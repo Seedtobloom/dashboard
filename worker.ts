@@ -70,13 +70,9 @@ export default {
         if (authError) return withSecurityHeaders(authError);
         response = await handleApiRoutes(request, env, url);
       }
-      // ── Everything else → serve index.html (SPA fallback) ───────────────────
+      // ── Everything else → handled by _redirects + static assets ─────────────
       else {
-        // Let the assets binding serve known static files first
-        const assetRes = await env.ASSETS.fetch(request);
-        if (assetRes.status !== 404) return assetRes;
-        // Unknown routes → SPA shell (index.html handles client-side routing)
-        return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
+        return new Response(null, { status: 404 });
       }
 
       return withSecurityHeaders(response);

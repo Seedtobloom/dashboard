@@ -115,7 +115,7 @@
 
     if (res.ok) {
       authHeader = testHeader;
-      sessionStorage.setItem('bloom_auth', testHeader);
+      localStorage.setItem('bloom_auth', testHeader);
       closeModal('modal-login');
       const data = await res.json();
       projects = data;
@@ -154,8 +154,8 @@
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
-    // Restore session from sessionStorage (survives F5, not tab close)
-    const saved = sessionStorage.getItem('bloom_auth');
+    // Restore session from localStorage (survives F5, not tab close)
+    const saved = localStorage.getItem('bloom_auth');
     if (saved) {
       const res = await fetch('/api/projects', {
         headers: { 'Authorization': saved, 'Content-Type': 'application/json' }
@@ -167,7 +167,7 @@
         routeFromUrl();
         return;
       } else {
-        sessionStorage.removeItem('bloom_auth');
+        localStorage.removeItem('bloom_auth');
       }
     }
     showLogin();
