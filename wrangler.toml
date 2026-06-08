@@ -10,7 +10,7 @@ preview_id = "9336bc6ddcca42bf8718546380c869d0"
 
 [[r2_buckets]]
 binding = "BLOOM_R2"
-bucket_name = "bloom-portal-files"
+bucket_name = "dashboard"
 
 [vars]
 ENVIRONMENT = "production"
