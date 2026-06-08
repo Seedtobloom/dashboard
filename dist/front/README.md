@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "bloom-portal-front" generated at 2026-06-08T20:12:51.009Z.
