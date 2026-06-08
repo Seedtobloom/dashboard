@@ -1,0 +1,64 @@
+/* Shared CSS variables and base reset */
+:root {
+  --navy: #1a2744;
+  --cream: #f5f0e8;
+  --sage: #7fa688;
+  --sky: #d4e4f0;
+  --white: #ffffff;
+  --text: #2d3a52;
+  --muted: #8090a8;
+  --border: #e8e2d8;
+  --radius: 12px;
+  --orange: #e8a87c;
+  --red: #e05050;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+}
+
+/* Shared button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s, transform 0.1s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.98); }
+.btn--primary { background: var(--navy); color: #fff; }
+.btn--primary:hover { opacity: 0.88; }
+.btn--sage { background: var(--sage); color: #fff; }
+.btn--sage:hover { opacity: 0.88; }
+.btn--outline { background: transparent; border: 1.5px solid var(--border); color: var(--navy); }
+.btn--danger { background: transparent; border: 1.5px solid var(--red); color: var(--red); }
+.btn--sm { padding: 5px 10px; font-size: 12px; }
+.btn:hover { opacity: 0.85; }
+
+/* Toast (shared pattern) */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  z-index: 1000;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
