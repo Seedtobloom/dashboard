@@ -1,6 +1,7 @@
 name = "bloom-portal"
-pages_build_output_dir = "public"
+main = "worker.ts"
 compatibility_date = "2024-01-01"
+assets = { directory = "./public" }
 
 [[kv_namespaces]]
 binding = "BLOOM_KV"
@@ -11,5 +12,8 @@ preview_id = "YOUR_KV_PREVIEW_NAMESPACE_ID"
 binding = "BLOOM_R2"
 bucket_name = "bloom-portal-files"
 
-# Secrets configured in Cloudflare Pages dashboard:
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets to configure in Cloudflare dashboard:
 # ADMIN_USERNAME, ADMIN_PASSWORD, RESEND_API_KEY, RESEND_FROM_EMAIL, PORTAL_BASE_URL
