@@ -5,8 +5,8 @@ assets = { directory = "./public" }
 
 [[kv_namespaces]]
 binding = "BLOOM_KV"
-id = "YOUR_KV_NAMESPACE_ID"
-preview_id = "YOUR_KV_PREVIEW_NAMESPACE_ID"
+id = "9336bc6ddcca42bf8718546380c869d0"
+preview_id = "9336bc6ddcca42bf8718546380c869d0"
 
 [[r2_buckets]]
 binding = "BLOOM_R2"
