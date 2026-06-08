@@ -47,10 +47,7 @@ export function requireAdminAuth(request: Request, env: Env): Response | null {
   if (!verifyAdminAuth(request, env)) {
     return new Response('Unauthorized', {
       status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Bloom Portal Admin"',
-        'Content-Type': 'text/plain',
-      },
+      headers: { 'Content-Type': 'text/plain' },
     });
   }
   return null;
