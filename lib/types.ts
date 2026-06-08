@@ -84,6 +84,7 @@ export interface EmailLog {
 export interface Env {
   BLOOM_KV: KVNamespace;
   BLOOM_R2: R2Bucket;
+  ASSETS: Fetcher;
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD: string;
   RESEND_API_KEY: string;
