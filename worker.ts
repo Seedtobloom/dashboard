@@ -70,10 +70,13 @@ export default {
         if (authError) return withSecurityHeaders(authError);
         response = await handleApiRoutes(request, env, url);
       }
-      // ── Static assets served by Workers Assets binding ───────────────────────
-      // (everything else falls through to the assets binding automatically)
+      // ── Everything else → serve index.html (SPA fallback) ───────────────────
       else {
-        return new Response('Not found', { status: 404 });
+        // Let the assets binding serve known static files first
+        const assetRes = await env.ASSETS.fetch(request);
+        if (assetRes.status !== 404) return assetRes;
+        // Unknown routes → SPA shell (index.html handles client-side routing)
+        return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
       }
 
       return withSecurityHeaders(response);
