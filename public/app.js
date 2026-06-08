@@ -1,11 +1,9 @@
-// Admin SPA — all admin interactions
-// Credentials stored in memory, Basic Auth header sent with every API call
+// Admin SPA — cookie-based auth (bloom_sid session cookie, no Basic Auth)
 
 (function() {
   'use strict';
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let authHeader = null; // Base64 Basic auth header value
   let currentProjectId = null;
   let projects = [];
 
@@ -52,7 +50,7 @@
   function apiFetch(path, opts) {
     opts = opts || {};
     opts.headers = opts.headers || {};
-    opts.headers['Authorization'] = authHeader;
+    opts.credentials = 'same-origin';
     if (!opts.headers['Content-Type'] && !(opts.body instanceof FormData)) {
       opts.headers['Content-Type'] = 'application/json';
     }
@@ -92,7 +90,6 @@
   // ── Auth / Login ───────────────────────────────────────────────────────────
   function showLogin() {
     openModal('modal-login');
-    // Prevent closing login by backdrop click
     const backdrop = document.getElementById('modal-login');
     if (backdrop) {
       backdrop.addEventListener('click', (e) => e.stopPropagation(), { once: false });
@@ -105,27 +102,27 @@
     const err = document.getElementById('login-error');
     err.style.display = 'none';
 
-    const creds = btoa(username + ':' + password);
-    const testHeader = 'Basic ' + creds;
-
-    // Test credentials against API
-    const res = await fetch('/api/projects', {
-      headers: { 'Authorization': testHeader, 'Content-Type': 'application/json' }
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
     });
 
     if (res.ok) {
-      authHeader = testHeader;
-      localStorage.setItem('bloom_auth', testHeader);
       closeModal('modal-login');
-      const data = await res.json();
-      projects = data;
-      renderDashboard(projects);
-      routeFromUrl();
+      await init();
     } else {
       err.style.display = '';
     }
   }
   window.doLogin = doLogin;
+
+  async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+    showLogin();
+  }
+  window.doLogout = doLogout;
 
   // Allow Enter key in login form
   document.addEventListener('keydown', (e) => {
@@ -136,7 +133,6 @@
 
   // ── Router ─────────────────────────────────────────────────────────────────
   function routeFromUrl() {
-    // Hash-based routing: #project-{id} to open a project, else dashboard
     const hash = window.location.hash;
     const match = hash.match(/^#project-([a-f0-9]{32})$/);
     if (match) {
@@ -149,7 +145,6 @@
   window.addEventListener('hashchange', () => routeFromUrl());
 
   function navigate(path) {
-    // Convert /admin/projects/{id} style paths to hash navigation
     const match = path.match(/\/admin\/projects\/([a-f0-9]{32})/);
     if (match) {
       window.location.hash = 'project-' + match[1];
@@ -160,33 +155,26 @@
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
-    // Restore session from localStorage (survives F5, not tab close)
-    const saved = localStorage.getItem('bloom_auth');
-    if (saved) {
-      const res = await fetch('/api/projects', {
-        headers: { 'Authorization': saved, 'Content-Type': 'application/json' }
-      });
-      if (res.ok) {
-        authHeader = saved;
-        projects = await res.json();
-        renderDashboard(projects);
-        routeFromUrl();
-        return;
-      } else {
-        localStorage.removeItem('bloom_auth');
-      }
+    const res = await fetch('/api/projects', { credentials: 'same-origin' });
+    if (res.ok) {
+      projects = await res.json();
+      renderDashboard(projects);
+      routeFromUrl();
+    } else {
+      showLogin();
     }
-    showLogin();
   }
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   async function showDashboard() {
     const res = await apiFetch('/api/projects');
-    if (!res.ok) { toast('Erreur chargement', true); return; }
+    if (!res.ok) {
+      if (res.status === 401) { showLogin(); return; }
+      toast('Erreur chargement', true); return;
+    }
     projects = await res.json();
     projects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-    // Fetch unread counts
     const unreadCounts = await Promise.all(projects.map(async (p) => {
       try {
         const r = await apiFetch('/api/projects/' + p.id + '/messages');
@@ -243,6 +231,9 @@
           '<button class="sidebar-new" onclick="navigate(\'/admin\')">Dashboard</button>' +
           '<button class="sidebar-new" style="background:var(--sky);color:var(--navy)" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
           '<div class="project-list">' + sidebarItems + '</div>' +
+          '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
+            '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
+          '</div>' +
         '</nav>' +
         '<main class="main">' +
           '<div class="main-inner">' +
@@ -279,7 +270,10 @@
       apiFetch('/api/projects'),
     ]);
 
-    if (!projRes.ok) { toast('Projet introuvable', true); return; }
+    if (!projRes.ok) {
+      if (projRes.status === 401) { showLogin(); return; }
+      toast('Projet introuvable', true); return;
+    }
 
     const project = await projRes.json();
     const messages = msgsRes.ok ? await msgsRes.json() : [];
@@ -289,7 +283,6 @@
     const allProjects = allProjs.ok ? await allProjs.json() : [];
     allProjects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-    // Unread counts for sidebar
     const unreadCounts = await Promise.all(allProjects.map(async (p) => {
       try {
         const r = await apiFetch('/api/projects/' + p.id + '/messages');
@@ -397,11 +390,13 @@
           '<button class="sidebar-new" onclick="navigate(\'/admin\')">Dashboard</button>' +
           '<button class="sidebar-new" style="background:var(--sky);color:var(--navy)" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
           '<div class="project-list">' + sidebarItems + '</div>' +
+          '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
+            '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
+          '</div>' +
         '</nav>' +
         '<main class="main">' +
           '<div class="main-inner">' +
 
-            // Project header
             '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap">' +
               '<div>' +
                 '<h1 style="font-family:\'Playfair Display\',serif;font-size:24px;color:var(--navy);line-height:1.3">' + esc(project.projectTitle) + '</h1>' +
@@ -413,7 +408,6 @@
               '</div>' +
             '</div>' +
 
-            // Project info card
             '<div class="card" id="card-info">' +
               '<div class="card-header">' +
                 '<span class="card-title">Informations du projet</span>' +
@@ -451,13 +445,11 @@
               '</div>' +
             '</div>' +
 
-            // Steps
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
               '<div class="card-body" id="steps-container">' + (stepsHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune étape.</p>') + '</div>' +
             '</div>' +
 
-            // Practical info
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Infos pratiques</span><button class="btn btn--sage btn--sm" onclick="openAddSection()">+ Ajouter</button></div>' +
               '<div class="card-body" id="sections-container">' +
@@ -478,7 +470,6 @@
               '</div>' +
             '</div>' +
 
-            // Messages
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Messages</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
               '<div class="card-body">' +
@@ -490,19 +481,16 @@
               '</div>' +
             '</div>' +
 
-            // Files
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Fichiers</span><button class="btn btn--sage btn--sm" onclick="document.getElementById(\'file-input\').click()">+ Uploader</button><input type="file" id="file-input" style="display:none" onchange="uploadFile(this)"></div>' +
               '<div class="card-body" id="files-container">' + (filesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun fichier.</p>') + '</div>' +
             '</div>' +
 
-            // Tokens
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Liens d\'accès client</span><button class="btn btn--sage btn--sm" onclick="openGenToken()">+ Générer</button></div>' +
               '<div class="card-body" id="tokens-container">' + (tokensHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun lien.</p>') + '</div>' +
             '</div>' +
 
-            // Notifications
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Notifications email</span><button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button></div>' +
               '<div class="card-body">' +
@@ -515,7 +503,6 @@
         '</main>' +
       '</div>' +
 
-      // Step modal
       '<div class="modal-backdrop" id="modal-step">' +
         '<div class="modal">' +
           '<h3 id="modal-step-title">Ajouter une étape</h3>' +
@@ -531,7 +518,6 @@
         '</div>' +
       '</div>' +
 
-      // Section modal
       '<div class="modal-backdrop" id="modal-section">' +
         '<div class="modal">' +
           '<h3 id="modal-section-title">Ajouter une section</h3>' +
@@ -542,7 +528,6 @@
         '</div>' +
       '</div>' +
 
-      // Token modal
       '<div class="modal-backdrop" id="modal-token">' +
         '<div class="modal">' +
           '<h3>Générer un lien d\'accès</h3>' +
@@ -556,7 +541,6 @@
         '</div>' +
       '</div>' +
 
-      // Notif modal
       '<div class="modal-backdrop" id="modal-notif">' +
         '<div class="modal">' +
           '<h3>Envoyer une notification</h3>' +
@@ -577,7 +561,6 @@
 
       '<div class="toast" id="toast"></div>';
 
-    // Rebind modal backdrop clicks after DOM update
     document.querySelectorAll('.modal-backdrop').forEach(m => {
       m.addEventListener('click', e => { if (e.target === m && m.id !== 'modal-login') m.classList.remove('open'); });
     });
@@ -610,7 +593,6 @@
     else toast('Erreur sauvegarde', true);
   };
 
-  // Steps
   window.openAddStep = function() {
     document.getElementById('step-id').value = '';
     document.getElementById('step-title').value = '';
@@ -671,7 +653,6 @@
     if (res.ok) setTimeout(() => loadProject(currentProjectId), 300);
   };
 
-  // Sections
   window.openAddSection = function() {
     document.getElementById('section-id').value = '';
     document.getElementById('section-title').value = '';
@@ -718,7 +699,6 @@
     else toast('Erreur', true);
   };
 
-  // Messages
   window.sendAdminMessage = async function() {
     const content = document.getElementById('admin-message').value.trim();
     if (!content) return;
@@ -735,7 +715,6 @@
     setTimeout(() => loadProject(currentProjectId), 400);
   };
 
-  // Files
   window.uploadFile = async function(input) {
     const file = input.files[0];
     if (!file) return;
@@ -744,8 +723,11 @@
     fd.append('file', file);
     fd.append('category', category);
     toast('Upload en cours…');
-    const headers = { 'Authorization': authHeader };
-    const res = await fetch('/api/projects/' + currentProjectId + '/files', { method: 'POST', headers, body: fd });
+    const res = await fetch('/api/projects/' + currentProjectId + '/files', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: fd,
+    });
     if (res.ok) { toast('Fichier uploadé ✓'); setTimeout(() => loadProject(currentProjectId), 400); }
     else toast('Erreur upload', true);
     input.value = '';
@@ -758,7 +740,6 @@
     else toast('Erreur', true);
   };
 
-  // Tokens
   window.openGenToken = function() {
     document.getElementById('token-label').value = '';
     document.getElementById('token-expires').value = '';
@@ -800,7 +781,6 @@
     else toast('Erreur', true);
   };
 
-  // Notifications
   window.openNotifModal = function() { openModal('modal-notif'); };
   window.toggleCustomNotif = function() {
     const el = document.getElementById('notif-custom');
@@ -818,7 +798,6 @@
     else toast('Erreur envoi', true);
   };
 
-  // Delete project
   window.confirmDelete = async function() {
     if (!confirm('Supprimer ce projet définitivement ?')) return;
     if (!confirm('Confirmez la suppression ?')) return;
@@ -827,7 +806,6 @@
     else toast('Erreur', true);
   };
 
-  // New project
   window.createProject = async function() {
     const body = {
       clientName: document.getElementById('new-clientName').value,
@@ -847,7 +825,6 @@
     } else toast('Erreur création', true);
   };
 
-  // Expose navigate globally
   window.navigate = navigate;
 
   // ── Boot ───────────────────────────────────────────────────────────────────
