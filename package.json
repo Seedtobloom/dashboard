@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "build": "wrangler build"
+    "dev:back": "wrangler dev back/worker.ts --env back",
+    "dev:front": "wrangler dev front/worker.ts --env front",
+    "deploy:back": "wrangler deploy --env back",
+    "deploy:front": "wrangler deploy --env front",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "wrangler": "^3.40.0",
