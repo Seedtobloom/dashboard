@@ -9,10 +9,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": false,
-    "resolveJsonModule": true
+    "skipLibCheck": true
   },
-  "include": ["back/**/*.ts", "front/**/*.ts"],
-  "exclude": ["node_modules", "src"]
+  "include": ["functions/**/*.ts", "lib/**/*.ts"],
+  "exclude": ["node_modules"]
 }

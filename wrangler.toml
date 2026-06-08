@@ -1,13 +1,5 @@
-# Bloom Portal — Two Cloudflare Workers
-#
-# Deploy back:  wrangler deploy --env back
-# Deploy front: wrangler deploy --env front
-#
-# Dev back:     wrangler dev back/worker.ts --env back
-# Dev front:    wrangler dev front/worker.ts --env front
-
-name = "bloom-portal-back"
-main = "back/worker.ts"
+name = "bloom-portal"
+pages_build_output_dir = "public"
 compatibility_date = "2024-01-01"
 
 [[kv_namespaces]]
@@ -19,19 +11,5 @@ preview_id = "YOUR_KV_PREVIEW_NAMESPACE_ID"
 binding = "BLOOM_R2"
 bucket_name = "bloom-portal-files"
 
-[vars]
-ENVIRONMENT = "production"
-
-# Secrets (back worker):
-#   wrangler secret put ADMIN_USERNAME --env back
-#   wrangler secret put ADMIN_PASSWORD --env back
-#   wrangler secret put RESEND_API_KEY --env back
-#   wrangler secret put RESEND_FROM_EMAIL --env back
-#   wrangler secret put PORTAL_BASE_URL --env back
-
-[env.front]
-name = "bloom-portal-front"
-main = "front/worker.ts"
-compatibility_date = "2024-01-01"
-
-# No KV/R2 needed for front worker — it only serves static files
+# Secrets configured in Cloudflare Pages dashboard:
+# ADMIN_USERNAME, ADMIN_PASSWORD, RESEND_API_KEY, RESEND_FROM_EMAIL, PORTAL_BASE_URL

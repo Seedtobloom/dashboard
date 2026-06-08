@@ -1,1 +1,0 @@
-This folder contains the built output assets for the worker "bloom-portal-back" generated at 2026-06-08T20:12:46.269Z.

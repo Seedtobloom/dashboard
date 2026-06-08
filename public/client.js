@@ -1,10 +1,18 @@
-// Client portal SPA — token is in URL path /p/{token}
-// Fetches data from back API /api/client/{token}
+// Client portal SPA — token comes from ?token= query param or bloom_token cookie
+// Fetches data from /api/client/{token}
 (function() {
   'use strict';
 
-  const pathMatch = window.location.pathname.match(/^\/p\/([a-f0-9]{64})$/);
-  const TOKEN = pathMatch ? pathMatch[1] : null;
+  function getTokenFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('token');
+    return t && /^[a-f0-9]{64}$/.test(t) ? t : null;
+  }
+  function getTokenFromCookie() {
+    const m = document.cookie.match(/bloom_token=([a-f0-9]{64})/);
+    return m ? m[1] : null;
+  }
+  const TOKEN = getTokenFromUrl() || getTokenFromCookie();
   const API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
   const STATUS_COLORS = {

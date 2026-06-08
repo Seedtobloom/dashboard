@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev:back": "wrangler dev back/worker.ts --env back",
-    "dev:front": "wrangler dev front/worker.ts --env front",
-    "deploy:back": "wrangler deploy --env back",
-    "deploy:front": "wrangler deploy --env front",
-    "typecheck": "tsc --noEmit"
+    "dev": "wrangler pages dev public --binding BLOOM_KV=... --kv BLOOM_KV",
+    "typecheck": "tsc --noEmit",
+    "build": "echo 'No build step needed — Pages compiles TypeScript functions automatically'"
   },
   "devDependencies": {
     "wrangler": "^3.40.0",
