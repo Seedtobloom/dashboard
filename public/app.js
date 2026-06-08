@@ -136,8 +136,9 @@
 
   // ── Router ─────────────────────────────────────────────────────────────────
   function routeFromUrl() {
-    const path = window.location.pathname;
-    const match = path.match(/^\/admin\/projects\/([a-f0-9]{32})$/);
+    // Hash-based routing: #project-{id} to open a project, else dashboard
+    const hash = window.location.hash;
+    const match = hash.match(/^#project-([a-f0-9]{32})$/);
     if (match) {
       loadProject(match[1]);
     } else {
@@ -145,11 +146,16 @@
     }
   }
 
-  window.addEventListener('popstate', () => routeFromUrl());
+  window.addEventListener('hashchange', () => routeFromUrl());
 
   function navigate(path) {
-    history.pushState(null, '', path);
-    routeFromUrl();
+    // Convert /admin/projects/{id} style paths to hash navigation
+    const match = path.match(/\/admin\/projects\/([a-f0-9]{32})/);
+    if (match) {
+      window.location.hash = 'project-' + match[1];
+    } else {
+      window.location.hash = '';
+    }
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────

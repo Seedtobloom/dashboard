@@ -70,13 +70,9 @@ export default {
         if (authError) return withSecurityHeaders(authError);
         response = await handleApiRoutes(request, env, url);
       }
-      // ── Everything else → static asset or SPA fallback ───────────────────────
+      // ── Everything else → assets binding handles static files ───────────────
       else {
-        // Try exact static file match first (app.js, style.css, etc.)
-        const asset = await env.ASSETS.fetch(new Request(request.url, request));
-        if (asset.status !== 404) return asset;
-        // SPA fallback: any unknown route serves index.html
-        return env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString()));
+        return new Response('Not found', { status: 404 });
       }
 
       return withSecurityHeaders(response);
