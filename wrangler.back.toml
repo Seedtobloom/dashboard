@@ -1,5 +1,5 @@
-name = "bloom-portal"
-main = "wFront.js"
+name = "bloom-portal-back"
+main = "wBack.ts"
 compatibility_date = "2024-01-01"
 
 [[kv_namespaces]]
@@ -7,12 +7,13 @@ binding = "BLOOM_KV"
 id = "9336bc6ddcca42bf8718546380c869d0"
 preview_id = "9336bc6ddcca42bf8718546380c869d0"
 
-[[services]]
-binding = "BLOOM_BACK"
-service = "bloom-portal-back"
+[[r2_buckets]]
+binding = "BLOOM_R2"
+bucket_name = "dashboard"
 
 [vars]
 ENVIRONMENT = "production"
 
 # Secrets to configure in Cloudflare dashboard:
-# ADMIN_USERNAME, ADMIN_PASSWORD
+# RESEND_API_KEY, RESEND_FROM_EMAIL, PORTAL_BASE_URL
+# ADMIN_USERNAME, ADMIN_PASSWORD (not used by back, but required by Env type)
