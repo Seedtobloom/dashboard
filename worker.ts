@@ -541,7 +541,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 </div>
 
 <div class="toast" id="global-toast"></div>
-<script src="/app.js"></script>
+<script src="/app.js?v=3"></script>
 </body>
 </html>`;
 
@@ -564,7 +564,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
   </div>
 </div>
 <div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a2744;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
-<script src="/client.js"></script>
+<script src="/client.js?v=3"></script>
 </body>
 </html>`;
 
