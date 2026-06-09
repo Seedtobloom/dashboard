@@ -814,6 +814,4 @@ var wBack_default = {
     }
   }
 };
-export {
-  wBack_default as default
-};
+export default wBack_default;
