@@ -53,8 +53,8 @@ export async function handleProjects(request: Request, env: Env, url: URL): Prom
     return jsonResponse(project);
   }
 
-  // PUT /api/projects/{id}
-  if (method === 'PUT') {
+  // PUT or PATCH /api/projects/{id}
+  if (method === 'PUT' || method === 'PATCH') {
     const existing = await getProject(env, id);
     if (!existing) return errorResponse('Project not found', 404);
 
