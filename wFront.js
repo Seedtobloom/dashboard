@@ -1,3 +1,4 @@
+// v2 - redesign portail client + multi-projets + pin admin
 const COOKIE_NAME = 'bloom_sid';
 const SESSION_TTL = 7 * 24 * 3600;
 
