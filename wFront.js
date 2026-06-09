@@ -1419,9 +1419,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .replace(/\*(.+?)\*/g,'<em>$1</em>')
       .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
       .replace(/^- (.+)$/gm,'<li>$1</li>')
-      .replace(/
-
-/g,'</p><p>')
+      .replace(/\n\n/g,'</p><p>')
       .replace(/^/,'<p>').replace(/$/,'</p>');
   }
   function toast(msg) {
