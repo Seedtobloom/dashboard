@@ -331,6 +331,29 @@ const ADMIN_CSS = `/* Admin-specific layout and component styles */
 .projects-table tr:last-child td { border-bottom: none; }
 .projects-table tr:hover td { background: var(--surface); cursor: pointer; }
 
+.inbox-list {
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--white);
+}
+.inbox-item {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.inbox-item:hover { background: var(--surface); }
+.inbox-item.active { background: #f0f4ff; border-left: 3px solid var(--navy); }
+.inbox-convo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+}
+
 @media (max-width: 768px) {
   .app { flex-direction: column; }
   .sidebar { width: 100%; height: auto; max-height: 50vh; }
@@ -660,9 +683,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ── Router ─────────────────────────────────────────────────────────────────
   function routeFromUrl() {
     const hash = window.location.hash;
-    const match = hash.match(/^#project-([a-f0-9]{32})$/);
-    if (match) {
-      loadProject(match[1]);
+    const projMatch = hash.match(/^#project-([a-f0-9]{32})$/);
+    if (projMatch) {
+      loadProject(projMatch[1]);
+    } else if (hash === '#messages') {
+      showMessages();
     } else {
       showDashboard();
     }
@@ -754,20 +779,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</tr>';
     }).join('');
 
+    var unreadMap = {};
+    projs.forEach(function(p, i) { unreadMap[p.id] = unreadCounts[i] || 0; });
+
     document.getElementById('app').innerHTML =
       '<div class="app">' +
-        '<nav class="sidebar">' +
-          '<div class="sidebar-header">' +
-            '<div class="sidebar-logo">✦ Seed to Bloom</div>' +
-            '<div class="sidebar-sub">Administration</div>' +
-          '</div>' +
-          '<button class="sidebar-new" onclick="navigate(\'/admin\')">Dashboard</button>' +
-          '<button class="sidebar-new" style="background:var(--sky);color:var(--navy)" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
-          '<div class="project-list">' + sidebarItems + '</div>' +
-          '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
-            '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
-          '</div>' +
-        '</nav>' +
+        buildSidebarHtml('dashboard', projs, unreadMap) +
         '<main class="main">' +
           '<div class="main-inner">' +
             '<div style="margin-bottom:24px">' +
@@ -790,6 +807,219 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</main>' +
       '</div>';
   }
+
+  // ── Messages (inbox) ──────────────────────────────────────────────────────
+  var inboxData = []; // [{project, messages}]
+  var inboxProjectId = null;
+
+  function buildSidebarHtml(activeSection, allProjs, unreadMap) {
+    unreadMap = unreadMap || {};
+    var items = allProjs.map(function(p) {
+      var u = unreadMap[p.id] || 0;
+      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="navigate(\'/admin/projects/' + p.id + '\');return false;">' +
+        '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
+        '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
+        '<div class="project-item__meta">' +
+          '<span class="badge-dot" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '"></span>' +
+          (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') +
+        '</div>' +
+      '</a>';
+    }).join('');
+    var totalUnread = Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
+    return '<nav class="sidebar">' +
+      '<div class="sidebar-header"><div class="sidebar-logo">✦ Seed to Bloom</div><div class="sidebar-sub">Administration</div></div>' +
+      '<button class="sidebar-new" onclick="navigate(\'/admin\')" style="' + (activeSection === 'dashboard' ? '' : 'opacity:0.7') + '">Dashboard</button>' +
+      '<button class="sidebar-new" style="background:' + (activeSection === 'messages' ? 'var(--sage)' : 'rgba(127,166,136,0.25)') + ';color:' + (activeSection === 'messages' ? '#fff' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;gap:8px" onclick="window.location.hash=\'messages\'">' +
+        '💬 Messages' + (totalUnread > 0 ? ' <span style="background:#e8a87c;color:#fff;font-size:10px;padding:1px 6px;border-radius:999px;font-weight:700">' + totalUnread + '</span>' : '') +
+      '</button>' +
+      '<button class="sidebar-new" style="background:var(--sky);color:var(--navy)" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
+      '<div class="project-list">' + items + '</div>' +
+      '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
+        '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
+      '</div>' +
+    '</nav>';
+  }
+
+  async function showMessages(activeId) {
+    const projs = await apiFetch('/api/projects').then(function(r) { return r.ok ? r.json() : []; });
+    const allMsgs = await Promise.all(projs.map(function(p) {
+      return apiFetch('/api/projects/' + p.id + '/messages').then(function(r) { return r.ok ? r.json() : []; });
+    }));
+
+    inboxData = projs.map(function(p, i) { return { project: p, messages: allMsgs[i] }; });
+    inboxData.sort(function(a, b) {
+      var la = a.messages.length ? new Date(a.messages[a.messages.length-1].createdAt) : new Date(a.project.updatedAt);
+      var lb = b.messages.length ? new Date(b.messages[b.messages.length-1].createdAt) : new Date(b.project.updatedAt);
+      return lb - la;
+    });
+
+    var unreadMap = {};
+    inboxData.forEach(function(d) {
+      unreadMap[d.project.id] = d.messages.filter(function(m) { return m.author === 'client' && !m.readByAdmin; }).length;
+    });
+
+    if (!activeId && inboxData.length) activeId = inboxData[0].project.id;
+    inboxProjectId = activeId;
+
+    function renderInboxList() {
+      return inboxData.map(function(d) {
+        var p = d.project, msgs = d.messages;
+        var last = msgs.length ? msgs[msgs.length-1] : null;
+        var unread = unreadMap[p.id] || 0;
+        var isActive = p.id === inboxProjectId;
+        return '<div class="inbox-item' + (isActive ? ' active' : '') + '" onclick="switchInboxProject(\'' + p.id + '\')">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+            '<div style="width:32px;height:32px;border-radius:50%;background:' + (STATUS_COLORS[p.status]||'#aaa') + '30;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--navy)">' + esc(p.clientName).charAt(0).toUpperCase() + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:4px">' +
+                '<span style="font-weight:' + (unread > 0 ? '600' : '500') + ';font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.clientName) + '</span>' +
+                (last ? '<span style="font-size:11px;color:var(--muted);flex-shrink:0">' + new Date(last.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + '</span>' : '') +
+              '</div>' +
+              '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.projectTitle) + '</div>' +
+            '</div>' +
+            (unread > 0 ? '<span class="unread-badge" style="flex-shrink:0">' + unread + '</span>' : '') +
+          '</div>' +
+          (last ? '<div style="font-size:12px;color:' + (unread > 0 ? 'var(--text)' : 'var(--muted)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:42px">' +
+            (last.author === 'cindy' ? 'Vous : ' : '') + esc(last.content.slice(0, 60)) + (last.content.length > 60 ? '…' : '') +
+          '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+
+    function renderConversation(projectId) {
+      var d = inboxData.find(function(x) { return x.project.id === projectId; });
+      if (!d) return '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted)">Sélectionnez une conversation</div>';
+      var p = d.project, msgs = d.messages;
+      var msgsHtml = msgs.length ? msgs.map(function(m) {
+        var isCindy = m.author === 'cindy';
+        return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
+          '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(p.clientName).charAt(0).toUpperCase()) + '</div>' +
+          '<div style="max-width:65%">' +
+            '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(p.clientName)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
+            '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
+            (!m.readByAdmin && !isCindy ? '<div style="font-size:10px;color:var(--orange);margin-top:2px">● non lu</div>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">Pas encore de messages.</div>';
+
+      return '<div style="display:flex;flex-direction:column;height:100%">' +
+        '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white)">' +
+          '<div>' +
+            '<div style="font-weight:600;color:var(--navy)">' + esc(p.clientName) + '</div>' +
+            '<div style="font-size:12px;color:var(--muted)">' + esc(p.projectTitle) + ' · <a href="#project-' + p.id + '" style="color:var(--sage)">Voir le projet →</a></div>' +
+          '</div>' +
+          '<button class="btn btn--outline btn--sm" onclick="markInboxRead(\'' + p.id + '\')">Tout marquer lu</button>' +
+        '</div>' +
+        '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
+        '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
+          '<div style="display:flex;gap:10px;align-items:flex-end">' +
+            '<textarea id="inbox-input" placeholder="Répondre à ' + esc(p.clientName) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
+            '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    var totalUnreadAll = Object.values(unreadMap).reduce(function(a,b){return a+b;},0);
+
+    document.getElementById('app').innerHTML =
+      '<div class="app">' +
+        buildSidebarHtml('messages', projs, unreadMap) +
+        '<main class="main" style="display:flex;flex-direction:column;overflow:hidden">' +
+          '<div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px">' +
+            '<h2 style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--navy)">Messages</h2>' +
+            (totalUnreadAll > 0 ? '<span class="unread-badge">' + totalUnreadAll + ' non lu' + (totalUnreadAll > 1 ? 's' : '') + '</span>' : '') +
+          '</div>' +
+          '<div style="display:flex;flex:1;overflow:hidden">' +
+            '<div class="inbox-list" id="inbox-list">' + renderInboxList() + '</div>' +
+            '<div class="inbox-convo" id="inbox-convo">' + renderConversation(inboxProjectId) + '</div>' +
+          '</div>' +
+        '</main>' +
+      '</div>';
+
+    var msgs = document.getElementById('inbox-msgs');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  window.switchInboxProject = function(id) {
+    inboxProjectId = id;
+    var listEl = document.getElementById('inbox-list');
+    var convoEl = document.getElementById('inbox-convo');
+    if (!listEl || !convoEl) return;
+    listEl.querySelectorAll('.inbox-item').forEach(function(el) { el.classList.remove('active'); });
+    var clicked = listEl.querySelectorAll('.inbox-item')[inboxData.findIndex(function(d) { return d.project.id === id; })];
+    if (clicked) clicked.classList.add('active');
+    var d = inboxData.find(function(x) { return x.project.id === id; });
+    if (!d) return;
+    var p = d.project, msgs = d.messages;
+    var msgsHtml = msgs.length ? msgs.map(function(m) {
+      var isCindy = m.author === 'cindy';
+      return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
+        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(p.clientName).charAt(0).toUpperCase()) + '</div>' +
+        '<div style="max-width:65%">' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(p.clientName)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
+          '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">Pas encore de messages.</div>';
+
+    convoEl.innerHTML =
+      '<div style="display:flex;flex-direction:column;height:100%">' +
+        '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white)">' +
+          '<div><div style="font-weight:600;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.projectTitle) + ' · <a href="#project-' + p.id + '" style="color:var(--sage)">Voir le projet →</a></div></div>' +
+          '<button class="btn btn--outline btn--sm" onclick="markInboxRead(\'' + p.id + '\')">Tout marquer lu</button>' +
+        '</div>' +
+        '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
+        '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
+          '<div style="display:flex;gap:10px;align-items:flex-end">' +
+            '<textarea id="inbox-input" placeholder="Répondre à ' + esc(p.clientName) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
+            '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
+        '</div>' +
+      '</div>';
+    var msgsEl = document.getElementById('inbox-msgs');
+    if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
+  };
+
+  window.sendInboxMessage = async function() {
+    var input = document.getElementById('inbox-input');
+    if (!input || !inboxProjectId) return;
+    var content = input.value.trim();
+    if (!content) return;
+    input.disabled = true;
+    var res = await apiFetch('/api/projects/' + inboxProjectId + '/messages', {
+      method: 'POST', body: JSON.stringify({ content: content, author: 'cindy' })
+    });
+    if (res.ok) {
+      var data = await res.json();
+      var d = inboxData.find(function(x) { return x.project.id === inboxProjectId; });
+      if (d) d.messages.push(data);
+      input.value = '';
+      var msgsEl = document.getElementById('inbox-msgs');
+      if (msgsEl) {
+        var p = d ? d.project : { clientName: '' };
+        var div = document.createElement('div');
+        div.style.cssText = 'display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-direction:row-reverse';
+        div.innerHTML = '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff">C</div>' +
+          '<div style="max-width:65%"><div style="font-size:11px;color:var(--muted);margin-bottom:3px;text-align:right">Vous · maintenant</div>' +
+          '<div style="padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;background:var(--navy);color:#fff;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word">' + esc(content) + '</div></div>';
+        msgsEl.appendChild(div);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+      toast('Message envoyé ✓');
+    } else { toast('Erreur', true); }
+    input.disabled = false;
+    if (input) input.focus();
+  };
+
+  window.markInboxRead = async function(projectId) {
+    await apiFetch('/api/projects/' + projectId + '/messages/read-all', { method: 'PUT', body: '{}' });
+    var d = inboxData.find(function(x) { return x.project.id === projectId; });
+    if (d) d.messages = d.messages.map(function(m) { return Object.assign({}, m, { readByAdmin: true }); });
+    toast('Marqué comme lu ✓');
+  };
 
   // ── Project detail ─────────────────────────────────────────────────────────
   async function loadProject(projectId) {
@@ -830,16 +1060,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   function renderProject(project, messages, files, tokens, emailLogs, allProjects, unreadCounts) {
-    const sidebarItems = allProjects.map(function(p, i) {
-      return '<a class="project-item ' + (p.id === project.id ? 'active' : '') + '" href="/admin/projects/' + p.id + '" onclick="navigate(\'/admin/projects/' + p.id + '\');return false;">' +
-        '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
-        '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
-        '<div class="project-item__meta">' +
-          '<span class="badge-dot" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '"></span>' +
-          (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + '</span>' : '') +
-        '</div>' +
-      '</a>';
-    }).join('');
+    var unreadMapP = {};
+    allProjects.forEach(function(p, i) { unreadMapP[p.id] = unreadCounts[i] || 0; });
 
     const stepsHtml = [...project.steps].sort(function(a, b) { return a.order - b.order; }).map(function(step) {
       return '<div class="step-row" data-step-id="' + step.id + '">' +
@@ -917,18 +1139,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
-        '<nav class="sidebar">' +
-          '<div class="sidebar-header">' +
-            '<div class="sidebar-logo">✦ Seed to Bloom</div>' +
-            '<div class="sidebar-sub">Administration</div>' +
-          '</div>' +
-          '<button class="sidebar-new" onclick="navigate(\'/admin\')">Dashboard</button>' +
-          '<button class="sidebar-new" style="background:var(--sky);color:var(--navy)" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
-          '<div class="project-list">' + sidebarItems + '</div>' +
-          '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
-            '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
-          '</div>' +
-        '</nav>' +
+        buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
           '<div class="main-inner">' +
 
