@@ -810,12 +810,14 @@ function html(content: string, contentType: string): Response {
 }
 
 function withCors(response: Response): Response {
-  // Mutate headers directly — creating new Headers() may drop Set-Cookie
-  // (forbidden response-header name in WHATWG Fetch iterator)
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  return response;
+  // Copy Set-Cookie before new Headers() in case it gets filtered
+  const setCookie = response.headers.get('Set-Cookie');
+  const headers = new Headers(response.headers);
+  if (setCookie) headers.set('Set-Cookie', setCookie);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  return new Response(response.body, { status: response.status, headers });
 }
 
 // ── Inlined JS (read from public/ at build time) ─────────────────────────────
