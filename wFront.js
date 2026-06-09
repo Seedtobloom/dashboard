@@ -479,7 +479,7 @@ body {
 
 // ── JavaScript ────────────────────────────────────────────────────────────────
 
-const APP_JS = `// Admin SPA — cookie-based auth (bloom_sid session cookie, no Basic Auth)
+const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session cookie, no Basic Auth)
 
 (function() {
   'use strict';
@@ -845,7 +845,7 @@ const APP_JS = `// Admin SPA — cookie-based auth (bloom_sid session cookie, no
         '<span class="file-name-col">' + esc(f.name) + '</span>' +
         '<span style="font-size:12px;color:var(--muted)">' + f.category + '</span>' +
         '<a class="btn btn--outline btn--sm" href="/api/projects/' + project.id + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">↓</a>' +
-        '<button class="btn btn--danger btn--sm" onclick="deleteFile(\'' + f.key.replace(/\'/g, "\\'") + '\')">Suppr.</button>' +
+        '<button class="btn btn--danger btn--sm" onclick="deleteFile(\'' + f.key.replace(/\'/g, "\'") + '\')">Suppr.</button>' +
       '</div>';
     }).join('');
 
@@ -1313,7 +1313,7 @@ const APP_JS = `// Admin SPA — cookie-based auth (bloom_sid session cookie, no
   init();
 })();`;
 
-const CLIENT_JS = `// Client portal SPA
+const CLIENT_JS = String.raw`// Client portal SPA
 (function() {
   'use strict';
 
