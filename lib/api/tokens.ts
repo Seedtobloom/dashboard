@@ -1,32 +1,30 @@
 import type { Env, ClientToken } from '../types';
-import { getProjectTokens, saveToken, addTokenToProject, getToken } from '../kv';
+import { getProjectTokens, saveToken, addTokenToProject, getToken, addClientEmailToken, getClientEmailTokens } from '../kv';
 import { generateToken, jsonResponse, errorResponse } from '../utils';
 import { getProject } from '../kv';
 
 export async function handleTokens(request: Request, env: Env, url: URL): Promise<Response> {
   const method = request.method;
 
-  // /api/projects/{id}/tokens[/{token}/revoke]
   const projectMatch = url.pathname.match(/^\/api\/projects\/([a-f0-9]{32})\/tokens$/);
   const revokeMatch = url.pathname.match(/^\/api\/tokens\/([a-f0-9]{64})\/revoke$/);
+  const clientTokenMatch = url.pathname === '/api/tokens/client';
 
   // GET /api/projects/{id}/tokens
   if (method === 'GET' && projectMatch) {
     const project = await getProject(env, projectMatch[1]);
     if (!project) return errorResponse('Project not found', 404);
-
     const tokens = await getProjectTokens(env, projectMatch[1]);
     return jsonResponse(tokens);
   }
 
-  // POST /api/projects/{id}/tokens — generate new token
+  // POST /api/projects/{id}/tokens — generate project-specific token
   if (method === 'POST' && projectMatch) {
     const projectId = projectMatch[1];
     const project = await getProject(env, projectId);
     if (!project) return errorResponse('Project not found', 404);
 
-    const body = await request.json() as { label?: string; expiresAt?: string };
-
+    const body = (await request.json()) as { label?: string; expiresAt?: string };
     const token = generateToken();
     const clientToken: ClientToken = {
       token,
@@ -42,6 +40,37 @@ export async function handleTokens(request: Request, env: Env, url: URL): Promis
 
     const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.workers.dev';
     return jsonResponse({ ...clientToken, url: `${baseUrl}/p/${token}` }, 201);
+  }
+
+  // POST /api/tokens/client — generate client-level token (all projects for an email)
+  if (method === 'POST' && clientTokenMatch) {
+    const body = (await request.json()) as { clientEmail: string; label?: string; expiresAt?: string };
+    if (!body.clientEmail) return errorResponse('clientEmail is required');
+
+    const token = generateToken();
+    const clientToken: ClientToken = {
+      token,
+      clientEmail: body.clientEmail.toLowerCase(),
+      label: body.label || body.clientEmail,
+      createdAt: new Date().toISOString(),
+      expiresAt: body.expiresAt,
+      revoked: false,
+    };
+
+    await saveToken(env, clientToken);
+    await addClientEmailToken(env, body.clientEmail.toLowerCase(), token);
+
+    const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.workers.dev';
+    return jsonResponse({ ...clientToken, url: `${baseUrl}/p/${token}` }, 201);
+  }
+
+  // GET /api/tokens/client/{email} — get client-level tokens for an email
+  const clientEmailMatch = url.pathname.match(/^\/api\/tokens\/client\/(.+)$/);
+  if (method === 'GET' && clientEmailMatch) {
+    const email = decodeURIComponent(clientEmailMatch[1]);
+    const tokens = await getClientEmailTokens(env, email);
+    const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.workers.dev';
+    return jsonResponse(tokens.map(t => ({ ...t, url: `${baseUrl}/p/${t.token}` })));
   }
 
   // POST /api/tokens/{token}/revoke

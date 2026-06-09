@@ -10,6 +10,7 @@ export interface Project {
   steps: Step[];
   practicalInfo: PracticalInfo;
   meetingLink?: string;
+  pinned?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,7 +64,8 @@ export interface ProjectFile {
 
 export interface ClientToken {
   token: string;
-  projectId: string;
+  projectId?: string;
+  clientEmail?: string;
   label?: string;
   createdAt: string;
   expiresAt?: string;

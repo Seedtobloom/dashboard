@@ -108,6 +108,29 @@ export async function getEmailLogs(env: Env, projectId: string): Promise<EmailLo
   return data ? JSON.parse(data) : [];
 }
 
+export async function getProjectsByEmail(env: Env, email: string): Promise<Project[]> {
+  const all = await getAllProjects(env);
+  return all.filter((p) => p.clientEmail.toLowerCase() === email.toLowerCase());
+}
+
+export async function addClientEmailToken(env: Env, email: string, token: string): Promise<void> {
+  const key = `tokens:client:${email.toLowerCase()}`;
+  const data = await env.BLOOM_KV.get(key);
+  const tokens: string[] = data ? JSON.parse(data) : [];
+  if (!tokens.includes(token)) {
+    tokens.push(token);
+    await env.BLOOM_KV.put(key, JSON.stringify(tokens));
+  }
+}
+
+export async function getClientEmailTokens(env: Env, email: string): Promise<ClientToken[]> {
+  const key = `tokens:client:${email.toLowerCase()}`;
+  const data = await env.BLOOM_KV.get(key);
+  const tokenStrings: string[] = data ? JSON.parse(data) : [];
+  const tokens = await Promise.all(tokenStrings.map((t) => getToken(env, t)));
+  return tokens.filter((t): t is ClientToken => t !== null);
+}
+
 export async function addEmailLog(env: Env, log: EmailLog): Promise<void> {
   const logs = await getEmailLogs(env, log.projectId);
   logs.push(log);
