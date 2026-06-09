@@ -596,6 +596,12 @@ const ERROR_HTML = `<!DOCTYPE html>
 
 // ── Session helpers ──────────────────────────────────────────────────────────
 
+function cookieFlags(request: Request): string {
+  // Add Secure flag only on HTTPS (omit for local wrangler dev on HTTP)
+  const isHttps = request.url.startsWith('https://');
+  return `; Path=/; Max-Age=${SESSION_TTL}; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+}
+
 async function getSession(request: Request, env: Env): Promise<string | null> {
   const cookie = request.headers.get('Cookie');
   if (!cookie) return null;
@@ -673,7 +679,7 @@ export default {
             headers: { 'Content-Type': 'application/json' },
           }));
         }
-        env.BLOOM_KV.put('sess:' + sessionId, '1', { expirationTtl: SESSION_TTL });
+        await env.BLOOM_KV.put('sess:' + sessionId, '1', { expirationTtl: SESSION_TTL });
         response = await handleApiRoutes(request, env, url);
       }
 
@@ -719,7 +725,7 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   return new Response(JSON.stringify({ ok: true }), {
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': `bloom_sid=${sessionId}; Path=/; Max-Age=${SESSION_TTL}; HttpOnly; SameSite=Lax; Secure`,
+      'Set-Cookie': `bloom_sid=${sessionId}${cookieFlags(request)}`,
     },
   });
 }
@@ -730,17 +736,18 @@ async function handleLogout(request: Request, env: Env): Promise<Response> {
     const match = cookie.match(/bloom_sid=([a-f0-9-]{36})/);
     if (match) await env.BLOOM_KV.delete('sess:' + match[1]);
   }
+  const isHttps = request.url.startsWith('https://');
   return new Response(JSON.stringify({ ok: true }), {
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': 'bloom_sid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure',
+      'Set-Cookie': `bloom_sid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`,
     },
   });
 }
 
 // ── Client portal ─────────────────────────────────────────────────────────────
 
-async function handleClientPortal(_request: Request, env: Env, pathname: string): Promise<Response> {
+async function handleClientPortal(request: Request, env: Env, pathname: string): Promise<Response> {
   const match = pathname.match(/^\/p\/([a-f0-9]{64})$/);
   if (!match) return new Response(ERROR_HTML, { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 
@@ -754,7 +761,7 @@ async function handleClientPortal(_request: Request, env: Env, pathname: string)
     status: 302,
     headers: {
       Location: `/client.html?token=${token}`,
-      'Set-Cookie': `bloom_token=${token}; Path=/; Max-Age=${SESSION_TTL}; HttpOnly; SameSite=Lax; Secure`,
+      'Set-Cookie': `bloom_token=${token}${cookieFlags(request)}`,
       'Cache-Control': 'no-store',
     },
   });
@@ -971,7 +978,10 @@ const APP_JS = `// Admin SPA — cookie-based auth (bloom_sid session cookie, no
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
-    const res = await fetch('/api/projects', { credentials: 'same-origin' });
+    const res = await fetch('/api/projects', {
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+    });
     if (res.ok) {
       projects = await res.json();
       renderDashboard(projects);

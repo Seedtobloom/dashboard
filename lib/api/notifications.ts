@@ -105,7 +105,7 @@ export async function sendMessageNotification(env: Env, project: Project, _messa
   const template = 'new_message';
   if (!(await canSendEmail(env, project.id, template))) return;
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
   const body = `
@@ -132,7 +132,7 @@ export async function sendStepNotification(
 ): Promise<void> {
   if (!project.clientEmail) return;
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
   if (step.status === 'waiting_client') {
@@ -196,7 +196,7 @@ export async function handleNotifications(request: Request, env: Env, url: URL):
     stepId?: string;
   };
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
   let subject = '';

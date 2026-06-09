@@ -155,7 +155,10 @@
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
-    const res = await fetch('/api/projects', { credentials: 'same-origin' });
+    const res = await fetch('/api/projects', {
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+    });
     if (res.ok) {
       projects = await res.json();
       renderDashboard(projects);

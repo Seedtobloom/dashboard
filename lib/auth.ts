@@ -22,36 +22,6 @@ export async function verifyClientToken(
   return clientToken;
 }
 
-export function verifyAdminAuth(request: Request, env: Env): boolean {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Basic ')) return false;
-
-  const base64 = authHeader.slice(6);
-  let decoded: string;
-  try {
-    decoded = atob(base64);
-  } catch {
-    return false;
-  }
-
-  const colonIdx = decoded.indexOf(':');
-  if (colonIdx === -1) return false;
-
-  const username = decoded.slice(0, colonIdx);
-  const password = decoded.slice(colonIdx + 1);
-
-  return username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD;
-}
-
-export function requireAdminAuth(request: Request, env: Env): Response | null {
-  if (!verifyAdminAuth(request, env)) {
-    return new Response('Unauthorized', {
-      status: 401,
-      headers: { 'Content-Type': 'text/plain' },
-    });
-  }
-  return null;
-}
 
 export function getTokenFromRequest(request: Request): string | null {
   const url = new URL(request.url);
