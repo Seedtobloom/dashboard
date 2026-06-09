@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - claude/practical-brahmagupta-0Wxco
 
 jobs:
   deploy:
