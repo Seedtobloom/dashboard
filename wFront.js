@@ -460,6 +460,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return '<span class="status-badge" style="background:' + bg + ';color:' + fg + '">' + (STATUS_LABELS[status] || status) + '</span>';
   }
 
+  const TYPE_LABELS = {
+    identite: 'Identité visuelle',
+    site: 'Site web',
+    partenaire: 'Partenaire créative mensuel',
+    support: 'Supports de communication',
+    custom: 'Personnalisé',
+  };
+
   const STEP_STATUS_LABELS = {
     upcoming: 'À venir',
     in_progress: 'En cours',
@@ -1033,6 +1041,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>' +
               '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
                 '<button class="btn btn--outline" onclick="navigate(\'/admin\')">← Dashboard</button>' +
+                '<button class="btn btn--sage" onclick="addProjectForClient()">➕ Ajouter un projet pour ce client</button>' +
                 (project.clientEmail ? '<button class="btn btn--sage" onclick="previewClientSpace()">👁 Voir l\'espace client</button>' : '') +
                 '<button class="btn btn--danger" onclick="confirmDelete()">Supprimer le projet</button>' +
               '</div>' +
@@ -1069,6 +1078,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '</div>' +
                 '<div class="form-field"><label>Titre</label><input type="text" id="edit-projectTitle" value="' + esc(project.projectTitle) + '"></div>' +
                 '<div class="form-field"><label>Description</label><textarea id="edit-description" rows="3">' + esc(project.description) + '</textarea></div>' +
+                '<div class="form-field"><label for="edit-type">Type d\'espace</label><select id="edit-type">' +
+                  ['identite','site','partenaire','support','custom'].map(function(tv) {
+                    return '<option value="' + tv + '"' + ((project.type||'custom') === tv ? ' selected' : '') + '>' + (TYPE_LABELS[tv]||tv) + '</option>';
+                  }).join('') +
+                '</select></div>' +
                 '<div class="form-row">' +
                   '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
                   '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
@@ -1221,6 +1235,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       clientEmail: document.getElementById('edit-clientEmail').value,
       projectTitle: document.getElementById('edit-projectTitle').value,
       description: document.getElementById('edit-description').value,
+      type: document.getElementById('edit-type').value,
       status: document.getElementById('edit-status').value,
       deadline: document.getElementById('edit-deadline').value || undefined,
       meetingLink: document.getElementById('edit-meetingLink').value || undefined,
@@ -1520,6 +1535,25 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     await navigator.clipboard.writeText(data.url).catch(function() {});
     toast('Lien espace client copié ✓');
     loadProject(currentProjectId);
+  };
+
+  window.addProjectForClient = async function() {
+    var p = window._currentProject || {};
+    var title = prompt('Titre du nouveau projet pour ' + (p.clientName || 'ce client') + ' :', '');
+    if (!title) return;
+    var body = {
+      clientName: p.clientName || '',
+      clientEmail: p.clientEmail || '',
+      projectTitle: title,
+      description: '',
+      type: 'support',
+      startDate: new Date().toISOString().split('T')[0],
+      steps: [],
+    };
+    var res = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
+    var data = await res.json();
+    if (res.ok) { toast('Projet ajouté ✓'); setTimeout(function() { navigate('/admin/projects/' + data.id); }, 600); }
+    else toast('Erreur création', true);
   };
 
   window.previewClientSpace = async function() {
