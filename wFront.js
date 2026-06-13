@@ -19,6 +19,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
   --surface: #F5F2EC;
   --sage: #7fa688;
   --sky: #BAD1FD;
+  --sidebar-text: #BAD1FD;
   --red: #C94040;
   --radius: 10px;
 }
@@ -107,9 +108,9 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   margin: 5px 12px 0; display: flex; align-items: center; gap: 8px;
   width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none;
   cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500;
-  background: rgba(186,209,253,0.10); color: var(--blue-light); transition: background 0.15s, color 0.15s;
+  background: rgba(0,0,0,0.12); color: var(--sidebar-text); transition: background 0.15s, color 0.15s;
 }
-.side-tab:hover { background: rgba(186,209,253,0.22); }
+.side-tab:hover { background: rgba(0,0,0,0.22); }
 .side-tab.active { background: var(--lavender); color: var(--navy); font-weight: 600; }
 .side-tab__badge { margin-left: auto; background: var(--cream); color: var(--navy); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
 .side-cta {
@@ -124,11 +125,11 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   padding: 10px 16px; cursor: pointer; border-left: 2px solid transparent;
   transition: background 0.12s; text-decoration: none; display: block; color: inherit;
 }
-.project-item:hover { background: rgba(186,209,253,0.12); }
+.project-item:hover { background: rgba(0,0,0,0.15); }
 .project-item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
-.project-item.active { background: rgba(186,209,253,0.1); border-left-color: var(--lavender); }
-.project-item__name { font-size: 13px; font-weight: 500; color: var(--blue-light); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.project-item__title { font-size: 12px; color: var(--blue-light); opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item.active { background: rgba(0,0,0,0.2); border-left-color: var(--lavender); }
+.project-item__name { font-size: 13px; font-weight: 500; color: var(--sidebar-text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item__title { font-size: 12px; color: var(--sidebar-text); opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .unread-badge { background: var(--lavender); color: var(--navy); font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
@@ -279,6 +280,7 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
   --surface: #F5F2EC;
   --sage: #7fa688;
   --sky: #BAD1FD;
+  --sidebar-text: #BAD1FD;
   --orange: #D4845A;
   --radius: 12px;
   --shadow: 0 1px 12px rgba(5,24,51,0.06);
@@ -543,6 +545,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var COLOR_DEFAULTS = {
     '--navy':       '#051833',
     '--brown':      '#412F21',
+    '--sidebar-text':'#BAD1FD',
     '--lavender':   '#E4D1FE',
     '--blue-light': '#BAD1FD',
     '--cream':      '#EFE1B0',
@@ -551,11 +554,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   var COLOR_LABELS = [
-    { key: '--navy',       label: 'Fond sidebar',     section: 'Sidebar' },
-    { key: '--brown',      label: 'En-tete sidebar',  section: 'Sidebar' },
-    { key: '--cream',      label: 'Texte sidebar',    section: 'Sidebar' },
-    { key: '--lavender',   label: 'Boutons / accent', section: 'Interface' },
-    { key: '--blue-light', label: 'Texte sur accent', section: 'Interface' },
+    { key: '--navy',       label: 'Fond sidebar',       section: 'Sidebar' },
+    { key: '--brown',      label: 'En-tete sidebar',    section: 'Sidebar' },
+    { key: '--sidebar-text',label:'Texte projets',        section: 'Sidebar' },
+    { key: '--cream',      label: 'Texte en-tete',      section: 'Sidebar' },
+    { key: '--lavender',   label: 'Boutons / accent',   section: 'Interface' },
+    { key: '--blue-light', label: 'Texte sur bouton',   section: 'Interface' },
     { key: '--bg',         label: 'Fond de page',     section: 'Interface' },
     { key: '--surface',    label: 'Fond des cartes',  section: 'Interface' },
   ];
