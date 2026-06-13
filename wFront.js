@@ -140,11 +140,15 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .proj-section { padding: 0 32px 28px; }
 /* Project banner */
 .proj-banner { width: 100%; min-height: 130px; display: flex; align-items: flex-end; position: relative; }
-.proj-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 100%); pointer-events: none; }
+.proj-banner::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.28); pointer-events: none; }
+.proj-banner[data-light]::after { background: rgba(0,0,0,0.08); }
 .proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .proj-banner__title { font-family: 'Alegreya', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.55); margin: 0; line-height: 1.25; }
+.proj-banner[data-light] .proj-banner__title { color: #051833; text-shadow: none; }
 .proj-banner__sub { color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.proj-banner[data-light] .proj-banner__sub { color: rgba(5,24,51,0.7); text-shadow: none; }
+.proj-banner[data-light] .btn--ghost { background: rgba(5,24,51,0.08); color: #051833; border-color: rgba(5,24,51,0.3); }
 /* Tab nav */
 .proj-tabnav { display: flex; gap: 2px; padding: 0 32px; background: var(--white); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; }
 .proj-tabnav__btn { padding: 12px 20px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); transition: all 0.15s; white-space: nowrap; }
@@ -1334,9 +1338,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return '<option value="' + val + '"' + (val === project.status ? ' selected' : '') + '>' + label + '</option>';
     }).join('');
 
-    var bannerColors = (project.bannerColor || '#412F21|#EFE1B0').split('|');
-    var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : 'linear-gradient(135deg,' + bannerColors[0] + ' 0%,' + bannerColors[1] + ' 100%)';
-    var bannerFg = bannerColors[1] || '#EFE1B0';
+    var bannerColors = (project.bannerColor || '#412F21').split('|');
+    var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : bannerColors[0];
+    var _bc = bannerColors[0].replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
+    var bannerIsLight = !project.bannerUrl && (0.299*_r+0.587*_g+0.114*_b) > 160;
     var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client']];
     var tabNav = '<div class="proj-tabnav">' +
       tabs.map(function(tb){
@@ -1350,7 +1355,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
 
-          '<div class="proj-banner" style="background:' + bannerBg + '" id="proj-banner-el">' +
+          '<div class="proj-banner" style="background:' + bannerBg + '" id="proj-banner-el"' + (bannerIsLight ? ' data-light' : '') + '>' +
             '<div class="proj-banner__inner">' +
               '<div>' +
                 '<h1 class="proj-banner__title">' + esc(project.projectTitle) + '</h1>' +
@@ -1628,8 +1633,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Tab navigation ─────────────────────────────────────────────────────────
   var BANNER_COLORS = [
-    ['#412F21','Marron'],['#051833','Navy'],['#2D4A2D','Foret'],['#1a1a2e','Prune'],
-    ['#7C4A00','Ambre'],['#3d2b1f','Cafe'],['#1c3a4a','Canard'],['#2c2c2c','Ardoise']
+    ['#412F21','Marron'],['#051833','Navy'],['#7fa688','Sauge'],['#C94040','Rouge'],
+    ['#E4D1FE','Lavande'],['#BAD1FD','Bleu clair'],['#EFE1B0','Creme'],['#FAF8F4','Fond']
   ];
 
   window.openBannerEditor = function() {
@@ -1664,7 +1669,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
     var banner = document.getElementById('proj-banner-el');
     var body = { bannerColor: color || undefined, bannerUrl: undefined };
-    if (banner) banner.style.background = color || '#412F21';
+    if (banner) {
+      banner.style.background = color || '#412F21';
+      var _bc2 = (color||'#412F21').replace('#',''); var _r2=parseInt(_bc2.substring(0,2),16),_g2=parseInt(_bc2.substring(2,4),16),_b2=parseInt(_bc2.substring(4,6),16);
+      var light2 = (0.299*_r2+0.587*_g2+0.114*_b2) > 160;
+      light2 ? banner.setAttribute('data-light','') : banner.removeAttribute('data-light');
+    }
     var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, body)) });
     if (res.ok) toast('Banniere mise a jour');
     else toast('Erreur', true);
