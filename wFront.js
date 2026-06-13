@@ -1889,6 +1889,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   var appData = null;
   var currentId = null;
+  var currentView = 'home'; // 'home' | 'project' | 'messages'
+  var convoId = null; // projet sélectionné dans la messagerie
   var clientInitial = 'C';
   var pollTimer = null;
 
@@ -2006,26 +2008,44 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
+  function totalUnread() {
+    return appData.projects.reduce(function(a, pd) {
+      return a + pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
+    }, 0);
+  }
+
   function buildSidebar() {
-    var multi = appData.projects.length > 1;
+    var portal = appData.type === 'client';
     var navHtml = '';
-    if (multi) {
-      navHtml = '<div class="cp-nav"><div class="cp-nav__label">Mes projets</div>' +
-        appData.projects.map(function(pd) {
-          var p = pd.project;
-          var col = STATUS_COLORS[p.status] || '#aaa';
-          var unread = pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
-          var act = p.id === currentId ? ' active' : '';
-          return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
-            '<span class="cp-nav__dot" style="background:' + col + '"></span>' +
-            '<span class="cp-nav__text">' +
-              '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
-              '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
-            '</span>' +
-            (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
-          '</button>';
-        }).join('') + '</div>';
-    }
+    // Section navigation principale
+    var mainNav = '<div class="cp-nav"><div class="cp-nav__label">Navigation</div>' +
+      (portal ? '<button class="cp-nav__item' + (currentView==='home'?' active':'') + '" aria-label="Accueil, mes projets" onclick="cpGoHome()">' +
+        '<span class="cp-nav__dot" style="background:var(--cream)"></span>' +
+        '<span class="cp-nav__text"><div class="cp-nav__title">Accueil · Mes projets</div></span>' +
+      '</button>' : '') +
+      '<button class="cp-nav__item' + (currentView==='messages'?' active':'') + '" aria-label="Messagerie" onclick="cpOpenMessages()">' +
+        '<span class="cp-nav__dot" style="background:var(--lavender)"></span>' +
+        '<span class="cp-nav__text"><div class="cp-nav__title">Messages</div></span>' +
+        (totalUnread() > 0 ? '<span class="cp-nav__badge">' + totalUnread() + '</span>' : '') +
+      '</button>' +
+    '</div>';
+    // Section projets
+    var projNav = '<div class="cp-nav"><div class="cp-nav__label">Mes projets</div>' +
+      appData.projects.map(function(pd) {
+        var p = pd.project;
+        var col = STATUS_COLORS[p.status] || '#aaa';
+        var unread = pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
+        var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
+        return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
+          '<span class="cp-nav__dot" style="background:' + col + '"></span>' +
+          '<span class="cp-nav__text">' +
+            '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
+            '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
+          '</span>' +
+          (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
+        '</button>';
+      }).join('') + '</div>';
+    navHtml = mainNav + projNav;
     return '<aside class="cp-sidebar">' +
       '<div class="cp-sidebar__brand">' +
         '<div class="cp-sidebar__logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:32px;width:auto"></div>' +
@@ -2196,6 +2216,112 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div></div>';
   }
 
+  // ── Vue conversation unifiée (messagerie client) ────────────────────────────
+  function buildConversation() {
+    if (!convoId) convoId = appData.projects[0] && appData.projects[0].project.id;
+    var list = appData.projects.slice().sort(function(a, b) {
+      var la = a.messages.length ? new Date(a.messages[a.messages.length-1].createdAt) : new Date(a.project.updatedAt);
+      var lb = b.messages.length ? new Date(b.messages[b.messages.length-1].createdAt) : new Date(b.project.updatedAt);
+      return lb - la;
+    });
+    var listHtml = list.map(function(pd) {
+      var p = pd.project;
+      var unread = pd.messages.filter(function(m){return m.author==='cindy'&&!m.readByClient;}).length;
+      var last = pd.messages.length ? pd.messages[pd.messages.length-1] : null;
+      var act = p.id === convoId ? ' active' : '';
+      return '<button class="cp-nav__item' + act + '" style="border-radius:0" onclick="cpSwitchConvo(\'' + p.id + '\')">' +
+        '<span class="cp-nav__dot" style="background:' + (STATUS_COLORS[p.status]||'#aaa') + '"></span>' +
+        '<span class="cp-nav__text">' +
+          '<div class="cp-nav__title" style="color:var(--navy)">' + esc(p.projectTitle) + '</div>' +
+          '<div class="cp-nav__status" style="color:var(--muted)">' + (last ? (last.author==='cindy'?'Cindy : ':'Vous : ') + esc(last.content.slice(0,32)) : 'Pas de message') + '</div>' +
+        '</span>' +
+        (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
+      '</button>';
+    }).join('');
+
+    var pd = getPD(convoId);
+    var convoHtml = '';
+    if (pd) {
+      var msgs = pd.messages.length ? pd.messages.map(function(m) {
+        var isC = m.author === 'cindy';
+        return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
+          '<div class="cp-msg__av cp-msg__av--' + (isC?'cindy':'client') + '">' + (isC?'C':clientInitial) + '</div>' +
+          '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(m.content) + '</div>' +
+          '<div class="cp-msg__date">' + (isC?'Cindy':'Vous') + ' · ' + fmtShort(m.createdAt) + '</div></div>' +
+        '</div>';
+      }).join('') : '<div class="cp-empty">Pas encore de messages.<br>Écrivez à Cindy !</div>';
+      convoHtml = '<div class="cp-card" style="padding:0;overflow:hidden">' +
+        '<div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface)">' +
+          '<div style="font-family:\'Alegreya\',serif;font-style:italic;color:var(--navy);font-size:16px">' + esc(pd.project.projectTitle) + '</div>' +
+        '</div>' +
+        '<div class="cp-msgs" id="cp-convo-list" style="padding:20px;max-height:480px;overflow-y:auto;margin-bottom:0">' + msgs + '</div>' +
+        '<form class="cp-msg-form" id="cp-convo-form" style="padding:16px 20px;border-top:1px solid var(--border)">' +
+          '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
+          '<div class="cp-msg-form__row"><button type="submit" class="cp-btn cp-btn--dark">Envoyer →</button></div>' +
+        '</form>' +
+      '</div>';
+    } else {
+      convoHtml = '<div class="cp-empty">Sélectionnez une conversation.</div>';
+    }
+
+    var header = '<div class="cp-header"><h1 class="cp-header__title">Messagerie</h1>' +
+      '<div class="cp-header__meta">Toutes vos conversations avec Cindy</div></div>';
+    return header +
+      '<div class="cp-content"><div class="cp-grid" style="grid-template-columns:300px 1fr">' +
+        '<div class="cp-card" style="padding:0;overflow:hidden"><div class="cp-nav__label" style="color:var(--muted);padding:14px 18px 4px">Conversations</div>' + listHtml + '</div>' +
+        '<div>' + convoHtml + '</div>' +
+      '</div></div>';
+  }
+
+  function attachConvoForm() {
+    var form = document.getElementById('cp-convo-form');
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var content = form.content.value.trim();
+      if (!content) return;
+      var btn = form.querySelector('button[type=submit]');
+      btn.disabled = true; btn.textContent = 'Envoi…';
+      var body = { content: content };
+      if (appData.type === 'client') body.projectId = convoId;
+      fetch(API_BASE + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(d) {
+          var pd = getPD(convoId);
+          if (pd) pd.messages.push(d.message);
+          var list = document.getElementById('cp-convo-list');
+          var empty = list && list.querySelector('.cp-empty');
+          if (empty) empty.remove();
+          var div = document.createElement('div');
+          div.className = 'cp-msg cp-msg--client';
+          div.innerHTML = '<div class="cp-msg__av cp-msg__av--client">' + clientInitial + '</div>' +
+            '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(d.message.content) + '</div>' +
+            '<div class="cp-msg__date">Vous · maintenant</div></div>';
+          if (list) { list.appendChild(div); div.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+          form.content.value = '';
+          toast('Message envoyé ✓');
+        })
+        .catch(function(){ toast('Erreur, réessayez.'); })
+        .finally(function(){ btn.disabled = false; btn.textContent = 'Envoyer →'; });
+    });
+  }
+
+  function mainForView() {
+    if (currentView === 'messages') return buildConversation();
+    if (currentView === 'project') return buildProjectView(getPD(currentId));
+    return buildHome();
+  }
+
+  function renderShell() {
+    document.getElementById('app').innerHTML =
+      '<div class="cp">' + buildSidebar() +
+        '<div class="cp-main" id="cp-main">' + buildTopbar() + mainForView() + '</div>' +
+      '</div><div class="cp-toast" id="cp-toast"></div>';
+    if (currentView === 'project') attachForm();
+    if (currentView === 'messages') attachConvoForm();
+    window.scrollTo(0, 0);
+  }
+
   function renderApp(data) {
     if (!data.type) {
       appData = { type:'project', clientName:data.project.clientName,
@@ -2204,43 +2330,52 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!appData.projects.length) { showError(); return; }
     var portal = appData.type === 'client';
     currentId = appData.projects[0].project.id;
+    convoId = currentId;
     clientInitial = (appData.clientName||'C').charAt(0).toUpperCase();
-    var mainContent = portal ? buildHome() : buildProjectView(getPD(currentId));
-    document.getElementById('app').innerHTML =
-      '<div class="cp">' + buildSidebar() +
-        '<div class="cp-main" id="cp-main">' + buildTopbar() + mainContent + '</div>' +
-      '</div><div class="cp-toast" id="cp-toast"></div>';
-    if (!portal) attachForm();
+    currentView = portal ? 'home' : 'project';
+    renderShell();
     startPoll();
   }
 
   window.cpSelHome = function(id) {
     currentId = id;
-    var main = document.getElementById('cp-main');
-    if (!main) return;
-    main.innerHTML = buildTopbar() + buildProjectView(getPD(id));
-    attachForm();
-    window.scrollTo(0, 0);
+    currentView = 'project';
+    renderShell();
   };
 
   window.cpGoHome = function() {
-    var main = document.getElementById('cp-main');
-    if (!main) return;
-    main.innerHTML = buildTopbar() + buildHome();
+    currentView = 'home';
+    renderShell();
   };
 
   window.cpSel = function(id) {
-    if (id === currentId) return;
     currentId = id;
-    var main = document.getElementById('cp-main');
-    if (!main) return;
-    main.innerHTML = buildTopbar() + buildProjectView(getPD(currentId));
-    attachForm();
-    // Update sidebar active
-    document.querySelectorAll('.cp-nav__item').forEach(function(el) {
-      el.classList.toggle('active', el.getAttribute('onclick').includes(id));
-    });
+    currentView = 'project';
+    renderShell();
   };
+
+  window.cpOpenMessages = function() {
+    currentView = 'messages';
+    if (!convoId) convoId = currentId || (appData.projects[0] && appData.projects[0].project.id);
+    renderShell();
+    // marquer comme lus à l'ouverture
+    markConvoRead(convoId);
+  };
+
+  window.cpSwitchConvo = function(id) {
+    convoId = id;
+    renderShell();
+    markConvoRead(id);
+  };
+
+  function markConvoRead(id) {
+    var pd = getPD(id);
+    if (!pd) return;
+    pd.messages.forEach(function(m) { if (m.author === 'cindy') m.readByClient = true; });
+    // refléter dans la sidebar (badges)
+    var sb = document.querySelector('.cp-sidebar');
+    // pas d'endpoint de lecture côté client : on met simplement à jour localement
+  }
 
   window.cpTab = function(btn, panel) {
     var tabs = btn.closest('.cp-tabs');
