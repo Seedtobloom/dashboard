@@ -2492,26 +2492,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function taskCardHtml(t, pid, files) {
     var comments = Array.isArray(t.comments)?t.comments:[];
     var deliverable = t.deliverableFileKey ? (files||[]).find(function(f){return f.key===t.deliverableFileKey;}) : null;
-    var cls = 'cp-task-card' + (t.status==='done'?' cp-task-card__done':'');
+    var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
     var dotCol = CLI_URGENCY[t.urgency] || '#ddd';
     var dotTx = CLI_URGENCY_TX[t.urgency] || '#1a1a1a';
-    return '<div class="'+cls+'">' +
+    var tJson = JSON.stringify(JSON.stringify(t));
+    return '<div class="cp-task-card'+(t.status==='done'?' cp-task-card__done':'')+'">' +
       '<div class="cp-task-card__top">' +
-        '<div class="cp-task-card__dot" style="background:'+dotCol+';margin-top:4px"></div>' +
         '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">' +
+            '<span style="padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span>' +
+            '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:'+dotTx+';background:'+dotCol+';padding:2px 8px;border-radius:999px;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:'+dotTx+';opacity:.6"></span>'+(CLI_URG_LABEL[t.urgency]||t.urgency)+'</span>' +
+            (t.pole?'<span style="font-size:11px;color:var(--muted);background:var(--surface);padding:2px 8px;border-radius:999px">'+esc(t.pole)+'</span>':'') +
+            (t.missionType?'<span style="font-size:11px;color:var(--muted)">'+esc(t.missionType)+'</span>':'') +
+          '</div>' +
           '<div class="cp-task-card__title">'+esc(t.title)+'</div>' +
-          '<div class="cp-task-card__meta">' +
-            '<span class="cp-task-badge" style="background:'+dotCol+';color:'+dotTx+'">'+(CLI_URG_LABEL[t.urgency]||t.urgency)+'</span>' +
-            '<span class="cp-task-badge" style="background:var(--surface);color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span>' +
-            (t.dueDate ? '<span style="font-size:12px;color:var(--muted)">📅 '+fmtDate(t.dueDate)+'</span>' : '') +
+          (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-top:3px">📅 '+fmtDate(t.dueDate)+'</div>':'') +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
+          '<button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted);font-family:\'Jost\',sans-serif;white-space:nowrap">'+(t.status==='done'?'↩ Rouvrir':'✓ Terminer')+'</button>' +
+          '<div style="display:flex;gap:4px">' +
+            '<button onclick="cliEditTask('+tJson+',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)" title="Modifier">✏</button>' +
+            '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44" title="Supprimer">✕</button>' +
           '</div>' +
         '</div>' +
-        '<button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--muted);font-family:\'Jost\',sans-serif;white-space:nowrap" title="'+(t.status==='done'?'Rouvrir':'Marquer terminé')+'">'+(t.status==='done'?'↩ Rouvrir':'✓ Terminer')+'</button>' +
       '</div>' +
-      (t.content ? '<div style="font-size:13px;color:var(--muted);margin-top:6px;white-space:pre-wrap;padding-left:24px">'+esc(t.content)+'</div>' : '') +
-      (deliverable ? '<div style="margin-top:8px;padding-left:24px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>' : '') +
-      (comments.length ? '<div style="margin-top:8px;padding-left:24px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div>'+esc(c.text)+'</div></div>';}).join('')+'</div>' : '') +
-      '<div style="display:flex;gap:6px;margin-top:8px;padding-left:24px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
+      (t.content?'<div style="font-size:13px;color:var(--muted);margin-top:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
+      (t.imageUrl?'<div style="margin-top:10px"><img src="'+esc(t.imageUrl)+'" alt="" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>':'') +
+      (t.livrableUrl?'<div style="margin-top:8px"><a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--sage);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a></div>':'') +
+      (deliverable?'<div style="margin-top:8px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>':'') +
+      (comments.length?'<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div style="margin-top:1px">'+esc(c.text)+'</div></div>';}).join('')+'</div>':'') +
+      '<div style="display:flex;gap:6px;margin-top:10px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
     '</div>';
   }
 
@@ -2575,7 +2585,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var cls = 'cp-cal-day'+(isToday?' today':'')+(isSel?' selected':'');
       var pills = dt.slice(0,3).map(function(t){
         var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
-        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';'+(t.status==='done'?'opacity:0.5;text-decoration:line-through':'')+'" title="'+esc(t.title)+'">'+(t.status==='done'?'✓ ':'')+esc(t.title)+'</div>';
+        var urg = CLI_URGENCY[t.urgency]||'#ddd';
+        var tip = [t.title, brief.label, CLI_URG_LABEL[t.urgency]||'', t.pole||'', t.dueDate?fmtDate(t.dueDate):''].filter(Boolean).join(' · ');
+        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';'+(t.status==='done'?'opacity:0.5;text-decoration:line-through':'')+'" title="'+esc(tip)+'">' +
+          '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+urg+';margin-right:4px;vertical-align:middle;flex-shrink:0"></span>' +
+          (t.status==='done'?'✓ ':'')+esc(t.title) +
+        '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted)">+' +(dt.length-3)+' autres</div>':'');
       cells += '<div class="'+cls+'" onclick="cliSelDay(\''+pid+'\',\''+ds+'\')">' +
         '<div class="cp-cal-day__num">'+dd+(isToday?'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--navy);margin-left:3px;vertical-align:middle"></span>':'')+'</div>'+pills+'</div>';
@@ -2671,7 +2686,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // ── Onglet Forfait ────────────────────────────────────────────────────────
   function buildPartForfait(pid, tasks, project) {
     var forfait = project.monthlyHours || 0;
-    if (!forfait) return '<div class="cp-card"><div class="cp-empty">Forfait mensuel non défini — contactez Cindy.</div></div>';
+    var overrides = project.forfaitOverrides || {};
+
+    var defBtn = '<button class="cp-btn" onclick="cliForfaitDefine(\''+pid+'\')" style="margin-bottom:16px">' +
+      (forfait ? '✏ Modifier le forfait ('+forfait+'h/mois)' : '⚙ Définir le forfait mensuel') + '</button>';
+
+    if (!forfait) return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2></div>' +
+      defBtn + '</div>';
 
     // Grouper les tâches par mois (basé sur dueDate ou completedAt)
     var byMonth = {};
@@ -2698,30 +2719,38 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     if (!months.length) return '<div class="cp-card"><div class="cp-empty">Aucune donnée disponible.</div></div>';
 
-    // Calculer soldes
+    // Calculer soldes (avec overrides manuels sur le report M-1)
     var rows = [];
-    var carry = 0; // régul cumulée
+    var carry = 0;
     var totalReel = 0;
-    months.forEach(function(mk) {
+    months.forEach(function(mk, idx) {
       var mTasks = byMonth[mk] || [];
       var reel = mTasks.reduce(function(s,t){ return s+(t.timeSpentMinutes||0); },0) / 60;
-      var regulM1 = carry;
+      // Si override manuel défini pour ce mois, on l'utilise comme report M-1
+      var regulM1 = (overrides[mk] !== undefined) ? overrides[mk] : carry;
       var solde = forfait + regulM1 - reel;
-      carry = solde; // carry-over
+      carry = solde;
       totalReel += reel;
       var mLabel = new Date(mk+'-15').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-      rows.push({ mk:mk, label:mLabel, forfait:forfait, regulM1:regulM1, reel:reel, solde:solde });
+      rows.push({ mk:mk, label:mLabel, forfait:forfait, regulM1:regulM1, hasOverride:(overrides[mk]!==undefined), reel:reel, solde:solde });
     });
 
     var totalSolde = carry;
+    function fmt(h) { var abs=Math.abs(h); var hh=Math.floor(abs); var mm=Math.round((abs-hh)*60); return (h<0?'-':'')+(hh>0?hh+'h ':'')+String(mm).padStart(2,'0')+'min'; }
     var rowsHtml = rows.map(function(r) {
       var isNow = r.mk === endKey;
       var soldeCol = r.solde > 0 ? 'var(--sage)' : r.solde < 0 ? 'var(--red)' : 'var(--muted)';
-      function fmt(h) { var abs=Math.abs(h); var hh=Math.floor(abs); var mm=Math.round((abs-hh)*60); return (h<0?'-':'')+(hh>0?hh+'h ':'')+String(mm).padStart(2,'0')+'min'; }
+      var regulCell = '<div style="display:flex;align-items:center;gap:6px;justify-content:center">' +
+        '<span style="color:'+(r.regulM1>0?'var(--sage)':r.regulM1<0?'var(--red)':'var(--muted)')+'">' +
+          fmt(r.regulM1) + (r.hasOverride ? ' ✎' : '') +
+        '</span>' +
+        '<button title="Saisir un report manuel" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;border-radius:4px" ' +
+          'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">✎</button>' +
+      '</div>';
       return '<tr style="'+(isNow?'background:rgba(5,24,51,0.03);font-weight:600':'')+'\">' +
         '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
         '<td style="padding:10px 14px;font-size:14px;text-align:center">'+r.forfait+'h</td>' +
-        '<td style="padding:10px 14px;font-size:14px;text-align:center;color:'+(r.regulM1>0?'var(--sage)':r.regulM1<0?'var(--red)':'var(--muted)')+'">'+fmt(r.regulM1)+'</td>' +
+        '<td style="padding:10px 14px;font-size:14px;text-align:center">'+regulCell+'</td>' +
         '<td style="padding:10px 14px;font-size:14px;text-align:center;color:var(--navy)">'+fmt(r.reel)+'</td>' +
         '<td style="padding:10px 14px;font-size:14px;text-align:center;color:'+soldeCol+';font-weight:600">'+fmt(r.solde)+'</td>' +
       '</tr>';
@@ -2744,7 +2773,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     return '<div class="cp-card">' +
       '<div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2>' +
-        '<div style="font-size:13px;color:var(--muted)">'+forfait+'h / mois</div>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          '<div style="font-size:13px;color:var(--muted)">'+forfait+'h / mois</div>' +
+          defBtn +
+        '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start">' +
         '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Jost\',sans-serif">' +
@@ -2788,52 +2820,158 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     renderShell();
   };
 
-  window.cliOpenAddTask = function(pid, ds) {
+  function cliTaskOverlay(pid, opts) {
+    // opts: { taskId, title, content, briefStatus, urgency, dueDate, missionType, pole, imageUrl, livrableUrl, submitLabel, onSubmit }
+    opts = opts || {};
     var existing = document.getElementById('cli-add-task-overlay');
     if (existing) existing.remove();
+    var BRIEF_OPTS = ['pas_commence','brief_en_cours','brief_pret','en_projet','a_retravailler','archive'];
+    var briefSel = BRIEF_OPTS.map(function(v){ return '<option value="'+v+'"'+(opts.briefStatus===v?' selected':'')+'>'+(CLI_BRIEF[v]||{label:v}).label+'</option>'; }).join('');
     var ov = document.createElement('div');
     ov.id = 'cli-add-task-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">Nouvelle tâche</h3>' +
-      '<div class="form-field"><label for="cli-nt-title">Titre</label><input type="text" id="cli-nt-title" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif;font-size:14px"></div>' +
-      '<div class="form-field" style="margin-top:10px"><label for="cli-nt-content">Détails (optionnel)</label><textarea id="cli-nt-content" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif;font-size:14px;resize:vertical"></textarea></div>' +
-      '<div style="display:flex;gap:8px;margin-top:10px">' +
-        '<div class="form-field" style="flex:1"><label for="cli-nt-urgency">Urgence</label><select id="cli-nt-urgency" style="width:100%;padding:9px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif"><option value="basse">Basse</option><option value="moyenne" selected>Moyenne</option><option value="haute">Haute</option></select></div>' +
-        '<div class="form-field" style="flex:1"><label for="cli-nt-due">Date</label><input type="date" id="cli-nt-due" value="'+(ds||'')+'" style="width:100%;padding:9px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif"></div>' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif;font-size:14px;box-sizing:border-box';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value="">—</option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
+      '</div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
         '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;color:#8090a8">Annuler</button>' +
-        '<button onclick="cliSubmitAddTask(\''+pid+'\')" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500">Ajouter</button>' +
+        '<button id="clt-submit" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
-    setTimeout(function(){ var el=document.getElementById('cli-nt-title'); if(el)el.focus(); },100);
+    document.getElementById('clt-submit').addEventListener('click', function(){ opts.onSubmit && opts.onSubmit(pid); });
+    setTimeout(function(){ var el=document.getElementById('clt-title'); if(el)el.focus(); },80);
+  }
+
+  function cliReadOverlay() {
+    return {
+      title: (document.getElementById('clt-title')||{}).value||'',
+      briefStatus: (document.getElementById('clt-brief')||{}).value||'pas_commence',
+      urgency: (document.getElementById('clt-urgency')||{}).value||'moyenne',
+      dueDate: (document.getElementById('clt-due')||{}).value||undefined,
+      pole: (document.getElementById('clt-pole')||{}).value||undefined,
+      missionType: (document.getElementById('clt-type')||{}).value||undefined,
+      content: (document.getElementById('clt-content')||{}).value||'',
+      imageUrl: (document.getElementById('clt-image')||{}).value||undefined,
+      livrableUrl: (document.getElementById('clt-livrable')||{}).value||undefined,
+    };
+  }
+
+  window.cliOpenAddTask = function(pid, ds) {
+    cliTaskOverlay(pid, { dueDate: ds, onSubmit: cliDoAddTask });
   };
 
-  window.cliSubmitAddTask = function(pid) {
-    var title = (document.getElementById('cli-nt-title')||{}).value;
-    if (!title || !title.trim()) { toast('Titre requis'); return; }
-    var body = {
-      projectId: pid,
-      title: title.trim(),
-      content: (document.getElementById('cli-nt-content')||{}).value || '',
-      urgency: (document.getElementById('cli-nt-urgency')||{}).value || 'moyenne',
-      dueDate: (document.getElementById('cli-nt-due')||{}).value || undefined,
-    };
-    var ov = document.getElementById('cli-add-task-overlay');
-    if (ov) ov.remove();
+  function cliDoAddTask(pid) {
+    var f = cliReadOverlay();
+    if (!f.title.trim()) { toast('Titre requis'); return; }
+    document.getElementById('cli-add-task-overlay').remove();
+    var body = Object.assign({ projectId: pid }, f);
     fetch(API_BASE + '/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
       .then(function(task) {
         var pd = getPD(pid);
         if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
         if (body.dueDate) cliCalSelected[pid] = body.dueDate;
-        toast('Tâche ajoutée ✓');
-        renderShell();
-      })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+        toast('Tâche ajoutée ✓'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  }
+
+  window.cliEditTask = function(taskJson, pid) {
+    var t = JSON.parse(taskJson);
+    cliTaskOverlay(pid, {
+      taskId: t.id, title: t.title, content: t.content, briefStatus: t.briefStatus,
+      urgency: t.urgency, dueDate: (t.dueDate||'').slice(0,10), pole: t.pole,
+      missionType: t.missionType, imageUrl: t.imageUrl, livrableUrl: t.livrableUrl,
+      submitLabel: 'Sauvegarder', onSubmit: function(pid2) { cliDoEditTask(pid2, t.id); }
+    });
+  };
+
+  function cliDoEditTask(pid, taskId) {
+    var f = cliReadOverlay();
+    document.getElementById('cli-add-task-overlay').remove();
+    var body = Object.assign({ projectId: pid }, f);
+    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(updated) {
+        var pd = getPD(pid);
+        if (pd) { var idx=(pd.project.tasks||[]).findIndex(function(x){return x.id===taskId;}); if(idx>=0) pd.project.tasks[idx]=updated; }
+        toast('Tâche mise à jour ✓'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  }
+
+  window.cliDeleteTask = function(pid, taskId) {
+    if (!confirm('Supprimer cette tâche ?')) return;
+    fetch(API_BASE + '/tasks/' + taskId + '?projectId=' + pid, { method:'DELETE', headers:{'Content-Type':'application/json'} })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function() {
+        var pd = getPD(pid);
+        if (pd) pd.project.tasks = (pd.project.tasks||[]).filter(function(x){return x.id!==taskId;});
+        toast('Tâche supprimée'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliForfaitDefine = function(pid) {
+    var pd = getPD(pid);
+    var cur = pd && pd.project.monthlyHours ? pd.project.monthlyHours : '';
+    var val = prompt('Nombre d\'heures mensuel du forfait :', cur);
+    if (val === null) return;
+    var hours = parseFloat(val);
+    if (isNaN(hours) || hours <= 0) { toast('Valeur invalide.'); return; }
+    fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectId: pid, monthlyHours: hours }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(proj) {
+        if (pd) { pd.project.monthlyHours = proj.monthlyHours; pd.project.forfaitOverrides = proj.forfaitOverrides || pd.project.forfaitOverrides; }
+        toast('Forfait mis à jour ✓'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliRegulOverride = function(pid, monthKey, currentVal) {
+    var cur = currentVal !== undefined ? currentVal : '';
+    var val = prompt('Report M-1 manuel pour ' + monthKey + ' (en heures, ex: 2.5 ou -1) :', cur);
+    if (val === null) return;
+    if (val.trim() === '') {
+      // Reset override (remove)
+      var pd = getPD(pid);
+      var overrides = Object.assign({}, pd && pd.project.forfaitOverrides || {});
+      delete overrides[monthKey];
+      fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides }) })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(proj) {
+          if (pd) { pd.project.forfaitOverrides = proj.forfaitOverrides || {}; }
+          toast('Report supprimé ✓'); renderShell();
+        }).catch(function(){ toast('Erreur, réessayez.'); });
+      return;
+    }
+    var hours = parseFloat(val);
+    if (isNaN(hours)) { toast('Valeur invalide.'); return; }
+    var pd2 = getPD(pid);
+    var overrides2 = Object.assign({}, pd2 && pd2.project.forfaitOverrides || {});
+    overrides2[monthKey] = hours;
+    fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides2 }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(proj) {
+        if (pd2) { pd2.project.forfaitOverrides = proj.forfaitOverrides || {}; }
+        toast('Report mis à jour ✓'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
   };
 
   window.cliToggleTask = function(pid, taskId, newStatus) {

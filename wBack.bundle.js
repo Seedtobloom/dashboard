@@ -1035,12 +1035,13 @@ async function handleClientApi(request, env, url) {
     const fileKey = decodeURIComponent(dl[2]);
     return clientFileDownload(env, projects2, fileKey);
   }
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match)
     return errorResponse("Not found", 404);
-  const [, tokenStr, subPathRaw, taskCommentId] = match;
+  const [, tokenStr, subPathRaw, taskId, commentsSegment] = match;
   const subPath = subPathRaw && subPathRaw.indexOf("/tasks") === 0 ? "/tasks" : subPathRaw;
-  const isTaskComment = subPathRaw && subPathRaw.indexOf("/comments") !== -1;
+  const isTaskComment = commentsSegment === "/comments";
+  const taskCommentId = isTaskComment ? taskId : undefined;
   const clientToken = await verifyClientToken(tokenStr, env);
   if (!clientToken)
     return errorResponse("Invalid or expired token", 403);
@@ -1127,13 +1128,55 @@ async function handleClientApi(request, env, url) {
     });
     return jsonResponse({ success: true, message }, 201);
   }
-  if (method === "POST" && subPath === "/tasks") {
-    const peek = await request.clone().json().catch(() => ({}));
-    const projectId = peek.projectId || url.searchParams.get("projectId") || projects[0]?.id;
+  if (subPath === "/tasks") {
+    // POST new task or comment
+    if (method === "POST") {
+      const peek = await request.clone().json().catch(() => ({}));
+      const projectId = peek.projectId || url.searchParams.get("projectId") || projects[0]?.id;
+      const project2 = projects.find((p) => p.id === projectId);
+      if (!project2) return errorResponse("Project not found", 404);
+      return clientTaskOp(request, env, project2, isTaskComment, taskCommentId);
+    }
+    // PATCH /tasks/{taskId} — update task fields
+    if ((method === "PATCH" || method === "PUT") && taskId && !isTaskComment) {
+      const body = await request.json().catch(() => ({}));
+      const projectId = body.projectId || projects[0]?.id;
+      const project2 = projects.find((p) => p.id === projectId);
+      if (!project2) return errorResponse("Project not found", 404);
+      if (!Array.isArray(project2.tasks)) return errorResponse("Task not found", 404);
+      const idx = project2.tasks.findIndex((t) => t.id === taskId);
+      if (idx < 0) return errorResponse("Task not found", 404);
+      const { projectId: _pid, ...fields } = body;
+      project2.tasks[idx] = { ...project2.tasks[idx], ...fields, id: taskId };
+      project2.updatedAt = new Date().toISOString();
+      await saveProject(env, project2);
+      return jsonResponse(project2.tasks[idx]);
+    }
+    // DELETE /tasks/{taskId}
+    if (method === "DELETE" && taskId && !isTaskComment) {
+      const projectId = url.searchParams.get("projectId") || projects[0]?.id;
+      const project2 = projects.find((p) => p.id === projectId);
+      if (!project2) return errorResponse("Project not found", 404);
+      if (!Array.isArray(project2.tasks)) return errorResponse("Task not found", 404);
+      const before = project2.tasks.length;
+      project2.tasks = project2.tasks.filter((t) => t.id !== taskId);
+      if (project2.tasks.length === before) return errorResponse("Task not found", 404);
+      project2.updatedAt = new Date().toISOString();
+      await saveProject(env, project2);
+      return jsonResponse({ success: true });
+    }
+  }
+  // PATCH /forfait — update monthlyHours on the project
+  if (method === "PATCH" && subPathRaw === "/forfait") {
+    const body = await request.json().catch(() => ({}));
+    const projectId = body.projectId || projects[0]?.id;
     const project2 = projects.find((p) => p.id === projectId);
-    if (!project2)
-      return errorResponse("Project not found", 404);
-    return clientTaskOp(request, env, project2, isTaskComment, taskCommentId);
+    if (!project2) return errorResponse("Project not found", 404);
+    if (body.monthlyHours !== undefined) project2.monthlyHours = parseFloat(body.monthlyHours) || 0;
+    if (body.forfaitOverrides !== undefined) project2.forfaitOverrides = body.forfaitOverrides;
+    project2.updatedAt = new Date().toISOString();
+    await saveProject(env, project2);
+    return jsonResponse({ success: true, monthlyHours: project2.monthlyHours, forfaitOverrides: project2.forfaitOverrides || {} });
   }
   return errorResponse("Method not allowed", 405);
 }
