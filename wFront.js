@@ -3194,11 +3194,19 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : project.bannerColor
         ? 'background:' + esc(project.bannerColor.split('|')[0])
         : '';
+    // Contraste du texte selon la luminosite de la banniere (comme la card)
+    var bannerHex = (!project.bannerUrl && project.bannerColor) ? project.bannerColor.split('|')[0] : null;
+    var bannerLight = bannerHex && bannerHex.charAt(0) === '#' && cpHexLum(bannerHex) > 160;
+    var titleCol = bannerLight ? '#1a2744' : 'var(--cream)';
+    var metaCol  = bannerLight ? 'rgba(26,39,68,0.72)' : 'var(--cream)';
+    var backBtnStyle = bannerLight
+      ? 'background:rgba(5,24,51,0.07);border:1.5px solid rgba(5,24,51,0.22);color:#1a2744'
+      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#fff';
     var header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
-      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#fff;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
+      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="' + backBtnStyle + ';font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
       '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
-      '<h1 class="cp-header__title">' + esc(project.projectTitle) + '</h1>' +
-      '<div class="cp-header__meta">Bonjour ' + esc(project.clientName) +
+      '<h1 class="cp-header__title" style="color:' + titleCol + '">' + esc(project.projectTitle) + '</h1>' +
+      '<div class="cp-header__meta" style="color:' + metaCol + ';opacity:1">Bonjour ' + esc(project.clientName) +
         (project.deadline ? ' · Livraison prévue le ' + fmtDate(project.deadline) + extended : '') +
       '</div>' +
     '</div>';
