@@ -106,7 +106,14 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .deadline-badge { font-size: 10px; color: var(--cream); opacity: 0.8; }
 
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
-.main-inner { max-width: 900px; margin: 0 auto; padding: 28px 32px 80px; }
+.main-inner { max-width: 1180px; margin: 0 auto; padding: 28px 32px 80px; }
+
+/* Notion-like multi-column */
+.proj-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: start; }
+.proj-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.proj-col .card { margin-bottom: 0; }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 1000px) { .proj-grid, .dash-grid { grid-template-columns: 1fr; } }
 
 .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
 .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -274,7 +281,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 }
 .cp-header__title { font-family: 'Alegreya', serif; font-size: clamp(20px,2.5vw,30px); font-weight: 400; line-height: 1.3; color: var(--cream); margin-bottom: 6px; font-style: italic; }
 .cp-header__meta { font-size: 13px; color: var(--cream); opacity: 0.88; }
-.cp-content { flex: 1; padding: 32px 44px 64px; max-width: 720px; }
+.cp-content { flex: 1; padding: 32px 44px 64px; max-width: 1080px; }
+/* Notion-like 2 colonnes */
+.cp-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 28px; align-items: start; }
+.cp-grid__main, .cp-grid__side { min-width: 0; }
+@media (max-width: 900px) { .cp-grid { grid-template-columns: 1fr; gap: 0; } }
 
 /* Action banner */
 .cp-action {
@@ -425,6 +436,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     delivered: 'Livré',
     archived: 'Archivé',
   };
+
+  // RGAA 3.2 — texte lisible sur le fond du badge
+  const STATUS_TEXT = {
+    discovery: '#051833', in_progress: '#0d2b16', waiting_client: '#5a2c0e',
+    review: '#2a1d4a', delivered: '#FFFFFF', archived: '#2a2a2a',
+  };
+  function adminStatusBadge(status) {
+    var bg = STATUS_COLORS[status] || '#aaa';
+    var fg = STATUS_TEXT[status] || '#1a1a1a';
+    return '<span class="status-badge" style="background:' + bg + ';color:' + fg + '">' + (STATUS_LABELS[status] || status) + '</span>';
+  }
 
   const STEP_STATUS_LABELS = {
     upcoming: 'À venir',
@@ -621,7 +643,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return '<tr onclick="navigate(\'/admin/projects/' + p.id + '\')" style="cursor:pointer">' +
         '<td><div style="display:flex;align-items:center;gap:8px"><button onclick="event.stopPropagation();togglePin(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0;opacity:' + (p.pinned ? '1' : '0.25') + '" title="' + (p.pinned ? 'Désépingler' : 'Épingler') + '">' + (p.pinned ? '📌' : '📌') + '</button><div><div style="font-weight:500;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.clientEmail) + '</div></div></div></td>' +
         '<td>' + esc(p.projectTitle) + '</td>' +
-        '<td><span class="status-badge" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '20;color:' + (STATUS_COLORS[p.status] || '#aaa') + '">' + (STATUS_LABELS[p.status] || p.status) + '</span></td>' +
+        '<td>' + adminStatusBadge(p.status) + '</td>' +
         '<td>' + (p.deadline ? formatDate(p.deadline) : '—') + '</td>' +
         '<td>' + (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + ' non lu</span>' : '—') + '</td>' +
         '<td>' + formatDate(p.updatedAt) + '</td>' +
@@ -1004,6 +1026,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>' +
             '</div>' +
 
+            '<div class="proj-grid">' +
+            '<div class="proj-col">' +
             '<div class="card" id="card-info">' +
               '<div class="card-header">' +
                 '<span class="card-title">Informations du projet</span>' +
@@ -1021,7 +1045,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div class="form-field"><label>Titre</label><p>' + esc(project.projectTitle) + '</p></div>' +
                 '<div class="form-field"><label>Description</label><p style="white-space:pre-wrap">' + esc(project.description) + '</p></div>' +
                 '<div class="form-row">' +
-                  '<div><label>Statut</label><span class="status-badge" style="background:' + (STATUS_COLORS[project.status]||'#aaa') + '20;color:' + (STATUS_COLORS[project.status]||'#aaa') + '">' + (STATUS_LABELS[project.status]||project.status) + '</span></div>' +
+                  '<div><label>Statut</label>' + adminStatusBadge(project.status) + '</div>' +
                   '<div><label>Deadline</label><p>' + (project.deadline ? formatDate(project.deadline) : '—') + '</p></div>' +
                 '</div>' +
                 (project.meetingLink ? '<div class="form-field"><label>Lien visio</label><a href="' + esc(project.meetingLink) + '" target="_blank" style="color:var(--sage)">' + esc(project.meetingLink) + '</a></div>' : '') +
@@ -1067,6 +1091,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>' +
             '</div>' +
 
+            '</div>' + /* fin colonne gauche */
+            '<div class="proj-col">' +
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Messages</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
               '<div class="card-body">' +
@@ -1095,6 +1121,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 (emailLogsHtml || '<p style="color:var(--muted);text-align:center;padding:12px 0">Aucun email.</p>') +
               '</div>' +
             '</div>' +
+            '</div>' + /* fin colonne droite */
+            '</div>' + /* fin proj-grid */
 
           '</div>' +
         '</main>' +
@@ -1404,14 +1432,41 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     else toast('Erreur', true);
   };
 
+  function uid() {
+    return 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/x/g, function() { return Math.floor(Math.random() * 16).toString(16); });
+  }
+  function templateSteps(type) {
+    var defs = {
+      identite: [
+        { title: 'Stratégie de marque', description: 'Analyser l\'existant et retravailler la stratégie de marque.' },
+        { title: 'Identité visuelle', description: 'Concevoir une identité visuelle cohérente et différenciante, du logo aux éléments graphiques.' },
+        { title: 'Déclinaisons', description: 'Décliner l\'identité sur vos supports print et digitaux selon les principes d\'éco-conception.' },
+        { title: 'Livraison', description: 'Vous livrer tout en main propre avec les explications pour l\'utiliser en autonomie.' },
+      ],
+      site: [
+        { title: 'Phase 1 · Atelier stratégie & contenu (Sem. 1–2)', description: 'Questionnaire amont (objectifs, offres, cible, ton). Atelier 1h30 : arborescence + blocs par page. Validation live → trame Google Doc. Date butoir contenus (textes + photos nommés). Rappel J-4 si contenus non livrés.' },
+        { title: 'Phase 2 · Maquette page d\'accueil (Sem. 3)', description: 'Maquette Figma de la page d\'accueil. Envoi avec vidéo Loom (pas de visio obligatoire). Retours cadrés : style, blocs, DA — pas le contenu. Retours consolidés par une seule personne. Validation → déclinaison des autres pages.' },
+        { title: 'Phase 3 · Développement WordPress (Sem. 4–5)', description: 'Intégration sur staging. Responsive mobile + tablette, SEO essentiels, formulaire de contact. Retours via Pastel (annotations sur le site). 2 rounds de corrections inclus.' },
+        { title: 'Phase 4 · Livraison (Sem. 6)', description: 'Mise en ligne + vérifications finales. Formation 1h + tutoriel écrit. Solde 60 % à réception.' },
+      ],
+    };
+    var arr = defs[type] || [];
+    return arr.map(function(s, i) {
+      return { id: uid(), order: i, title: s.title, description: s.description, status: i === 0 ? 'in_progress' : 'upcoming', dueDate: '', clientAction: '' };
+    });
+  }
+
   window.createProject = async function() {
+    const type = document.getElementById('new-type').value;
     const body = {
       clientName: document.getElementById('new-clientName').value,
       clientEmail: document.getElementById('new-clientEmail').value,
       projectTitle: document.getElementById('new-projectTitle').value,
       description: document.getElementById('new-description').value,
+      type: type,
       startDate: document.getElementById('new-startDate').value,
       deadline: document.getElementById('new-deadline').value || undefined,
+      steps: templateSteps(type),
     };
     if (!body.clientName || !body.projectTitle) { toast('Nom et titre requis', true); return; }
     const res = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
@@ -1796,7 +1851,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>' : '';
 
     return header +
-      '<div class="cp-content">' + banner + progress + tabs + msgsPanel + filesPanel + pracPanel + meetPanel + '</div>';
+      '<div class="cp-content"><div class="cp-grid">' +
+        '<div class="cp-grid__main">' + banner + progress + '</div>' +
+        '<div class="cp-grid__side">' + tabs + msgsPanel + filesPanel + pracPanel + meetPanel + '</div>' +
+      '</div></div>';
   }
 
   function renderApp(data) {
@@ -2006,9 +2064,20 @@ ${ADMIN_CSS}</style>
 <div class="modal-backdrop" id="modal-new-project">
   <div class="modal">
     <h3>Nouveau projet</h3>
+    <div class="form-field">
+      <label for="new-type">Type d'espace</label>
+      <select id="new-type">
+        <option value="identite">Identité visuelle (4 étapes)</option>
+        <option value="site">Création / refonte de site (4 phases)</option>
+        <option value="partenaire">Partenaire créative mensuel</option>
+        <option value="support">Supports de communication</option>
+        <option value="custom">Personnalisé (vierge)</option>
+      </select>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;text-transform:none;letter-spacing:0">Les étapes seront pré-remplies selon le type choisi.</div>
+    </div>
     <div class="form-row">
-      <div class="form-field"><label>Nom du client *</label><input type="text" id="new-clientName" placeholder="Marie Martin"></div>
-      <div class="form-field"><label>Email client</label><input type="email" id="new-clientEmail" placeholder="marie@example.com"></div>
+      <div class="form-field"><label for="new-clientName">Nom du client *</label><input type="text" id="new-clientName" placeholder="Marie Martin"></div>
+      <div class="form-field"><label for="new-clientEmail">Email client</label><input type="email" id="new-clientEmail" placeholder="marie@example.com"></div>
     </div>
     <div class="form-field"><label>Titre du projet *</label><input type="text" id="new-projectTitle" placeholder="Refonte identite visuelle"></div>
     <div class="form-field"><label>Description</label><textarea id="new-description" rows="3" placeholder="Breve description..."></textarea></div>

@@ -142,12 +142,14 @@ async function handleProjects(request, env, url) {
       clientEmail: body.clientEmail ?? "",
       projectTitle: body.projectTitle,
       description: body.description ?? "",
+      type: body.type ?? "custom",
       status: "discovery",
-      startDate: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+      startDate: body.startDate ?? (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
       deadline: body.deadline,
-      steps: [],
-      practicalInfo: { sections: [] },
+      steps: Array.isArray(body.steps) ? body.steps : [],
+      practicalInfo: { sections: Array.isArray(body.sections) ? body.sections : [] },
       meetingLink: body.meetingLink,
+      bannerUrl: body.bannerUrl,
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
