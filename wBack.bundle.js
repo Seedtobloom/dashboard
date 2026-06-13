@@ -744,6 +744,7 @@ async function handleTokens(request, env, url) {
     const clientToken = {
       token,
       projectId,
+      clientEmail: body.clientEmail || project.clientEmail || undefined,
       label: body.label,
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       expiresAt: body.expiresAt,

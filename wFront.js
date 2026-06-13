@@ -62,7 +62,10 @@ textarea { resize: vertical; min-height: 72px; }
 .form-row.full { grid-template-columns: 1fr; }
 .form-field { margin-bottom: 14px; }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s; text-decoration: none; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s, box-shadow 0.15s; text-decoration: none; white-space: nowrap; }
+.btn:hover { opacity: 0.82; }
+.btn:active { opacity: 0.65; transform: scale(0.98); }
+.btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .btn:active { opacity: 0.8; }
 .btn--primary { background: var(--navy); color: var(--blue-light); }
 .btn--sage { background: var(--lavender); color: var(--navy); }
@@ -198,8 +201,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
 .stat-card { background: var(--navy); border-radius: var(--radius); padding: 16px 20px; }
-.stat-card__num { font-family: 'Alegreya', serif; font-size: 32px; font-weight: 400; color: var(--blue-light); }
-.stat-card__label { font-size: 11px; color: var(--blue-light); opacity: 0.85; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card__num { font-family: 'Alegreya', serif; font-size: 32px; font-weight: 400; color: var(--navy); }
+.stat-card__label { font-size: 11px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 .projects-table { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .projects-table table { width: 100%; border-collapse: collapse; }
 .projects-table th { text-align: left; padding: 11px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); }
@@ -316,9 +319,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px; transition: background 0.12s, opacity 0.12s; border-left: 2px solid transparent;
 }
-.cp-nav__item:hover { background: rgba(186,209,253,0.07); opacity: 1; }
-.cp-nav__item.active { background: rgba(186,209,253,0.1); opacity: 1; color: var(--blue-light); border-left-color: var(--lavender); }
+.cp-nav__item:hover { background: rgba(186,209,253,0.12); opacity: 1; }
+.cp-nav__item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
+.cp-nav__item.active { background: rgba(186,209,253,0.18); opacity: 1; color: #fff; border-left: 3px solid var(--blue-light); font-weight: 600; }
 .cp-nav__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cp-nav__arrow { font-size: 13px; color: var(--blue-light); opacity: 0.55; flex-shrink: 0; transition: opacity 0.15s, transform 0.15s; line-height: 1; }
+.cp-nav__item:hover .cp-nav__arrow, .cp-nav__item.active .cp-nav__arrow { opacity: 1; transform: translateX(3px); }
 .cp-nav__text { flex: 1; min-width: 0; }
 .cp-nav__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cp-nav__status { font-size: 11px; opacity: 0.8; margin-top: 1px; }
@@ -885,7 +891,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<main class="main">' +
           '<div class="main-inner">' +
             '<div style="margin-bottom:24px">' +
-              '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Bonjour Cindy ✦</h1>' +
+              '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Bonjour Cindy</h1>' +
               '<p style="color:var(--muted);font-size:14px">Voici l\'état de vos projets en cours.</p>' +
             '</div>' +
             '<div class="stat-grid">' +
@@ -2431,7 +2437,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
     showPrompt('Créer un espace client', 'Nom du lien (ex: Emilie — Accès principal)', email, async function(label) {
-      const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: label || email }) });
+      const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email, clientEmail: email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
       await navigator.clipboard.writeText(data.url).catch(function() {});
@@ -2678,11 +2684,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Section navigation principale
     var mainNav = '<div class="cp-nav"><div class="cp-nav__label">Navigation</div>' +
       (portal ? '<button class="cp-nav__item' + (currentView==='home'?' active':'') + '" aria-label="Accueil, mes projets" onclick="cpGoHome()">' +
-        '<span class="cp-nav__dot" style="background:var(--cream)"></span>' +
+        '<span class="cp-nav__arrow">&#8594;</span>' +
         '<span class="cp-nav__text"><div class="cp-nav__title">Accueil · Mes projets</div></span>' +
       '</button>' : '') +
       '<button class="cp-nav__item' + (currentView==='messages'?' active':'') + '" aria-label="Messagerie" onclick="cpOpenMessages()">' +
-        '<span class="cp-nav__dot" style="background:var(--lavender)"></span>' +
+        '<span class="cp-nav__arrow">&#8594;</span>' +
         '<span class="cp-nav__text"><div class="cp-nav__title">Messages</div></span>' +
         (totalUnread() > 0 ? '<span class="cp-nav__badge">' + totalUnread() + '</span>' : '') +
       '</button>' +
@@ -2693,7 +2699,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var col = STATUS_COLORS[p.status] || '#aaa';
       var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
       return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
-        '<span class="cp-nav__dot" style="background:' + col + '"></span>' +
+        '<span class="cp-nav__arrow">&#8594;</span>' +
         '<span class="cp-nav__text">' +
           '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
           '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
@@ -2719,12 +2725,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-sidebar__greeting">Espace projet de</div>' +
         '<div class="cp-sidebar__name">' + esc(appData.clientName) + '</div>' +
       '</div>' +
-      '<div class="cp-cindy">' +
-        '<div class="cp-cindy__av">C</div>' +
-        '<div><div class="cp-cindy__name">Cindy</div><div class="cp-cindy__role">Seed to Bloom · seedtobloom.fr</div></div>' +
-      '</div>' +
       navHtml +
-      '<div class="cp-sidebar__footer">seedtobloom.fr</div>' +
     '</aside>';
   }
 
@@ -3649,7 +3650,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildConversation() {
     var unread = totalUnread();
     var summary = '<button class="cp-nav__item active" style="border-radius:0" type="button">' +
-      '<span class="cp-nav__dot" style="background:var(--lavender)"></span>' +
+      '<span class="cp-nav__arrow">&#8594;</span>' +
       '<span class="cp-nav__text">' +
         '<div class="cp-nav__title" style="color:var(--navy)">Cindy · Seed to Bloom</div>' +
         '<div class="cp-nav__status" style="color:var(--muted)">Toute votre conversation</div>' +
