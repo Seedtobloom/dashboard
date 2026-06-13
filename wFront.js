@@ -413,6 +413,9 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-empty { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; line-height: 1.7; }
 .cp-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--navy); color: var(--blue-light); padding: 11px 22px; border-radius: 999px; font-size: 14px; z-index: 999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
 .cp-topbar { display: none; }
+/* Champs de formulaire (espace partenaire client) */
+.cp-card .form-field { margin-bottom: 0; }
+.cp-card .form-field label { display: block; font-size: 12px; color: var(--navy); margin-bottom: 4px; font-weight: 500; }
 
 @media (max-width: 768px) {
   .cp-home { margin-left: 0; padding: 20px 20px 48px; }
@@ -2209,12 +2212,136 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
     '</div>' : '';
 
+    var partenaireMain = project.type === 'partenaire' ? buildClientPartenaire(pd) : '';
+
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
-        '<div class="cp-grid__main">' + banner + progress + '</div>' +
+        '<div class="cp-grid__main">' + banner + partenaireMain + progress + '</div>' +
         '<div class="cp-grid__side">' + tabs + msgsPanel + filesPanel + pracPanel + meetPanel + '</div>' +
       '</div></div>';
   }
+
+  // ── Espace partenaire côté client (tâches mensuelles) ───────────────────────
+  var CLI_URGENCY = { basse:'#BAD1FD', moyenne:'#E4D1FE', haute:'#e8a87c' };
+  var CLI_URGENCY_TX = { basse:'#0a2a5e', moyenne:'#2a1d4a', haute:'#5a2c0e' };
+  var CLI_URG_LABEL = { basse:'Basse', moyenne:'Moyenne', haute:'Haute' };
+  var CLI_TSTATUS = { todo:'À faire', in_progress:'En cours', done:'Terminé' };
+  var cliCalMonth = {};
+
+  function buildClientPartenaire(pd) {
+    var project = pd.project, files = pd.files;
+    var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    var done = tasks.filter(function(t){return t.status==='done';}).length;
+    var pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
+
+    // Calendrier
+    if (!cliCalMonth[project.id]) { var d0 = new Date(); d0.setDate(1); d0.setHours(0,0,0,0); cliCalMonth[project.id] = d0; }
+    var cm = cliCalMonth[project.id];
+    var year = cm.getFullYear(), month = cm.getMonth();
+    var monthName = cm.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+    var startDay = (new Date(year,month,1).getDay()+6)%7;
+    var dim = new Date(year,month+1,0).getDate();
+    var dayNames = ['L','M','M','J','V','S','D'];
+    var cells = '';
+    for (var i=0;i<startDay;i++) cells += '<div style="min-height:46px"></div>';
+    for (var dd=1;dd<=dim;dd++) {
+      var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+      var dt = tasks.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
+      var pills = dt.map(function(t){return '<div style="font-size:9px;padding:1px 3px;border-radius:3px;background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(t.title)+'">'+esc(t.title)+'</div>';}).join('');
+      cells += '<div style="min-height:46px;border:1px solid var(--border);border-radius:5px;padding:2px"><div style="font-size:10px;color:var(--muted)">'+dd+'</div>'+pills+'</div>';
+    }
+    var calendar = '<div class="cp-card">' +
+      '<div class="cp-card__hd"><span class="cp-card__title">Calendrier · '+esc(monthName)+'</span>' +
+        '<span style="display:flex;gap:6px"><button class="cp-btn cp-btn--sage" style="padding:4px 10px" aria-label="Mois précédent" onclick="cliCalNav(\''+project.id+'\',-1)">←</button><button class="cp-btn cp-btn--sage" style="padding:4px 10px" aria-label="Mois suivant" onclick="cliCalNav(\''+project.id+'\',1)">→</button></span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">'+dayNames.map(function(n){return '<div style="text-align:center;font-size:10px;color:var(--muted)">'+n+'</div>';}).join('')+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">'+cells+'</div>' +
+    '</div>';
+
+    var tasksHtml = tasks.slice().sort(function(a,b){return (a.dueDate||'').localeCompare(b.dueDate||'');}).map(function(t) {
+      var deliverable = t.deliverableFileKey ? (files.find(function(f){return f.key===t.deliverableFileKey;})) : null;
+      var comments = Array.isArray(t.comments)?t.comments:[];
+      return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--white)">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<strong style="color:var(--navy)'+(t.status==='done'?';text-decoration:line-through':'')+'">'+esc(t.title)+'</strong>' +
+          '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+'">'+(CLI_URG_LABEL[t.urgency]||t.urgency)+'</span>' +
+          '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#F0EDE6;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span>' +
+        '</div>' +
+        (t.content ? '<div style="font-size:13px;margin-top:6px;white-space:pre-wrap">'+esc(t.content)+'</div>' : '') +
+        (t.dueDate ? '<div style="font-size:12px;color:var(--muted);margin-top:5px">📅 '+fmtDate(t.dueDate)+'</div>' : '') +
+        (deliverable ? '<div style="margin-top:8px"><a class="cp-file" href="/api/projects/'+project.id+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>' : '') +
+        '<div style="margin-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:4px 0;border-top:1px dashed var(--border)"><strong>'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> · <span style="color:var(--muted)">'+fmtShort(c.createdAt)+'</span><div>'+esc(c.text)+'</div></div>';}).join('')+'</div>' +
+        '<div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:6px 12px" onclick="cliAddComment(\''+project.id+'\',\''+t.id+'\')">Envoyer</button></div>' +
+      '</div>';
+    }).join('') || '<div class="cp-empty">Aucune tâche pour le moment.</div>';
+
+    var progressCard = '<div class="cp-card">' +
+      '<div class="cp-card__hd"><span class="cp-card__title">Avancement</span><span class="cp-card__pct">'+pct+'%</span></div>' +
+      '<div class="cp-bar"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
+      '<div style="font-size:13px;color:var(--muted)">'+done+'/'+tasks.length+' tâches terminées</div>' +
+    '</div>';
+
+    var addForm = '<div class="cp-card">' +
+      '<div class="cp-card__hd"><span class="cp-card__title">Ajouter une tâche</span></div>' +
+      '<div class="form-field"><label for="cli-task-title">Titre</label><input type="text" id="cli-task-title" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px"></div>' +
+      '<div class="form-field" style="margin-top:8px"><label for="cli-task-content">Détails</label><textarea id="cli-task-content" rows="2" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px"></textarea></div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px">' +
+        '<select id="cli-task-urgency" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px"><option value="basse">Basse</option><option value="moyenne" selected>Moyenne</option><option value="haute">Haute</option></select>' +
+        '<input type="date" id="cli-task-due" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px">' +
+      '</div>' +
+      '<div style="margin-top:10px;text-align:right"><button class="cp-btn cp-btn--dark" onclick="cliAddTask(\''+project.id+'\')">+ Ajouter</button></div>' +
+    '</div>';
+
+    return progressCard + calendar +
+      '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Tâches du mois</span></div>' + tasksHtml + '</div>' +
+      addForm;
+  }
+
+  window.cliCalNav = function(pid, delta) {
+    if (!cliCalMonth[pid]) { var d0 = new Date(); d0.setDate(1); cliCalMonth[pid] = d0; }
+    cliCalMonth[pid].setMonth(cliCalMonth[pid].getMonth() + delta);
+    renderShell();
+  };
+
+  window.cliAddTask = function(pid) {
+    var title = (document.getElementById('cli-task-title')||{}).value;
+    if (!title || !title.trim()) { toast('Titre requis'); return; }
+    var body = {
+      projectId: pid,
+      title: title.trim(),
+      content: (document.getElementById('cli-task-content')||{}).value || '',
+      urgency: (document.getElementById('cli-task-urgency')||{}).value || 'moyenne',
+      dueDate: (document.getElementById('cli-task-due')||{}).value || undefined,
+    };
+    fetch(API_BASE + '/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(task) {
+        var pd = getPD(pid);
+        if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
+        toast('Tâche ajoutée ✓');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliAddComment = function(pid, taskId) {
+    var input = document.getElementById('cli-tc-' + taskId);
+    if (!input) return;
+    var text = input.value.trim();
+    if (!text) return;
+    fetch(API_BASE + '/tasks/' + taskId + '/comments', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, text: text }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(comment) {
+        var pd = getPD(pid);
+        if (pd) {
+          var t = (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+          if (t) { if(!Array.isArray(t.comments)) t.comments=[]; t.comments.push(comment); }
+        }
+        toast('Commentaire ajouté ✓');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  };
 
   // ── Vue conversation unifiée (messagerie client) ────────────────────────────
   function buildConversation() {
