@@ -3152,6 +3152,49 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .catch(function(){ toast('Erreur, réessayez.'); });
   };
 
+  window.cliSaveNotes = function(pid) {
+    var el = document.getElementById('cli-notes-' + pid);
+    if (!el) return;
+    var notes = el.value;
+    fetch(API_BASE + '/notes', { method: 'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectId: pid, notes: notes }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(proj) {
+        var pd = getPD(pid);
+        if (pd) pd.project.notes = proj.notes;
+        toast('Notes enregistrées ✓');
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliAddResource = function(pid) {
+    var url = prompt('URL de la ressource :', 'https://');
+    if (!url || !url.startsWith('http')) { toast('URL invalide'); return; }
+    var title = prompt('Nom de la ressource (optionnel) :', '');
+    var pd = getPD(pid);
+    var resources = (pd && pd.project.resources ? pd.project.resources.slice() : []);
+    resources.push({ url: url, title: title || url });
+    fetch(API_BASE + '/notes', { method: 'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectId: pid, resources: resources }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(proj) {
+        if (pd) { pd.project.resources = proj.resources; }
+        toast('Ressource ajoutée ✓'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliDeleteResource = function(pid, idx) {
+    var pd = getPD(pid);
+    var resources = (pd && pd.project.resources ? pd.project.resources.slice() : []);
+    resources.splice(idx, 1);
+    fetch(API_BASE + '/notes', { method: 'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectId: pid, resources: resources }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(proj) {
+        if (pd) { pd.project.resources = proj.resources; }
+        toast('Supprimé'); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
   // ── Vue conversation unifiée espace client (un seul fil) ─────────────────────
   function convoMsgHtml(m) {
     var isC = m.author === 'cindy';

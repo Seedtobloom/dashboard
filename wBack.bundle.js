@@ -1035,7 +1035,7 @@ async function handleClientApi(request, env, url) {
     const fileKey = decodeURIComponent(dl[2]);
     return clientFileDownload(env, projects2, fileKey);
   }
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/notes|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match)
     return errorResponse("Not found", 404);
   const [, tokenStr, subPathRaw, taskId, commentsSegment] = match;
@@ -1165,6 +1165,18 @@ async function handleClientApi(request, env, url) {
       await saveProject(env, project2);
       return jsonResponse({ success: true });
     }
+  }
+  // PATCH /notes — update project notes and resources
+  if (method === "PATCH" && subPathRaw === "/notes") {
+    const body = await request.json().catch(() => ({}));
+    const projectId = body.projectId || projects[0]?.id;
+    const project2 = projects.find((p) => p.id === projectId);
+    if (!project2) return errorResponse("Project not found", 404);
+    if (body.notes !== undefined) project2.notes = body.notes;
+    if (body.resources !== undefined) project2.resources = body.resources;
+    project2.updatedAt = new Date().toISOString();
+    await saveProject(env, project2);
+    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [] });
   }
   // PATCH /forfait — update monthlyHours on the project
   if (method === "PATCH" && subPathRaw === "/forfait") {
