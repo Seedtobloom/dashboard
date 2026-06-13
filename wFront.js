@@ -936,7 +936,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.addEventListener('hashchange', function() { routeFromUrl(); });
 
-  function navigate(path) {
+  function adminNav(path) {
     const match = path.match(/\/admin\/projects\/([a-f0-9]{32})/);
     if (match) {
       window.location.hash = 'project-' + match[1];
@@ -1047,7 +1047,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const nearDeadline = projs.filter(soonDeadline).length;
 
     const sidebarItems = projs.map(function(p, i) {
-      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="navigate(\'/admin/projects/' + p.id + '\');return false;">' +
+      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
         '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
         '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
         '<div class="project-item__meta">' +
@@ -1123,7 +1123,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var u = unreadMap[p.id] || 0;
       var now = Date.now();
       var soon = p.deadline && new Date(p.deadline).getTime() - now < 7*24*3600*1000 && new Date(p.deadline).getTime() > now;
-      return '<tr onclick="navigate(\'/admin/projects/' + p.id + '\')" style="cursor:pointer">' +
+      return '<tr onclick="adminNav(\'/admin/projects/' + p.id + '\')" style="cursor:pointer">' +
         '<td><div style="display:flex;align-items:center;gap:8px"><button onclick="event.stopPropagation();togglePin(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0;opacity:' + (p.pinned ? '1' : '0.3') + '" title="' + (p.pinned ? 'Désépingler' : 'Épingler') + '" aria-label="' + (p.pinned ? 'Désépingler' : 'Épingler') + '">📌</button><div><div style="font-weight:500;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.clientEmail) + '</div></div></div></td>' +
         '<td>' + esc(p.projectTitle) + '</td>' +
         '<td><span style="font-size:11px;background:var(--cream);color:var(--brown);padding:2px 8px;border-radius:999px;white-space:nowrap">' + (TYPE_LABELS[p.type||'custom'] || p.type) + '</span></td>' +
@@ -1177,7 +1177,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     unreadMap = unreadMap || {};
     var items = allProjs.map(function(p) {
       var u = unreadMap[p.id] || 0;
-      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="navigate(\'/admin/projects/' + p.id + '\');return false;">' +
+      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
         '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
         '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
         '<div class="project-item__meta">' +
@@ -1189,7 +1189,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var totalUnread = (typeof msgBadgeOverride === 'number') ? msgBadgeOverride : Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
     return '<nav class="sidebar">' +
       '<div class="sidebar-header"><div class="sidebar-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:36px;width:auto"></div><div class="sidebar-sub">Administration</div></div>' +
-      '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="navigate(\'/admin\')">'+icon('dashboard',15)+' Dashboard</button>' +
+      '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="adminNav(\'/admin\')">'+icon('dashboard',15)+' Dashboard</button>' +
       '<button class="side-tab' + (activeSection === 'messages' ? ' active' : '') + '" onclick="window.location.hash=\'messages\'">' +
         icon('messages',15)+' Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
       '</button>' +
@@ -1561,7 +1561,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<p class="proj-banner__sub">' + esc(project.clientName) + ' · ' + esc(project.clientEmail) + '</p>' +
               '</div>' +
               '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
-                '<button class="btn btn--ghost" onclick="navigate(\'/admin\')">← Dashboard</button>' +
+                '<button class="btn btn--ghost" onclick="adminNav(\'/admin\')">← Dashboard</button>' +
                 '<button class="btn btn--ghost" onclick="addProjectForClient()">+ Nouveau projet</button>' +
                 (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Espace client</button>' : '') +
                 '<button class="btn btn--ghost" onclick="openBannerEditor()" title="Changer la couleur ou l\'image" style="padding:6px 10px;font-size:18px">&#9998;</button>' +
@@ -2236,7 +2236,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.confirmDelete = async function() {
     showConfirm('Toutes les tâches, messages et fichiers liés seront perdus. Cette action est irréversible.', async function() {
       const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'DELETE' });
-      if (res.ok) { toast('Projet supprimé'); setTimeout(function() { navigate('/admin'); }, 600); }
+      if (res.ok) { toast('Projet supprimé'); setTimeout(function() { adminNav('/admin'); }, 600); }
       else toast('Erreur', true);
     }, { title: 'Supprimer le projet', okLabel: 'Supprimer définitivement', danger: true }); return;
   };
@@ -2732,11 +2732,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (res.ok) {
       toast('Projet créé ✓');
       closeModal('modal-new-project');
-      setTimeout(function() { navigate('/admin/projects/' + data.id); }, 600);
+      setTimeout(function() { adminNav('/admin/projects/' + data.id); }, 600);
     } else toast('Erreur création', true);
   };
 
-  window.navigate = navigate;
+  window.adminNav = adminNav;
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   window.extendDeadline = async function() {
@@ -2847,7 +2847,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     };
       var res = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
       var data = await res.json();
-      if (res.ok) { toast('Projet ajouté ✓'); setTimeout(function() { navigate('/admin/projects/' + data.id); }, 600); }
+      if (res.ok) { toast('Projet ajouté ✓'); setTimeout(function() { adminNav('/admin/projects/' + data.id); }, 600); }
       else toast('Erreur création', true);
     }, { okLabel: 'Créer' }); return;
   };
