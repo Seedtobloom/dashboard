@@ -708,6 +708,41 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     done: 'Terminé',
   };
 
+  // ── Icones SVG (Lucide paths, currentColor) ───────────────────────────────
+  var ICONS = {
+    dashboard:  '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+    messages:   '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    users:      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    plus:       '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    pencil:     '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+    trash:      '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+    calendar:   '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    link:       '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    check:      '<polyline points="20 6 9 17 4 12"/>',
+    eye:        '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    download:   '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    upload:     '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+    file:       '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>',
+    image:      '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+    send:       '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+    clock:      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    alert:      '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+    palette:    '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+    home:       '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    settings:   '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    logout:     '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+    chevron_r:  '<polyline points="9 18 15 12 9 6"/>',
+    x:          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    star:       '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    invoice:    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+  };
+
+  function icon(name, size, color) {
+    size = size || 16;
+    var clr = color ? 'color:'+color+';' : '';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;flex-shrink:0;'+clr+'">'+( ICONS[name]||'')+'</svg>';
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
   function esc(str) {
     return String(str ?? '')
@@ -1120,11 +1155,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var totalUnread = (typeof msgBadgeOverride === 'number') ? msgBadgeOverride : Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
     return '<nav class="sidebar">' +
       '<div class="sidebar-header"><div class="sidebar-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:36px;width:auto"></div><div class="sidebar-sub">Administration</div></div>' +
-      '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="navigate(\'/admin\')">📊 Dashboard</button>' +
+      '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="navigate(\'/admin\')">'+icon('dashboard',15)+' Dashboard</button>' +
       '<button class="side-tab' + (activeSection === 'messages' ? ' active' : '') + '" onclick="window.location.hash=\'messages\'">' +
-        '💬 Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
+        icon('messages',15)+' Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
       '</button>' +
-      '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">🔗 Espaces clients</button>' +
+      '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">'+icon('link',15)+' Espaces clients</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">' +
@@ -1424,7 +1459,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     const filesHtml = files.map(function(f) {
       return '<div class="file-row">' +
-        '<span>' + (f.type.startsWith('image/') ? '🖼️' : f.type.includes('pdf') ? '📄' : '📎') + '</span>' +
+        '<span>' + (f.type.startsWith('image/') ? icon('image',14) : f.type.includes('pdf') ? icon('file',14) : icon('file',14)) + '</span>' +
         '<span class="file-name-col">' + esc(f.name) + '</span>' +
         '<span style="font-size:12px;color:var(--muted)">' + f.category + '</span>' +
         '<a class="btn btn--outline btn--sm" href="/api/projects/' + project.id + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">↓</a>' +
@@ -1549,7 +1584,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div class="form-field"><label>Image de bannière</label>' +
                   '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
                     '<input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl && !project.bannerUrl.startsWith('data:') ? project.bannerUrl : '') + '" placeholder="https://… (ou choisir ci-dessous)" oninput="previewBanner()" style="flex:1">' +
-                    '<label style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--navy)">📁 Choisir<input type="file" accept="image/*" style="display:none" onchange="uploadBannerImage(this)"></label>' +
+                    '<label style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--navy)">'+icon('upload',13)+' Choisir<input type="file" accept="image/*" style="display:none" onchange="uploadBannerImage(this)"></label>' +
                     (project.bannerUrl ? '<button type="button" onclick="clearBannerImage()" style="padding:6px 10px;background:none;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;color:var(--muted)">✕ Supprimer</button>' : '') +
                   '</div>' +
                   '<small style="color:var(--muted);font-size:11px">Coller une URL ou choisir un fichier — laisser vide pour utiliser la couleur</small>' +
@@ -2430,6 +2465,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     document.getElementById('modal-task-title').textContent = 'Modifier la tâche';
     openModal('modal-task');
   };
+  // Recharge uniquement le contenu des tâches sans refaire toute la page
+  async function refreshTasksOnly() {
+    var r = await apiFetch('/api/projects/' + currentProjectId);
+    if (!r.ok) return;
+    var p = await r.json();
+    window._currentProject = p;
+    if (window._adminTaskReg) {
+      (p.tasks||[]).forEach(function(t){ window._adminTaskReg[t.id] = t; });
+    }
+    var el = document.getElementById('tab-taches');
+    if (el) el.innerHTML = buildTaskList(p);
+    var el2 = document.getElementById('tab-suivi');
+    if (el2) el2.innerHTML = buildCharts(p);
+  }
+
   window.saveTask = async function() {
     var id = document.getElementById('task-id').value;
     var body = {
@@ -2445,28 +2495,28 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!body.title) { toast('Titre requis', true); return; }
     var url = id ? '/api/projects/' + currentProjectId + '/tasks/' + id : '/api/projects/' + currentProjectId + '/tasks';
     var res = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
-    if (res.ok) { toast('Tâche sauvegardée ✓'); closeModal('modal-task'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    if (res.ok) { toast('Tâche sauvegardée'); closeModal('modal-task'); await refreshTasksOnly(); }
     else toast('Erreur', true);
   };
   window.deleteTask = async function(id) {
-    showConfirm('Cette tâche sera supprimée définitivement.', async function() {
+    showConfirm('Cette tache sera supprimee definitivement.', async function() {
       var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'DELETE' });
-      if (res.ok) { toast('Tâche supprimée'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+      if (res.ok) { toast('Tache supprimee'); await refreshTasksOnly(); }
       else toast('Erreur', true);
-    }, { title: 'Supprimer la tâche', okLabel: 'Supprimer', danger: true }); return;
+    }, { title: 'Supprimer la tache', okLabel: 'Supprimer', danger: true }); return;
   };
   window.updateTaskStatus = async function(id, status) {
     var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ status: status }) });
-    if (res.ok) { toast(status === 'done' ? 'Tâche terminée — email envoyé ✓' : 'Statut mis à jour ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    if (res.ok) { toast(status === 'done' ? 'Tache terminee' : 'Statut mis a jour'); await refreshTasksOnly(); }
     else toast('Erreur', true);
   };
   window.setTaskTime = async function(id) {
     var t = tasksOf(window._currentProject||{}).find(function(x){return x.id===id;}) || {};
-    showPrompt('Temps passé sur cette tâche', 'Saisissez le temps en minutes (ex: 90 pour 1h30)', String(t.timeSpentMinutes||0), async function(v) {
+    showPrompt('Temps passe sur cette tache', 'Saisissez le temps en minutes (ex: 90 pour 1h30)', String(t.timeSpentMinutes||0), async function(v) {
       var min = parseInt(v, 10);
       if (isNaN(min) || min < 0) { toast('Valeur invalide', true); return; }
       var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ timeSpentMinutes: min }) });
-      if (res.ok) { toast('Temps enregistré ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+      if (res.ok) { toast('Temps enregistre'); await refreshTasksOnly(); }
       else toast('Erreur', true);
     }, { type: 'number', okLabel: 'Enregistrer', placeholder: 'ex: 90' }); return;
   };
@@ -3037,7 +3087,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var helpCard = '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
       '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Votre conversation avec Cindy couvre tout votre espace.</div>' +
-      '<button class="cp-btn cp-btn--dark" onclick="cpOpenMessages()" type="button">💬 Ouvrir la messagerie</button>' +
+      '<button class="cp-btn cp-btn--dark" onclick="cpOpenMessages()" type="button">'+icon('messages',15)+' Ouvrir la messagerie</button>' +
     '</div>';
 
     function filesGroup(label, items) {
@@ -3510,7 +3560,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           fmt(r.regulM1) + (r.hasOverride ? ' ✎' : '') +
         '</span>' +
         '<button title="Saisir un report manuel" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;border-radius:4px" ' +
-          'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">✎</button>' +
+          'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">'+icon('pencil',13)+'</button>' +
       '</div>';
       return '<tr style="'+(isNow?'background:rgba(5,24,51,0.03);font-weight:600':'')+'\">' +
         '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
