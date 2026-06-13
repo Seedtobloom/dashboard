@@ -182,6 +182,11 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .projects-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .projects-table tr:last-child td { border-bottom: none; }
 .projects-table tr:hover td { background: var(--surface); cursor: pointer; }
+.proj-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.proj-toolbar input[type=search] { flex: 1; min-width: 220px; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Jost', sans-serif; font-size: 14px; background: var(--white); color: var(--text); }
+.proj-toolbar input[type=search]:focus { outline: none; border-color: var(--navy); }
+.proj-toolbar select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Jost', sans-serif; font-size: 13px; background: var(--white); color: var(--text); cursor: pointer; }
+.proj-toolbar select:focus { outline: none; border-color: var(--navy); }
 
 .inbox-list {
   width: 300px;
@@ -697,19 +702,34 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</a>';
     }).join('');
 
-    const projectRows = projs.map(function(p, i) {
-      return '<tr onclick="navigate(\'/admin/projects/' + p.id + '\')" style="cursor:pointer">' +
-        '<td><div style="display:flex;align-items:center;gap:8px"><button onclick="event.stopPropagation();togglePin(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0;opacity:' + (p.pinned ? '1' : '0.25') + '" title="' + (p.pinned ? 'Désépingler' : 'Épingler') + '">' + (p.pinned ? '📌' : '📌') + '</button><div><div style="font-weight:500;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.clientEmail) + '</div></div></div></td>' +
-        '<td>' + esc(p.projectTitle) + '</td>' +
-        '<td>' + adminStatusBadge(p.status) + '</td>' +
-        '<td>' + (p.deadline ? formatDate(p.deadline) : '—') + '</td>' +
-        '<td>' + (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + ' non lu</span>' : '—') + '</td>' +
-        '<td>' + formatDate(p.updatedAt) + '</td>' +
-      '</tr>';
-    }).join('');
-
     var unreadMap = {};
     projs.forEach(function(p, i) { unreadMap[p.id] = unreadCounts[i] || 0; });
+
+    // Données accessibles au filtrage/tri client.
+    dashProjs = projs.slice();
+    dashUnreadMap = unreadMap;
+
+    var typesPresent = {};
+    projs.forEach(function(p) { typesPresent[p.type || 'custom'] = true; });
+    var typeFilterOpts = '<option value="">Tous les types</option>' +
+      Object.keys(typesPresent).map(function(t) { return '<option value="' + t + '">' + (TYPE_LABELS[t] || t) + '</option>'; }).join('');
+    var statusFilterOpts = '<option value="">Tous les statuts</option>' +
+      Object.entries(STATUS_LABELS).map(function(e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
+
+    var toolbar = '<div class="proj-toolbar">' +
+      '<input type="search" id="dash-search" placeholder="🔍 Rechercher un client, un projet…" oninput="applyProjectFilters()" aria-label="Rechercher">' +
+      '<select id="dash-type" onchange="applyProjectFilters()" aria-label="Filtrer par type">' + typeFilterOpts + '</select>' +
+      '<select id="dash-status" onchange="applyProjectFilters()" aria-label="Filtrer par statut">' + statusFilterOpts + '</select>' +
+      '<select id="dash-sort" onchange="applyProjectFilters()" aria-label="Trier">' +
+        '<option value="updated">Tri : récemment modifié</option>' +
+        '<option value="client">Tri : client (A→Z)</option>' +
+        '<option value="title">Tri : projet (A→Z)</option>' +
+        '<option value="deadline">Tri : deadline</option>' +
+        '<option value="status">Tri : statut</option>' +
+      '</select>' +
+    '</div>';
+
+    var projectRows = renderProjectRows(projs, unreadMap);
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
@@ -726,16 +746,72 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '<div class="stat-card"><div class="stat-card__num">' + waitingClient + '</div><div class="stat-card__label">En attente client</div></div>' +
               '<div class="stat-card"><div class="stat-card__num" style="color:' + (nearDeadline > 0 ? 'var(--red)' : 'inherit') + '">' + nearDeadline + '</div><div class="stat-card__label">Deadlines &lt; 7 jours</div></div>' +
             '</div>' +
+            toolbar +
             '<div class="projects-table">' +
               '<table>' +
-                '<thead><tr><th>Client</th><th>Projet</th><th>Statut</th><th>Deadline</th><th>Messages</th><th>Modifié</th></tr></thead>' +
-                '<tbody>' + projectRows + '</tbody>' +
+                '<thead><tr><th>Client</th><th>Projet</th><th>Type</th><th>Statut</th><th>Deadline</th><th>Messages</th><th>Modifié</th></tr></thead>' +
+                '<tbody id="dash-tbody">' + projectRows + '</tbody>' +
               '</table>' +
             '</div>' +
           '</div>' +
         '</main>' +
       '</div>';
   }
+
+  // ── Tri / filtre des projets sur le tableau de bord ────────────────────────
+  var dashProjs = [], dashUnreadMap = {};
+
+  function renderProjectRows(list, unreadMap) {
+    if (!list.length) return '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Aucun projet ne correspond.</td></tr>';
+    return list.map(function(p) {
+      var u = unreadMap[p.id] || 0;
+      var now = Date.now();
+      var soon = p.deadline && new Date(p.deadline).getTime() - now < 7*24*3600*1000 && new Date(p.deadline).getTime() > now;
+      return '<tr onclick="navigate(\'/admin/projects/' + p.id + '\')" style="cursor:pointer">' +
+        '<td><div style="display:flex;align-items:center;gap:8px"><button onclick="event.stopPropagation();togglePin(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0;opacity:' + (p.pinned ? '1' : '0.3') + '" title="' + (p.pinned ? 'Désépingler' : 'Épingler') + '" aria-label="' + (p.pinned ? 'Désépingler' : 'Épingler') + '">📌</button><div><div style="font-weight:500;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.clientEmail) + '</div></div></div></td>' +
+        '<td>' + esc(p.projectTitle) + '</td>' +
+        '<td><span style="font-size:11px;background:var(--cream);color:var(--brown);padding:2px 8px;border-radius:999px;white-space:nowrap">' + (TYPE_LABELS[p.type||'custom'] || p.type) + '</span></td>' +
+        '<td>' + adminStatusBadge(p.status) + '</td>' +
+        '<td>' + (p.deadline ? formatDate(p.deadline) + (soon ? ' <span style="font-size:11px;color:var(--red);font-weight:600">⚠</span>' : '') : '—') + '</td>' +
+        '<td>' + (u > 0 ? '<span class="unread-badge">' + u + ' non lu</span>' : '—') + '</td>' +
+        '<td>' + formatDate(p.updatedAt) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  window.applyProjectFilters = function() {
+    var q = (document.getElementById('dash-search')||{}).value || '';
+    var ft = (document.getElementById('dash-type')||{}).value || '';
+    var fs = (document.getElementById('dash-status')||{}).value || '';
+    var sort = (document.getElementById('dash-sort')||{}).value || 'updated';
+    q = q.trim().toLowerCase();
+
+    var list = dashProjs.filter(function(p) {
+      if (ft && (p.type||'custom') !== ft) return false;
+      if (fs && p.status !== fs) return false;
+      if (q) {
+        var hay = ((p.clientName||'') + ' ' + (p.clientEmail||'') + ' ' + (p.projectTitle||'')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    list.sort(function(a, b) {
+      // Les projets épinglés restent toujours en tête.
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      if (sort === 'client') return (a.clientName||'').localeCompare(b.clientName||'', 'fr');
+      if (sort === 'title') return (a.projectTitle||'').localeCompare(b.projectTitle||'', 'fr');
+      if (sort === 'status') return (STATUS_LABELS[a.status]||'').localeCompare(STATUS_LABELS[b.status]||'', 'fr');
+      if (sort === 'deadline') {
+        if (!a.deadline) return 1; if (!b.deadline) return -1;
+        return new Date(a.deadline) - new Date(b.deadline);
+      }
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+
+    var tbody = document.getElementById('dash-tbody');
+    if (tbody) tbody.innerHTML = renderProjectRows(list, dashUnreadMap);
+  };
 
   // ── Messages (inbox) — une conversation par client (email) ─────────────────
   var inboxData = []; // [{clientEmail, clientName, messages, unread, last}]
@@ -2184,34 +2260,22 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (steps.length ? '<div class="cp-steps">' + stepsHtml + '</div>' : '<div class="cp-empty">Les étapes seront bientôt définies.</div>') +
     '</div>';
 
-    var tabs = '<div class="cp-tabs">' +
-      '<button class="cp-tab active" onclick="cpTab(this,\'msgs\')">Messages</button>' +
-      (files.length ? '<button class="cp-tab" onclick="cpTab(this,\'files\')">Fichiers</button>' : '') +
-      (project.practicalInfo.sections.length ? '<button class="cp-tab" onclick="cpTab(this,\'prac\')">Infos pratiques</button>' : '') +
-      (project.meetingLink ? '<button class="cp-tab" onclick="cpTab(this,\'meet\')">Réunion</button>' : '') +
-    '</div>';
+    // La messagerie est unifiée et accessible depuis le panneau « Messagerie ».
+    // On ne l'affiche plus dans le board du projet — uniquement fichiers / infos / réunion.
+    var sideTabs = [];
+    if (files.length) sideTabs.push({ id:'files', label:'Fichiers' });
+    if (project.practicalInfo.sections.length) sideTabs.push({ id:'prac', label:'Infos pratiques' });
+    if (project.meetingLink) sideTabs.push({ id:'meet', label:'Réunion' });
 
-    // Le fil est unifié au niveau de l'espace client (un seul fil pour tous les projets).
-    var msgsHtml = convData.length ?
-      convData.map(function(m) {
-        var isC = m.author==='cindy';
-        return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
-          '<div class="cp-msg__av cp-msg__av--' + (isC?'cindy':'client') + '">' + (isC?'C':clientInitial) + '</div>' +
-          '<div class="cp-msg__bubble">' +
-            '<div class="cp-msg__text">' + esc(m.content) + '</div>' +
-            '<div class="cp-msg__date">' + (isC?'Cindy':'Vous') + ' · ' + fmtShort(m.createdAt) + '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('') :
-      '<div class="cp-empty">Pas encore de messages.<br>N\'hésitez pas à m\'écrire !</div>';
+    var tabs = sideTabs.length ? '<div class="cp-tabs">' +
+      sideTabs.map(function(t, i) {
+        return '<button class="cp-tab' + (i===0?' active':'') + '" onclick="cpTab(this,\'' + t.id + '\')">' + t.label + '</button>';
+      }).join('') +
+    '</div>' : '';
 
-    var msgsPanel = '<div id="cp-panel-msgs" class="cp-panel">' +
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Votre conversation avec Cindy couvre tout votre espace.</div>' +
-      '<div class="cp-msgs" id="cp-msgs-list">' + msgsHtml + '</div>' +
-      '<form class="cp-msg-form" id="cp-msg-form">' +
-        '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
-        '<div class="cp-msg-form__row"><button type="submit" class="cp-btn cp-btn--dark">Envoyer →</button></div>' +
-      '</form>' +
+    var helpCard = '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Votre conversation avec Cindy couvre tout votre espace.</div>' +
+      '<button class="cp-btn cp-btn--dark" onclick="cpOpenMessages()" type="button">💬 Ouvrir la messagerie</button>' +
     '</div>';
 
     function filesGroup(label, items) {
@@ -2229,19 +2293,21 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    var filesPanel = files.length ? '<div id="cp-panel-files" class="cp-panel hidden">' +
+    function panelHidden(id) { return (sideTabs.length && sideTabs[0].id === id) ? '' : ' hidden'; }
+
+    var filesPanel = files.length ? '<div id="cp-panel-files" class="cp-panel' + panelHidden('files') + '">' +
       filesGroup('Livrables', bycat.deliverable) +
       filesGroup('Documents', bycat.document) +
       filesGroup('Références', bycat.reference) +
     '</div>' : '';
 
-    var pracPanel = project.practicalInfo.sections.length ? '<div id="cp-panel-prac" class="cp-panel hidden">' +
+    var pracPanel = project.practicalInfo.sections.length ? '<div id="cp-panel-prac" class="cp-panel' + panelHidden('prac') + '">' +
       project.practicalInfo.sections.map(function(s) {
         return '<details class="cp-prac"><summary>' + esc(s.title) + '</summary>' +
           '<div class="cp-prac__body">' + renderMd(s.content) + '</div></details>';
       }).join('') + '</div>' : '';
 
-    var meetPanel = project.meetingLink ? '<div id="cp-panel-meet" class="cp-panel hidden">' +
+    var meetPanel = project.meetingLink ? '<div id="cp-panel-meet" class="cp-panel' + panelHidden('meet') + '">' +
       '<div class="cp-meet">' +
         '<div class="cp-meet__icon">📹</div>' +
         '<div class="cp-meet__body">' +
@@ -2252,12 +2318,21 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
     '</div>' : '';
 
-    var partenaireMain = project.type === 'partenaire' ? buildClientPartenaire(pd) : '';
+    var sideCol = tabs + filesPanel + pracPanel + meetPanel + helpCard;
+
+    // Espace partenaire : mise en page pleine largeur pour un grand calendrier.
+    if (project.type === 'partenaire') {
+      return header +
+        '<div class="cp-content">' + banner + buildClientPartenaire(pd) +
+          (sideTabs.length ? '<div style="margin-top:14px">' + tabs + filesPanel + pracPanel + meetPanel + '</div>' : '') +
+          helpCard +
+        '</div>';
+    }
 
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
-        '<div class="cp-grid__main">' + banner + partenaireMain + progress + '</div>' +
-        '<div class="cp-grid__side">' + tabs + msgsPanel + filesPanel + pracPanel + meetPanel + '</div>' +
+        '<div class="cp-grid__main">' + banner + progress + '</div>' +
+        '<div class="cp-grid__side">' + sideCol + '</div>' +
       '</div></div>';
   }
 
@@ -2282,20 +2357,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var startDay = (new Date(year,month,1).getDay()+6)%7;
     var dim = new Date(year,month+1,0).getDate();
     var dayNames = ['L','M','M','J','V','S','D'];
+    var dayNamesFull = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    var todayStr = (function(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); })();
     var cells = '';
-    for (var i=0;i<startDay;i++) cells += '<div style="min-height:46px"></div>';
+    for (var i=0;i<startDay;i++) cells += '<div style="min-height:118px;background:var(--surface);border-radius:8px"></div>';
     for (var dd=1;dd<=dim;dd++) {
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
       var dt = tasks.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
-      var pills = dt.map(function(t){return '<div style="font-size:9px;padding:1px 3px;border-radius:3px;background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(t.title)+'">'+esc(t.title)+'</div>';}).join('');
-      cells += '<div style="min-height:46px;border:1px solid var(--border);border-radius:5px;padding:2px"><div style="font-size:10px;color:var(--muted)">'+dd+'</div>'+pills+'</div>';
+      var isToday = ds===todayStr;
+      var pills = dt.map(function(t){return '<div style="font-size:12px;line-height:1.35;padding:3px 7px;border-radius:5px;margin-bottom:3px;background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'+(t.status==='done'?';text-decoration:line-through':'')+'" title="'+esc(t.title)+'">'+(t.status==='done'?'✓ ':'')+esc(t.title)+'</div>';}).join('');
+      cells += '<div style="min-height:118px;border:1px solid '+(isToday?'var(--navy)':'var(--border)')+';border-radius:8px;padding:6px;'+(isToday?'box-shadow:inset 0 0 0 1px var(--navy)':'')+'"><div style="font-size:13px;font-weight:600;color:'+(isToday?'var(--navy)':'var(--muted)')+';margin-bottom:4px">'+dd+(isToday?' •':'')+'</div>'+pills+'</div>';
     }
     var calendar = '<div class="cp-card">' +
-      '<div class="cp-card__hd"><span class="cp-card__title">Calendrier · '+esc(monthName)+'</span>' +
-        '<span style="display:flex;gap:6px"><button class="cp-btn cp-btn--sage" style="padding:4px 10px" aria-label="Mois précédent" onclick="cliCalNav(\''+project.id+'\',-1)">←</button><button class="cp-btn cp-btn--sage" style="padding:4px 10px" aria-label="Mois suivant" onclick="cliCalNav(\''+project.id+'\',1)">→</button></span>' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title" style="font-size:20px;text-transform:capitalize">'+esc(monthName)+'</h2>' +
+        '<span style="display:flex;gap:8px"><button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" aria-label="Mois précédent" onclick="cliCalNav(\''+project.id+'\',-1)">←</button><button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" aria-label="Mois suivant" onclick="cliCalNav(\''+project.id+'\',1)">→</button></span>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">'+dayNames.map(function(n){return '<div style="text-align:center;font-size:10px;color:var(--muted)">'+n+'</div>';}).join('')+'</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">'+cells+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+dayNamesFull.map(function(n){return '<div style="text-align:center;font-size:13px;font-weight:600;color:var(--muted);padding-bottom:4px">'+n+'</div>';}).join('')+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+cells+'</div>' +
     '</div>';
 
     var tasksHtml = tasks.slice().sort(function(a,b){return (a.dueDate||'').localeCompare(b.dueDate||'');}).map(function(t) {
@@ -2332,9 +2410,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="margin-top:10px;text-align:right"><button class="cp-btn cp-btn--dark" onclick="cliAddTask(\''+project.id+'\')">+ Ajouter</button></div>' +
     '</div>';
 
-    return progressCard + calendar +
-      '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Tâches du mois</span></div>' + tasksHtml + '</div>' +
-      addForm;
+    var tasksCard = '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Tâches du mois</h2></div>' + tasksHtml + '</div>';
+
+    return calendar +
+      '<div class="cp-grid" style="grid-template-columns:1fr 340px;margin-top:14px">' +
+        '<div>' + tasksCard + '</div>' +
+        '<div>' + progressCard + addForm + '</div>' +
+      '</div>';
   }
 
   window.cliCalNav = function(pid, delta) {
@@ -2525,7 +2607,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var tabs = btn.closest('.cp-tabs');
     if (tabs) tabs.querySelectorAll('.cp-tab').forEach(function(t) { t.classList.remove('active'); });
     btn.classList.add('active');
-    ['msgs','files','prac','meet'].forEach(function(id) {
+    ['files','prac','meet'].forEach(function(id) {
       var el = document.getElementById('cp-panel-' + id);
       if (el) el.classList[id===panel?'remove':'add']('hidden');
     });
