@@ -539,6 +539,85 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   let currentProjectId = null;
   let projects = [];
 
+  // ── Themes ─────────────────────────────────────────────────────────────────
+  const THEMES = {
+    marine: {
+      label: 'Marine',
+      '--navy': '#051833',
+      '--brown': '#412F21',
+      '--lavender': '#E4D1FE',
+      '--blue-light': '#BAD1FD',
+      '--cream': '#EFE1B0',
+    },
+    terre: {
+      label: 'Terre',
+      '--navy': '#412F21',
+      '--brown': '#2d1f14',
+      '--lavender': '#EFE1B0',
+      '--blue-light': '#EFE1B0',
+      '--cream': '#FAF8F4',
+    },
+    sauge: {
+      label: 'Sauge',
+      '--navy': '#3a5c43',
+      '--brown': '#2a4030',
+      '--lavender': '#cce0cc',
+      '--blue-light': '#d4e8d4',
+      '--cream': '#EFE1B0',
+    },
+    prune: {
+      label: 'Prune',
+      '--navy': '#3d2952',
+      '--brown': '#2a1a3d',
+      '--lavender': '#E4D1FE',
+      '--blue-light': '#d8c0f8',
+      '--cream': '#f0e8ff',
+    },
+  };
+
+  window.applyTheme = function applyTheme(name) {
+    var t = THEMES[name] || THEMES.marine;
+    var vars = Object.keys(t).filter(function(k){ return k.startsWith('--'); }).map(function(k){ return k+':'+t[k]+';'; }).join('');
+    var el = document.getElementById('bloom-theme-style');
+    if (!el) { el = document.createElement('style'); el.id = 'bloom-theme-style'; document.head.appendChild(el); }
+    el.textContent = ':root{'+vars+'}';
+    localStorage.setItem('bloom_theme', name);
+  }
+
+  function loadTheme() {
+    var saved = localStorage.getItem('bloom_theme') || 'marine';
+    if (THEMES[saved]) applyTheme(saved);
+  }
+
+  window.openThemePicker = function() {
+    var existing = document.getElementById('_theme-picker');
+    if (existing) { existing.remove(); return; }
+    var current = localStorage.getItem('bloom_theme') || 'marine';
+    var ov = document.createElement('div');
+    ov.id = '_theme-picker';
+    ov.style.cssText = 'position:fixed;bottom:56px;left:12px;width:236px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 4px 24px rgba(0,0,0,0.18);z-index:9999;border:1px solid #ebebeb';
+    ov.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:12px">Theme de l\'interface</div>' +
+      Object.keys(THEMES).map(function(key) {
+        var t = THEMES[key];
+        var isActive = key === current;
+        return '<button onclick="applyTheme(\''+key+'\');document.getElementById(\'_theme-picker\').remove()" ' +
+          'style="display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;border:' + (isActive ? '2px solid '+t['--navy'] : '1.5px solid #e0e0e0') + ';background:'+(isActive ? t['--lavender'] : '#fff')+';cursor:pointer;margin-bottom:6px;text-align:left">' +
+          '<span style="display:flex;gap:4px">' +
+            '<span style="width:14px;height:14px;border-radius:50%;background:'+t['--navy']+';display:inline-block"></span>' +
+            '<span style="width:14px;height:14px;border-radius:50%;background:'+t['--brown']+';display:inline-block"></span>' +
+            '<span style="width:14px;height:14px;border-radius:50%;background:'+t['--lavender']+';display:inline-block;border:1px solid #e0e0e0"></span>' +
+          '</span>' +
+          '<span style="font-size:13px;color:#051833;font-weight:'+(isActive?'600':'400')+'">'+t.label+'</span>' +
+          (isActive ? '<span style="margin-left:auto;font-size:10px;color:'+t['--navy']+'">actif</span>' : '') +
+        '</button>';
+      }).join('') +
+    '</div>';
+    document.addEventListener('click', function close(e) {
+      if (!ov.contains(e.target) && e.target.id !== '_theme-btn') { ov.remove(); document.removeEventListener('click', close); }
+    }, { capture: true });
+    document.body.appendChild(ov);
+  };
+
   const STATUS_COLORS = {
     discovery: '#d4e4f0',
     in_progress: '#7fa688',
@@ -753,6 +832,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
+    loadTheme();
     const res = await fetch('/api/projects', {
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -1001,8 +1081,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">🔗 Espaces clients</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
-      '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
-        '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
+      '<div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">' +
+        '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Deconnexion</button>' +
+        '<button id="_theme-btn" onclick="openThemePicker()" title="Theme" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;gap:3px;align-items:center">' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:var(--lavender);display:inline-block"></span>' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:var(--cream);display:inline-block"></span>' +
+        '</button>' +
       '</div>' +
     '</nav>';
   }
@@ -1433,7 +1517,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                     '<input type="color" id="edit-bannerColorCustom" value="' + esc(project.bannerColor ? project.bannerColor.split('|')[0] : '#412F21') + '" onchange="pickBannerColor(this.value,null)" title="Couleur personnalisée" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
                   '</div>' +
                 '</div>' +
-                '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : 'linear-gradient(135deg,'+(project.bannerColor||'#412F21|#EFE1B0').split('|').join(',')+')')+';border:1.5px solid var(--border)"></div>' +
+                '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : (project.bannerColor||'#412F21').split('|')[0])+';border:1.5px solid var(--border)"></div>' +
               '</div>' +
             '</div>' +
 
@@ -2702,7 +2786,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var bannerStyle = p.bannerUrl
         ? 'background-image:url(' + esc(p.bannerUrl) + ');background-size:cover;background-position:center'
         : (p.bannerColor
-            ? 'background:linear-gradient(135deg,' + esc(p.bannerColor).replace('|',',') + ')'
+            ? 'background:' + esc(p.bannerColor.split('|')[0])
             : '');
       var duration = '';
       if (p.startDate && p.deadline) {
@@ -2847,7 +2931,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var hdrBg = project.bannerUrl
       ? 'background:url(' + esc(project.bannerUrl) + ') center/cover no-repeat'
       : project.bannerColor
-        ? 'background:linear-gradient(135deg,' + esc(project.bannerColor).replace('|',',') + ')'
+        ? 'background:' + esc(project.bannerColor.split('|')[0])
         : '';
     var header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
       (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#fff;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
@@ -3805,6 +3889,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     window.scrollTo(0, 0);
   }
 
+  function applyClientTheme(projects) {
+    var color = (projects[0] && projects[0].project && projects[0].project.bannerColor) ? projects[0].project.bannerColor.split('|')[0] : null;
+    if (!color) return;
+    var el = document.getElementById('cp-theme-style');
+    if (!el) { el = document.createElement('style'); el.id = 'cp-theme-style'; document.head.appendChild(el); }
+    var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
+    var lum = 0.299*_r+0.587*_g+0.114*_b;
+    var accent = lum > 160 ? '#051833' : color;
+    el.textContent = ':root{--navy:'+accent+';--brown:'+color+';}';
+  }
+
   function renderApp(data) {
     if (!data.type) {
       appData = { type:'project', clientName:data.project.clientName,
@@ -3812,6 +3907,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     } else { appData = data; }
     convData = Array.isArray(data.conversation) ? data.conversation : [];
     if (!appData.projects.length) { showError(); return; }
+    applyClientTheme(appData.projects);
     var portal = appData.type === 'client';
     currentId = appData.projects[0].project.id;
     convoId = currentId;
