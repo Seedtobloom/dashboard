@@ -472,6 +472,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-msg__bubble { max-width: 85%; }
   .cp-meet { flex-direction: column; align-items: flex-start; gap: 14px; }
 }
+.cp-cal-layout { display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start; }
+@media (max-width:1024px) { .cp-cal-layout { grid-template-columns:1fr; } .cp-task-panel { max-height:none; } }
 .cp-cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:6px; }
 .cp-cal-day { min-height:110px;border:1.5px solid var(--border);border-radius:10px;padding:5px 7px;cursor:pointer;transition:background 0.12s; }
 .cp-cal-day:hover { background:var(--surface); }
@@ -480,7 +482,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cal-day__num { font-size:12px;font-weight:600;color:var(--muted);margin-bottom:3px; }
 .cp-cal-day.today .cp-cal-day__num { color:var(--navy); }
 .cp-cal-pill { font-size:11px;padding:2px 6px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;line-height:1.4; }
-.cp-task-panel { background:var(--white);border:1.5px solid var(--sky);border-radius:14px;padding:18px;margin-bottom:14px; }
+.cp-task-panel { background:var(--white);border:1.5px solid var(--sky);border-radius:14px;padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }
 .cp-task-card { border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--white);transition:box-shadow 0.15s; }
 .cp-task-card:hover { box-shadow:0 3px 12px rgba(5,24,51,0.08); }
 .cp-task-card__top { display:flex;align-items:flex-start;gap:10px;margin-bottom:8px; }
@@ -2616,7 +2618,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px 0">Aucune tâche ce jour — cliquez + Ajouter</div>') +
     '</div>';
 
-    return calCard + dayPanel;
+    return '<div class="cp-cal-layout">' + calCard + dayPanel + '</div>';
   }
 
   // ── Onglet Tableau ────────────────────────────────────────────────────────
