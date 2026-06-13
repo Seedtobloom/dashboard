@@ -3898,8 +3898,8 @@ const ERROR_HTML = `<!DOCTYPE html>
 @font-face {
   font-family: 'Ambra Sans';
   src: url('/fonts/ambra-bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
+  font-weight: 400;
+  font-style: italic;
   font-display: swap;
   unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
@@ -3942,8 +3942,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
 @font-face {
   font-family: 'Ambra Sans';
   src: url('/fonts/ambra-bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
+  font-weight: 400;
+  font-style: italic;
   font-display: swap;
   unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
@@ -4026,8 +4026,8 @@ const CLIENT_HTML = `<!DOCTYPE html>
 @font-face {
   font-family: 'Ambra Sans';
   src: url('/fonts/ambra-bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
+  font-weight: 400;
+  font-style: italic;
   font-display: swap;
   unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
