@@ -335,6 +335,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .cp-nav__arrow { font-size: 13px; color: var(--sidebar-text); opacity: 0.55; flex-shrink: 0; transition: opacity 0.15s, transform 0.15s; line-height: 1; }
 .cp-nav__item:hover .cp-nav__arrow, .cp-nav__item.active .cp-nav__arrow { opacity: 1; transform: translateX(3px); }
+.cp-nav__item > svg { opacity: 0.6; flex-shrink: 0; transition: opacity 0.15s; }
+.cp-nav__item:hover > svg, .cp-nav__item.active > svg { opacity: 1; }
 .cp-nav__text { flex: 1; min-width: 0; }
 .cp-nav__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cp-nav__status { font-size: 11px; opacity: 0.8; margin-top: 1px; }
@@ -2899,6 +2901,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
   var STATUS_COLORS = { discovery:'#d4e4f0', in_progress:'#7fa688', waiting_client:'#e8a87c', review:'#b0a0d4', delivered:'#1a2744', archived:'#aaa' };
+
+  var CP_ICONS = {
+    home:     '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    messages: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    folder:   '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    chevron_r:'<polyline points="9 18 15 12 9 6"/>',
+  };
+  function cpIcon(name, size) {
+    size = size || 15;
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;flex-shrink:0">'+( CP_ICONS[name]||'')+'</svg>';
+  }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
   var STATUS_TEXT = { discovery:'#051833', in_progress:'#0d2b16', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
   function statusBadge(status) {
@@ -3069,11 +3082,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Section navigation principale
     var mainNav = '<div class="cp-nav"><div class="cp-nav__label">Navigation</div>' +
       (portal ? '<button class="cp-nav__item' + (currentView==='home'?' active':'') + '" aria-label="Accueil, mes projets" onclick="cpGoHome()">' +
-        '<span class="cp-nav__arrow">&#8594;</span>' +
-        '<span class="cp-nav__text"><div class="cp-nav__title">Accueil · Mes projets</div></span>' +
+        cpIcon('home',15) +
+        '<span class="cp-nav__text"><div class="cp-nav__title">Accueil</div></span>' +
       '</button>' : '') +
       '<button class="cp-nav__item' + (currentView==='messages'?' active':'') + '" aria-label="Messagerie" onclick="cpOpenMessages()">' +
-        '<span class="cp-nav__arrow">&#8594;</span>' +
+        cpIcon('messages',15) +
         '<span class="cp-nav__text"><div class="cp-nav__title">Messages</div></span>' +
         (totalUnread() > 0 ? '<span class="cp-nav__badge">' + totalUnread() + '</span>' : '') +
       '</button>' +
@@ -3081,10 +3094,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Section projets, regroupés par type d'offre (sections non vides uniquement)
     function navItem(pd) {
       var p = pd.project;
-      var col = STATUS_COLORS[p.status] || '#aaa';
       var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
       return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
-        '<span class="cp-nav__arrow">&#8594;</span>' +
+        cpIcon('folder',15) +
         '<span class="cp-nav__text">' +
           '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
           '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
@@ -4067,7 +4079,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildConversation() {
     var unread = totalUnread();
     var summary = '<button class="cp-nav__item active" style="border-radius:0" type="button">' +
-      '<span class="cp-nav__arrow">&#8594;</span>' +
+      cpIcon('messages',15) +
       '<span class="cp-nav__text">' +
         '<div class="cp-nav__title" style="color:var(--navy)">Cindy · Seed to Bloom</div>' +
         '<div class="cp-nav__status" style="color:var(--muted)">Toute votre conversation</div>' +
