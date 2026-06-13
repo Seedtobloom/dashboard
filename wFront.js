@@ -2809,14 +2809,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpSelHome = function(id) {
     currentId = id;
     currentView = 'project';
+    clearInterval(pollTimer);
+    document.removeEventListener('visibilitychange', stopPollOnHide);
     renderShell();
   };
 
   window.cpGoHome = function() {
     currentView = 'home';
-    renderShell();
     clearInterval(pollTimer);
-    pollTimer = setInterval(poll, pollInterval());
+    document.removeEventListener('visibilitychange', stopPollOnHide);
+    renderShell();
   };
 
   window.cpSel = function(id) {
@@ -2829,10 +2831,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     currentView = 'messages';
     renderShell();
     markConvoRead();
-    // Passe en mode poll rapide dès que la messagerie est ouverte.
+    // Poll uniquement quand la messagerie est visible.
     clearInterval(pollTimer);
-    pollTimer = setInterval(poll, pollInterval());
+    pollTimer = setInterval(poll, 8000);
+    document.addEventListener('visibilitychange', stopPollOnHide);
   };
+
+  function stopPollOnHide() {
+    if (document.hidden) { clearInterval(pollTimer); }
+    else if (currentView === 'messages') { pollTimer = setInterval(poll, 8000); }
+  }
 
   function markConvoRead() {
     // GET /conversation marque les messages de Cindy comme lus côté serveur
@@ -2909,18 +2917,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).catch(function() {});
   }
 
-  function pollInterval() {
-    // Rapide (8s) si la messagerie est ouverte, lent (60s) sinon → économise les requêtes Cloudflare.
-    return currentView === 'messages' ? 8000 : 60000;
-  }
-
   function startPoll() {
+    // Pas de poll en arrière-plan. Le poll ne tourne que quand la messagerie est ouverte.
     clearInterval(pollTimer);
-    pollTimer = setInterval(poll, pollInterval());
-    document.addEventListener('visibilitychange', function() {
-      clearInterval(pollTimer);
-      if (!document.hidden) pollTimer = setInterval(poll, pollInterval());
-    });
   }
 
   function showError() {
