@@ -151,6 +151,62 @@ export async function sendAdminMessageNotification(env: Env, project: Project, _
   );
 }
 
+// --- Conversation au niveau espace client ---
+// Notifie l'admin qu'un client a écrit dans le fil unifié.
+export async function sendClientThreadAdminNotification(
+  env: Env,
+  clientEmail: string,
+  clientName: string,
+  refProjectId: string
+): Promise<void> {
+  const adminEmail = env.ADMIN_EMAIL ?? 'hello@seedtobloom.fr';
+  if (!adminEmail) return;
+  const template = `admin_client_msg_${clientEmail.toLowerCase()}`;
+  if (!(await canSendEmail(env, refProjectId, template))) return;
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/admin#messages`;
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${clientName || clientEmail}</strong> vient de vous envoyer un message dans son espace.</p>
+    <p>Connectez-vous à votre tableau de bord pour y répondre.</p>
+  `;
+  await sendEmail(
+    env,
+    refProjectId,
+    adminEmail,
+    `Nouveau message de ${clientName || clientEmail}`,
+    emailWrapper('Nouveau message client', body, portalUrl),
+    template
+  );
+}
+
+// Notifie le client (par email) que Cindy a répondu dans le fil unifié.
+export async function sendClientThreadClientNotification(
+  env: Env,
+  clientEmail: string,
+  clientName: string,
+  refProjectId: string
+): Promise<void> {
+  if (!clientEmail) return;
+  const template = `client_thread_reply_${clientEmail.toLowerCase()}`;
+  if (!(await canSendEmail(env, refProjectId, template))) return;
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/p/`;
+  const body = `
+    <p>Bonjour ${clientName || ''},</p>
+    <p>J'ai répondu à votre message. Rendez-vous sur votre espace pour lire ma réponse.</p>
+    <p>À très vite,<br>Cindy</p>
+  `;
+  await sendEmail(
+    env,
+    refProjectId,
+    clientEmail,
+    `Nouveau message de Cindy`,
+    emailWrapper('Cindy vous a répondu', body, portalUrl),
+    template
+  );
+}
+
 export async function sendStepNotification(
   env: Env,
   project: Project,

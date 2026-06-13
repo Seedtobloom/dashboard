@@ -1,9 +1,43 @@
 import type { Env } from '../types';
 import { verifyClientToken } from '../auth';
 import type { Project } from '../types';
-import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject } from '../kv';
+import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
-import { sendAdminMessageNotification } from './notifications';
+import { sendAdminMessageNotification, sendClientThreadAdminNotification } from './notifications';
+
+// Liste des projets autorisés pour un token (cloisonnement strict).
+async function allowedProjects(env: Env, clientToken: { clientEmail?: string; projectId?: string }): Promise<Project[]> {
+  if (clientToken.clientEmail) {
+    return getProjectsByEmail(env, clientToken.clientEmail);
+  }
+  if (clientToken.projectId) {
+    const p = await getProject(env, clientToken.projectId);
+    return p ? [p] : [];
+  }
+  return [];
+}
+
+// Téléchargement fichier côté client : /api/client/{token}/files/{fileKey}/download
+async function clientFileDownload(
+  env: Env,
+  projects: Project[],
+  fileKey: string
+): Promise<Response> {
+  // Le fichier appartient-il à un projet autorisé ? (la clé R2 commence par {projectId}/)
+  const ownerId = fileKey.split('/')[0];
+  const project = projects.find((p) => p.id === ownerId);
+  if (!project) return errorResponse('File not found', 404);
+  const files = await getProjectFiles(env, project.id);
+  if (!files.some((f) => f.key === fileKey)) return errorResponse('File not found', 404);
+
+  const obj = await env.BLOOM_R2.get(fileKey);
+  if (!obj) return errorResponse('File not found', 404);
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set('Content-Disposition', `attachment; filename="${fileKey.split('/').pop()}"`);
+  headers.set('Cache-Control', 'private, max-age=3600');
+  return new Response(obj.body, { headers });
+}
 
 async function clientTaskOp(
   request: Request,
@@ -51,7 +85,17 @@ async function clientTaskOp(
 export async function handleClientApi(request: Request, env: Env, url: URL): Promise<Response> {
   const method = request.method;
 
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
+  // Téléchargement de fichier : /api/client/{token}/files/{fileKey}/download
+  const dl = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/files\/(.+)\/download$/);
+  if (dl) {
+    const clientToken = await verifyClientToken(dl[1], env);
+    if (!clientToken) return errorResponse('Invalid or expired token', 403);
+    const projects = await allowedProjects(env, clientToken);
+    const fileKey = decodeURIComponent(dl[2]);
+    return clientFileDownload(env, projects, fileKey);
+  }
+
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
   if (!match) return errorResponse('Not found', 404);
 
   const [, tokenStr, subPathRaw, taskCommentId] = match;
@@ -61,77 +105,72 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
   const clientToken = await verifyClientToken(tokenStr, env);
   if (!clientToken) return errorResponse('Invalid or expired token', 403);
 
-  // Client-level token (linked to email, shows all projects)
-  if (clientToken.clientEmail) {
-    const projects = await getProjectsByEmail(env, clientToken.clientEmail);
-    projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const projects = await allowedProjects(env, clientToken);
+  projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-    if (method === 'GET' && !subPath) {
-      const projectsData = await Promise.all(
-        projects.map(async (project) => {
-          const messages = await getMessages(env, project.id);
-          const files = await getProjectFiles(env, project.id);
-          return { project, messages, files };
-        })
-      );
-      const clientName = projects[0]?.clientName || '';
-      return jsonResponse({ type: 'client', clientName, projects: projectsData });
+  // Email de rattachement du fil client (token email, sinon email du projet).
+  const threadEmail = (clientToken.clientEmail || projects[0]?.clientEmail || '').toLowerCase();
+  const clientName = projects[0]?.clientName || '';
+  const refProjectId = projects[0]?.id || '';
+
+  // GET liste (projets + fil de conversation unifié)
+  if (method === 'GET' && !subPath) {
+    const projectsData = await Promise.all(
+      projects.map(async (project) => {
+        const messages = await getMessages(env, project.id);
+        const files = await getProjectFiles(env, project.id);
+        return { project, messages, files };
+      })
+    );
+    const conversation = threadEmail ? await getClientMessages(env, threadEmail) : [];
+    if (clientToken.clientEmail) {
+      return jsonResponse({ type: 'client', clientName, projects: projectsData, conversation });
     }
+    // Token projet seul : conserve le format simple + conversation rattachée.
+    const single = projectsData[0];
+    if (!single) return errorResponse('Project not found', 404);
+    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation });
+  }
 
-    if (method === 'POST' && subPath === '/message') {
-      const body = (await request.json()) as { content: string; projectId: string };
-      const projectId = body.projectId || url.searchParams.get('projectId');
-      if (!projectId) return errorResponse('projectId is required');
-
-      const project = projects.find((p) => p.id === projectId);
-      if (!project) return errorResponse('Project not found', 404);
-
+  // Conversation unifiée espace client
+  if (subPath === '/conversation') {
+    if (!threadEmail) return errorResponse('No client thread available', 404);
+    if (method === 'GET') {
+      const conversation = await getClientMessages(env, threadEmail);
+      // marque lu côté client
+      let changed = false;
+      conversation.forEach((m) => { if (m.author === 'cindy' && !m.readByClient) { m.readByClient = true; changed = true; } });
+      if (changed) await saveClientMessages(env, threadEmail, conversation);
+      return jsonResponse(conversation);
+    }
+    if (method === 'POST') {
+      const body = (await request.json()) as { content: string };
       const content = body.content?.trim();
       if (!content) return errorResponse('content is required');
-
       const message = {
         id: generateId(),
-        projectId: project.id,
+        clientEmail: threadEmail,
         author: 'client' as const,
         content,
         createdAt: new Date().toISOString(),
         readByClient: true,
         readByAdmin: false,
       };
-
-      await addMessage(env, message);
-      sendAdminMessageNotification(env, project, message).catch(() => {});
+      await addClientMessage(env, message);
+      if (refProjectId) sendClientThreadAdminNotification(env, threadEmail, clientName, refProjectId).catch(() => {});
       return jsonResponse({ success: true, message }, 201);
     }
-
-    if (method === 'POST' && subPath === '/tasks') {
-      const peek = (await request.clone().json().catch(() => ({}))) as Record<string, any>;
-      const projectId = peek.projectId || url.searchParams.get('projectId');
-      const project = projects.find((p) => p.id === projectId);
-      if (!project) return errorResponse('Project not found', 404);
-      return clientTaskOp(request, env, project, isTaskComment, taskCommentId);
-    }
-
     return errorResponse('Method not allowed', 405);
   }
 
-  // Single-project token (backward compat)
-  if (!clientToken.projectId) return errorResponse('Invalid token', 500);
-
-  const project = await getProject(env, clientToken.projectId);
-  if (!project) return errorResponse('Project not found', 404);
-
-  if (method === 'GET' && !subPath) {
-    const messages = await getMessages(env, project.id);
-    const files = await getProjectFiles(env, project.id);
-    return jsonResponse({ project, messages, files });
-  }
-
+  // Message par projet (rétro-compat) — vérifie l'appartenance au token.
   if (method === 'POST' && subPath === '/message') {
-    const body = (await request.json()) as { content: string };
+    const body = (await request.json()) as { content: string; projectId?: string };
+    const projectId = body.projectId || url.searchParams.get('projectId') || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return errorResponse('Project not found', 404);
     const content = body.content?.trim();
     if (!content) return errorResponse('content is required');
-
     const message = {
       id: generateId(),
       projectId: project.id,
@@ -141,13 +180,16 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       readByClient: true,
       readByAdmin: false,
     };
-
     await addMessage(env, message);
     sendAdminMessageNotification(env, project, message).catch(() => {});
     return jsonResponse({ success: true, message }, 201);
   }
 
   if (method === 'POST' && subPath === '/tasks') {
+    const peek = (await request.clone().json().catch(() => ({}))) as Record<string, any>;
+    const projectId = peek.projectId || url.searchParams.get('projectId') || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return errorResponse('Project not found', 404);
     return clientTaskOp(request, env, project, isTaskComment, taskCommentId);
   }
 

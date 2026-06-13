@@ -734,11 +734,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
   }
 
-  // ── Messages (inbox) ──────────────────────────────────────────────────────
-  var inboxData = []; // [{project, messages}]
-  var inboxProjectId = null;
+  // ── Messages (inbox) — une conversation par client (email) ─────────────────
+  var inboxData = []; // [{clientEmail, clientName, messages, unread, last}]
+  var inboxEmail = null;
 
-  function buildSidebarHtml(activeSection, allProjs, unreadMap) {
+  function buildSidebarHtml(activeSection, allProjs, unreadMap, msgBadgeOverride) {
     unreadMap = unreadMap || {};
     var items = allProjs.map(function(p) {
       var u = unreadMap[p.id] || 0;
@@ -751,7 +751,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</div>' +
       '</a>';
     }).join('');
-    var totalUnread = Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
+    var totalUnread = (typeof msgBadgeOverride === 'number') ? msgBadgeOverride : Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
     return '<nav class="sidebar">' +
       '<div class="sidebar-header"><div class="sidebar-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:36px;width:auto"></div><div class="sidebar-sub">Administration</div></div>' +
       '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="navigate(\'/admin\')">📊 Dashboard</button>' +
@@ -766,42 +766,75 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '</nav>';
   }
 
-  async function showMessages(activeId) {
+  function inboxMsgHtml(c, m) {
+    var isCindy = m.author === 'cindy';
+    return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(c.clientName||c.clientEmail).charAt(0).toUpperCase()) + '</div>' +
+      '<div style="max-width:65%">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(c.clientName||c.clientEmail)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
+        (!m.readByAdmin && !isCindy ? '<div style="font-size:10px;color:var(--orange);margin-top:2px">● non lu</div>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function inboxConvoBody(c) {
+    var msgs = c.messages || [];
+    var msgsHtml = msgs.length ? msgs.map(function(m){ return inboxMsgHtml(c, m); }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">Pas encore de messages.</div>';
+    return '<div style="display:flex;flex-direction:column;height:100%">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white)">' +
+        '<div>' +
+          '<div style="font-weight:600;color:var(--navy)">' + esc(c.clientName||c.clientEmail) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted)">' + esc(c.clientEmail) + '</div>' +
+        '</div>' +
+        '<button class="btn btn--outline btn--sm" onclick="markInboxRead(\'' + esc(c.clientEmail) + '\')">Tout marquer lu</button>' +
+      '</div>' +
+      '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
+      '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
+        '<div style="display:flex;gap:10px;align-items:flex-end">' +
+          '<textarea id="inbox-input" placeholder="Répondre à ' + esc(c.clientName||c.clientEmail) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Jost\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
+          '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function getInbox(email) { return inboxData.find(function(c){ return c.clientEmail === email; }) || null; }
+
+  async function loadConvoMessages(c) {
+    if (c.messages) return;
+    c.messages = await apiFetch('/api/conversations/' + encodeURIComponent(c.clientEmail)).then(function(r){ return r.ok ? r.json() : []; });
+  }
+
+  async function showMessages(activeEmail) {
     const projs = await apiFetch('/api/projects').then(function(r) { return r.ok ? r.json() : []; });
-    const allMsgs = await Promise.all(projs.map(function(p) {
-      return apiFetch('/api/projects/' + p.id + '/messages').then(function(r) { return r.ok ? r.json() : []; });
-    }));
+    const convos = await apiFetch('/api/conversations').then(function(r) { return r.ok ? r.json() : []; });
 
-    inboxData = projs.map(function(p, i) { return { project: p, messages: allMsgs[i] }; });
-    inboxData.sort(function(a, b) {
-      var la = a.messages.length ? new Date(a.messages[a.messages.length-1].createdAt) : new Date(a.project.updatedAt);
-      var lb = b.messages.length ? new Date(b.messages[b.messages.length-1].createdAt) : new Date(b.project.updatedAt);
-      return lb - la;
-    });
+    inboxData = convos.map(function(c){ return { clientEmail: c.clientEmail, clientName: c.clientName, unread: c.unread, last: c.last, messages: null }; });
 
-    var unreadMap = {};
-    inboxData.forEach(function(d) {
-      unreadMap[d.project.id] = d.messages.filter(function(m) { return m.author === 'client' && !m.readByAdmin; }).length;
-    });
+    var totalUnreadAll = inboxData.reduce(function(a, c){ return a + (c.unread||0); }, 0);
 
-    if (!activeId && inboxData.length) activeId = inboxData[0].project.id;
-    inboxProjectId = activeId;
+    if (!activeEmail && inboxData.length) activeEmail = inboxData[0].clientEmail;
+    inboxEmail = activeEmail;
+    var active = getInbox(inboxEmail);
+    if (active) await loadConvoMessages(active);
 
     function renderInboxList() {
-      return inboxData.map(function(d) {
-        var p = d.project, msgs = d.messages;
-        var last = msgs.length ? msgs[msgs.length-1] : null;
-        var unread = unreadMap[p.id] || 0;
-        var isActive = p.id === inboxProjectId;
-        return '<div class="inbox-item' + (isActive ? ' active' : '') + '" onclick="switchInboxProject(\'' + p.id + '\')">' +
+      if (!inboxData.length) return '<div style="padding:24px;color:var(--muted);font-size:13px;text-align:center">Aucune conversation.</div>';
+      return inboxData.map(function(c) {
+        var last = c.last;
+        var unread = c.unread || 0;
+        var isActive = c.clientEmail === inboxEmail;
+        return '<div class="inbox-item' + (isActive ? ' active' : '') + '" onclick="switchInboxConvo(\'' + esc(c.clientEmail) + '\')">' +
           '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
-            '<div style="width:32px;height:32px;border-radius:50%;background:' + (STATUS_COLORS[p.status]||'#aaa') + '30;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--navy)">' + esc(p.clientName).charAt(0).toUpperCase() + '</div>' +
+            '<div style="width:32px;height:32px;border-radius:50%;background:var(--sky);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--navy)">' + esc(c.clientName||c.clientEmail).charAt(0).toUpperCase() + '</div>' +
             '<div style="flex:1;min-width:0">' +
               '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:4px">' +
-                '<span style="font-weight:' + (unread > 0 ? '600' : '500') + ';font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.clientName) + '</span>' +
+                '<span style="font-weight:' + (unread > 0 ? '600' : '500') + ';font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.clientName||c.clientEmail) + '</span>' +
                 (last ? '<span style="font-size:11px;color:var(--muted);flex-shrink:0">' + new Date(last.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + '</span>' : '') +
               '</div>' +
-              '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.projectTitle) + '</div>' +
+              '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.clientEmail) + '</div>' +
             '</div>' +
             (unread > 0 ? '<span class="unread-badge" style="flex-shrink:0">' + unread + '</span>' : '') +
           '</div>' +
@@ -812,46 +845,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }).join('');
     }
 
-    function renderConversation(projectId) {
-      var d = inboxData.find(function(x) { return x.project.id === projectId; });
-      if (!d) return '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted)">Sélectionnez une conversation</div>';
-      var p = d.project, msgs = d.messages;
-      var msgsHtml = msgs.length ? msgs.map(function(m) {
-        var isCindy = m.author === 'cindy';
-        return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
-          '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(p.clientName).charAt(0).toUpperCase()) + '</div>' +
-          '<div style="max-width:65%">' +
-            '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(p.clientName)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
-            '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
-            (!m.readByAdmin && !isCindy ? '<div style="font-size:10px;color:var(--orange);margin-top:2px">● non lu</div>' : '') +
-          '</div>' +
-        '</div>';
-      }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">Pas encore de messages.</div>';
-
-      return '<div style="display:flex;flex-direction:column;height:100%">' +
-        '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white)">' +
-          '<div>' +
-            '<div style="font-weight:600;color:var(--navy)">' + esc(p.clientName) + '</div>' +
-            '<div style="font-size:12px;color:var(--muted)">' + esc(p.projectTitle) + ' · <a href="#project-' + p.id + '" style="color:var(--sage)">Voir le projet →</a></div>' +
-          '</div>' +
-          '<button class="btn btn--outline btn--sm" onclick="markInboxRead(\'' + p.id + '\')">Tout marquer lu</button>' +
-        '</div>' +
-        '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
-        '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
-          '<div style="display:flex;gap:10px;align-items:flex-end">' +
-            '<textarea id="inbox-input" placeholder="Répondre à ' + esc(p.clientName) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Jost\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
-            '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
-          '</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
-        '</div>' +
-      '</div>';
-    }
-
-    var totalUnreadAll = Object.values(unreadMap).reduce(function(a,b){return a+b;},0);
+    var convoHtml = active ? inboxConvoBody(active) : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted)">Sélectionnez une conversation</div>';
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
-        buildSidebarHtml('messages', projs, unreadMap) +
+        buildSidebarHtml('messages', projs, {}, totalUnreadAll) +
         '<main class="main" style="display:flex;flex-direction:column;overflow:hidden">' +
           '<div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px">' +
             '<h2 style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
@@ -859,73 +857,58 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           '<div style="display:flex;flex:1;overflow:hidden">' +
             '<div class="inbox-list" id="inbox-list">' + renderInboxList() + '</div>' +
-            '<div class="inbox-convo" id="inbox-convo">' + renderConversation(inboxProjectId) + '</div>' +
+            '<div class="inbox-convo" id="inbox-convo">' + convoHtml + '</div>' +
           '</div>' +
         '</main>' +
       '</div>';
 
+    if (active) markInboxReadLocal(active);
     var msgs = document.getElementById('inbox-msgs');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
   }
 
-  window.switchInboxProject = function(id) {
-    inboxProjectId = id;
+  function markInboxReadLocal(c) {
+    if (!c.unread) return;
+    apiFetch('/api/conversations/' + encodeURIComponent(c.clientEmail) + '/read-all', { method: 'PUT', body: '{}' });
+    c.unread = 0;
+    if (c.messages) c.messages = c.messages.map(function(m){ return Object.assign({}, m, { readByAdmin: true }); });
+  }
+
+  window.switchInboxConvo = async function(email) {
+    inboxEmail = email;
+    var c = getInbox(email);
+    if (!c) return;
+    await loadConvoMessages(c);
     var listEl = document.getElementById('inbox-list');
     var convoEl = document.getElementById('inbox-convo');
-    if (!listEl || !convoEl) return;
-    listEl.querySelectorAll('.inbox-item').forEach(function(el) { el.classList.remove('active'); });
-    var clicked = listEl.querySelectorAll('.inbox-item')[inboxData.findIndex(function(d) { return d.project.id === id; })];
-    if (clicked) clicked.classList.add('active');
-    var d = inboxData.find(function(x) { return x.project.id === id; });
-    if (!d) return;
-    var p = d.project, msgs = d.messages;
-    var msgsHtml = msgs.length ? msgs.map(function(m) {
-      var isCindy = m.author === 'cindy';
-      return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
-        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(p.clientName).charAt(0).toUpperCase()) + '</div>' +
-        '<div style="max-width:65%">' +
-          '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(p.clientName)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
-          '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">Pas encore de messages.</div>';
-
-    convoEl.innerHTML =
-      '<div style="display:flex;flex-direction:column;height:100%">' +
-        '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white)">' +
-          '<div><div style="font-weight:600;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.projectTitle) + ' · <a href="#project-' + p.id + '" style="color:var(--sage)">Voir le projet →</a></div></div>' +
-          '<button class="btn btn--outline btn--sm" onclick="markInboxRead(\'' + p.id + '\')">Tout marquer lu</button>' +
-        '</div>' +
-        '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
-        '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
-          '<div style="display:flex;gap:10px;align-items:flex-end">' +
-            '<textarea id="inbox-input" placeholder="Répondre à ' + esc(p.clientName) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Jost\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
-            '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
-          '</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
-        '</div>' +
-      '</div>';
+    if (listEl) {
+      listEl.querySelectorAll('.inbox-item').forEach(function(el) { el.classList.remove('active'); });
+      var idx = inboxData.findIndex(function(x){ return x.clientEmail === email; });
+      var clicked = listEl.querySelectorAll('.inbox-item')[idx];
+      if (clicked) clicked.classList.add('active');
+    }
+    if (convoEl) convoEl.innerHTML = inboxConvoBody(c);
+    markInboxReadLocal(c);
     var msgsEl = document.getElementById('inbox-msgs');
     if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
   };
 
   window.sendInboxMessage = async function() {
     var input = document.getElementById('inbox-input');
-    if (!input || !inboxProjectId) return;
+    if (!input || !inboxEmail) return;
     var content = input.value.trim();
     if (!content) return;
     input.disabled = true;
-    var res = await apiFetch('/api/projects/' + inboxProjectId + '/messages', {
-      method: 'POST', body: JSON.stringify({ content: content, author: 'cindy' })
+    var res = await apiFetch('/api/conversations/' + encodeURIComponent(inboxEmail), {
+      method: 'POST', body: JSON.stringify({ content: content })
     });
     if (res.ok) {
       var data = await res.json();
-      var d = inboxData.find(function(x) { return x.project.id === inboxProjectId; });
-      if (d) d.messages.push(data);
+      var c = getInbox(inboxEmail);
+      if (c) { if (!c.messages) c.messages = []; c.messages.push(data.message); c.last = data.message; }
       input.value = '';
       var msgsEl = document.getElementById('inbox-msgs');
       if (msgsEl) {
-        var p = d ? d.project : { clientName: '' };
         var div = document.createElement('div');
         div.style.cssText = 'display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-direction:row-reverse';
         div.innerHTML = '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff">C</div>' +
@@ -940,10 +923,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (input) input.focus();
   };
 
-  window.markInboxRead = async function(projectId) {
-    await apiFetch('/api/projects/' + projectId + '/messages/read-all', { method: 'PUT', body: '{}' });
-    var d = inboxData.find(function(x) { return x.project.id === projectId; });
-    if (d) d.messages = d.messages.map(function(m) { return Object.assign({}, m, { readByAdmin: true }); });
+  window.markInboxRead = async function(email) {
+    await apiFetch('/api/conversations/' + encodeURIComponent(email) + '/read-all', { method: 'PUT', body: '{}' });
+    var c = getInbox(email);
+    if (c) { c.unread = 0; if (c.messages) c.messages = c.messages.map(function(m){ return Object.assign({}, m, { readByAdmin: true }); }); }
     toast('Marqué comme lu ✓');
   };
 
@@ -1910,6 +1893,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
 
   var appData = null;
+  var convData = []; // fil de conversation unifié (espace client)
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages'
   var convoId = null; // projet sélectionné dans la messagerie
@@ -2031,9 +2015,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function totalUnread() {
-    return appData.projects.reduce(function(a, pd) {
-      return a + pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
-    }, 0);
+    return convData.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
   }
 
   function buildSidebar() {
@@ -2172,8 +2154,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (project.meetingLink ? '<button class="cp-tab" onclick="cpTab(this,\'meet\')">Réunion</button>' : '') +
     '</div>';
 
-    var msgsHtml = messages.length ?
-      messages.map(function(m) {
+    // Le fil est unifié au niveau de l'espace client (un seul fil pour tous les projets).
+    var msgsHtml = convData.length ?
+      convData.map(function(m) {
         var isC = m.author==='cindy';
         return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
           '<div class="cp-msg__av cp-msg__av--' + (isC?'cindy':'client') + '">' + (isC?'C':clientInitial) + '</div>' +
@@ -2186,6 +2169,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div class="cp-empty">Pas encore de messages.<br>N\'hésitez pas à m\'écrire !</div>';
 
     var msgsPanel = '<div id="cp-panel-msgs" class="cp-panel">' +
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Votre conversation avec Cindy couvre tout votre espace.</div>' +
       '<div class="cp-msgs" id="cp-msgs-list">' + msgsHtml + '</div>' +
       '<form class="cp-msg-form" id="cp-msg-form">' +
         '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
@@ -2198,7 +2182,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return '<div class="cp-files-group">' +
         '<div class="cp-files-group__label">' + label + '</div>' +
         items.map(function(f) {
-          return '<a class="cp-file" href="/api/projects/' + project.id + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">' +
+          return '<a class="cp-file" href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">' +
             '<span class="cp-file__icon">' + fileIcon(f.type) + '</span>' +
             '<span class="cp-file__name">' + esc(f.name) + '</span>' +
             '<span class="cp-file__size">' + fmtSize(f.size) + '</span>' +
@@ -2288,7 +2272,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         (t.content ? '<div style="font-size:13px;margin-top:6px;white-space:pre-wrap">'+esc(t.content)+'</div>' : '') +
         (t.dueDate ? '<div style="font-size:12px;color:var(--muted);margin-top:5px">📅 '+fmtDate(t.dueDate)+'</div>' : '') +
-        (deliverable ? '<div style="margin-top:8px"><a class="cp-file" href="/api/projects/'+project.id+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>' : '') +
+        (deliverable ? '<div style="margin-top:8px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>' : '') +
         '<div style="margin-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:4px 0;border-top:1px dashed var(--border)"><strong>'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> · <span style="color:var(--muted)">'+fmtShort(c.createdAt)+'</span><div>'+esc(c.text)+'</div></div>';}).join('')+'</div>' +
         '<div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:6px 12px" onclick="cliAddComment(\''+project.id+'\',\''+t.id+'\')">Envoyer</button></div>' +
       '</div>';
@@ -2362,59 +2346,47 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .catch(function(){ toast('Erreur, réessayez.'); });
   };
 
-  // ── Vue conversation unifiée (messagerie client) ────────────────────────────
-  function buildConversation() {
-    if (!convoId) convoId = appData.projects[0] && appData.projects[0].project.id;
-    var list = appData.projects.slice().sort(function(a, b) {
-      var la = a.messages.length ? new Date(a.messages[a.messages.length-1].createdAt) : new Date(a.project.updatedAt);
-      var lb = b.messages.length ? new Date(b.messages[b.messages.length-1].createdAt) : new Date(b.project.updatedAt);
-      return lb - la;
-    });
-    var listHtml = list.map(function(pd) {
-      var p = pd.project;
-      var unread = pd.messages.filter(function(m){return m.author==='cindy'&&!m.readByClient;}).length;
-      var last = pd.messages.length ? pd.messages[pd.messages.length-1] : null;
-      var act = p.id === convoId ? ' active' : '';
-      return '<button class="cp-nav__item' + act + '" style="border-radius:0" onclick="cpSwitchConvo(\'' + p.id + '\')">' +
-        '<span class="cp-nav__dot" style="background:' + (STATUS_COLORS[p.status]||'#aaa') + '"></span>' +
-        '<span class="cp-nav__text">' +
-          '<div class="cp-nav__title" style="color:var(--navy)">' + esc(p.projectTitle) + '</div>' +
-          '<div class="cp-nav__status" style="color:var(--muted)">' + (last ? (last.author==='cindy'?'Cindy : ':'Vous : ') + esc(last.content.slice(0,32)) : 'Pas de message') + '</div>' +
-        '</span>' +
-        (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
-      '</button>';
-    }).join('');
+  // ── Vue conversation unifiée espace client (un seul fil) ─────────────────────
+  function convoMsgHtml(m) {
+    var isC = m.author === 'cindy';
+    return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
+      '<div class="cp-msg__av cp-msg__av--' + (isC?'cindy':'client') + '">' + (isC?'C':clientInitial) + '</div>' +
+      '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(m.content) + '</div>' +
+      '<div class="cp-msg__date">' + (isC?'Cindy':'Vous') + ' · ' + fmtShort(m.createdAt) + '</div></div>' +
+    '</div>';
+  }
 
-    var pd = getPD(convoId);
-    var convoHtml = '';
-    if (pd) {
-      var msgs = pd.messages.length ? pd.messages.map(function(m) {
-        var isC = m.author === 'cindy';
-        return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
-          '<div class="cp-msg__av cp-msg__av--' + (isC?'cindy':'client') + '">' + (isC?'C':clientInitial) + '</div>' +
-          '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(m.content) + '</div>' +
-          '<div class="cp-msg__date">' + (isC?'Cindy':'Vous') + ' · ' + fmtShort(m.createdAt) + '</div></div>' +
-        '</div>';
-      }).join('') : '<div class="cp-empty">Pas encore de messages.<br>Écrivez à Cindy !</div>';
-      convoHtml = '<div class="cp-card" style="padding:0;overflow:hidden">' +
-        '<div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface)">' +
-          '<div style="font-family:\'Alegreya\',serif;font-style:italic;color:var(--navy);font-size:16px">' + esc(pd.project.projectTitle) + '</div>' +
-        '</div>' +
-        '<div class="cp-msgs" id="cp-convo-list" style="padding:20px;max-height:480px;overflow-y:auto;margin-bottom:0">' + msgs + '</div>' +
-        '<form class="cp-msg-form" id="cp-convo-form" style="padding:16px 20px;border-top:1px solid var(--border)">' +
-          '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
-          '<div class="cp-msg-form__row"><button type="submit" class="cp-btn cp-btn--dark">Envoyer →</button></div>' +
-        '</form>' +
-      '</div>';
-    } else {
-      convoHtml = '<div class="cp-empty">Sélectionnez une conversation.</div>';
-    }
+  function buildConversation() {
+    var unread = totalUnread();
+    var summary = '<button class="cp-nav__item active" style="border-radius:0" type="button">' +
+      '<span class="cp-nav__dot" style="background:var(--lavender)"></span>' +
+      '<span class="cp-nav__text">' +
+        '<div class="cp-nav__title" style="color:var(--navy)">Cindy · Seed to Bloom</div>' +
+        '<div class="cp-nav__status" style="color:var(--muted)">Toute votre conversation</div>' +
+      '</span>' +
+      (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
+    '</button>';
+
+    var msgs = convData.length
+      ? convData.map(convoMsgHtml).join('')
+      : '<div class="cp-empty">Pas encore de messages.<br>Écrivez à Cindy !</div>';
+
+    var convoHtml = '<div class="cp-card" style="padding:0;overflow:hidden">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface)">' +
+        '<div style="font-family:\'Alegreya\',serif;font-style:italic;color:var(--navy);font-size:16px">Conversation avec Cindy</div>' +
+      '</div>' +
+      '<div class="cp-msgs" id="cp-convo-list" style="padding:20px;max-height:480px;overflow-y:auto;margin-bottom:0">' + msgs + '</div>' +
+      '<form class="cp-msg-form" id="cp-convo-form" style="padding:16px 20px;border-top:1px solid var(--border)">' +
+        '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
+        '<div class="cp-msg-form__row"><button type="submit" class="cp-btn cp-btn--dark">Envoyer →</button></div>' +
+      '</form>' +
+    '</div>';
 
     var header = '<div class="cp-header"><h1 class="cp-header__title">Messagerie</h1>' +
-      '<div class="cp-header__meta">Toutes vos conversations avec Cindy</div></div>';
+      '<div class="cp-header__meta">Votre conversation avec Cindy, pour tout votre espace</div></div>';
     return header +
       '<div class="cp-content"><div class="cp-grid" style="grid-template-columns:300px 1fr">' +
-        '<div class="cp-card" style="padding:0;overflow:hidden"><div class="cp-nav__label" style="color:var(--muted);padding:14px 18px 4px">Conversations</div>' + listHtml + '</div>' +
+        '<div class="cp-card" style="padding:0;overflow:hidden"><div class="cp-nav__label" style="color:var(--muted);padding:14px 18px 4px">Conversation</div>' + summary + '</div>' +
         '<div>' + convoHtml + '</div>' +
       '</div></div>';
   }
@@ -2428,13 +2400,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (!content) return;
       var btn = form.querySelector('button[type=submit]');
       btn.disabled = true; btn.textContent = 'Envoi…';
-      var body = { content: content };
-      if (appData.type === 'client') body.projectId = convoId;
-      fetch(API_BASE + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      fetch(API_BASE + '/conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: content }) })
         .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
         .then(function(d) {
-          var pd = getPD(convoId);
-          if (pd) pd.messages.push(d.message);
+          convData.push(d.message);
           var list = document.getElementById('cp-convo-list');
           var empty = list && list.querySelector('.cp-empty');
           if (empty) empty.remove();
@@ -2473,6 +2442,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       appData = { type:'project', clientName:data.project.clientName,
         projects:[{ project:data.project, messages:data.messages, files:data.files }] };
     } else { appData = data; }
+    convData = Array.isArray(data.conversation) ? data.conversation : [];
     if (!appData.projects.length) { showError(); return; }
     var portal = appData.type === 'client';
     currentId = appData.projects[0].project.id;
@@ -2502,25 +2472,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpOpenMessages = function() {
     currentView = 'messages';
-    if (!convoId) convoId = currentId || (appData.projects[0] && appData.projects[0].project.id);
     renderShell();
-    // marquer comme lus à l'ouverture
-    markConvoRead(convoId);
+    markConvoRead();
   };
 
-  window.cpSwitchConvo = function(id) {
-    convoId = id;
-    renderShell();
-    markConvoRead(id);
-  };
-
-  function markConvoRead(id) {
-    var pd = getPD(id);
-    if (!pd) return;
-    pd.messages.forEach(function(m) { if (m.author === 'cindy') m.readByClient = true; });
-    // refléter dans la sidebar (badges)
-    var sb = document.querySelector('.cp-sidebar');
-    // pas d'endpoint de lecture côté client : on met simplement à jour localement
+  function markConvoRead() {
+    // GET /conversation marque les messages de Cindy comme lus côté serveur
+    convData.forEach(function(m) { if (m.author === 'cindy') m.readByClient = true; });
+    fetch(API_BASE + '/conversation').then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(list){ if (Array.isArray(list)) convData = list; })
+      .catch(function(){});
   }
 
   window.cpTab = function(btn, panel) {
@@ -2542,17 +2503,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (!content) return;
       var btn = form.querySelector('button[type=submit]');
       btn.disabled = true; btn.textContent = 'Envoi…';
-      var body = { content: content };
-      if (appData.type === 'client') body.projectId = currentId;
-      fetch(API_BASE + '/message', {
+      fetch(API_BASE + '/conversation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ content: content }),
       })
         .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function(d) {
-          var pd = getPD(currentId);
-          if (pd) pd.messages.push(d.message);
+          convData.push(d.message);
           var list = document.getElementById('cp-msgs-list');
           var empty = list && list.querySelector('.cp-empty');
           if (empty) empty.remove();
@@ -2572,26 +2530,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   function poll() {
     if (!API_BASE) return;
-    fetch(API_BASE).then(function(r) { return r.ok ? r.json() : null; }).then(function(data) {
-      if (!data) return;
-      var fresh = data.type ? data.projects : [{ project:data.project, messages:data.messages, files:data.files }];
-      fresh.forEach(function(fpd) {
-        var local = getPD(fpd.project.id);
-        if (!local || fpd.messages.length <= local.messages.length) return;
-        var newMsgs = fpd.messages.slice(local.messages.length);
-        if (fpd.project.id === currentId) {
-          newMsgs.filter(function(m) { return m.author==='cindy'; }).forEach(function(msg) {
-            var list = document.getElementById('cp-msgs-list');
-            if (!list) return;
-            var div = document.createElement('div');
-            div.className = 'cp-msg cp-msg--cindy';
-            div.innerHTML = '<div class="cp-msg__av cp-msg__av--cindy">C</div>' +
-              '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(msg.content) + '</div>' +
-              '<div class="cp-msg__date">Cindy · maintenant</div></div>';
-            list.appendChild(div);
-          });
-        }
-        local.messages = fpd.messages;
+    // Rafraîchit le fil de conversation unifié.
+    fetch(API_BASE + '/conversation').then(function(r) { return r.ok ? r.json() : null; }).then(function(list) {
+      if (!Array.isArray(list)) return;
+      if (list.length <= convData.length) { convData = list; return; }
+      var newMsgs = list.slice(convData.length);
+      convData = list;
+      newMsgs.filter(function(m) { return m.author==='cindy'; }).forEach(function(msg) {
+        var el = document.getElementById('cp-convo-list') || document.getElementById('cp-msgs-list');
+        if (!el) return;
+        var empty = el.querySelector('.cp-empty');
+        if (empty) empty.remove();
+        var div = document.createElement('div');
+        div.className = 'cp-msg cp-msg--cindy';
+        div.innerHTML = '<div class="cp-msg__av cp-msg__av--cindy">C</div>' +
+          '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(msg.content) + '</div>' +
+          '<div class="cp-msg__date">Cindy · maintenant</div></div>';
+        el.appendChild(div);
       });
     }).catch(function() {});
   }
@@ -2838,7 +2793,7 @@ export default {
 
       // Client HTML (public)
       if (pathname === '/client.html' || pathname === '/client') {
-        return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
+        return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
       }
 
       // Client API (public, no admin auth needed)
@@ -2856,7 +2811,7 @@ export default {
       }
 
       // Admin SPA catch-all (handles all routes for hash-based navigation)
-      return new Response(ADMIN_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
+      return new Response(ADMIN_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
 
     } catch (err) {
       console.error('Front worker error:', err);

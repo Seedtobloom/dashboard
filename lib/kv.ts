@@ -59,6 +59,33 @@ export async function getUnreadAdminCount(env: Env, projectId: string): Promise<
   return messages.filter((m) => m.author === 'client' && !m.readByAdmin).length;
 }
 
+// --- Conversation au niveau de l'espace client (clé messages:client:{email}) ---
+
+export interface ClientMessage {
+  id: string;
+  clientEmail: string;
+  author: 'cindy' | 'client';
+  content: string;
+  createdAt: string;
+  readByClient: boolean;
+  readByAdmin: boolean;
+}
+
+export async function getClientMessages(env: Env, email: string): Promise<ClientMessage[]> {
+  const data = await env.BLOOM_KV.get(`messages:client:${email.toLowerCase()}`);
+  return data ? JSON.parse(data) : [];
+}
+
+export async function saveClientMessages(env: Env, email: string, messages: ClientMessage[]): Promise<void> {
+  await env.BLOOM_KV.put(`messages:client:${email.toLowerCase()}`, JSON.stringify(messages));
+}
+
+export async function addClientMessage(env: Env, message: ClientMessage): Promise<void> {
+  const messages = await getClientMessages(env, message.clientEmail);
+  messages.push(message);
+  await saveClientMessages(env, message.clientEmail, messages);
+}
+
 // --- Tokens ---
 
 export async function getToken(env: Env, token: string): Promise<ClientToken | null> {

@@ -40,6 +40,18 @@ async function addMessage(env, message) {
   messages.push(message);
   await saveMessages(env, message.projectId, messages);
 }
+async function getClientMessages(env, email) {
+  const data = await env.BLOOM_KV.get(`messages:client:${email.toLowerCase()}`);
+  return data ? JSON.parse(data) : [];
+}
+async function saveClientMessages(env, email, messages) {
+  await env.BLOOM_KV.put(`messages:client:${email.toLowerCase()}`, JSON.stringify(messages));
+}
+async function addClientMessage(env, message) {
+  const messages = await getClientMessages(env, message.clientEmail);
+  messages.push(message);
+  await saveClientMessages(env, message.clientEmail, messages);
+}
 async function getToken(env, token) {
   const data = await env.BLOOM_KV.get(`token:${token}`);
   return data ? JSON.parse(data) : null;
@@ -317,6 +329,51 @@ async function sendAdminMessageNotification(env, project, _message) {
     template
   );
 }
+async function sendClientThreadAdminNotification(env, clientEmail, clientName, refProjectId) {
+  const adminEmail = env.ADMIN_EMAIL ?? "hello@seedtobloom.fr";
+  if (!adminEmail)
+    return;
+  const template = `admin_client_msg_${clientEmail.toLowerCase()}`;
+  if (!await canSendEmail(env, refProjectId, template))
+    return;
+  const baseUrl = env.PORTAL_BASE_URL ?? "https://dashboard.seedtobloom.workers.dev";
+  const portalUrl = `${baseUrl}/admin#messages`;
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${clientName || clientEmail}</strong> vient de vous envoyer un message dans son espace.</p>
+    <p>Connectez-vous \xE0 votre tableau de bord pour y r\xE9pondre.</p>
+  `;
+  await sendEmail(
+    env,
+    refProjectId,
+    adminEmail,
+    `Nouveau message de ${clientName || clientEmail}`,
+    emailWrapper("Nouveau message client", body, portalUrl),
+    template
+  );
+}
+async function sendClientThreadClientNotification(env, clientEmail, clientName, refProjectId) {
+  if (!clientEmail)
+    return;
+  const template = `client_thread_reply_${clientEmail.toLowerCase()}`;
+  if (!await canSendEmail(env, refProjectId, template))
+    return;
+  const baseUrl = env.PORTAL_BASE_URL ?? "https://dashboard.seedtobloom.workers.dev";
+  const portalUrl = `${baseUrl}/p/`;
+  const body = `
+    <p>Bonjour ${clientName || ""},</p>
+    <p>J'ai r\xE9pondu \xE0 votre message. Rendez-vous sur votre espace pour lire ma r\xE9ponse.</p>
+    <p>\xC0 tr\xE8s vite,<br>Cindy</p>
+  `;
+  await sendEmail(
+    env,
+    refProjectId,
+    clientEmail,
+    `Nouveau message de Cindy`,
+    emailWrapper("Cindy vous a r\xE9pondu", body, portalUrl),
+    template
+  );
+}
 async function sendTaskDoneNotification(env, project, taskTitle) {
   if (!project.clientEmail)
     return;
@@ -532,6 +589,74 @@ async function handleSteps(request, env, url) {
 }
 
 // lib/api/messages.ts
+async function handleConversations(request, env, url) {
+  const method = request.method;
+  if (method === "GET" && url.pathname === "/api/conversations") {
+    const projects = await getAllProjects(env);
+    const byEmail = /* @__PURE__ */ new Map();
+    projects.forEach((p) => {
+      const email2 = (p.clientEmail || "").toLowerCase();
+      if (!email2)
+        return;
+      if (!byEmail.has(email2))
+        byEmail.set(email2, { clientEmail: email2, clientName: p.clientName, refProjectId: p.id });
+    });
+    const list = await Promise.all(
+      Array.from(byEmail.values()).map(async (c) => {
+        const messages = await getClientMessages(env, c.clientEmail);
+        const unread = messages.filter((m) => m.author === "client" && !m.readByAdmin).length;
+        const last = messages.length ? messages[messages.length - 1] : null;
+        return { ...c, unread, last, count: messages.length };
+      })
+    );
+    list.sort((a, b) => {
+      const la = a.last ? new Date(a.last.createdAt).getTime() : 0;
+      const lb = b.last ? new Date(b.last.createdAt).getTime() : 0;
+      return lb - la;
+    });
+    return jsonResponse(list);
+  }
+  const match = url.pathname.match(/^\/api\/conversations\/([^/]+)(\/read-all)?$/);
+  if (!match)
+    return errorResponse("Not found", 404);
+  const email = decodeURIComponent(match[1]).toLowerCase();
+  const isReadAll = !!match[2];
+  if (method === "PUT" && isReadAll) {
+    const messages = await getClientMessages(env, email);
+    messages.forEach((m) => {
+      m.readByAdmin = true;
+    });
+    await saveClientMessages(env, email, messages);
+    return jsonResponse({ success: true });
+  }
+  if (method === "GET") {
+    const messages = await getClientMessages(env, email);
+    return jsonResponse(messages);
+  }
+  if (method === "POST") {
+    const body = await request.json();
+    const content = body.content?.trim();
+    if (!content)
+      return errorResponse("content is required");
+    const message = {
+      id: generateId(),
+      clientEmail: email,
+      author: "cindy",
+      content,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      readByClient: false,
+      readByAdmin: true
+    };
+    await addClientMessage(env, message);
+    const projects = await getAllProjects(env);
+    const proj = projects.find((p) => (p.clientEmail || "").toLowerCase() === email);
+    if (proj)
+      sendClientThreadClientNotification(env, email, proj.clientName, proj.id).catch(() => {
+      });
+    return jsonResponse({ success: true, message }, 201);
+  }
+  return errorResponse("Method not allowed", 405);
+}
 async function handleMessages(request, env, url) {
   const method = request.method;
   const match = url.pathname.match(/^\/api\/projects\/([a-f0-9]{32})\/messages(?:\/([a-f0-9]{32})\/(read))?$/);
@@ -831,6 +956,33 @@ async function verifyClientToken(token, env) {
 }
 
 // lib/api/client.ts — opérations tâches côté client
+async function allowedProjects(env, clientToken) {
+  if (clientToken.clientEmail) {
+    return getProjectsByEmail(env, clientToken.clientEmail);
+  }
+  if (clientToken.projectId) {
+    const p = await getProject(env, clientToken.projectId);
+    return p ? [p] : [];
+  }
+  return [];
+}
+async function clientFileDownload(env, projects, fileKey) {
+  const ownerId = fileKey.split("/")[0];
+  const project = projects.find((p) => p.id === ownerId);
+  if (!project)
+    return errorResponse("File not found", 404);
+  const files = await getProjectFiles(env, project.id);
+  if (!files.some((f) => f.key === fileKey))
+    return errorResponse("File not found", 404);
+  const obj = await env.BLOOM_R2.get(fileKey);
+  if (!obj)
+    return errorResponse("File not found", 404);
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set("Content-Disposition", `attachment; filename="${fileKey.split("/").pop()}"`);
+  headers.set("Cache-Control", "private, max-age=3600");
+  return new Response(obj.body, { headers });
+}
 async function clientTaskOp(request, env, project, isTaskComment, taskCommentId) {
   if (!Array.isArray(project.tasks))
     project.tasks = [];
@@ -874,7 +1026,16 @@ async function clientTaskOp(request, env, project, isTaskComment, taskCommentId)
 }
 async function handleClientApi(request, env, url) {
   const method = request.method;
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
+  const dl = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/files\/(.+)\/download$/);
+  if (dl) {
+    const clientToken2 = await verifyClientToken(dl[1], env);
+    if (!clientToken2)
+      return errorResponse("Invalid or expired token", 403);
+    const projects2 = await allowedProjects(env, clientToken2);
+    const fileKey = decodeURIComponent(dl[2]);
+    return clientFileDownload(env, projects2, fileKey);
+  }
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
   if (!match)
     return errorResponse("Not found", 404);
   const [, tokenStr, subPathRaw, taskCommentId] = match;
@@ -883,73 +1044,78 @@ async function handleClientApi(request, env, url) {
   const clientToken = await verifyClientToken(tokenStr, env);
   if (!clientToken)
     return errorResponse("Invalid or expired token", 403);
-  if (clientToken.clientEmail) {
-    const projects = await getProjectsByEmail(env, clientToken.clientEmail);
-    projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    if (method === "GET" && !subPath) {
-      const projectsData = await Promise.all(
-        projects.map(async (project2) => {
-          const messages = await getMessages(env, project2.id);
-          const files = await getProjectFiles(env, project2.id);
-          return { project: project2, messages, files };
-        })
-      );
-      const clientName = projects[0]?.clientName || "";
-      return jsonResponse({ type: "client", clientName, projects: projectsData });
+  const projects = await allowedProjects(env, clientToken);
+  projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const threadEmail = (clientToken.clientEmail || projects[0]?.clientEmail || "").toLowerCase();
+  const clientName = projects[0]?.clientName || "";
+  const refProjectId = projects[0]?.id || "";
+  if (method === "GET" && !subPath) {
+    const projectsData = await Promise.all(
+      projects.map(async (project2) => {
+        const messages = await getMessages(env, project2.id);
+        const files = await getProjectFiles(env, project2.id);
+        return { project: project2, messages, files };
+      })
+    );
+    const conversation = threadEmail ? await getClientMessages(env, threadEmail) : [];
+    if (clientToken.clientEmail) {
+      return jsonResponse({ type: "client", clientName, projects: projectsData, conversation });
     }
-    if (method === "POST" && subPath === "/message") {
+    const single = projectsData[0];
+    if (!single)
+      return errorResponse("Project not found", 404);
+    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation });
+  }
+  if (subPath === "/conversation") {
+    if (!threadEmail)
+      return errorResponse("No client thread available", 404);
+    if (method === "GET") {
+      const conversation = await getClientMessages(env, threadEmail);
+      let changed = false;
+      conversation.forEach((m) => {
+        if (m.author === "cindy" && !m.readByClient) {
+          m.readByClient = true;
+          changed = true;
+        }
+      });
+      if (changed)
+        await saveClientMessages(env, threadEmail, conversation);
+      return jsonResponse(conversation);
+    }
+    if (method === "POST") {
       const body = await request.json();
-      const projectId = body.projectId || url.searchParams.get("projectId");
-      if (!projectId)
-        return errorResponse("projectId is required");
-      const project2 = projects.find((p) => p.id === projectId);
-      if (!project2)
-        return errorResponse("Project not found", 404);
       const content = body.content?.trim();
       if (!content)
         return errorResponse("content is required");
       const message = {
         id: generateId(),
-        projectId: project2.id,
+        clientEmail: threadEmail,
         author: "client",
         content,
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
         readByClient: true,
         readByAdmin: false
       };
-      await addMessage(env, message);
-      sendAdminMessageNotification(env, project2, message).catch(() => {
-      });
+      await addClientMessage(env, message);
+      if (refProjectId)
+        sendClientThreadAdminNotification(env, threadEmail, clientName, refProjectId).catch(() => {
+        });
       return jsonResponse({ success: true, message }, 201);
-    }
-    if (method === "POST" && subPath === "/tasks") {
-      const peek = await request.clone().json().catch(() => ({}));
-      const projectId = peek.projectId || url.searchParams.get("projectId");
-      const project2 = projects.find((p) => p.id === projectId);
-      if (!project2)
-        return errorResponse("Project not found", 404);
-      return clientTaskOp(request, env, project2, isTaskComment, taskCommentId);
     }
     return errorResponse("Method not allowed", 405);
   }
-  if (!clientToken.projectId)
-    return errorResponse("Invalid token", 500);
-  const project = await getProject(env, clientToken.projectId);
-  if (!project)
-    return errorResponse("Project not found", 404);
-  if (method === "GET" && !subPath) {
-    const messages = await getMessages(env, project.id);
-    const files = await getProjectFiles(env, project.id);
-    return jsonResponse({ project, messages, files });
-  }
   if (method === "POST" && subPath === "/message") {
     const body = await request.json();
+    const projectId = body.projectId || url.searchParams.get("projectId") || projects[0]?.id;
+    const project2 = projects.find((p) => p.id === projectId);
+    if (!project2)
+      return errorResponse("Project not found", 404);
     const content = body.content?.trim();
     if (!content)
       return errorResponse("content is required");
     const message = {
       id: generateId(),
-      projectId: project.id,
+      projectId: project2.id,
       author: "client",
       content,
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -957,12 +1123,17 @@ async function handleClientApi(request, env, url) {
       readByAdmin: false
     };
     await addMessage(env, message);
-    sendAdminMessageNotification(env, project, message).catch(() => {
+    sendAdminMessageNotification(env, project2, message).catch(() => {
     });
     return jsonResponse({ success: true, message }, 201);
   }
   if (method === "POST" && subPath === "/tasks") {
-    return clientTaskOp(request, env, project, isTaskComment, taskCommentId);
+    const peek = await request.clone().json().catch(() => ({}));
+    const projectId = peek.projectId || url.searchParams.get("projectId") || projects[0]?.id;
+    const project2 = projects.find((p) => p.id === projectId);
+    if (!project2)
+      return errorResponse("Project not found", 404);
+    return clientTaskOp(request, env, project2, isTaskComment, taskCommentId);
   }
   return errorResponse("Method not allowed", 405);
 }
@@ -993,6 +1164,9 @@ var wBack_default = {
       }
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/messages/)) {
         return handleMessages(request, env, url);
+      }
+      if (pathname === "/api/conversations" || pathname.match(/^\/api\/conversations\//)) {
+        return handleConversations(request, env, url);
       }
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/tokens$/) || pathname.match(/^\/api\/tokens\/[a-f0-9]{64}\/revoke$/) || pathname === "/api/tokens/client" || pathname.match(/^\/api\/tokens\/client\/.+$/)) {
         return handleTokens(request, env, url);

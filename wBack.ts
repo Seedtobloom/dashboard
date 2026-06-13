@@ -2,7 +2,7 @@ import type { Env } from './lib/types';
 import { handleProjects } from './lib/api/projects';
 import { handleSteps } from './lib/api/steps';
 import { handleTasks } from './lib/api/tasks';
-import { handleMessages } from './lib/api/messages';
+import { handleMessages, handleConversations } from './lib/api/messages';
 import { handleTokens } from './lib/api/tokens';
 import { handleFiles } from './lib/api/files';
 import { handleNotifications, getEmailHistory } from './lib/api/notifications';
@@ -46,6 +46,11 @@ export default {
       // Messages
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/messages/)) {
         return handleMessages(request, env, url);
+      }
+
+      // Conversations admin (fil unifié par email client)
+      if (pathname === '/api/conversations' || pathname.match(/^\/api\/conversations\//)) {
+        return handleConversations(request, env, url);
       }
 
       // Tokens
