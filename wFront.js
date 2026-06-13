@@ -166,7 +166,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (max-width: 1000px) { .proj-grid, .dash-grid { grid-template-columns: 1fr; } }
 
-.card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
+.card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; transition: border-color 0.15s; }
+.card:hover { border-color: var(--card-hover, var(--border)); }
 .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .card-title { font-family: 'Alegreya', serif; font-size: 18px; color: var(--navy); font-weight: 400; font-style: italic; }
 .card-body { padding: 20px; }
@@ -557,6 +558,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '--st-review':    '#b0a0d4',
     '--st-delivered':  '#1a2744',
     '--st-archived':  '#aaaaaa',
+    '--card-hover':    '#BAD1FD',
   };
 
   var COLOR_LABELS = [
@@ -568,6 +570,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     { key: '--blue-light', label: 'Texte sur bouton',   section: 'Interface' },
     { key: '--bg',         label: 'Fond de page',     section: 'Interface' },
     { key: '--surface',    label: 'Fond des cartes',  section: 'Interface' },
+    { key: '--card-hover',  label: 'Bordure card (survol)', section: 'Interface' },
     { key: '--st-discovery',  label: 'Decouverte',   section: 'Etats' },
     { key: '--st-in-progress',label: 'En cours',     section: 'Etats' },
     { key: '--st-waiting',    label: 'Attente client',section: 'Etats' },
@@ -2219,7 +2222,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var URGENCY_COLORS = { basse: '#BAD1FD', moyenne: '#E4D1FE', haute: '#e8a87c' };
   var URGENCY_TEXT = { basse: '#0a2a5e', moyenne: '#2a1d4a', haute: '#5a2c0e' };
   var URGENCY_LABELS = { basse: 'Basse', moyenne: 'Moyenne', haute: 'Haute' };
-  var TASK_STATUS_LABELS = { todo: 'À faire', in_progress: 'En cours', done: 'Terminé' };
+  var TASK_STATUS_LABELS = { todo: 'A faire', in_progress: 'En cours', waiting_client: 'Action client', done: 'Termine' };
   var _calMonth = null; // Date du 1er du mois affiché
 
   function urgencyBadge(u) {
@@ -2278,7 +2281,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">' +
             '<select onchange="updateTaskStatus(\''+t.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid #e8e4dc;border-radius:6px">' +
-              ['todo','in_progress','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
+              ['todo','in_progress','waiting_client','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
             '</select>' +
             '<button onclick="setTaskTime(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">⏱ Temps</button>' +
             '<button onclick="openEditTask(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">✏ Modifier</button>' +
@@ -2313,12 +2316,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</div>' +
             '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">'+cells+'</div>' +
           '</div>' +
-          '<div style="border:1.5px solid #BAD1FD;border-radius:12px;padding:14px;max-height:520px;overflow-y:auto">' +
+          '<div style="border:1.5px solid var(--blue-light);border-radius:12px;padding:14px;max-height:520px;overflow-y:auto">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
               '<span style="font-weight:600;font-size:14px;color:var(--navy);text-transform:capitalize">'+esc(selLabel)+'</span>' +
               '<button class="btn btn--sage btn--sm" onclick="adminAddTaskForDay(\''+_calSel+'\')">+ Ajouter</button>' +
             '</div>' +
-            (selRows || '<div style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">Aucune tâche ce jour.</div>') +
+            (selRows ? (project.type==='partenaire' ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+selRows+'</div>' : selRows) : '<div style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">Aucune tache ce jour.</div>') +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -2381,24 +2384,26 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var commentsHtml = comments.map(function(c) {
         return '<div class="task-comment"><strong>' + (c.author === 'cindy' ? 'Cindy' : esc(project.clientName)) + '</strong> · <span style="color:var(--muted);font-size:11px">' + formatDate(c.createdAt) + '</span><div>' + esc(c.text) + '</div></div>';
       }).join('');
-      return '<div class="task-row" data-task-id="' + t.id + '">' +
+      var isWaiting = t.status === 'waiting_client';
+      return '<div class="task-row" data-task-id="' + t.id + '" style="' + (isWaiting ? 'border-left:3px solid var(--red);' : '') + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
           '<div style="flex:1">' +
             '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-              (t.pinned ? '<span title="Épinglée">📌</span>' : '') +
+              (isWaiting ? '<span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap">Action requise</span>' : '') +
+              (t.pinned ? icon('star',13,'var(--navy)') : '') +
               '<strong style="color:var(--navy)' + (t.status==='done'?';text-decoration:line-through':'') + '">' + esc(t.title) + '</strong>' +
               urgencyBadge(t.urgency) +
               '<span class="status-badge" style="background:#eee;color:#333">' + (TASK_STATUS_LABELS[t.status]||t.status) + '</span>' +
             '</div>' +
             (t.content ? '<div style="font-size:13px;color:var(--text);margin-top:6px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '') +
             '<div style="font-size:12px;color:var(--muted);margin-top:5px">' +
-              (t.dueDate ? '📅 ' + formatDate(t.dueDate) + ' · ' : '') +
-              '⏱ ' + ((t.timeSpentMinutes||0)) + ' min' +
+              (t.dueDate ? icon('calendar',12)+' ' + formatDate(t.dueDate) + ' · ' : '') +
+              icon('clock',12)+' ' + ((t.timeSpentMinutes||0)) + ' min' +
             '</div>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">' +
             '<select onchange="updateTaskStatus(\'' + t.id + '\',this.value)" style="font-size:12px;padding:3px 6px;width:auto">' +
-              ['todo','in_progress','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
+              ['todo','in_progress','waiting_client','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
             '</select>' +
           '</div>' +
         '</div>' +
@@ -3138,7 +3143,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var meetPanel = project.meetingLink ? '<div id="cp-panel-meet" class="cp-panel' + panelHidden('meet') + '">' +
       '<div class="cp-meet">' +
-        '<div class="cp-meet__icon">📹</div>' +
+        '' +
         '<div class="cp-meet__body">' +
           '<div class="cp-meet__title">Rejoindre la réunion</div>' +
           '<div class="cp-meet__sub">Cliquez pour accéder à la visioconférence</div>' +
