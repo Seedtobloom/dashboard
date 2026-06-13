@@ -589,6 +589,52 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     setTimeout(function() { t.classList.remove('show'); }, 3000);
   }
 
+  // ── Modals custom (remplace prompt/confirm natifs) ─────────────────────────
+  function showConfirm(msg, onOk, opts) {
+    opts = opts || {};
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Jost\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:10px">' + (opts.title || 'Confirmation') + '</div>' +
+      '<div style="font-size:14px;color:#5a6a7e;line-height:1.5;margin-bottom:22px">' + msg + '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button id="_conf-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_conf-ok" style="padding:9px 20px;background:'+(opts.danger?'#c44':'#051833')+';color:'+(opts.danger?'#fff':'#BAD1FD')+';border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Confirmer') + '</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    function close() { ov.remove(); }
+    ov.querySelector('#_conf-cancel').onclick = close;
+    ov.querySelector('#_conf-ok').onclick = function() { close(); onOk(); };
+    ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+  }
+
+  function showPrompt(title, label, defaultVal, onOk, opts) {
+    opts = opts || {};
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    var inputType = opts.type || 'text';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Jost\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:6px">' + title + '</div>' +
+      (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
+      (opts.hint ? '<div style="font-size:12px;color:#aaa;margin-bottom:12px">' + opts.hint + '</div>' : '') +
+      '<input id="_prompt-input" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Jost\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#051833" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button id="_prompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_prompt-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    var inp = ov.querySelector('#_prompt-input');
+    setTimeout(function(){ inp.focus(); inp.select(); }, 60);
+    function close() { ov.remove(); }
+    function submit() { var v = inp.value; close(); onOk(v); }
+    ov.querySelector('#_prompt-cancel').onclick = close;
+    ov.querySelector('#_prompt-ok').onclick = submit;
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); if(e.key==='Escape') close(); });
+    ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+  }
+
   function openModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add('open');
@@ -741,10 +787,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   window.revokeSpaceToken = function(token) {
-    if (!confirm('Révoquer cet accès ? Le lien ne fonctionnera plus.')) return;
-    apiFetch('/api/tokens/' + token + '/revoke', { method: 'POST', body: '{}' })
-      .then(function(r) { if (!r.ok) throw new Error(); toast('Accès révoqué'); showSpaces(); })
-      .catch(function() { toast('Erreur', true); });
+    showConfirm('Cet accès sera désactivé. La cliente ne pourra plus se connecter avec ce lien.', function() {
+      apiFetch('/api/tokens/' + token + '/revoke', { method: 'POST', body: '{}' })
+        .then(function(r) { if (!r.ok) throw new Error(); toast('Accès révoqué'); showSpaces(); })
+        .catch(function() { toast('Erreur', true); });
+    }, { title: 'Révoquer l\'accès', okLabel: 'Révoquer', danger: true });
   };
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -1563,10 +1610,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   window.deleteStep = async function(id) {
-    if (!confirm('Supprimer cette étape ?')) return;
-    const res = await apiFetch('/api/projects/' + currentProjectId + '/steps/' + id, { method: 'DELETE' });
-    if (res.ok) { toast('Étape supprimée'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
-    else toast('Erreur', true);
+    showConfirm('Cette étape sera définitivement supprimée.', async function() {
+      const res = await apiFetch('/api/projects/' + currentProjectId + '/steps/' + id, { method: 'DELETE' });
+      if (res.ok) { toast('Étape supprimée'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
+      else toast('Erreur', true);
+    }, { title: 'Supprimer l\'étape', okLabel: 'Supprimer', danger: true }); return;
   };
 
   window.updateStepStatus = async function(id, status) {
@@ -1621,13 +1669,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   window.deleteSection = async function(id) {
-    if (!confirm('Supprimer cette section ?')) return;
+    showConfirm('Cette section sera supprimée.', async function() {
     const projRes = await apiFetch('/api/projects/' + currentProjectId);
     const proj = await projRes.json();
-    proj.practicalInfo.sections = proj.practicalInfo.sections.filter(function(s) { return s.id !== id; });
-    const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(proj) });
-    if (res.ok) { toast('Section supprimée'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
-    else toast('Erreur', true);
+      proj.practicalInfo.sections = proj.practicalInfo.sections.filter(function(s) { return s.id !== id; });
+      const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(proj) });
+      if (res.ok) { toast('Section supprimée'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
+      else toast('Erreur', true);
+    }, { title: 'Supprimer la section', okLabel: 'Supprimer', danger: true }); return;
   };
 
   window.sendAdminMessage = async function() {
@@ -1649,7 +1698,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.uploadFile = async function(input) {
     const file = input.files[0];
     if (!file) return;
-    const category = prompt('Catégorie ? (document / deliverable / reference)', 'document') || 'document';
+    var cats = ['document','deliverable','reference'];
+    var catOv = document.createElement('div');
+    catOv.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    catOv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:360px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Jost\',sans-serif"><div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Catégorie du fichier</div>' +
+      cats.map(function(c){ var ico = c==='deliverable'?'📦':c==='reference'?'🎨':'📄'; var lbl = c==='deliverable'?'Livrable':c==='reference'?'Référence':'Document'; return '<button data-cat="'+c+'" style="display:block;width:100%;text-align:left;padding:12px 16px;border:1.5px solid #e2dbd0;border-radius:10px;margin-bottom:8px;cursor:pointer;font-family:\'Jost\',sans-serif;font-size:14px;background:#fff;color:#051833">'+ico+' '+lbl+'</button>'; }).join('') +
+      '<button id="_cat-cancel" style="width:100%;padding:9px;background:none;border:none;cursor:pointer;color:#aaa;font-size:13px;margin-top:4px">Annuler</button></div>';
+    document.body.appendChild(catOv);
+    var category = await new Promise(function(resolve) {
+      catOv.querySelectorAll('[data-cat]').forEach(function(btn){ btn.onclick=function(){ catOv.remove(); resolve(btn.dataset.cat); }; });
+      catOv.querySelector('#_cat-cancel').onclick = function(){ catOv.remove(); resolve(null); };
+    });
+    if (!category) return;
     const fd = new FormData();
     fd.append('file', file);
     fd.append('category', category);
@@ -1665,10 +1725,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   window.deleteFile = async function(key) {
-    if (!confirm('Supprimer ce fichier ?')) return;
-    const res = await apiFetch('/api/projects/' + currentProjectId + '/files/' + encodeURIComponent(key), { method: 'DELETE' });
-    if (res.ok) { toast('Fichier supprimé'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
-    else toast('Erreur', true);
+    showConfirm('Ce fichier sera supprimé définitivement.', async function() {
+      const res = await apiFetch('/api/projects/' + currentProjectId + '/files/' + encodeURIComponent(key), { method: 'DELETE' });
+      if (res.ok) { toast('Fichier supprimé'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
+      else toast('Erreur', true);
+    }, { title: 'Supprimer le fichier', okLabel: 'Supprimer', danger: true }); return;
   };
 
   window.openGenToken = function() {
@@ -1706,10 +1767,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   window.revokeToken = async function(token) {
-    if (!confirm('Révoquer ce lien ? Le client ne pourra plus y accéder.')) return;
-    const res = await apiFetch('/api/tokens/' + token + '/revoke', { method: 'POST', body: '{}' });
-    if (res.ok) { toast('Lien révoqué'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
-    else toast('Erreur', true);
+    showConfirm('La cliente ne pourra plus accéder au projet avec ce lien.', async function() {
+      const res = await apiFetch('/api/tokens/' + token + '/revoke', { method: 'POST', body: '{}' });
+      if (res.ok) { toast('Lien révoqué'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
+      else toast('Erreur', true);
+    }, { title: 'Révoquer le lien', okLabel: 'Révoquer', danger: true }); return;
   };
 
   window.openNotifModal = function() { openModal('modal-notif'); };
@@ -1730,11 +1792,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   window.confirmDelete = async function() {
-    if (!confirm('Supprimer ce projet définitivement ?')) return;
-    if (!confirm('Confirmez la suppression ?')) return;
-    const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'DELETE' });
-    if (res.ok) { toast('Projet supprimé'); setTimeout(function() { navigate('/admin'); }, 600); }
-    else toast('Erreur', true);
+    showConfirm('Toutes les tâches, messages et fichiers liés seront perdus. Cette action est irréversible.', async function() {
+      const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'DELETE' });
+      if (res.ok) { toast('Projet supprimé'); setTimeout(function() { navigate('/admin'); }, 600); }
+      else toast('Erreur', true);
+    }, { title: 'Supprimer le projet', okLabel: 'Supprimer définitivement', danger: true }); return;
   };
 
   // ── Espace partenaire (tâches mensuelles) ───────────────────────────────────
@@ -1751,40 +1813,96 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function tasksOf(project) { return Array.isArray(project.tasks) ? project.tasks : []; }
 
+  var _calSel = null;
+  var _calFilter = '';
+
   function buildCalendar(project) {
     var tasks = tasksOf(project);
-    if (!_calMonth) {
-      _calMonth = new Date();
-      _calMonth.setDate(1);
-      _calMonth.setHours(0,0,0,0);
-    }
+    if (!_calMonth) { _calMonth = new Date(); _calMonth.setDate(1); _calMonth.setHours(0,0,0,0); }
     var year = _calMonth.getFullYear(), month = _calMonth.getMonth();
     var monthName = _calMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-    var first = new Date(year, month, 1);
-    var startDay = (first.getDay() + 6) % 7; // lundi=0
+    var startDay = (new Date(year, month, 1).getDay() + 6) % 7;
     var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var n0 = new Date(); var todayStr = n0.getFullYear()+'-'+String(n0.getMonth()+1).padStart(2,'0')+'-'+String(n0.getDate()).padStart(2,'0');
+    if (!_calSel) _calSel = todayStr;
+    var fltTasks = _calFilter ? tasks.filter(function(t){ return t.status===_calFilter; }) : tasks;
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     var cells = '';
-    for (var i = 0; i < startDay; i++) cells += '<div class="cal-cell cal-cell--empty"></div>';
+    for (var i = 0; i < startDay; i++) cells += '<div></div>';
     for (var d = 1; d <= daysInMonth; d++) {
-      var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-      var dayTasks = tasks.filter(function(t) { return (t.dueDate||'').slice(0,10) === dateStr; });
-      var pills = dayTasks.map(function(t) {
-        return '<div class="cal-task" title="' + esc(t.title) + '" style="background:' + (URGENCY_COLORS[t.urgency]||'#ddd') + ';color:' + (URGENCY_TEXT[t.urgency]||'#1a1a1a') + (t.status==='done'?';text-decoration:line-through;opacity:0.6':'') + '">' + esc(t.title) + '</div>';
-      }).join('');
-      cells += '<div class="cal-cell"><div class="cal-cell__num">' + d + '</div>' + pills + '</div>';
+      var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      var dt = fltTasks.filter(function(t){ return (t.dueDate||'').slice(0,10)===ds; });
+      var isToday = ds===todayStr, isSel = ds===_calSel;
+      var cellStyle = 'min-height:76px;border:1.5px solid '+(isSel?'var(--navy)':isToday?'#BAD1FD':'#e8e4dc')+';border-radius:8px;padding:4px 5px;cursor:pointer;background:'+(isSel?'rgba(5,24,51,0.05)':isToday?'rgba(186,209,253,0.12)':'#fff');
+      var pills = dt.slice(0,3).map(function(t){
+        var uc = URGENCY_COLORS[t.urgency]||'#e0e0e0';
+        return '<div style="font-size:10px;padding:2px 5px;border-left:3px solid '+uc+';background:rgba(0,0,0,0.03);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+(t.status==='done'?'#aaa':'var(--navy)')+';'+(t.status==='done'?'text-decoration:line-through':'')+'" title="'+esc(t.title)+'">'+esc(t.title)+'</div>';
+      }).join('')+(dt.length>3?'<div style="font-size:9px;color:var(--muted);text-align:center">+' +(dt.length-3)+'</div>':'');
+      cells += '<div style="'+cellStyle+'" onclick="adminCalSel(\''+ds+'\')">' +
+        '<div style="font-size:12px;font-weight:'+(isToday?'700':'500')+';color:'+(isToday?'var(--navy)':'var(--text)')+';margin-bottom:3px">'+d+(isToday?'<span style="display:inline-block;width:5px;height:5px;background:var(--navy);border-radius:50%;margin-left:3px;vertical-align:middle"></span>':'')+'</div>'+pills+'</div>';
     }
+    // Panneau jour
+    var selTasks = tasks.filter(function(t){ return (t.dueDate||'').slice(0,10)===_calSel; });
+    var selLabel = _calSel===todayStr ? "Aujourd'hui" : (function(){ var dd=new Date(_calSel+'T12:00:00'); return dd.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); })();
+    var selRows = selTasks.map(function(t){
+      var uc = URGENCY_COLORS[t.urgency]||'#eee', ut = URGENCY_TEXT[t.urgency]||'#333';
+      return '<div style="background:#fff;border:1.5px solid #e8e4dc;border-left:4px solid '+uc+';border-radius:10px;padding:12px;margin-bottom:8px">' +
+        '<div style="display:flex;gap:8px;align-items:flex-start">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:600;font-size:13px;color:var(--navy);'+(t.status==='done'?'text-decoration:line-through;opacity:.55':'')+'">' + esc(t.title) + '</div>' +
+            (t.pole||t.missionType ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(t.pole?esc(t.pole)+(t.missionType?' · ':''):'')+(t.missionType?esc(t.missionType):'')+'</div>' : '') +
+            (t.content ? '<div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">'+esc(t.content.slice(0,100))+(t.content.length>100?'…':'')+'</div>' : '') +
+            '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">' +
+              urgencyBadge(t.urgency) +
+              (t.briefStatus ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:'+(CLI_BRIEF&&CLI_BRIEF[t.briefStatus]?CLI_BRIEF[t.briefStatus].bg:'#eee')+';color:'+(CLI_BRIEF&&CLI_BRIEF[t.briefStatus]?CLI_BRIEF[t.briefStatus].tx:'#333')+'">'+(CLI_BRIEF&&CLI_BRIEF[t.briefStatus]?CLI_BRIEF[t.briefStatus].label:t.briefStatus)+'</span>' : '') +
+              (t.timeSpentMinutes ? '<span style="font-size:11px;color:var(--muted)">⏱ '+t.timeSpentMinutes+'min</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">' +
+            '<select onchange="updateTaskStatus(\''+t.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid #e8e4dc;border-radius:6px">' +
+              ['todo','in_progress','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
+            '</select>' +
+            '<button onclick="setTaskTime(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">⏱ Temps</button>' +
+            '<button onclick="openEditTask(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">✏ Modifier</button>' +
+          '</div>' +
+        '</div>' +
+        (t.livrableUrl?'<div style="margin-top:6px"><a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:11px;color:var(--sage);text-decoration:none">↗ Livrable</a></div>':'') +
+      '</div>';
+    }).join('');
+    // Barre filtre
+    var filterBar = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' +
+      [['','Toutes'],['todo','À faire'],['in_progress','En cours'],['done','Terminées']].map(function(f){
+        var act = _calFilter===f[0];
+        return '<button onclick="adminCalFilter(\''+f[0]+'\')" style="font-size:12px;padding:4px 12px;border-radius:999px;border:1.5px solid '+(act?'var(--navy)':'#e8e4dc')+';background:'+(act?'var(--navy)':'#fff')+';color:'+(act?'#BAD1FD':'var(--muted)')+';cursor:pointer">'+f[1]+'</button>';
+      }).join('') +
+    '</div>';
     return '<div class="card">' +
       '<div class="card-header">' +
-        '<span class="card-title">Calendrier · ' + esc(monthName) + '</span>' +
-        '<div style="display:flex;gap:6px">' +
-          '<button class="btn btn--outline btn--sm" aria-label="Mois précédent" onclick="calNav(-1)">←</button>' +
-          '<button class="btn btn--outline btn--sm" aria-label="Mois suivant" onclick="calNav(1)">→</button>' +
+        '<span class="card-title" style="text-transform:capitalize">📅 '+esc(monthName)+'</span>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<button onclick="adminCalToday()" style="font-size:12px;padding:4px 10px;border:1.5px solid #e8e4dc;border-radius:8px;background:#fff;cursor:pointer;color:var(--muted)">Aujourd\'hui</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="calNav(-1)">←</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="calNav(1)">→</button>' +
+          '<button class="btn btn--sage btn--sm" onclick="openAddTask()">+ Tâche</button>' +
         '</div>' +
       '</div>' +
       '<div class="card-body">' +
-        '<div class="cal-grid cal-grid--head">' + dayNames.map(function(n){return '<div class="cal-head">'+n+'</div>';}).join('') + '</div>' +
-        '<div class="cal-grid">' + cells + '</div>' +
+        filterBar +
+        '<div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">' +
+          '<div>' +
+            '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">' +
+              dayNames.map(function(n){return '<div style="text-align:center;font-size:11px;font-weight:600;color:var(--muted);padding:4px 0">'+n+'</div>';}).join('') +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">'+cells+'</div>' +
+          '</div>' +
+          '<div style="border:1.5px solid #BAD1FD;border-radius:12px;padding:14px;max-height:520px;overflow-y:auto">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+              '<span style="font-weight:600;font-size:14px;color:var(--navy);text-transform:capitalize">'+esc(selLabel)+'</span>' +
+              '<button class="btn btn--sage btn--sm" onclick="adminAddTaskForDay(\''+_calSel+'\')">+ Ajouter</button>' +
+            '</div>' +
+            (selRows || '<div style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">Aucune tâche ce jour.</div>') +
+          '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }
@@ -1838,7 +1956,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       if (!a.pinned && b.pinned) return 1;
       return (a.dueDate||'').localeCompare(b.dueDate||'');
     });
+    if (!window._adminTaskReg) window._adminTaskReg = {};
     var rows = tasks.map(function(t) {
+      window._adminTaskReg[t.id] = t;
       var comments = Array.isArray(t.comments) ? t.comments : [];
       var commentsHtml = comments.map(function(c) {
         return '<div class="task-comment"><strong>' + (c.author === 'cindy' ? 'Cindy' : esc(project.clientName)) + '</strong> · <span style="color:var(--muted);font-size:11px">' + formatDate(c.createdAt) + '</span><div>' + esc(c.text) + '</div></div>';
@@ -1865,7 +1985,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
-          '<button class="btn btn--outline btn--sm" onclick="openEditTask(' + JSON.stringify(JSON.stringify(t)) + ')">Modifier</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="openEditTask(\'' + t.id + '\')">Modifier</button>' +
           '<button class="btn btn--outline btn--sm" onclick="setTaskTime(\'' + t.id + '\')">⏱ Temps</button>' +
           '<button class="btn btn--outline btn--sm" onclick="toggleTaskPin(\'' + t.id + '\',' + (t.pinned?'true':'false') + ')">' + (t.pinned?'Désépingler':'Épingler') + '</button>' +
           '<button class="btn btn--outline btn--sm" onclick="attachDeliverable(\'' + t.id + '\')">📎 Livrable</button>' +
@@ -1909,6 +2029,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (currentProjectId) loadProject(currentProjectId);
   };
 
+  window.adminCalSel = function(ds) { _calSel = ds; if (currentProjectId) loadProject(currentProjectId); };
+  window.adminCalFilter = function(f) { _calFilter = f; if (currentProjectId) loadProject(currentProjectId); };
+  window.adminCalToday = function() {
+    var n = new Date(); _calMonth = new Date(n.getFullYear(), n.getMonth(), 1);
+    _calSel = n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+    if (currentProjectId) loadProject(currentProjectId);
+  };
+  window.adminAddTaskForDay = function(ds) {
+    window.openAddTask();
+    setTimeout(function(){ setTaskField('task-dueDate', ds); }, 50);
+  };
+
   function setTaskField(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; }
   window.openAddTask = function() {
     setTaskField('task-id',''); setTaskField('task-title',''); setTaskField('task-content','');
@@ -1918,8 +2050,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     document.getElementById('modal-task-title').textContent = 'Ajouter une tâche';
     openModal('modal-task');
   };
-  window.openEditTask = function(json) {
-    var t = JSON.parse(json);
+  window.openEditTask = function(idOrJson) {
+    // Accept task ID (from registry) or legacy JSON string
+    var t = (window._adminTaskReg && window._adminTaskReg[idOrJson]) || (function(){ try { return JSON.parse(idOrJson); } catch(e){ return null; } }());
+    if (!t) { toast('Tâche introuvable', true); return; }
     setTaskField('task-id', t.id); setTaskField('task-title', t.title);
     setTaskField('task-content', t.content); setTaskField('task-urgency', t.urgency || 'moyenne');
     setTaskField('task-dueDate', (t.dueDate||'').slice(0,10));
@@ -1949,10 +2083,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     else toast('Erreur', true);
   };
   window.deleteTask = async function(id) {
-    if (!confirm('Supprimer cette tâche ?')) return;
-    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'DELETE' });
-    if (res.ok) { toast('Tâche supprimée'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
-    else toast('Erreur', true);
+    showConfirm('Cette tâche sera supprimée définitivement.', async function() {
+      var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'DELETE' });
+      if (res.ok) { toast('Tâche supprimée'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+      else toast('Erreur', true);
+    }, { title: 'Supprimer la tâche', okLabel: 'Supprimer', danger: true }); return;
   };
   window.updateTaskStatus = async function(id, status) {
     var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ status: status }) });
@@ -1961,13 +2096,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
   window.setTaskTime = async function(id) {
     var t = tasksOf(window._currentProject||{}).find(function(x){return x.id===id;}) || {};
-    var v = prompt('Temps passé (en minutes) :', String(t.timeSpentMinutes||0));
-    if (v === null) return;
-    var min = parseInt(v, 10);
-    if (isNaN(min) || min < 0) { toast('Valeur invalide', true); return; }
-    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ timeSpentMinutes: min }) });
-    if (res.ok) { toast('Temps enregistré ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
-    else toast('Erreur', true);
+    showPrompt('Temps passé sur cette tâche', 'Saisissez le temps en minutes (ex: 90 pour 1h30)', String(t.timeSpentMinutes||0), async function(v) {
+      var min = parseInt(v, 10);
+      if (isNaN(min) || min < 0) { toast('Valeur invalide', true); return; }
+      var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ timeSpentMinutes: min }) });
+      if (res.ok) { toast('Temps enregistré ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+      else toast('Erreur', true);
+    }, { type: 'number', okLabel: 'Enregistrer', placeholder: 'ex: 90' }); return;
   };
   window.toggleTaskPin = async function(id, pinned) {
     var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ pinned: !pinned }) });
@@ -2001,10 +2136,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     input.click();
   };
   window.archiveProject = async function() {
-    if (!confirm('Archiver ce projet ?')) return;
-    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) });
-    if (res.ok) { toast('Projet archivé ✓'); setTimeout(function(){loadProject(currentProjectId);}, 500); }
-    else toast('Erreur', true);
+    showConfirm('Le projet passera en statut "Archivé". Vous pourrez le retrouver dans les filtres.', async function() {
+      var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) });
+      if (res.ok) { toast('Projet archivé ✓'); setTimeout(function(){loadProject(currentProjectId);}, 500); }
+      else toast('Erreur', true);
+    }, { title: 'Archiver le projet', okLabel: 'Archiver' }); return;
   };
 
   function uid() {
@@ -2057,11 +2193,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   window.extendDeadline = async function() {
-    var newDate = prompt('Nouvelle date de livraison (AAAA-MM-JJ) :', (window._currentProject && window._currentProject.deadline) || '');
-    if (!newDate || !newDate.match(/^\d{4}-\d{2}-\d{2}$/)) { toast('Date invalide', true); return; }
-    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ deadline: newDate, deadlineExtended: true }) });
-    if (res.ok) { toast('Date prolongée ✓'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
-    else toast('Erreur', true);
+    showPrompt('Modifier la date de livraison', '', (window._currentProject && window._currentProject.deadline) || '', async function(newDate) {
+      if (!newDate || !newDate.match(/^\d{4}-\d{2}-\d{2}$/)) { toast('Date invalide (format AAAA-MM-JJ)', true); return; }
+      var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ deadline: newDate, deadlineExtended: true }) });
+      if (res.ok) { toast('Date prolongée ✓'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
+      else toast('Erreur', true);
+    }, { type: 'date', okLabel: 'Enregistrer' }); return;
   };
 
   window.togglePin = async function(projectId) {
@@ -2075,21 +2212,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.genClientSpaceToken = async function() {
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
-    const label = prompt('Label pour ce lien (optionnel) :', email);
-    if (label === null) return;
-    const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email }) });
+    showPrompt('Créer un espace client', 'Nom du lien (ex: Emilie — Accès principal)', email, async function(label) {
+      const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
-    await navigator.clipboard.writeText(data.url).catch(function() {});
-    toast('Lien espace client copié ✓');
-    showTokenModal(data.url);
-    loadProject(currentProjectId);
+      await navigator.clipboard.writeText(data.url).catch(function() {});
+      toast('Lien espace client copié ✓');
+      showTokenModal(data.url);
+      loadProject(currentProjectId);
+    }, { okLabel: 'Créer le lien' }); return;
   };
 
   window.addProjectForClient = async function() {
     var p = window._currentProject || {};
-    var title = prompt('Titre du nouveau projet pour ' + (p.clientName || 'ce client') + ' :', '');
-    if (!title) return;
+    showPrompt('Nouveau projet pour ' + (p.clientName || 'ce client'), 'Titre du projet', '', async function(title) {
+      if (!title) return;
     var body = {
       clientName: p.clientName || '',
       clientEmail: p.clientEmail || '',
@@ -2099,10 +2236,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       startDate: new Date().toISOString().split('T')[0],
       steps: [],
     };
-    var res = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
-    var data = await res.json();
-    if (res.ok) { toast('Projet ajouté ✓'); setTimeout(function() { navigate('/admin/projects/' + data.id); }, 600); }
-    else toast('Erreur création', true);
+      var res = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
+      var data = await res.json();
+      if (res.ok) { toast('Projet ajouté ✓'); setTimeout(function() { navigate('/admin/projects/' + data.id); }, 600); }
+      else toast('Erreur création', true);
+    }, { okLabel: 'Créer' }); return;
   };
 
   window.previewClientSpace = async function() {
@@ -3065,62 +3203,58 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   window.cliDeleteTask = function(pid, taskId) {
-    if (!confirm('Supprimer cette tâche ?')) return;
-    fetch(API_BASE + '/tasks/' + taskId + '?projectId=' + pid, { method:'DELETE', headers:{'Content-Type':'application/json'} })
+    showConfirm('Cette tâche sera définitivement supprimée.', function() {
+      fetch(API_BASE + '/tasks/' + taskId + '?projectId=' + pid, { method:'DELETE', headers:{'Content-Type':'application/json'} })
       .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
       .then(function() {
         var pd = getPD(pid);
         if (pd) pd.project.tasks = (pd.project.tasks||[]).filter(function(x){return x.id!==taskId;});
         toast('Tâche supprimée'); renderShell();
       }).catch(function(){ toast('Erreur, réessayez.'); });
+    }, { title: 'Supprimer la tâche', okLabel: 'Supprimer', danger: true }); return;
   };
 
   window.cliForfaitDefine = function(pid) {
     var pd = getPD(pid);
-    var cur = pd && pd.project.monthlyHours ? pd.project.monthlyHours : '';
-    var val = prompt('Nombre d\'heures mensuel du forfait :', cur);
-    if (val === null) return;
-    var hours = parseFloat(val);
-    if (isNaN(hours) || hours <= 0) { toast('Valeur invalide.'); return; }
-    fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ projectId: pid, monthlyHours: hours }) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-      .then(function(proj) {
-        if (pd) { pd.project.monthlyHours = proj.monthlyHours; pd.project.forfaitOverrides = proj.forfaitOverrides || pd.project.forfaitOverrides; }
-        toast('Forfait mis à jour ✓'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+    var cur = pd && pd.project.monthlyHours ? String(pd.project.monthlyHours) : '';
+    showPrompt('Forfait mensuel', 'Nombre d\'heures incluses par mois dans le forfait', cur, function(val) {
+      var hours = parseFloat(val);
+      if (isNaN(hours) || hours <= 0) { toast('Valeur invalide.'); return; }
+      fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ projectId: pid, monthlyHours: hours }) })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(proj) {
+          if (pd) { pd.project.monthlyHours = proj.monthlyHours; pd.project.forfaitOverrides = proj.forfaitOverrides || pd.project.forfaitOverrides; }
+          toast('Forfait mis à jour ✓'); renderShell();
+        }).catch(function(){ toast('Erreur, réessayez.'); });
+    }, { type:'number', placeholder:'ex: 10', okLabel:'Enregistrer' }); return;
   };
 
   window.cliRegulOverride = function(pid, monthKey, currentVal) {
-    var cur = currentVal !== undefined ? currentVal : '';
-    var val = prompt('Report M-1 manuel pour ' + monthKey + ' (en heures, ex: 2.5 ou -1) :', cur);
-    if (val === null) return;
-    if (val.trim() === '') {
-      // Reset override (remove)
-      var pd = getPD(pid);
-      var overrides = Object.assign({}, pd && pd.project.forfaitOverrides || {});
-      delete overrides[monthKey];
+    var cur = currentVal !== undefined ? String(currentVal) : '';
+    showPrompt('Report manuel — ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
+      if (val.trim() === '') {
+        var pd = getPD(pid);
+        var overrides = Object.assign({}, pd && pd.project.forfaitOverrides || {});
+        delete overrides[monthKey];
+        fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides }) })
+          .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+          .then(function(proj) { if (pd) pd.project.forfaitOverrides = proj.forfaitOverrides || {}; toast('Report supprimé ✓'); renderShell(); })
+          .catch(function(){ toast('Erreur, réessayez.'); });
+        return;
+      }
+      var hours = parseFloat(val);
+      if (isNaN(hours)) { toast('Valeur invalide.'); return; }
+      var pd2 = getPD(pid);
+      var overrides2 = Object.assign({}, pd2 && pd2.project.forfaitOverrides || {});
+      overrides2[monthKey] = hours;
       fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides }) })
+        body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides2 }) })
         .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-        .then(function(proj) {
-          if (pd) { pd.project.forfaitOverrides = proj.forfaitOverrides || {}; }
-          toast('Report supprimé ✓'); renderShell();
-        }).catch(function(){ toast('Erreur, réessayez.'); });
-      return;
-    }
-    var hours = parseFloat(val);
-    if (isNaN(hours)) { toast('Valeur invalide.'); return; }
-    var pd2 = getPD(pid);
-    var overrides2 = Object.assign({}, pd2 && pd2.project.forfaitOverrides || {});
-    overrides2[monthKey] = hours;
-    fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides2 }) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-      .then(function(proj) {
-        if (pd2) { pd2.project.forfaitOverrides = proj.forfaitOverrides || {}; }
-        toast('Report mis à jour ✓'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+        .then(function(proj) { if (pd2) pd2.project.forfaitOverrides = proj.forfaitOverrides || {}; toast('Report mis à jour ✓'); renderShell(); })
+        .catch(function(){ toast('Erreur, réessayez.'); });
+    }, { placeholder:'ex: 2.5', okLabel:'Enregistrer', hint:'Laisser vide pour réinitialiser au calcul automatique' }); return;
   };
 
   window.cliToggleTask = function(pid, taskId, newStatus) {
@@ -3175,10 +3309,28 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   window.cliAddResource = function(pid) {
-    var url = prompt('URL de la ressource :', 'https://');
-    if (!url || !url.startsWith('http')) { toast('URL invalide'); return; }
-    var title = prompt('Nom de la ressource (optionnel) :', '');
-    var pd = getPD(pid);
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Jost\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;margin-bottom:12px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Jost\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Ajouter une ressource</div>' +
+      '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
+      '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">' +
+        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_res-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
+      '</div></div>';
+    document.body.appendChild(ov);
+    setTimeout(function(){ ov.querySelector('#_res-url').focus(); }, 60);
+    function close() { ov.remove(); }
+    ov.querySelector('#_res-cancel').onclick = close;
+    ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
+    ov.querySelector('#_res-ok').onclick = function() {
+      var url = ov.querySelector('#_res-url').value.trim();
+      var title = ov.querySelector('#_res-title').value.trim();
+      if (!url || !url.startsWith('http')) { toast('URL invalide'); return; }
+      close();
+      var pd = getPD(pid);
     var resources = (pd && pd.project.resources ? pd.project.resources.slice() : []);
     resources.push({ url: url, title: title || url });
     fetch(API_BASE + '/notes', { method: 'PATCH', headers:{'Content-Type':'application/json'},
@@ -3188,6 +3340,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         if (pd) { pd.project.resources = proj.resources; }
         toast('Ressource ajoutée ✓'); renderShell();
       }).catch(function(){ toast('Erreur, réessayez.'); });
+    }; return;
   };
 
   window.cliDeleteResource = function(pid, idx) {
