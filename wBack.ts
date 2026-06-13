@@ -1,6 +1,7 @@
 import type { Env } from './lib/types';
 import { handleProjects } from './lib/api/projects';
 import { handleSteps } from './lib/api/steps';
+import { handleTasks } from './lib/api/tasks';
 import { handleMessages } from './lib/api/messages';
 import { handleTokens } from './lib/api/tokens';
 import { handleFiles } from './lib/api/files';
@@ -27,6 +28,11 @@ export default {
       // Steps
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/steps/)) {
         return handleSteps(request, env, url);
+      }
+
+      // Tasks (espace partenaire)
+      if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/tasks/)) {
+        return handleTasks(request, env, url);
       }
 
       // Messages

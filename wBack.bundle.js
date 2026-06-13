@@ -725,6 +725,95 @@ async function handleFiles(request, env, url) {
   return errorResponse("Method not allowed", 405);
 }
 
+// lib/api/tasks.ts
+async function handleTasks(request, env, url) {
+  const method = request.method;
+  const match = url.pathname.match(
+    /^\/api\/projects\/([a-f0-9]{32})\/tasks(?:\/([a-f0-9]{32}))?(\/comments)?$/
+  );
+  if (!match)
+    return errorResponse("Not found", 404);
+  const [, projectId, taskId, commentsPath] = match;
+  const project = await getProject(env, projectId);
+  if (!project)
+    return errorResponse("Project not found", 404);
+  if (!Array.isArray(project.tasks))
+    project.tasks = [];
+  if (method === "GET" && !taskId) {
+    return jsonResponse(project.tasks);
+  }
+  if (method === "POST" && !taskId) {
+    const body = await request.json();
+    if (!body.title)
+      return errorResponse("title is required");
+    const task = {
+      id: generateId(),
+      title: body.title,
+      content: body.content ?? "",
+      urgency: body.urgency ?? "moyenne",
+      dueDate: body.dueDate,
+      status: body.status ?? "todo",
+      deliverableFileKey: body.deliverableFileKey,
+      comments: [],
+      pinned: body.pinned ?? false,
+      timeSpentMinutes: body.timeSpentMinutes ?? 0,
+      completedAt: null,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    project.tasks.push(task);
+    await saveProject(env, project);
+    return jsonResponse(task, 201);
+  }
+  if (method === "POST" && taskId && commentsPath) {
+    const idx = project.tasks.findIndex((t) => t.id === taskId);
+    if (idx === -1)
+      return errorResponse("Task not found", 404);
+    const body = await request.json();
+    if (!body.text?.trim())
+      return errorResponse("text is required");
+    const comment = {
+      id: generateId(),
+      author: body.author === "client" ? "client" : "cindy",
+      text: body.text.trim(),
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    if (!Array.isArray(project.tasks[idx].comments))
+      project.tasks[idx].comments = [];
+    project.tasks[idx].comments.push(comment);
+    await saveProject(env, project);
+    return jsonResponse(comment, 201);
+  }
+  if (method === "PUT" && taskId) {
+    const idx = project.tasks.findIndex((t) => t.id === taskId);
+    if (idx === -1)
+      return errorResponse("Task not found", 404);
+    const body = await request.json();
+    const prev = project.tasks[idx];
+    const updated = { ...prev, ...body, id: taskId, comments: prev.comments };
+    const justDone = body.status === "done" && prev.status !== "done";
+    if (justDone)
+      updated.completedAt = (/* @__PURE__ */ new Date()).toISOString();
+    if (body.status && body.status !== "done")
+      updated.completedAt = null;
+    project.tasks[idx] = updated;
+    await saveProject(env, project);
+    if (justDone) {
+      sendTaskDoneNotification(env, project, updated.title).catch(() => {
+      });
+    }
+    return jsonResponse(updated);
+  }
+  if (method === "DELETE" && taskId) {
+    const before = project.tasks.length;
+    project.tasks = project.tasks.filter((t) => t.id !== taskId);
+    if (project.tasks.length === before)
+      return errorResponse("Task not found", 404);
+    await saveProject(env, project);
+    return jsonResponse({ success: true });
+  }
+  return errorResponse("Method not allowed", 405);
+}
+
 // lib/auth.ts
 async function verifyClientToken(token, env) {
   const data = await env.BLOOM_KV.get(`token:${token}`);
@@ -741,13 +830,56 @@ async function verifyClientToken(token, env) {
   return clientToken;
 }
 
-// lib/api/client.ts
+// lib/api/client.ts — opérations tâches côté client
+async function clientTaskOp(request, env, project, isTaskComment, taskCommentId) {
+  if (!Array.isArray(project.tasks))
+    project.tasks = [];
+  const body = await request.json();
+  if (isTaskComment) {
+    const idx = project.tasks.findIndex((t) => t.id === taskCommentId);
+    if (idx === -1)
+      return errorResponse("Task not found", 404);
+    if (!body.text?.trim())
+      return errorResponse("text is required");
+    const comment = {
+      id: generateId(),
+      author: "client",
+      text: body.text.trim(),
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    if (!Array.isArray(project.tasks[idx].comments))
+      project.tasks[idx].comments = [];
+    project.tasks[idx].comments.push(comment);
+    await saveProject(env, project);
+    return jsonResponse(comment, 201);
+  }
+  if (!body.title?.trim())
+    return errorResponse("title is required");
+  const task = {
+    id: generateId(),
+    title: body.title.trim(),
+    content: body.content ?? "",
+    urgency: body.urgency ?? "moyenne",
+    dueDate: body.dueDate,
+    status: "todo",
+    comments: [],
+    pinned: false,
+    timeSpentMinutes: 0,
+    completedAt: null,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  project.tasks.push(task);
+  await saveProject(env, project);
+  return jsonResponse(task, 201);
+}
 async function handleClientApi(request, env, url) {
   const method = request.method;
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/message)?$/);
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
   if (!match)
     return errorResponse("Not found", 404);
-  const [, tokenStr, subPath] = match;
+  const [, tokenStr, subPathRaw, taskCommentId] = match;
+  const subPath = subPathRaw && subPathRaw.indexOf("/tasks") === 0 ? "/tasks" : subPathRaw;
+  const isTaskComment = subPathRaw && subPathRaw.indexOf("/comments") !== -1;
   const clientToken = await verifyClientToken(tokenStr, env);
   if (!clientToken)
     return errorResponse("Invalid or expired token", 403);
@@ -790,6 +922,14 @@ async function handleClientApi(request, env, url) {
       });
       return jsonResponse({ success: true, message }, 201);
     }
+    if (method === "POST" && subPath === "/tasks") {
+      const peek = await request.clone().json().catch(() => ({}));
+      const projectId = peek.projectId || url.searchParams.get("projectId");
+      const project2 = projects.find((p) => p.id === projectId);
+      if (!project2)
+        return errorResponse("Project not found", 404);
+      return clientTaskOp(request, env, project2, isTaskComment, taskCommentId);
+    }
     return errorResponse("Method not allowed", 405);
   }
   if (!clientToken.projectId)
@@ -821,6 +961,9 @@ async function handleClientApi(request, env, url) {
     });
     return jsonResponse({ success: true, message }, 201);
   }
+  if (method === "POST" && subPath === "/tasks") {
+    return clientTaskOp(request, env, project, isTaskComment, taskCommentId);
+  }
   return errorResponse("Method not allowed", 405);
 }
 
@@ -838,6 +981,9 @@ var wBack_default = {
       }
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/steps/)) {
         return handleSteps(request, env, url);
+      }
+      if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/tasks/)) {
+        return handleTasks(request, env, url);
       }
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/messages/)) {
         return handleMessages(request, env, url);
