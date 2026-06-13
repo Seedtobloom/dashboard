@@ -2769,8 +2769,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var extended = project.deadlineExtended
       ? ' <span style="font-size:11px;background:var(--cream);color:var(--brown);padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">↩ Prolongée</span>'
       : '';
-    var header = '<div class="cp-header">' +
-      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:var(--cream);border:none;color:var(--brown);font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
+    var hdrBg = project.bannerUrl
+      ? 'background:url(' + esc(project.bannerUrl) + ') center/cover no-repeat'
+      : project.bannerColor
+        ? 'background:linear-gradient(135deg,' + esc(project.bannerColor).replace('|',',') + ')'
+        : '';
+    var header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
+      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#fff;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
       '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
       '<h1 class="cp-header__title">' + esc(project.projectTitle) + '</h1>' +
       '<div class="cp-header__meta">Bonjour ' + esc(project.clientName) +
