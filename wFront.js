@@ -551,6 +551,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '--cream':      '#EFE1B0',
     '--bg':         '#FAF8F4',
     '--surface':    '#F5F2EC',
+    '--st-discovery':  '#d4e4f0',
+    '--st-in-progress':'#7fa688',
+    '--st-waiting':   '#e8a87c',
+    '--st-review':    '#b0a0d4',
+    '--st-delivered':  '#1a2744',
+    '--st-archived':  '#aaaaaa',
   };
 
   var COLOR_LABELS = [
@@ -562,6 +568,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     { key: '--blue-light', label: 'Texte sur bouton',   section: 'Interface' },
     { key: '--bg',         label: 'Fond de page',     section: 'Interface' },
     { key: '--surface',    label: 'Fond des cartes',  section: 'Interface' },
+    { key: '--st-discovery',  label: 'Decouverte',   section: 'Etats' },
+    { key: '--st-in-progress',label: 'En cours',     section: 'Etats' },
+    { key: '--st-waiting',    label: 'Attente client',section: 'Etats' },
+    { key: '--st-review',     label: 'En revision',  section: 'Etats' },
+    { key: '--st-delivered',  label: 'Livre',        section: 'Etats' },
+    { key: '--st-archived',   label: 'Archive',      section: 'Etats' },
   ];
 
   function applyColors(colors) {
@@ -669,12 +681,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
 
   const STATUS_COLORS = {
-    discovery: '#d4e4f0',
-    in_progress: '#7fa688',
-    waiting_client: '#e8a87c',
-    review: '#b0a0d4',
-    delivered: '#1a2744',
-    archived: '#aaa',
+    discovery: 'var(--st-discovery)',
+    in_progress: 'var(--st-in-progress)',
+    waiting_client: 'var(--st-waiting)',
+    review: 'var(--st-review)',
+    delivered: 'var(--st-delivered)',
+    archived: 'var(--st-archived)',
   };
 
   const STATUS_LABELS = {
@@ -687,13 +699,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   // RGAA 3.2 — texte lisible sur le fond du badge
-  const STATUS_TEXT = {
-    discovery: '#051833', in_progress: '#0d2b16', waiting_client: '#5a2c0e',
-    review: '#2a1d4a', delivered: '#FFFFFF', archived: '#2a2a2a',
+  var STATUS_TEXT_VARS = {
+    discovery: 'var(--st-discovery-t,#051833)', in_progress: 'var(--st-in-progress-t,#0d2b16)',
+    waiting_client: 'var(--st-waiting-t,#5a2c0e)', review: 'var(--st-review-t,#2a1d4a)',
+    delivered: 'var(--st-delivered-t,#FFFFFF)', archived: 'var(--st-archived-t,#2a2a2a)',
   };
   function adminStatusBadge(status) {
-    var bg = STATUS_COLORS[status] || '#aaa';
-    var fg = STATUS_TEXT[status] || '#1a1a1a';
+    var bg = STATUS_COLORS[status] || 'var(--st-archived)';
+    var fg = STATUS_TEXT_VARS[status] || '#1a1a1a';
     return '<span class="status-badge" style="background:' + bg + ';color:' + fg + '">' + (STATUS_LABELS[status] || status) + '</span>';
   }
 
@@ -1021,7 +1034,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
         '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
         '<div class="project-item__meta">' +
-          '<span style="font-size:10px;padding:1px 7px;border-radius:999px;background:' + (STATUS_COLORS[p.status] || '#aaa') + ';color:#fff;font-weight:500">' + (STATUS_LABELS[p.status] || p.status) + '</span>' +
+          adminStatusBadge(p.status) +
           (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + '</span>' : '') +
           (soonDeadline(p) ? '<span class="deadline-badge">⚠ deadline</span>' : '') +
         '</div>' +
@@ -1151,7 +1164,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
         '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
         '<div class="project-item__meta">' +
-          '<span style="font-size:10px;padding:1px 7px;border-radius:999px;background:' + (STATUS_COLORS[p.status] || '#aaa') + ';color:#fff;font-weight:500">' + (STATUS_LABELS[p.status] || p.status) + '</span>' +
+          adminStatusBadge(p.status) +
           (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') +
         '</div>' +
       '</a>';
