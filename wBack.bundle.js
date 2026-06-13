@@ -1035,7 +1035,7 @@ async function handleClientApi(request, env, url) {
     const fileKey = decodeURIComponent(dl[2]);
     return clientFileDownload(env, projects2, fileKey);
   }
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/notes|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/notes|\/invoices|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match)
     return errorResponse("Not found", 404);
   const [, tokenStr, subPathRaw, taskId, commentsSegment] = match;
@@ -1166,6 +1166,14 @@ async function handleClientApi(request, env, url) {
       return jsonResponse({ success: true });
     }
   }
+  // GET /invoices — lecture seule des factures/devis pour le client
+  if (method === "GET" && subPathRaw === "/invoices") {
+    const projectId = url.searchParams.get("projectId") || projects[0]?.id;
+    if (!projectId) return errorResponse("Project not found", 404);
+    const invoices = await getProjectInvoices(env, projectId);
+    return jsonResponse(invoices.filter(i => i.status !== "draft")); // hide drafts from client
+  }
+
   // PATCH /notes — update project notes and resources
   if (method === "PATCH" && subPathRaw === "/notes") {
     const body = await request.json().catch(() => ({}));
@@ -1193,6 +1201,88 @@ async function handleClientApi(request, env, url) {
   return errorResponse("Method not allowed", 405);
 }
 
+// ── Invoices & Devis ──────────────────────────────────────────────────────────
+async function getProjectInvoices(env, projectId) {
+  const data = await env.BLOOM_KV.get(`invoices:project:${projectId}`);
+  return data ? JSON.parse(data) : [];
+}
+async function saveProjectInvoices(env, projectId, invoices) {
+  await env.BLOOM_KV.put(`invoices:project:${projectId}`, JSON.stringify(invoices));
+}
+
+async function handleInvoices(request, env, url) {
+  const method = request.method;
+  const projMatch = url.pathname.match(/^\/api\/projects\/([a-f0-9]{32})\/invoices(?:\/([a-f0-9]{32}))?$/);
+  const globalMatch = url.pathname.match(/^\/api\/invoices(?:\/([a-f0-9]{32}))?$/);
+
+  // GET all invoices across all projects (for finance dashboard or admin overview)
+  if (method === "GET" && globalMatch && !globalMatch[1]) {
+    const allProjects = await env.BLOOM_KV.list({ prefix: "invoices:project:" });
+    const all = [];
+    for (const key of allProjects.keys) {
+      const data = await env.BLOOM_KV.get(key.name);
+      if (data) { const invs = JSON.parse(data); invs.forEach(i => all.push(i)); }
+    }
+    all.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return jsonResponse(all);
+  }
+
+  if (!projMatch) return errorResponse("Invalid path", 400);
+  const projectId = projMatch[1];
+  const invoiceId = projMatch[2];
+  const invoices = await getProjectInvoices(env, projectId);
+
+  if (method === "GET" && !invoiceId) {
+    return jsonResponse(invoices);
+  }
+  if (method === "GET" && invoiceId) {
+    const inv = invoices.find(i => i.id === invoiceId);
+    return inv ? jsonResponse(inv) : errorResponse("Not found", 404);
+  }
+  if (method === "POST" && !invoiceId) {
+    const body = await request.json().catch(() => ({}));
+    const inv = {
+      id: generateId(),
+      projectId,
+      type: body.type || "devis",           // 'devis' | 'facture'
+      number: body.number || "",
+      title: body.title || "",
+      amount: parseFloat(body.amount) || 0,  // HT
+      amountTTC: parseFloat(body.amountTTC) || 0,
+      tva: parseFloat(body.tva) || 20,
+      status: body.status || "draft",        // 'draft'|'sent'|'signed'|'paid'|'cancelled'
+      issueDate: body.issueDate || new Date().toISOString().split("T")[0],
+      dueDate: body.dueDate || "",
+      pdfUrl: body.pdfUrl || "",
+      notes: body.notes || "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      source: body.source || "dashboard",    // 'dashboard' | 'finance' (pour savoir d'où vient la facture)
+    };
+    invoices.push(inv);
+    await saveProjectInvoices(env, projectId, invoices);
+    return jsonResponse(inv, 201);
+  }
+  if ((method === "PUT" || method === "PATCH") && invoiceId) {
+    const body = await request.json().catch(() => ({}));
+    const idx = invoices.findIndex(i => i.id === invoiceId);
+    if (idx < 0) return errorResponse("Not found", 404);
+    const allowed = ["type","number","title","amount","amountTTC","tva","status","issueDate","dueDate","pdfUrl","notes","source"];
+    allowed.forEach(k => { if (body[k] !== undefined) invoices[idx][k] = body[k]; });
+    invoices[idx].updatedAt = new Date().toISOString();
+    await saveProjectInvoices(env, projectId, invoices);
+    return jsonResponse(invoices[idx]);
+  }
+  if (method === "DELETE" && invoiceId) {
+    const filtered = invoices.filter(i => i.id !== invoiceId);
+    await saveProjectInvoices(env, projectId, filtered);
+    return jsonResponse({ success: true });
+  }
+  return errorResponse("Method not allowed", 405);
+}
+
+// ── Client API route for invoices (read-only) ─────────────────────────────────
+// Called via /api/client/{token}/invoices — already handled in handleClientApi
 // wBack.ts
 var wBack_default = {
   async fetch(request, env) {
@@ -1234,6 +1324,12 @@ var wBack_default = {
       }
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/emails$/)) {
         return getEmailHistory(request, env, url);
+      }
+      if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/invoices/)) {
+        return handleInvoices(request, env, url);
+      }
+      if (pathname === "/api/invoices" || pathname.match(/^\/api\/invoices\//)) {
+        return handleInvoices(request, env, url);
       }
       return errorResponse("Not found", 404);
     } catch (err) {
