@@ -2812,15 +2812,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpSelHome = function(id) {
     currentId = id;
     currentView = 'project';
-    clearInterval(pollTimer);
-    document.removeEventListener('visibilitychange', stopPollOnHide);
     renderShell();
   };
 
   window.cpGoHome = function() {
     currentView = 'home';
-    clearInterval(pollTimer);
-    document.removeEventListener('visibilitychange', stopPollOnHide);
     renderShell();
   };
 
