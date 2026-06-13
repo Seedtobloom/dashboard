@@ -14,6 +14,14 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
 
+    // Secret partagé front↔back : le back n'est jamais joignable directement.
+    if (!env.INTERNAL_SECRET || request.headers.get('X-Internal-Auth') !== env.INTERNAL_SECRET) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     try {
       // Client API (public, token-based auth handled inside handler)
       if (pathname.match(/^\/api\/client\//)) {

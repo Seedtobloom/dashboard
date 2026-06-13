@@ -2804,6 +2804,22 @@ async function handleClientPortal(request, env, token) {
   });
 }
 
+// ── Proxy vers le worker BACK avec secret partagé ───────────────────────────────
+
+function forwardToBack(request, env) {
+  // Les headers d'une Request sont immuables : on reconstruit une nouvelle Request
+  // en réinjectant body/method et en ajoutant le secret interne.
+  const headers = new Headers(request.headers);
+  headers.set('X-Internal-Auth', env.INTERNAL_SECRET || '');
+  const req = new Request(request.url, {
+    method: request.method,
+    headers,
+    body: (request.method === 'GET' || request.method === 'HEAD') ? undefined : request.body,
+    redirect: 'manual',
+  });
+  return env.BLOOM_BACK.fetch(req);
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export default {
@@ -2827,7 +2843,7 @@ export default {
 
       // Client API (public, no admin auth needed)
       if (pathname.startsWith('/api/client/')) {
-        return env.BLOOM_BACK.fetch(request);
+        return forwardToBack(request, env);
       }
 
       // Admin API (requires session cookie)
@@ -2836,7 +2852,7 @@ export default {
         if (!authed) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
-        return env.BLOOM_BACK.fetch(request);
+        return forwardToBack(request, env);
       }
 
       // Admin SPA catch-all (handles all routes for hash-based navigation)

@@ -972,6 +972,12 @@ var wBack_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
     const { pathname } = url;
+    if (!env.INTERNAL_SECRET || request.headers.get("X-Internal-Auth") !== env.INTERNAL_SECRET) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     try {
       if (pathname.match(/^\/api\/client\//)) {
         return handleClientApi(request, env, url);

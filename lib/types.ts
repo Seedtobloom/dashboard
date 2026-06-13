@@ -119,4 +119,5 @@ export interface Env {
   ADMIN_EMAIL?: string;
   PORTAL_BASE_URL: string;
   ENVIRONMENT: string;
+  INTERNAL_SECRET?: string;
 }
