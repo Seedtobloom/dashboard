@@ -343,6 +343,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-header__title { font-family: 'Alegreya', serif; font-size: clamp(20px,2.5vw,30px); font-weight: 400; line-height: 1.3; color: var(--cream); margin-bottom: 6px; font-style: italic; }
 .cp-header__meta { font-size: 13px; color: var(--cream); opacity: 0.88; }
 .cp-content { flex: 1; padding: 32px 44px 64px; max-width: 1080px; }
+.cp-content--wide { max-width: none; }
 /* Notion-like 2 colonnes */
 .cp-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 28px; align-items: start; }
 .cp-grid__main, .cp-grid__side { min-width: 0; }
@@ -658,6 +659,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       loadProject(projMatch[1]);
     } else if (hash === '#messages') {
       showMessages();
+    } else if (hash === '#spaces') {
+      showSpaces();
     } else {
       showDashboard();
     }
@@ -688,6 +691,61 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       showLogin();
     }
   }
+
+  // ── Espaces clients (tous les tokens) ─────────────────────────────────────
+  async function showSpaces() {
+    const res = await apiFetch('/api/projects');
+    if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur', true); return; }
+    const projs = await res.json();
+    const allTokens = await Promise.all(projs.map(async function(p) {
+      const r = await apiFetch('/api/projects/' + p.id + '/tokens');
+      const toks = r.ok ? await r.json() : [];
+      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, projectId: p.id }); });
+    }));
+    const tokens = [].concat.apply([], allTokens).sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+    var rows = tokens.map(function(t) {
+      var url = window.location.origin + '/p/' + t.token;
+      return '<tr style="' + (t.revoked ? 'opacity:0.5' : '') + '">' +
+        '<td style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</td>' +
+        '<td>' + esc(t.projectTitle) + '</td>' +
+        '<td>' + esc(t.label || '—') + '</td>' +
+        '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,12) + '…' + '</td>' +
+        '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : 'Jamais') + '</td>' +
+        '<td style="font-size:12px;color:' + (t.revoked ? 'var(--red)' : 'var(--sage)') + '">' + (t.revoked ? 'Révoqué' : 'Actif') + '</td>' +
+        '<td style="white-space:nowrap;display:flex;gap:6px">' +
+          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copySpaceUrl(\'' + esc(url) + '\')">Copier lien</button>' : '') +
+          (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    document.getElementById('app').innerHTML =
+      '<div class="app">' +
+        buildSidebarHtml('spaces', projs, {}) +
+        '<main class="main"><div class="main-inner">' +
+          '<div style="margin-bottom:24px">' +
+            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
+            '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
+          '</div>' +
+          (tokens.length ? '<div class="projects-table"><table>' +
+            '<thead><tr><th>Client</th><th>Projet</th><th>Label</th><th>URL</th><th>Dernière visite</th><th>Statut</th><th></th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div>' :
+            '<div style="text-align:center;padding:60px 0;color:var(--muted)">Aucun espace client créé.</div>') +
+        '</div></main>' +
+      '</div>';
+  }
+
+  window.copySpaceUrl = function(url) {
+    navigator.clipboard.writeText(url).then(function() { toast('Lien copié ✓'); }).catch(function() { toast('Impossible de copier', true); });
+  };
+
+  window.revokeSpaceToken = function(token) {
+    if (!confirm('Révoquer cet accès ? Le lien ne fonctionnera plus.')) return;
+    apiFetch('/api/tokens/' + token + '/revoke', { method: 'POST', body: '{}' })
+      .then(function(r) { if (!r.ok) throw new Error(); toast('Accès révoqué'); showSpaces(); })
+      .catch(function() { toast('Erreur', true); });
+  };
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   async function showDashboard() {
@@ -873,6 +931,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<button class="side-tab' + (activeSection === 'messages' ? ' active' : '') + '" onclick="window.location.hash=\'messages\'">' +
         '💬 Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
       '</button>' +
+      '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">🔗 Espaces clients</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
@@ -2460,7 +2519,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Espace partenaire : mise en page pleine largeur pour un grand calendrier.
     if (project.type === 'partenaire') {
       return header +
-        '<div class="cp-content">' + banner + buildClientPartenaire(pd) +
+        '<div class="cp-content cp-content--wide">' + banner + buildClientPartenaire(pd) +
           (sideTabs.length ? '<div style="margin-top:14px">' + tabs + filesPanel + pracPanel + meetPanel + '</div>' : '') +
           helpCard +
         '</div>';
