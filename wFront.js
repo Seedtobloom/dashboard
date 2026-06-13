@@ -3284,25 +3284,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (qQuestions.length) {
       var qAnswers = project.questionnaireAnswers || {};
       var allAnswered = qQuestions.every(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); });
-      var qFields = qQuestions.map(function(q) {
-        var ans = qAnswers[q.id] || '';
-        return '<div style="margin-bottom:14px">' +
-          '<label style="display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px">' + esc(q.label) + '</label>' +
-          '<textarea data-qid="' + q.id + '" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box">' + esc(ans) + '</textarea>' +
-        '</div>';
-      }).join('');
-      questionnaireCard = '<div class="cp-card">' +
-        '<div class="cp-card__hd"><span class="cp-card__title">Questionnaire</span>' +
-          (allAnswered ? '<span style="font-size:11px;background:#d4edda;color:#155724;padding:2px 8px;border-radius:999px">Complété</span>' : '<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:999px">A compléter</span>') +
-        '</div>' +
-        '<div id="cp-questionnaire-form">' + qFields + '</div>' +
-        '<div style="text-align:right"><button onclick="cpSaveQuestionnaire(\'' + esc(project.id) + '\')" class="cp-btn cp-btn--dark">Enregistrer mes réponses</button></div>' +
-      '</div>';
+      var answered = qQuestions.filter(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); }).length;
+      var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
+      questionnaireCard =
+        '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);margin-bottom:14px;display:block">' +
+          '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
+            '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
+            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
+            (allAnswered
+              ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
+              : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
+          '</div>' +
+          '<div style="background:#fff;padding:14px 20px;border:1.5px solid rgba(5,24,51,0.08);border-top:none;border-radius:0 0 14px 14px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<span style="font-size:13px;color:var(--muted)">' + answered + ' / ' + qQuestions.length + ' réponse' + (qQuestions.length > 1 ? 's' : '') + '</span>' +
+              '<span style="font-size:13px;color:var(--navy);font-weight:600">' + (allAnswered ? 'Voir mes réponses' : 'Compléter') + ' →</span>' +
+            '</div>' +
+          '</div>' +
+        '</button>';
     }
 
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
-        '<div class="cp-grid__main">' + banner + progress + questionnaireCard + '</div>' +
+        '<div class="cp-grid__main">' + banner + questionnaireCard + progress + '</div>' +
         '<div class="cp-grid__side">' + sideCol + '</div>' +
       '</div></div>';
   }
@@ -4210,6 +4214,49 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .catch(function(){ toast('Erreur de connexion', true); });
   };
 
+  window.cpOpenQuestionnaire = function(projectId) {
+    var pd = appData.projects.find(function(x) { return x.project.id === projectId; });
+    if (!pd) return;
+    var project = pd.project;
+    var questions = project.questionnaireQuestions || [];
+    var answers = project.questionnaireAnswers || {};
+
+    var existing = document.getElementById('cp-q-overlay');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = 'cp-q-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
+
+    var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
+    var fields = questions.map(function(q) {
+      var ans = answers[q.id] || '';
+      return '<div style="margin-bottom:18px">' +
+        '<label style="display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">' + esc(q.label) + '</label>' +
+        '<textarea data-qid="' + q.id + '" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--bg)">' + esc(ans) + '</textarea>' +
+      '</div>';
+    }).join('');
+
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(5,24,51,0.2)">' +
+        '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
+          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
+          '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
+        '</div>' +
+        '<div style="padding:24px 28px">' +
+          '<p style="font-size:13px;color:var(--muted);margin-bottom:20px">Vos réponses nous aident à mieux cerner votre projet. Elles peuvent être modifiées à tout moment.</p>' +
+          '<div id="cp-q-fields">' + fields + '</div>' +
+          '<div style="display:flex;justify-content:flex-end;gap:10px">' +
+            '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="padding:10px 20px;border:1.5px solid var(--border);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--muted)">Fermer</button>' +
+            '<button onclick="cpSaveQuestionnaire(\'' + esc(projectId) + '\')" style="padding:10px 22px;border:none;border-radius:10px;background:var(--navy);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer →</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  };
+
   function markConvoRead() {
     // GET /conversation marque les messages de Cindy comme lus côté serveur
     convData.forEach(function(m) { if (m.author === 'cindy') m.readByClient = true; });
@@ -4219,7 +4266,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   window.cpSaveQuestionnaire = async function(projectId) {
-    var form = document.getElementById('cp-questionnaire-form');
+    var overlay = document.getElementById('cp-q-overlay');
+    var form = overlay ? overlay.querySelector('#cp-q-fields') : document.getElementById('cp-questionnaire-form');
     if (!form) return;
     var answers = {};
     form.querySelectorAll('textarea[data-qid]').forEach(function(ta) {
@@ -4227,10 +4275,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
     var pd = appData.projects.find(function(x) { return x.project.id === projectId; });
     var body = { questionnaireAnswers: answers };
-    if (pd && pd.project.clientEmail) body.projectId = projectId;
+    body.projectId = projectId;
     var res = await fetch(API_BASE + '/notes', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (res.ok) {
       if (pd) pd.project.questionnaireAnswers = answers;
+      if (overlay) overlay.remove();
       toast('Réponses enregistrées ✓');
       renderShell();
     } else { toast('Erreur enregistrement'); }
