@@ -280,6 +280,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cindy__role { font-size: 11px; color: var(--blue-light); opacity: 0.75; margin-top: 1px; }
 .cp-nav { flex: 1; padding: 10px 0; }
 .cp-nav__label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--blue-light); opacity: 0.65; padding: 14px 24px 6px; }
+.cp-nav__sublabel { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--blue-light); opacity: 0.5; padding: 10px 24px 4px; font-weight: 600; }
 .cp-nav__item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 24px; background: none; border: none; cursor: pointer;
@@ -314,6 +315,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-card__pct { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
 .cp-archive-section { margin-top: 8px; }
 .cp-archive-title { font-family: 'Alegreya', serif; font-size: 18px; color: var(--muted); font-style: italic; margin-bottom: 16px; padding-top: 24px; border-top: 1px solid var(--border); }
+.cp-type-section { margin-bottom: 28px; }
+.cp-type-title { font-family: 'Alegreya', serif; font-size: 18px; color: var(--navy); font-style: italic; margin-bottom: 14px; }
 
 /* Main */
 .cp-main { flex: 1; margin-left: var(--sw); display: flex; flex-direction: column; min-height: 100vh; }
@@ -1954,15 +1957,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return d;
   }
 
+  // Regroupement par type d'offre (ordre et libellés des sections).
+  var TYPE_GROUPS = [
+    { key:'identite', label:'Identité visuelle' },
+    { key:'site', label:'Création de site' },
+    { key:'partenaire', label:'Partenaire créative' },
+    { key:'support', label:'Supports de communication' },
+    { key:'custom', label:'Autres' },
+  ];
+  function typeGroupKey(t) {
+    if (t === 'identite' || t === 'site' || t === 'partenaire' || t === 'support') return t;
+    return 'custom';
+  }
+  function groupByType(list) {
+    // retourne [{label, items}] pour les groupes non vides, tri urgence à l'intérieur
+    return TYPE_GROUPS.map(function(g) {
+      var items = list.filter(function(pd) { return typeGroupKey(pd.project.type) === g.key; });
+      items.sort(function(a, b) {
+        var da = a.project.deadline ? new Date(a.project.deadline) : new Date('9999-12-31');
+        var db = b.project.deadline ? new Date(b.project.deadline) : new Date('9999-12-31');
+        return da - db;
+      });
+      return { label: g.label, items: items };
+    }).filter(function(g) { return g.items.length; });
+  }
+
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
-    // Sort active: by urgency (deadline soonest first, null last)
-    active.sort(function(a, b) {
-      var da = a.project.deadline ? new Date(a.project.deadline) : new Date('9999-12-31');
-      var db = b.project.deadline ? new Date(b.project.deadline) : new Date('9999-12-31');
-      return da - db;
-    });
 
     function cardHtml(pd) {
       var p = pd.project;
@@ -1999,8 +2021,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</button>';
     }
 
+    var groups = groupByType(active);
     var activeHtml = active.length
-      ? '<div class="cp-proj-grid">' + active.map(cardHtml).join('') + '</div>'
+      ? (groups.length > 1
+          ? groups.map(function(g) {
+              return '<div class="cp-type-section"><h2 class="cp-type-title">' + esc(g.label) + '</h2>' +
+                '<div class="cp-proj-grid">' + g.items.map(cardHtml).join('') + '</div></div>';
+            }).join('')
+          : '<div class="cp-proj-grid">' + groups[0].items.map(cardHtml).join('') + '</div>')
       : '<div class="cp-empty">Aucun projet en cours.</div>';
 
     var archivedHtml = archived.length
@@ -2033,22 +2061,31 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (totalUnread() > 0 ? '<span class="cp-nav__badge">' + totalUnread() + '</span>' : '') +
       '</button>' +
     '</div>';
-    // Section projets
+    // Section projets, regroupés par type d'offre (sections non vides uniquement)
+    function navItem(pd) {
+      var p = pd.project;
+      var col = STATUS_COLORS[p.status] || '#aaa';
+      var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
+      return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
+        '<span class="cp-nav__dot" style="background:' + col + '"></span>' +
+        '<span class="cp-nav__text">' +
+          '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
+          '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
+        '</span>' +
+      '</button>';
+    }
+    var navActive = appData.projects.filter(function(pd){ return pd.project.status !== 'archived'; });
+    var navArchived = appData.projects.filter(function(pd){ return pd.project.status === 'archived'; });
+    var navGroups = groupByType(navActive);
     var projNav = '<div class="cp-nav"><div class="cp-nav__label">Mes projets</div>' +
-      appData.projects.map(function(pd) {
-        var p = pd.project;
-        var col = STATUS_COLORS[p.status] || '#aaa';
-        var unread = pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
-        var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
-        return '<button class="cp-nav__item' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
-          '<span class="cp-nav__dot" style="background:' + col + '"></span>' +
-          '<span class="cp-nav__text">' +
-            '<div class="cp-nav__title">' + esc(p.projectTitle) + '</div>' +
-            '<div class="cp-nav__status">' + (STATUS_LABELS[p.status]||p.status) + '</div>' +
-          '</span>' +
-          (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
-        '</button>';
-      }).join('') + '</div>';
+      (navGroups.length
+        ? navGroups.map(function(g) {
+            return (navGroups.length > 1 ? '<div class="cp-nav__sublabel">' + esc(g.label) + '</div>' : '') +
+              g.items.map(navItem).join('');
+          }).join('')
+        : '') +
+      (navArchived.length ? '<div class="cp-nav__sublabel">Archives</div>' + navArchived.map(navItem).join('') : '') +
+    '</div>';
     navHtml = mainNav + projNav;
     return '<aside class="cp-sidebar">' +
       '<div class="cp-sidebar__brand">' +
