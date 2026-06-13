@@ -188,10 +188,23 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   background: var(--surface);
 }
 
+/* Espace partenaire — calendrier & tâches */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-grid--head { margin-bottom: 4px; }
+.cal-head { text-align: center; font-size: 11px; color: var(--muted); font-weight: 500; padding: 4px 0; }
+.cal-cell { min-height: 64px; border: 1px solid var(--border); border-radius: 6px; padding: 3px; background: var(--white); display: flex; flex-direction: column; gap: 2px; }
+.cal-cell--empty { background: transparent; border: none; }
+.cal-cell__num { font-size: 11px; color: var(--muted); }
+.cal-task { font-size: 10px; padding: 2px 4px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-row { padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: var(--white); }
+.task-comments { margin-top: 8px; }
+.task-comment { font-size: 12px; padding: 4px 0; border-top: 1px dashed var(--border); }
+
 @media (max-width: 768px) {
   .app { flex-direction: column; }
   .sidebar { width: 100%; height: auto; max-height: 50vh; }
   .main-inner { padding: 16px; }
+  .cal-cell { min-height: 48px; }
 }`;
 
 const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
@@ -1092,6 +1105,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>' +
             '</div>' +
 
+            (project.type === 'partenaire' ? buildPartenaireSection(project) : '') +
+
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
               '<div class="card-body" id="steps-container">' + (stepsHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune étape.</p>') + '</div>' +
@@ -1166,6 +1181,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           '<div class="form-field"><label>Action client</label><textarea id="step-clientAction" rows="2"></textarea></div>' +
           '<div class="modal-footer"><button class="btn btn--outline" onclick="closeModal(\'modal-step\')">Annuler</button><button class="btn btn--primary" onclick="saveStep()">Sauvegarder</button></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="modal-backdrop" id="modal-task">' +
+        '<div class="modal">' +
+          '<h3 id="modal-task-title">Ajouter une tâche</h3>' +
+          '<input type="hidden" id="task-id">' +
+          '<div class="form-field"><label for="task-title">Titre</label><input type="text" id="task-title" placeholder="Ex: Visuels Instagram"></div>' +
+          '<div class="form-field"><label for="task-content">Contenu</label><textarea id="task-content" rows="3"></textarea></div>' +
+          '<div class="form-row">' +
+            '<div class="form-field"><label for="task-urgency">Urgence</label><select id="task-urgency"><option value="basse">Basse</option><option value="moyenne">Moyenne</option><option value="haute">Haute</option></select></div>' +
+            '<div class="form-field"><label for="task-dueDate">Deadline</label><input type="date" id="task-dueDate"></div>' +
+          '</div>' +
+          '<div class="modal-footer"><button class="btn btn--outline" onclick="closeModal(\'modal-task\')">Annuler</button><button class="btn btn--primary" onclick="saveTask()">Sauvegarder</button></div>' +
         '</div>' +
       '</div>' +
 
@@ -1456,6 +1485,270 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!confirm('Confirmez la suppression ?')) return;
     const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'DELETE' });
     if (res.ok) { toast('Projet supprimé'); setTimeout(function() { navigate('/admin'); }, 600); }
+    else toast('Erreur', true);
+  };
+
+  // ── Espace partenaire (tâches mensuelles) ───────────────────────────────────
+  var URGENCY_COLORS = { basse: '#BAD1FD', moyenne: '#E4D1FE', haute: '#e8a87c' };
+  var URGENCY_TEXT = { basse: '#0a2a5e', moyenne: '#2a1d4a', haute: '#5a2c0e' };
+  var URGENCY_LABELS = { basse: 'Basse', moyenne: 'Moyenne', haute: 'Haute' };
+  var TASK_STATUS_LABELS = { todo: 'À faire', in_progress: 'En cours', done: 'Terminé' };
+  var _calMonth = null; // Date du 1er du mois affiché
+
+  function urgencyBadge(u) {
+    var bg = URGENCY_COLORS[u] || '#ddd', fg = URGENCY_TEXT[u] || '#1a1a1a';
+    return '<span class="status-badge" style="background:' + bg + ';color:' + fg + '">' + (URGENCY_LABELS[u] || u) + '</span>';
+  }
+
+  function tasksOf(project) { return Array.isArray(project.tasks) ? project.tasks : []; }
+
+  function buildCalendar(project) {
+    var tasks = tasksOf(project);
+    if (!_calMonth) {
+      _calMonth = new Date();
+      _calMonth.setDate(1);
+      _calMonth.setHours(0,0,0,0);
+    }
+    var year = _calMonth.getFullYear(), month = _calMonth.getMonth();
+    var monthName = _calMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    var first = new Date(year, month, 1);
+    var startDay = (first.getDay() + 6) % 7; // lundi=0
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    var cells = '';
+    for (var i = 0; i < startDay; i++) cells += '<div class="cal-cell cal-cell--empty"></div>';
+    for (var d = 1; d <= daysInMonth; d++) {
+      var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      var dayTasks = tasks.filter(function(t) { return (t.dueDate||'').slice(0,10) === dateStr; });
+      var pills = dayTasks.map(function(t) {
+        return '<div class="cal-task" title="' + esc(t.title) + '" style="background:' + (URGENCY_COLORS[t.urgency]||'#ddd') + ';color:' + (URGENCY_TEXT[t.urgency]||'#1a1a1a') + (t.status==='done'?';text-decoration:line-through;opacity:0.6':'') + '">' + esc(t.title) + '</div>';
+      }).join('');
+      cells += '<div class="cal-cell"><div class="cal-cell__num">' + d + '</div>' + pills + '</div>';
+    }
+    return '<div class="card">' +
+      '<div class="card-header">' +
+        '<span class="card-title">Calendrier · ' + esc(monthName) + '</span>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn btn--outline btn--sm" aria-label="Mois précédent" onclick="calNav(-1)">←</button>' +
+          '<button class="btn btn--outline btn--sm" aria-label="Mois suivant" onclick="calNav(1)">→</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card-body">' +
+        '<div class="cal-grid cal-grid--head">' + dayNames.map(function(n){return '<div class="cal-head">'+n+'</div>';}).join('') + '</div>' +
+        '<div class="cal-grid">' + cells + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function buildCharts(project) {
+    var tasks = tasksOf(project);
+    // Heures par semaine (du mois affiché) à partir de timeSpentMinutes répartis sur dueDate
+    var year = _calMonth.getFullYear(), month = _calMonth.getMonth();
+    var weeks = [0,0,0,0,0,0];
+    var doneByMonth = {};
+    tasks.forEach(function(t) {
+      if (t.dueDate) {
+        var dt = new Date(t.dueDate);
+        if (dt.getFullYear() === year && dt.getMonth() === month) {
+          var wk = Math.floor((dt.getDate()-1)/7);
+          weeks[wk] += (t.timeSpentMinutes||0)/60;
+        }
+      }
+      if (t.status === 'done' && t.completedAt) {
+        var key = t.completedAt.slice(0,7);
+        doneByMonth[key] = (doneByMonth[key]||0) + 1;
+      }
+    });
+    function barChart(title, labels, values, unit) {
+      var max = Math.max.apply(null, values.concat([1]));
+      var bw = 46, gap = 18, h = 120;
+      var bars = values.map(function(v, i) {
+        var bh = Math.round(v / max * h);
+        var x = i * (bw + gap) + 10;
+        return '<rect x="' + x + '" y="' + (h - bh + 10) + '" width="' + bw + '" height="' + bh + '" rx="4" fill="#412F21"></rect>' +
+          '<text x="' + (x + bw/2) + '" y="' + (h - bh + 4) + '" text-anchor="middle" font-size="10" fill="#051833">' + (Math.round(v*10)/10) + '</text>' +
+          '<text x="' + (x + bw/2) + '" y="' + (h + 24) + '" text-anchor="middle" font-size="10" fill="#5a5a5a">' + esc(labels[i]) + '</text>';
+      }).join('');
+      var width = values.length * (bw + gap) + 10;
+      return '<div style="margin-bottom:18px"><div style="font-size:13px;color:var(--navy);font-weight:500;margin-bottom:8px">' + title + '</div>' +
+        '<svg viewBox="0 0 ' + width + ' ' + (h + 32) + '" style="max-width:100%;height:auto" role="img" aria-label="' + esc(title) + '">' + bars + '</svg></div>';
+    }
+    var monthKeys = Object.keys(doneByMonth).sort().slice(-6);
+    return '<div class="card">' +
+      '<div class="card-header"><span class="card-title">📊 Suivi pour scaler</span></div>' +
+      '<div class="card-body">' +
+        barChart('Heures passées par semaine (ce mois)', ['S1','S2','S3','S4','S5','S6'], weeks, 'h') +
+        (monthKeys.length ? barChart('Tâches terminées par mois', monthKeys, monthKeys.map(function(k){return doneByMonth[k];}), '') : '<div style="color:var(--muted);font-size:13px">Aucune tâche terminée pour le graphique mensuel.</div>') +
+      '</div>' +
+    '</div>';
+  }
+
+  function buildTaskList(project) {
+    var tasks = tasksOf(project).slice().sort(function(a, b) {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (a.dueDate||'').localeCompare(b.dueDate||'');
+    });
+    var rows = tasks.map(function(t) {
+      var comments = Array.isArray(t.comments) ? t.comments : [];
+      var commentsHtml = comments.map(function(c) {
+        return '<div class="task-comment"><strong>' + (c.author === 'cindy' ? 'Cindy' : esc(project.clientName)) + '</strong> · <span style="color:var(--muted);font-size:11px">' + formatDate(c.createdAt) + '</span><div>' + esc(c.text) + '</div></div>';
+      }).join('');
+      return '<div class="task-row" data-task-id="' + t.id + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+          '<div style="flex:1">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+              (t.pinned ? '<span title="Épinglée">📌</span>' : '') +
+              '<strong style="color:var(--navy)' + (t.status==='done'?';text-decoration:line-through':'') + '">' + esc(t.title) + '</strong>' +
+              urgencyBadge(t.urgency) +
+              '<span class="status-badge" style="background:#eee;color:#333">' + (TASK_STATUS_LABELS[t.status]||t.status) + '</span>' +
+            '</div>' +
+            (t.content ? '<div style="font-size:13px;color:var(--text);margin-top:6px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '') +
+            '<div style="font-size:12px;color:var(--muted);margin-top:5px">' +
+              (t.dueDate ? '📅 ' + formatDate(t.dueDate) + ' · ' : '') +
+              '⏱ ' + ((t.timeSpentMinutes||0)) + ' min' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">' +
+            '<select onchange="updateTaskStatus(\'' + t.id + '\',this.value)" style="font-size:12px;padding:3px 6px;width:auto">' +
+              ['todo','in_progress','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+          '<button class="btn btn--outline btn--sm" onclick="openEditTask(' + JSON.stringify(JSON.stringify(t)) + ')">Modifier</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="setTaskTime(\'' + t.id + '\')">⏱ Temps</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="toggleTaskPin(\'' + t.id + '\',' + (t.pinned?'true':'false') + ')">' + (t.pinned?'Désépingler':'Épingler') + '</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="attachDeliverable(\'' + t.id + '\')">📎 Livrable</button>' +
+          '<button class="btn btn--danger btn--sm" onclick="deleteTask(\'' + t.id + '\')">Suppr.</button>' +
+        '</div>' +
+        '<div class="task-comments">' + commentsHtml + '</div>' +
+        '<div style="display:flex;gap:6px;margin-top:6px">' +
+          '<input type="text" id="task-comment-' + t.id + '" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:5px 8px">' +
+          '<button class="btn btn--outline btn--sm" onclick="addTaskComment(\'' + t.id + '\')">Envoyer</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="card">' +
+      '<div class="card-header"><span class="card-title">Tâches du mois</span><button class="btn btn--sage btn--sm" onclick="openAddTask()">+ Ajouter</button></div>' +
+      '<div class="card-body" id="tasks-container">' + (rows || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune tâche.</p>') + '</div>' +
+    '</div>';
+  }
+
+  function buildPartenaireSection(project) {
+    var tasks = tasksOf(project);
+    var done = tasks.filter(function(t){return t.status==='done';}).length;
+    var pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
+    var totalMin = tasks.reduce(function(a,t){return a+(t.timeSpentMinutes||0);},0);
+    var totalH = Math.round(totalMin/6)/10;
+    var progress = '<div class="card">' +
+      '<div class="card-header"><span class="card-title">Espace partenaire · avancement</span>' +
+        '<button class="btn btn--outline btn--sm" onclick="archiveProject()">📦 Archiver</button>' +
+      '</div>' +
+      '<div class="card-body">' +
+        '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);margin-bottom:6px"><span>' + done + '/' + tasks.length + ' tâches terminées</span><span>' + pct + '%</span></div>' +
+        '<div class="cp-bar" style="background:rgba(5,24,51,0.08);border-radius:999px;height:10px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:var(--sage,#7fa688)"></div></div>' +
+        '<div style="margin-top:12px;font-size:13px;color:var(--brown,#412F21)">⏱ Total heures suivies : <strong>' + totalH + ' h</strong> (' + totalMin + ' min)</div>' +
+      '</div>' +
+    '</div>';
+    return progress + buildCalendar(project) + buildTaskList(project) + buildCharts(project);
+  }
+
+  window.calNav = function(delta) {
+    if (!_calMonth) { _calMonth = new Date(); _calMonth.setDate(1); }
+    _calMonth.setMonth(_calMonth.getMonth() + delta);
+    if (currentProjectId) loadProject(currentProjectId);
+  };
+
+  window.openAddTask = function() {
+    document.getElementById('task-id').value = '';
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-content').value = '';
+    document.getElementById('task-urgency').value = 'moyenne';
+    document.getElementById('task-dueDate').value = '';
+    document.getElementById('modal-task-title').textContent = 'Ajouter une tâche';
+    openModal('modal-task');
+  };
+  window.openEditTask = function(json) {
+    var t = JSON.parse(json);
+    document.getElementById('task-id').value = t.id;
+    document.getElementById('task-title').value = t.title;
+    document.getElementById('task-content').value = t.content || '';
+    document.getElementById('task-urgency').value = t.urgency || 'moyenne';
+    document.getElementById('task-dueDate').value = (t.dueDate||'').slice(0,10);
+    document.getElementById('modal-task-title').textContent = 'Modifier la tâche';
+    openModal('modal-task');
+  };
+  window.saveTask = async function() {
+    var id = document.getElementById('task-id').value;
+    var body = {
+      title: document.getElementById('task-title').value,
+      content: document.getElementById('task-content').value,
+      urgency: document.getElementById('task-urgency').value,
+      dueDate: document.getElementById('task-dueDate').value || undefined,
+    };
+    if (!body.title) { toast('Titre requis', true); return; }
+    var url = id ? '/api/projects/' + currentProjectId + '/tasks/' + id : '/api/projects/' + currentProjectId + '/tasks';
+    var res = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+    if (res.ok) { toast('Tâche sauvegardée ✓'); closeModal('modal-task'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    else toast('Erreur', true);
+  };
+  window.deleteTask = async function(id) {
+    if (!confirm('Supprimer cette tâche ?')) return;
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'DELETE' });
+    if (res.ok) { toast('Tâche supprimée'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    else toast('Erreur', true);
+  };
+  window.updateTaskStatus = async function(id, status) {
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ status: status }) });
+    if (res.ok) { toast(status === 'done' ? 'Tâche terminée — email envoyé ✓' : 'Statut mis à jour ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    else toast('Erreur', true);
+  };
+  window.setTaskTime = async function(id) {
+    var t = tasksOf(window._currentProject||{}).find(function(x){return x.id===id;}) || {};
+    var v = prompt('Temps passé (en minutes) :', String(t.timeSpentMinutes||0));
+    if (v === null) return;
+    var min = parseInt(v, 10);
+    if (isNaN(min) || min < 0) { toast('Valeur invalide', true); return; }
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ timeSpentMinutes: min }) });
+    if (res.ok) { toast('Temps enregistré ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    else toast('Erreur', true);
+  };
+  window.toggleTaskPin = async function(id, pinned) {
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ pinned: !pinned }) });
+    if (res.ok) setTimeout(function(){loadProject(currentProjectId);}, 300);
+  };
+  window.addTaskComment = async function(id) {
+    var input = document.getElementById('task-comment-' + id);
+    if (!input) return;
+    var text = input.value.trim();
+    if (!text) return;
+    var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id + '/comments', { method: 'POST', body: JSON.stringify({ author: 'cindy', text: text }) });
+    if (res.ok) { toast('Commentaire ajouté ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    else toast('Erreur', true);
+  };
+  window.attachDeliverable = async function(id) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = async function() {
+      var file = input.files[0];
+      if (!file) return;
+      var fd = new FormData();
+      fd.append('file', file);
+      fd.append('category', 'deliverable');
+      toast('Upload en cours…');
+      var res = await fetch('/api/projects/' + currentProjectId + '/files', { method: 'POST', credentials: 'same-origin', body: fd });
+      if (!res.ok) { toast('Erreur upload', true); return; }
+      var fileData = await res.json();
+      var r2 = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ deliverableFileKey: fileData.key }) });
+      if (r2.ok) { toast('Livrable attaché ✓'); setTimeout(function(){loadProject(currentProjectId);}, 400); }
+    };
+    input.click();
+  };
+  window.archiveProject = async function() {
+    if (!confirm('Archiver ce projet ?')) return;
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) });
+    if (res.ok) { toast('Projet archivé ✓'); setTimeout(function(){loadProject(currentProjectId);}, 500); }
     else toast('Erreur', true);
   };
 
