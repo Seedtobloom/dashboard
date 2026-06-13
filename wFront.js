@@ -24,7 +24,14 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+/* Le curseur texte (I-beam) et la sélection ne s'affichent que sur les vrais contenus éditables/lisibles */
+input, textarea, select, [contenteditable="true"], .selectable, p, pre,
+.cp-msg__text, .cp-step__desc, .cp-prac__body, .file-name-col, .cp-file__name {
+  -webkit-user-select: text; -moz-user-select: text; user-select: text;
+}
+input, textarea, select, [contenteditable="true"] { cursor: text; }
+a, button, .btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
 
 h1, h2, h3, h4, .serif { font-family: 'Alegreya', Georgia, serif; font-weight: 400; }
 em, .italic { font-style: italic; }
@@ -208,7 +215,12 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+/* Curseur texte + sélection uniquement sur les vrais contenus */
+input, textarea, select, [contenteditable="true"], .selectable, p, pre,
+.cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
+input, textarea, select, [contenteditable="true"] { cursor: text; }
+a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
 .cp { display: flex; min-height: 100vh; }
 /* RGAA 10.7 — focus visible */
 a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--lavender); outline-offset: 2px; border-radius: 4px; }
