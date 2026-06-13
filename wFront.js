@@ -25,7 +25,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-body { font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+body { font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
 /* Le curseur texte (I-beam) et la sélection ne s'affichent que sur les vrais contenus éditables/lisibles */
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .file-name-col, .cp-file__name {
@@ -53,7 +53,7 @@ em, .italic { font-style: italic; }
 label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.6px; }
 input[type=text], input[type=email], input[type=date], input[type=url], input[type=password], textarea, select {
   width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
-  font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--text);
+  font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--text);
   background: var(--white); outline: none; transition: border-color 0.2s;
 }
 input:focus, textarea:focus, select:focus { border-color: var(--navy); }
@@ -62,7 +62,7 @@ textarea { resize: vertical; min-height: 72px; }
 .form-row.full { grid-template-columns: 1fr; }
 .form-field { margin-bottom: 14px; }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s; text-decoration: none; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s; text-decoration: none; white-space: nowrap; }
 .btn:active { opacity: 0.8; }
 .btn--primary { background: var(--navy); color: var(--blue-light); }
 .btn--sage { background: var(--lavender); color: var(--navy); }
@@ -132,9 +132,21 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
 .main-inner { max-width: 1280px; margin: 0 auto; padding: 28px 32px 80px; }
-.main-inner.proj-main { padding: 0 0 80px; }
-.proj-section { padding: 0 32px; }
-.proj-tab-nav { border-bottom: 1px solid var(--border); background: var(--white); display: flex; gap: 0; padding: 0 32px; }
+.main-inner.proj-main { padding: 24px 32px 80px; }
+.proj-section { padding: 0 32px 28px; }
+/* Project banner */
+.proj-banner { width: 100%; min-height: 120px; display: flex; align-items: flex-end; }
+.proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.proj-banner__title { font-family: 'Alegreya', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.35); margin: 0; line-height: 1.25; }
+.proj-banner__sub { color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+/* Tab nav */
+.proj-tabnav { display: flex; gap: 2px; padding: 0 32px; background: var(--white); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; }
+.proj-tabnav__btn { padding: 12px 20px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); transition: all 0.15s; white-space: nowrap; }
+.proj-tabnav__btn.active, .proj-tabnav__btn:hover { color: var(--navy); border-bottom-color: var(--navy); }
+/* Ghost buttons for banner */
+.btn--ghost { background: rgba(255,255,255,0.18); color: #fff; border: 1.5px solid rgba(255,255,255,0.4); backdrop-filter: blur(4px); }
+.btn--ghost:hover { background: rgba(255,255,255,0.28); }
+.btn--ghost-danger { background: rgba(220,53,53,0.25); border-color: rgba(220,53,53,0.5); }
 
 /* Notion-like multi-column */
 .proj-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: start; }
@@ -264,7 +276,7 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+body { font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
 /* Curseur texte + sélection uniquement sur les vrais contenus */
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
@@ -301,7 +313,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 24px; background: none; border: none; cursor: pointer;
-  text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px; transition: background 0.12s, opacity 0.12s; border-left: 2px solid transparent;
 }
 .cp-nav__item:hover { background: rgba(186,209,253,0.07); opacity: 1; }
@@ -400,7 +412,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 /* Tabs */
 .cp-tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
 .cp-tabs::-webkit-scrollbar { display: none; }
-.cp-tab { padding: 7px 16px; background: none; border: 1px solid transparent; cursor: pointer; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; border-radius: 999px; transition: all 0.15s; }
+.cp-tab { padding: 7px 16px; background: none; border: 1px solid transparent; cursor: pointer; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; border-radius: 999px; transition: all 0.15s; }
 .cp-tab.active { background: var(--navy); color: var(--blue-light); border-color: var(--navy); }
 .cp-tab:hover:not(.active) { background: var(--surface); color: var(--text); border-color: var(--border); }
 .cp-panel { animation: cpIn 0.18s ease both; }
@@ -419,10 +431,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg--client .cp-msg__bubble { background: var(--navy); border-bottom-right-radius: 4px; color: var(--blue-light); }
 .cp-msg__text { white-space: pre-wrap; word-break: break-word; }
 .cp-msg__date { font-size: 11px; opacity: 0.4; margin-top: 4px; }
-.cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; resize: vertical; min-height: 80px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.2s; }
+.cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; resize: vertical; min-height: 80px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.2s; }
 .cp-msg-form textarea:focus { border-color: var(--navy); }
 .cp-msg-form__row { display: flex; justify-content: flex-end; margin-top: 10px; }
-.cp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; }
+.cp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; }
 .cp-btn:hover { opacity: 0.82; }
 .cp-btn--dark { background: var(--navy); color: var(--blue-light); }
 .cp-btn--sage { background: var(--lavender); color: var(--navy); text-decoration: none; }
@@ -467,7 +479,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-topbar__name { font-size: 13px; color: var(--blue-light); opacity: 0.65; }
   .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(5,24,51,0.04); border-bottom: 1px solid var(--border); }
   .cp-pills::-webkit-scrollbar { display: none; }
-  .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); cursor: pointer; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; transition: all 0.15s; }
+  .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); cursor: pointer; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; transition: all 0.15s; }
   .cp-pill.active { background: var(--navy); color: var(--blue-light); border-color: var(--navy); }
   .cp-main { margin-left: 0; }
   .cp-header { padding: 20px 20px 18px; }
@@ -741,6 +753,63 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }
   }
 
+  // ── Espaces clients (tous les tokens) ─────────────────────────────────────
+  async function showSpaces() {
+    const res = await apiFetch('/api/projects');
+    if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur', true); return; }
+    const projs = await res.json();
+    const allTokens = await Promise.all(projs.map(async function(p) {
+      const r = await apiFetch('/api/projects/' + p.id + '/tokens');
+      const toks = r.ok ? await r.json() : [];
+      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, projectId: p.id }); });
+    }));
+    const tokens = [].concat.apply([], allTokens).sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+    var rows = tokens.map(function(t) {
+      var url = window.location.origin + '/p/' + t.token;
+      return '<tr style="' + (t.revoked ? 'opacity:0.5' : '') + '">' +
+        '<td style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</td>' +
+        '<td>' + esc(t.projectTitle) + '</td>' +
+        '<td>' + esc(t.label || '—') + '</td>' +
+        '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,12) + '…' + '</td>' +
+        '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : 'Jamais') + '</td>' +
+        '<td style="font-size:12px;color:' + (t.revoked ? 'var(--red)' : 'var(--sage)') + '">' + (t.revoked ? 'Révoqué' : 'Actif') + '</td>' +
+        '<td style="white-space:nowrap;display:flex;gap:6px">' +
+          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copySpaceUrl(\'' + esc(url) + '\')">Copier lien</button>' : '') +
+          (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    document.getElementById('app').innerHTML =
+      '<div class="app">' +
+        buildSidebarHtml('spaces', projs, {}) +
+        '<main class="main"><div class="main-inner">' +
+          '<div style="margin-bottom:24px">' +
+            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
+            '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
+          '</div>' +
+          (tokens.length ? '<div class="projects-table"><table>' +
+            '<thead><tr><th>Client</th><th>Projet</th><th>Label</th><th>URL</th><th>Dernière visite</th><th>Statut</th><th></th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div>' :
+            '<div style="text-align:center;padding:60px 0;color:var(--muted)">Aucun espace client créé.</div>') +
+        '</div></main>' +
+      '</div>';
+  }
+
+  window.copySpaceUrl = function(url) {
+    navigator.clipboard.writeText(url).then(function() { toast('Lien copié ✓'); }).catch(function() { toast('Impossible de copier', true); });
+  };
+
+  window.revokeSpaceToken = function(token) {
+    showConfirm('Cet accès sera désactivé. La cliente ne pourra plus se connecter avec ce lien.', function() {
+      apiFetch('/api/tokens/' + token + '/revoke', { method: 'POST', body: '{}' })
+        .then(function(r) { if (!r.ok) throw new Error(); toast('Accès révoqué'); showSpaces(); })
+        .catch(function() { toast('Erreur', true); });
+    }, { title: 'Révoquer l\'accès', okLabel: 'Révoquer', danger: true });
+  };
+
+  // ── Dashboard ──────────────────────────────────────────────────────────────
   async function showDashboard() {
     const res = await apiFetch('/api/projects');
     if (!res.ok) {
@@ -905,67 +974,237 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var inboxEmail = null;
 
   function buildSidebarHtml(activeSection, allProjs, unreadMap, msgBadgeOverride) {
-
-  // ── Espaces clients (tous les tokens) ─────────────────────────────────────
-  async function showSpaces() {
-    const res = await apiFetch('/api/projects');
-    if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur', true); return; }
-    const projs = await res.json();
-    const allTokens = await Promise.all(projs.map(async function(p) {
-      const r = await apiFetch('/api/projects/' + p.id + '/tokens');
-      const toks = r.ok ? await r.json() : [];
-      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, projectId: p.id }); });
-    }));
-    const tokens = [].concat.apply([], allTokens).sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-
-    var rows = tokens.map(function(t) {
-      var url = window.location.origin + '/p/' + t.token;
-      return '<tr style="' + (t.revoked ? 'opacity:0.5' : '') + '">' +
-        '<td style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</td>' +
-        '<td>' + esc(t.projectTitle) + '</td>' +
-        '<td>' + esc(t.label || '—') + '</td>' +
-        '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,12) + '…' + '</td>' +
-        '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : 'Jamais') + '</td>' +
-        '<td style="font-size:12px;color:' + (t.revoked ? 'var(--red)' : 'var(--sage)') + '">' + (t.revoked ? 'Révoqué' : 'Actif') + '</td>' +
-        '<td style="white-space:nowrap;display:flex;gap:6px">' +
-          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copySpaceUrl(\'' + esc(url) + '\')">Copier lien</button>' : '') +
-          (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
-        '</td>' +
-      '</tr>';
+    unreadMap = unreadMap || {};
+    var items = allProjs.map(function(p) {
+      var u = unreadMap[p.id] || 0;
+      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="navigate(\'/admin/projects/' + p.id + '\');return false;">' +
+        '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
+        '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
+        '<div class="project-item__meta">' +
+          '<span class="badge-dot" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '"></span>' +
+          (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') +
+        '</div>' +
+      '</a>';
     }).join('');
+    var totalUnread = (typeof msgBadgeOverride === 'number') ? msgBadgeOverride : Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
+    return '<nav class="sidebar">' +
+      '<div class="sidebar-header"><div class="sidebar-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:36px;width:auto"></div><div class="sidebar-sub">Administration</div></div>' +
+      '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="navigate(\'/admin\')">📊 Dashboard</button>' +
+      '<button class="side-tab' + (activeSection === 'messages' ? ' active' : '') + '" onclick="window.location.hash=\'messages\'">' +
+        '💬 Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
+      '</button>' +
+      '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">🔗 Espaces clients</button>' +
+      '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
+      '<div class="project-list">' + items + '</div>' +
+      '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
+        '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
+      '</div>' +
+    '</nav>';
+  }
 
-    if (!rows) {
-      document.getElementById('app').innerHTML = buildSidebarHtml('spaces', [], {}) +
-        '<main class="main"><div class="main-inner"><h1 style="font-family:'Alegreya',serif;font-size:22px;color:var(--navy);font-style:italic;margin-bottom:24px">Espaces clients</h1>' +
-        '<p style="color:var(--muted);text-align:center;padding:40px 0">Aucun espace client créé.</p></div></main>';
-      return;
+  function inboxMsgHtml(c, m) {
+    var isCindy = m.author === 'cindy';
+    return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(c.clientName||c.clientEmail).charAt(0).toUpperCase()) + '</div>' +
+      '<div style="max-width:65%">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(c.clientName||c.clientEmail)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
+        (!m.readByAdmin && !isCindy ? '<div style="font-size:10px;color:var(--orange);margin-top:2px">● non lu</div>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function inboxConvoBody(c) {
+    var msgs = c.messages || [];
+    var msgsHtml = msgs.length ? msgs.map(function(m){ return inboxMsgHtml(c, m); }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">Pas encore de messages.</div>';
+    return '<div style="display:flex;flex-direction:column;height:100%">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white)">' +
+        '<div>' +
+          '<div style="font-weight:600;color:var(--navy)">' + esc(c.clientName||c.clientEmail) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted)">' + esc(c.clientEmail) + '</div>' +
+        '</div>' +
+        '<button class="btn btn--outline btn--sm" onclick="markInboxRead(\'' + esc(c.clientEmail) + '\')">Tout marquer lu</button>' +
+      '</div>' +
+      '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
+      '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
+        '<div style="display:flex;gap:10px;align-items:flex-end">' +
+          '<textarea id="inbox-input" placeholder="Répondre à ' + esc(c.clientName||c.clientEmail) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
+          '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function getInbox(email) { return inboxData.find(function(c){ return c.clientEmail === email; }) || null; }
+
+  async function loadConvoMessages(c) {
+    if (c.messages) return;
+    c.messages = await apiFetch('/api/conversations/' + encodeURIComponent(c.clientEmail)).then(function(r){ return r.ok ? r.json() : []; });
+  }
+
+  async function showMessages(activeEmail) {
+    const projs = await apiFetch('/api/projects').then(function(r) { return r.ok ? r.json() : []; });
+    const convos = await apiFetch('/api/conversations').then(function(r) { return r.ok ? r.json() : []; });
+
+    inboxData = convos.map(function(c){ return { clientEmail: c.clientEmail, clientName: c.clientName, unread: c.unread, last: c.last, messages: null }; });
+
+    var totalUnreadAll = inboxData.reduce(function(a, c){ return a + (c.unread||0); }, 0);
+
+    if (!activeEmail && inboxData.length) activeEmail = inboxData[0].clientEmail;
+    inboxEmail = activeEmail;
+    var active = getInbox(inboxEmail);
+    if (active) await loadConvoMessages(active);
+
+    function renderInboxList() {
+      if (!inboxData.length) return '<div style="padding:24px;color:var(--muted);font-size:13px;text-align:center">Aucune conversation.</div>';
+      return inboxData.map(function(c) {
+        var last = c.last;
+        var unread = c.unread || 0;
+        var isActive = c.clientEmail === inboxEmail;
+        return '<div class="inbox-item' + (isActive ? ' active' : '') + '" onclick="switchInboxConvo(\'' + esc(c.clientEmail) + '\')">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+            '<div style="width:32px;height:32px;border-radius:50%;background:var(--sky);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--navy)">' + esc(c.clientName||c.clientEmail).charAt(0).toUpperCase() + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:4px">' +
+                '<span style="font-weight:' + (unread > 0 ? '600' : '500') + ';font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.clientName||c.clientEmail) + '</span>' +
+                (last ? '<span style="font-size:11px;color:var(--muted);flex-shrink:0">' + new Date(last.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + '</span>' : '') +
+              '</div>' +
+              '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.clientEmail) + '</div>' +
+            '</div>' +
+            (unread > 0 ? '<span class="unread-badge" style="flex-shrink:0">' + unread + '</span>' : '') +
+          '</div>' +
+          (last ? '<div style="font-size:12px;color:' + (unread > 0 ? 'var(--text)' : 'var(--muted)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:42px">' +
+            (last.author === 'cindy' ? 'Vous : ' : '') + esc(last.content.slice(0, 60)) + (last.content.length > 60 ? '…' : '') +
+          '</div>' : '') +
+        '</div>';
+      }).join('');
     }
 
+    var convoHtml = active ? inboxConvoBody(active) : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted)">Sélectionnez une conversation</div>';
+
     document.getElementById('app').innerHTML =
-      buildSidebarHtml('spaces', [], {}) +
-      '<main class="main">' +
-        '<div class="main-inner">' +
-          '<h1 style="font-family:'Alegreya',serif;font-size:22px;color:var(--navy);font-style:italic;margin-bottom:4px">Espaces clients</h1>' +
-          '<p style="color:var(--muted);font-size:13px;margin-bottom:24px">' + tokens.length + ' espace' + (tokens.length>1?'s':'') + ' créé' + (tokens.length>1?'s':'') + '</p>' +
-          '<div class="card">' +
-            '<div class="card-body" style="padding:0;overflow-x:auto">' +
-              '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-                '<thead><tr style="border-bottom:2px solid var(--border);background:var(--surface)">' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Client</th>' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Projet</th>' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Label</th>' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Token</th>' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Dernier accès</th>' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Statut</th>' +
-                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Actions</th>' +
-                '</tr></thead>' +
-                '<tbody>' + rows + '</tbody>' +
-              '</table>' +
-            '</div>' +
+      '<div class="app">' +
+        buildSidebarHtml('messages', projs, {}, totalUnreadAll) +
+        '<main class="main" style="display:flex;flex-direction:column;overflow:hidden">' +
+          '<div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px">' +
+            '<h2 style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
+            (totalUnreadAll > 0 ? '<span class="unread-badge">' + totalUnreadAll + ' non lu' + (totalUnreadAll > 1 ? 's' : '') + '</span>' : '') +
           '</div>' +
-        '</div>' +
-      '</main>' +
-      '<div class="toast" id="toast"></div>';
+          '<div style="display:flex;flex:1;overflow:hidden">' +
+            '<div class="inbox-list" id="inbox-list">' + renderInboxList() + '</div>' +
+            '<div class="inbox-convo" id="inbox-convo">' + convoHtml + '</div>' +
+          '</div>' +
+        '</main>' +
+      '</div>';
+
+    if (active) markInboxReadLocal(active);
+    var msgs = document.getElementById('inbox-msgs');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function markInboxReadLocal(c) {
+    if (!c.unread) return;
+    apiFetch('/api/conversations/' + encodeURIComponent(c.clientEmail) + '/read-all', { method: 'PUT', body: '{}' });
+    c.unread = 0;
+    if (c.messages) c.messages = c.messages.map(function(m){ return Object.assign({}, m, { readByAdmin: true }); });
+  }
+
+  window.switchInboxConvo = async function(email) {
+    inboxEmail = email;
+    var c = getInbox(email);
+    if (!c) return;
+    await loadConvoMessages(c);
+    var listEl = document.getElementById('inbox-list');
+    var convoEl = document.getElementById('inbox-convo');
+    if (listEl) {
+      listEl.querySelectorAll('.inbox-item').forEach(function(el) { el.classList.remove('active'); });
+      var idx = inboxData.findIndex(function(x){ return x.clientEmail === email; });
+      var clicked = listEl.querySelectorAll('.inbox-item')[idx];
+      if (clicked) clicked.classList.add('active');
+    }
+    if (convoEl) convoEl.innerHTML = inboxConvoBody(c);
+    markInboxReadLocal(c);
+    var msgsEl = document.getElementById('inbox-msgs');
+    if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
+  };
+
+  window.sendInboxMessage = async function() {
+    var input = document.getElementById('inbox-input');
+    if (!input || !inboxEmail) return;
+    var content = input.value.trim();
+    if (!content) return;
+    input.disabled = true;
+    var res = await apiFetch('/api/conversations/' + encodeURIComponent(inboxEmail), {
+      method: 'POST', body: JSON.stringify({ content: content })
+    });
+    if (res.ok) {
+      var data = await res.json();
+      var c = getInbox(inboxEmail);
+      if (c) { if (!c.messages) c.messages = []; c.messages.push(data.message); c.last = data.message; }
+      input.value = '';
+      var msgsEl = document.getElementById('inbox-msgs');
+      if (msgsEl) {
+        var div = document.createElement('div');
+        div.style.cssText = 'display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-direction:row-reverse';
+        div.innerHTML = '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff">C</div>' +
+          '<div style="max-width:65%"><div style="font-size:11px;color:var(--muted);margin-bottom:3px;text-align:right">Vous · maintenant</div>' +
+          '<div style="padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;background:var(--navy);color:#fff;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word">' + esc(content) + '</div></div>';
+        msgsEl.appendChild(div);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+      toast('Message envoyé ✓');
+    } else { toast('Erreur', true); }
+    input.disabled = false;
+    if (input) input.focus();
+  };
+
+  window.markInboxRead = async function(email) {
+    await apiFetch('/api/conversations/' + encodeURIComponent(email) + '/read-all', { method: 'PUT', body: '{}' });
+    var c = getInbox(email);
+    if (c) { c.unread = 0; if (c.messages) c.messages = c.messages.map(function(m){ return Object.assign({}, m, { readByAdmin: true }); }); }
+    toast('Marqué comme lu ✓');
+  };
+
+  // ── Project detail ─────────────────────────────────────────────────────────
+  async function loadProject(projectId) {
+    currentProjectId = projectId;
+    const [projRes, msgsRes, filesRes, tokensRes, emailsRes, allProjs, invRes] = await Promise.all([
+      apiFetch('/api/projects/' + projectId),
+      apiFetch('/api/projects/' + projectId + '/messages'),
+      apiFetch('/api/projects/' + projectId + '/files'),
+      apiFetch('/api/projects/' + projectId + '/tokens'),
+      apiFetch('/api/projects/' + projectId + '/emails'),
+      apiFetch('/api/projects'),
+      apiFetch('/api/projects/' + projectId + '/invoices'),
+    ]);
+
+    if (!projRes.ok) {
+      if (projRes.status === 401) { showLogin(); return; }
+      toast('Projet introuvable', true); return;
+    }
+
+    const project = await projRes.json();
+    window._currentProject = project;
+    window._adminInvReg = {};
+    const messages = msgsRes.ok ? await msgsRes.json() : [];
+    const files = filesRes.ok ? await filesRes.json() : [];
+    const tokens = tokensRes.ok ? await tokensRes.json() : [];
+    const emailLogs = emailsRes.ok ? await emailsRes.json() : [];
+    const invoices = invRes.ok ? await invRes.json() : [];
+    const allProjects = allProjs.ok ? await allProjs.json() : [];
+    allProjects.sort(function(a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+
+    const unreadCounts = await Promise.all(allProjects.map(async function(p) {
+      try {
+        const r = await apiFetch('/api/projects/' + p.id + '/messages');
+        if (!r.ok) return 0;
+        const msgs = await r.json();
+        return msgs.filter(function(m) { return m.author === 'client' && !m.readByAdmin; }).length;
+      } catch { return 0; }
+    }));
+
+    renderProject(project, messages, files, tokens, emailLogs, allProjects, unreadCounts, invoices);
   }
 
   function renderProject(project, messages, files, tokens, emailLogs, allProjects, unreadCounts, invoices) {
@@ -973,102 +1212,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var unreadMapP = {};
     allProjects.forEach(function(p, i) { unreadMapP[p.id] = unreadCounts[i] || 0; });
 
-    // --- Tab helpers ---
-    function projTabBtn(key, label, active) {
-      return '<button onclick="adminProjTab(\'' + key + '\')" style="padding:10px 20px;border:none;background:none;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-size:14px;font-weight:' + (active?'700':'500') + ';color:' + (active?'var(--navy)':'var(--muted)') + ';border-bottom:3px solid ' + (active?'var(--brown)':'transparent') + ';margin-bottom:-1px;transition:all .15s">' + label + '</button>';
-    }
-    var tab = _adminProjTab;
-    var bannerBg = project.bannerUrl
-      ? 'url(' + project.bannerUrl + ') center/cover no-repeat'
-      : 'linear-gradient(135deg,' + (project.bannerColor||'#412F21|#EFE1B0').split('|').join(',') + ')';
-    var bannerFg = (project.bannerColor||'#412F21|#EFE1B0').split('|')[1] || '#EFE1B0';
-    var tasks = tasksOf(project);
-    var tasksDone = tasks.filter(function(t){return t.status==='done';}).length;
-    var tasksPct = tasks.length ? Math.round(tasksDone/tasks.length*100) : 0;
-    var totalMin = tasks.reduce(function(a,t){return a+(t.timeSpentMinutes||0);},0);
-    var totalH = (Math.round(totalMin/6)/10).toFixed(1);
-    var forfaitH = project.monthlyHours || 0;
-    var usedH = Math.round(totalMin/60*10)/10;
-    var restH = forfaitH ? Math.max(0, forfaitH - usedH).toFixed(1) : null;
-    var unreadCount = messages.filter(function(m){return m.author==='client'&&!m.readByAdmin;}).length;
-
-    window._currentProject = project;
-    if (!window._adminInvReg) window._adminInvReg = {};
-    if (!window._adminTaskReg) window._adminTaskReg = {};
-
-    // ── Pre-build HTML fragments ──────────────────────────────────────────────
-    var messagesHtml = messages.map(function(m) {
-      return '<div class="msg-row">' +
-        '<div style="flex:1">' +
-          '<div class="msg-author ' + (m.author === 'client' ? 'client' : '') + '">' + (m.author === 'cindy' ? 'Cindy' : esc(project.clientName)) + '</div>' +
-          '<div class="msg-content">' + esc(m.content) + '</div>' +
-          '<div class="msg-meta">' + formatDate(m.createdAt) + (!m.readByAdmin && m.author === 'client' ? ' · <strong style="color:var(--orange)">non lu</strong>' : '') + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    var tokensHtml = tokens.map(function(t) {
-      return '<div class="token-row ' + (t.revoked ? 'token-revoked' : '') + '">' +
-        '<div style="flex:1">' +
-          '<div class="token-url" onclick="copyToken(\'' + t.token + '\')" title="Cliquer pour copier">/p/' + t.token.slice(0,16) + '…</div>' +
-          '<div class="token-meta">' +
-            (t.label ? esc(t.label) + ' · ' : '') +
-            'Créé le ' + formatDate(t.createdAt) +
-            (t.lastUsedAt ? ' · Utilisé le ' + formatDate(t.lastUsedAt) : '') +
-            (t.revoked ? ' · <span style="color:var(--red)">Révoqué</span>' : '') +
-          '</div>' +
-        '</div>' +
-        (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button><button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
-      '</div>';
-    }).join('');
-
-    var filesHtml = files.map(function(f) {
-      return '<div class="file-row">' +
-        '<span>' + (f.type.startsWith('image/') ? '🖼️' : f.type.includes('pdf') ? '📄' : '📎') + '</span>' +
-        '<span class="file-name-col">' + esc(f.name) + '</span>' +
-        '<span style="font-size:12px;color:var(--muted)">' + f.category + '</span>' +
-        '<a class="btn btn--outline btn--sm" href="/api/projects/' + project.id + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">↓</a>' +
-        '<button class="btn btn--danger btn--sm" onclick="deleteFile(\'' + f.key.replace(/\'/g, "\\'") + '\')">Suppr.</button>' +
-      '</div>';
-    }).join('');
-
-    invoices.forEach(function(i){ window._adminInvReg[i.id] = i; });
-    var ADM_INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente', draft:'Brouillon' };
-    var ADM_INV_COLOR  = { sent:'#7fa688', signed:'#BAD1FD', paid:'#412F21', overdue:'#c0392b', cancelled:'#aaa', pending:'#e8a87c', draft:'#ddd' };
-    var ADM_INV_TXT    = { sent:'#0d2b16', signed:'#051833', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e', draft:'#555' };
-    var invoicesHtml = invoices.map(function(inv) {
-      var bg = ADM_INV_COLOR[inv.status] || '#aaa';
-      var fg = ADM_INV_TXT[inv.status] || '#222';
-      var badge = '<span style="display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:'+bg+';color:'+fg+'">'+(ADM_INV_STATUS[inv.status]||inv.status)+'</span>';
-      var amtStr = inv.amountTTC != null ? (inv.amountTTC/100).toFixed(2)+' € TTC' : inv.amount != null ? (inv.amount/100).toFixed(2)+' € HT' : '';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:600;font-size:13px">'+(inv.type==='devis'?'<span style="font-size:10px;background:var(--lavender);color:var(--navy);padding:1px 6px;border-radius:4px;margin-right:4px;font-weight:700">DEVIS</span>':'')+esc(inv.title||'Sans titre')+'</div>' +
-          (inv.number ? '<div style="font-size:11px;color:var(--muted)">'+esc(inv.number)+'</div>' : '') +
-        '</div>' +
-        '<div style="font-size:13px;font-weight:700;white-space:nowrap">'+esc(amtStr)+'</div>' +
-        badge +
-        '<div style="display:flex;gap:4px">' +
-          '<button class="btn btn--outline btn--sm" onclick="openEditInvoice(\''+inv.id+'\')">✏</button>' +
-          '<button class="btn btn--outline btn--sm" style="color:#c0392b" onclick="deleteInvoice(\''+inv.id+'\')">✕</button>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    var emailLogsHtml = [...emailLogs].reverse().slice(0,10).map(function(l) {
-      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:10px;align-items:center">' +
-        '<span style="color:' + (l.status === 'sent' ? 'var(--sage)' : 'var(--red)') + '">' + (l.status === 'sent' ? '✓' : '✗') + '</span>' +
-        '<span style="flex:1">' + esc(l.subject) + '</span>' +
-        '<span style="color:var(--muted);font-size:12px">' + formatDate(l.sentAt) + '</span>' +
-      '</div>';
-    }).join('');
-
-    var statusOptions = Object.entries(STATUS_LABELS).map(function(entry) {
-      var val = entry[0]; var label = entry[1];
-      return '<option value="' + val + '"' + (val === project.status ? ' selected' : '') + '>' + label + '</option>';
-    }).join('');
-
-    // ── Steps HTML (used in accueil tab) ─────────────────────────────────────
     var STEP_DOT_STYLE = {
       upcoming:       { bg:'var(--border)',    color:'var(--muted)',  label:'•' },
       in_progress:    { bg:'var(--sky)',       color:'var(--navy)',   label:'▶' },
@@ -1082,7 +1225,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       done:           'background:var(--sage);color:#fff',
     };
     var STEP_CARD_CLS = { upcoming:'', in_progress:' step-card--active', waiting_client:' step-card--waiting', done:' step-card--done' };
-    var stepsHtml = '<div class="step-cards">' + ([...project.steps].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
+
+    const stepsHtml = '<div class="step-cards">' + ([...project.steps].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
       var dot = STEP_DOT_STYLE[step.status] || STEP_DOT_STYLE.upcoming;
       var cardCls = 'step-card' + (STEP_CARD_CLS[step.status]||'');
       var badgeSty = STEP_BADGE_STYLE[step.status] || STEP_BADGE_STYLE.upcoming;
@@ -1117,272 +1261,247 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('') || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune étape.</p>') + '</div>';
 
-    // ── Tab content ─────────────────────────────────────────────────────────
-    var tabContent = '';
-    if (tab === 'accueil') {
-      var infoCard = '<div class="card" id="card-info">' +
-        '<div class="card-header">' +
-          '<span class="card-title">Informations du projet</span>' +
-          '<div style="display:flex;gap:8px">' +
-            '<button class="btn btn--outline btn--sm" id="btn-edit-info" onclick="toggleEditInfo()">Modifier</button>' +
-            '<button class="btn btn--primary btn--sm" id="btn-save-info" onclick="saveProjectInfo()" style="display:none">Sauvegarder</button>' +
-            '<button class="btn btn--outline btn--sm" id="btn-cancel-info" onclick="toggleEditInfo()" style="display:none">Annuler</button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card-body" id="info-view">' +
-          '<div class="form-row">' +
-            '<div><label>Client</label><p>' + esc(project.clientName) + '</p></div>' +
-            '<div><label>Email</label><p>' + esc(project.clientEmail) + '</p></div>' +
-          '</div>' +
-          '<div class="form-field"><label>Titre</label><p>' + esc(project.projectTitle) + '</p></div>' +
-          '<div class="form-field"><label>Description</label><p style="white-space:pre-wrap">' + esc(project.description) + '</p></div>' +
-          '<div class="form-row">' +
-            '<div><label>Statut</label>' + adminStatusBadge(project.status) + '</div>' +
-            '<div><label>Deadline</label><p>' + (project.deadline ? formatDate(project.deadline) : '—') + '</p></div>' +
-          '</div>' +
-          (project.meetingLink ? '<div class="form-field"><label>Lien visio</label><a href="' + esc(project.meetingLink) + '" target="_blank" style="color:var(--sage)">' + esc(project.meetingLink) + '</a></div>' : '') +
-        '</div>' +
-        '<div class="card-body" id="info-edit" style="display:none">' +
-          '<div class="form-row">' +
-            '<div class="form-field"><label>Nom client</label><input type="text" id="edit-clientName" value="' + esc(project.clientName) + '"></div>' +
-            '<div class="form-field"><label>Email client</label><input type="email" id="edit-clientEmail" value="' + esc(project.clientEmail) + '"></div>' +
-          '</div>' +
-          '<div class="form-field"><label>Titre</label><input type="text" id="edit-projectTitle" value="' + esc(project.projectTitle) + '"></div>' +
-          '<div class="form-field"><label>Description</label><textarea id="edit-description" rows="3">' + esc(project.description) + '</textarea></div>' +
-          '<div class="form-field"><label for="edit-type">Type d\'espace</label><select id="edit-type">' +
-            ['identite','site','partenaire','support','custom'].map(function(tv) {
-              return '<option value="' + tv + '"' + ((project.type||'custom') === tv ? ' selected' : '') + '>' + (TYPE_LABELS[tv]||tv) + '</option>';
-            }).join('') +
-          '</select></div>' +
-          '<div class="form-row">' +
-            '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
-            '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
-          '</div>' +
-          '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
-          (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
-          '<div class="form-field"><label>URL de la bannière</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://…" oninput="previewBanner()"><small style="color:var(--muted);font-size:11px">Coller un lien image ou laisser vide pour une couleur</small></div>' +
-          '<div class="form-field"><label>Couleur de la bannière</label>' +
-            '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
-              [['#412F21','#EFE1B0','Marron'],['#051833','#BAD1FD','Navy'],['#2D4A2D','#d4edda','Forêt'],['#412F21','#E4D1FE','Brun–Lavande'],['#1a1a2e','#e8e0f0','Prune'],['#7C4A00','#fff3e0','Ambre']].map(function(c) {
-                var isSelected = (project.bannerColor||'#412F21|#EFE1B0') === c[0]+'|'+c[1];
-                return '<button type="button" title="'+esc(c[2])+'" onclick="pickBannerColor(\''+c[0]+'\',\''+c[1]+'\')" style="width:36px;height:36px;border-radius:8px;border:' + (isSelected?'3px solid var(--navy)':'2px solid transparent') + ';background:linear-gradient(135deg,'+c[0]+','+c[1]+');cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.15)" aria-label="'+esc(c[2])+'"></button>';
-              }).join('') +
-              '<input type="color" id="edit-bannerColorCustom" value="' + esc(project.bannerColor ? project.bannerColor.split('|')[0] : '#412F21') + '" onchange="pickBannerColor(this.value,null)" title="Couleur personnalisée" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
-            '</div>' +
-          '</div>' +
-          '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : 'linear-gradient(135deg,'+(project.bannerColor||'#412F21|#EFE1B0').split('|').join(',')+')')+';border:1.5px solid var(--border)"></div>' +
+    const messagesHtml = messages.map(function(m) {
+      return '<div class="msg-row">' +
+        '<div style="flex:1">' +
+          '<div class="msg-author ' + (m.author === 'client' ? 'client' : '') + '">' + (m.author === 'cindy' ? 'Cindy' : esc(project.clientName)) + '</div>' +
+          '<div class="msg-content">' + esc(m.content) + '</div>' +
+          '<div class="msg-meta">' + formatDate(m.createdAt) + (!m.readByAdmin && m.author === 'client' ? ' · <strong style="color:var(--orange)">non lu</strong>' : '') + '</div>' +
         '</div>' +
       '</div>';
+    }).join('');
 
-      var stepsCard = '<div class="card">' +
-        '<div class="card-header"><span class="card-title">Étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
-        '<div class="card-body" id="steps-container" style="padding:8px 0">' + stepsHtml + '</div>' +
-      '</div>';
-
-      var sectionsCard = '<div class="card">' +
-        '<div class="card-header"><span class="card-title">Infos pratiques</span><button class="btn btn--sage btn--sm" onclick="openAddSection()">+ Ajouter</button></div>' +
-        '<div class="card-body" id="sections-container">' +
-          (project.practicalInfo.sections.length ?
-            project.practicalInfo.sections.map(function(s) {
-              return '<div style="padding:12px 0;border-bottom:1px solid var(--border)" data-section-id="' + s.id + '">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-                  '<strong>' + esc(s.title) + '</strong>' +
-                  '<div style="display:flex;gap:6px">' +
-                    '<button class="btn btn--outline btn--sm" onclick="openEditSection(' + JSON.stringify(JSON.stringify(s)) + ')">Modifier</button>' +
-                    '<button class="btn btn--danger btn--sm" onclick="deleteSection(\'' + s.id + '\')">Suppr.</button>' +
-                  '</div>' +
-                '</div>' +
-                '<pre style="font-size:12px;color:var(--muted);white-space:pre-wrap;font-family:inherit;line-height:1.5">' + esc(s.content) + '</pre>' +
-              '</div>';
-            }).join('') :
-            '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune section.</p>') +
-        '</div>' +
-      '</div>';
-
-      // Summary bar for partenaire
-      var forfaitBar = '';
-      if (project.type === 'partenaire') {
-        var forfaitPct = forfaitH ? Math.min(100, Math.round(usedH/forfaitH*100)) : 0;
-        forfaitBar = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">' +
-          '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px">' +
-            '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait mensuel</div>' +
-            '<div style="font-size:22px;font-weight:700;color:var(--navy)">' + (restH !== null ? restH + 'h' : '—') + '</div>' +
-            '<div style="font-size:11px;color:var(--muted)">' + (forfaitH ? 'restantes sur ' + forfaitH + 'h' : 'non défini') + '</div>' +
-            (forfaitH ? '<div style="margin-top:8px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+forfaitPct+'%;height:100%;background:var(--sage)"></div></div>' : '') +
-          '</div>' +
-          '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px">' +
-            '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Heures suivies</div>' +
-            '<div style="font-size:22px;font-weight:700;color:var(--brown)">' + totalH + 'h</div>' +
-            '<div style="font-size:11px;color:var(--muted)">' + totalMin + ' minutes</div>' +
-          '</div>' +
-          '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px">' +
-            '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Progression</div>' +
-            '<div style="font-size:22px;font-weight:700;color:var(--navy)">' + tasksPct + '%</div>' +
-            '<div style="font-size:11px;color:var(--muted)">' + tasksDone + '/' + tasks.length + ' tâches</div>' +
-            '<div style="margin-top:8px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+tasksPct+'%;height:100%;background:var(--brown)"></div></div>' +
-          '</div>' +
-        '</div>';
-      }
-
-      tabContent = forfaitBar + '<div class="proj-grid"><div class="proj-col">' + infoCard + stepsCard + '</div><div class="proj-col">' + sectionsCard + '</div></div>';
-
-    } else if (tab === 'calendrier') {
-      tabContent = buildCalendar(project);
-
-    } else if (tab === 'taches') {
-      tabContent = buildTaskList(project);
-
-    } else if (tab === 'suivi') {
-      tabContent = buildCharts(project);
-
-    } else if (tab === 'client') {
-      var clientGrid = '<div class="proj-grid">' +
-        '<div class="proj-col">' +
-          '<div class="card">' +
-            '<div class="card-header"><span class="card-title">Messages' + (unreadCount ? ' <span style="background:var(--brown);color:#EFE1B0;font-size:11px;padding:1px 7px;border-radius:999px;margin-left:6px">' + unreadCount + '</span>' : '') + '</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
-            '<div class="card-body">' +
-              '<div id="messages-container" style="margin-bottom:16px;max-height:400px;overflow-y:auto">' + (messagesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun message.</p>') + '</div>' +
-              '<div style="display:flex;flex-direction:column;gap:10px">' +
-                '<textarea id="admin-message" placeholder="Répondre au client…" rows="3"></textarea>' +
-                '<div style="display:flex;justify-content:flex-end"><button class="btn btn--primary" onclick="sendAdminMessage()">Envoyer →</button></div>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="card-header"><span class="card-title">Notifications email</span><button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button></div>' +
-            '<div class="card-body">' +
-              '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Historique des 10 derniers emails</div>' +
-              (emailLogsHtml || '<p style="color:var(--muted);text-align:center;padding:12px 0">Aucun email.</p>') +
-            '</div>' +
+    const tokensHtml = tokens.map(function(t) {
+      return '<div class="token-row ' + (t.revoked ? 'token-revoked' : '') + '">' +
+        '<div style="flex:1">' +
+          '<div class="token-url" onclick="copyToken(\'' + t.token + '\')" title="Cliquer pour copier">/p/' + t.token.slice(0,16) + '…</div>' +
+          '<div class="token-meta">' +
+            (t.label ? esc(t.label) + ' · ' : '') +
+            'Créé le ' + formatDate(t.createdAt) +
+            (t.lastUsedAt ? ' · Utilisé le ' + formatDate(t.lastUsedAt) : '') +
+            (t.revoked ? ' · <span style="color:var(--red)">Révoqué</span>' : '') +
           '</div>' +
         '</div>' +
-        '<div class="proj-col">' +
-          '<div class="card">' +
-            '<div class="card-header"><span class="card-title">💳 Factures & Devis</span><button class="btn btn--sage btn--sm" onclick="openAddInvoice()">+ Ajouter</button></div>' +
-            '<div class="card-body" id="invoices-container">' + (invoicesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune facture.</p>') + '</div>' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="card-header"><span class="card-title">Fichiers</span><button class="btn btn--sage btn--sm" onclick="document.getElementById(\'file-input\').click()">+ Uploader</button><input type="file" id="file-input" style="display:none" onchange="uploadFile(this)"></div>' +
-            '<div class="card-body" id="files-container">' + (filesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun fichier.</p>') + '</div>' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="card-header"><span class="card-title">Liens d\'accès client</span><div style="display:flex;gap:8px"><button class="btn btn--outline btn--sm" onclick="genClientSpaceToken()">🌐 Espace client</button><button class="btn btn--sage btn--sm" onclick="openGenToken()">+ Lien projet</button></div></div>' +
-            '<div class="card-body" id="tokens-container">' + (tokensHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun lien.</p>') + '</div>' +
-          '</div>' +
+        (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button><button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+      '</div>';
+    }).join('');
+
+    const filesHtml = files.map(function(f) {
+      return '<div class="file-row">' +
+        '<span>' + (f.type.startsWith('image/') ? '🖼️' : f.type.includes('pdf') ? '📄' : '📎') + '</span>' +
+        '<span class="file-name-col">' + esc(f.name) + '</span>' +
+        '<span style="font-size:12px;color:var(--muted)">' + f.category + '</span>' +
+        '<a class="btn btn--outline btn--sm" href="/api/projects/' + project.id + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">↓</a>' +
+        '<button class="btn btn--danger btn--sm" onclick="deleteFile(\'' + f.key.replace(/\'/g, "\'") + '\')">Suppr.</button>' +
+      '</div>';
+    }).join('');
+
+    invoices.forEach(function(i){ window._adminInvReg[i.id] = i; });
+    const ADM_INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente', draft:'Brouillon' };
+    const ADM_INV_COLOR  = { sent:'#7fa688', signed:'#BAD1FD', paid:'#412F21', overdue:'#c0392b', cancelled:'#aaa', pending:'#e8a87c', draft:'#ddd' };
+    const ADM_INV_TXT    = { sent:'#0d2b16', signed:'#051833', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e', draft:'#555' };
+    const invoicesHtml = invoices.map(function(inv) {
+      var bg = ADM_INV_COLOR[inv.status] || '#aaa';
+      var fg = ADM_INV_TXT[inv.status] || '#222';
+      var badge = '<span style="display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:'+bg+';color:'+fg+'">'+(ADM_INV_STATUS[inv.status]||inv.status)+'</span>';
+      var amtStr = inv.amountTTC != null ? (inv.amountTTC/100).toFixed(2)+' € TTC' : inv.amount != null ? (inv.amount/100).toFixed(2)+' € HT' : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:600;font-size:13px">'+(inv.type==='devis'?'<span style="font-size:10px;background:var(--lavender);color:var(--navy);padding:1px 6px;border-radius:4px;margin-right:4px;font-weight:700">DEVIS</span>':'')+esc(inv.title||'Sans titre')+'</div>' +
+          (inv.number ? '<div style="font-size:11px;color:var(--muted)">'+esc(inv.number)+'</div>' : '') +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:700;white-space:nowrap">'+esc(amtStr)+'</div>' +
+        badge +
+        '<div style="display:flex;gap:4px">' +
+          '<button class="btn btn--outline btn--sm" onclick="openEditInvoice(\''+inv.id+'\')">✏</button>' +
+          '<button class="btn btn--outline btn--sm" style="color:#c0392b" onclick="deleteInvoice(\''+inv.id+'\')">✕</button>' +
         '</div>' +
       '</div>';
-      tabContent = clientGrid;
-    }
+    }).join('');
 
-    // ── Task drawer overlay ───────────────────────────────────────────────────
-    var drawerHtml = '';
-    if (_adminTaskDrawer) {
-      var dt = (_adminTaskReg || {})[_adminTaskDrawer];
-      if (dt) {
-        var BRIEF_LABELS = { pas_commence:'Pas commencé', brief_en_cours:'Brief en cours', brief_pret:'Brief prêt', en_projet:'En projet', a_retravailler:'À retravailler', archive:'Archivé' };
-        var urgColors = { haute:'#c0392b', moyenne:'#e8a87c', basse:'#7fa688' };
-        var urgBg = urgColors[dt.urgency] || '#aaa';
-        drawerHtml =
-          '<div id="task-drawer-overlay" onclick="closeTaskDrawer()" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200"></div>' +
-          '<div id="task-drawer" style="position:fixed;top:0;right:0;width:480px;max-width:95vw;height:100vh;background:var(--white);z-index:201;overflow-y:auto;box-shadow:-4px 0 24px rgba(0,0,0,0.15);display:flex;flex-direction:column">' +
-            '<div style="background:' + urgBg + ';padding:20px 24px 16px;position:relative">' +
-              '<button onclick="closeTaskDrawer()" style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:#fff;line-height:1">✕</button>' +
-              '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,0.8);margin-bottom:6px">' + (dt.missionType ? esc(dt.missionType) : 'Tâche') + '</div>' +
-              '<div style="font-size:20px;font-weight:700;color:#fff;line-height:1.3">' + esc(dt.title) + '</div>' +
-            '</div>' +
-            '<div style="padding:20px 24px;flex:1;display:flex;flex-direction:column;gap:16px">' +
-              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-                '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
-                  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Statut</div>' +
-                  '<select onchange="updateTaskStatus(\''+dt.id+'\',this.value)" style="font-size:13px;padding:4px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);width:100%">' +
-                    ['todo','in_progress','done'].map(function(s){return '<option value="'+s+'"'+(s===dt.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
-                  '</select>' +
-                '</div>' +
-                '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
-                  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Priorité</div>' +
-                  '<div style="font-size:14px;font-weight:600;color:' + urgBg + '">' + (dt.urgency==='haute'?'🔴 Haute':dt.urgency==='basse'?'🟢 Basse':'🟡 Normale') + '</div>' +
-                '</div>' +
-                '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
-                  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Deadline</div>' +
-                  '<div style="font-size:13px;color:var(--navy)">' + (dt.dueDate ? formatDate(dt.dueDate) : '—') + '</div>' +
-                '</div>' +
-                '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
-                  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Temps suivi</div>' +
-                  '<div style="font-size:13px;color:var(--navy)">' + (dt.timeSpentMinutes ? dt.timeSpentMinutes + ' min' : '—') + '</div>' +
-                '</div>' +
-                (dt.briefStatus ? '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
-                  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Brief</div>' +
-                  '<div style="font-size:13px;color:var(--navy)">' + (BRIEF_LABELS[dt.briefStatus]||dt.briefStatus) + '</div>' +
-                '</div>' : '') +
-                (dt.missionType ? '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
-                  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Pôle</div>' +
-                  '<div style="font-size:13px;color:var(--navy)">' + esc(dt.missionType) + '</div>' +
-                '</div>' : '') +
-              '</div>' +
-              (dt.content ? '<div>' +
-                '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Description</div>' +
-                '<div style="font-size:14px;line-height:1.6;color:var(--text);background:var(--surface);border-radius:10px;padding:14px;white-space:pre-wrap">' + esc(dt.content) + '</div>' +
-              '</div>' : '') +
-              (dt.livrableUrl ? '<div>' +
-                '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Livrable</div>' +
-                '<a href="' + esc(dt.livrableUrl) + '" target="_blank" rel="noopener" style="font-size:13px;color:var(--sage);word-break:break-all">' + esc(dt.livrableUrl) + '</a>' +
-              '</div>' : '') +
-              '<div style="font-size:11px;color:var(--muted)">' +
-                (dt.createdAt ? 'Créé le ' + formatDate(dt.createdAt) + ' · ' : '') +
-                (dt.pinned ? '📌 Épinglée · ' : '') +
-              '</div>' +
-            '</div>' +
-            '<div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px">' +
-              '<button class="btn btn--primary" onclick="openEditTask(\'' + dt.id + '\')">✏ Modifier</button>' +
-              '<button class="btn btn--outline" onclick="setTaskTime(\'' + dt.id + '\')">⏱ Temps</button>' +
-              '<button class="btn btn--danger" onclick="deleteTask(\'' + dt.id + '\');closeTaskDrawer()">Supprimer</button>' +
-            '</div>' +
-          '</div>';
-      }
-    }
+    const emailLogsHtml = [...emailLogs].reverse().slice(0,10).map(function(l) {
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:10px;align-items:center">' +
+        '<span style="color:' + (l.status === 'sent' ? 'var(--sage)' : 'var(--red)') + '">' + (l.status === 'sent' ? '✓' : '✗') + '</span>' +
+        '<span style="flex:1">' + esc(l.subject) + '</span>' +
+        '<span style="color:var(--muted);font-size:12px">' + formatDate(l.sentAt) + '</span>' +
+      '</div>';
+    }).join('');
+
+    const statusOptions = Object.entries(STATUS_LABELS).map(function(entry) {
+      const val = entry[0]; const label = entry[1];
+      return '<option value="' + val + '"' + (val === project.status ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
+
+    var bannerColors = (project.bannerColor || '#412F21|#EFE1B0').split('|');
+    var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : 'linear-gradient(135deg,' + bannerColors[0] + ' 0%,' + bannerColors[1] + ' 100%)';
+    var bannerFg = bannerColors[1] || '#EFE1B0';
+    var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client']];
+    var tabNav = '<div class="proj-tabnav">' +
+      tabs.map(function(tb){
+        var act = _adminProjTab === tb[0];
+        return '<button class="proj-tabnav__btn'+(act?' active':'')+'" onclick="adminProjTab(\''+tb[0]+'\')" data-tab="'+tb[0]+'">'+tb[1]+'</button>';
+      }).join('') +
+    '</div>';
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
-          '<div class="main-inner proj-main">' +
 
-            // Banner
-            '<div style="background:' + bannerBg + ';border-radius:0;padding:32px 36px;margin-bottom:0;position:relative;overflow:hidden;min-height:140px">' +
-              '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.25)"></div>' +
-              '<div style="position:relative;z-index:1">' +
-                '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
-                  '<div>' +
-                    '<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,0.7);margin-bottom:6px">' + (TYPE_LABELS[project.type]||project.type||'Projet') + '</div>' +
-                    '<h1 style="font-family:\'Alegreya\',serif;font-size:28px;color:#fff;line-height:1.25;font-style:italic;margin-bottom:6px">' + esc(project.projectTitle) + '</h1>' +
-                    '<p style="color:rgba(255,255,255,0.8);font-size:14px">' + esc(project.clientName) + ' · <a href="mailto:' + esc(project.clientEmail) + '" style="color:rgba(255,255,255,0.8)">' + esc(project.clientEmail) + '</a></p>' +
+          '<div class="proj-banner" style="background:' + bannerBg + '">' +
+            '<div class="proj-banner__inner">' +
+              '<div>' +
+                '<h1 class="proj-banner__title">' + esc(project.projectTitle) + '</h1>' +
+                '<p class="proj-banner__sub">' + esc(project.clientName) + ' · ' + esc(project.clientEmail) + '</p>' +
+              '</div>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                '<button class="btn btn--ghost" onclick="navigate(\'/admin\')">← Dashboard</button>' +
+                '<button class="btn btn--ghost" onclick="addProjectForClient()">➕ Nouveau projet</button>' +
+                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">👁 Espace client</button>' : '') +
+                '<button class="btn btn--ghost btn--ghost-danger" onclick="confirmDelete()">Supprimer</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          tabNav +
+
+          '<div id="tab-accueil" class="main-inner proj-main" style="' + (_adminProjTab==='accueil' ? '' : 'display:none') + '">' +
+            '<div class="proj-grid">' +
+            '<div class="proj-col">' +
+            '<div class="card" id="card-info">' +
+              '<div class="card-header">' +
+                '<span class="card-title">Informations du projet</span>' +
+                '<div style="display:flex;gap:8px">' +
+                  '<button class="btn btn--outline btn--sm" id="btn-edit-info" onclick="toggleEditInfo()">Modifier</button>' +
+                  '<button class="btn btn--primary btn--sm" id="btn-save-info" onclick="saveProjectInfo()" style="display:none">Sauvegarder</button>' +
+                  '<button class="btn btn--outline btn--sm" id="btn-cancel-info" onclick="toggleEditInfo()" style="display:none">Annuler</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="card-body" id="info-view">' +
+                '<div class="form-row">' +
+                  '<div><label>Client</label><p>' + esc(project.clientName) + '</p></div>' +
+                  '<div><label>Email</label><p>' + esc(project.clientEmail) + '</p></div>' +
+                '</div>' +
+                '<div class="form-field"><label>Titre</label><p>' + esc(project.projectTitle) + '</p></div>' +
+                '<div class="form-field"><label>Description</label><p style="white-space:pre-wrap">' + esc(project.description) + '</p></div>' +
+                '<div class="form-row">' +
+                  '<div><label>Statut</label>' + adminStatusBadge(project.status) + '</div>' +
+                  '<div><label>Deadline</label><p>' + (project.deadline ? formatDate(project.deadline) : '—') + '</p></div>' +
+                '</div>' +
+                (project.meetingLink ? '<div class="form-field"><label>Lien visio</label><a href="' + esc(project.meetingLink) + '" target="_blank" style="color:var(--sage)">' + esc(project.meetingLink) + '</a></div>' : '') +
+              '</div>' +
+              '<div class="card-body" id="info-edit" style="display:none">' +
+                '<div class="form-row">' +
+                  '<div class="form-field"><label>Nom client</label><input type="text" id="edit-clientName" value="' + esc(project.clientName) + '"></div>' +
+                  '<div class="form-field"><label>Email client</label><input type="email" id="edit-clientEmail" value="' + esc(project.clientEmail) + '"></div>' +
+                '</div>' +
+                '<div class="form-field"><label>Titre</label><input type="text" id="edit-projectTitle" value="' + esc(project.projectTitle) + '"></div>' +
+                '<div class="form-field"><label>Description</label><textarea id="edit-description" rows="3">' + esc(project.description) + '</textarea></div>' +
+                '<div class="form-field"><label for="edit-type">Type d\'espace</label><select id="edit-type">' +
+                  ['identite','site','partenaire','support','custom'].map(function(tv) {
+                    return '<option value="' + tv + '"' + ((project.type||'custom') === tv ? ' selected' : '') + '>' + (TYPE_LABELS[tv]||tv) + '</option>';
+                  }).join('') +
+                '</select></div>' +
+                '<div class="form-row">' +
+                  '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
+                  '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
+                '</div>' +
+                '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
+                (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
+                '<div class="form-field"><label>URL de la bannière</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://…" oninput="previewBanner()"><small style="color:var(--muted);font-size:11px">Coller un lien image ou laisser vide pour une couleur</small></div>' +
+                '<div class="form-field"><label>Couleur de la bannière</label>' +
+                  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
+                    [['#412F21','#EFE1B0','Marron'],['#051833','#BAD1FD','Navy'],['#2D4A2D','#d4edda','Forêt'],['#412F21','#E4D1FE','Brun–Lavande'],['#1a1a2e','#e8e0f0','Prune'],['#7C4A00','#fff3e0','Ambre']].map(function(c) {
+                      var isSelected = (project.bannerColor||'#412F21|#EFE1B0') === c[0]+'|'+c[1];
+                      return '<button type="button" title="'+esc(c[2])+'" onclick="pickBannerColor(\''+c[0]+'\',\''+c[1]+'\')" style="width:36px;height:36px;border-radius:8px;border:' + (isSelected?'3px solid var(--navy)':'2px solid transparent') + ';background:linear-gradient(135deg,'+c[0]+','+c[1]+');cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.15)" aria-label="'+esc(c[2])+'"></button>';
+                    }).join('') +
+                    '<input type="color" id="edit-bannerColorCustom" value="' + esc(project.bannerColor ? project.bannerColor.split('|')[0] : '#412F21') + '" onchange="pickBannerColor(this.value,null)" title="Couleur personnalisée" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
                   '</div>' +
-                  '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">' +
-                    '<button class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)" onclick="navigate(\'/admin\')">← Dashboard</button>' +
-                    '<button class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)" onclick="addProjectForClient()">+ Projet</button>' +
-                    (project.clientEmail ? '<button class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)" onclick="previewClientSpace()">👁 Espace client</button>' : '') +
-                    '<button class="btn" style="background:rgba(220,50,50,0.5);color:#fff;border:1px solid rgba(255,255,255,0.3)" onclick="confirmDelete()">Supprimer</button>' +
-                  '</div>' +
+                '</div>' +
+                '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : 'linear-gradient(135deg,'+(project.bannerColor||'#412F21|#EFE1B0').split('|').join(',')+')')+';border:1.5px solid var(--border)"></div>' +
+              '</div>' +
+            '</div>' +
+
+            (project.type === 'partenaire' ? buildPartenaireSection(project) : '') +
+
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
+              '<div class="card-body" id="steps-container" style="padding:8px 0">' + stepsHtml + '</div>' +
+            '</div>' +
+
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Infos pratiques</span><button class="btn btn--sage btn--sm" onclick="openAddSection()">+ Ajouter</button></div>' +
+              '<div class="card-body" id="sections-container">' +
+                (project.practicalInfo.sections.length ?
+                  project.practicalInfo.sections.map(function(s) {
+                    return '<div style="padding:12px 0;border-bottom:1px solid var(--border)" data-section-id="' + s.id + '">' +
+                      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+                        '<strong>' + esc(s.title) + '</strong>' +
+                        '<div style="display:flex;gap:6px">' +
+                          '<button class="btn btn--outline btn--sm" onclick="openEditSection(' + JSON.stringify(JSON.stringify(s)) + ')">Modifier</button>' +
+                          '<button class="btn btn--danger btn--sm" onclick="deleteSection(\'' + s.id + '\')">Suppr.</button>' +
+                        '</div>' +
+                      '</div>' +
+                      '<pre style="font-size:12px;color:var(--muted);white-space:pre-wrap;font-family:inherit;line-height:1.5">' + esc(s.content) + '</pre>' +
+                    '</div>';
+                  }).join('') :
+                  '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune section.</p>') +
+              '</div>' +
+            '</div>' +
+
+            '</div>' + /* fin proj-col gauche */
+            '<div class="proj-col">' +
+
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Messages</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
+              '<div class="card-body">' +
+                '<div id="messages-container" style="margin-bottom:16px;max-height:400px;overflow-y:auto">' + (messagesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun message.</p>') + '</div>' +
+                '<div style="display:flex;flex-direction:column;gap:10px">' +
+                  '<textarea id="admin-message" placeholder="Répondre au client…" rows="3"></textarea>' +
+                  '<div style="display:flex;justify-content:flex-end"><button class="btn btn--primary" onclick="sendAdminMessage()">Envoyer →</button></div>' +
                 '</div>' +
               '</div>' +
             '</div>' +
 
-            // Tab nav
-            '<div class="proj-tab-nav">' +
-              projTabBtn('accueil', '🏠 Accueil', tab==='accueil') +
-              projTabBtn('calendrier', '📅 Calendrier', tab==='calendrier') +
-              projTabBtn('taches', '📋 Tâches', tab==='taches') +
-              projTabBtn('suivi', '📊 Suivi', tab==='suivi') +
-              projTabBtn('client', '💬 Client' + (unreadCount ? ' ('+unreadCount+')' : ''), tab==='client') +
-            '</div>' +
+            '</div>' + /* fin proj-col droite */
+            '</div>' + /* fin proj-grid accueil */
+          '</div>' + /* fin tab-accueil */
 
-            // Tab content
-            '<div class="proj-section">' + tabContent + '</div>' +
-
+          '<div id="tab-calendrier" class="main-inner proj-main" style="' + (_adminProjTab==='calendrier' ? '' : 'display:none') + '">' +
+            buildCalendar(project) +
           '</div>' +
+
+          '<div id="tab-taches" class="main-inner proj-main" style="' + (_adminProjTab==='taches' ? '' : 'display:none') + '">' +
+            buildTaskList(project) +
+          '</div>' +
+
+          '<div id="tab-suivi" class="main-inner proj-main" style="' + (_adminProjTab==='suivi' ? '' : 'display:none') + '">' +
+            buildCharts(project) +
+          '</div>' +
+
+          '<div id="tab-client" class="main-inner proj-main" style="' + (_adminProjTab==='client' ? '' : 'display:none') + '">' +
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Fichiers</span><button class="btn btn--sage btn--sm" onclick="document.getElementById(\'file-input\').click()">+ Uploader</button><input type="file" id="file-input" style="display:none" onchange="uploadFile(this)"></div>' +
+              '<div class="card-body" id="files-container">' + (filesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun fichier.</p>') + '</div>' +
+            '</div>' +
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">💳 Factures & Devis</span><button class="btn btn--sage btn--sm" onclick="openAddInvoice()">+ Ajouter</button></div>' +
+              '<div class="card-body" id="invoices-container">' + (invoicesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune facture.</p>') + '</div>' +
+            '</div>' +
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Liens d\'accès client</span><div style="display:flex;gap:8px"><button class="btn btn--outline btn--sm" onclick="genClientSpaceToken()">🌐 Espace client</button><button class="btn btn--sage btn--sm" onclick="openGenToken()">+ Lien projet</button></div></div>' +
+              '<div class="card-body" id="tokens-container">' + (tokensHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun lien.</p>') + '</div>' +
+            '</div>' +
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Notifications email</span><button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button></div>' +
+              '<div class="card-body">' +
+                '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Historique des 10 derniers emails</div>' +
+                (emailLogsHtml || '<p style="color:var(--muted);text-align:center;padding:12px 0">Aucun email.</p>') +
+              '</div>' +
+            '</div>' +
+          '</div>' + /* fin tab-client */
+
         '</main>' +
-      '</div>' +
-      drawerHtml +
       '</div>' +
 
       '<div class="modal-backdrop" id="modal-step">' +
@@ -1496,6 +1615,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       m.addEventListener('click', function(e) { if (e.target === m && m.id !== 'modal-login') m.classList.remove('open'); });
     });
   }
+
+  // ── Tab navigation ─────────────────────────────────────────────────────────
+  window.adminProjTab = function(tab) {
+    _adminProjTab = tab;
+    ['accueil','calendrier','taches','suivi','client'].forEach(function(t) {
+      var el = document.getElementById('tab-' + t);
+      if (el) el.style.display = (t === tab ? '' : 'none');
+    });
+    document.querySelectorAll('.proj-tabnav__btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+  };
 
   // ── Project actions ────────────────────────────────────────────────────────
   window.toggleEditInfo = function() {
@@ -1798,8 +1929,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   var _calSel = null;
   var _calFilter = '';
-  var _adminProjTab = 'accueil'; // 'accueil'|'calendrier'|'taches'|'suivi'|'client'
-  var _adminTaskDrawer = null; // task id open in drawer
+  var _adminProjTab = 'accueil';
+  var _adminTaskDrawer = null;
 
   function buildCalendar(project) {
     var tasks = tasksOf(project);
@@ -1849,7 +1980,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</select>' +
             '<button onclick="setTaskTime(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">⏱ Temps</button>' +
             '<button onclick="openEditTask(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">✏ Modifier</button>' +
-            '<button onclick="openTaskDrawer(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:var(--navy);color:#fff;border:none;border-radius:5px;cursor:pointer">→ Détail</button>' +
           '</div>' +
         '</div>' +
         (t.livrableUrl?'<div style="margin-top:6px"><a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:11px;color:var(--sage);text-decoration:none">↗ Livrable</a></div>':'') +
@@ -1971,8 +2101,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
-          '<button class="btn btn--primary btn--sm" onclick="openTaskDrawer(\'' + t.id + '\')">→ Détail</button>' +
-          '<button class="btn btn--outline btn--sm" onclick="openEditTask(\'' + t.id + '\')">✏ Modifier</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="openEditTask(\'' + t.id + '\')">Modifier</button>' +
           '<button class="btn btn--outline btn--sm" onclick="setTaskTime(\'' + t.id + '\')">⏱ Temps</button>' +
           '<button class="btn btn--outline btn--sm" onclick="toggleTaskPin(\'' + t.id + '\',' + (t.pinned?'true':'false') + ')">' + (t.pinned?'Désépingler':'Épingler') + '</button>' +
           '<button class="btn btn--outline btn--sm" onclick="attachDeliverable(\'' + t.id + '\')">📎 Livrable</button>' +
@@ -2122,10 +2251,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     };
     input.click();
   };
-  window.adminProjTab = function(t) { _adminProjTab = t; loadProject(currentProjectId); };
-  window.openTaskDrawer = function(id) { _adminTaskDrawer = id; loadProject(currentProjectId); };
-  window.closeTaskDrawer = function() { _adminTaskDrawer = null; loadProject(currentProjectId); };
-
   window.archiveProject = async function() {
     showConfirm('Le projet passera en statut "Archivé". Vous pourrez le retrouver dans les filtres.', async function() {
       var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) });
