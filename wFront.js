@@ -4178,12 +4178,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function applyClientTheme(projects) {
     var color = (projects[0] && projects[0].project && projects[0].project.bannerColor) ? projects[0].project.bannerColor.split('|')[0] : null;
     if (!color) return;
-    var el = document.getElementById('cp-theme-style');
-    if (!el) { el = document.createElement('style'); el.id = 'cp-theme-style'; document.head.appendChild(el); }
+    // Element distinct du theme utilisateur (cp-theme-style) pour ne pas l'ecraser
+    var el = document.getElementById('cp-banner-style');
+    if (!el) { el = document.createElement('style'); el.id = 'cp-banner-style'; document.head.appendChild(el); }
     var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
     var lum = 0.299*_r+0.587*_g+0.114*_b;
     var accent = lum > 160 ? '#051833' : color;
     el.textContent = ':root{--navy:'+accent+';--brown:'+color+';}';
+    // Garder le theme utilisateur prioritaire (dernier dans le head)
+    var u = document.getElementById('cp-theme-style');
+    if (u) document.head.appendChild(u);
   }
 
   function renderApp(data) {
@@ -4425,19 +4429,22 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function applyCpColors(colors) {
     var vars = Object.keys(colors).map(function(k){ return k+':'+colors[k]+';'; }).join('');
     var el = document.getElementById('cp-theme-style');
-    if (!el) { el = document.createElement('style'); el.id = 'cp-theme-style'; document.head.appendChild(el); }
+    if (!el) { el = document.createElement('style'); el.id = 'cp-theme-style'; }
     el.textContent = ':root{'+vars+'}';
+    // Toujours en dernier dans le head pour rester prioritaire sur le theme bannière
+    document.head.appendChild(el);
   }
 
   function loadCpColors() {
+    // On ne stocke/applique que les couleurs explicitement personnalisees
     var saved = localStorage.getItem('bloom_cp_colors');
-    var colors = saved ? JSON.parse(saved) : Object.assign({}, CP_COLOR_DEFAULTS);
+    var colors = saved ? JSON.parse(saved) : {};
     applyCpColors(colors);
   }
 
   window.updateCpColor = function(key, val) {
     var saved = localStorage.getItem('bloom_cp_colors');
-    var colors = saved ? JSON.parse(saved) : Object.assign({}, CP_COLOR_DEFAULTS);
+    var colors = saved ? JSON.parse(saved) : {};
     colors[key] = val;
     localStorage.setItem('bloom_cp_colors', JSON.stringify(colors));
     applyCpColors(colors);
@@ -4445,7 +4452,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.resetCpColors = function() {
     localStorage.removeItem('bloom_cp_colors');
-    applyCpColors(Object.assign({}, CP_COLOR_DEFAULTS));
+    applyCpColors({});
     var panel = document.getElementById('_cp-color-panel');
     if (panel) { panel.remove(); openCpColorPanel(); }
   };
