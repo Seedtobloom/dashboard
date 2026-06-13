@@ -449,6 +449,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-empty { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; line-height: 1.7; }
 .cp-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--navy); color: var(--blue-light); padding: 11px 22px; border-radius: 999px; font-size: 14px; z-index: 999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
 .cp-topbar { display: none; }
+.cp-pills { display: none; }
 /* Champs de formulaire (espace partenaire client) */
 .cp-card .form-field { margin-bottom: 0; }
 .cp-card .form-field label { display: block; font-size: 12px; color: var(--navy); margin-bottom: 4px; font-weight: 500; }
@@ -460,7 +461,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--navy); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .cp-topbar__logo { font-family: 'Alegreya', serif; font-size: 15px; color: var(--cream); font-style: italic; }
   .cp-topbar__name { font-size: 13px; color: var(--blue-light); opacity: 0.65; }
-  .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(5,24,51,0.04); border-bottom: 1px solid var(--border); }
   .cp-pills::-webkit-scrollbar { display: none; }
   .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); cursor: pointer; font-family: 'Ambra Sans', 'Jost', sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; transition: all 0.15s; }
   .cp-pill.active { background: var(--navy); color: var(--blue-light); border-color: var(--navy); }
@@ -2264,10 +2265,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</button>';
         }).join('') + '</div>';
     }
+    // Sur desktop, la navigation se fait via la sidebar → pills uniquement sur mobile.
     return '<div class="cp-topbar">' +
       '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:28px;width:auto">' +
       '<div class="cp-topbar__name">' + esc(appData.clientName) + '</div>' +
-    '</div>' + pills;
+    '</div>' +
+    pills; // Après la topbar, visible uniquement sur mobile via CSS
   }
 
   function buildProjectView(pd) {
