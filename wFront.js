@@ -2906,6 +2906,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     home:     '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
     messages: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     folder:   '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    pencil:   '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     chevron_r:'<polyline points="9 18 15 12 9 6"/>',
   };
   function cpIcon(name, size) {
@@ -3237,7 +3238,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var helpCard = '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
       '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Votre conversation avec Cindy couvre tout votre espace.</div>' +
-      '<button class="cp-btn cp-btn--dark" onclick="cpOpenMessages()" type="button">'+icon('messages',15)+' Ouvrir la messagerie</button>' +
+      '<button class="cp-btn cp-btn--dark" onclick="cpOpenMessages()" type="button">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +
     '</div>';
 
     function filesGroup(label, items) {
@@ -3735,7 +3736,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           fmt(r.regulM1) + (r.hasOverride ? ' ✎' : '') +
         '</span>' +
         '<button title="Saisir un report manuel" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;border-radius:4px" ' +
-          'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">'+icon('pencil',13)+'</button>' +
+          'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">'+cpIcon('pencil',13)+'</button>' +
       '</div>';
       return '<tr style="'+(isNow?'background:rgba(5,24,51,0.03);font-weight:600':'')+'\">' +
         '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
