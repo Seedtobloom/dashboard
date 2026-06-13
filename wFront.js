@@ -968,18 +968,32 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const res = await apiFetch('/api/projects');
     if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur', true); return; }
     const projs = await res.json();
+    // Tokens par projet (liens /p/ rattachés à un projet précis)
     const allTokens = await Promise.all(projs.map(async function(p) {
       const r = await apiFetch('/api/projects/' + p.id + '/tokens');
       const toks = r.ok ? await r.json() : [];
       return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, projectId: p.id }); });
     }));
-    const tokens = [].concat.apply([], allTokens).sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    // Tokens par email (espace multi-projets) — pour chaque email client unique
+    var emailMap = {};
+    projs.forEach(function(p) { if (p.clientEmail) emailMap[p.clientEmail.toLowerCase()] = p.clientName; });
+    const emailTokenLists = await Promise.all(Object.keys(emailMap).map(async function(email) {
+      const r = await apiFetch('/api/tokens/client/' + encodeURIComponent(email));
+      const toks = r.ok ? await r.json() : [];
+      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: 'Espace multi-projets', clientName: emailMap[email], isClientSpace: true }); });
+    }));
+
+    // Fusion + dédoublonnage par token
+    var seen = {};
+    var tokens = [].concat.apply([], allTokens).concat([].concat.apply([], emailTokenLists))
+      .filter(function(t) { if (seen[t.token]) return false; seen[t.token] = true; return true; })
+      .sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
 
     var rows = tokens.map(function(t) {
       var url = window.location.origin + '/p/' + t.token;
       return '<tr style="' + (t.revoked ? 'opacity:0.5' : '') + '">' +
         '<td style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</td>' +
-        '<td>' + esc(t.projectTitle) + '</td>' +
+        '<td>' + esc(t.projectTitle) + (t.isClientSpace ? ' <span style="font-size:10px;background:var(--lavender);color:var(--navy);padding:1px 7px;border-radius:999px;font-weight:600">Espace client</span>' : '') + '</td>' +
         '<td>' + esc(t.label || '—') + '</td>' +
         '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,12) + '…' + '</td>' +
         '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : 'Jamais') + '</td>' +
