@@ -63,6 +63,12 @@ textarea { resize: vertical; min-height: 72px; }
 .btn--sm { padding: 5px 12px; font-size: 12px; }
 .btn:hover { opacity: 0.82; }
 
+/* RGAA 10.7 — focus visible */
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid var(--lavender); outline-offset: 2px; border-radius: 4px;
+}
+.sidebar a:focus-visible, .sidebar button:focus-visible { outline-color: var(--cream); }
+
 @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }`;
 
 const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
@@ -77,7 +83,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .sidebar-header { padding: 22px 20px 18px; background: var(--brown); border-bottom: 1px solid rgba(239,225,176,0.12); }
 .sidebar-logo { font-family: 'Alegreya', serif; font-size: 17px; color: var(--cream); font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
 .sidebar-logo img { max-height: 36px; width: auto; }
-.sidebar-sub { font-size: 11px; color: var(--cream); margin-top: 3px; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.6px; }
+.sidebar-sub { font-size: 11px; color: var(--cream); margin-top: 3px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.6px; }
 .sidebar-new {
   margin: 10px 12px 4px; display: block; text-align: center; padding: 9px 12px;
   background: var(--lavender); color: var(--navy); border-radius: 8px; text-decoration: none;
@@ -93,7 +99,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .project-item:hover { background: rgba(186,209,253,0.07); }
 .project-item.active { background: rgba(186,209,253,0.1); border-left-color: var(--lavender); }
 .project-item__name { font-size: 13px; font-weight: 500; color: var(--blue-light); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.project-item__title { font-size: 12px; color: var(--blue-light); opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item__title { font-size: 12px; color: var(--blue-light); opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .unread-badge { background: var(--lavender); color: var(--navy); font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
@@ -137,7 +143,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
 .stat-card { background: var(--navy); border-radius: var(--radius); padding: 16px 20px; }
 .stat-card__num { font-family: 'Alegreya', serif; font-size: 32px; font-weight: 400; color: var(--blue-light); }
-.stat-card__label { font-size: 11px; color: var(--blue-light); opacity: 0.55; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card__label { font-size: 11px; color: var(--blue-light); opacity: 0.85; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 .projects-table { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .projects-table table { width: 100%; border-collapse: collapse; }
 .projects-table th { text-align: left; padding: 11px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); }
@@ -197,6 +203,9 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
 html { scroll-behavior: smooth; }
 body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
 .cp { display: flex; min-height: 100vh; }
+/* RGAA 10.7 — focus visible */
+a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--lavender); outline-offset: 2px; border-radius: 4px; }
+.cp-sidebar a:focus-visible, .cp-sidebar button:focus-visible, .cp-header button:focus-visible { outline-color: var(--cream); }
 
 /* Sidebar navy */
 .cp-sidebar {
@@ -207,7 +216,7 @@ body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); col
 .cp-sidebar__brand { padding: 24px 24px 20px; background: var(--brown); border-bottom: 1px solid rgba(239,225,176,0.12); }
 .cp-sidebar__logo { font-family: 'Alegreya', serif; font-size: 17px; color: var(--cream); font-style: italic; display: flex; align-items: center; gap: 10px; }
 .cp-sidebar__logo img { max-height: 32px; width: auto; }
-.cp-sidebar__greeting { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--blue-light); opacity: 0.5; margin-top: 20px; }
+.cp-sidebar__greeting { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--cream); opacity: 0.8; margin-top: 20px; }
 .cp-sidebar__name { font-family: 'Alegreya', serif; font-size: 22px; color: var(--cream); margin-top: 3px; font-style: italic; }
 .cp-cindy { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid rgba(186,209,253,0.1); }
 .cp-cindy__av {
@@ -217,13 +226,13 @@ body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); col
 }
 .cp-cindy__av img { width: 100%; height: 100%; object-fit: cover; }
 .cp-cindy__name { font-size: 13px; color: var(--blue-light); font-weight: 500; }
-.cp-cindy__role { font-size: 11px; color: var(--blue-light); opacity: 0.45; margin-top: 1px; }
+.cp-cindy__role { font-size: 11px; color: var(--blue-light); opacity: 0.75; margin-top: 1px; }
 .cp-nav { flex: 1; padding: 10px 0; }
-.cp-nav__label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--blue-light); opacity: 0.35; padding: 14px 24px 6px; }
+.cp-nav__label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--blue-light); opacity: 0.65; padding: 14px 24px 6px; }
 .cp-nav__item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 24px; background: none; border: none; cursor: pointer;
-  text-align: left; color: var(--blue-light); opacity: 0.65; font-family: 'Ambra Sans', 'Jost', sans-serif;
+  text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', 'Jost', sans-serif;
   font-size: 14px; transition: background 0.12s, opacity 0.12s; border-left: 2px solid transparent;
 }
 .cp-nav__item:hover { background: rgba(186,209,253,0.07); opacity: 1; }
@@ -231,9 +240,9 @@ body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); col
 .cp-nav__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .cp-nav__text { flex: 1; min-width: 0; }
 .cp-nav__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cp-nav__status { font-size: 11px; opacity: 0.55; margin-top: 1px; }
+.cp-nav__status { font-size: 11px; opacity: 0.8; margin-top: 1px; }
 .cp-nav__badge { background: var(--lavender); color: var(--navy); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; flex-shrink: 0; }
-.cp-sidebar__footer { padding: 16px 24px; border-top: 1px solid rgba(186,209,253,0.08); font-size: 11px; color: var(--blue-light); opacity: 0.25; margin-top: auto; }
+.cp-sidebar__footer { padding: 16px 24px; border-top: 1px solid rgba(186,209,253,0.08); font-size: 11px; color: var(--blue-light); opacity: 0.55; margin-top: auto; }
 
 /* Home cards view */
 .cp-home { flex: 1; margin-left: var(--sw); min-height: 100vh; padding: 40px 44px 64px; background: var(--bg); }
@@ -264,7 +273,7 @@ body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); col
   background: rgba(239,225,176,0.15); color: var(--cream);
 }
 .cp-header__title { font-family: 'Alegreya', serif; font-size: clamp(20px,2.5vw,30px); font-weight: 400; line-height: 1.3; color: var(--cream); margin-bottom: 6px; font-style: italic; }
-.cp-header__meta { font-size: 13px; color: var(--cream); opacity: 0.6; }
+.cp-header__meta { font-size: 13px; color: var(--cream); opacity: 0.88; }
 .cp-content { flex: 1; padding: 32px 44px 64px; max-width: 720px; }
 
 /* Action banner */
@@ -1473,6 +1482,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
   var STATUS_COLORS = { discovery:'#d4e4f0', in_progress:'#7fa688', waiting_client:'#e8a87c', review:'#b0a0d4', delivered:'#1a2744', archived:'#aaa' };
+  // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
+  var STATUS_TEXT = { discovery:'#051833', in_progress:'#0d2b16', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
+  function statusBadge(status) {
+    var bg = STATUS_COLORS[status] || '#aaa';
+    var fg = STATUS_TEXT[status] || '#1a1a1a';
+    var label = STATUS_LABELS[status] || status;
+    return '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;background:' + bg + ';color:' + fg + '">' + esc(label) + '</span>';
+  }
   var STATUS_LABELS = { discovery:'Découverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En révision', delivered:'Livré', archived:'Archivé' };
   var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
 
@@ -1562,9 +1579,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
         duration = weeks + ' sem.';
       }
-      return '<button class="cp-proj-card" onclick="cpSelHome(\'' + p.id + '\')">' +
+      return '<button type="button" class="cp-proj-card" aria-label="Ouvrir le projet ' + esc(p.projectTitle) + ' — ' + esc(label) + ', ' + pct + '% complété" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '">' +
-          '<span class="cp-proj-banner__badge" style="background:' + col + '40;color:' + (p.status==='delivered'?'#fff':'inherit') + '">' + label + '</span>' +
+          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
           (urgent ? '<span class="cp-proj-banner__urgent">⚡ ' + days + ' j</span>' : '') +
         '</div>' +
         '<div class="cp-proj-card__body">' +
@@ -1585,11 +1602,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '<div class="cp-empty">Aucun projet en cours.</div>';
 
     var archivedHtml = archived.length
-      ? '<div class="cp-archive-section"><div class="cp-archive-title">Archives</div><div class="cp-proj-grid">' + archived.map(cardHtml).join('') + '</div></div>'
+      ? '<div class="cp-archive-section"><h2 class="cp-archive-title">Archives</h2><div class="cp-proj-grid">' + archived.map(cardHtml).join('') + '</div></div>'
       : '';
 
     return '<div class="cp-home">' +
-      '<div class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + ' ✦</div>' +
+      '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + ' ✦</h1>' +
       '<div class="cp-home__sub">Retrouvez vos projets ci-dessous</div>' +
       activeHtml + archivedHtml +
     '</div>';
@@ -1665,14 +1682,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       reference:   files.filter(function(f){ return f.category==='reference'; }),
     };
 
-    var multi = appData.projects.length > 1;
+    var portal = appData.type === 'client';
     var extended = project.deadlineExtended
-      ? ' <span style="font-size:11px;background:rgba(65,47,33,0.15);color:var(--brown);padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">↩ Prolongée</span>'
+      ? ' <span style="font-size:11px;background:var(--cream);color:var(--brown);padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">↩ Prolongée</span>'
       : '';
     var header = '<div class="cp-header">' +
-      (multi ? '<button onclick="cpGoHome()" style="background:rgba(239,225,176,0.2);border:none;color:var(--cream);font-size:13px;padding:4px 12px;border-radius:999px;cursor:pointer;margin-bottom:12px;font-family:inherit">← Mes projets</button><br>' : '') +
-      '<span class="cp-header__status" style="background:' + col + '20;color:' + col + ';border:1px solid ' + col + '40">' + (STATUS_LABELS[project.status]||project.status) + '</span>' +
-      '<div class="cp-header__title">' + esc(project.projectTitle) + '</div>' +
+      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:var(--cream);border:none;color:var(--brown);font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
+      '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
+      '<h1 class="cp-header__title">' + esc(project.projectTitle) + '</h1>' +
       '<div class="cp-header__meta">Bonjour ' + esc(project.clientName) +
         (project.deadline ? ' · Livraison prévue le ' + fmtDate(project.deadline) + extended : '') +
       '</div>' +
@@ -1788,15 +1805,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         projects:[{ project:data.project, messages:data.messages, files:data.files }] };
     } else { appData = data; }
     if (!appData.projects.length) { showError(); return; }
-    var multi = appData.projects.length > 1;
+    var portal = appData.type === 'client';
     currentId = appData.projects[0].project.id;
     clientInitial = (appData.clientName||'C').charAt(0).toUpperCase();
-    var mainContent = multi ? buildHome() : buildProjectView(getPD(currentId));
+    var mainContent = portal ? buildHome() : buildProjectView(getPD(currentId));
     document.getElementById('app').innerHTML =
       '<div class="cp">' + buildSidebar() +
         '<div class="cp-main" id="cp-main">' + buildTopbar() + mainContent + '</div>' +
       '</div><div class="cp-toast" id="cp-toast"></div>';
-    if (!multi) attachForm();
+    if (!portal) attachForm();
     startPoll();
   }
 
