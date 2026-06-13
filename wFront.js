@@ -482,7 +482,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cal-day.selected { background:#eef3ff;border-color:var(--sky); }
 .cp-cal-day__num { font-size:12px;font-weight:600;color:var(--muted);margin-bottom:3px; }
 .cp-cal-day.today .cp-cal-day__num { color:var(--navy); }
-.cp-cal-pill { font-size:11px;padding:2px 6px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;line-height:1.4; }
+.cp-cal-pill { font-size:11px;padding:4px 7px;border-radius:6px;cursor:pointer;margin-bottom:3px;overflow:hidden;border-left:3px solid transparent; }
 .cp-task-panel { background:var(--white);border:1.5px solid var(--sky);border-radius:14px;padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }
 .cp-task-card { border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--white);transition:box-shadow 0.15s; }
 .cp-task-card:hover { box-shadow:0 3px 12px rgba(5,24,51,0.08); }
@@ -2077,7 +2077,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!email) { toast('Email client manquant', true); return; }
     const label = prompt('Label pour ce lien (optionnel) :', email);
     if (label === null) return;
-    const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: label || email }) });
+    const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
     await navigator.clipboard.writeText(data.url).catch(function() {});
@@ -2570,7 +2570,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-top:3px">📅 '+fmtDate(t.dueDate)+'</div>':'') +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
-          '<button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted);font-family:\'Jost\',sans-serif;white-space:nowrap">'+(t.status==='done'?'↩ Rouvrir':'✓ Terminer')+'</button>' +
           '<div style="display:flex;gap:4px">' +
             '<button onclick="cliEditTask('+tJson+',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)" title="Modifier">✏</button>' +
             '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44" title="Supprimer">✕</button>' +
@@ -2592,17 +2591,56 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var pid = project.id;
     var tab = cliPartTab[pid] || 'cal';
 
-    // Navigation onglets
-    var tabs = '<div class="cp-part-tabs">' +
-      [['cal','📅 Calendrier'],['board','📋 Tableau'],['forfait','⏱ Forfait']].map(function(t){
-        return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
-      }).join('') +
+    // Calculs pour la barre récap
+    var todayStr0 = _todayStr();
+    var curMonthKey = todayStr0.slice(0,7);
+    var doneTasks = tasks.filter(function(t){return t.status==='done';});
+    var todayTasks = tasks.filter(function(t){return (t.dueDate||'').slice(0,10)===todayStr0 && t.status!=='done';});
+    var monthReel = tasks.reduce(function(s,t){
+      var ref = (t.completedAt||t.dueDate||'');
+      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
+    }, 0);
+    var forfaitH = project.monthlyHours || 0;
+    var forfaitLeft = forfaitH - monthReel;
+    var pctDone = tasks.length ? Math.round(doneTasks.length/tasks.length*100) : 0;
+    function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
+
+    var summaryBar = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait restant</div>' +
+        '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
+          (forfaitH ? fmtHours(forfaitLeft) : '—') +
+        '</div>' +
+        (forfaitH ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">sur '+forfaitH+'h ce mois</div>' : '<div style="font-size:11px;color:var(--muted)">Forfait non défini</div>') +
+      '</div>' +
+      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tâches aujourd\'hui</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+todayTasks.length+'</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">à réaliser</div>' +
+      '</div>' +
+      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Progression</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+pctDone+'%</div>' +
+        '<div style="background:var(--border);border-radius:999px;height:5px;margin-top:6px"><div style="background:var(--sage);height:100%;border-radius:999px;width:'+pctDone+'%"></div></div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+' </div>' +
+      '</div>' +
     '</div>';
 
-    if (tab === 'cal')     return tabs + buildPartCal(pid, tasks, files, project);
-    if (tab === 'board')   return tabs + buildPartBoard(pid, tasks, files);
-    if (tab === 'forfait') return tabs + buildPartForfait(pid, tasks, project);
-    return tabs;
+    // Navigation onglets
+    var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
+      '<div style="display:flex;gap:0">' +
+        [['cal','📅 Calendrier'],['board','📋 Tableau'],['forfait','⏱ Forfait'],['notes','📝 Notes']].map(function(t){
+          return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
+        }).join('') +
+      '</div>' +
+      '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Nouvelle tâche</button>' +
+    '</div>';
+
+    if (tab === 'cal')     return summaryBar + tabs + buildPartCal(pid, tasks, files, project);
+    if (tab === 'board')   return summaryBar + tabs + buildPartBoard(pid, tasks, files);
+    if (tab === 'forfait') return summaryBar + tabs + buildPartForfait(pid, tasks, project);
+    if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);
+    return summaryBar + tabs;
   }
 
   // ── Onglet Calendrier ─────────────────────────────────────────────────────
@@ -2647,12 +2685,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var pills = dt.slice(0,3).map(function(t){
         var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
         var urg = CLI_URGENCY[t.urgency]||'#ddd';
-        var tip = [t.title, brief.label, CLI_URG_LABEL[t.urgency]||'', t.pole||'', t.dueDate?fmtDate(t.dueDate):''].filter(Boolean).join(' · ');
-        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';'+(t.status==='done'?'opacity:0.5;text-decoration:line-through':'')+'" title="'+esc(tip)+'">' +
-          '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+urg+';margin-right:4px;vertical-align:middle;flex-shrink:0"></span>' +
-          (t.status==='done'?'✓ ':'')+esc(t.title) +
+        var isDone = t.status==='done';
+        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';border-left:3px solid '+urg+';'+(isDone?'opacity:0.55':'')+'" onclick="event.stopPropagation();cliSelDay(\''+pid+'\',\''+((t.dueDate||'').slice(0,10)||todayStr)+'\')">' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">' +
+            (isDone?'<span style="font-size:9px">✓</span>':'') +
+            '<span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+esc(t.title)+'</span>' +
+          '</div>' +
+          (t.pole||t.missionType ? '<div style="font-size:10px;opacity:.75;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(t.pole?esc(t.pole):esc(t.missionType))+'</div>' : '') +
+          '<div style="display:flex;gap:4px;align-items:center;margin-top:2px">' +
+            '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+urg+'"></span>' +
+            '<span style="font-size:9px;opacity:.7">'+(CLI_URG_LABEL[t.urgency]||'')+'</span>' +
+            (t.briefStatus && t.briefStatus!=='pas_commence'?'<span style="font-size:9px;padding:0 4px;border-radius:4px;background:rgba(0,0,0,.06)">'+brief.label+'</span>':'') +
+          '</div>' +
         '</div>';
-      }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted)">+' +(dt.length-3)+' autres</div>':'');
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted);text-align:center">+' +(dt.length-3)+' autres</div>':'');
       cells += '<div class="'+cls+'" onclick="cliSelDay(\''+pid+'\',\''+ds+'\')">' +
         '<div class="cp-cal-day__num">'+dd+(isToday?'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--navy);margin-left:3px;vertical-align:middle"></span>':'')+'</div>'+pills+'</div>';
     }
@@ -2741,6 +2787,40 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</tr></thead>' +
         '<tbody>'+rows+'</tbody>' +
       '</table></div>' : '<div class="cp-empty">Aucune mission'+((flt.urgency||flt.status)?' correspondant aux filtres':'')+'.</div>') +
+    '</div>';
+  }
+
+  // ── Onglet Notes & Ressources ─────────────────────────────────────────────
+  function buildPartNotes(pid, project) {
+    var notes = project.notes || '';
+    var resources = Array.isArray(project.resources) ? project.resources : [];
+
+    return '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">📝 Notes & Ressources</h2>' +
+        '<button class="cp-btn cp-btn--dark" onclick="cliAddResource(\''+pid+'\')">+ Ajouter un lien</button>' +
+      '</div>' +
+      '<div style="margin-bottom:16px">' +
+        '<label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Notes libres</label>' +
+        '<textarea id="cli-notes-'+pid+'" style="width:100%;min-height:140px;font-family:\'Jost\',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;resize:vertical;color:var(--navy);background:var(--surface);line-height:1.6" placeholder="Vos notes, idées, points de suivi…">'+esc(notes)+'</textarea>' +
+        '<div style="margin-top:8px;display:flex;justify-content:flex-end">' +
+          '<button class="cp-btn cp-btn--sage" onclick="cliSaveNotes(\''+pid+'\')">Enregistrer les notes</button>' +
+        '</div>' +
+      '</div>' +
+      (resources.length ? '<div>' +
+        '<label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">Liens & ressources</label>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+          resources.map(function(r, i){
+            return '<div style="display:flex;align-items:center;gap:10px;background:var(--surface);padding:10px 14px;border-radius:10px;border:1px solid var(--border)">' +
+              '<span style="font-size:18px">🔗</span>' +
+              '<div style="flex:1;min-width:0">' +
+                '<div style="font-weight:600;font-size:13px;color:var(--navy)">'+esc(r.title||r.url)+'</div>' +
+                '<a href="'+esc(r.url)+'" target="_blank" rel="noopener" style="font-size:12px;color:var(--sage);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.url)+'</a>' +
+              '</div>' +
+              '<button onclick="cliDeleteResource(\''+pid+'\','+i+')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px">✕</button>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>' : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Aucune ressource. Cliquez "+ Ajouter un lien".</div>') +
     '</div>';
   }
 
