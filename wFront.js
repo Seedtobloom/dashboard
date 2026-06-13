@@ -1408,7 +1408,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '</div>' +
                 '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
                 (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
-                '<div class="form-field"><label>URL de la bannière</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://…" oninput="previewBanner()"><small style="color:var(--muted);font-size:11px">Coller un lien image ou laisser vide pour une couleur</small></div>' +
+                '<div class="form-field"><label>Image de bannière</label>' +
+                  '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
+                    '<input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl && !project.bannerUrl.startsWith('data:') ? project.bannerUrl : '') + '" placeholder="https://… (ou choisir ci-dessous)" oninput="previewBanner()" style="flex:1">' +
+                    '<label style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--navy)">📁 Choisir<input type="file" accept="image/*" style="display:none" onchange="uploadBannerImage(this)"></label>' +
+                    (project.bannerUrl ? '<button type="button" onclick="clearBannerImage()" style="padding:6px 10px;background:none;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;color:var(--muted)">✕ Supprimer</button>' : '') +
+                  '</div>' +
+                  '<small style="color:var(--muted);font-size:11px">Coller une URL ou choisir un fichier — laisser vide pour utiliser la couleur</small>' +
+                '</div>' +
                 '<div class="form-field"><label>Couleur de la bannière</label>' +
                   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
                     [['#412F21','#EFE1B0','Marron'],['#051833','#BAD1FD','Navy'],['#2D4A2D','#d4edda','Forêt'],['#412F21','#E4D1FE','Brun–Lavande'],['#1a1a2e','#e8e0f0','Prune'],['#7C4A00','#fff3e0','Ambre']].map(function(c) {
@@ -1652,6 +1659,42 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }
   };
 
+  window.uploadBannerImage = function(input) {
+    var file = input.files[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) { toast('Image trop lourde (max 4 Mo)', true); input.value = ''; return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var dataUrl = e.target.result;
+      var prev = document.getElementById('banner-preview');
+      var urlEl = document.getElementById('edit-bannerUrl');
+      if (urlEl) urlEl.value = '';
+      if (prev) prev.style.background = 'url(' + dataUrl + ') center/cover no-repeat';
+      // Store data URL in hidden field for save
+      var hidden = document.getElementById('edit-bannerData');
+      if (!hidden) {
+        hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'edit-bannerData';
+        document.body.appendChild(hidden);
+      }
+      hidden.value = dataUrl;
+      toast('Image chargée ✓');
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  };
+
+  window.clearBannerImage = function() {
+    var urlEl = document.getElementById('edit-bannerUrl');
+    if (urlEl) urlEl.value = '';
+    var hidden = document.getElementById('edit-bannerData');
+    if (hidden) hidden.value = '';
+    var prev = document.getElementById('banner-preview');
+    if (prev) prev.style.background = 'linear-gradient(135deg,#412F21,#EFE1B0)';
+    toast('Image supprimée');
+  };
+
   var _bannerColor = null;
   window.pickBannerColor = function(c1, c2) {
     _bannerColor = c1 + (c2 ? '|'+c2 : '');
@@ -1676,7 +1719,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       status: document.getElementById('edit-status').value,
       deadline: document.getElementById('edit-deadline').value || undefined,
       meetingLink: document.getElementById('edit-meetingLink').value || undefined,
-      bannerUrl: document.getElementById('edit-bannerUrl').value || undefined,
+      bannerUrl: (document.getElementById('edit-bannerData') && document.getElementById('edit-bannerData').value) || document.getElementById('edit-bannerUrl').value || undefined,
       bannerColor: _bannerColor || undefined,
       monthlyHours: parseFloat((document.getElementById('edit-monthlyHours')||{}).value) || undefined,
     };
@@ -3850,6 +3893,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 @font-face {
   font-family: 'Ambra Sans';
@@ -3857,6 +3901,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 </style>
 <style>
@@ -3892,6 +3937,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 @font-face {
   font-family: 'Ambra Sans';
@@ -3899,6 +3945,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 </style>
 <style>${STYLE_CSS}
@@ -3974,6 +4021,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 @font-face {
   font-family: 'Ambra Sans';
@@ -3981,6 +4029,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 </style>
 <style>${CLIENT_CSS}</style>
