@@ -235,6 +235,26 @@ body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); col
 .cp-nav__badge { background: var(--lavender); color: var(--navy); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; flex-shrink: 0; }
 .cp-sidebar__footer { padding: 16px 24px; border-top: 1px solid rgba(186,209,253,0.08); font-size: 11px; color: var(--blue-light); opacity: 0.25; margin-top: auto; }
 
+/* Home cards view */
+.cp-home { flex: 1; margin-left: var(--sw); min-height: 100vh; padding: 40px 44px 64px; background: var(--bg); }
+.cp-home__greeting { font-family: 'Alegreya', serif; font-size: 28px; color: var(--navy); font-style: italic; margin-bottom: 6px; }
+.cp-home__sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+.cp-proj-card { background: var(--white); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.18s, box-shadow 0.18s; text-align: left; width: 100%; }
+.cp-proj-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(5,24,51,0.1); }
+.cp-proj-banner { height: 150px; background: linear-gradient(135deg, var(--brown) 0%, var(--navy) 100%); background-size: cover; background-position: center; position: relative; }
+.cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; backdrop-filter: blur(6px); background: rgba(255,255,255,0.22); color: white; }
+.cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #C94040; color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.cp-proj-card__body { padding: 18px 20px 20px; }
+.cp-proj-card__title { font-family: 'Alegreya', serif; font-size: 17px; color: var(--navy); font-style: italic; margin-bottom: 6px; line-height: 1.3; }
+.cp-proj-card__meta { font-size: 12px; color: var(--muted); margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cp-proj-card__ext { color: var(--brown); font-weight: 600; font-size: 11px; background: rgba(65,47,33,0.1); padding: 2px 8px; border-radius: 999px; }
+.cp-proj-bar { height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
+.cp-proj-bar__fill { height: 100%; border-radius: 999px; background: var(--navy); }
+.cp-proj-card__pct { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+.cp-archive-section { margin-top: 8px; }
+.cp-archive-title { font-family: 'Alegreya', serif; font-size: 18px; color: var(--muted); font-style: italic; margin-bottom: 16px; padding-top: 24px; border-top: 1px solid var(--border); }
+
 /* Main */
 .cp-main { flex: 1; margin-left: var(--sw); display: flex; flex-direction: column; min-height: 100vh; }
 .cp-header { background: var(--brown); padding: 32px 44px 28px; }
@@ -350,6 +370,8 @@ body { font-family: 'Ambra Sans', 'Jost', sans-serif; background: var(--bg); col
 .cp-topbar { display: none; }
 
 @media (max-width: 768px) {
+  .cp-home { margin-left: 0; padding: 20px 20px 48px; }
+  .cp-proj-grid { grid-template-columns: 1fr; }
   .cp-sidebar { display: none; }
   .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--navy); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .cp-topbar__logo { font-family: 'Alegreya', serif; font-size: 15px; color: var(--cream); font-style: italic; }
@@ -1004,9 +1026,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div class="form-field"><label>Description</label><textarea id="edit-description" rows="3">' + esc(project.description) + '</textarea></div>' +
                 '<div class="form-row">' +
                   '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
-                  '<div class="form-field"><label>Deadline</label><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '"></div>' +
+                  '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
                 '</div>' +
                 '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
+                '<div class="form-field"><label>Bannière (URL image)</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://..."></div>' +
               '</div>' +
             '</div>' +
 
@@ -1152,6 +1175,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       status: document.getElementById('edit-status').value,
       deadline: document.getElementById('edit-deadline').value || undefined,
       meetingLink: document.getElementById('edit-meetingLink').value || undefined,
+      bannerUrl: document.getElementById('edit-bannerUrl').value || undefined,
     };
     const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
     if (res.ok) { toast('Projet mis à jour ✓'); setTimeout(function() { loadProject(currentProjectId); }, 600); }
@@ -1393,6 +1417,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.navigate = navigate;
 
   // ── Boot ───────────────────────────────────────────────────────────────────
+  window.extendDeadline = async function() {
+    var newDate = prompt('Nouvelle date de livraison (AAAA-MM-JJ) :', (window._currentProject && window._currentProject.deadline) || '');
+    if (!newDate || !newDate.match(/^\d{4}-\d{2}-\d{2}$/)) { toast('Date invalide', true); return; }
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ deadline: newDate, deadlineExtended: true }) });
+    if (res.ok) { toast('Date prolongée ✓'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
+  };
+
   window.togglePin = async function(projectId) {
     const res = await apiFetch('/api/projects/' + projectId);
     if (!res.ok) return;
@@ -1497,6 +1529,72 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return appData.projects.find(function(pd) { return pd.project.id === id; }) || null;
   }
 
+  function daysUntil(iso) {
+    if (!iso) return null;
+    var d = Math.ceil((new Date(iso) - new Date()) / 86400000);
+    return d;
+  }
+
+  function buildHome() {
+    var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
+    var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
+    // Sort active: by urgency (deadline soonest first, null last)
+    active.sort(function(a, b) {
+      var da = a.project.deadline ? new Date(a.project.deadline) : new Date('9999-12-31');
+      var db = b.project.deadline ? new Date(b.project.deadline) : new Date('9999-12-31');
+      return da - db;
+    });
+
+    function cardHtml(pd) {
+      var p = pd.project;
+      var steps = p.steps || [];
+      var done = steps.filter(function(s) { return s.status === 'done'; }).length;
+      var pct = steps.length ? Math.round(done / steps.length * 100) : 0;
+      var col = STATUS_COLORS[p.status] || '#aaa';
+      var label = STATUS_LABELS[p.status] || p.status;
+      var days = daysUntil(p.deadline);
+      var urgent = days !== null && days <= 7 && days >= 0;
+      var bannerStyle = p.bannerUrl
+        ? 'background-image:url(' + esc(p.bannerUrl) + ');background-size:cover;background-position:center'
+        : '';
+      var duration = '';
+      if (p.startDate && p.deadline) {
+        var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
+        duration = weeks + ' sem.';
+      }
+      return '<button class="cp-proj-card" onclick="cpSelHome(\'' + p.id + '\')">' +
+        '<div class="cp-proj-banner" style="' + bannerStyle + '">' +
+          '<span class="cp-proj-banner__badge" style="background:' + col + '40;color:' + (p.status==='delivered'?'#fff':'inherit') + '">' + label + '</span>' +
+          (urgent ? '<span class="cp-proj-banner__urgent">⚡ ' + days + ' j</span>' : '') +
+        '</div>' +
+        '<div class="cp-proj-card__body">' +
+          '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
+          '<div class="cp-proj-card__meta">' +
+            (p.deadline ? '<span>📅 ' + fmtShort(p.deadline) + '</span>' : '') +
+            (p.deadlineExtended ? '<span class="cp-proj-card__ext">↩ Date prolongée</span>' : '') +
+            (duration ? '<span>⏱ ' + duration + '</span>' : '') +
+          '</div>' +
+          '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
+        '</div>' +
+      '</button>';
+    }
+
+    var activeHtml = active.length
+      ? '<div class="cp-proj-grid">' + active.map(cardHtml).join('') + '</div>'
+      : '<div class="cp-empty">Aucun projet en cours.</div>';
+
+    var archivedHtml = archived.length
+      ? '<div class="cp-archive-section"><div class="cp-archive-title">Archives</div><div class="cp-proj-grid">' + archived.map(cardHtml).join('') + '</div></div>'
+      : '';
+
+    return '<div class="cp-home">' +
+      '<div class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + ' ✦</div>' +
+      '<div class="cp-home__sub">Retrouvez vos projets ci-dessous</div>' +
+      activeHtml + archivedHtml +
+    '</div>';
+  }
+
   function buildSidebar() {
     var multi = appData.projects.length > 1;
     var navHtml = '';
@@ -1567,11 +1665,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       reference:   files.filter(function(f){ return f.category==='reference'; }),
     };
 
+    var multi = appData.projects.length > 1;
+    var extended = project.deadlineExtended
+      ? ' <span style="font-size:11px;background:rgba(65,47,33,0.15);color:var(--brown);padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">↩ Prolongée</span>'
+      : '';
     var header = '<div class="cp-header">' +
+      (multi ? '<button onclick="cpGoHome()" style="background:rgba(239,225,176,0.2);border:none;color:var(--cream);font-size:13px;padding:4px 12px;border-radius:999px;cursor:pointer;margin-bottom:12px;font-family:inherit">← Mes projets</button><br>' : '') +
       '<span class="cp-header__status" style="background:' + col + '20;color:' + col + ';border:1px solid ' + col + '40">' + (STATUS_LABELS[project.status]||project.status) + '</span>' +
       '<div class="cp-header__title">' + esc(project.projectTitle) + '</div>' +
       '<div class="cp-header__meta">Bonjour ' + esc(project.clientName) +
-        (project.deadline ? ' · Livraison prévue le ' + fmtDate(project.deadline) : '') +
+        (project.deadline ? ' · Livraison prévue le ' + fmtDate(project.deadline) + extended : '') +
       '</div>' +
     '</div>';
 
@@ -1685,15 +1788,32 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         projects:[{ project:data.project, messages:data.messages, files:data.files }] };
     } else { appData = data; }
     if (!appData.projects.length) { showError(); return; }
+    var multi = appData.projects.length > 1;
     currentId = appData.projects[0].project.id;
     clientInitial = (appData.clientName||'C').charAt(0).toUpperCase();
+    var mainContent = multi ? buildHome() : buildProjectView(getPD(currentId));
     document.getElementById('app').innerHTML =
       '<div class="cp">' + buildSidebar() +
-        '<div class="cp-main" id="cp-main">' + buildTopbar() + buildProjectView(getPD(currentId)) + '</div>' +
+        '<div class="cp-main" id="cp-main">' + buildTopbar() + mainContent + '</div>' +
       '</div><div class="cp-toast" id="cp-toast"></div>';
-    attachForm();
+    if (!multi) attachForm();
     startPoll();
   }
+
+  window.cpSelHome = function(id) {
+    currentId = id;
+    var main = document.getElementById('cp-main');
+    if (!main) return;
+    main.innerHTML = buildTopbar() + buildProjectView(getPD(id));
+    attachForm();
+    window.scrollTo(0, 0);
+  };
+
+  window.cpGoHome = function() {
+    var main = document.getElementById('cp-main');
+    if (!main) return;
+    main.innerHTML = buildTopbar() + buildHome();
+  };
 
   window.cpSel = function(id) {
     if (id === currentId) return;
