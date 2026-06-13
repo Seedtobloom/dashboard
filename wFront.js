@@ -326,14 +326,14 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 24px; background: none; border: none; cursor: pointer;
-  text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  text-align: left; color: var(--sidebar-text); opacity: 0.85; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px; transition: background 0.12s, opacity 0.12s; border-left: 2px solid transparent;
 }
-.cp-nav__item:hover { background: rgba(186,209,253,0.12); opacity: 1; }
+.cp-nav__item:hover { background: rgba(0,0,0,0.15); opacity: 1; }
 .cp-nav__item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
-.cp-nav__item.active { background: rgba(186,209,253,0.18); opacity: 1; color: #fff; border-left: 3px solid var(--blue-light); font-weight: 600; }
+.cp-nav__item.active { background: rgba(0,0,0,0.2); opacity: 1; color: var(--sidebar-text); border-left: 3px solid var(--sidebar-text); font-weight: 600; }
 .cp-nav__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.cp-nav__arrow { font-size: 13px; color: var(--blue-light); opacity: 0.55; flex-shrink: 0; transition: opacity 0.15s, transform 0.15s; line-height: 1; }
+.cp-nav__arrow { font-size: 13px; color: var(--sidebar-text); opacity: 0.55; flex-shrink: 0; transition: opacity 0.15s, transform 0.15s; line-height: 1; }
 .cp-nav__item:hover .cp-nav__arrow, .cp-nav__item.active .cp-nav__arrow { opacity: 1; transform: translateX(3px); }
 .cp-nav__text { flex: 1; min-width: 0; }
 .cp-nav__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -579,8 +579,22 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     { key: '--st-archived',   label: 'Archive',      section: 'Etats' },
   ];
 
+  function hexLum(hex) {
+    var h = hex.replace('#','');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return 0.299*parseInt(h.substring(0,2),16)+0.587*parseInt(h.substring(2,4),16)+0.114*parseInt(h.substring(4,6),16);
+  }
+
   function applyColors(colors) {
     var vars = Object.keys(colors).map(function(k){ return k+':'+colors[k]+';'; }).join('');
+    // Auto-compute text contrast for status badge vars
+    ['--st-discovery','--st-in-progress','--st-waiting','--st-review','--st-delivered','--st-archived'].forEach(function(k) {
+      if (colors[k] && colors[k].startsWith('#')) {
+        var lum = hexLum(colors[k]);
+        var suffix = k.replace('--st-', '--st-') + '-t';
+        vars += suffix + ':' + (lum > 140 ? '#1a1a1a' : '#ffffff') + ';';
+      }
+    });
     var el = document.getElementById('bloom-theme-style');
     if (!el) { el = document.createElement('style'); el.id = 'bloom-theme-style'; document.head.appendChild(el); }
     el.textContent = ':root{'+vars+'}';
@@ -3002,6 +3016,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-sidebar__name">' + esc(appData.clientName) + '</div>' +
       '</div>' +
       navHtml +
+      '<div class="cp-sidebar__footer" style="opacity:1;display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="opacity:0.55">Seed to Bloom</span>' +
+        '<button id="_cp-color-btn" onclick="openCpColorPanel()" title="Couleurs" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;gap:3px;align-items:center">' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:var(--lavender);display:inline-block"></span>' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:var(--cream);display:inline-block"></span>' +
+        '</button>' +
+      '</div>' +
     '</aside>';
   }
 
@@ -4161,6 +4182,140 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div></div>';
   }
 
+
+  // ── Couleurs espace client ─────────────────────────────────────────────────
+  var CP_COLOR_DEFAULTS = {
+    '--navy':        '#051833',
+    '--brown':       '#412F21',
+    '--sidebar-text':'#BAD1FD',
+    '--cream':       '#EFE1B0',
+    '--lavender':    '#E4D1FE',
+    '--blue-light':  '#BAD1FD',
+    '--bg':          '#FAF8F4',
+    '--surface':     '#F5F2EC',
+  };
+
+  var CP_COLOR_LABELS = [
+    { key: '--navy',        label: 'Fond sidebar',       section: 'Sidebar' },
+    { key: '--brown',       label: 'En-tete sidebar',    section: 'Sidebar' },
+    { key: '--sidebar-text',label: 'Texte nav',          section: 'Sidebar' },
+    { key: '--cream',       label: 'Texte en-tete',      section: 'Sidebar' },
+    { key: '--lavender',    label: 'Boutons / accent',   section: 'Interface' },
+    { key: '--blue-light',  label: 'Texte sur bouton',   section: 'Interface' },
+    { key: '--bg',          label: 'Fond de page',       section: 'Interface' },
+    { key: '--surface',     label: 'Fond des cartes',    section: 'Interface' },
+  ];
+
+  function cpHexLum(hex) {
+    var h = hex.replace('#','');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return 0.299*parseInt(h.substring(0,2),16)+0.587*parseInt(h.substring(2,4),16)+0.114*parseInt(h.substring(4,6),16);
+  }
+
+  function applyCpColors(colors) {
+    var vars = Object.keys(colors).map(function(k){ return k+':'+colors[k]+';'; }).join('');
+    var el = document.getElementById('cp-theme-style');
+    if (!el) { el = document.createElement('style'); el.id = 'cp-theme-style'; document.head.appendChild(el); }
+    el.textContent = ':root{'+vars+'}';
+  }
+
+  function loadCpColors() {
+    var saved = localStorage.getItem('bloom_cp_colors');
+    var colors = saved ? JSON.parse(saved) : Object.assign({}, CP_COLOR_DEFAULTS);
+    applyCpColors(colors);
+  }
+
+  window.updateCpColor = function(key, val) {
+    var saved = localStorage.getItem('bloom_cp_colors');
+    var colors = saved ? JSON.parse(saved) : Object.assign({}, CP_COLOR_DEFAULTS);
+    colors[key] = val;
+    localStorage.setItem('bloom_cp_colors', JSON.stringify(colors));
+    applyCpColors(colors);
+  };
+
+  window.resetCpColors = function() {
+    localStorage.removeItem('bloom_cp_colors');
+    applyCpColors(Object.assign({}, CP_COLOR_DEFAULTS));
+    var panel = document.getElementById('_cp-color-panel');
+    if (panel) { panel.remove(); openCpColorPanel(); }
+  };
+
+  window.openCpColorPanel = function() {
+    var existing = document.getElementById('_cp-color-panel');
+    if (existing) { existing.remove(); return; }
+    var saved = localStorage.getItem('bloom_cp_colors');
+    var colors = saved ? JSON.parse(saved) : Object.assign({}, CP_COLOR_DEFAULTS);
+
+    var panel = document.createElement('div');
+    panel.id = '_cp-color-panel';
+    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:0 4px 28px rgba(0,0,0,0.18);z-index:9999;border:1px solid #ebebeb;max-height:80vh;overflow-y:auto';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
+    var title = document.createElement('strong');
+    title.style.cssText = 'font-size:14px;color:#051833';
+    title.textContent = 'Couleurs';
+    var resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reinitialiser';
+    resetBtn.style.cssText = 'font-size:11px;color:#636363;background:none;border:1px solid #e0e0e0;border-radius:6px;padding:3px 8px;cursor:pointer';
+    resetBtn.onclick = function() { resetCpColors(); };
+    header.appendChild(title);
+    header.appendChild(resetBtn);
+    panel.appendChild(header);
+
+    var sections = {};
+    CP_COLOR_LABELS.forEach(function(item) {
+      if (!sections[item.section]) sections[item.section] = [];
+      sections[item.section].push(item);
+    });
+
+    Object.keys(sections).forEach(function(sec) {
+      var secDiv = document.createElement('div');
+      secDiv.style.marginBottom = '14px';
+      var secTitle = document.createElement('div');
+      secTitle.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:#999;margin-bottom:8px';
+      secTitle.textContent = sec;
+      secDiv.appendChild(secTitle);
+
+      sections[sec].forEach(function(item) {
+        var val = colors[item.key] || CP_COLOR_DEFAULTS[item.key];
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
+
+        var lbl = document.createElement('span');
+        lbl.style.cssText = 'font-size:13px;color:#1a1a1a';
+        lbl.textContent = item.label;
+
+        var swatch = document.createElement('span');
+        swatch.style.cssText = 'width:30px;height:30px;border-radius:6px;border:1.5px solid #e0e0e0;display:inline-block;cursor:pointer;position:relative';
+        swatch.style.background = val;
+
+        var inp = document.createElement('input');
+        inp.type = 'color';
+        inp.value = val;
+        inp.style.cssText = 'position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none';
+        (function(k, sw) {
+          inp.addEventListener('input', function() {
+            sw.style.background = this.value;
+            updateCpColor(k, this.value);
+          });
+        })(item.key, swatch);
+        swatch.appendChild(inp);
+
+        row.appendChild(lbl);
+        row.appendChild(swatch);
+        secDiv.appendChild(row);
+      });
+      panel.appendChild(secDiv);
+    });
+
+    document.addEventListener('click', function close(e) {
+      if (!panel.contains(e.target) && e.target.id !== '_cp-color-btn') { panel.remove(); document.removeEventListener('click', close); }
+    }, { capture: true });
+    document.body.appendChild(panel);
+  };
+
+  loadCpColors();
   if (!TOKEN || !API_BASE) { showError(); return; }
   fetch(API_BASE)
     .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
