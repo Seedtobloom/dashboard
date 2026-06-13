@@ -471,7 +471,27 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-card { padding: 16px; }
   .cp-msg__bubble { max-width: 85%; }
   .cp-meet { flex-direction: column; align-items: flex-start; gap: 14px; }
-}`;
+}
+.cp-cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:6px; }
+.cp-cal-day { min-height:110px;border:1.5px solid var(--border);border-radius:10px;padding:5px 7px;cursor:pointer;transition:background 0.12s; }
+.cp-cal-day:hover { background:var(--surface); }
+.cp-cal-day.today { border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy); }
+.cp-cal-day.selected { background:#eef3ff;border-color:var(--sky); }
+.cp-cal-day__num { font-size:12px;font-weight:600;color:var(--muted);margin-bottom:3px; }
+.cp-cal-day.today .cp-cal-day__num { color:var(--navy); }
+.cp-cal-pill { font-size:11px;padding:2px 6px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;line-height:1.4; }
+.cp-task-panel { background:var(--white);border:1.5px solid var(--sky);border-radius:14px;padding:18px;margin-bottom:14px; }
+.cp-task-card { border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--white);transition:box-shadow 0.15s; }
+.cp-task-card:hover { box-shadow:0 3px 12px rgba(5,24,51,0.08); }
+.cp-task-card__top { display:flex;align-items:flex-start;gap:10px;margin-bottom:8px; }
+.cp-task-card__dot { width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:3px; }
+.cp-task-card__title { font-weight:600;font-size:14px;color:var(--navy); }
+.cp-task-card__done .cp-task-card__title { text-decoration:line-through;color:var(--muted); }
+.cp-task-card__meta { display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px; }
+.cp-task-badge { font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600; }
+.cp-cal-filters { display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px; }
+.cp-cal-filter { padding:6px 14px;border-radius:999px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-family:'Jost',sans-serif;cursor:pointer;transition:all 0.12s; }
+.cp-cal-filter.active { background:var(--navy);color:var(--cream);border-color:var(--navy); }`;
 
 // ── JavaScript ────────────────────────────────────────────────────────────────
 
@@ -1981,6 +2001,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const data = await res.json();
     await navigator.clipboard.writeText(data.url).catch(function() {});
     toast('Lien espace client copié ✓');
+    showTokenModal(data.url);
     loadProject(currentProjectId);
   };
 
@@ -2010,6 +2031,26 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!res.ok) { toast('Erreur', true); return; }
     const data = await res.json();
     window.open(data.url, '_blank');
+  };
+
+  window.showTokenModal = function(url) {
+    var existing = document.getElementById('token-modal-overlay');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = 'token-modal-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
+      '<p style="font-size:13px;color:#8090a8;margin-bottom:16px">Envoyez ce lien à votre cliente pour qu\'elle accède à son espace.</p>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">' +
+        '<input id="token-modal-url" type="text" readonly value="' + url + '" style="flex:1;padding:10px 14px;border:1.5px solid #e2dbd0;border-radius:10px;font-size:13px;background:#f9f7f4;color:#051833;font-family:monospace">' +
+        '<button onclick="navigator.clipboard.writeText(document.getElementById(\'token-modal-url\').value).then(function(){var b=this;b.textContent=\'Copié ✓\';setTimeout(function(){b.textContent=\'Copier\';},2000);}.bind(this))" style="padding:10px 18px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500;white-space:nowrap">Copier</button>' +
+      '</div>' +
+      '<div style="text-align:right"><button onclick="document.getElementById(\'token-modal-overlay\').remove()" style="padding:8px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;color:#8090a8">Fermer</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    setTimeout(function(){ var inp = document.getElementById('token-modal-url'); if(inp) inp.select(); }, 100);
   };
 
   init();
@@ -2416,6 +2457,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var CLI_URG_LABEL = { basse:'Basse', moyenne:'Moyenne', haute:'Haute' };
   var CLI_TSTATUS = { todo:'À faire', in_progress:'En cours', done:'Terminé' };
   var cliCalMonth = {};
+  var cliCalSelected = {}; // pid -> 'YYYY-MM-DD' selected day
+  var cliCalFilter = {}; // pid -> { urgency: '', status: '' }
+
+  function taskCardHtml(t, pid, files) {
+    var comments = Array.isArray(t.comments)?t.comments:[];
+    var deliverable = t.deliverableFileKey ? (files||[]).find(function(f){return f.key===t.deliverableFileKey;}) : null;
+    var cls = 'cp-task-card' + (t.status==='done'?' cp-task-card__done':'');
+    var dotCol = CLI_URGENCY[t.urgency] || '#ddd';
+    var dotTx = CLI_URGENCY_TX[t.urgency] || '#1a1a1a';
+    return '<div class="'+cls+'">' +
+      '<div class="cp-task-card__top">' +
+        '<div class="cp-task-card__dot" style="background:'+dotCol+';margin-top:4px"></div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="cp-task-card__title">'+esc(t.title)+'</div>' +
+          '<div class="cp-task-card__meta">' +
+            '<span class="cp-task-badge" style="background:'+dotCol+';color:'+dotTx+'">'+(CLI_URG_LABEL[t.urgency]||t.urgency)+'</span>' +
+            '<span class="cp-task-badge" style="background:var(--surface);color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span>' +
+            (t.dueDate ? '<span style="font-size:12px;color:var(--muted)">📅 '+fmtDate(t.dueDate)+'</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--muted);font-family:\'Jost\',sans-serif;white-space:nowrap" title="'+(t.status==='done'?'Rouvrir':'Marquer terminé')+'">'+(t.status==='done'?'↩ Rouvrir':'✓ Terminer')+'</button>' +
+      '</div>' +
+      (t.content ? '<div style="font-size:13px;color:var(--muted);margin-top:6px;white-space:pre-wrap;padding-left:24px">'+esc(t.content)+'</div>' : '') +
+      (deliverable ? '<div style="margin-top:8px;padding-left:24px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>' : '') +
+      (comments.length ? '<div style="margin-top:8px;padding-left:24px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div>'+esc(c.text)+'</div></div>';}).join('')+'</div>' : '') +
+      '<div style="display:flex;gap:6px;margin-top:8px;padding-left:24px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
+    '</div>';
+  }
 
   function buildClientPartenaire(pd) {
     var project = pd.project, files = pd.files;
@@ -2746,9 +2815,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   function startPoll() {
     clearInterval(pollTimer);
-    pollTimer = setInterval(poll, 30000);
+    pollTimer = setInterval(poll, 5000);
     document.addEventListener('visibilitychange', function() {
-      document.hidden ? clearInterval(pollTimer) : (pollTimer = setInterval(poll, 30000));
+      document.hidden ? clearInterval(pollTimer) : (pollTimer = setInterval(poll, 5000));
     });
   }
 
