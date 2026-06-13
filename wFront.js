@@ -124,7 +124,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   padding: 10px 16px; cursor: pointer; border-left: 2px solid transparent;
   transition: background 0.12s; text-decoration: none; display: block; color: inherit;
 }
-.project-item:hover { background: rgba(186,209,253,0.07); }
+.project-item:hover { background: rgba(186,209,253,0.12); }
+.project-item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
 .project-item.active { background: rgba(186,209,253,0.1); border-left-color: var(--lavender); }
 .project-item__name { font-size: 13px; font-weight: 500; color: var(--blue-light); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__title { font-size: 12px; color: var(--blue-light); opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -138,9 +139,11 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .main-inner.proj-main { padding: 24px 32px 80px; }
 .proj-section { padding: 0 32px 28px; }
 /* Project banner */
-.proj-banner { width: 100%; min-height: 120px; display: flex; align-items: flex-end; }
+.proj-banner { width: 100%; min-height: 130px; display: flex; align-items: flex-end; position: relative; }
+.proj-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 100%); pointer-events: none; }
+.proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.proj-banner__title { font-family: 'Alegreya', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.35); margin: 0; line-height: 1.25; }
+.proj-banner__title { font-family: 'Alegreya', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.55); margin: 0; line-height: 1.25; }
 .proj-banner__sub { color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 /* Tab nav */
 .proj-tabnav { display: flex; gap: 2px; padding: 0 32px; background: var(--white); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; }
@@ -200,9 +203,9 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .file-name-col { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--navy); border-radius: var(--radius); padding: 16px 20px; }
-.stat-card__num { font-family: 'Alegreya', serif; font-size: 32px; font-weight: 400; color: var(--navy); }
-.stat-card__label { font-size: 11px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+.stat-card__num { font-family: 'Alegreya', serif; font-size: 36px; font-weight: 400; color: var(--navy); line-height: 1; margin-bottom: 6px; }
+.stat-card__label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
 .projects-table { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .projects-table table { width: 100%; border-collapse: collapse; }
 .projects-table th { text-align: left; padding: 11px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); }
@@ -849,7 +852,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
         '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
         '<div class="project-item__meta">' +
-          '<span class="badge-dot" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '"></span>' +
+          '<span style="font-size:10px;padding:1px 7px;border-radius:999px;background:' + (STATUS_COLORS[p.status] || '#aaa') + ';color:#fff;font-weight:500">' + (STATUS_LABELS[p.status] || p.status) + '</span>' +
           (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + '</span>' : '') +
           (soonDeadline(p) ? '<span class="deadline-badge">⚠ deadline</span>' : '') +
         '</div>' +
@@ -979,7 +982,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
         '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
         '<div class="project-item__meta">' +
-          '<span class="badge-dot" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '"></span>' +
+          '<span style="font-size:10px;padding:1px 7px;border-radius:999px;background:' + (STATUS_COLORS[p.status] || '#aaa') + ';color:#fff;font-weight:500">' + (STATUS_LABELS[p.status] || p.status) + '</span>' +
           (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') +
         '</div>' +
       '</a>';
