@@ -2735,8 +2735,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</form>' +
     '</div>';
 
-    var header = '<div class="cp-header"><h1 class="cp-header__title">Messagerie</h1>' +
-      '<div class="cp-header__meta">Votre conversation avec Cindy, pour tout votre espace</div></div>';
+    var header = '<div class="cp-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
+      '<div><h1 class="cp-header__title">Messagerie</h1>' +
+      '<div class="cp-header__meta">Votre conversation avec Cindy</div></div>' +
+      '<button onclick="refreshConvo()" class="cp-btn cp-btn--sage" style="margin-top:4px" aria-label="Actualiser les messages">↻ Actualiser</button>' +
+    '</div>';
     return header +
       '<div class="cp-content"><div class="cp-grid" style="grid-template-columns:300px 1fr">' +
         '<div class="cp-card" style="padding:0;overflow:hidden"><div class="cp-nav__label" style="color:var(--muted);padding:14px 18px 4px">Conversation</div>' + summary + '</div>' +
@@ -2831,16 +2834,22 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     currentView = 'messages';
     renderShell();
     markConvoRead();
-    // Poll uniquement quand la messagerie est visible.
-    clearInterval(pollTimer);
-    pollTimer = setInterval(poll, 8000);
-    document.addEventListener('visibilitychange', stopPollOnHide);
   };
 
-  function stopPollOnHide() {
-    if (document.hidden) { clearInterval(pollTimer); }
-    else if (currentView === 'messages') { pollTimer = setInterval(poll, 8000); }
-  }
+  // Bouton actualiser dans la messagerie — pas de polling automatique.
+  window.refreshConvo = function() {
+    fetch(API_BASE + '/conversation')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(list){
+        if (!Array.isArray(list)) return;
+        convData = list;
+        var newCount = list.filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
+        renderShell();
+        if (newCount > 0) toast(newCount + ' nouveau' + (newCount>1?'x':'') + ' message' + (newCount>1?'s':''));
+        else toast('Messagerie à jour ✓');
+      })
+      .catch(function(){ toast('Erreur de connexion', true); });
+  };
 
   function markConvoRead() {
     // GET /conversation marque les messages de Cindy comme lus côté serveur
@@ -2917,10 +2926,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).catch(function() {});
   }
 
-  function startPoll() {
-    // Pas de poll en arrière-plan. Le poll ne tourne que quand la messagerie est ouverte.
-    clearInterval(pollTimer);
-  }
+  function startPoll() { /* Polling supprimé — requêtes uniquement à la demande. */ }
 
   function showError() {
     document.getElementById('app').innerHTML =
