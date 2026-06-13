@@ -491,7 +491,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-task-badge { font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600; }
 .cp-cal-filters { display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px; }
 .cp-cal-filter { padding:6px 14px;border-radius:999px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-family:'Jost',sans-serif;cursor:pointer;transition:all 0.12s; }
-.cp-cal-filter.active { background:var(--navy);color:var(--cream);border-color:var(--navy); }`;
+.cp-cal-filter.active { background:var(--navy);color:var(--cream);border-color:var(--navy); }
+.cp-part-tabs { display:flex;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0; }
+.cp-part-tab { padding:10px 20px;border:none;background:none;font-family:'Jost',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s; }
+.cp-part-tab.active { color:var(--navy);font-weight:600;border-bottom-color:var(--navy); }
+.cp-part-tab:hover { color:var(--navy); }`;
 
 // ── JavaScript ────────────────────────────────────────────────────────────────
 
@@ -1238,6 +1242,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
                 '</div>' +
                 '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
+                (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
                 '<div class="form-field"><label>URL de la bannière</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://…" oninput="previewBanner()"><small style="color:var(--muted);font-size:11px">Coller un lien image ou laisser vide pour une couleur</small></div>' +
                 '<div class="form-field"><label>Couleur de la bannière</label>' +
                   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
@@ -1332,15 +1337,23 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>' +
 
       '<div class="modal-backdrop" id="modal-task">' +
-        '<div class="modal">' +
+        '<div class="modal" style="max-width:560px">' +
           '<h3 id="modal-task-title">Ajouter une tâche</h3>' +
           '<input type="hidden" id="task-id">' +
-          '<div class="form-field"><label for="task-title">Titre</label><input type="text" id="task-title" placeholder="Ex: Visuels Instagram"></div>' +
-          '<div class="form-field"><label for="task-content">Contenu</label><textarea id="task-content" rows="3"></textarea></div>' +
+          '<div class="form-field"><label for="task-title">Mission / Titre</label><input type="text" id="task-title" placeholder="Ex: Carrousel LinkedIn"></div>' +
           '<div class="form-row">' +
-            '<div class="form-field"><label for="task-urgency">Urgence</label><select id="task-urgency"><option value="basse">Basse</option><option value="moyenne">Moyenne</option><option value="haute">Haute</option></select></div>' +
+            '<div class="form-field"><label for="task-briefStatus">État du brief</label><select id="task-briefStatus"><option value="pas_commence">Pas commencé</option><option value="brief_en_cours">Brief en cours</option><option value="brief_pret">Brief prêt</option><option value="en_projet">En projet</option><option value="a_retravailler">À retravailler</option><option value="archive">Archivé</option></select></div>' +
+            '<div class="form-field"><label for="task-missionType">Type de mission</label><input type="text" id="task-missionType" placeholder="Ex: Communication, Site internet…"></div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-field"><label for="task-urgency">Priorité</label><select id="task-urgency"><option value="basse">Basse</option><option value="moyenne">Normale</option><option value="haute">Haute</option></select></div>' +
             '<div class="form-field"><label for="task-dueDate">Deadline</label><input type="date" id="task-dueDate"></div>' +
           '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-field"><label for="task-timeSpent">Temps passé (minutes)</label><input type="number" id="task-timeSpent" min="0" placeholder="0"></div>' +
+            '<div class="form-field"><label for="task-livrableUrl">Lien livrable</label><input type="url" id="task-livrableUrl" placeholder="https://…"></div>' +
+          '</div>' +
+          '<div class="form-field"><label for="task-content">Notes</label><textarea id="task-content" rows="2"></textarea></div>' +
           '<div class="modal-footer"><button class="btn btn--outline" onclick="closeModal(\'modal-task\')">Annuler</button><button class="btn btn--primary" onclick="saveTask()">Sauvegarder</button></div>' +
         '</div>' +
       '</div>' +
@@ -1443,6 +1456,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       meetingLink: document.getElementById('edit-meetingLink').value || undefined,
       bannerUrl: document.getElementById('edit-bannerUrl').value || undefined,
       bannerColor: _bannerColor || undefined,
+      monthlyHours: parseFloat((document.getElementById('edit-monthlyHours')||{}).value) || undefined,
     };
     const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
     if (res.ok) { _bannerColor = null; toast('Projet mis à jour ✓'); setTimeout(function() { loadProject(currentProjectId); }, 600); }
@@ -1834,22 +1848,24 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (currentProjectId) loadProject(currentProjectId);
   };
 
+  function setTaskField(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; }
   window.openAddTask = function() {
-    document.getElementById('task-id').value = '';
-    document.getElementById('task-title').value = '';
-    document.getElementById('task-content').value = '';
-    document.getElementById('task-urgency').value = 'moyenne';
-    document.getElementById('task-dueDate').value = '';
+    setTaskField('task-id',''); setTaskField('task-title',''); setTaskField('task-content','');
+    setTaskField('task-urgency','moyenne'); setTaskField('task-dueDate','');
+    setTaskField('task-briefStatus','pas_commence'); setTaskField('task-missionType','');
+    setTaskField('task-timeSpent',''); setTaskField('task-livrableUrl','');
     document.getElementById('modal-task-title').textContent = 'Ajouter une tâche';
     openModal('modal-task');
   };
   window.openEditTask = function(json) {
     var t = JSON.parse(json);
-    document.getElementById('task-id').value = t.id;
-    document.getElementById('task-title').value = t.title;
-    document.getElementById('task-content').value = t.content || '';
-    document.getElementById('task-urgency').value = t.urgency || 'moyenne';
-    document.getElementById('task-dueDate').value = (t.dueDate||'').slice(0,10);
+    setTaskField('task-id', t.id); setTaskField('task-title', t.title);
+    setTaskField('task-content', t.content); setTaskField('task-urgency', t.urgency || 'moyenne');
+    setTaskField('task-dueDate', (t.dueDate||'').slice(0,10));
+    setTaskField('task-briefStatus', t.briefStatus || 'pas_commence');
+    setTaskField('task-missionType', t.missionType);
+    setTaskField('task-timeSpent', t.timeSpentMinutes || '');
+    setTaskField('task-livrableUrl', t.livrableUrl);
     document.getElementById('modal-task-title').textContent = 'Modifier la tâche';
     openModal('modal-task');
   };
@@ -1860,6 +1876,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       content: document.getElementById('task-content').value,
       urgency: document.getElementById('task-urgency').value,
       dueDate: document.getElementById('task-dueDate').value || undefined,
+      briefStatus: document.getElementById('task-briefStatus').value,
+      missionType: document.getElementById('task-missionType').value || undefined,
+      timeSpentMinutes: parseInt(document.getElementById('task-timeSpent').value) || 0,
+      livrableUrl: document.getElementById('task-livrableUrl').value || undefined,
     };
     if (!body.title) { toast('Titre requis', true); return; }
     var url = id ? '/api/projects/' + currentProjectId + '/tasks/' + id : '/api/projects/' + currentProjectId + '/tasks';
@@ -2451,14 +2471,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div></div>';
   }
 
-  // ── Espace partenaire côté client (tâches mensuelles) ───────────────────────
-  var CLI_URGENCY = { basse:'#BAD1FD', moyenne:'#E4D1FE', haute:'#e8a87c' };
+  // ── Espace partenaire côté client ────────────────────────────────────────────
+  var CLI_URGENCY    = { basse:'#BAD1FD', moyenne:'#E4D1FE', haute:'#e8a87c' };
   var CLI_URGENCY_TX = { basse:'#0a2a5e', moyenne:'#2a1d4a', haute:'#5a2c0e' };
-  var CLI_URG_LABEL = { basse:'Basse', moyenne:'Moyenne', haute:'Haute' };
-  var CLI_TSTATUS = { todo:'À faire', in_progress:'En cours', done:'Terminé' };
-  var cliCalMonth = {};
-  var cliCalSelected = {}; // pid -> 'YYYY-MM-DD' selected day
-  var cliCalFilter = {}; // pid -> { urgency: '', status: '' }
+  var CLI_URG_LABEL  = { basse:'Basse', moyenne:'Normale', haute:'Haute' };
+  var CLI_TSTATUS    = { todo:'À faire', in_progress:'En cours', done:'Terminé' };
+  var CLI_BRIEF = {
+    pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
+    brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
+    brief_pret:    { label:'Brief prêt',     bg:'#d8f0e8', tx:'#1a5c38' },
+    en_projet:     { label:'En projet',      bg:'#dce8ff', tx:'#1a3a7a' },
+    a_retravailler:{ label:'À retravailler', bg:'#fdf0d0', tx:'#7a5a00' },
+    archive:       { label:'Archivé',        bg:'#ebebeb', tx:'#6b6b6b' },
+  };
+  var cliCalMonth    = {};
+  var cliCalSelected = {};
+  var cliCalFilter   = {};
+  var cliPartTab     = {}; // pid -> 'cal'|'board'|'forfait'
 
   function taskCardHtml(t, pid, files) {
     var comments = Array.isArray(t.comments)?t.comments:[];
@@ -2489,113 +2518,258 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildClientPartenaire(pd) {
     var project = pd.project, files = pd.files;
     var tasks = Array.isArray(project.tasks) ? project.tasks : [];
-    var done = tasks.filter(function(t){return t.status==='done';}).length;
-    var pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
     var pid = project.id;
+    var tab = cliPartTab[pid] || 'cal';
 
-    // Mois affiché
+    // Navigation onglets
+    var tabs = '<div class="cp-part-tabs">' +
+      [['cal','📅 Calendrier'],['board','📋 Tableau'],['forfait','⏱ Forfait']].map(function(t){
+        return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
+      }).join('') +
+    '</div>';
+
+    if (tab === 'cal')     return tabs + buildPartCal(pid, tasks, files, project);
+    if (tab === 'board')   return tabs + buildPartBoard(pid, tasks, files);
+    if (tab === 'forfait') return tabs + buildPartForfait(pid, tasks, project);
+    return tabs;
+  }
+
+  // ── Onglet Calendrier ─────────────────────────────────────────────────────
+  function buildPartCal(pid, tasks, files, project) {
     if (!cliCalMonth[pid]) { var d0=new Date(); d0.setDate(1); d0.setHours(0,0,0,0); cliCalMonth[pid]=d0; }
     var cm = cliCalMonth[pid];
     var year = cm.getFullYear(), month = cm.getMonth();
     var monthName = cm.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
     var startDay = (new Date(year,month,1).getDay()+6)%7;
     var dim = new Date(year,month+1,0).getDate();
-
-    var todayStr = (function(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); })();
+    var todayStr = _todayStr();
     var sel = cliCalSelected[pid] || todayStr;
-
-    // Filtres actifs
     if (!cliCalFilter[pid]) cliCalFilter[pid] = { urgency:'', status:'' };
     var flt = cliCalFilter[pid];
 
-    // Filtrage
-    var filteredTasks = tasks.filter(function(t) {
+    var filtered = tasks.filter(function(t){
       if (flt.urgency && t.urgency !== flt.urgency) return false;
       if (flt.status && t.status !== flt.status) return false;
       return true;
     });
 
-    // Barre de filtres
-    var urgencies = ['','basse','moyenne','haute'];
-    var statuses = ['','todo','in_progress','done'];
-    var urgLabels = {'':'Toutes urgences','basse':'Basse','moyenne':'Moyenne','haute':'Haute'};
-    var statLabels = {'':'Tous statuts','todo':'À faire','in_progress':'En cours','done':'Terminés'};
-
     var filtersHtml = '<div class="cp-cal-filters">' +
-      urgencies.map(function(u) {
-        var active = flt.urgency === u ? ' active' : '';
-        return '<button class="cp-cal-filter'+active+'" onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')">'+(u?'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(CLI_URGENCY[u]||'#aaa')+';margin-right:5px;vertical-align:middle"></span>':'')+esc(urgLabels[u]||u)+'</button>';
+      ['','basse','moyenne','haute'].map(function(u){
+        var lbl = u ? ('<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(CLI_URGENCY[u]||'#aaa')+';margin-right:5px;vertical-align:middle"></span>'+(CLI_URG_LABEL[u]||u)) : 'Toutes';
+        return '<button class="cp-cal-filter'+(flt.urgency===u?' active':'')+'" onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')">'+lbl+'</button>';
       }).join('') +
-      '<span style="width:1px;background:var(--border);height:20px;display:inline-block;align-self:center"></span>' +
-      statuses.map(function(s) {
-        var active = flt.status === s ? ' active' : '';
-        return '<button class="cp-cal-filter'+active+'" onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s+'\')">'+esc(statLabels[s]||s)+'</button>';
+      '<span style="width:1px;background:var(--border);height:18px;display:inline-block;margin:0 4px;align-self:center"></span>' +
+      ['','todo','in_progress','done'].map(function(s){
+        var lbl = {'':'Tous statuts',todo:'À faire',in_progress:'En cours',done:'Terminés'}[s]||s;
+        return '<button class="cp-cal-filter'+(flt.status===s?' active':'')+'" onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s+'\')">'+lbl+'</button>';
       }).join('') +
     '</div>';
 
-    // Calendrier
-    var dayNamesFull = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    var dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     var cells = '';
     for (var i=0;i<startDay;i++) cells += '<div></div>';
     for (var dd=1;dd<=dim;dd++) {
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
-      var dt = filteredTasks.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
-      var isToday = ds===todayStr;
-      var isSel = ds===sel;
+      var dt = filtered.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
+      var isToday = ds===todayStr, isSel = ds===sel;
       var cls = 'cp-cal-day'+(isToday?' today':'')+(isSel?' selected':'');
       var pills = dt.slice(0,3).map(function(t){
-        return '<div class="cp-cal-pill" style="background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+';'+(t.status==='done'?'opacity:0.55;text-decoration:line-through':'')+'" title="'+esc(t.title)+'" onclick="event.stopPropagation();cliOpenTask(\''+pid+'\',\''+t.id+'\')">'+(t.status==='done'?'✓ ':'')+esc(t.title)+'</div>';
-      }).join('');
-      var more = dt.length > 3 ? '<div style="font-size:10px;color:var(--muted)">+' + (dt.length-3) + ' autres</div>' : '';
+        var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
+        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';'+(t.status==='done'?'opacity:0.5;text-decoration:line-through':'')+'" title="'+esc(t.title)+'">'+(t.status==='done'?'✓ ':'')+esc(t.title)+'</div>';
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted)">+' +(dt.length-3)+' autres</div>':'');
       cells += '<div class="'+cls+'" onclick="cliSelDay(\''+pid+'\',\''+ds+'\')">' +
-        '<div class="cp-cal-day__num">'+dd+(isToday?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--navy);margin-left:3px;vertical-align:middle"></span>':'')+'</div>' +
-        pills + more +
-      '</div>';
+        '<div class="cp-cal-day__num">'+dd+(isToday?'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--navy);margin-left:3px;vertical-align:middle"></span>':'')+'</div>'+pills+'</div>';
     }
 
-    var calHtml = '<div class="cp-card">' +
-      '<div class="cp-card__hd">' +
-        '<h2 class="cp-card__title" style="font-size:20px;text-transform:capitalize">'+esc(monthName)+'</h2>' +
-        '<span style="display:flex;gap:8px">' +
-          '<button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" onclick="cliCalNav(\''+pid+'\',-1)" aria-label="Mois précédent">←</button>' +
-          '<button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" onclick="cliCalNav(\''+pid+'\',1)" aria-label="Mois suivant">→</button>' +
-        '</span>' +
+    var calCard = '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title" style="font-size:19px;text-transform:capitalize">'+esc(monthName)+'</h2>' +
+        '<span style="display:flex;gap:8px"><button class="cp-btn cp-btn--sage" style="padding:7px 15px" onclick="cliCalNav(\''+pid+'\',-1)" aria-label="Mois précédent">←</button><button class="cp-btn cp-btn--sage" style="padding:7px 15px" onclick="cliCalNav(\''+pid+'\',1)" aria-label="Mois suivant">→</button></span>' +
       '</div>' +
       filtersHtml +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+dayNamesFull.map(function(n){return '<div style="text-align:center;font-size:12px;font-weight:600;color:var(--muted)">'+n+'</div>';}).join('')+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px">'+dayNames.map(function(n){return '<div style="text-align:center;font-size:12px;font-weight:600;color:var(--muted)">'+n+'</div>';}).join('')+'</div>' +
       '<div class="cp-cal-grid">'+cells+'</div>' +
     '</div>';
 
-    // Panneau jour sélectionné
-    var selTasks = filteredTasks.filter(function(t){return (t.dueDate||'').slice(0,10)===sel;});
-    var selLabel = sel === todayStr ? "Aujourd'hui" : (function(){ var d=new Date(sel+'T12:00:00'); return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); })();
-
+    var selTasks = filtered.filter(function(t){return (t.dueDate||'').slice(0,10)===sel;});
+    var selLabel = sel===todayStr ? "Aujourd'hui" : (function(){ var d=new Date(sel+'T12:00:00'); return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); })();
     var dayPanel = '<div class="cp-task-panel">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">' +
         '<h3 style="font-size:15px;font-weight:600;color:var(--navy);text-transform:capitalize">'+esc(selLabel)+'</h3>' +
-        '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\''+sel+'\')">+ Ajouter une tâche</button>' +
+        '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\''+sel+'\')">+ Ajouter</button>' +
       '</div>' +
-      (selTasks.length ? selTasks.map(function(t){
-        return taskCardHtml(t, pid, files);
-      }).join('') : '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Aucune tâche ce jour.<br><span style="font-size:12px">Cliquez « + Ajouter une tâche » pour en créer une.</span></div>') +
+      (selTasks.length ? selTasks.map(function(t){ return taskCardHtml(t,pid,files); }).join('') :
+        '<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px 0">Aucune tâche ce jour — cliquez + Ajouter</div>') +
     '</div>';
 
-    // Liste complète
-    var sortedTasks = filteredTasks.slice().sort(function(a,b){
+    return calCard + dayPanel;
+  }
+
+  // ── Onglet Tableau ────────────────────────────────────────────────────────
+  function buildPartBoard(pid, tasks, files) {
+    if (!cliCalFilter[pid]) cliCalFilter[pid] = { urgency:'', status:'' };
+    var flt = cliCalFilter[pid];
+    var filtered = tasks.filter(function(t){
+      if (flt.urgency && t.urgency !== flt.urgency) return false;
+      if (flt.status && t.status !== flt.status) return false;
+      return true;
+    }).slice().sort(function(a,b){
       if (a.status==='done'&&b.status!=='done') return 1;
       if (b.status==='done'&&a.status!=='done') return -1;
+      var ua = {haute:0,moyenne:1,basse:2}[a.urgency]||1, ub = {haute:0,moyenne:1,basse:2}[b.urgency]||1;
+      if (ua!==ub) return ua-ub;
       return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
     });
 
-    var allTasksHtml = sortedTasks.length
-      ? '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Toutes les tâches</h2><span style="font-size:13px;color:var(--muted)">'+done+'/'+tasks.length+' terminées</span></div>' +
-          '<div class="cp-bar" style="margin-bottom:14px"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
-          sortedTasks.map(function(t){ return taskCardHtml(t, pid, files); }).join('') +
-        '</div>'
-      : '<div class="cp-card"><div class="cp-empty">Aucune tâche'+((flt.urgency||flt.status)?' correspondant aux filtres.':'.')+' </div></div>';
+    var filtersHtml = '<div class="cp-cal-filters" style="margin-bottom:12px">' +
+      ['','brief_en_cours','brief_pret','en_projet','a_retravailler'].map(function(s){
+        var lbl = s ? (CLI_BRIEF[s]||{label:s}).label : 'Tous';
+        var bg  = s ? (CLI_BRIEF[s]||{bg:'#eee'}).bg : 'var(--white)';
+        return '<button class="cp-cal-filter'+(flt.status===s?' active':'')+'" style="'+(s&&flt.status!==s?'background:'+bg+';border-color:transparent':'')+'\" onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s+'\')">'+esc(lbl)+'</button>';
+      }).join('') +
+    '</div>';
 
-    return calHtml + dayPanel + allTasksHtml;
+    var rows = filtered.map(function(t){
+      var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
+      var urg = CLI_URGENCY[t.urgency]||'#eee', urgTx = CLI_URGENCY_TX[t.urgency]||'#333';
+      var dl = t.dueDate ? fmtDate(t.dueDate) : '—';
+      var overdue = t.dueDate && new Date(t.dueDate+'T23:59:59') < new Date() && t.status!=='done';
+      return '<tr style="cursor:default;'+(t.status==='done'?'opacity:0.55':'')+'\">' +
+        '<td><span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span></td>' +
+        '<td style="color:'+(overdue?'var(--red)':'var(--text)')+';font-size:13px">'+dl+'</td>' +
+        '<td style="font-weight:500;color:var(--navy);font-size:14px;max-width:280px">'+esc(t.title)+(t.missionType?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(t.missionType)+'</div>':'')+'</td>' +
+        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+urg+';margin-right:5px;vertical-align:middle"></span><span style="font-size:12px;color:var(--muted)">'+(CLI_URG_LABEL[t.urgency]||'—')+'</span></td>' +
+        '<td><span style="font-size:12px;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span></td>' +
+        '<td>'+(t.livrableUrl?'<a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:12px;color:var(--sage);text-decoration:none">↗ Voir</a>':'<span style="color:var(--border)">—</span>')+'</td>' +
+        '<td><button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--muted)">'+(t.status==='done'?'↩':'✓')+'</button></td>' +
+      '</tr>';
+    }).join('');
+
+    var done = tasks.filter(function(t){return t.status==='done';}).length;
+    var pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
+
+    return '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">Tableau des missions</h2>' +
+        '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Ajouter</button>' +
+      '</div>' +
+      '<div class="cp-bar" style="margin-bottom:14px"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
+      filtersHtml +
+      (rows ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Jost\',sans-serif">' +
+        '<thead><tr style="border-bottom:2px solid var(--border)">' +
+          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">État du brief</th>' +
+          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">Deadline</th>' +
+          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Mission</th>' +
+          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Priorité</th>' +
+          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Statut</th>' +
+          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Livrable</th>' +
+          '<th></th>' +
+        '</tr></thead>' +
+        '<tbody>'+rows+'</tbody>' +
+      '</table></div>' : '<div class="cp-empty">Aucune mission'+((flt.urgency||flt.status)?' correspondant aux filtres':'')+'.</div>') +
+    '</div>';
   }
+
+  // ── Onglet Forfait ────────────────────────────────────────────────────────
+  function buildPartForfait(pid, tasks, project) {
+    var forfait = project.monthlyHours || 0;
+    if (!forfait) return '<div class="cp-card"><div class="cp-empty">Forfait mensuel non défini — contactez Cindy.</div></div>';
+
+    // Grouper les tâches par mois (basé sur dueDate ou completedAt)
+    var byMonth = {};
+    tasks.forEach(function(t) {
+      var ref = (t.completedAt || t.dueDate || '');
+      if (!ref) return;
+      var key = ref.slice(0,7); // YYYY-MM
+      if (!byMonth[key]) byMonth[key] = [];
+      byMonth[key].push(t);
+    });
+
+    // Construire la liste de mois depuis le début du projet
+    var startM = project.startDate ? project.startDate.slice(0,7) : Object.keys(byMonth).sort()[0];
+    var now = new Date();
+    var endKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    var months = [];
+    if (startM) {
+      var cur = new Date(startM+'-01');
+      var end = new Date(endKey+'-01');
+      while (cur <= end) {
+        months.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0'));
+        cur.setMonth(cur.getMonth()+1);
+      }
+    }
+    if (!months.length) return '<div class="cp-card"><div class="cp-empty">Aucune donnée disponible.</div></div>';
+
+    // Calculer soldes
+    var rows = [];
+    var carry = 0; // régul cumulée
+    var totalReel = 0;
+    months.forEach(function(mk) {
+      var mTasks = byMonth[mk] || [];
+      var reel = mTasks.reduce(function(s,t){ return s+(t.timeSpentMinutes||0); },0) / 60;
+      var regulM1 = carry;
+      var solde = forfait + regulM1 - reel;
+      carry = solde; // carry-over
+      totalReel += reel;
+      var mLabel = new Date(mk+'-15').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      rows.push({ mk:mk, label:mLabel, forfait:forfait, regulM1:regulM1, reel:reel, solde:solde });
+    });
+
+    var totalSolde = carry;
+    var rowsHtml = rows.map(function(r) {
+      var isNow = r.mk === endKey;
+      var soldeCol = r.solde > 0 ? 'var(--sage)' : r.solde < 0 ? 'var(--red)' : 'var(--muted)';
+      function fmt(h) { var abs=Math.abs(h); var hh=Math.floor(abs); var mm=Math.round((abs-hh)*60); return (h<0?'-':'')+(hh>0?hh+'h ':'')+String(mm).padStart(2,'0')+'min'; }
+      return '<tr style="'+(isNow?'background:rgba(5,24,51,0.03);font-weight:600':'')+'\">' +
+        '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
+        '<td style="padding:10px 14px;font-size:14px;text-align:center">'+r.forfait+'h</td>' +
+        '<td style="padding:10px 14px;font-size:14px;text-align:center;color:'+(r.regulM1>0?'var(--sage)':r.regulM1<0?'var(--red)':'var(--muted)')+'">'+fmt(r.regulM1)+'</td>' +
+        '<td style="padding:10px 14px;font-size:14px;text-align:center;color:var(--navy)">'+fmt(r.reel)+'</td>' +
+        '<td style="padding:10px 14px;font-size:14px;text-align:center;color:'+soldeCol+';font-weight:600">'+fmt(r.solde)+'</td>' +
+      '</tr>';
+    }).join('');
+
+    // Mini graphique SVG donut
+    var used = Math.min(totalReel, forfait * months.length);
+    var total = forfait * months.length;
+    var pct = total > 0 ? Math.round(used/total*100) : 0;
+    var r = 54, circ = 2*Math.PI*r;
+    var dash = (pct/100)*circ;
+    var donut = '<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto">' +
+      '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="#e8e4dc" stroke-width="14"/>' +
+      '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="var(--navy)" stroke-width="14" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+circ/4+'" stroke-linecap="round"/>' +
+      '<text x="70" y="66" text-anchor="middle" font-size="22" font-weight="700" fill="var(--navy)" font-family="Jost,sans-serif">'+pct+'%</text>' +
+      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#8090a8" font-family="Jost,sans-serif">heures utilisées</text>' +
+    '</svg>';
+
+    function fmtH(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
+
+    return '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2>' +
+        '<div style="font-size:13px;color:var(--muted)">'+forfait+'h / mois</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start">' +
+        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Jost\',sans-serif">' +
+          '<thead><tr style="border-bottom:2px solid var(--border)">' +
+            '<th style="text-align:left;padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Mois</th>' +
+            '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Forfait</th>' +
+            '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Report M-1</th>' +
+            '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Réel</th>' +
+            '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Solde</th>' +
+          '</tr></thead>' +
+          '<tbody style="border-bottom:2px solid var(--border)">'+rowsHtml+'</tbody>' +
+          '<tfoot><tr>' +
+            '<td colspan="3" style="padding:10px 14px;font-size:13px;color:var(--muted)">Total</td>' +
+            '<td style="padding:10px 14px;font-size:14px;text-align:center;font-weight:600;color:var(--navy)">'+fmtH(totalReel)+'</td>' +
+            '<td style="padding:10px 14px;font-size:14px;text-align:center;font-weight:700;color:'+(totalSolde>=0?'var(--sage)':'var(--red)')+'">'+fmtH(totalSolde)+'</td>' +
+          '</tr></tfoot>' +
+        '</table></div>' +
+        '<div style="padding:16px 0;min-width:140px">' + donut + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _todayStr() { var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+
+  window.cliPartSwitch = function(pid, tab) { cliPartTab[pid] = tab; renderShell(); };
 
   window.cliCalNav = function(pid, delta) {
     if (!cliCalMonth[pid]) { var d0 = new Date(); d0.setDate(1); cliCalMonth[pid] = d0; }
