@@ -141,7 +141,12 @@ async function handleProjects(request, env, url) {
   if (method === "GET" && url.pathname === "/api/projects") {
     const projects = await getAllProjects(env);
     projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    return jsonResponse(projects);
+    const unreadCounts = await Promise.all(projects.map(async (p) => {
+      const msgs = await getMessages(env, p.id);
+      return msgs.filter((m) => m.author === "client" && !m.readByAdmin).length;
+    }));
+    const result = projects.map((p, i) => ({ ...p, _unread: unreadCounts[i] }));
+    return jsonResponse(result);
   }
   if (method === "POST" && url.pathname === "/api/projects") {
     const body = await request.json();

@@ -823,21 +823,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
 
-    const unreadCounts = await Promise.all(projects.map(async function(p) {
-      try {
-        const r = await apiFetch('/api/projects/' + p.id + '/messages');
-        if (!r.ok) return 0;
-        const msgs = await r.json();
-        return msgs.filter(function(m) { return m.author === 'client' && !m.readByAdmin; }).length;
-      } catch { return 0; }
-    }));
-
+    const unreadCounts = projects.map(function(p) { return p._unread || 0; });
     renderDashboard(projects, unreadCounts);
     currentProjectId = null;
   }
 
   function renderDashboard(projs, unreadCounts) {
-    unreadCounts = unreadCounts || projs.map(function() { return 0; });
+    unreadCounts = unreadCounts || projs.map(function(p) { return p._unread || 0; });
     const now = Date.now();
     const soonDeadline = function(p) { return p.deadline && new Date(p.deadline).getTime() - now < 7 * 24 * 3600 * 1000 && new Date(p.deadline).getTime() > now; };
 
@@ -1169,6 +1161,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ── Project detail ─────────────────────────────────────────────────────────
   async function loadProject(projectId) {
     currentProjectId = projectId;
+    _bannerColor = null; // reset between projects
     const [projRes, msgsRes, filesRes, tokensRes, emailsRes, allProjs, invRes] = await Promise.all([
       apiFetch('/api/projects/' + projectId),
       apiFetch('/api/projects/' + projectId + '/messages'),
@@ -1690,6 +1683,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (urlEl) urlEl.value = '';
     var hidden = document.getElementById('edit-bannerData');
     if (hidden) hidden.value = '';
+    _bannerColor = null;
     var prev = document.getElementById('banner-preview');
     if (prev) prev.style.background = 'linear-gradient(135deg,#412F21,#EFE1B0)';
     toast('Image supprimée');
@@ -1698,6 +1692,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var _bannerColor = null;
   window.pickBannerColor = function(c1, c2) {
     _bannerColor = c1 + (c2 ? '|'+c2 : '');
+    // Clear any uploaded image when picking a color
+    var hidden = document.getElementById('edit-bannerData');
+    if (hidden) hidden.value = '';
     var prev = document.getElementById('banner-preview');
     if (!prev) return;
     var urlEl = document.getElementById('edit-bannerUrl');
@@ -2434,7 +2431,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
     showPrompt('Créer un espace client', 'Nom du lien (ex: Emilie — Accès principal)', email, async function(label) {
-      const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email }) });
+      const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: label || email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
       await navigator.clipboard.writeText(data.url).catch(function() {});
@@ -4159,7 +4156,7 @@ export default {
 
       // Client HTML (public)
       if (pathname === '/client.html' || pathname === '/client') {
-        return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
+        return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'X-Frame-Options': 'DENY' } });
       }
 
       // Client API (public, no admin auth needed)
@@ -4177,7 +4174,7 @@ export default {
       }
 
       // Admin SPA catch-all (handles all routes for hash-based navigation)
-      return new Response(ADMIN_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
+      return new Response(ADMIN_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'X-Frame-Options': 'DENY' } });
 
     } catch (err) {
       console.error('Front worker error:', err);
