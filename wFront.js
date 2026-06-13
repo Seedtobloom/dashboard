@@ -1666,6 +1666,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</div>' + /* fin proj-col gauche */
             '<div class="proj-col">' +
 
+            ((project.questionnaireQuestions && project.questionnaireQuestions.length) ? '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Reponses questionnaire</span></div>' +
+              '<div class="card-body">' + buildQuestionnaireAdminView(project) + '</div>' +
+            '</div>' : '') +
+
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Messages</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
               '<div class="card-body">' +
@@ -1705,6 +1710,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Liens d\'accès client</span><div style="display:flex;gap:8px"><button class="btn btn--outline btn--sm" onclick="genClientSpaceToken()">🌐 Espace client</button><button class="btn btn--sage btn--sm" onclick="openGenToken()">+ Lien projet</button></div></div>' +
               '<div class="card-body" id="tokens-container">' + (tokensHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun lien.</p>') + '</div>' +
+            '</div>' +
+            '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Questionnaire client</span><button class="btn btn--sage btn--sm" onclick="openQuestionnaireEditor()">Modifier</button></div>' +
+              '<div class="card-body" id="questionnaire-admin-container">' + buildQuestionnaireAdminView(project) + '</div>' +
             '</div>' +
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Notifications email</span><button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button></div>' +
@@ -2440,6 +2449,92 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div class="card-body" id="tasks-container">' + (rows || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune tâche.</p>') + '</div>' +
     '</div>';
   }
+
+  function buildQuestionnaireAdminView(project) {
+    var questions = (project.questionnaireQuestions || []);
+    var answers = (project.questionnaireAnswers || {});
+    if (!questions.length) {
+      return '<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">Aucun questionnaire configuré. Cliquez sur Modifier pour en créer un.</p>';
+    }
+    return questions.map(function(q) {
+      var ans = answers[q.id];
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px">' + esc(q.label) + '</div>' +
+        (ans
+          ? '<div style="font-size:13px;color:var(--text);white-space:pre-wrap">' + esc(ans) + '</div>'
+          : '<div style="font-size:12px;color:var(--muted);font-style:italic">Pas encore repondu</div>') +
+      '</div>';
+    }).join('');
+  }
+
+  window.openQuestionnaireEditor = function() {
+    var project = window._currentProject;
+    if (!project) return;
+    var questions = (project.questionnaireQuestions || []).slice();
+
+    var existing = document.getElementById('questionnaire-editor-overlay');
+    if (existing) existing.remove();
+
+    var ov = document.createElement('div');
+    ov.id = 'questionnaire-editor-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+
+    function renderPanel() {
+      var qList = questions.map(function(q, i) {
+        return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">' +
+          '<input type="text" value="' + esc(q.label) + '" data-qi="' + i + '" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" placeholder="Question ' + (i+1) + '">' +
+          '<button onclick="this.closest(\'div\').remove();window._qeRemove(' + i + ')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);font-size:12px">✕</button>' +
+        '</div>';
+      }).join('');
+
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+          '<strong style="font-size:16px;color:var(--navy)">Questionnaire client</strong>' +
+          '<button onclick="document.getElementById(\'questionnaire-editor-overlay\').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">✕</button>' +
+        '</div>' +
+        '<div id="_qe-list">' + qList + '</div>' +
+        '<button onclick="window._qeAdd()" style="width:100%;padding:9px;border:1.5px dashed var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:16px">+ Ajouter une question</button>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<button onclick="document.getElementById(\'questionnaire-editor-overlay\').remove()" style="padding:9px 18px;border:1.5px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;color:var(--muted)">Annuler</button>' +
+          '<button onclick="window._qeSave()" style="padding:9px 18px;border:none;border-radius:8px;background:var(--navy);color:var(--sidebar-text);cursor:pointer;font-size:13px;font-weight:500">Sauvegarder</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    window._qeRemove = function(i) {
+      var inputs = ov.querySelectorAll('input[data-qi]');
+      var updated = [];
+      inputs.forEach(function(inp) { var idx = parseInt(inp.dataset.qi); if (idx !== i) updated.push(questions[idx]); });
+      questions = updated;
+      renderPanel();
+    };
+    window._qeAdd = function() {
+      var inputs = ov.querySelectorAll('input[data-qi]');
+      inputs.forEach(function(inp) { var idx = parseInt(inp.dataset.qi); if (questions[idx]) questions[idx].label = inp.value; });
+      questions.push({ id: 'q' + Date.now(), label: '' });
+      renderPanel();
+      var allInputs = ov.querySelectorAll('input[data-qi]');
+      if (allInputs.length) allInputs[allInputs.length-1].focus();
+    };
+    window._qeSave = async function() {
+      var inputs = ov.querySelectorAll('input[data-qi]');
+      var updated = [];
+      inputs.forEach(function(inp) { var idx = parseInt(inp.dataset.qi); var lbl = inp.value.trim(); if (lbl && questions[idx]) updated.push({ id: questions[idx].id, label: lbl }); });
+      var body = Object.assign({}, window._currentProject, { questionnaireQuestions: updated });
+      var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
+      if (res.ok) {
+        window._currentProject.questionnaireQuestions = updated;
+        toast('Questionnaire sauvegarde ✓');
+        ov.remove();
+        var el = document.getElementById('questionnaire-admin-container');
+        if (el) el.innerHTML = buildQuestionnaireAdminView(window._currentProject);
+      } else { toast('Erreur', true); }
+    };
+
+    renderPanel();
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  };
 
   function buildPartenaireSection(project) {
     var tasks = tasksOf(project);
@@ -3184,9 +3279,30 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
     }
 
+    var questionnaireCard = '';
+    var qQuestions = project.questionnaireQuestions || [];
+    if (qQuestions.length) {
+      var qAnswers = project.questionnaireAnswers || {};
+      var allAnswered = qQuestions.every(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); });
+      var qFields = qQuestions.map(function(q) {
+        var ans = qAnswers[q.id] || '';
+        return '<div style="margin-bottom:14px">' +
+          '<label style="display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px">' + esc(q.label) + '</label>' +
+          '<textarea data-qid="' + q.id + '" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box">' + esc(ans) + '</textarea>' +
+        '</div>';
+      }).join('');
+      questionnaireCard = '<div class="cp-card">' +
+        '<div class="cp-card__hd"><span class="cp-card__title">Questionnaire</span>' +
+          (allAnswered ? '<span style="font-size:11px;background:#d4edda;color:#155724;padding:2px 8px;border-radius:999px">Complété</span>' : '<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:999px">A compléter</span>') +
+        '</div>' +
+        '<div id="cp-questionnaire-form">' + qFields + '</div>' +
+        '<div style="text-align:right"><button onclick="cpSaveQuestionnaire(\'' + esc(project.id) + '\')" class="cp-btn cp-btn--dark">Enregistrer mes réponses</button></div>' +
+      '</div>';
+    }
+
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
-        '<div class="cp-grid__main">' + banner + progress + '</div>' +
+        '<div class="cp-grid__main">' + banner + progress + questionnaireCard + '</div>' +
         '<div class="cp-grid__side">' + sideCol + '</div>' +
       '</div></div>';
   }
@@ -4101,6 +4217,24 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .then(function(list){ if (Array.isArray(list)) convData = list; })
       .catch(function(){});
   }
+
+  window.cpSaveQuestionnaire = async function(projectId) {
+    var form = document.getElementById('cp-questionnaire-form');
+    if (!form) return;
+    var answers = {};
+    form.querySelectorAll('textarea[data-qid]').forEach(function(ta) {
+      answers[ta.dataset.qid] = ta.value.trim();
+    });
+    var pd = appData.projects.find(function(x) { return x.project.id === projectId; });
+    var body = { questionnaireAnswers: answers };
+    if (pd && pd.project.clientEmail) body.projectId = projectId;
+    var res = await fetch(API_BASE + '/notes', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) {
+      if (pd) pd.project.questionnaireAnswers = answers;
+      toast('Réponses enregistrées ✓');
+      renderShell();
+    } else { toast('Erreur enregistrement'); }
+  };
 
   window.cpTab = function(btn, panel) {
     var tabs = btn.closest('.cp-tabs');

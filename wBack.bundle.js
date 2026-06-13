@@ -1188,9 +1188,10 @@ async function handleClientApi(request, env, url) {
     if (!project2) return errorResponse("Project not found", 404);
     if (body.notes !== undefined) project2.notes = body.notes;
     if (body.resources !== undefined) project2.resources = body.resources;
+    if (body.questionnaireAnswers !== undefined) project2.questionnaireAnswers = body.questionnaireAnswers;
     project2.updatedAt = new Date().toISOString();
     await saveProject(env, project2);
-    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [] });
+    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [], questionnaireAnswers: project2.questionnaireAnswers || {} });
   }
   // PATCH /forfait — update monthlyHours on the project
   if (method === "PATCH" && subPathRaw === "/forfait") {
