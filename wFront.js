@@ -2491,75 +2491,110 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var tasks = Array.isArray(project.tasks) ? project.tasks : [];
     var done = tasks.filter(function(t){return t.status==='done';}).length;
     var pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
+    var pid = project.id;
 
-    // Calendrier
-    if (!cliCalMonth[project.id]) { var d0 = new Date(); d0.setDate(1); d0.setHours(0,0,0,0); cliCalMonth[project.id] = d0; }
-    var cm = cliCalMonth[project.id];
+    // Mois affiché
+    if (!cliCalMonth[pid]) { var d0=new Date(); d0.setDate(1); d0.setHours(0,0,0,0); cliCalMonth[pid]=d0; }
+    var cm = cliCalMonth[pid];
     var year = cm.getFullYear(), month = cm.getMonth();
     var monthName = cm.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
     var startDay = (new Date(year,month,1).getDay()+6)%7;
     var dim = new Date(year,month+1,0).getDate();
-    var dayNames = ['L','M','M','J','V','S','D'];
-    var dayNamesFull = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
     var todayStr = (function(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); })();
+    var sel = cliCalSelected[pid] || todayStr;
+
+    // Filtres actifs
+    if (!cliCalFilter[pid]) cliCalFilter[pid] = { urgency:'', status:'' };
+    var flt = cliCalFilter[pid];
+
+    // Filtrage
+    var filteredTasks = tasks.filter(function(t) {
+      if (flt.urgency && t.urgency !== flt.urgency) return false;
+      if (flt.status && t.status !== flt.status) return false;
+      return true;
+    });
+
+    // Barre de filtres
+    var urgencies = ['','basse','moyenne','haute'];
+    var statuses = ['','todo','in_progress','done'];
+    var urgLabels = {'':'Toutes urgences','basse':'Basse','moyenne':'Moyenne','haute':'Haute'};
+    var statLabels = {'':'Tous statuts','todo':'À faire','in_progress':'En cours','done':'Terminés'};
+
+    var filtersHtml = '<div class="cp-cal-filters">' +
+      urgencies.map(function(u) {
+        var active = flt.urgency === u ? ' active' : '';
+        return '<button class="cp-cal-filter'+active+'" onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')">'+(u?'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(CLI_URGENCY[u]||'#aaa')+';margin-right:5px;vertical-align:middle"></span>':'')+esc(urgLabels[u]||u)+'</button>';
+      }).join('') +
+      '<span style="width:1px;background:var(--border);height:20px;display:inline-block;align-self:center"></span>' +
+      statuses.map(function(s) {
+        var active = flt.status === s ? ' active' : '';
+        return '<button class="cp-cal-filter'+active+'" onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s+'\')">'+esc(statLabels[s]||s)+'</button>';
+      }).join('') +
+    '</div>';
+
+    // Calendrier
+    var dayNamesFull = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     var cells = '';
-    for (var i=0;i<startDay;i++) cells += '<div style="min-height:118px;background:var(--surface);border-radius:8px"></div>';
+    for (var i=0;i<startDay;i++) cells += '<div></div>';
     for (var dd=1;dd<=dim;dd++) {
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
-      var dt = tasks.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
+      var dt = filteredTasks.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
       var isToday = ds===todayStr;
-      var pills = dt.map(function(t){return '<div style="font-size:12px;line-height:1.35;padding:3px 7px;border-radius:5px;margin-bottom:3px;background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'+(t.status==='done'?';text-decoration:line-through':'')+'" title="'+esc(t.title)+'">'+(t.status==='done'?'✓ ':'')+esc(t.title)+'</div>';}).join('');
-      cells += '<div style="min-height:118px;border:1px solid '+(isToday?'var(--navy)':'var(--border)')+';border-radius:8px;padding:6px;'+(isToday?'box-shadow:inset 0 0 0 1px var(--navy)':'')+'"><div style="font-size:13px;font-weight:600;color:'+(isToday?'var(--navy)':'var(--muted)')+';margin-bottom:4px">'+dd+(isToday?' •':'')+'</div>'+pills+'</div>';
+      var isSel = ds===sel;
+      var cls = 'cp-cal-day'+(isToday?' today':'')+(isSel?' selected':'');
+      var pills = dt.slice(0,3).map(function(t){
+        return '<div class="cp-cal-pill" style="background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+';'+(t.status==='done'?'opacity:0.55;text-decoration:line-through':'')+'" title="'+esc(t.title)+'" onclick="event.stopPropagation();cliOpenTask(\''+pid+'\',\''+t.id+'\')">'+(t.status==='done'?'✓ ':'')+esc(t.title)+'</div>';
+      }).join('');
+      var more = dt.length > 3 ? '<div style="font-size:10px;color:var(--muted)">+' + (dt.length-3) + ' autres</div>' : '';
+      cells += '<div class="'+cls+'" onclick="cliSelDay(\''+pid+'\',\''+ds+'\')">' +
+        '<div class="cp-cal-day__num">'+dd+(isToday?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--navy);margin-left:3px;vertical-align:middle"></span>':'')+'</div>' +
+        pills + more +
+      '</div>';
     }
-    var calendar = '<div class="cp-card">' +
-      '<div class="cp-card__hd"><h2 class="cp-card__title" style="font-size:20px;text-transform:capitalize">'+esc(monthName)+'</h2>' +
-        '<span style="display:flex;gap:8px"><button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" aria-label="Mois précédent" onclick="cliCalNav(\''+project.id+'\',-1)">←</button><button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" aria-label="Mois suivant" onclick="cliCalNav(\''+project.id+'\',1)">→</button></span>' +
+
+    var calHtml = '<div class="cp-card">' +
+      '<div class="cp-card__hd">' +
+        '<h2 class="cp-card__title" style="font-size:20px;text-transform:capitalize">'+esc(monthName)+'</h2>' +
+        '<span style="display:flex;gap:8px">' +
+          '<button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" onclick="cliCalNav(\''+pid+'\',-1)" aria-label="Mois précédent">←</button>' +
+          '<button class="cp-btn cp-btn--sage" style="padding:7px 16px;font-size:16px" onclick="cliCalNav(\''+pid+'\',1)" aria-label="Mois suivant">→</button>' +
+        '</span>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+dayNamesFull.map(function(n){return '<div style="text-align:center;font-size:13px;font-weight:600;color:var(--muted);padding-bottom:4px">'+n+'</div>';}).join('')+'</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+cells+'</div>' +
+      filtersHtml +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+dayNamesFull.map(function(n){return '<div style="text-align:center;font-size:12px;font-weight:600;color:var(--muted)">'+n+'</div>';}).join('')+'</div>' +
+      '<div class="cp-cal-grid">'+cells+'</div>' +
     '</div>';
 
-    var tasksHtml = tasks.slice().sort(function(a,b){return (a.dueDate||'').localeCompare(b.dueDate||'');}).map(function(t) {
-      var deliverable = t.deliverableFileKey ? (files.find(function(f){return f.key===t.deliverableFileKey;})) : null;
-      var comments = Array.isArray(t.comments)?t.comments:[];
-      return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--white)">' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-          '<strong style="color:var(--navy)'+(t.status==='done'?';text-decoration:line-through':'')+'">'+esc(t.title)+'</strong>' +
-          '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:'+(CLI_URGENCY[t.urgency]||'#ddd')+';color:'+(CLI_URGENCY_TX[t.urgency]||'#1a1a1a')+'">'+(CLI_URG_LABEL[t.urgency]||t.urgency)+'</span>' +
-          '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#F0EDE6;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span>' +
-        '</div>' +
-        (t.content ? '<div style="font-size:13px;margin-top:6px;white-space:pre-wrap">'+esc(t.content)+'</div>' : '') +
-        (t.dueDate ? '<div style="font-size:12px;color:var(--muted);margin-top:5px">📅 '+fmtDate(t.dueDate)+'</div>' : '') +
-        (deliverable ? '<div style="margin-top:8px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>' : '') +
-        '<div style="margin-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:4px 0;border-top:1px dashed var(--border)"><strong>'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> · <span style="color:var(--muted)">'+fmtShort(c.createdAt)+'</span><div>'+esc(c.text)+'</div></div>';}).join('')+'</div>' +
-        '<div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:6px 12px" onclick="cliAddComment(\''+project.id+'\',\''+t.id+'\')">Envoyer</button></div>' +
-      '</div>';
-    }).join('') || '<div class="cp-empty">Aucune tâche pour le moment.</div>';
+    // Panneau jour sélectionné
+    var selTasks = filteredTasks.filter(function(t){return (t.dueDate||'').slice(0,10)===sel;});
+    var selLabel = sel === todayStr ? "Aujourd'hui" : (function(){ var d=new Date(sel+'T12:00:00'); return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); })();
 
-    var progressCard = '<div class="cp-card">' +
-      '<div class="cp-card__hd"><span class="cp-card__title">Avancement</span><span class="cp-card__pct">'+pct+'%</span></div>' +
-      '<div class="cp-bar"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
-      '<div style="font-size:13px;color:var(--muted)">'+done+'/'+tasks.length+' tâches terminées</div>' +
-    '</div>';
-
-    var addForm = '<div class="cp-card">' +
-      '<div class="cp-card__hd"><span class="cp-card__title">Ajouter une tâche</span></div>' +
-      '<div class="form-field"><label for="cli-task-title">Titre</label><input type="text" id="cli-task-title" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px"></div>' +
-      '<div class="form-field" style="margin-top:8px"><label for="cli-task-content">Détails</label><textarea id="cli-task-content" rows="2" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px"></textarea></div>' +
-      '<div style="display:flex;gap:8px;margin-top:8px">' +
-        '<select id="cli-task-urgency" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px"><option value="basse">Basse</option><option value="moyenne" selected>Moyenne</option><option value="haute">Haute</option></select>' +
-        '<input type="date" id="cli-task-due" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px">' +
+    var dayPanel = '<div class="cp-task-panel">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
+        '<h3 style="font-size:15px;font-weight:600;color:var(--navy);text-transform:capitalize">'+esc(selLabel)+'</h3>' +
+        '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\''+sel+'\')">+ Ajouter une tâche</button>' +
       '</div>' +
-      '<div style="margin-top:10px;text-align:right"><button class="cp-btn cp-btn--dark" onclick="cliAddTask(\''+project.id+'\')">+ Ajouter</button></div>' +
+      (selTasks.length ? selTasks.map(function(t){
+        return taskCardHtml(t, pid, files);
+      }).join('') : '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Aucune tâche ce jour.<br><span style="font-size:12px">Cliquez « + Ajouter une tâche » pour en créer une.</span></div>') +
     '</div>';
 
-    var tasksCard = '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Tâches du mois</h2></div>' + tasksHtml + '</div>';
+    // Liste complète
+    var sortedTasks = filteredTasks.slice().sort(function(a,b){
+      if (a.status==='done'&&b.status!=='done') return 1;
+      if (b.status==='done'&&a.status!=='done') return -1;
+      return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
+    });
 
-    return calendar +
-      '<div class="cp-grid" style="grid-template-columns:1fr 340px;margin-top:14px">' +
-        '<div>' + tasksCard + '</div>' +
-        '<div>' + progressCard + addForm + '</div>' +
-      '</div>';
+    var allTasksHtml = sortedTasks.length
+      ? '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Toutes les tâches</h2><span style="font-size:13px;color:var(--muted)">'+done+'/'+tasks.length+' terminées</span></div>' +
+          '<div class="cp-bar" style="margin-bottom:14px"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
+          sortedTasks.map(function(t){ return taskCardHtml(t, pid, files); }).join('') +
+        '</div>'
+      : '<div class="cp-card"><div class="cp-empty">Aucune tâche'+((flt.urgency||flt.status)?' correspondant aux filtres.':'.')+' </div></div>';
+
+    return calHtml + dayPanel + allTasksHtml;
   }
 
   window.cliCalNav = function(pid, delta) {
@@ -2568,25 +2603,81 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     renderShell();
   };
 
-  window.cliAddTask = function(pid) {
-    var title = (document.getElementById('cli-task-title')||{}).value;
+  window.cliSelDay = function(pid, ds) {
+    cliCalSelected[pid] = ds;
+    renderShell();
+  };
+
+  window.cliSetFilter = function(pid, key, val) {
+    if (!cliCalFilter[pid]) cliCalFilter[pid] = { urgency:'', status:'' };
+    cliCalFilter[pid][key] = cliCalFilter[pid][key] === val ? '' : val;
+    renderShell();
+  };
+
+  window.cliOpenAddTask = function(pid, ds) {
+    var existing = document.getElementById('cli-add-task-overlay');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = 'cli-add-task-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">Nouvelle tâche</h3>' +
+      '<div class="form-field"><label for="cli-nt-title">Titre</label><input type="text" id="cli-nt-title" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif;font-size:14px"></div>' +
+      '<div class="form-field" style="margin-top:10px"><label for="cli-nt-content">Détails (optionnel)</label><textarea id="cli-nt-content" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif;font-size:14px;resize:vertical"></textarea></div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<div class="form-field" style="flex:1"><label for="cli-nt-urgency">Urgence</label><select id="cli-nt-urgency" style="width:100%;padding:9px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif"><option value="basse">Basse</option><option value="moyenne" selected>Moyenne</option><option value="haute">Haute</option></select></div>' +
+        '<div class="form-field" style="flex:1"><label for="cli-nt-due">Date</label><input type="date" id="cli-nt-due" value="'+(ds||'')+'" style="width:100%;padding:9px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Jost\',sans-serif"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">' +
+        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;color:#8090a8">Annuler</button>' +
+        '<button onclick="cliSubmitAddTask(\''+pid+'\')" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Jost\',sans-serif;font-weight:500">Ajouter</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    setTimeout(function(){ var el=document.getElementById('cli-nt-title'); if(el)el.focus(); },100);
+  };
+
+  window.cliSubmitAddTask = function(pid) {
+    var title = (document.getElementById('cli-nt-title')||{}).value;
     if (!title || !title.trim()) { toast('Titre requis'); return; }
     var body = {
       projectId: pid,
       title: title.trim(),
-      content: (document.getElementById('cli-task-content')||{}).value || '',
-      urgency: (document.getElementById('cli-task-urgency')||{}).value || 'moyenne',
-      dueDate: (document.getElementById('cli-task-due')||{}).value || undefined,
+      content: (document.getElementById('cli-nt-content')||{}).value || '',
+      urgency: (document.getElementById('cli-nt-urgency')||{}).value || 'moyenne',
+      dueDate: (document.getElementById('cli-nt-due')||{}).value || undefined,
     };
+    var ov = document.getElementById('cli-add-task-overlay');
+    if (ov) ov.remove();
     fetch(API_BASE + '/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
       .then(function(task) {
         var pd = getPD(pid);
         if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
+        if (body.dueDate) cliCalSelected[pid] = body.dueDate;
         toast('Tâche ajoutée ✓');
         renderShell();
       })
       .catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliToggleTask = function(pid, taskId, newStatus) {
+    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, status: newStatus }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(updated) {
+        var pd = getPD(pid);
+        if (pd) {
+          var idx = (pd.project.tasks||[]).findIndex(function(x){return x.id===taskId;});
+          if (idx>=0) pd.project.tasks[idx] = updated;
+        }
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  };
+
+  window.cliOpenTask = function(pid, taskId) {
+    // Scroll to task in list — handled by selection highlight
   };
 
   window.cliAddComment = function(pid, taskId) {
