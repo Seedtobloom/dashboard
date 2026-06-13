@@ -2556,7 +2556,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
     var dotCol = CLI_URGENCY[t.urgency] || '#ddd';
     var dotTx = CLI_URGENCY_TX[t.urgency] || '#1a1a1a';
-    var tJson = JSON.stringify(JSON.stringify(t));
+    // Registre global pour éviter les problèmes de quotes dans les onclick
+    if (!window._cliTaskReg) window._cliTaskReg = {};
+    window._cliTaskReg[t.id] = t;
     return '<div class="cp-task-card'+(t.status==='done'?' cp-task-card__done':'')+'">' +
       '<div class="cp-task-card__top">' +
         '<div style="flex:1;min-width:0">' +
@@ -2571,7 +2573,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
           '<div style="display:flex;gap:4px">' +
-            '<button onclick="cliEditTask('+tJson+',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)" title="Modifier">✏</button>' +
+            '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)" title="Modifier">✏</button>' +
             '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44" title="Supprimer">✕</button>' +
           '</div>' +
         '</div>' +
@@ -3033,10 +3035,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).catch(function(){ toast('Erreur, réessayez.'); });
   }
 
-  window.cliEditTask = function(taskJson, pid) {
-    var t = JSON.parse(taskJson);
+  window.cliEditTask = function(taskId, pid) {
+    // Lookup task from registry (avoids HTML-escaping issues with inline JSON)
+    var t = (window._cliTaskReg || {})[taskId];
+    if (!t) {
+      var pd = getPD(pid);
+      t = pd && (pd.project.tasks || []).find(function(x) { return x.id === taskId; });
+    }
+    if (!t) { toast('Tâche introuvable'); return; }
     cliTaskOverlay(pid, {
-      taskId: t.id, title: t.title, content: t.content, briefStatus: t.briefStatus,
+      taskId: t.id, title: t.title||'', content: t.content||'', briefStatus: t.briefStatus,
       urgency: t.urgency, dueDate: (t.dueDate||'').slice(0,10), pole: t.pole,
       missionType: t.missionType, imageUrl: t.imageUrl, livrableUrl: t.livrableUrl,
       submitLabel: 'Sauvegarder', onSubmit: function(pid2) { cliDoEditTask(pid2, t.id); }
