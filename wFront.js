@@ -147,13 +147,22 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 .status-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
 
-.step-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
-.step-row:last-child { border-bottom: none; }
-.step-order { display: flex; flex-direction: column; gap: 2px; }
-.step-content { flex: 1; min-width: 0; }
-.step-title { font-weight: 500; font-size: 14px; color: var(--text); margin-bottom: 3px; }
-.step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-.step-actions { display: flex; gap: 6px; flex-shrink: 0; }
+/* Steps — admin cards */
+.step-cards { display: grid; gap: 12px; }
+.step-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 18px; background: var(--white); transition: box-shadow 0.15s; position: relative; }
+.step-card:hover { box-shadow: 0 3px 14px rgba(5,24,51,0.07); }
+.step-card--done { border-color: var(--sage); background: #f6faf7; }
+.step-card--waiting { border-color: var(--lavender); background: #f9f7ff; }
+.step-card--active { border-color: var(--sky); background: #f5f8ff; }
+.step-card__top { display: flex; align-items: flex-start; gap: 12px; }
+.step-card__dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin-top: 1px; }
+.step-card__body { flex: 1; min-width: 0; }
+.step-card__title { font-weight: 600; font-size: 14px; color: var(--navy); margin-bottom: 4px; }
+.step-card__desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-top: 4px; }
+.step-card__meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.step-card__badge { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 600; }
+.step-card__actions { display: flex; gap: 6px; align-items: center; margin-top: 10px; justify-content: space-between; }
+.step-card__move { display: flex; gap: 4px; }
 
 .msg-row { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .msg-row:last-child { border-bottom: none; }
@@ -1051,31 +1060,54 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var unreadMapP = {};
     allProjects.forEach(function(p, i) { unreadMapP[p.id] = unreadCounts[i] || 0; });
 
-    const stepsHtml = [...project.steps].sort(function(a, b) { return a.order - b.order; }).map(function(step) {
-      return '<div class="step-row" data-step-id="' + step.id + '">' +
-        '<div class="step-order">' +
-          '<button class="btn btn--outline btn--sm" onclick="moveStep(\'' + step.id + '\',\'up\')">↑</button>' +
-          '<button class="btn btn--outline btn--sm" onclick="moveStep(\'' + step.id + '\',\'down\')">↓</button>' +
+    var STEP_DOT_STYLE = {
+      upcoming:       { bg:'var(--border)',    color:'var(--muted)',  label:'•' },
+      in_progress:    { bg:'var(--sky)',       color:'var(--navy)',   label:'▶' },
+      waiting_client: { bg:'var(--lavender)',  color:'var(--navy)',   label:'⏳' },
+      done:           { bg:'var(--sage)',      color:'#fff',          label:'✓' },
+    };
+    var STEP_BADGE_STYLE = {
+      upcoming:       'background:var(--surface);color:var(--muted)',
+      in_progress:    'background:var(--sky);color:var(--navy)',
+      waiting_client: 'background:var(--lavender);color:var(--navy)',
+      done:           'background:var(--sage);color:#fff',
+    };
+    var STEP_CARD_CLS = { upcoming:'', in_progress:' step-card--active', waiting_client:' step-card--waiting', done:' step-card--done' };
+
+    const stepsHtml = '<div class="step-cards">' + ([...project.steps].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
+      var dot = STEP_DOT_STYLE[step.status] || STEP_DOT_STYLE.upcoming;
+      var cardCls = 'step-card' + (STEP_CARD_CLS[step.status]||'');
+      var badgeSty = STEP_BADGE_STYLE[step.status] || STEP_BADGE_STYLE.upcoming;
+      var statusSelect = '<select onchange="updateStepStatus(\'' + step.id + '\',this.value)" style="font-size:11px;padding:3px 7px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);color:var(--text)">' +
+        ['upcoming','in_progress','waiting_client','done'].map(function(s) {
+          return '<option value="' + s + '"' + (s === step.status ? ' selected' : '') + '>' + (STEP_STATUS_LABELS[s] || s) + '</option>';
+        }).join('') + '</select>';
+      return '<div class="' + cardCls + '" data-step-id="' + step.id + '">' +
+        '<div class="step-card__top">' +
+          '<div class="step-card__dot" style="background:' + dot.bg + ';color:' + dot.color + '">' + dot.label + '</div>' +
+          '<div class="step-card__body">' +
+            '<div class="step-card__title">' + esc(step.title) + '</div>' +
+            (step.description ? '<div class="step-card__desc">' + esc(step.description) + '</div>' : '') +
+            '<div class="step-card__meta">' +
+              '<span class="step-card__badge" style="' + badgeSty + '">' + (STEP_STATUS_LABELS[step.status]||step.status) + '</span>' +
+              (step.dueDate ? '<span style="font-size:12px;color:var(--muted)">📅 ' + formatDate(step.dueDate) + '</span>' : '') +
+              (step.clientAction ? '<span style="font-size:12px;color:var(--brown)">🎯 Action client</span>' : '') +
+            '</div>' +
+          '</div>' +
         '</div>' +
-        '<div class="step-content">' +
-          '<div class="step-title">' + esc(step.title) + '</div>' +
-          (step.description ? '<div class="step-desc">' + esc(step.description) + '</div>' : '') +
-          (step.dueDate ? '<div style="font-size:12px;color:var(--muted);margin-top:3px">📅 ' + formatDate(step.dueDate) + '</div>' : '') +
-          (step.clientAction ? '<div style="font-size:12px;color:#c47840;margin-top:3px">🎯 ' + esc(step.clientAction) + '</div>' : '') +
-        '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
-          '<select onchange="updateStepStatus(\'' + step.id + '\',this.value)" style="font-size:12px;padding:4px 8px;width:auto">' +
-            ['upcoming','in_progress','waiting_client','done'].map(function(s) {
-              return '<option value="' + s + '"' + (s === step.status ? ' selected' : '') + '>' + (STEP_STATUS_LABELS[s] || s) + '</option>';
-            }).join('') +
-          '</select>' +
-          '<div class="step-actions">' +
+        '<div class="step-card__actions">' +
+          '<div class="step-card__move">' +
+            (idx > 0 ? '<button class="btn btn--outline btn--sm" onclick="moveStep(\'' + step.id + '\',\'up\')" aria-label="Monter" title="Monter">↑</button>' : '<span style="width:32px"></span>') +
+            (idx < arr.length-1 ? '<button class="btn btn--outline btn--sm" onclick="moveStep(\'' + step.id + '\',\'down\')" aria-label="Descendre" title="Descendre">↓</button>' : '<span style="width:32px"></span>') +
+          '</div>' +
+          statusSelect +
+          '<div style="display:flex;gap:6px">' +
             '<button class="btn btn--outline btn--sm" onclick="openEditStep(' + JSON.stringify(JSON.stringify(step)) + ')">Modifier</button>' +
             '<button class="btn btn--danger btn--sm" onclick="deleteStep(\'' + step.id + '\')">Suppr.</button>' +
           '</div>' +
         '</div>' +
       '</div>';
-    }).join('');
+    }).join('') || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune étape.</p>') + '</div>';
 
     const messagesHtml = messages.map(function(m) {
       return '<div class="msg-row">' +
@@ -1185,7 +1217,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
                 '</div>' +
                 '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
-                '<div class="form-field"><label>Bannière (URL image)</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://..."></div>' +
+                '<div class="form-field"><label>URL de la bannière</label><input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl || '') + '" placeholder="https://…" oninput="previewBanner()"><small style="color:var(--muted);font-size:11px">Coller un lien image ou laisser vide pour une couleur</small></div>' +
+                '<div class="form-field"><label>Couleur de la bannière</label>' +
+                  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
+                    [['#412F21','#EFE1B0','Marron'],['#051833','#BAD1FD','Navy'],['#2D4A2D','#d4edda','Forêt'],['#412F21','#E4D1FE','Brun–Lavande'],['#1a1a2e','#e8e0f0','Prune'],['#7C4A00','#fff3e0','Ambre']].map(function(c) {
+                      var isSelected = (project.bannerColor||'#412F21|#EFE1B0') === c[0]+'|'+c[1];
+                      return '<button type="button" title="'+esc(c[2])+'" onclick="pickBannerColor(\''+c[0]+'\',\''+c[1]+'\')" style="width:36px;height:36px;border-radius:8px;border:' + (isSelected?'3px solid var(--navy)':'2px solid transparent') + ';background:linear-gradient(135deg,'+c[0]+','+c[1]+');cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.15)" aria-label="'+esc(c[2])+'"></button>';
+                    }).join('') +
+                    '<input type="color" id="edit-bannerColorCustom" value="' + esc(project.bannerColor ? project.bannerColor.split('|')[0] : '#412F21') + '" onchange="pickBannerColor(this.value,null)" title="Couleur personnalisée" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
+                  '</div>' +
+                '</div>' +
+                '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : 'linear-gradient(135deg,'+(project.bannerColor||'#412F21|#EFE1B0').split('|').join(',')+')')+';border:1.5px solid var(--border)"></div>' +
               '</div>' +
             '</div>' +
 
@@ -1193,7 +1235,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
-              '<div class="card-body" id="steps-container">' + (stepsHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune étape.</p>') + '</div>' +
+              '<div class="card-body" id="steps-container" style="padding:8px 0">' + stepsHtml + '</div>' +
             '</div>' +
 
             '<div class="card">' +
@@ -1342,6 +1384,32 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     document.getElementById('btn-cancel-info').style.display = editing ? 'none' : '';
   };
 
+  // Aperçu bannière en temps réel dans le formulaire
+  window.previewBanner = function() {
+    var url = (document.getElementById('edit-bannerUrl')||{}).value || '';
+    var prev = document.getElementById('banner-preview');
+    if (!prev) return;
+    if (url) { prev.style.backgroundImage = 'url('+url+')'; prev.style.backgroundSize = 'cover'; prev.style.backgroundPosition = 'center'; prev.style.background = ''; }
+    else {
+      var col = (document.getElementById('edit-bannerColorCustom')||{}).value || '#412F21';
+      prev.style.background = 'linear-gradient(135deg,'+col+','+col+'44)';
+    }
+  };
+
+  var _bannerColor = null;
+  window.pickBannerColor = function(c1, c2) {
+    _bannerColor = c1 + (c2 ? '|'+c2 : '');
+    var prev = document.getElementById('banner-preview');
+    if (!prev) return;
+    var urlEl = document.getElementById('edit-bannerUrl');
+    if (urlEl) urlEl.value = '';
+    prev.style.backgroundImage = '';
+    prev.style.background = 'linear-gradient(135deg,'+c1+','+(c2||c1)+'44)';
+    // Met à jour la sélection visuelle
+    var btns = document.querySelectorAll('[onclick^="pickBannerColor"]');
+    btns.forEach(function(b) { b.style.border = '2px solid transparent'; });
+  };
+
   window.saveProjectInfo = async function() {
     const body = {
       clientName: document.getElementById('edit-clientName').value,
@@ -1353,9 +1421,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       deadline: document.getElementById('edit-deadline').value || undefined,
       meetingLink: document.getElementById('edit-meetingLink').value || undefined,
       bannerUrl: document.getElementById('edit-bannerUrl').value || undefined,
+      bannerColor: _bannerColor || undefined,
     };
     const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
-    if (res.ok) { toast('Projet mis à jour ✓'); setTimeout(function() { loadProject(currentProjectId); }, 600); }
+    if (res.ok) { _bannerColor = null; toast('Projet mis à jour ✓'); setTimeout(function() { loadProject(currentProjectId); }, 600); }
     else toast('Erreur sauvegarde', true);
   };
 
@@ -2073,7 +2142,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var urgent = days !== null && days <= 7 && days >= 0;
       var bannerStyle = p.bannerUrl
         ? 'background-image:url(' + esc(p.bannerUrl) + ');background-size:cover;background-position:center'
-        : '';
+        : (p.bannerColor
+            ? 'background:linear-gradient(135deg,' + esc(p.bannerColor).replace('|',',') + ')'
+            : '');
       var duration = '';
       if (p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
