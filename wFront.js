@@ -25,7 +25,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-body { font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+body { font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
 /* Le curseur texte (I-beam) et la sélection ne s'affichent que sur les vrais contenus éditables/lisibles */
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .file-name-col, .cp-file__name {
@@ -53,7 +53,7 @@ em, .italic { font-style: italic; }
 label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.6px; }
 input[type=text], input[type=email], input[type=date], input[type=url], input[type=password], textarea, select {
   width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
-  font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; font-size: 14px; color: var(--text);
+  font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--text);
   background: var(--white); outline: none; transition: border-color 0.2s;
 }
 input:focus, textarea:focus, select:focus { border-color: var(--navy); }
@@ -62,7 +62,7 @@ textarea { resize: vertical; min-height: 72px; }
 .form-row.full { grid-template-columns: 1fr; }
 .form-field { margin-bottom: 14px; }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s; text-decoration: none; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s; text-decoration: none; white-space: nowrap; }
 .btn:active { opacity: 0.8; }
 .btn--primary { background: var(--navy); color: var(--blue-light); }
 .btn--sage { background: var(--lavender); color: var(--navy); }
@@ -195,9 +195,9 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .projects-table tr:last-child td { border-bottom: none; }
 .projects-table tr:hover td { background: var(--surface); cursor: pointer; }
 .proj-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.proj-toolbar input[type=search] { flex: 1; min-width: 220px; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', sans-serif; font-size: 14px; background: var(--white); color: var(--text); }
+.proj-toolbar input[type=search] { flex: 1; min-width: 220px; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; background: var(--white); color: var(--text); }
 .proj-toolbar input[type=search]:focus { outline: none; border-color: var(--navy); }
-.proj-toolbar select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', sans-serif; font-size: 13px; background: var(--white); color: var(--text); cursor: pointer; }
+.proj-toolbar select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: var(--white); color: var(--text); cursor: pointer; }
 .proj-toolbar select:focus { outline: none; border-color: var(--navy); }
 
 .inbox-list {
@@ -264,7 +264,7 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+body { font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
 /* Curseur texte + sélection uniquement sur les vrais contenus */
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
@@ -301,7 +301,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 24px; background: none; border: none; cursor: pointer;
-  text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', 'Ambra Sans', sans-serif;
+  text-align: left; color: var(--blue-light); opacity: 0.85; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px; transition: background 0.12s, opacity 0.12s; border-left: 2px solid transparent;
 }
 .cp-nav__item:hover { background: rgba(186,209,253,0.07); opacity: 1; }
@@ -400,7 +400,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 /* Tabs */
 .cp-tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
 .cp-tabs::-webkit-scrollbar { display: none; }
-.cp-tab { padding: 7px 16px; background: none; border: 1px solid transparent; cursor: pointer; font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; border-radius: 999px; transition: all 0.15s; }
+.cp-tab { padding: 7px 16px; background: none; border: 1px solid transparent; cursor: pointer; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; border-radius: 999px; transition: all 0.15s; }
 .cp-tab.active { background: var(--navy); color: var(--blue-light); border-color: var(--navy); }
 .cp-tab:hover:not(.active) { background: var(--surface); color: var(--text); border-color: var(--border); }
 .cp-panel { animation: cpIn 0.18s ease both; }
@@ -419,10 +419,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg--client .cp-msg__bubble { background: var(--navy); border-bottom-right-radius: 4px; color: var(--blue-light); }
 .cp-msg__text { white-space: pre-wrap; word-break: break-word; }
 .cp-msg__date { font-size: 11px; opacity: 0.4; margin-top: 4px; }
-.cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; font-size: 14px; resize: vertical; min-height: 80px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.2s; }
+.cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; resize: vertical; min-height: 80px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.2s; }
 .cp-msg-form textarea:focus { border-color: var(--navy); }
 .cp-msg-form__row { display: flex; justify-content: flex-end; margin-top: 10px; }
-.cp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; }
+.cp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; }
 .cp-btn:hover { opacity: 0.82; }
 .cp-btn--dark { background: var(--navy); color: var(--blue-light); }
 .cp-btn--sage { background: var(--lavender); color: var(--navy); text-decoration: none; }
@@ -467,7 +467,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-topbar__name { font-size: 13px; color: var(--blue-light); opacity: 0.65; }
   .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(5,24,51,0.04); border-bottom: 1px solid var(--border); }
   .cp-pills::-webkit-scrollbar { display: none; }
-  .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); cursor: pointer; font-family: 'Ambra Sans', 'Ambra Sans', sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; transition: all 0.15s; }
+  .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); cursor: pointer; font-family: 'Ambra Sans', 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: var(--muted); white-space: nowrap; transition: all 0.15s; }
   .cp-pill.active { background: var(--navy); color: var(--blue-light); border-color: var(--navy); }
   .cp-main { margin-left: 0; }
   .cp-header { padding: 20px 20px 18px; }
@@ -741,6 +741,171 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }
   }
 
+  async function showDashboard() {
+    const res = await apiFetch('/api/projects');
+    if (!res.ok) {
+      if (res.status === 401) { showLogin(); return; }
+      toast('Erreur chargement', true); return;
+    }
+    projects = await res.json();
+    projects.sort(function(a, b) {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+
+    const unreadCounts = await Promise.all(projects.map(async function(p) {
+      try {
+        const r = await apiFetch('/api/projects/' + p.id + '/messages');
+        if (!r.ok) return 0;
+        const msgs = await r.json();
+        return msgs.filter(function(m) { return m.author === 'client' && !m.readByAdmin; }).length;
+      } catch { return 0; }
+    }));
+
+    renderDashboard(projects, unreadCounts);
+    currentProjectId = null;
+  }
+
+  function renderDashboard(projs, unreadCounts) {
+    unreadCounts = unreadCounts || projs.map(function() { return 0; });
+    const now = Date.now();
+    const soonDeadline = function(p) { return p.deadline && new Date(p.deadline).getTime() - now < 7 * 24 * 3600 * 1000 && new Date(p.deadline).getTime() > now; };
+
+    const activeProjects = projs.filter(function(p) { return p.status !== 'archived'; });
+    const totalUnread = unreadCounts.reduce(function(a, b) { return a + b; }, 0);
+    const waitingClient = projs.filter(function(p) { return p.status === 'waiting_client'; }).length;
+    const nearDeadline = projs.filter(soonDeadline).length;
+
+    const sidebarItems = projs.map(function(p, i) {
+      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="navigate(\'/admin/projects/' + p.id + '\');return false;">' +
+        '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
+        '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
+        '<div class="project-item__meta">' +
+          '<span class="badge-dot" style="background:' + (STATUS_COLORS[p.status] || '#aaa') + '"></span>' +
+          (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + '</span>' : '') +
+          (soonDeadline(p) ? '<span class="deadline-badge">⚠ deadline</span>' : '') +
+        '</div>' +
+      '</a>';
+    }).join('');
+
+    var unreadMap = {};
+    projs.forEach(function(p, i) { unreadMap[p.id] = unreadCounts[i] || 0; });
+
+    // Données accessibles au filtrage/tri client.
+    dashProjs = projs.slice();
+    dashUnreadMap = unreadMap;
+
+    var typesPresent = {};
+    projs.forEach(function(p) { typesPresent[p.type || 'custom'] = true; });
+    var typeFilterOpts = '<option value="">Tous les types</option>' +
+      Object.keys(typesPresent).map(function(t) { return '<option value="' + t + '">' + (TYPE_LABELS[t] || t) + '</option>'; }).join('');
+    var statusFilterOpts = '<option value="">Tous les statuts</option>' +
+      Object.entries(STATUS_LABELS).map(function(e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
+
+    var toolbar = '<div class="proj-toolbar">' +
+      '<input type="search" id="dash-search" placeholder="🔍 Rechercher un client, un projet…" oninput="applyProjectFilters()" aria-label="Rechercher">' +
+      '<select id="dash-type" onchange="applyProjectFilters()" aria-label="Filtrer par type">' + typeFilterOpts + '</select>' +
+      '<select id="dash-status" onchange="applyProjectFilters()" aria-label="Filtrer par statut">' + statusFilterOpts + '</select>' +
+      '<select id="dash-sort" onchange="applyProjectFilters()" aria-label="Trier">' +
+        '<option value="updated">Tri : récemment modifié</option>' +
+        '<option value="client">Tri : client (A→Z)</option>' +
+        '<option value="title">Tri : projet (A→Z)</option>' +
+        '<option value="deadline">Tri : deadline</option>' +
+        '<option value="status">Tri : statut</option>' +
+      '</select>' +
+    '</div>';
+
+    var projectRows = renderProjectRows(projs, unreadMap);
+
+    document.getElementById('app').innerHTML =
+      '<div class="app">' +
+        buildSidebarHtml('dashboard', projs, unreadMap) +
+        '<main class="main">' +
+          '<div class="main-inner">' +
+            '<div style="margin-bottom:24px">' +
+              '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Bonjour Cindy ✦</h1>' +
+              '<p style="color:var(--muted);font-size:14px">Voici l\'état de vos projets en cours.</p>' +
+            '</div>' +
+            '<div class="stat-grid">' +
+              '<div class="stat-card"><div class="stat-card__num">' + activeProjects.length + '</div><div class="stat-card__label">Projets actifs</div></div>' +
+              '<div class="stat-card"><div class="stat-card__num" style="color:' + (totalUnread > 0 ? 'var(--orange)' : 'inherit') + '">' + totalUnread + '</div><div class="stat-card__label">Messages non lus</div></div>' +
+              '<div class="stat-card"><div class="stat-card__num">' + waitingClient + '</div><div class="stat-card__label">En attente client</div></div>' +
+              '<div class="stat-card"><div class="stat-card__num" style="color:' + (nearDeadline > 0 ? 'var(--red)' : 'inherit') + '">' + nearDeadline + '</div><div class="stat-card__label">Deadlines &lt; 7 jours</div></div>' +
+            '</div>' +
+            toolbar +
+            '<div class="projects-table">' +
+              '<table>' +
+                '<thead><tr><th>Client</th><th>Projet</th><th>Type</th><th>Statut</th><th>Deadline</th><th>Messages</th><th>Modifié</th></tr></thead>' +
+                '<tbody id="dash-tbody">' + projectRows + '</tbody>' +
+              '</table>' +
+            '</div>' +
+          '</div>' +
+        '</main>' +
+      '</div>';
+  }
+
+  // ── Tri / filtre des projets sur le tableau de bord ────────────────────────
+  var dashProjs = [], dashUnreadMap = {};
+
+  function renderProjectRows(list, unreadMap) {
+    if (!list.length) return '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Aucun projet ne correspond.</td></tr>';
+    return list.map(function(p) {
+      var u = unreadMap[p.id] || 0;
+      var now = Date.now();
+      var soon = p.deadline && new Date(p.deadline).getTime() - now < 7*24*3600*1000 && new Date(p.deadline).getTime() > now;
+      return '<tr onclick="navigate(\'/admin/projects/' + p.id + '\')" style="cursor:pointer">' +
+        '<td><div style="display:flex;align-items:center;gap:8px"><button onclick="event.stopPropagation();togglePin(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0;opacity:' + (p.pinned ? '1' : '0.3') + '" title="' + (p.pinned ? 'Désépingler' : 'Épingler') + '" aria-label="' + (p.pinned ? 'Désépingler' : 'Épingler') + '">📌</button><div><div style="font-weight:500;color:var(--navy)">' + esc(p.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(p.clientEmail) + '</div></div></div></td>' +
+        '<td>' + esc(p.projectTitle) + '</td>' +
+        '<td><span style="font-size:11px;background:var(--cream);color:var(--brown);padding:2px 8px;border-radius:999px;white-space:nowrap">' + (TYPE_LABELS[p.type||'custom'] || p.type) + '</span></td>' +
+        '<td>' + adminStatusBadge(p.status) + '</td>' +
+        '<td>' + (p.deadline ? formatDate(p.deadline) + (soon ? ' <span style="font-size:11px;color:var(--red);font-weight:600">⚠</span>' : '') : '—') + '</td>' +
+        '<td>' + (u > 0 ? '<span class="unread-badge">' + u + ' non lu</span>' : '—') + '</td>' +
+        '<td>' + formatDate(p.updatedAt) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  window.applyProjectFilters = function() {
+    var q = (document.getElementById('dash-search')||{}).value || '';
+    var ft = (document.getElementById('dash-type')||{}).value || '';
+    var fs = (document.getElementById('dash-status')||{}).value || '';
+    var sort = (document.getElementById('dash-sort')||{}).value || 'updated';
+    q = q.trim().toLowerCase();
+
+    var list = dashProjs.filter(function(p) {
+      if (ft && (p.type||'custom') !== ft) return false;
+      if (fs && p.status !== fs) return false;
+      if (q) {
+        var hay = ((p.clientName||'') + ' ' + (p.clientEmail||'') + ' ' + (p.projectTitle||'')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    list.sort(function(a, b) {
+      // Les projets épinglés restent toujours en tête.
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      if (sort === 'client') return (a.clientName||'').localeCompare(b.clientName||'', 'fr');
+      if (sort === 'title') return (a.projectTitle||'').localeCompare(b.projectTitle||'', 'fr');
+      if (sort === 'status') return (STATUS_LABELS[a.status]||'').localeCompare(STATUS_LABELS[b.status]||'', 'fr');
+      if (sort === 'deadline') {
+        if (!a.deadline) return 1; if (!b.deadline) return -1;
+        return new Date(a.deadline) - new Date(b.deadline);
+      }
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+
+    var tbody = document.getElementById('dash-tbody');
+    if (tbody) tbody.innerHTML = renderProjectRows(list, dashUnreadMap);
+  };
+
+  // ── Messages (inbox) — une conversation par client (email) ─────────────────
+  var inboxData = []; // [{clientEmail, clientName, messages, unread, last}]
+  var inboxEmail = null;
+
+  function buildSidebarHtml(activeSection, allProjs, unreadMap, msgBadgeOverride) {
+
   // ── Espaces clients (tous les tokens) ─────────────────────────────────────
   async function showSpaces() {
     const res = await apiFetch('/api/projects');
@@ -768,6 +933,45 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</td>' +
       '</tr>';
     }).join('');
+
+    if (!rows) {
+      document.getElementById('app').innerHTML = buildSidebarHtml('spaces', [], {}) +
+        '<main class="main"><div class="main-inner"><h1 style="font-family:'Alegreya',serif;font-size:22px;color:var(--navy);font-style:italic;margin-bottom:24px">Espaces clients</h1>' +
+        '<p style="color:var(--muted);text-align:center;padding:40px 0">Aucun espace client créé.</p></div></main>';
+      return;
+    }
+
+    document.getElementById('app').innerHTML =
+      buildSidebarHtml('spaces', [], {}) +
+      '<main class="main">' +
+        '<div class="main-inner">' +
+          '<h1 style="font-family:'Alegreya',serif;font-size:22px;color:var(--navy);font-style:italic;margin-bottom:4px">Espaces clients</h1>' +
+          '<p style="color:var(--muted);font-size:13px;margin-bottom:24px">' + tokens.length + ' espace' + (tokens.length>1?'s':'') + ' créé' + (tokens.length>1?'s':'') + '</p>' +
+          '<div class="card">' +
+            '<div class="card-body" style="padding:0;overflow-x:auto">' +
+              '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+                '<thead><tr style="border-bottom:2px solid var(--border);background:var(--surface)">' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Client</th>' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Projet</th>' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Label</th>' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Token</th>' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Dernier accès</th>' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Statut</th>' +
+                  '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Actions</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+              '</table>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</main>' +
+      '<div class="toast" id="toast"></div>';
+  }
+
+  function renderProject(project, messages, files, tokens, emailLogs, allProjects, unreadCounts, invoices) {
+    invoices = invoices || [];
+    var unreadMapP = {};
+    allProjects.forEach(function(p, i) { unreadMapP[p.id] = unreadCounts[i] || 0; });
 
     // --- Tab helpers ---
     function projTabBtn(key, label, active) {
