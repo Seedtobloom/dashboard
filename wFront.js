@@ -2815,6 +2815,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpGoHome = function() {
     currentView = 'home';
     renderShell();
+    clearInterval(pollTimer);
+    pollTimer = setInterval(poll, pollInterval());
   };
 
   window.cpSel = function(id) {
@@ -2827,6 +2829,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     currentView = 'messages';
     renderShell();
     markConvoRead();
+    // Passe en mode poll rapide dès que la messagerie est ouverte.
+    clearInterval(pollTimer);
+    pollTimer = setInterval(poll, pollInterval());
   };
 
   function markConvoRead() {
@@ -2904,11 +2909,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).catch(function() {});
   }
 
+  function pollInterval() {
+    // Rapide (8s) si la messagerie est ouverte, lent (60s) sinon → économise les requêtes Cloudflare.
+    return currentView === 'messages' ? 8000 : 60000;
+  }
+
   function startPoll() {
     clearInterval(pollTimer);
-    pollTimer = setInterval(poll, 5000);
+    pollTimer = setInterval(poll, pollInterval());
     document.addEventListener('visibilitychange', function() {
-      document.hidden ? clearInterval(pollTimer) : (pollTimer = setInterval(poll, 5000));
+      clearInterval(pollTimer);
+      if (!document.hidden) pollTimer = setInterval(poll, pollInterval());
     });
   }
 
