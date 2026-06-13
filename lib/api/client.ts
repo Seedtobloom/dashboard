@@ -2,6 +2,7 @@ import type { Env } from '../types';
 import { verifyClientToken } from '../auth';
 import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
+import { sendAdminMessageNotification } from './notifications';
 
 export async function handleClientApi(request: Request, env: Env, url: URL): Promise<Response> {
   const method = request.method;
@@ -53,6 +54,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       };
 
       await addMessage(env, message);
+      sendAdminMessageNotification(env, project, message).catch(() => {});
       return jsonResponse({ success: true, message }, 201);
     }
 
@@ -87,6 +89,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     };
 
     await addMessage(env, message);
+    sendAdminMessageNotification(env, project, message).catch(() => {});
     return jsonResponse({ success: true, message }, 201);
   }
 

@@ -4,15 +4,41 @@ export interface Project {
   clientEmail: string;
   projectTitle: string;
   description: string;
+  type?: 'identite' | 'site' | 'partenaire' | 'support' | 'custom';
   status: 'discovery' | 'in_progress' | 'waiting_client' | 'review' | 'delivered' | 'archived';
   startDate: string;
   deadline?: string;
+  deadlineExtended?: boolean;
   steps: Step[];
+  tasks?: Task[];
   practicalInfo: PracticalInfo;
   meetingLink?: string;
+  bannerUrl?: string;
   pinned?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TaskComment {
+  id: string;
+  author: 'cindy' | 'client';
+  text: string;
+  createdAt: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  content?: string;
+  urgency: 'basse' | 'moyenne' | 'haute';
+  dueDate?: string;
+  status: 'todo' | 'in_progress' | 'done';
+  deliverableFileKey?: string;
+  comments: TaskComment[];
+  pinned?: boolean;
+  timeSpentMinutes?: number;
+  completedAt?: string | null;
+  createdAt: string;
 }
 
 export interface Step {
@@ -90,6 +116,7 @@ export interface Env {
   ADMIN_PASSWORD?: string;
   RESEND_API_KEY: string;
   RESEND_FROM_EMAIL: string;
+  ADMIN_EMAIL?: string;
   PORTAL_BASE_URL: string;
   ENVIRONMENT: string;
 }

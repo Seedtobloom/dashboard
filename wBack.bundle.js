@@ -294,6 +294,50 @@ async function sendMessageNotification(env, project, _message) {
     template
   );
 }
+async function sendAdminMessageNotification(env, project, _message) {
+  const adminEmail = env.ADMIN_EMAIL ?? "hello@seedtobloom.fr";
+  if (!adminEmail)
+    return;
+  const template = `admin_new_message_${project.id}`;
+  if (!await canSendEmail(env, project.id, template))
+    return;
+  const baseUrl = env.PORTAL_BASE_URL ?? "https://dashboard.seedtobloom.workers.dev";
+  const portalUrl = `${baseUrl}/admin#project-${project.id}`;
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${project.clientName}</strong> vient de vous envoyer un message concernant <em>${project.projectTitle}</em>.</p>
+    <p>Connectez-vous \xE0 votre tableau de bord pour y r\xE9pondre.</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    adminEmail,
+    `Nouveau message de ${project.clientName} — ${project.projectTitle}`,
+    emailWrapper("Nouveau message client", body, portalUrl),
+    template
+  );
+}
+async function sendTaskDoneNotification(env, project, taskTitle) {
+  if (!project.clientEmail)
+    return;
+  const template = `task_done_${Date.now()}`;
+  const baseUrl = env.PORTAL_BASE_URL ?? "https://dashboard.seedtobloom.workers.dev";
+  const portalUrl = `${baseUrl}/p/`;
+  const body = `
+    <p>Bonjour ${project.clientName},</p>
+    <p>La t\xE2che <strong>${taskTitle}</strong> de votre espace <em>${project.projectTitle}</em> vient d'\xEAtre termin\xE9e. ✓</p>
+    <p>Consultez votre espace pour voir le d\xE9tail et les \xE9ventuels livrables.</p>
+    <p>Cindy</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    project.clientEmail,
+    `T\xE2che termin\xE9e : ${taskTitle}`,
+    emailWrapper("Une t\xE2che vient d'\xEAtre termin\xE9e ✓", body, portalUrl),
+    template
+  );
+}
 async function sendStepNotification(env, project, step, _oldStatus) {
   if (!project.clientEmail)
     return;
@@ -742,6 +786,8 @@ async function handleClientApi(request, env, url) {
         readByAdmin: false
       };
       await addMessage(env, message);
+      sendAdminMessageNotification(env, project2, message).catch(() => {
+      });
       return jsonResponse({ success: true, message }, 201);
     }
     return errorResponse("Method not allowed", 405);
@@ -771,6 +817,8 @@ async function handleClientApi(request, env, url) {
       readByAdmin: false
     };
     await addMessage(env, message);
+    sendAdminMessageNotification(env, project, message).catch(() => {
+    });
     return jsonResponse({ success: true, message }, 201);
   }
   return errorResponse("Method not allowed", 405);

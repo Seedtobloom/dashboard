@@ -124,6 +124,33 @@ export async function sendMessageNotification(env: Env, project: Project, _messa
   );
 }
 
+// Notifie Cindy (admin) qu'un client a envoyé un nouveau message.
+export async function sendAdminMessageNotification(env: Env, project: Project, _message: Message): Promise<void> {
+  const adminEmail = env.ADMIN_EMAIL ?? 'hello@seedtobloom.fr';
+  if (!adminEmail) return;
+
+  const template = `admin_new_message_${project.id}`;
+  if (!(await canSendEmail(env, project.id, template))) return;
+
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/admin#project-${project.id}`;
+
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${project.clientName}</strong> vient de vous envoyer un message concernant <em>${project.projectTitle}</em>.</p>
+    <p>Connectez-vous à votre tableau de bord pour y répondre.</p>
+  `;
+
+  await sendEmail(
+    env,
+    project.id,
+    adminEmail,
+    `Nouveau message de ${project.clientName} — ${project.projectTitle}`,
+    emailWrapper('Nouveau message client', body, portalUrl),
+    template
+  );
+}
+
 export async function sendStepNotification(
   env: Env,
   project: Project,
@@ -177,6 +204,28 @@ export async function sendStepNotification(
       template
     );
   }
+}
+
+// Notifie le client qu'une tâche (espace partenaire) est terminée.
+export async function sendTaskDoneNotification(env: Env, project: Project, taskTitle: string): Promise<void> {
+  if (!project.clientEmail) return;
+  const template = `task_done_${Date.now()}`;
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/p/`;
+  const body = `
+    <p>Bonjour ${project.clientName},</p>
+    <p>La tâche <strong>${taskTitle}</strong> de votre espace <em>${project.projectTitle}</em> vient d'être terminée. ✓</p>
+    <p>Consultez votre espace pour voir le détail et les éventuels livrables.</p>
+    <p>Cindy</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    project.clientEmail,
+    `Tâche terminée : ${taskTitle}`,
+    emailWrapper('Une tâche vient d\'être terminée ✓', body, portalUrl),
+    template
+  );
 }
 
 export async function handleNotifications(request: Request, env: Env, url: URL): Promise<Response> {
