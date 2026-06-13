@@ -18,6 +18,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
   --border: #EBEBEB;
   --surface: #F5F2EC;
   --sage: #7fa688;
+  --sky: #BAD1FD;
   --red: #C94040;
   --radius: 10px;
 }
@@ -98,6 +99,23 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   border: none; font-family: inherit; width: calc(100% - 24px);
 }
 .sidebar-new:hover { opacity: 0.88; }
+/* Boutons de navigation sidebar — cohérents et lisibles */
+.side-tab {
+  margin: 5px 12px 0; display: flex; align-items: center; gap: 8px;
+  width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none;
+  cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500;
+  background: rgba(186,209,253,0.10); color: var(--blue-light); transition: background 0.15s, color 0.15s;
+}
+.side-tab:hover { background: rgba(186,209,253,0.22); }
+.side-tab.active { background: var(--lavender); color: var(--navy); font-weight: 600; }
+.side-tab__badge { margin-left: auto; background: var(--cream); color: var(--navy); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+.side-cta {
+  margin: 12px 12px 6px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600; background: var(--lavender); color: var(--navy);
+  transition: opacity 0.15s;
+}
+.side-cta:hover { opacity: 0.88; }
 .project-list { padding: 6px 0; flex: 1; }
 .project-item {
   padding: 10px 16px; cursor: pointer; border-left: 2px solid transparent;
@@ -221,6 +239,7 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
   --border: #EBEBEB;
   --surface: #F5F2EC;
   --sage: #7fa688;
+  --sky: #BAD1FD;
   --orange: #D4845A;
   --radius: 12px;
   --shadow: 0 1px 12px rgba(5,24,51,0.06);
@@ -735,11 +754,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var totalUnread = Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
     return '<nav class="sidebar">' +
       '<div class="sidebar-header"><div class="sidebar-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:36px;width:auto"></div><div class="sidebar-sub">Administration</div></div>' +
-      '<button class="sidebar-new" onclick="navigate(\'/admin\')" style="' + (activeSection === 'dashboard' ? '' : 'opacity:0.7') + '">Dashboard</button>' +
-      '<button class="sidebar-new" style="background:' + (activeSection === 'messages' ? 'var(--sage)' : 'rgba(127,166,136,0.25)') + ';color:' + (activeSection === 'messages' ? '#fff' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;gap:8px" onclick="window.location.hash=\'messages\'">' +
-        '💬 Messages' + (totalUnread > 0 ? ' <span style="background:#e8a87c;color:#fff;font-size:10px;padding:1px 6px;border-radius:999px;font-weight:700">' + totalUnread + '</span>' : '') +
+      '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="navigate(\'/admin\')">📊 Dashboard</button>' +
+      '<button class="side-tab' + (activeSection === 'messages' ? ' active' : '') + '" onclick="window.location.hash=\'messages\'">' +
+        '💬 Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
       '</button>' +
-      '<button class="sidebar-new" style="background:var(--sky);color:var(--navy)" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
+      '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08)">' +
         '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Déconnexion</button>' +
