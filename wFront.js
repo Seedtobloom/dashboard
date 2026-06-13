@@ -1350,16 +1350,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
 
-          '<div class="proj-banner" style="background:' + bannerBg + '">' +
+          '<div class="proj-banner" style="background:' + bannerBg + '" id="proj-banner-el">' +
             '<div class="proj-banner__inner">' +
               '<div>' +
                 '<h1 class="proj-banner__title">' + esc(project.projectTitle) + '</h1>' +
                 '<p class="proj-banner__sub">' + esc(project.clientName) + ' · ' + esc(project.clientEmail) + '</p>' +
               '</div>' +
-              '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
                 '<button class="btn btn--ghost" onclick="navigate(\'/admin\')">← Dashboard</button>' +
-                '<button class="btn btn--ghost" onclick="addProjectForClient()">➕ Nouveau projet</button>' +
-                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">👁 Espace client</button>' : '') +
+                '<button class="btn btn--ghost" onclick="addProjectForClient()">+ Nouveau projet</button>' +
+                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Espace client</button>' : '') +
+                '<button class="btn btn--ghost" onclick="openBannerEditor()" title="Changer la couleur ou l\'image" style="padding:6px 10px;font-size:18px">&#9998;</button>' +
                 '<button class="btn btn--ghost btn--ghost-danger" onclick="confirmDelete()">Supprimer</button>' +
               '</div>' +
             '</div>' +
@@ -1626,6 +1627,66 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   // ── Tab navigation ─────────────────────────────────────────────────────────
+  var BANNER_COLORS = [
+    ['#412F21','Marron'],['#051833','Navy'],['#2D4A2D','Foret'],['#1a1a2e','Prune'],
+    ['#7C4A00','Ambre'],['#3d2b1f','Cafe'],['#1c3a4a','Canard'],['#2c2c2c','Ardoise']
+  ];
+
+  window.openBannerEditor = function() {
+    var existing = document.getElementById('_banner-editor');
+    if (existing) { existing.remove(); return; }
+    var ov = document.createElement('div');
+    ov.id = '_banner-editor';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.2)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+        '<strong style="font-size:15px;color:#051833">Personnaliser la banniere</strong>' +
+        '<button onclick="document.getElementById(\'_banner-editor\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#aaa;line-height:1">&#215;</button>' +
+      '</div>' +
+      '<div style="margin-bottom:14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:8px">Couleur</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+          BANNER_COLORS.map(function(c) {
+            return '<button onclick="applyBannerColor(\''+c[0]+'\')" title="'+c[1]+'" style="width:36px;height:36px;border-radius:8px;background:'+c[0]+';border:2px solid #e0e0e0;cursor:pointer" aria-label="'+c[1]+'"></button>';
+          }).join('') +
+          '<label title="Couleur personnalisee" style="width:36px;height:36px;border-radius:8px;border:2px solid #e0e0e0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px">&#9998;<input type="color" style="opacity:0;position:absolute;width:0;height:0" onchange="applyBannerColor(this.value)"></label>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-bottom:18px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:8px">Image</div>' +
+        '<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;font-size:13px;color:#051833">Choisir une image<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
+        '<button onclick="applyBannerColor(null)" style="margin-left:8px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;background:none;cursor:pointer;font-size:13px;color:#636363">Retirer l\'image</button>' +
+      '</div>' +
+    '</div>';
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+  };
+
+  window.applyBannerColor = async function(color) {
+    document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
+    var banner = document.getElementById('proj-banner-el');
+    var body = { bannerColor: color || undefined, bannerUrl: undefined };
+    if (banner) banner.style.background = color || '#412F21';
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, body)) });
+    if (res.ok) toast('Banniere mise a jour');
+    else toast('Erreur', true);
+  };
+
+  window.applyBannerFile = function(input) {
+    var file = input.files[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) { toast('Image trop lourde (max 4 Mo)', true); return; }
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      var dataUrl = e.target.result;
+      document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
+      var banner = document.getElementById('proj-banner-el');
+      if (banner) banner.style.background = 'url('+dataUrl+') center/cover no-repeat';
+      var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { bannerUrl: dataUrl, bannerColor: undefined })) });
+      if (res.ok) toast('Banniere mise a jour');
+      else toast('Erreur', true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   window.adminProjTab = function(tab) {
     _adminProjTab = tab;
     ['accueil','calendrier','taches','suivi','client'].forEach(function(t) {
@@ -1657,7 +1718,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (url) { prev.style.backgroundImage = 'url('+url+')'; prev.style.backgroundSize = 'cover'; prev.style.backgroundPosition = 'center'; prev.style.background = ''; }
     else {
       var col = (document.getElementById('edit-bannerColorCustom')||{}).value || '#412F21';
-      prev.style.background = 'linear-gradient(135deg,'+col+','+col+'44)';
+      prev.style.background = col;
     }
   };
 
