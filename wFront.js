@@ -539,84 +539,130 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   let currentProjectId = null;
   let projects = [];
 
-  // ── Themes ─────────────────────────────────────────────────────────────────
-  const THEMES = {
-    marine: {
-      label: 'Marine',
-      '--navy': '#051833',
-      '--brown': '#412F21',
-      '--lavender': '#E4D1FE',
-      '--blue-light': '#BAD1FD',
-      '--cream': '#EFE1B0',
-    },
-    terre: {
-      label: 'Terre',
-      '--navy': '#412F21',
-      '--brown': '#2d1f14',
-      '--lavender': '#EFE1B0',
-      '--blue-light': '#EFE1B0',
-      '--cream': '#FAF8F4',
-    },
-    sauge: {
-      label: 'Sauge',
-      '--navy': '#3a5c43',
-      '--brown': '#2a4030',
-      '--lavender': '#cce0cc',
-      '--blue-light': '#d4e8d4',
-      '--cream': '#EFE1B0',
-    },
-    prune: {
-      label: 'Prune',
-      '--navy': '#3d2952',
-      '--brown': '#2a1a3d',
-      '--lavender': '#E4D1FE',
-      '--blue-light': '#d8c0f8',
-      '--cream': '#f0e8ff',
-    },
+  // ── Couleurs personnalisees ─────────────────────────────────────────────────
+  var COLOR_DEFAULTS = {
+    '--navy':       '#051833',
+    '--brown':      '#412F21',
+    '--lavender':   '#E4D1FE',
+    '--blue-light': '#BAD1FD',
+    '--cream':      '#EFE1B0',
+    '--bg':         '#FAF8F4',
+    '--surface':    '#F5F2EC',
   };
 
-  window.applyTheme = function applyTheme(name) {
-    var t = THEMES[name] || THEMES.marine;
-    var vars = Object.keys(t).filter(function(k){ return k.startsWith('--'); }).map(function(k){ return k+':'+t[k]+';'; }).join('');
+  var COLOR_LABELS = [
+    { key: '--navy',       label: 'Fond sidebar',     section: 'Sidebar' },
+    { key: '--brown',      label: 'En-tete sidebar',  section: 'Sidebar' },
+    { key: '--cream',      label: 'Texte sidebar',    section: 'Sidebar' },
+    { key: '--lavender',   label: 'Boutons / accent', section: 'Interface' },
+    { key: '--blue-light', label: 'Texte sur accent', section: 'Interface' },
+    { key: '--bg',         label: 'Fond de page',     section: 'Interface' },
+    { key: '--surface',    label: 'Fond des cartes',  section: 'Interface' },
+  ];
+
+  function applyColors(colors) {
+    var vars = Object.keys(colors).map(function(k){ return k+':'+colors[k]+';'; }).join('');
     var el = document.getElementById('bloom-theme-style');
     if (!el) { el = document.createElement('style'); el.id = 'bloom-theme-style'; document.head.appendChild(el); }
     el.textContent = ':root{'+vars+'}';
-    localStorage.setItem('bloom_theme', name);
   }
 
   function loadTheme() {
-    var saved = localStorage.getItem('bloom_theme') || 'marine';
-    if (THEMES[saved]) applyTheme(saved);
+    var saved = localStorage.getItem('bloom_colors');
+    var colors = saved ? JSON.parse(saved) : Object.assign({}, COLOR_DEFAULTS);
+    applyColors(colors);
   }
 
-  window.openThemePicker = function() {
-    var existing = document.getElementById('_theme-picker');
-    if (existing) { existing.remove(); return; }
-    var current = localStorage.getItem('bloom_theme') || 'marine';
-    var ov = document.createElement('div');
-    ov.id = '_theme-picker';
-    ov.style.cssText = 'position:fixed;bottom:56px;left:12px;width:236px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 4px 24px rgba(0,0,0,0.18);z-index:9999;border:1px solid #ebebeb';
-    ov.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:12px">Theme de l\'interface</div>' +
-      Object.keys(THEMES).map(function(key) {
-        var t = THEMES[key];
-        var isActive = key === current;
-        return '<button onclick="applyTheme(\''+key+'\');document.getElementById(\'_theme-picker\').remove()" ' +
-          'style="display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;border:' + (isActive ? '2px solid '+t['--navy'] : '1.5px solid #e0e0e0') + ';background:'+(isActive ? t['--lavender'] : '#fff')+';cursor:pointer;margin-bottom:6px;text-align:left">' +
-          '<span style="display:flex;gap:4px">' +
-            '<span style="width:14px;height:14px;border-radius:50%;background:'+t['--navy']+';display:inline-block"></span>' +
-            '<span style="width:14px;height:14px;border-radius:50%;background:'+t['--brown']+';display:inline-block"></span>' +
-            '<span style="width:14px;height:14px;border-radius:50%;background:'+t['--lavender']+';display:inline-block;border:1px solid #e0e0e0"></span>' +
-          '</span>' +
-          '<span style="font-size:13px;color:#051833;font-weight:'+(isActive?'600':'400')+'">'+t.label+'</span>' +
-          (isActive ? '<span style="margin-left:auto;font-size:10px;color:'+t['--navy']+'">actif</span>' : '') +
-        '</button>';
-      }).join('') +
-    '</div>';
-    document.addEventListener('click', function close(e) {
-      if (!ov.contains(e.target) && e.target.id !== '_theme-btn') { ov.remove(); document.removeEventListener('click', close); }
-    }, { capture: true });
-    document.body.appendChild(ov);
+  window.updateColor = function(key, val) {
+    var saved = localStorage.getItem('bloom_colors');
+    var colors = saved ? JSON.parse(saved) : Object.assign({}, COLOR_DEFAULTS);
+    colors[key] = val;
+    localStorage.setItem('bloom_colors', JSON.stringify(colors));
+    applyColors(colors);
   };
+
+  window.resetColors = function() {
+    localStorage.removeItem('bloom_colors');
+    applyColors(Object.assign({}, COLOR_DEFAULTS));
+    var panel = document.getElementById('_color-panel');
+    if (panel) { panel.remove(); openColorPanel(); }
+  };
+
+  window.openColorPanel = function() {
+    var existing = document.getElementById('_color-panel');
+    if (existing) { existing.remove(); return; }
+    var saved = localStorage.getItem('bloom_colors');
+    var colors = saved ? JSON.parse(saved) : Object.assign({}, COLOR_DEFAULTS);
+
+    var panel = document.createElement('div');
+    panel.id = '_color-panel';
+    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:0 4px 28px rgba(0,0,0,0.18);z-index:9999;border:1px solid #ebebeb;max-height:80vh;overflow-y:auto';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
+    var title = document.createElement('strong');
+    title.style.cssText = 'font-size:14px;color:#051833';
+    title.textContent = 'Couleurs';
+    var resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reinitialiser';
+    resetBtn.style.cssText = 'font-size:11px;color:#636363;background:none;border:1px solid #e0e0e0;border-radius:6px;padding:3px 8px;cursor:pointer';
+    resetBtn.onclick = function() { resetColors(); };
+    header.appendChild(title);
+    header.appendChild(resetBtn);
+    panel.appendChild(header);
+
+    var sections = {};
+    COLOR_LABELS.forEach(function(item) {
+      if (!sections[item.section]) sections[item.section] = [];
+      sections[item.section].push(item);
+    });
+
+    Object.keys(sections).forEach(function(sec) {
+      var secDiv = document.createElement('div');
+      secDiv.style.marginBottom = '14px';
+      var secTitle = document.createElement('div');
+      secTitle.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:#999;margin-bottom:8px';
+      secTitle.textContent = sec;
+      secDiv.appendChild(secTitle);
+
+      sections[sec].forEach(function(item) {
+        var val = colors[item.key] || COLOR_DEFAULTS[item.key];
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
+
+        var lbl = document.createElement('span');
+        lbl.style.cssText = 'font-size:13px;color:#1a1a1a';
+        lbl.textContent = item.label;
+
+        var swatch = document.createElement('span');
+        swatch.style.cssText = 'width:30px;height:30px;border-radius:6px;border:1.5px solid #e0e0e0;display:inline-block;cursor:pointer;position:relative';
+        swatch.style.background = val;
+
+        var inp = document.createElement('input');
+        inp.type = 'color';
+        inp.value = val;
+        inp.style.cssText = 'position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none';
+        (function(k, sw) {
+          inp.addEventListener('input', function() {
+            sw.style.background = this.value;
+            updateColor(k, this.value);
+          });
+        })(item.key, swatch);
+        swatch.appendChild(inp);
+
+        row.appendChild(lbl);
+        row.appendChild(swatch);
+        secDiv.appendChild(row);
+      });
+      panel.appendChild(secDiv);
+    });
+
+    document.addEventListener('click', function close(e) {
+      if (!panel.contains(e.target) && e.target.id !== '_theme-btn') { panel.remove(); document.removeEventListener('click', close); }
+    }, { capture: true });
+    document.body.appendChild(panel);
+  };
+
 
   const STATUS_COLORS = {
     discovery: '#d4e4f0',
@@ -1083,7 +1129,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">' +
         '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Deconnexion</button>' +
-        '<button id="_theme-btn" onclick="openThemePicker()" title="Theme" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;gap:3px;align-items:center">' +
+        '<button id="_theme-btn" onclick="openColorPanel()" title="Couleurs" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;gap:3px;align-items:center">' +
           '<span style="width:10px;height:10px;border-radius:50%;background:var(--lavender);display:inline-block"></span>' +
           '<span style="width:10px;height:10px;border-radius:50%;background:var(--cream);display:inline-block"></span>' +
         '</button>' +
