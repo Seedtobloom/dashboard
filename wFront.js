@@ -3807,7 +3807,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // La messagerie est unifiée et accessible depuis le panneau « Messagerie ».
     // On ne l'affiche plus dans le board du projet — uniquement fichiers / infos / réunion.
     var sideTabs = [];
-    if (files.length) sideTabs.push({ id:'files', label:'Fichiers' });
+    sideTabs.push({ id:'files', label:'Fichiers' });
     if (project.practicalInfo.sections.length) sideTabs.push({ id:'prac', label:'Infos pratiques' });
     if (project.meetingLink) sideTabs.push({ id:'meet', label:'Réunion' });
 
@@ -3858,8 +3858,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<input type="file" id="cli-file-up-' + uploadPid + '" style="display:none" onchange="cliUploadClientFile(\'' + uploadPid + '\',this)">' +
       '</label>' +
     '</div>';
-    var hasFiles = adminSharedFiles.length || true;
-    if (!sideTabs.find(function(t){ return t.id==='files'; })) sideTabs.push({ id:'files', label:'Fichiers' });
     var filesPanel = '<div id="cp-panel-files" class="cp-panel' + panelHidden('files') + '">' +
       (adminSharedFiles.length
         ? filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference)
