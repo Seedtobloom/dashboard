@@ -265,7 +265,41 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   .sidebar { width: 100%; height: auto; max-height: 50vh; }
   .main-inner { padding: 16px; }
   .cal-cell { min-height: 48px; }
-}`;
+}
+/* Page builder (admin) */
+.apb-bar { display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding:12px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px; }
+.apb-bar__title { font-size:13px;font-weight:600;color:var(--navy);flex:1; }
+.apb-cols { display:grid;grid-template-columns:1fr;gap:16px; }
+.apb-cols--2 { grid-template-columns:1fr 1fr; }
+@media (max-width:760px){ .apb-cols--2 { grid-template-columns:1fr; } }
+.apb-col { min-height:80px;border:2px dashed var(--border);border-radius:12px;padding:12px;background:rgba(0,0,0,0.01); }
+.apb-col.apb-over { border-color:var(--lavender);background:rgba(228,209,254,0.10); }
+.apb-sec { border:1.5px solid var(--border);border-radius:10px;margin-bottom:12px;background:var(--white);overflow:hidden; }
+.apb-sec.apb-over { border-color:var(--lavender); }
+.apb-sec-hd { display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);cursor:grab;font-size:12px;font-weight:600;color:var(--navy); }
+.apb-sec-hd:active { cursor:grabbing; }
+.apb-grip { color:var(--muted);font-size:14px;line-height:1; }
+.apb-sec-lbl { flex:1; }
+.apb-sec-body { padding:10px 12px; }
+.apb-abtn { background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit; }
+.apb-abtn:hover { background:var(--surface);color:var(--navy); }
+.apb-abtn.danger:hover { background:#fde8e8;border-color:#c44;color:#c44; }
+.apb-blk { border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--white); }
+.apb-blk.apb-over { border-color:var(--lavender); }
+.apb-blk-hd { display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface);cursor:grab;font-size:11px;color:var(--muted); }
+.apb-blk-body { padding:8px 10px;font-size:13px;color:var(--text); }
+.apb-add { width:100%;padding:8px;border:1.5px dashed var(--border);background:none;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit; }
+.apb-add:hover { border-color:var(--lavender);color:var(--navy); }
+.apb-placeholder { font-size:12px;color:var(--muted);font-style:italic;padding:4px 0; }
+.apb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
+.apb-modal__box { background:#fff;border-radius:14px;padding:24px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto; }
+.apb-modal__title { font-family:'Alegreya',serif;font-size:19px;color:var(--navy);margin-bottom:16px;font-style:italic; }
+.apb-modal label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin:0 0 5px; }
+.apb-modal input, .apb-modal select, .apb-modal textarea { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;box-sizing:border-box;margin-bottom:12px; }
+.apb-modal textarea { min-height:80px;resize:vertical; }
+.apb-modal__footer { display:flex;justify-content:flex-end;gap:10px; }
+.apb-layout-btn { padding:7px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;color:var(--muted); }
+.apb-layout-btn.active { border-color:var(--navy);background:var(--navy);color:var(--blue-light); }`;
 
 const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
 :root {
@@ -1768,7 +1802,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : bannerColors[0];
     var _bc = bannerColors[0].replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
     var bannerIsLight = !project.bannerUrl && (0.299*_r+0.587*_g+0.114*_b) > 160;
-    var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client']];
+    var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client'],['page','Personnaliser']];
     var tabNav = '<div class="proj-tabnav">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
@@ -1790,8 +1824,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
                 '<button class="btn btn--ghost" onclick="adminNav(\'/admin\')">← Dashboard</button>' +
                 '<button class="btn btn--ghost" onclick="addProjectForClient()">+ Nouveau projet</button>' +
-                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Espace client</button>' : '') +
-                (project.clientEmail ? '<button class="btn btn--ghost" onclick="editClientSpace()">Personnaliser</button>' : '') +
+                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Apercu espace client</button>' : '') +
                 '<button class="btn btn--ghost" onclick="openBannerEditor()" title="Changer la couleur ou l\'image" style="padding:6px 10px;font-size:18px">&#9998;</button>' +
                 '<button class="btn btn--ghost btn--ghost-danger" onclick="confirmDelete()">Supprimer</button>' +
               '</div>' +
@@ -1971,6 +2004,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>' +
             '</div>' +
           '</div>' + /* fin tab-client */
+
+          '<div id="tab-page" class="main-inner proj-main" style="' + (_adminProjTab==='page' ? '' : 'display:none') + '">' +
+            '<div id="apb-root"></div>' +
+          '</div>' +
 
         '</main>' +
       '</div>' +
@@ -2155,13 +2192,231 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.adminProjTab = function(tab) {
     _adminProjTab = tab;
-    ['accueil','calendrier','taches','suivi','client'].forEach(function(t) {
+    ['accueil','calendrier','taches','suivi','client','page'].forEach(function(t) {
       var el = document.getElementById('tab-' + t);
       if (el) el.style.display = (t === tab ? '' : 'none');
     });
     document.querySelectorAll('.proj-tabnav__btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.tab === tab);
     });
+    if (tab === 'page') { apbInit(); apbRender(); }
+  };
+
+  // ── Page builder (admin) ─────────────────────────────────────────────────────
+  var _apbDraft = null, _apbDragSec = null, _apbDragBlk = null;
+  var APB_SEC_TYPES = [
+    { type:'card',          label:'Carte libre (contenu personnalise)' },
+    { type:'steps',         label:'Etapes du projet' },
+    { type:'questionnaire', label:'Questionnaire' },
+    { type:'cards',         label:'Cartes projet' },
+    { type:'files',         label:'Fichiers partages' },
+    { type:'fileexchange',  label:'Depot / echange de fichiers' },
+    { type:'practical',     label:'Infos pratiques' },
+    { type:'meeting',       label:'Lien de reunion' },
+    { type:'help',          label:'Messagerie / Aide' },
+  ];
+  var APB_SEC_LABELS = {};
+  APB_SEC_TYPES.forEach(function(t){ APB_SEC_LABELS[t.type] = t.label; });
+  var APB_BLK_TYPES = [
+    { type:'title',       label:'Titre' },
+    { type:'text',        label:'Texte' },
+    { type:'list',        label:'Liste a puces' },
+    { type:'separator',   label:'Separateur' },
+    { type:'image',       label:'Image' },
+    { type:'mini-banner', label:'Mini-banniere' },
+  ];
+  function apbId() { return Math.random().toString(36).slice(2,9); }
+
+  function apbInit() {
+    var p = window._currentProject || {};
+    if (p.clientPage && p.clientPage.sections) {
+      _apbDraft = JSON.parse(JSON.stringify(p.clientPage));
+    } else {
+      var secs = [];
+      if ((p.steps||[]).length) secs.push({ id:apbId(), col:0, type:'steps', title:'Etapes', blocks:[] });
+      if ((p.clientCards||[]).length) secs.push({ id:apbId(), col:0, type:'cards', title:'Cartes', blocks:[] });
+      if (!secs.length) secs.push({ id:apbId(), col:0, type:'card', title:'Bienvenue', blocks:[{ id:apbId(), type:'text', content:'Ajoutez votre contenu ici.' }] });
+      _apbDraft = { layout:'1col', sections:secs };
+    }
+    if (!_apbDraft.layout) _apbDraft.layout = '1col';
+    if (!Array.isArray(_apbDraft.sections)) _apbDraft.sections = [];
+  }
+
+  function apbBlockPreview(b) {
+    if (b.type === 'title') return '<div style="font-family:\'Alegreya\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
+    if (b.type === 'text') return '<div style="white-space:pre-wrap">'+esc(b.content||'(texte vide)')+'</div>';
+    if (b.type === 'list') {
+      var items = (b.content||'').split('\n').filter(Boolean);
+      return items.length ? '<ul style="margin:0;padding-left:18px">'+items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul>' : '<span class="apb-placeholder">(liste vide)</span>';
+    }
+    if (b.type === 'separator') return '<hr style="border:none;border-top:1px solid var(--border);margin:4px 0">';
+    if (b.type === 'image') return b.src ? '<img src="'+esc(b.src)+'" alt="" style="max-width:100%;border-radius:6px">' : '<span class="apb-placeholder">(image sans URL)</span>';
+    if (b.type === 'mini-banner') return '<div style="background:var(--navy);color:#fff;border-radius:6px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;opacity:.7">'+esc(b.label||'')+'</div>'+esc(b.content||'')+'</div>';
+    return '';
+  }
+
+  function apbBlock(b, secId) {
+    return '<div class="apb-blk" draggable="true"' +
+      ' ondragstart="apbBDragStart(event,\''+secId+'\',\''+b.id+'\')" ondragover="apbBOver(event)" ondragleave="apbBLeave(event)" ondrop="apbBDrop(event,\''+secId+'\',\''+b.id+'\')">' +
+      '<div class="apb-blk-hd"><span class="apb-grip">&#8942;</span><span style="flex:1">'+b.type+'</span>' +
+        '<button class="apb-abtn" onclick="apbEditBlk(\''+secId+'\',\''+b.id+'\')">Modifier</button>' +
+        '<button class="apb-abtn danger" onclick="apbDelBlk(\''+secId+'\',\''+b.id+'\')">&#x2715;</button>' +
+      '</div>' +
+      '<div class="apb-blk-body">'+apbBlockPreview(b)+'</div>' +
+    '</div>';
+  }
+
+  function apbSecInner(sec) {
+    if (sec.type === 'card') {
+      var html = (sec.blocks||[]).map(function(b){ return apbBlock(b, sec.id); }).join('');
+      html += '<button class="apb-add" onclick="apbAddBlk(\''+sec.id+'\')">+ Ajouter un bloc</button>';
+      return html;
+    }
+    return '<div class="apb-placeholder">Cette section affichera automatiquement : ' + esc(APB_SEC_LABELS[sec.type]||sec.type) + ' (contenu gere ailleurs).</div>';
+  }
+
+  function apbSec(sec) {
+    return '<div class="apb-sec" id="apbsec-'+sec.id+'" ondragover="apbSOver(event)" ondragleave="apbSLeave(event)" ondrop="apbSDrop(event,\''+sec.id+'\')">' +
+      '<div class="apb-sec-hd" draggable="true" ondragstart="apbSDragStart(event,\''+sec.id+'\')">' +
+        '<span class="apb-grip">&#8942;</span>' +
+        '<span class="apb-sec-lbl">'+esc(sec.title||APB_SEC_LABELS[sec.type]||sec.type)+'</span>' +
+        '<button class="apb-abtn" onclick="apbEditSec(\''+sec.id+'\')">Renommer</button>' +
+        (_apbDraft.layout==='2col' ? '<button class="apb-abtn" onclick="apbToggleCol(\''+sec.id+'\')">Colonne '+((sec.col||0)===0?'1':'2')+'</button>' : '') +
+        '<button class="apb-abtn" onclick="apbMoveSec(\''+sec.id+'\',-1)">&#8593;</button>' +
+        '<button class="apb-abtn" onclick="apbMoveSec(\''+sec.id+'\',1)">&#8595;</button>' +
+        '<button class="apb-abtn danger" onclick="apbDelSec(\''+sec.id+'\')">&#x2715;</button>' +
+      '</div>' +
+      '<div class="apb-sec-body">'+apbSecInner(sec)+'</div>' +
+    '</div>';
+  }
+
+  function apbRender() {
+    var root = document.getElementById('apb-root');
+    if (!root || !_apbDraft) return;
+    var is2 = _apbDraft.layout === '2col';
+    var bar = '<div class="apb-bar">' +
+      '<span class="apb-bar__title">Mise en page de l\'espace client</span>' +
+      '<button class="apb-layout-btn'+(is2?'':' active')+'" onclick="apbLayout(\'1col\')">1 colonne</button>' +
+      '<button class="apb-layout-btn'+(is2?' active':'')+'" onclick="apbLayout(\'2col\')">2 colonnes</button>' +
+      '<button class="btn btn--primary" onclick="apbSave()">Enregistrer</button>' +
+    '</div>';
+    var body;
+    if (is2) {
+      var c0 = _apbDraft.sections.filter(function(s){ return (s.col||0)===0; });
+      var c1 = _apbDraft.sections.filter(function(s){ return s.col===1; });
+      body = '<div class="apb-cols apb-cols--2">' +
+        '<div class="apb-col" data-col="0" ondragover="apbColOver(event)" ondragleave="apbColLeave(event)" ondrop="apbColDrop(event,0)">' + c0.map(apbSec).join('') + '<button class="apb-add" onclick="apbAddSec(0)">+ Section (colonne 1)</button></div>' +
+        '<div class="apb-col" data-col="1" ondragover="apbColOver(event)" ondragleave="apbColLeave(event)" ondrop="apbColDrop(event,1)">' + c1.map(apbSec).join('') + '<button class="apb-add" onclick="apbAddSec(1)">+ Section (colonne 2)</button></div>' +
+      '</div>';
+    } else {
+      body = '<div class="apb-cols"><div class="apb-col" data-col="0" ondragover="apbColOver(event)" ondragleave="apbColLeave(event)" ondrop="apbColDrop(event,0)">' + _apbDraft.sections.map(apbSec).join('') + '<button class="apb-add" onclick="apbAddSec(0)">+ Ajouter une section</button></div></div>';
+    }
+    root.innerHTML = bar + body;
+  }
+
+  window.apbLayout = function(l) { _apbDraft.layout = l; apbRender(); };
+  window.apbToggleCol = function(id) { var s=_apbDraft.sections.find(function(x){return x.id===id;}); if(s){ s.col = (s.col===1?0:1); apbRender(); } };
+  window.apbMoveSec = function(id, dir) {
+    var s=_apbDraft.sections, i=s.findIndex(function(x){return x.id===id;}); if(i<0) return;
+    var j=i+dir; if(j<0||j>=s.length) return; var t=s[i]; s[i]=s[j]; s[j]=t; apbRender();
+  };
+  window.apbDelSec = function(id) { _apbDraft.sections = _apbDraft.sections.filter(function(x){return x.id!==id;}); apbRender(); };
+  window.apbEditSec = function(id) {
+    var s=_apbDraft.sections.find(function(x){return x.id===id;}); if(!s) return;
+    apbModal('Renommer la section', '<label>Titre</label><input id="apb-f-title" value="'+esc(s.title||'')+'">', function(){ s.title=document.getElementById('apb-f-title').value; apbRender(); });
+  };
+  window.apbAddSec = function(col) {
+    var opts = APB_SEC_TYPES.map(function(t){return '<option value="'+t.type+'">'+t.label+'</option>';}).join('');
+    apbModal('Ajouter une section', '<label>Type</label><select id="apb-f-type">'+opts+'</select><label>Titre</label><input id="apb-f-title" placeholder="Titre">', function(){
+      var ty=document.getElementById('apb-f-type').value; var ti=document.getElementById('apb-f-title').value||'';
+      _apbDraft.sections.push({ id:apbId(), col:col||0, type:ty, title:ti, blocks:[] }); apbRender();
+    });
+  };
+  window.apbAddBlk = function(secId) {
+    var s=_apbDraft.sections.find(function(x){return x.id===secId;}); if(!s) return;
+    var opts = APB_BLK_TYPES.map(function(t){return '<option value="'+t.type+'">'+t.label+'</option>';}).join('');
+    apbModal('Ajouter un bloc', '<label>Type</label><select id="apb-f-type">'+opts+'</select>', function(){
+      s.blocks=s.blocks||[]; s.blocks.push({ id:apbId(), type:document.getElementById('apb-f-type').value, content:'' }); apbRender();
+    });
+  };
+  window.apbEditBlk = function(secId, blkId) {
+    var s=_apbDraft.sections.find(function(x){return x.id===secId;}); if(!s) return;
+    var b=(s.blocks||[]).find(function(x){return x.id===blkId;}); if(!b) return;
+    var f='';
+    if (b.type==='mini-banner') f+='<label>Sous-titre</label><input id="apb-f-label" value="'+esc(b.label||'')+'">';
+    if (b.type==='image') { f+='<label>URL de l\'image</label><input id="apb-f-src" value="'+esc(b.src||'')+'">'; }
+    else if (b.type!=='separator') {
+      var multi = b.type==='text'||b.type==='list'||b.type==='mini-banner';
+      f+='<label>Contenu'+(b.type==='list'?' (une ligne par puce)':'')+'</label>'+(multi?'<textarea id="apb-f-content">'+esc(b.content||'')+'</textarea>':'<input id="apb-f-content" value="'+esc(b.content||'')+'">');
+    }
+    apbModal('Modifier le bloc', f||'<div class="apb-placeholder">Aucune propriete.</div>', function(){
+      if (b.type==='image') b.src=document.getElementById('apb-f-src').value;
+      else { var ci=document.getElementById('apb-f-content'); if(ci) b.content=ci.value; var li=document.getElementById('apb-f-label'); if(li) b.label=li.value; }
+      apbRender();
+    });
+  };
+  window.apbDelBlk = function(secId, blkId) {
+    var s=_apbDraft.sections.find(function(x){return x.id===secId;}); if(!s) return;
+    s.blocks=(s.blocks||[]).filter(function(x){return x.id!==blkId;}); apbRender();
+  };
+
+  function apbModal(title, inner, onOk) {
+    var ex=document.getElementById('apb-modal'); if(ex) ex.remove();
+    var m=document.createElement('div'); m.className='apb-modal'; m.id='apb-modal';
+    m.innerHTML='<div class="apb-modal__box"><div class="apb-modal__title">'+title+'</div>'+inner+
+      '<div class="apb-modal__footer"><button class="btn btn--outline" onclick="document.getElementById(\'apb-modal\').remove()">Annuler</button><button class="btn btn--primary" id="apb-modal-ok">OK</button></div></div>';
+    document.body.appendChild(m);
+    document.getElementById('apb-modal-ok').onclick=function(){ onOk(); m.remove(); };
+  }
+
+  // DnD sections
+  window.apbSDragStart=function(e,id){ _apbDragSec=id; _apbDragBlk=null; e.dataTransfer.effectAllowed='move'; };
+  window.apbSOver=function(e){ if(_apbDragSec){ e.preventDefault(); e.currentTarget.classList.add('apb-over'); } };
+  window.apbSLeave=function(e){ e.currentTarget.classList.remove('apb-over'); };
+  window.apbSDrop=function(e,toId){
+    e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('apb-over');
+    if(!_apbDragSec||_apbDragSec===toId) return;
+    var s=_apbDraft.sections;
+    var fi=s.findIndex(function(x){return x.id===_apbDragSec;});
+    var target=s.find(function(x){return x.id===toId;});
+    if(fi<0||!target) return;
+    var moved=s.splice(fi,1)[0];
+    moved.col=target.col||0; // adopte la colonne de la cible
+    var ti=s.findIndex(function(x){return x.id===toId;});
+    s.splice(ti,0,moved);
+    _apbDragSec=null; apbRender();
+  };
+  // Drop into empty column area
+  window.apbColOver=function(e){ if(_apbDragSec){ e.preventDefault(); e.currentTarget.classList.add('apb-over'); } };
+  window.apbColLeave=function(e){ e.currentTarget.classList.remove('apb-over'); };
+  window.apbColDrop=function(e,col){
+    e.preventDefault(); e.currentTarget.classList.remove('apb-over');
+    if(!_apbDragSec) return;
+    var s=_apbDraft.sections.find(function(x){return x.id===_apbDragSec;}); if(s) s.col=col;
+    _apbDragSec=null; apbRender();
+  };
+  // DnD blocks
+  window.apbBDragStart=function(e,secId,blkId){ _apbDragBlk={secId:secId,blkId:blkId}; _apbDragSec=null; e.dataTransfer.effectAllowed='move'; e.stopPropagation(); };
+  window.apbBOver=function(e){ if(_apbDragBlk){ e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('apb-over'); } };
+  window.apbBLeave=function(e){ e.currentTarget.classList.remove('apb-over'); };
+  window.apbBDrop=function(e,toSec,toBlk){
+    e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('apb-over');
+    if(!_apbDragBlk) return;
+    var src=_apbDraft.sections.find(function(x){return x.id===_apbDragBlk.secId;});
+    var dst=_apbDraft.sections.find(function(x){return x.id===toSec;});
+    if(!src||!dst){ _apbDragBlk=null; return; }
+    var fi=(src.blocks||[]).findIndex(function(b){return b.id===_apbDragBlk.blkId;}); if(fi<0){ _apbDragBlk=null; return; }
+    var moved=src.blocks.splice(fi,1)[0]; dst.blocks=dst.blocks||[];
+    var ti=dst.blocks.findIndex(function(b){return b.id===toBlk;}); if(ti<0) dst.blocks.push(moved); else dst.blocks.splice(ti,0,moved);
+    _apbDragBlk=null; apbRender();
+  };
+
+  window.apbSave = async function() {
+    if (!_apbDraft || !currentProjectId) return;
+    var clean = { layout:_apbDraft.layout, sections:_apbDraft.sections };
+    var res = await apiFetch('/api/projects/'+currentProjectId, { method:'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { clientPage: clean })) });
+    if (res.ok) { window._currentProject.clientPage = clean; toast('Espace client enregistre ✓'); }
+    else toast('Erreur lors de l\'enregistrement', true);
   };
 
   // ── Project actions ────────────────────────────────────────────────────────
