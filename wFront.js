@@ -2608,7 +2608,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">' +
           [
             { label:'Avancement', val:pct+'%', sub: done.length+'/'+total+' taches', col:'var(--navy)' },
-            { label:'Temps total', val:totalH+'h'+String(totalMm).padStart(2,'0'), sub:'cumule', col:'var(--brown)' },
+            { label:'Temps total', val:totalH+'h'+String(totalM).padStart(2,'0'), sub:'cumule', col:'var(--brown)' },
             { label:'Ce mois', val:monthH+'h'+String(monthMm).padStart(2,'0'), sub:'heures suivies', col:'var(--sage)' },
             { label:'En attente', val:waiting.length, sub:'action client', col:waiting.length?'#c94040':'var(--muted)' },
           ].map(function(k) {
