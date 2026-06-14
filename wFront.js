@@ -1167,7 +1167,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var grp = _clientMap[key];
       var rows = grp.items.map(function(obj) {
         var p = obj.p, i = obj.i;
-        return '<a class="project-item' + (activeSection === 'project-' + p.id ? ' active' : '') + '" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
+        return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
           (grp.items.length > 1 ? '<div class="project-item__title" style="padding-left:8px;font-size:12px;color:var(--sidebar-text);opacity:.9">' + esc(p.projectTitle) + '</div>' :
             '<div>' +
               '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
