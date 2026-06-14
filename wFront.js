@@ -988,6 +988,28 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.addEventListener('hashchange', function() { routeFromUrl(); });
 
+  // ── Badge messages non lus (global, toutes vues) ───────────────────────────
+  var _globalMsgUnread = 0;
+  async function refreshMsgBadge() {
+    try {
+      var convos = await apiFetch('/api/conversations').then(function(r){ return r.ok ? r.json() : []; });
+      _globalMsgUnread = convos.reduce(function(a, c){ return a + (c.unread||0); }, 0);
+    } catch (e) { return; }
+    updateMsgBadgeDom();
+  }
+  function updateMsgBadgeDom() {
+    var tabs = document.querySelectorAll('.side-tab');
+    for (var i = 0; i < tabs.length; i++) {
+      var t = tabs[i];
+      if (t.textContent.indexOf('Messages') === -1) continue;
+      var b = t.querySelector('.side-tab__badge');
+      if (_globalMsgUnread > 0) {
+        if (!b) { b = document.createElement('span'); b.className = 'side-tab__badge'; t.appendChild(b); }
+        b.textContent = _globalMsgUnread;
+      } else if (b) { b.remove(); }
+    }
+  }
+
   function adminNav(path) {
     const match = path.match(/\/admin\/projects\/([a-f0-9]{32})/);
     if (match) {
@@ -1008,6 +1030,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       projects = await res.json();
       renderDashboard(projects);
       routeFromUrl();
+      refreshMsgBadge();
     } else {
       showLogin();
     }
@@ -1061,7 +1084,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
-        buildSidebarHtml('spaces', projs, {}) +
+        buildSidebarHtml('spaces', projs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="margin-bottom:24px">' +
             '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
@@ -1073,6 +1096,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<div style="text-align:center;padding:60px 0;color:var(--muted)">Aucun espace client créé.</div>') +
         '</div></main>' +
       '</div>';
+    refreshMsgBadge();
   }
 
   window.copySpaceUrl = function(url) {
@@ -1133,7 +1157,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var sectionsHtml = hubData.sections.map(sectionHtml).join('');
     document.getElementById('app').innerHTML =
       '<div class="app">' +
-        buildSidebarHtml('hub', allProjs, {}) +
+        buildSidebarHtml('hub', allProjs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">' +
             '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
@@ -1146,6 +1170,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div id="hub-sections">' + sectionsHtml + '</div>' +
         '</div></main>' +
       '</div>';
+    refreshMsgBadge();
   }
 
   window.hubDeleteSection = function(idx) {
@@ -1197,6 +1222,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const unreadCounts = projects.map(function(p) { return p._unread || 0; });
     renderDashboard(projects, unreadCounts);
     currentProjectId = null;
+    refreshMsgBadge();
   }
 
   function renderDashboard(projs, unreadCounts) {
@@ -1274,7 +1300,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
-        buildSidebarHtml('dashboard', projs, unreadMap) +
+        buildSidebarHtml('dashboard', projs, unreadMap, _globalMsgUnread || undefined) +
         '<main class="main">' +
           '<div class="main-inner">' +
             '<div style="margin-bottom:24px">' +
@@ -1452,6 +1478,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     inboxData = convos.map(function(c){ return { clientEmail: c.clientEmail, clientName: c.clientName, unread: c.unread, last: c.last, messages: null }; });
 
     var totalUnreadAll = inboxData.reduce(function(a, c){ return a + (c.unread||0); }, 0);
+    _globalMsgUnread = totalUnreadAll;
 
     if (!activeEmail && inboxData.length) activeEmail = inboxData[0].clientEmail;
     inboxEmail = activeEmail;
