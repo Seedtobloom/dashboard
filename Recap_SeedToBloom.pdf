@@ -1,0 +1,250 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 2 /Kids [3 0 R 5 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R /F3 9 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 4341 >>
+stream
+BT
+0.040 0.130 0.240 rg
+/F2 20 Tf
+1 0 0 1 60 784 Tm
+(Seed to Bloom ? Recapitulatif des demandes) Tj
+0.500 0.500 0.500 rg
+/F3 10 Tf
+1 0 0 1 60 760 Tm
+(Espace client & panel admin ? 14 juin 2026) Tj
+0.160 0.100 0.060 rg
+/F2 14 Tf
+1 0 0 1 60 724 Tm
+(1. Corrections de bugs) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 702 Tm
+(> Erreur "totalMm is not defined" qui rendait les onglets Suivi / Client blancs.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 686 Tm
+(> Grand bloc vide au-dessus du contenu des onglets Suivi / Client \(div mal fermee\).) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 670 Tm
+(> Texte des boutons invisible \(fond fonce\) : couleur de bouton decouplee de la) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 654 Tm
+(sidebar.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 638 Tm
+(> Impossible de cliquer sur un jour du calendrier contenant une tache : corrige.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 622 Tm
+(> Telechargement de fichier "not found" : la cle des fichiers deposes par le client) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 606 Tm
+(etait mal lue cote serveur \(prefixe projects/...\). Corrige.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 590 Tm
+(> Erreur a la suppression d'un espace client : la route DELETE n'etait pas routee.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 574 Tm
+(Corrige.) Tj
+0.160 0.100 0.060 rg
+/F2 14 Tf
+1 0 0 1 60 544 Tm
+(2. Espace client \(portail\)) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 522 Tm
+(> Le document/hub partage est devenu une SECTION distincte "Ressources" dans le) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 506 Tm
+(menu.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 490 Tm
+(> Page d'accueil centree \(ni trop a gauche, ni trop a droite\) via largeur max.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 474 Tm
+(> Espace messagerie agrandi : pleine largeur et hauteur dynamique \(avant trop) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 458 Tm
+(petit\).) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 442 Tm
+(> Section dediee au depot de fichiers + telechargement fonctionnel.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 426 Tm
+(> Cartes de taches redesignees : deadline, "Fait le", statut, fond creme.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 410 Tm
+(> Changement de statut directement depuis la carte \(selecteur\), sans ouvrir) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 394 Tm
+(Modifier.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 378 Tm
+(> Texte du code d'acces plus chaleureux : mention de Cindy et du studio Seed to) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 362 Tm
+(Bloom.) Tj
+0.160 0.100 0.060 rg
+/F2 14 Tf
+1 0 0 1 60 332 Tm
+(3. Mode edition / Page builder) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 310 Tm
+(> Constructeur de page pour l'espace client, tres flexible :) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 294 Tm
+(- ajout / suppression / deplacement de sections par glisser-deposer ;) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 278 Tm
+(- mise en page en 1 ou 2 colonnes \(grille\) ;) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 262 Tm
+(- blocs de contenu : titre, texte, liste, separateur, image, mini-banniere ;) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 246 Tm
+(- sections : etapes, cartes, fichiers, questionnaire, infos pratiques, etc. ;) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 230 Tm
+(- bouton Enregistrer.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 214 Tm
+(> Acces au mode edition via un bouton "Personnaliser" dans la fiche projet admin.) Tj
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 198 Tm
+(Le portail s'ouvre sur le meme domaine que l'admin pour transmettre la session.) Tj
+0.160 0.100 0.060 rg
+/F2 14 Tf
+1 0 0 1 60 168 Tm
+(4. Panel admin) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 146 Tm
+(> Controle des couleurs : fond et texte des boutons \(principal / secondaire\)) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 130 Tm
+(personnalisables.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 114 Tm
+(> Suppression definitive d'un espace client \(en plus de la simple revocation\).) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 98 Tm
+(> Barre de tri / filtres du dashboard rendue plus compacte \(prend moins de place\).) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 82 Tm
+(> Pastille de messages non lus visible sur le menu "Messages" dans toutes les vues,) Tj
+ET
+0.8 0.8 0.8 RG
+60 740 m 535 740 l S
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R /F3 9 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 956 >>
+stream
+BT
+0.250 0.250 0.250 rg
+/F1 11 Tf
+1 0 0 1 76 790 Tm
+(pour savoir immediatement quand un client a ecrit.) Tj
+0.160 0.100 0.060 rg
+/F2 14 Tf
+1 0 0 1 60 760 Tm
+(5. Contraintes de design respectees) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 738 Tm
+(> Pas de degrades.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 722 Tm
+(> Fleches autorisees ; pas de points, privilegier les icones.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 706 Tm
+(> Pas de references au design "IA" \(bordures laterales au focus/survol, emojis) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 72 690 Tm
+(etoile\).) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 674 Tm
+(> Titres sans accents.) Tj
+0.100 0.100 0.100 rg
+/F1 11 Tf
+1 0 0 1 60 658 Tm
+(> Tout changement applique a la fois cote admin et cote espace client.) Tj
+0.500 0.500 0.500 rg
+/F3 10 Tf
+1 0 0 1 60 620 Tm
+(Document genere automatiquement ? branche claude/practical-brahmagupta-0Wxco) Tj
+ET
+0.8 0.8 0.8 RG
+60 630 m 535 630 l S
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000273 00000 n 
+0000004666 00000 n 
+0000004812 00000 n 
+0000005819 00000 n 
+0000005916 00000 n 
+0000006018 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+6123
+%%EOF
