@@ -3806,8 +3806,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // La messagerie est unifiée et accessible depuis le panneau « Messagerie ».
     // On ne l'affiche plus dans le board du projet — uniquement fichiers / infos / réunion.
+    var adminSharedFiles = files.filter(function(f){ return f.source !== 'client'; });
     var sideTabs = [];
-    sideTabs.push({ id:'files', label:'Fichiers' });
+    if (adminSharedFiles.length) sideTabs.push({ id:'files', label:'Fichiers' });
     if (project.practicalInfo.sections.length) sideTabs.push({ id:'prac', label:'Infos pratiques' });
     if (project.meetingLink) sideTabs.push({ id:'meet', label:'Réunion' });
 
@@ -3839,31 +3840,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     function panelHidden(id) { return (sideTabs.length && sideTabs[0].id === id) ? '' : ' hidden'; }
 
-    var clientUploadedFiles = files.filter(function(f){ return f.source === 'client'; });
-    var adminSharedFiles = files.filter(function(f){ return f.source !== 'client'; });
     var adminBycat = { deliverable: adminSharedFiles.filter(function(f){ return f.category==='deliverable'; }), document: adminSharedFiles.filter(function(f){ return !f.category||f.category==='document'; }), reference: adminSharedFiles.filter(function(f){ return f.category==='reference'; }) };
-    var uploadPid = project.id;
-    var uploadSection = '<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">' +
-      '<div class="cp-files-group__label" style="margin-bottom:10px">Vos depots</div>' +
-      (clientUploadedFiles.length ? clientUploadedFiles.map(function(f){
-        return '<a class="cp-file" href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">' +
-          '<span class="cp-file__icon">' + fileIcon(f.type) + '</span>' +
-          '<span class="cp-file__name">' + esc(f.name) + '</span>' +
-          '<span class="cp-file__size">' + fmtSize(f.size) + '</span>' +
-          '<span class="cp-file__dl">↓</span>' +
-        '</a>';
-      }).join('') : '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Aucun fichier deposé.</div>') +
-      '<label style="display:flex;align-items:center;gap:10px;padding:14px 16px;border:2px dashed var(--border);border-radius:12px;cursor:pointer;color:var(--muted);font-size:13px;margin-top:8px" for="cli-file-up-' + uploadPid + '">' +
-        cpIcon('upload', 14) + ' Deposer un fichier' +
-        '<input type="file" id="cli-file-up-' + uploadPid + '" style="display:none" onchange="cliUploadClientFile(\'' + uploadPid + '\',this)">' +
-      '</label>' +
-    '</div>';
-    var filesPanel = '<div id="cp-panel-files" class="cp-panel' + panelHidden('files') + '">' +
-      (adminSharedFiles.length
-        ? filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference)
-        : '<div style="color:var(--muted);font-size:13px;margin-bottom:4px">Aucun document partage pour le moment.</div>') +
-      uploadSection +
-    '</div>';
+    var filesPanel = adminSharedFiles.length ? '<div id="cp-panel-files" class="cp-panel' + panelHidden('files') + '">' +
+      filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference) +
+    '</div>' : '';
 
     var pracPanel = project.practicalInfo.sections.length ? '<div id="cp-panel-prac" class="cp-panel' + panelHidden('prac') + '">' +
       project.practicalInfo.sections.map(function(s) {
@@ -3882,7 +3862,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
     '</div>' : '';
 
-    var sideCol = tabs + filesPanel + pracPanel + meetPanel + helpCard;
+    var fileExchangeCard = buildClientFileExchange(project.id, files);
+    var sideCol = (adminSharedFiles.length ? tabs + filesPanel : '') + pracPanel + meetPanel + fileExchangeCard + helpCard;
 
     // Espace partenaire : mise en page pleine largeur pour un grand calendrier.
     if (project.type === 'partenaire') {
@@ -5354,6 +5335,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function startPoll() { /* Polling supprimé — requêtes uniquement à la demande. */ }
+
+  function buildClientFileExchange(pid, files) {
+    var adminFiles = (files||[]).filter(function(f){ return f.source !== 'client'; });
+    var clientFiles = (files||[]).filter(function(f){ return f.source === 'client'; });
+    function fileRow(f) {
+      var ico = f.type && f.type.startsWith('image/') ? '🖼' : f.type === 'application/pdf' ? '📄' : '📎';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:6px">' +
+        '<span style="font-size:16px">' + ico + '</span>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</div>' +
+          '<div style="font-size:11px;color:var(--muted)">' + (f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('fr-FR') : '') + (f.size ? ' · ' + fmtSize(f.size) : '') + '</div></div>' +
+        '<a href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" class="cp-btn cp-btn--outline" style="padding:5px 12px;font-size:12px">↓</a>' +
+      '</div>';
+    }
+    return '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">Documents partages</h2></div>' +
+      (adminFiles.length
+        ? '<div style="margin-bottom:20px">' + adminFiles.map(fileRow).join('') + '</div>'
+        : '<div style="color:var(--muted);font-size:13px;margin-bottom:20px">Aucun document partage pour le moment.</div>') +
+      '<div style="border-top:1px solid var(--border);padding-top:16px">' +
+        '<div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:10px">Vos depots</div>' +
+        (clientFiles.length ? '<div style="margin-bottom:12px">' + clientFiles.map(fileRow).join('') + '</div>' : '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Aucun fichier deposé.</div>') +
+        '<label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:2px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px" for="cli-file-up-' + pid + '">' +
+          cpIcon('upload',13) + ' Deposer un fichier' +
+          '<input type="file" id="cli-file-up-' + pid + '" style="display:none" onchange="cliUploadClientFile(\'' + pid + '\',this)">' +
+        '</label>' +
+      '</div>' +
+    '</div>';
+  }
 
   function showError() {
     document.getElementById('app').innerHTML =
