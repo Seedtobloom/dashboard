@@ -4,13 +4,18 @@ export interface Project {
   clientEmail: string;
   projectTitle: string;
   description: string;
-  type?: 'identite' | 'site' | 'partenaire' | 'support' | 'custom';
+  type?: 'identite' | 'site' | 'partenaire' | 'support' | 'custom' | 'maintenance';
   status: 'discovery' | 'in_progress' | 'waiting_client' | 'review' | 'delivered' | 'archived';
   startDate: string;
   deadline?: string;
   deadlineExtended?: boolean;
   steps: Step[];
   tasks?: Task[];
+  tickets?: MaintenanceTicket[];
+  monthlyHours?: number;
+  forfaitOverrides?: Record<string, number>;
+  notes?: string;
+  resources?: { title?: string; url: string }[];
   practicalInfo: PracticalInfo;
   meetingLink?: string;
   bannerUrl?: string;
@@ -39,6 +44,17 @@ export interface Task {
   timeSpentMinutes?: number;
   completedAt?: string | null;
   createdAt: string;
+}
+
+export interface MaintenanceTicket {
+  id: string;
+  title: string;
+  description?: string;
+  priority?: 'basse' | 'moyenne' | 'haute';
+  category?: string;
+  status: 'open' | 'in_progress' | 'done' | 'closed';
+  createdAt: string;
+  resolvedAt?: string;
 }
 
 export interface Step {

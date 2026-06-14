@@ -1,6 +1,5 @@
-import type { Env } from '../types';
+import type { Env, Project, MaintenanceTicket } from '../types';
 import { verifyClientToken } from '../auth';
-import type { Project } from '../types';
 import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
 import { sendAdminMessageNotification, sendClientThreadAdminNotification } from './notifications';
@@ -93,6 +92,52 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     const projects = await allowedProjects(env, clientToken);
     const fileKey = decodeURIComponent(dl[2]);
     return clientFileDownload(env, projects, fileKey);
+  }
+
+  // Tickets route: /api/client/{token}/tickets[/{ticketId}]
+  const ticketMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/tickets(?:\/([a-f0-9]{32}))?$/);
+  if (ticketMatch) {
+    const clientToken = await verifyClientToken(ticketMatch[1], env);
+    if (!clientToken) return errorResponse('Invalid or expired token', 403);
+    const projects = await allowedProjects(env, clientToken);
+    const projectId = (await request.clone().json().catch(() => ({} as Record<string, any>)) as Record<string, any>).projectId
+      || url.searchParams.get('projectId')
+      || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return errorResponse('Project not found', 404);
+    const ticketId = ticketMatch[2];
+
+    if (!Array.isArray(project.tickets)) project.tickets = [];
+
+    if (method === 'POST' && !ticketId) {
+      const body = (await request.json()) as Record<string, any>;
+      if (!body.title?.trim()) return errorResponse('title is required');
+      const ticket: MaintenanceTicket = {
+        id: generateId(),
+        title: body.title.trim(),
+        description: (body.description || '').trim(),
+        priority: body.priority || 'moyenne',
+        category: body.category || '',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      };
+      project.tickets.unshift(ticket);
+      await saveProject(env, project);
+      return jsonResponse(ticket, 201);
+    }
+
+    if (method === 'PATCH' && ticketId) {
+      const body = (await request.json()) as Record<string, any>;
+      const tickets = project.tickets!;
+      const idx = tickets.findIndex((t) => t.id === ticketId);
+      if (idx === -1) return errorResponse('Ticket not found', 404);
+      if (body.status) tickets[idx].status = body.status;
+      if (body.status === 'done' || body.status === 'closed') tickets[idx].resolvedAt = new Date().toISOString();
+      await saveProject(env, project);
+      return jsonResponse(tickets[idx]);
+    }
+
+    return errorResponse('Method not allowed', 405);
   }
 
   const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);

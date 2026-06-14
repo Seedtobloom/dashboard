@@ -347,10 +347,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-home { flex: 1; margin-left: var(--sw); min-height: 100vh; padding: 40px 44px 64px; background: var(--bg); }
 .cp-home__greeting { font-family: 'Alegreya', serif; font-size: 28px; color: var(--navy); font-style: italic; margin-bottom: 6px; }
 .cp-home__sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
-.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
 .cp-proj-card { background: var(--white); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.18s, box-shadow 0.18s; text-align: left; width: 100%; }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(5,24,51,0.1); }
-.cp-proj-banner { height: 150px; background: linear-gradient(135deg, var(--brown) 0%, var(--navy) 100%); background-size: cover; background-position: center; position: relative; }
+.cp-proj-banner { height: 150px; background: var(--brown); background-size: cover; background-position: center; position: relative; }
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; backdrop-filter: blur(6px); background: rgba(255,255,255,0.22); color: white; }
 .cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #C94040; color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .cp-proj-card__body { padding: 18px 20px 20px; }
@@ -452,10 +452,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; resize: vertical; min-height: 80px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.2s; }
 .cp-msg-form textarea:focus { border-color: var(--navy); }
 .cp-msg-form__row { display: flex; justify-content: flex-end; margin-top: 10px; }
-.cp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; }
+.cp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; background: var(--navy); color: var(--blue-light); text-decoration: none; }
 .cp-btn:hover { opacity: 0.82; }
 .cp-btn--dark { background: var(--navy); color: var(--blue-light); }
 .cp-btn--sage { background: var(--lavender); color: var(--navy); text-decoration: none; }
+.cp-btn--outline { background: transparent; border: 1.5px solid var(--border); color: var(--navy); }
 
 /* Files */
 .cp-files-group + .cp-files-group { margin-top: 20px; }
@@ -490,7 +491,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 
 @media (max-width: 768px) {
   .cp-home { margin-left: 0; padding: 20px 20px 48px; }
-  .cp-proj-grid { grid-template-columns: 1fr; }
+  .cp-proj-grid { grid-template-columns: repeat(2, 1fr); }
   .cp-sidebar { display: none; }
   .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--navy); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .cp-topbar__logo { font-family: 'Alegreya', serif; font-size: 15px; color: var(--cream); font-style: italic; }
@@ -733,6 +734,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     identite: 'Identité visuelle',
     site: 'Site web',
     partenaire: 'Partenaire créative mensuel',
+    maintenance: 'Maintenance site internet',
     support: 'Supports de communication',
     custom: 'Personnalisé',
   };
@@ -1062,16 +1064,38 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const waitingClient = projs.filter(function(p) { return p.status === 'waiting_client'; }).length;
     const nearDeadline = projs.filter(soonDeadline).length;
 
-    const sidebarItems = projs.map(function(p, i) {
-      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
-        '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
-        '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
-        '<div class="project-item__meta">' +
-          adminStatusBadge(p.status) +
-          (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + '</span>' : '') +
-          (soonDeadline(p) ? '<span class="deadline-badge">⚠ deadline</span>' : '') +
-        '</div>' +
-      '</a>';
+    // Grouper par client, tri alphabétique
+    var _clientMap = {};
+    projs.forEach(function(p, i) {
+      var key = (p.clientName || '').trim().toLowerCase() || '_';
+      if (!_clientMap[key]) _clientMap[key] = { name: p.clientName || '—', items: [] };
+      _clientMap[key].items.push({ p: p, i: i });
+    });
+    var _clientKeys = Object.keys(_clientMap).sort();
+    var sidebarItems = _clientKeys.map(function(key) {
+      var grp = _clientMap[key];
+      var rows = grp.items.map(function(obj) {
+        var p = obj.p, i = obj.i;
+        return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
+          (grp.items.length > 1 ? '<div class="project-item__title" style="padding-left:8px;font-size:12px;color:var(--sidebar-text);opacity:.9">' + esc(p.projectTitle) + '</div>' :
+            '<div>' +
+              '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
+              '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
+            '</div>') +
+          '<div class="project-item__meta">' +
+            adminStatusBadge(p.status) +
+            (unreadCounts[i] > 0 ? '<span class="unread-badge">' + unreadCounts[i] + '</span>' : '') +
+            (soonDeadline(p) ? '<span class="deadline-badge">Deadline</span>' : '') +
+          '</div>' +
+        '</a>';
+      }).join('');
+      if (grp.items.length > 1) {
+        return '<div style="margin-bottom:4px">' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--blue-light);opacity:.55;padding:8px 16px 3px">' + esc(grp.name) + '</div>' +
+          rows +
+        '</div>';
+      }
+      return rows;
     }).join('');
 
     var unreadMap = {};
@@ -1650,6 +1674,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '</div>' +
                 '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : (project.bannerColor||'#412F21').split('|')[0])+';border:1.5px solid var(--border)"></div>' +
               '</div>' +
+              '<div class="form-field" style="margin-top:12px">' +
+                '<label>Banniere d\'accueil espace client</label>' +
+                '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
+                  '<input type="color" id="edit-homeBannerColor" value="' + esc((project.homeBanner && project.homeBanner.color) || '#051833') + '" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
+                  '<input type="url" id="edit-homeBannerImg" value="' + esc((project.homeBanner && project.homeBanner.imageUrl) || '') + '" placeholder="URL image (optionnel)" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px">' +
+                '</div>' +
+                '<input type="text" id="edit-homeBannerSub" value="' + esc((project.homeBanner && project.homeBanner.subtitle) || '') + '" placeholder="Sous-titre (ex: Bienvenue dans votre espace…)" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px">' +
+                '<small style="color:var(--muted);font-size:11px;display:block;margin-top:4px">Couleur de fond + sous-titre affiches sur la page d\'accueil du portail client</small>' +
+              '</div>' +
+            '</div>' +
             '</div>' +
 
             (project.type === 'partenaire' ? buildPartenaireSection(project) : '') +
@@ -2027,6 +2061,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       bannerUrl: (document.getElementById('edit-bannerData') && document.getElementById('edit-bannerData').value) || document.getElementById('edit-bannerUrl').value || undefined,
       bannerColor: _bannerColor || undefined,
       monthlyHours: parseFloat((document.getElementById('edit-monthlyHours')||{}).value) || undefined,
+      homeBanner: {
+        color: (document.getElementById('edit-homeBannerColor')||{}).value || '#051833',
+        imageUrl: (document.getElementById('edit-homeBannerImg')||{}).value || '',
+        subtitle: (document.getElementById('edit-homeBannerSub')||{}).value || '',
+      },
     };
     const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
     if (res.ok) { _bannerColor = null; toast('Projet mis à jour ✓'); setTimeout(function() { loadProject(currentProjectId); }, 600); }
@@ -2309,28 +2348,38 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var selTasks = tasks.filter(function(t){ return (t.dueDate||'').slice(0,10)===_calSel; });
     var selLabel = _calSel===todayStr ? "Aujourd'hui" : (function(){ var dd=new Date(_calSel+'T12:00:00'); return dd.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); })();
     var selRows = selTasks.map(function(t){
-      var uc = URGENCY_COLORS[t.urgency]||'#eee', ut = URGENCY_TEXT[t.urgency]||'#333';
-      return '<div style="background:#fff;border:1.5px solid #e8e4dc;border-left:4px solid '+uc+';border-radius:10px;padding:12px;margin-bottom:8px">' +
-        '<div style="display:flex;gap:8px;align-items:flex-start">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-weight:600;font-size:13px;color:var(--navy);'+(t.status==='done'?'text-decoration:line-through;opacity:.55':'')+'">' + esc(t.title) + '</div>' +
-            (t.pole||t.missionType ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(t.pole?esc(t.pole)+(t.missionType?' · ':''):'')+(t.missionType?esc(t.missionType):'')+'</div>' : '') +
-            (t.content ? '<div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">'+esc(t.content.slice(0,100))+(t.content.length>100?'…':'')+'</div>' : '') +
-            '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">' +
-              urgencyBadge(t.urgency) +
-              (t.briefStatus ? '<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:'+(CLI_BRIEF&&CLI_BRIEF[t.briefStatus]?CLI_BRIEF[t.briefStatus].bg:'#eee')+';color:'+(CLI_BRIEF&&CLI_BRIEF[t.briefStatus]?CLI_BRIEF[t.briefStatus].tx:'#333')+'">'+(CLI_BRIEF&&CLI_BRIEF[t.briefStatus]?CLI_BRIEF[t.briefStatus].label:t.briefStatus)+'</span>' : '') +
-              (t.timeSpentMinutes ? '<span style="font-size:11px;color:var(--muted)">⏱ '+t.timeSpentMinutes+'min</span>' : '') +
-            '</div>' +
-          '</div>' +
-          '<div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">' +
-            '<select onchange="updateTaskStatus(\''+t.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid #e8e4dc;border-radius:6px">' +
-              ['todo','in_progress','waiting_client','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
-            '</select>' +
-            '<button onclick="setTaskTime(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">⏱ Temps</button>' +
-            '<button onclick="openEditTask(\''+t.id+'\')" style="font-size:10px;padding:2px 5px;background:none;border:1px solid #e8e4dc;border-radius:5px;cursor:pointer;color:var(--muted)">✏ Modifier</button>' +
-          '</div>' +
+      var uc = URGENCY_COLORS[t.urgency]||'#e0e0e0';
+      var brief = CLI_BRIEF && CLI_BRIEF[t.briefStatus];
+      var isDone = t.status === 'done';
+      var cardBg = isDone ? '#f9f7f2' : '#fffdf5';
+      // Calcul "Fait le" depuis completedAt ou startedAt
+      var faitLe = '';
+      if (t.completedAt) {
+        var cd = new Date(t.completedAt);
+        faitLe = cd.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+        if (t.startedAt) {
+          var sd = new Date(t.startedAt);
+          faitLe = sd.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' → ' + cd.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+          faitLe = cd.toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) + ' ' + faitLe;
+        }
+      }
+      return '<div style="background:' + cardBg + ';border:1.5px solid #e8e4dc;border-left:4px solid ' + uc + ';border-radius:10px;padding:12px 13px;margin-bottom:8px">' +
+        '<div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:3px;' + (isDone?'opacity:.6':'') + '">' + esc(t.title) + '</div>' +
+        (t.livrableUrl ? '<a href="' + esc(t.livrableUrl) + '" target="_blank" rel="noopener" style="display:inline-block;font-size:11px;color:var(--sage);text-decoration:none;margin-bottom:6px">→ Voir le livrable</a>' : '') +
+        (t.dueDate ? '<div style="font-size:12px;color:var(--muted);margin-bottom:3px"><span style="font-weight:600;color:var(--text)">Deadline :</span> ' + formatDate(t.dueDate) + '</div>' : '') +
+        (faitLe ? '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Fait le :</span> ' + faitLe + '</div>' : '') +
+        (t.timeSpentMinutes ? '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Temps :</span> ' + Math.floor(t.timeSpentMinutes/60) + 'h' + String(t.timeSpentMinutes%60).padStart(2,'0') + '</div>' : '') +
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:4px">' +
+          (brief ? '<span style="font-size:11px;padding:2px 9px;border-radius:999px;background:' + brief.bg + ';color:' + brief.tx + ';font-weight:600">' + brief.label + '</span>' : '') +
+          urgencyBadge(t.urgency) +
+          '<select onchange="updateTaskStatus(\'' + t.id + '\',this.value)" style="font-size:11px;padding:2px 6px;border:1px solid #e8e4dc;border-radius:6px;margin-left:auto">' +
+            ['todo','in_progress','waiting_client','done'].map(function(s){return '<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+TASK_STATUS_LABELS[s]+'</option>';}).join('') +
+          '</select>' +
         '</div>' +
-        (t.livrableUrl?'<div style="margin-top:6px"><a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:11px;color:var(--sage);text-decoration:none">↗ Livrable</a></div>':'') +
+        '<div style="display:flex;gap:5px;margin-top:8px">' +
+          '<button onclick="setTaskTime(\'' + t.id + '\')" style="font-size:11px;padding:3px 8px;background:none;border:1px solid #e8e4dc;border-radius:6px;cursor:pointer;color:var(--muted)">Temps</button>' +
+          '<button onclick="openEditTask(\'' + t.id + '\')" style="font-size:11px;padding:3px 8px;background:none;border:1px solid #e8e4dc;border-radius:6px;cursor:pointer;color:var(--muted)">Modifier</button>' +
+        '</div>' +
       '</div>';
     }).join('');
     // Barre filtre
@@ -2373,43 +2422,110 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function buildCharts(project) {
     var tasks = tasksOf(project);
-    // Heures par semaine (du mois affiché) à partir de timeSpentMinutes répartis sur dueDate
-    var year = _calMonth.getFullYear(), month = _calMonth.getMonth();
-    var weeks = [0,0,0,0,0,0];
+    var now = new Date();
+    var curYear = now.getFullYear(), curMonth = now.getMonth();
+    var curMk = curYear + '-' + String(curMonth+1).padStart(2,'0');
+
+    // KPIs globaux
+    var total = tasks.length;
+    var done = tasks.filter(function(t){ return t.status==='done'; });
+    var inProg = tasks.filter(function(t){ return t.status==='in_progress'; });
+    var waiting = tasks.filter(function(t){ return t.status==='waiting_client'; });
+    var pct = total ? Math.round(done.length/total*100) : 0;
+    var totalMin = tasks.reduce(function(s,t){ return s+(t.timeSpentMinutes||0); }, 0);
+    var totalH = Math.floor(totalMin/60), totalM = totalMin%60;
+
+    // Heures ce mois
+    var monthMin = tasks.reduce(function(s,t){
+      var ref = t.completedAt || t.dueDate || '';
+      return ref.slice(0,7)===curMk ? s+(t.timeSpentMinutes||0) : s;
+    }, 0);
+    var monthH = Math.floor(monthMin/60), monthMm = monthMin%60;
+
+    // Tâches terminées par mois (6 derniers mois)
     var doneByMonth = {};
-    tasks.forEach(function(t) {
-      if (t.dueDate) {
-        var dt = new Date(t.dueDate);
-        if (dt.getFullYear() === year && dt.getMonth() === month) {
-          var wk = Math.floor((dt.getDate()-1)/7);
-          weeks[wk] += (t.timeSpentMinutes||0)/60;
-        }
-      }
-      if (t.status === 'done' && t.completedAt) {
-        var key = t.completedAt.slice(0,7);
-        doneByMonth[key] = (doneByMonth[key]||0) + 1;
-      }
+    done.forEach(function(t) {
+      var key = (t.completedAt||t.dueDate||'').slice(0,7);
+      if (key) doneByMonth[key] = (doneByMonth[key]||0) + 1;
     });
-    function barChart(title, labels, values, unit) {
-      var max = Math.max.apply(null, values.concat([1]));
-      var bw = 46, gap = 18, h = 120;
-      var bars = values.map(function(v, i) {
-        var bh = Math.round(v / max * h);
-        var x = i * (bw + gap) + 10;
-        return '<rect x="' + x + '" y="' + (h - bh + 10) + '" width="' + bw + '" height="' + bh + '" rx="4" fill="#412F21"></rect>' +
-          '<text x="' + (x + bw/2) + '" y="' + (h - bh + 4) + '" text-anchor="middle" font-size="10" fill="#051833">' + (Math.round(v*10)/10) + '</text>' +
-          '<text x="' + (x + bw/2) + '" y="' + (h + 24) + '" text-anchor="middle" font-size="10" fill="#5a5a5a">' + esc(labels[i]) + '</text>';
-      }).join('');
-      var width = values.length * (bw + gap) + 10;
-      return '<div style="margin-bottom:18px"><div style="font-size:13px;color:var(--navy);font-weight:500;margin-bottom:8px">' + title + '</div>' +
-        '<svg viewBox="0 0 ' + width + ' ' + (h + 32) + '" style="max-width:100%;height:auto" role="img" aria-label="' + esc(title) + '">' + bars + '</svg></div>';
-    }
     var monthKeys = Object.keys(doneByMonth).sort().slice(-6);
+
+    // Mini barre horizontale
+    function hBar(val, max, color) {
+      var pct2 = max ? Math.round(val/max*100) : 0;
+      return '<div style="display:flex;align-items:center;gap:8px">' +
+        '<div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">' +
+          '<div style="width:' + pct2 + '%;height:100%;background:' + color + ';border-radius:3px"></div>' +
+        '</div>' +
+        '<span style="font-size:11px;color:var(--muted);min-width:24px;text-align:right">' + val + '</span>' +
+      '</div>';
+    }
+
+    // Graphique barres mensuelles compact
+    var maxDone = Math.max.apply(null, monthKeys.map(function(k){ return doneByMonth[k]; }).concat([1]));
+    var monthChart = monthKeys.length ? '<div style="margin-top:20px">' +
+      '<div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:10px">Taches terminees par mois</div>' +
+      '<div style="display:flex;align-items:flex-end;gap:8px;height:80px">' +
+        monthKeys.map(function(k) {
+          var v = doneByMonth[k];
+          var h = Math.round(v/maxDone*72);
+          var label = k.slice(5); // MM
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">' +
+            '<span style="font-size:10px;color:var(--navy);font-weight:600">' + v + '</span>' +
+            '<div style="width:100%;height:' + h + 'px;background:var(--navy);border-radius:3px 3px 0 0;min-height:4px"></div>' +
+            '<span style="font-size:10px;color:var(--muted)">' + label + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>' : '';
+
+    // Statuts des tâches en cours
+    var statusRows = [
+      { label:'En cours', count:inProg.length, color:'var(--blue-light)' },
+      { label:'Action client', count:waiting.length, color:'#e8a87c' },
+      { label:'Terminees', count:done.length, color:'var(--sage)' },
+      { label:'Total', count:total, color:'var(--border)' },
+    ].filter(function(r){ return r.count > 0; });
+
     return '<div class="card">' +
-      '<div class="card-header"><span class="card-title">📊 Suivi pour scaler</span></div>' +
+      '<div class="card-header"><span class="card-title">Suivi & avancement</span></div>' +
       '<div class="card-body">' +
-        barChart('Heures passées par semaine (ce mois)', ['S1','S2','S3','S4','S5','S6'], weeks, 'h') +
-        (monthKeys.length ? barChart('Tâches terminées par mois', monthKeys, monthKeys.map(function(k){return doneByMonth[k];}), '') : '<div style="color:var(--muted);font-size:13px">Aucune tâche terminée pour le graphique mensuel.</div>') +
+        // KPI row
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">' +
+          [
+            { label:'Avancement', val:pct+'%', sub: done.length+'/'+total+' taches', col:'var(--navy)' },
+            { label:'Temps total', val:totalH+'h'+String(totalMm).padStart(2,'0'), sub:'cumule', col:'var(--brown)' },
+            { label:'Ce mois', val:monthH+'h'+String(monthMm).padStart(2,'0'), sub:'heures suivies', col:'var(--sage)' },
+            { label:'En attente', val:waiting.length, sub:'action client', col:waiting.length?'#c94040':'var(--muted)' },
+          ].map(function(k) {
+            return '<div style="background:var(--surface);border-radius:10px;padding:12px;text-align:center">' +
+              '<div style="font-size:22px;font-weight:700;color:' + k.col + ';margin-bottom:2px">' + k.val + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">' + k.label + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + k.sub + '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+        // Barre progression globale
+        '<div style="margin-bottom:20px">' +
+          '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--navy);margin-bottom:5px">' +
+            '<span>Progression globale</span><span>' + pct + '%</span>' +
+          '</div>' +
+          '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">' +
+            '<div style="width:' + pct + '%;height:100%;background:var(--navy);border-radius:4px"></div>' +
+          '</div>' +
+        '</div>' +
+        // Statuts
+        (statusRows.length ? '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:8px">Repartition par statut</div>' +
+          statusRows.map(function(r) {
+            return '<div style="margin-bottom:6px">' +
+              '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">' +
+                '<span style="color:var(--text)">' + r.label + '</span>' +
+              '</div>' +
+              hBar(r.count, total, r.color) +
+            '</div>';
+          }).join('') +
+        '</div>' : '') +
+        monthChart +
       '</div>' +
     '</div>';
   }
@@ -3132,6 +3248,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (b < 1048576) return Math.round(b/1024) + ' Ko';
     return (b/1048576).toFixed(1) + ' Mo';
   }
+  function cpShowPrompt(title, label, defaultVal, onOk, opts) {
+    opts = opts || {};
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    var inputType = opts.type || 'text';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:6px">' + title + '</div>' +
+      (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
+      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#051833" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    var inp = ov.querySelector('#_cpprompt-inp');
+    setTimeout(function(){ inp.focus(); inp.select(); }, 60);
+    function close() { ov.remove(); }
+    function submit() { var v = inp.value; close(); onOk(v); }
+    ov.querySelector('#_cpprompt-cancel').onclick = close;
+    ov.querySelector('#_cpprompt-ok').onclick = submit;
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); if(e.key==='Escape') close(); });
+  }
   function fileIcon(t) {
     if (t.startsWith('image/')) return '🖼';
     if (t === 'application/pdf') return '📄';
@@ -3173,11 +3312,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     { key:'identite', label:'Identité visuelle' },
     { key:'site', label:'Création de site' },
     { key:'partenaire', label:'Partenaire créative' },
+    { key:'maintenance', label:'Maintenance site internet' },
     { key:'support', label:'Supports de communication' },
     { key:'custom', label:'Autres' },
   ];
   function typeGroupKey(t) {
-    if (t === 'identite' || t === 'site' || t === 'partenaire' || t === 'support') return t;
+    if (t === 'identite' || t === 'site' || t === 'partenaire' || t === 'maintenance' || t === 'support') return t;
     return 'custom';
   }
   function groupByType(list) {
@@ -3248,9 +3388,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? '<div class="cp-archive-section"><h2 class="cp-archive-title">Archives</h2><div class="cp-proj-grid">' + archived.map(cardHtml).join('') + '</div></div>'
       : '';
 
+    // Bannière d'accueil configurable par l'admin
+    var firstProj = appData.projects.length ? appData.projects[0].project : null;
+    var homeBannerHtml = '';
+    if (firstProj && firstProj.homeBanner) {
+      var hb = firstProj.homeBanner;
+      var hbBg = hb.imageUrl
+        ? 'background:url(' + esc(hb.imageUrl) + ') center/cover no-repeat;'
+        : 'background:' + esc(hb.color || 'var(--navy)') + ';';
+      var hbHex = hb.color && hb.color.charAt(0) === '#' ? hb.color : null;
+      var hbLight = hbHex && cpHexLum(hbHex) > 160;
+      var hbTx = hbLight ? '#051833' : '#fff';
+      var hbSub = hbLight ? 'rgba(5,24,51,0.6)' : 'rgba(255,255,255,0.7)';
+      homeBannerHtml = '<div style="' + hbBg + 'border-radius:16px;padding:32px 36px;margin-bottom:32px;position:relative;overflow:hidden">' +
+        '<h1 style="font-family:\'Alegreya\',serif;font-size:28px;color:' + hbTx + ';font-style:italic;margin-bottom:6px">Bonjour ' + esc(appData.clientName) + ' ✦</h1>' +
+        (hb.subtitle ? '<div style="font-size:14px;color:' + hbSub + ';line-height:1.6">' + esc(hb.subtitle) + '</div>' : '') +
+      '</div>';
+    }
+
     return '<div class="cp-home">' +
-      '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + ' ✦</h1>' +
-      '<div class="cp-home__sub">Retrouvez vos projets ci-dessous</div>' +
+      (homeBannerHtml ||
+        '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + ' ✦</h1>' +
+        '<div class="cp-home__sub">Retrouvez vos projets ci-dessous</div>'
+      ) +
       activeHtml + archivedHtml +
     '</div>';
   }
@@ -3596,6 +3756,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
     }
 
+    // Espace maintenance : vue pleine largeur avec tickets, notes, forfait, factures.
+    if (project.type === 'maintenance') {
+      return header + '<div class="cp-content cp-content--wide">' + banner + buildClientMaintenance(pd) + helpCard + '</div>';
+    }
+
     var questionnaireCard = '';
     var qQuestions = project.questionnaireQuestions || [];
     if (qQuestions.length) {
@@ -3649,6 +3814,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cliCalSelected = {};
   var cliCalFilter   = {};
   var cliPartTab     = {}; // pid -> 'cal'|'board'|'forfait'
+  var cliMaintTab    = {}; // pid -> 'tickets'|'notes'|'forfait'|'invoices'
   var cliInvoices    = {}; // pid -> array of invoices (cached)
 
   function taskCardHtml(t, pid, files) {
@@ -3687,6 +3853,123 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;gap:6px;margin-top:10px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
     '</div>';
   }
+
+  function buildClientMaintenance(pd) {
+    var project = pd.project;
+    var pid = project.id;
+    var tab = cliMaintTab[pid] || 'tickets';
+    var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    var open = tasks.filter(function(t){ return t.briefStatus !== 'brief_pret' && t.status !== 'done'; });
+    var MAINT_TYPE_BG  = { bug:'#fde8e8', question:'#e8f0fe', amelioration:'#e8f5e9', contenu:'#fff3e0' };
+    var MAINT_TYPE_TX  = { bug:'#a00',    question:'#1a3a7a', amelioration:'#1a5c38', contenu:'#7a4500' };
+    var MAINT_TYPE_LBL = { bug:'Bug / Dysfonctionnement', question:'Question / Conseil', amelioration:'Ajustement / Amelioration', contenu:'Mise a jour de contenu' };
+    var MAINT_STATUS_BG  = { a_faire:'#f0ede8', en_cours:'#dce8ff', traite:'#d8f0e8' };
+    var MAINT_STATUS_TX  = { a_faire:'#6b5a4e', en_cours:'#1a3a7a', traite:'#1a5c38' };
+    var MAINT_STATUS_LBL = { a_faire:'A faire', en_cours:'En cours', traite:'Traite' };
+    var tabs = [['tickets','Tickets'],['forfait','Forfait'],['notes','Notes']];
+    var tabsHtml = '<div style="display:flex;gap:0;margin-bottom:18px;border-bottom:1.5px solid var(--border)">' +
+      tabs.map(function(t) {
+        var a = tab === t[0];
+        return '<button onclick="cliMaintSwitch(\'' + pid + '\',\'' + t[0] + '\')" style="padding:8px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:' + (a?'600':'400') + ';color:' + (a?'var(--navy)':'var(--muted)') + ';border-bottom:2.5px solid ' + (a?'var(--navy)':'transparent') + ';margin-bottom:-1.5px">' + t[1] + '</button>';
+      }).join('') + '</div>';
+    var forfaitH = project.monthlyHours || 0;
+    var todayMk = new Date().toISOString().slice(0,7);
+    var monthMin = tasks.reduce(function(s,t){ return (t.completedAt||'').slice(0,7)===todayMk ? s+(t.timeSpentMinutes||0) : s; }, 0);
+    var recapHtml = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">' +
+      '<div style="background:var(--surface);border-radius:10px;padding:12px 18px;flex:1;min-width:90px">' +
+        '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px">Ouverts</div>' +
+        '<div style="font-size:26px;font-weight:700;color:var(--navy)">' + open.length + '</div>' +
+      '</div>' +
+      '<div style="background:var(--surface);border-radius:10px;padding:12px 18px;flex:1;min-width:90px">' +
+        '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px">Traites ce mois</div>' +
+        '<div style="font-size:26px;font-weight:700;color:var(--sage)">' + tasks.filter(function(t){ return (t.completedAt||'').slice(0,7)===todayMk && (t.status==='done'||t.briefStatus==='brief_pret'); }).length + '</div>' +
+      '</div>' +
+      (forfaitH ? '<div style="background:var(--surface);border-radius:10px;padding:12px 18px;flex:1;min-width:90px">' +
+        '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px">Heures / forfait</div>' +
+        '<div style="font-size:26px;font-weight:700;color:var(--brown)">' + (Math.round(monthMin/6)/10) + '<span style="font-size:12px;font-weight:400;color:var(--muted)">/' + forfaitH + 'h</span></div>' +
+      '</div>' : '') +
+    '</div>';
+    var content = '';
+    if (tab === 'tickets') {
+      var ticketRows = tasks.length ? tasks.map(function(t) {
+        var mType = t.missionType || 'question';
+        var mStatus = (t.briefStatus === 'brief_pret' || t.status === 'done') ? 'traite' : (t.status === 'in_progress' ? 'en_cours' : 'a_faire');
+        var tbg = MAINT_TYPE_BG[mType]  || '#f0ede8'; var ttx = MAINT_TYPE_TX[mType]  || '#6b5a4e';
+        var sbg = MAINT_STATUS_BG[mStatus] || '#f0ede8'; var stx = MAINT_STATUS_TX[mStatus] || '#6b5a4e';
+        return '<div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">' +
+          '<div style="width:3px;min-height:36px;border-radius:2px;background:' + (t.urgency==='haute'?'#c94040':'transparent') + ';flex-shrink:0;align-self:stretch"></div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">' + esc(t.title) + '</div>' +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+              '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:' + tbg + ';color:' + ttx + ';font-weight:600">' + (MAINT_TYPE_LBL[mType]||mType) + '</span>' +
+              '<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:' + sbg + ';color:' + stx + ';font-weight:600">' + (MAINT_STATUS_LBL[mStatus]||mStatus) + '</span>' +
+              (t.timeSpentMinutes ? '<span style="font-size:11px;color:var(--muted)">' + t.timeSpentMinutes + ' min</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') : '<div style="text-align:center;color:var(--muted);padding:32px 0;font-size:13px">Aucun ticket pour le moment.</div>';
+      content = recapHtml +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+          '<div style="font-size:13px;font-weight:600;color:var(--navy)">Mes demandes</div>' +
+          '<button onclick="cpOpenNewTicket(\'' + pid + '\')" style="padding:6px 14px;background:var(--navy);color:var(--sidebar-text);border:none;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">+ Nouvelle demande</button>' +
+        '</div>' + ticketRows;
+    } else if (tab === 'forfait') {
+      content = buildPartForfait(pid, tasks, project);
+    } else {
+      content = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:32px 0">Notes et ressources a venir.</div>';
+    }
+    return '<div class="cp-card" style="margin:16px 0">' + tabsHtml + content + '</div>';
+  }
+
+  window.cpOpenNewTicket = function(pid) {
+    var existing = document.getElementById('_cp-ticket-ov');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = '_cp-ticket-ov';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+        '<strong style="font-size:16px;color:var(--navy)">Nouvelle demande</strong>' +
+        '<button onclick="document.getElementById(\'_cp-ticket-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted)">✕</button>' +
+      '</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Description *</label>' +
+        '<textarea id="_tkt-brief" rows="4" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical" placeholder="Decrivez votre demande..."></textarea></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Type</label>' +
+        '<select id="_tkt-type" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit">' +
+          '<option value="bug">Bug / Dysfonctionnement</option>' +
+          '<option value="question">Question / Conseil</option>' +
+          '<option value="amelioration">Ajustement / Amelioration</option>' +
+          '<option value="contenu">Mise a jour de contenu</option>' +
+        '</select></div>' +
+      '<div style="margin-bottom:20px;display:flex;align-items:center;gap:8px">' +
+        '<input type="checkbox" id="_tkt-urgence" style="width:16px;height:16px;cursor:pointer"><label for="_tkt-urgence" style="font-size:13px;color:var(--navy);cursor:pointer">Marquer comme urgente</label>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+        '<button onclick="document.getElementById(\'_cp-ticket-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;color:var(--muted)">Annuler</button>' +
+        '<button onclick="window.cpSendTicket(\'' + pid + '\')" style="padding:9px 18px;border:none;border-radius:8px;background:var(--navy);color:var(--sidebar-text);cursor:pointer;font-size:13px;font-weight:500">Envoyer</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  };
+
+  window.cpSendTicket = async function(pid) {
+    var brief = (document.getElementById('_tkt-brief')||{}).value || '';
+    if (!brief.trim()) return;
+    var type = (document.getElementById('_tkt-type')||{}).value || 'question';
+    var urgence = !!(document.getElementById('_tkt-urgence')||{}).checked;
+    var r = await fetch(API_BASE + '/notes', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: pid, pendingTickets: [{ brief: brief.trim(), type: type, urgence: urgence }] })
+    });
+    if (r.ok) {
+      var data = await r.json();
+      var pd2 = appData.projects.find(function(x){ return x.project.id === pid; });
+      if (pd2 && data.tasks) pd2.project.tasks = data.tasks;
+      document.getElementById('_cp-ticket-ov').remove();
+      renderShell();
+    }
+  };
 
   function buildClientPartenaire(pd) {
     var project = pd.project, files = pd.files;
@@ -3745,6 +4028,112 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);
     if (tab === 'invoices') return summaryBar + tabs + buildPartInvoices(pid);
     return summaryBar + tabs;
+  }
+
+  // ── Espace Maintenance ────────────────────────────────────────────────────
+  function buildClientMaintenance(pd) {
+    var project = pd.project;
+    var pid = project.id;
+    var tab = cliMaintTab[pid] || 'tickets';
+
+    // Recap bar
+    var tickets = Array.isArray(project.tickets) ? project.tickets : [];
+    var openTickets   = tickets.filter(function(t){ return t.status !== 'done' && t.status !== 'closed'; });
+    var closedTickets = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
+    var forfaitH = project.monthlyHours || 0;
+
+    function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
+
+    var summaryBar = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tickets ouverts</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+openTickets.length+'</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">en cours de traitement</div>' +
+      '</div>' +
+      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tickets résolus</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+closedTickets.length+'</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">traités au total</div>' +
+      '</div>' +
+      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait mensuel</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+(forfaitH ? forfaitH+'h' : '—')+'</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(forfaitH ? 'inclus par mois' : 'non défini')+'</div>' +
+      '</div>' +
+    '</div>';
+
+    var tabDefs = [['tickets','🎫 Tickets'],['notes','📝 Notes'],['forfait','⏱ Forfait'],['invoices','💳 Factures']];
+    var tabsHtml = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
+      '<div style="display:flex;gap:0">' +
+        tabDefs.map(function(t){
+          return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliMaintSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
+        }).join('') +
+      '</div>' +
+      (tab === 'tickets' ? '<button class="cp-btn cp-btn--dark" onclick="cliOpenSubmitTicket(\''+pid+'\')">+ Nouveau ticket</button>' : '') +
+    '</div>';
+
+    if (tab === 'tickets')  return summaryBar + tabsHtml + buildMaintTickets(pid, project);
+    if (tab === 'notes')    return summaryBar + tabsHtml + buildPartNotes(pid, project);
+    if (tab === 'forfait')  return summaryBar + tabsHtml + buildPartForfait(pid, [], project);
+    if (tab === 'invoices') return summaryBar + tabsHtml + buildPartInvoices(pid);
+    return summaryBar + tabsHtml;
+  }
+
+  function buildMaintTickets(pid, project) {
+    var tickets = Array.isArray(project.tickets) ? project.tickets : [];
+    var MAINT_STATUS = { open:'Ouvert', in_progress:'En cours', done:'Résolu', closed:'Fermé' };
+    var MAINT_STATUS_COLOR = { open:'#e8a87c', in_progress:'#BAD1FD', done:'#7fa688', closed:'#ccc' };
+    var MAINT_STATUS_TXT   = { open:'#5a2c0e', in_progress:'#051833', done:'#0d2b16', closed:'#555' };
+    var MAINT_PRIO = { haute:'Haute', moyenne:'Moyenne', basse:'Basse' };
+    var MAINT_PRIO_COLOR = { haute:'#c0392b', moyenne:'#e8a87c', basse:'#7fa688' };
+
+    if (!tickets.length) {
+      return '<div class="cp-card">' +
+        '<div class="cp-card__hd"><h2 class="cp-card__title">Tickets de maintenance</h2></div>' +
+        '<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Aucun ticket pour le moment.<br><button class="cp-btn cp-btn--dark" style="margin-top:12px" onclick="cliOpenSubmitTicket(\''+pid+'\')">+ Soumettre un ticket</button></div>' +
+      '</div>';
+    }
+
+    var open   = tickets.filter(function(t){ return t.status !== 'done' && t.status !== 'closed'; });
+    var closed = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
+
+    function ticketRow(t) {
+      var sbg = MAINT_STATUS_COLOR[t.status] || '#eee';
+      var stx = MAINT_STATUS_TXT[t.status]   || '#333';
+      var badge = '<span style="display:inline-flex;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:'+sbg+';color:'+stx+'">'+(MAINT_STATUS[t.status]||t.status)+'</span>';
+      var prioDot = t.priority ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(MAINT_PRIO_COLOR[t.priority]||'#aaa')+';margin-right:5px;vertical-align:middle"></span><span style="font-size:12px;color:var(--muted)">'+(MAINT_PRIO[t.priority]||t.priority)+'</span>' : '';
+      var dateStr = t.createdAt ? '<span style="font-size:11px;color:var(--muted)">'+fmtDate(t.createdAt)+'</span>' : '';
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:600;font-size:14px;color:var(--navy);margin-bottom:4px">'+esc(t.title||'Sans titre')+'</div>' +
+            (t.description ? '<div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:8px">'+esc(t.description)+'</div>' : '') +
+            '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+              dateStr +
+              (prioDot ? '<span style="display:flex;align-items:center">'+prioDot+'</span>' : '') +
+              (t.category ? '<span style="font-size:11px;color:var(--muted);background:var(--border);padding:2px 8px;border-radius:6px">'+esc(t.category)+'</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
+            badge +
+            (t.status !== 'done' && t.status !== 'closed' ?
+              '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--muted)">Marquer résolu</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    var openHtml = open.length
+      ? '<div style="margin-bottom:24px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Tickets ouverts ('+open.length+')</div>'+open.map(ticketRow).join('')+'</div>'
+      : '';
+    var closedHtml = closed.length
+      ? '<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Tickets résolus ('+closed.length+')</div>'+closed.map(ticketRow).join('')+'</div>'
+      : '';
+
+    return '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">Tickets de maintenance</h2></div>' +
+      openHtml + closedHtml +
+    '</div>';
   }
 
   // ── Onglet Calendrier ─────────────────────────────────────────────────────
@@ -3906,7 +4295,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     if (!inv.length) {
       return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">💳 Factures & Devis</h2>' +
-        '<button class="cp-btn" onclick="cliRefreshInvoices(\''+pid+'\')">↻ Actualiser</button></div>' +
+        '<button class="cp-btn cp-btn--outline" onclick="cliRefreshInvoices(\''+pid+'\')">↻ Actualiser</button></div>' +
         '<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Aucune facture ou devis pour le moment.</div></div>';
     }
     var INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente' };
@@ -3934,7 +4323,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (amtStr ? '<div style="font-weight:700;font-size:15px;color:var(--navy)">'+esc(amtStr)+'</div>' : '') +
           badge +
         '</div>' +
-        (i.pdfUrl ? '<a href="'+esc(i.pdfUrl)+'" target="_blank" rel="noopener" class="cp-btn" style="padding:4px 12px;font-size:12px">📄 PDF</a>' : '') +
+        (i.pdfUrl ? '<a href="'+esc(i.pdfUrl)+'" target="_blank" rel="noopener" class="cp-btn cp-btn--outline" style="padding:4px 12px;font-size:12px">→ PDF</a>' : '') +
       '</div>';
     }
     var devisHtml = devisItems.length
@@ -3944,7 +4333,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? '<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Factures</div><div style="display:flex;flex-direction:column;gap:8px">'+factItems.map(invRow).join('')+'</div></div>'
       : '';
     return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">💳 Factures & Devis</h2>' +
-      '<button class="cp-btn" onclick="cliRefreshInvoices(\''+pid+'\')">↻ Actualiser</button></div>' +
+      '<button class="cp-btn cp-btn--outline" onclick="cliRefreshInvoices(\''+pid+'\')">↻ Actualiser</button></div>' +
       devisHtml + factHtml + '</div>';
   }
 
@@ -3987,7 +4376,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var forfait = project.monthlyHours || 0;
     var overrides = project.forfaitOverrides || {};
 
-    var defBtn = '<button class="cp-btn" onclick="cliForfaitDefine(\''+pid+'\')" style="margin-bottom:16px">' +
+    var defBtn = '<button class="cp-btn cp-btn--dark" onclick="cliForfaitDefine(\''+pid+'\')" style="margin-bottom:16px">' +
       (forfait ? '✏ Modifier le forfait ('+forfait+'h/mois)' : '⚙ Définir le forfait mensuel') + '</button>';
 
     if (!forfait) return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2></div>' +
@@ -4101,7 +4490,100 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function _todayStr() { var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
 
   window.cliPartSwitch = function(pid, tab) { cliPartTab[pid] = tab; renderShell(); };
+  window.cliMaintSwitch = function(pid, tab) { cliMaintTab[pid] = tab; renderShell(); };
   window.cliRefreshInvoices = function(pid) { delete cliInvoices[pid]; renderShell(); };
+
+  window.cliOpenSubmitTicket = function(pid) {
+    // Build a simple inline modal for ticket submission
+    var existing = document.getElementById('_maint-ticket-modal');
+    if (existing) existing.remove();
+
+    var ov = document.createElement('div');
+    ov.id = '_maint-ticket-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+      '<div style="font-size:17px;font-weight:700;color:#051833;margin-bottom:16px">Nouveau ticket de maintenance</div>' +
+      '<div style="margin-bottom:12px">' +
+        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
+        '<input id="_maint-t-title" type="text" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833">' +
+      '</div>' +
+      '<div style="margin-bottom:12px">' +
+        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
+        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;resize:vertical;line-height:1.5"></textarea>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">' +
+        '<div>' +
+          '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
+          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
+            '<option value="basse">Basse</option>' +
+            '<option value="moyenne" selected>Moyenne</option>' +
+            '<option value="haute">Haute</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
+          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
+            '<option value="">— Catégorie —</option>' +
+            '<option value="Bug">Bug</option>' +
+            '<option value="Modification">Modification</option>' +
+            '<option value="Ajout de contenu">Ajout de contenu</option>' +
+            '<option value="Performance">Performance</option>' +
+            '<option value="Sécurité">Sécurité</option>' +
+            '<option value="Autre">Autre</option>' +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_maint-t-ok" style="padding:9px 22px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">Envoyer le ticket</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+
+    var titleInp = ov.querySelector('#_maint-t-title');
+    setTimeout(function(){ titleInp.focus(); }, 60);
+
+    function close() { ov.remove(); }
+    ov.querySelector('#_maint-t-cancel').onclick = close;
+    ov.addEventListener('click', function(e){ if (e.target === ov) close(); });
+
+    ov.querySelector('#_maint-t-ok').onclick = function() {
+      var title = titleInp.value.trim();
+      if (!title) { titleInp.style.borderColor = 'var(--red)'; titleInp.focus(); return; }
+      var desc  = ov.querySelector('#_maint-t-desc').value.trim();
+      var prio  = ov.querySelector('#_maint-t-prio').value;
+      var cat   = ov.querySelector('#_maint-t-cat').value;
+      close();
+      var body = { projectId: pid, title: title, description: desc, priority: prio, category: cat || undefined, status: 'open', createdAt: new Date().toISOString() };
+      fetch(API_BASE + '/tickets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+        .then(function(ticket) {
+          var pd2 = getPD(pid);
+          if (pd2) {
+            if (!Array.isArray(pd2.project.tickets)) pd2.project.tickets = [];
+            pd2.project.tickets.unshift(ticket);
+          }
+          toast('Ticket envoyé ✓');
+          renderShell();
+        })
+        .catch(function(){ toast('Erreur lors de l\'envoi du ticket.'); });
+    };
+  };
+
+  window.cliMaintCloseTicket = function(pid, ticketId) {
+    fetch(API_BASE + '/tickets/' + ticketId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: 'done' }) })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+      .then(function(ticket) {
+        var pd2 = getPD(pid);
+        if (pd2 && Array.isArray(pd2.project.tickets)) {
+          var idx = pd2.project.tickets.findIndex(function(t){ return t.id === ticketId; });
+          if (idx !== -1) pd2.project.tickets[idx] = ticket;
+        }
+        toast('Ticket résolu ✓');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur lors de la mise à jour.'); });
+  };
 
   window.cliCalNav = function(pid, delta) {
     if (!cliCalMonth[pid]) { var d0 = new Date(); d0.setDate(1); cliCalMonth[pid] = d0; }
@@ -4236,7 +4718,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cliForfaitDefine = function(pid) {
     var pd = getPD(pid);
     var cur = pd && pd.project.monthlyHours ? String(pd.project.monthlyHours) : '';
-    showPrompt('Forfait mensuel', 'Nombre d\'heures incluses par mois dans le forfait', cur, function(val) {
+    cpShowPrompt('Forfait mensuel', 'Nombre d\'heures incluses par mois dans le forfait', cur, function(val) {
       var hours = parseFloat(val);
       if (isNaN(hours) || hours <= 0) { toast('Valeur invalide.'); return; }
       fetch(API_BASE + '/forfait', { method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -4251,7 +4733,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cliRegulOverride = function(pid, monthKey, currentVal) {
     var cur = currentVal !== undefined ? String(currentVal) : '';
-    showPrompt('Report manuel — ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
+    cpShowPrompt('Report manuel — ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
       if (val.trim() === '') {
         var pd = getPD(pid);
         var overrides = Object.assign({}, pd && pd.project.forfaitOverrides || {});
@@ -4937,6 +5419,7 @@ ${ADMIN_CSS}</style>
         <option value="identite">Identité visuelle (4 étapes)</option>
         <option value="site">Création / refonte de site (4 phases)</option>
         <option value="partenaire">Partenaire créative mensuel</option>
+        <option value="maintenance">Maintenance site internet</option>
         <option value="support">Supports de communication</option>
         <option value="custom">Personnalisé (vierge)</option>
       </select>

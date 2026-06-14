@@ -1190,9 +1190,25 @@ async function handleClientApi(request, env, url) {
     if (body.resources !== undefined) project2.resources = body.resources;
     if (body.questionnaireAnswers !== undefined) project2.questionnaireAnswers = body.questionnaireAnswers;
     if (body.clientCardValidations !== undefined) project2.clientCardValidations = body.clientCardValidations;
+    if (body.pendingTickets !== undefined && Array.isArray(body.pendingTickets)) {
+      if (!Array.isArray(project2.tasks)) project2.tasks = [];
+      body.pendingTickets.forEach(function(t) {
+        project2.tasks.push({
+          id: 'tkt' + Date.now() + Math.random().toString(36).slice(2,6),
+          title: t.brief,
+          briefStatus: 'pas_commence',
+          missionType: t.type || 'question',
+          urgency: t.urgence ? 'haute' : 'basse',
+          status: 'todo',
+          source: 'client',
+          createdAt: new Date().toISOString(),
+          timeSpentMinutes: 0,
+        });
+      });
+    }
     project2.updatedAt = new Date().toISOString();
     await saveProject(env, project2);
-    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [], questionnaireAnswers: project2.questionnaireAnswers || {}, clientCardValidations: project2.clientCardValidations || {} });
+    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [], questionnaireAnswers: project2.questionnaireAnswers || {}, clientCardValidations: project2.clientCardValidations || {}, tasks: project2.tasks || [] });
   }
   // PATCH /forfait — update monthlyHours on the project
   if (method === "PATCH" && subPathRaw === "/forfait") {
