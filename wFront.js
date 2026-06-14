@@ -1764,6 +1764,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<button class="btn btn--ghost" onclick="adminNav(\'/admin\')">← Dashboard</button>' +
                 '<button class="btn btn--ghost" onclick="addProjectForClient()">+ Nouveau projet</button>' +
                 (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Espace client</button>' : '') +
+                (project.clientEmail ? '<button class="btn btn--ghost" onclick="editClientSpace()">Personnaliser</button>' : '') +
                 '<button class="btn btn--ghost" onclick="openBannerEditor()" title="Changer la couleur ou l\'image" style="padding:6px 10px;font-size:18px">&#9998;</button>' +
                 '<button class="btn btn--ghost btn--ghost-danger" onclick="confirmDelete()">Supprimer</button>' +
               '</div>' +
@@ -3319,14 +3320,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }, { okLabel: 'Créer' }); return;
   };
 
-  window.previewClientSpace = async function() {
+  async function openClientSpace(edit) {
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
     const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: 'Aperçu admin' }) });
     if (!res.ok) { toast('Erreur', true); return; }
     const data = await res.json();
-    window.open(data.url + '?edit=1', '_blank');
-  };
+    // Ouvre sur le MEME domaine que l'admin pour que le cookie de session soit transmis
+    // (sinon le mode edition ne peut pas verifier la session admin).
+    const sameOriginUrl = window.location.origin + '/p/' + data.token;
+    window.open(sameOriginUrl + (edit ? '?edit=1' : ''), '_blank');
+  }
+  window.previewClientSpace = function() { return openClientSpace(false); };
+  window.editClientSpace = function() { return openClientSpace(true); };
 
   window.showTokenModal = function(url) {
     var existing = document.getElementById('token-modal-overlay');

@@ -1397,7 +1397,7 @@ var wBack_default = {
       if (pathname === "/api/conversations" || pathname.match(/^\/api\/conversations\//)) {
         return handleConversations(request, env, url);
       }
-      if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/tokens$/) || pathname.match(/^\/api\/tokens\/[a-f0-9]{64}\/revoke$/) || pathname === "/api/tokens/client" || pathname.match(/^\/api\/tokens\/client\/.+$/)) {
+      if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/tokens$/) || pathname.match(/^\/api\/tokens\/[a-f0-9]{64}\/revoke$/) || pathname.match(/^\/api\/tokens\/[a-f0-9]{64}$/) || pathname === "/api/tokens/client" || pathname.match(/^\/api\/tokens\/client\/.+$/)) {
         return handleTokens(request, env, url);
       }
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/files/)) {
