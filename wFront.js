@@ -4310,16 +4310,24 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpbSave = function() {
     if (!_cpbPid) return;
+    // On retire les champs internes (_project, _files) avant d'enregistrer.
+    var clean = { layout: _pageDraft.layout, sections: _pageDraft.sections };
     fetch('/api/projects/'+_cpbPid, {
       method:'PUT', credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ clientPage: _pageDraft })
-    }).then(function(r){ return r.json(); }).then(function(d) {
-      if (d && d.id) { _canEdit=false; cpbRefresh(); showToast('Page enregistree !'); }
-    }).catch(function(){ showToast('Erreur lors de l\'enregistrement.'); });
+      body: JSON.stringify({ clientPage: clean })
+    }).then(function(r){
+      if (r.status === 401 || r.status === 403) { toast('Connectez-vous en admin pour enregistrer.'); return null; }
+      return r.json();
+    }).then(function(d) {
+      if (d && d.id) { toast('Page enregistree !'); }
+    }).catch(function(){ toast('Erreur lors de l\'enregistrement.'); });
   };
 
-  window.cpbExit = function() { _canEdit=false; _pageDraft=null; _cpbPid=null; renderApp(null); };
+  window.cpbExit = function() {
+    // Quitte le mode edition en rechargeant la page sans le parametre edit.
+    window.location.href = window.location.pathname;
+  };
 
   // ── Espace partenaire côté client ────────────────────────────────────────────
   var CLI_URGENCY    = { basse:'#BAD1FD', moyenne:'#E4D1FE', haute:'#e8a87c' };
@@ -5985,21 +5993,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           setTimeout(function(){ var err=document.getElementById('_code-err'); if(err) err.textContent='Code incorrect. Reessayez.'; }, 80);
           return;
         }
-        renderApp(data);
         if (_isAdminEdit) {
-          fetch('/api/projects', { credentials:'include' })
-            .then(function(r){ return r.ok ? r.json() : null; })
-            .then(function(d) {
-              if (d && Array.isArray(d)) {
-                _canEdit = true;
-                if (appData && appData.projects && appData.projects.length === 1) {
-                  currentView = 'project';
-                  currentId = appData.projects[0].project.id;
-                }
-                renderShell();
-              }
-            })
-            .catch(function(){});
+          // Mode edition : on l'active directement (l'enregistrement reste protege
+          // par la session admin cote serveur, un client ne peut pas sauvegarder).
+          _canEdit = true;
+          renderApp(data);
+          if (appData && appData.projects && appData.projects.length) {
+            currentView = 'project';
+            currentId = appData.projects[0].project.id;
+            renderShell();
+          }
+        } else {
+          renderApp(data);
         }
       })
       .catch(showError);
