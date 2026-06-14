@@ -346,7 +346,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-sidebar__footer { padding: 16px 24px; border-top: 1px solid rgba(186,209,253,0.08); font-size: 11px; color: var(--blue-light); opacity: 0.55; margin-top: auto; }
 
 /* Home cards view */
-.cp-home { flex: 1; margin-left: var(--sw); min-height: 100vh; padding: 40px 44px 64px; background: var(--bg); }
+.cp-home { flex: 1; min-height: 100vh; padding: 40px 44px 64px; background: var(--bg); }
 .cp-home__greeting { font-family: 'Alegreya', serif; font-size: 28px; color: var(--navy); font-style: italic; margin-bottom: 6px; }
 .cp-home__sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
@@ -604,8 +604,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     { key: '--brown',      label: 'En-tete sidebar',    section: 'Sidebar' },
     { key: '--sidebar-text',label:'Texte projets',        section: 'Sidebar' },
     { key: '--cream',      label: 'Texte en-tete',      section: 'Sidebar' },
-    { key: '--lavender',   label: 'Boutons / accent',   section: 'Interface' },
-    { key: '--blue-light', label: 'Texte sur bouton',   section: 'Interface' },
+    { key: '--navy',       label: 'Fond bouton principal', section: 'Interface' },
+    { key: '--lavender',   label: 'Fond bouton secondaire', section: 'Interface' },
+    { key: '--blue-light', label: 'Texte sur bouton principal', section: 'Interface' },
     { key: '--bg',         label: 'Fond de page',     section: 'Interface' },
     { key: '--surface',    label: 'Fond des cartes',  section: 'Interface' },
     { key: '--card-hover',  label: 'Bordure card (survol)', section: 'Interface' },
@@ -5917,13 +5918,19 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }
         renderApp(data);
         if (_isAdminEdit) {
-          var pid = data && data.project && data.project.id;
-          if (pid) {
-            fetch('/api/projects/'+pid, { credentials:'include' })
-              .then(function(r){ return r.ok ? r.json() : null; })
-              .then(function(d) { if (d && d.id) { _canEdit=true; renderApp(data); } })
-              .catch(function(){});
-          }
+          fetch('/api/projects', { credentials:'include' })
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d) {
+              if (d && Array.isArray(d)) {
+                _canEdit = true;
+                if (appData && appData.projects && appData.projects.length === 1) {
+                  currentView = 'project';
+                  currentId = appData.projects[0].project.id;
+                }
+                renderShell();
+              }
+            })
+            .catch(function(){});
         }
       })
       .catch(showError);
