@@ -3314,7 +3314,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: 'Aperçu admin' }) });
     if (!res.ok) { toast('Erreur', true); return; }
     const data = await res.json();
-    window.open(data.url, '_blank');
+    window.open(data.url + '?edit=1', '_blank');
   };
 
   window.showTokenModal = function(url) {
@@ -3959,12 +3959,320 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? '<div data-cp-cards="' + project.id + '">' + buildClientCardsSection(project) + '</div>'
       : '';
 
+    if (_canEdit || project.clientPage) {
+      if (!_pageDraft || _cpbPid !== project.id) {
+        _pageDraft = cpbGetPage(project, files);
+        if (_pageDraft) _pageDraft._project = project;
+        _cpbPid = project.id;
+      }
+      _cpbPd = pd;
+      _cpbToken = TOKEN;
+      return header + '<div data-cpb-page="1">' + cpbRenderPage(_pageDraft, _canEdit) + '</div>';
+    }
+
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
         '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + progress + '</div>' +
         '<div class="cp-grid__side">' + sideCol + '</div>' +
       '</div></div>';
   }
+
+  // ── Page builder ──────────────────────────────────────────────────────────────
+  var _cpbPd = null, _cpbToken = null, _cpbPid = null;
+
+  var CPB_SEC_TYPES = [
+    { type:'card',          label:'Carte libre (contenu personnalise)' },
+    { type:'steps',         label:'Etapes du projet' },
+    { type:'questionnaire', label:'Questionnaire' },
+    { type:'cards',         label:'Cartes projet' },
+    { type:'files',         label:'Fichiers partages' },
+    { type:'fileexchange',  label:'Echange de fichiers' },
+    { type:'practical',     label:'Infos pratiques' },
+    { type:'meeting',       label:'Lien de reunion' },
+    { type:'help',          label:'Messagerie / Aide' },
+  ];
+  var CPB_BLK_TYPES = [
+    { type:'title',       label:'Titre' },
+    { type:'text',        label:'Texte' },
+    { type:'list',        label:'Liste a puces' },
+    { type:'separator',   label:'Separateur' },
+    { type:'image',       label:'Image' },
+    { type:'mini-banner', label:'Mini-banniere' },
+  ];
+
+  function cpbId() { return Math.random().toString(36).slice(2,9); }
+
+  function cpbGetPage(project, files) {
+    if (project.clientPage) return JSON.parse(JSON.stringify(project.clientPage));
+    var secs = [];
+    if ((project.steps||[]).length) secs.push({ id:cpbId(), col:0, type:'steps', title:'Etapes', blocks:[] });
+    if ((project.clientCards||[]).length) secs.push({ id:cpbId(), col:0, type:'cards', title:'Cartes', blocks:[] });
+    if (project.questionnaire && (project.questionnaire.questions||[]).length) secs.push({ id:cpbId(), col:0, type:'questionnaire', title:'Questionnaire', blocks:[] });
+    if ((files||[]).length) secs.push({ id:cpbId(), col:0, type:'files', title:'Fichiers partages', blocks:[] });
+    if (!secs.length) secs.push({ id:cpbId(), col:0, type:'card', title:'Bienvenue', blocks:[{ id:cpbId(), type:'text', content:'Ajoutez votre contenu ici.' }] });
+    return { layout:'1col', sections:secs };
+  }
+
+  function cpbRenderBlock(b, secId, em) {
+    var controls = em
+      ? '<div class="cpb-blk-hd" draggable="true" ondragstart="cpbBDragStart(event,\''+secId+'\',\''+b.id+'\')" ondragover="cpbBDragOver(event)" ondragleave="cpbBDragLeave(event)" ondrop="cpbBDrop(event,\''+secId+'\',\''+b.id+'\')">' +
+          '<span class="cpb-grip">&#8942;</span>' +
+          '<span style="flex:1;font-size:11px;color:var(--muted)">'+b.type+'</span>' +
+          '<button class="cpb-abtn" onclick="cpbEditBlk(\''+secId+'\',\''+b.id+'\')">Modifier</button>' +
+          '<button class="cpb-abtn danger" onclick="cpbDelBlk(\''+secId+'\',\''+b.id+'\')">&#x2715;</button>' +
+        '</div>'
+      : '';
+    var body = '';
+    if (b.type === 'title') {
+      body = '<div style="font-family:\'Alegreya\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
+    } else if (b.type === 'text') {
+      body = '<div style="font-size:14px;color:var(--text);padding:6px 10px;white-space:pre-wrap">'+(b.content||'')+'</div>';
+    } else if (b.type === 'list') {
+      var items = (b.content||'').split('\n').filter(Boolean);
+      body = '<ul style="margin:4px 0;padding:0 0 0 20px;font-size:14px;color:var(--text)">' + items.map(function(i){ return '<li style="margin-bottom:4px">'+i+'</li>'; }).join('') + '</ul>';
+    } else if (b.type === 'separator') {
+      body = '<hr style="border:none;border-top:1.5px solid var(--border);margin:6px 10px">';
+    } else if (b.type === 'image') {
+      body = b.src ? '<img src="'+b.src+'" alt="" style="max-width:100%;border-radius:8px;display:block;margin:6px 10px">' : '<div style="padding:6px 10px;color:var(--muted);font-size:13px">Image (URL non definie)</div>';
+    } else if (b.type === 'mini-banner') {
+      body = '<div style="background:var(--navy);color:#fff;border-radius:8px;padding:12px 16px;margin:6px 10px">' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;opacity:0.7;margin-bottom:3px">'+(b.label||'')+'</div>' +
+        '<div style="font-size:15px;font-weight:600">'+(b.content||'')+'</div>' +
+      '</div>';
+    }
+    return '<div class="cpb-blk" id="cpbblk-'+b.id+'">' + controls + (em ? '<div class="cpb-blk-body">'+body+'</div>' : body) + '</div>';
+  }
+
+  function cpbSecInner(sec, pd, em) {
+    if (sec.type === 'steps') {
+      var stepsData = _pageDraft && _pageDraft._project ? (_pageDraft._project.steps||[]) : [];
+      if (!stepsData.length) return '<div style="color:var(--muted);font-size:13px;padding:10px">Aucune etape definie.</div>';
+      return buildStepsHtml(stepsData);
+    }
+    if (sec.type === 'questionnaire') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Questionnaire]</div>';
+    if (sec.type === 'cards') {
+      var cardsProj = _pageDraft && _pageDraft._project ? _pageDraft._project : {};
+      return cardsProj.clientCards && cardsProj.clientCards.length ? buildClientCardsSection(cardsProj) : '<div style="color:var(--muted);font-size:13px;padding:10px">Aucune carte.</div>';
+    }
+    if (sec.type === 'files') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Fichiers partages]</div>';
+    if (sec.type === 'fileexchange') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Echange de fichiers]</div>';
+    if (sec.type === 'practical') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Infos pratiques]</div>';
+    if (sec.type === 'meeting') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Lien de reunion]</div>';
+    if (sec.type === 'help') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Messagerie / Aide]</div>';
+    var html = (sec.blocks||[]).map(function(b){ return cpbRenderBlock(b, sec.id, em); }).join('');
+    if (em) html += '<button class="cpb-add-blk" onclick="cpbAddBlk(\''+sec.id+'\')">+ Ajouter un bloc</button>';
+    return html;
+  }
+
+  function cpbSec(sec, pd, em) {
+    var hd = em
+      ? '<div class="cpb-sec-hd" draggable="true" ondragstart="cpbSDragStart(event,\''+sec.id+'\')" ondragover="cpbSDragOver(event)" ondragleave="cpbSDragLeave(event)" ondrop="cpbSDrop(event,\''+sec.id+'\')">' +
+          '<span class="cpb-grip">&#8942;</span>' +
+          '<span class="cpb-sec-lbl">'+(sec.title||sec.type)+'</span>' +
+          (sec.type==='card'?'<button class="cpb-abtn" onclick="cpbEditSec(\''+sec.id+'\')">Renommer</button>':'') +
+          '<button class="cpb-abtn" onclick="cpbMoveSec(\''+sec.id+'\',-1)">&#8593;</button>' +
+          '<button class="cpb-abtn" onclick="cpbMoveSec(\''+sec.id+'\',1)">&#8595;</button>' +
+          '<button class="cpb-abtn danger" onclick="cpbDelSec(\''+sec.id+'\')">&#x2715;</button>' +
+        '</div>'
+      : '';
+    return '<div class="cp-card cpb-sec" id="cpbsec-'+sec.id+'" ondragover="cpbSDragOver(event)" ondragleave="cpbSDragLeave(event)" ondrop="cpbSDrop(event,\''+sec.id+'\')">' +
+      hd +
+      '<div style="padding:'+(em?'8px 10px':'0')+'">'+cpbSecInner(sec, pd, em)+'</div>' +
+    '</div>';
+  }
+
+  function cpbRenderPage(pd, em) {
+    var secs = pd.sections||[];
+    var is2 = pd.layout === '2col';
+    var toolbar = em
+      ? '<div class="cpb-bar">' +
+          '<span class="cpb-bar__title">Mode edition</span>' +
+          '<button class="cpb-layout-btn'+(is2?'':' active')+'" onclick="cpbLayout(\'1col\')">1 colonne</button>' +
+          '<button class="cpb-layout-btn'+(is2?' active':'')+'" onclick="cpbLayout(\'2col\')">2 colonnes</button>' +
+          '<button class="btn btn--ghost" onclick="cpbExit()">Annuler</button>' +
+          '<button class="btn" onclick="cpbSave()">Enregistrer</button>' +
+        '</div>'
+      : '';
+    var content;
+    if (is2) {
+      var col0 = secs.filter(function(s){ return !s.col || s.col===0; });
+      var col1 = secs.filter(function(s){ return s.col===1; });
+      content = '<div class="cp-grid">' +
+        '<div class="cp-grid__main">' + col0.map(function(s){ return cpbSec(s,pd,em); }).join('') +
+          (em ? '<button class="cpb-add-sec" onclick="cpbAddSec(0)">+ Ajouter une section (colonne 1)</button>' : '') +
+        '</div>' +
+        '<div class="cp-grid__side">' + col1.map(function(s){ return cpbSec(s,pd,em); }).join('') +
+          (em ? '<button class="cpb-add-sec" onclick="cpbAddSec(1)">+ Ajouter une section (colonne 2)</button>' : '') +
+        '</div>' +
+      '</div>';
+    } else {
+      content = secs.map(function(s){ return cpbSec(s,pd,em); }).join('') +
+        (em ? '<button class="cpb-add-sec" onclick="cpbAddSec(0)">+ Ajouter une section</button>' : '');
+    }
+    return toolbar + '<div class="cp-content">' + content + '</div>';
+  }
+
+  function cpbRefresh() {
+    var cont = document.querySelector('[data-cpb-page]');
+    if (!cont) return;
+    cont.innerHTML = cpbRenderPage(_pageDraft, _canEdit);
+  }
+
+  window.cpbLayout = function(l) { _pageDraft.layout = l; cpbRefresh(); };
+
+  window.cpbMoveSec = function(id, dir) {
+    var secs = _pageDraft.sections;
+    var idx = secs.findIndex(function(s){ return s.id===id; });
+    if (idx < 0) return;
+    var to = idx + dir;
+    if (to < 0 || to >= secs.length) return;
+    var tmp = secs[idx]; secs[idx] = secs[to]; secs[to] = tmp;
+    cpbRefresh();
+  };
+
+  window.cpbDelSec = function(id) {
+    _pageDraft.sections = _pageDraft.sections.filter(function(s){ return s.id!==id; });
+    cpbRefresh();
+  };
+
+  window.cpbEditSec = function(id) {
+    var sec = _pageDraft.sections.find(function(s){ return s.id===id; });
+    if (!sec) return;
+    cpbModal('Renommer la section',
+      '<div class="cpb-modal__row"><label class="cpb-modal__label">Titre</label><input class="cpb-modal__input" id="cpb-sec-title" value="'+esc(sec.title||'')+'"></div>',
+      function() { sec.title = document.getElementById('cpb-sec-title').value; cpbRefresh(); }
+    );
+  };
+
+  window.cpbAddSec = function(col) {
+    var opts = CPB_SEC_TYPES.map(function(t){ return '<option value="'+t.type+'">'+t.label+'</option>'; }).join('');
+    cpbModal('Ajouter une section',
+      '<div class="cpb-modal__row"><label class="cpb-modal__label">Type</label><select class="cpb-modal__input" id="cpb-new-sec-type">'+opts+'</select></div>' +
+      '<div class="cpb-modal__row"><label class="cpb-modal__label">Titre</label><input class="cpb-modal__input" id="cpb-new-sec-title" placeholder="Titre de la section"></div>',
+      function() {
+        var t = document.getElementById('cpb-new-sec-type').value;
+        var ti = document.getElementById('cpb-new-sec-title').value || t;
+        _pageDraft.sections.push({ id:cpbId(), col:col||0, type:t, title:ti, blocks:[] });
+        cpbRefresh();
+      }
+    );
+  };
+
+  window.cpbAddBlk = function(secId) {
+    var sec = _pageDraft.sections.find(function(s){ return s.id===secId; });
+    if (!sec) return;
+    var opts = CPB_BLK_TYPES.map(function(t){ return '<option value="'+t.type+'">'+t.label+'</option>'; }).join('');
+    cpbModal('Ajouter un bloc',
+      '<div class="cpb-modal__row"><label class="cpb-modal__label">Type</label><select class="cpb-modal__input" id="cpb-new-blk-type">'+opts+'</select></div>',
+      function() {
+        var t = document.getElementById('cpb-new-blk-type').value;
+        sec.blocks = sec.blocks||[];
+        sec.blocks.push({ id:cpbId(), type:t, content:'' });
+        cpbRefresh();
+      }
+    );
+  };
+
+  window.cpbEditBlk = function(secId, blkId) {
+    var sec = _pageDraft.sections.find(function(s){ return s.id===secId; });
+    if (!sec) return;
+    var b = (sec.blocks||[]).find(function(x){ return x.id===blkId; });
+    if (!b) return;
+    var fields = '';
+    if (b.type === 'mini-banner') fields += '<div class="cpb-modal__row"><label class="cpb-modal__label">Sous-titre</label><input class="cpb-modal__input" id="cpb-blk-label" value="'+esc(b.label||'')+'"></div>';
+    if (b.type !== 'separator' && b.type !== 'image') {
+      var isMulti = b.type==='text'||b.type==='list'||b.type==='mini-banner';
+      fields += '<div class="cpb-modal__row"><label class="cpb-modal__label">Contenu</label>' +
+        (isMulti ? '<textarea class="cpb-modal__textarea" id="cpb-blk-content">'+esc(b.content||'')+'</textarea>' : '<input class="cpb-modal__input" id="cpb-blk-content" value="'+esc(b.content||'')+'">') +
+        '</div>';
+    } else if (b.type === 'image') {
+      fields = '<div class="cpb-modal__row"><label class="cpb-modal__label">URL de l\'image</label><input class="cpb-modal__input" id="cpb-blk-src" value="'+esc(b.src||'')+'"></div>';
+    }
+    cpbModal('Modifier le bloc',
+      fields || '<p style="color:var(--muted);font-size:13px">Pas de propriete modifiable.</p>',
+      function() {
+        if (b.type === 'image') { b.src = document.getElementById('cpb-blk-src').value; }
+        else {
+          var ci = document.getElementById('cpb-blk-content'); if (ci) b.content = ci.value;
+          var li = document.getElementById('cpb-blk-label'); if (li) b.label = li.value;
+        }
+        cpbRefresh();
+      }
+    );
+  };
+
+  window.cpbDelBlk = function(secId, blkId) {
+    var sec = _pageDraft.sections.find(function(s){ return s.id===secId; });
+    if (!sec) return;
+    sec.blocks = (sec.blocks||[]).filter(function(b){ return b.id!==blkId; });
+    cpbRefresh();
+  };
+
+  function cpbModal(title, html, onOk) {
+    var existing = document.getElementById('cpb-modal');
+    if (existing) existing.remove();
+    var m = document.createElement('div');
+    m.className = 'cpb-modal'; m.id = 'cpb-modal';
+    m.innerHTML = '<div class="cpb-modal__box">' +
+      '<div class="cpb-modal__title">'+title+'</div>' + html +
+      '<div class="cpb-modal__footer">' +
+        '<button class="btn btn--ghost" onclick="document.getElementById(\'cpb-modal\').remove()">Annuler</button>' +
+        '<button class="btn" id="cpb-modal-ok">OK</button>' +
+      '</div></div>';
+    document.body.appendChild(m);
+    document.getElementById('cpb-modal-ok').onclick = function() { onOk(); m.remove(); };
+  }
+
+  window.cpbSDragStart = function(e, id) { _dndSrcSec = id; e.dataTransfer.effectAllowed = 'move'; };
+  window.cpbSDragOver  = function(e) { e.preventDefault(); var t=e.currentTarget; if(t.classList) t.classList.add('cpb-over'); };
+  window.cpbSDragLeave = function(e) { var t=e.currentTarget; if(t.classList) t.classList.remove('cpb-over'); };
+  window.cpbSDrop = function(e, toId) {
+    e.preventDefault();
+    var t=e.currentTarget; if(t.classList) t.classList.remove('cpb-over');
+    if (!_dndSrcSec || _dndSrcSec===toId) return;
+    var secs = _pageDraft.sections;
+    var fi = secs.findIndex(function(s){ return s.id===_dndSrcSec; });
+    var ti = secs.findIndex(function(s){ return s.id===toId; });
+    if (fi<0||ti<0) return;
+    var moved = secs.splice(fi,1)[0];
+    secs.splice(ti,0,moved);
+    _dndSrcSec = null;
+    cpbRefresh();
+  };
+
+  window.cpbBDragStart = function(e, secId, blkId) { _dndSrcBlk = { secId:secId, blkId:blkId }; e.dataTransfer.effectAllowed='move'; e.stopPropagation(); };
+  window.cpbBDragOver  = function(e) { e.preventDefault(); e.stopPropagation(); var t=e.currentTarget; if(t.classList) t.classList.add('cpb-over'); };
+  window.cpbBDragLeave = function(e) { var t=e.currentTarget; if(t.classList) t.classList.remove('cpb-over'); };
+  window.cpbBDrop = function(e, toSecId, toBlkId) {
+    e.preventDefault(); e.stopPropagation();
+    var t=e.currentTarget; if(t.classList) t.classList.remove('cpb-over');
+    if (!_dndSrcBlk) return;
+    var srcSecId=_dndSrcBlk.secId, srcBlkId=_dndSrcBlk.blkId;
+    _dndSrcBlk = null;
+    var srcSec = _pageDraft.sections.find(function(s){ return s.id===srcSecId; });
+    var toSec  = _pageDraft.sections.find(function(s){ return s.id===toSecId; });
+    if (!srcSec||!toSec) return;
+    var fi = (srcSec.blocks||[]).findIndex(function(b){ return b.id===srcBlkId; });
+    if (fi<0) return;
+    var moved = srcSec.blocks.splice(fi,1)[0];
+    var ti = (toSec.blocks||[]).findIndex(function(b){ return b.id===toBlkId; });
+    toSec.blocks = toSec.blocks||[];
+    if (ti<0) toSec.blocks.push(moved); else toSec.blocks.splice(ti,0,moved);
+    cpbRefresh();
+  };
+
+  window.cpbSave = function() {
+    if (!_cpbPid) return;
+    fetch('/api/projects/'+_cpbPid, {
+      method:'PUT', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ clientPage: _pageDraft })
+    }).then(function(r){ return r.json(); }).then(function(d) {
+      if (d && d.id) { _canEdit=false; cpbRefresh(); showToast('Page enregistree !'); }
+    }).catch(function(){ showToast('Erreur lors de l\'enregistrement.'); });
+  };
+
+  window.cpbExit = function() { _canEdit=false; _pageDraft=null; _cpbPid=null; renderApp(null); };
 
   // ── Espace partenaire côté client ────────────────────────────────────────────
   var CLI_URGENCY    = { basse:'#BAD1FD', moyenne:'#E4D1FE', haute:'#e8a87c' };
@@ -5608,6 +5916,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           return;
         }
         renderApp(data);
+        if (_isAdminEdit) {
+          var pid = data && data.project && data.project.id;
+          if (pid) {
+            fetch('/api/projects/'+pid, { credentials:'include' })
+              .then(function(r){ return r.ok ? r.json() : null; })
+              .then(function(d) { if (d && d.id) { _canEdit=true; renderApp(data); } })
+              .catch(function(){});
+          }
+        }
       })
       .catch(showError);
   }
