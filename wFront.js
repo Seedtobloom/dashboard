@@ -3786,7 +3786,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
     var col = STATUS_COLORS[project.status] || '#aaa';
-    var steps = [].concat(project.steps).sort(function(a,b){ return a.order-b.order; });
+    var steps = (project.steps||[]).slice().sort(function(a,b){ return (a.order||0)-(b.order||0); });
     var done = steps.filter(function(s){ return s.status==='done'; }).length;
     var pct = steps.length ? Math.round(done/steps.length*100) : 0;
     var actionStep = steps.find(function(s){ return s.status==='waiting_client'; });
@@ -4299,36 +4299,48 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var comments = Array.isArray(t.comments)?t.comments:[];
     var deliverable = t.deliverableFileKey ? (files||[]).find(function(f){return f.key===t.deliverableFileKey;}) : null;
     var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
-    var dotCol = CLI_URGENCY[t.urgency] || '#ddd';
-    var dotTx = CLI_URGENCY_TX[t.urgency] || '#1a1a1a';
-    // Registre global pour éviter les problèmes de quotes dans les onclick
+    var urg = CLI_URGENCY[t.urgency] || '#ddd';
     if (!window._cliTaskReg) window._cliTaskReg = {};
     window._cliTaskReg[t.id] = t;
-    return '<div class="cp-task-card'+(t.status==='done'?' cp-task-card__done':'')+'">' +
-      '<div class="cp-task-card__top">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">' +
-            '<span style="padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span>' +
-            '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:'+dotTx+';background:'+dotCol+';padding:2px 8px;border-radius:999px;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:'+dotTx+';opacity:.6"></span>'+(CLI_URG_LABEL[t.urgency]||t.urgency)+'</span>' +
-            (t.pole?'<span style="font-size:11px;color:var(--muted);background:var(--surface);padding:2px 8px;border-radius:999px">'+esc(t.pole)+'</span>':'') +
-            (t.missionType?'<span style="font-size:11px;color:var(--muted)">'+esc(t.missionType)+'</span>':'') +
-          '</div>' +
-          '<div class="cp-task-card__title">'+esc(t.title)+'</div>' +
-          (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-top:3px">📅 '+fmtDate(t.dueDate)+'</div>':'') +
-        '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
-          '<div style="display:flex;gap:4px">' +
-            '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)" title="Modifier">✏</button>' +
-            '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44" title="Supprimer">✕</button>' +
-          '</div>' +
+    // Calcul "Fait le"
+    var faitLeHtml = '';
+    if (t.completedAt) {
+      var cd = new Date(t.completedAt);
+      var faitLe = cd.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+      if (t.startedAt) {
+        var sd = new Date(t.startedAt);
+        faitLe = cd.toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) + ' ' +
+          sd.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' → ' +
+          cd.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      }
+      faitLeHtml = '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Fait le :</span> ' + faitLe + '</div>';
+    }
+    // Statut inline — select
+    var statusOpts = Object.keys(CLI_BRIEF).map(function(k){
+      return '<option value="'+k+'"'+(t.briefStatus===k?' selected':'')+'>'+CLI_BRIEF[k].label+'</option>';
+    }).join('');
+    var statusSel = '<select onchange="cliSetBriefStatus(\''+pid+'\',\''+t.id+'\',this.value)" style="appearance:none;-webkit-appearance:none;cursor:pointer;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;border:none;background:'+brief.bg+';color:'+brief.tx+';font-family:inherit">'+statusOpts+'</select>';
+    return '<div class="cp-task-card'+(t.status==='done'?' cp-task-card__done':'')+'" style="background:#FFFBEF;border-color:#e8dfc8">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+        '<span style="font-size:14px;color:var(--navy);line-height:1">→</span>' +
+        '<div style="display:flex;gap:4px">' +
+          '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Modifier</button>' +
+          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44">✕</button>' +
         '</div>' +
       '</div>' +
-      (t.content?'<div style="font-size:13px;color:var(--muted);margin-top:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
-      (t.imageUrl?'<div style="margin-top:10px"><img src="'+esc(t.imageUrl)+'" alt="" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>':'') +
-      (t.livrableUrl?'<div style="margin-top:8px"><a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--sage);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a></div>':'') +
-      (deliverable?'<div style="margin-top:8px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>':'') +
-      (comments.length?'<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div style="margin-top:1px">'+esc(c.text)+'</div></div>';}).join('')+'</div>':'') +
-      '<div style="display:flex;gap:6px;margin-top:10px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
+      '<div style="font-family:\'Alegreya\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
+      (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
+      faitLeHtml +
+      (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
+      (t.imageUrl?'<div style="margin-bottom:10px"><img src="'+esc(t.imageUrl)+'" alt="" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>':'') +
+      (t.livrableUrl?'<div style="margin-bottom:8px"><a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a></div>':'') +
+      (deliverable?'<div style="margin-bottom:8px"><a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a></div>':'') +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">' +
+        statusSel +
+        '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:'+urg+';color:var(--navy);padding:2px 8px;border-radius:999px;font-weight:600">'+(CLI_URG_LABEL[t.urgency]||'')+'</span>' +
+      '</div>' +
+      (comments.length?'<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">'+comments.map(function(c){return '<div style="font-size:12px;padding:3px 0"><strong style="color:var(--navy)">'+(c.author==='cindy'?'Cindy':'Vous')+'</strong> <span style="color:var(--muted)">· '+fmtShort(c.createdAt)+'</span><div style="margin-top:1px">'+esc(c.text)+'</div></div>';}).join('')+'</div>':'') +
+      '<div style="display:flex;gap:6px;margin-top:8px"><input type="text" id="cli-tc-'+t.id+'" placeholder="Commenter…" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px"><button class="cp-btn cp-btn--sage" style="padding:5px 10px;font-size:12px" onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')">→</button></div>' +
     '</div>';
   }
 
@@ -4657,7 +4669,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
         var urg = CLI_URGENCY[t.urgency]||'#ddd';
         var isDone = t.status==='done';
-        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';border-left:3px solid '+urg+';'+(isDone?'opacity:0.55':'')+'" onclick="event.stopPropagation();cliSelDay(\''+pid+'\',\''+((t.dueDate||'').slice(0,10)||todayStr)+'\')">' +
+        return '<div class="cp-cal-pill" style="background:'+brief.bg+';color:'+brief.tx+';border-left:3px solid '+urg+';'+(isDone?'opacity:0.55':'')+'" onclick="cliSelDay(\''+pid+'\',\''+((t.dueDate||'').slice(0,10)||todayStr)+'\')">' +
           '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">' +
             (isDone?'<span style="font-size:9px">✓</span>':'') +
             '<span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+esc(t.title)+'</span>' +
@@ -5166,6 +5178,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       missionType: t.missionType, imageUrl: t.imageUrl, livrableUrl: t.livrableUrl,
       submitLabel: 'Sauvegarder', onSubmit: function(pid2) { cliDoEditTask(pid2, t.id); }
     });
+  };
+
+  window.cliSetBriefStatus = function(pid, taskId, newStatus) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){ return x.id===taskId; });
+    if (!t) return;
+    t.briefStatus = newStatus;
+    if (newStatus === 'brief_pret' || newStatus === 'archive') t.status = 'done';
+    fetch(API_BASE + '/tasks/' + taskId, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ projectId: pid, briefStatus: newStatus, status: t.status })
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(updated){ if (updated) { var idx=(pd.project.tasks||[]).findIndex(function(x){return x.id===taskId;}); if(idx>=0) pd.project.tasks[idx]=updated; } renderShell(); })
+      .catch(function(){ renderShell(); });
   };
 
   function cliDoEditTask(pid, taskId) {
