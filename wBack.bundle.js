@@ -196,6 +196,7 @@ async function handleProjects(request, env, url) {
       createdAt: existing.createdAt,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
+    if (body.spaceCode !== undefined) updated.spaceCode = body.spaceCode || null;
     await saveProject(env, updated);
     return jsonResponse(updated);
   }

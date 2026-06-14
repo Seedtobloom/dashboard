@@ -1306,6 +1306,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function buildSidebarHtml(activeSection, allProjs, unreadMap, msgBadgeOverride) {
     unreadMap = unreadMap || {};
+    // Grouper par client
     var _cmap = {};
     allProjs.forEach(function(p) {
       var key = (p.clientName || '').trim().toLowerCase() || '_';
@@ -3882,7 +3883,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
     '</div>' : '';
 
-    var sideCol = tabs + filesPanel + pracPanel + meetPanel + helpCard;
+    var fileExchangeCard = buildClientFileExchange(project.id, Object.assign({}, project, { files: files }));
+    var sideCol = tabs + filesPanel + pracPanel + meetPanel + fileExchangeCard + helpCard;
 
     // Espace partenaire : mise en page pleine largeur pour un grand calendrier.
     if (project.type === 'partenaire') {
@@ -5354,6 +5356,52 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function startPoll() { /* Polling supprimé — requêtes uniquement à la demande. */ }
+
+  function buildClientFileExchange(pid, project) {
+    var files = project.files || [];
+    var adminFiles = files.filter(function(f) { return f.source !== 'client'; });
+    var clientFiles = files.filter(function(f) { return f.source === 'client'; });
+
+    function fileRow(f) {
+      var icon = f.type && f.type.startsWith('image/') ? '🖼' : f.type === 'application/pdf' ? '📄' : '📎';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface)">' +
+        '<span style="font-size:18px">' + icon + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:500;font-size:13px;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</div>' +
+          '<div style="font-size:11px;color:var(--muted)">' + (f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('fr-FR') : '') + (f.size ? ' · ' + fmtSize(f.size) : '') + '</div>' +
+        '</div>' +
+        '<a href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" class="cp-btn cp-btn--outline" style="padding:5px 12px;font-size:12px">↓ Télécharger</a>' +
+      '</div>';
+    }
+
+    return '<div class="cp-card">' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">Documents partages</h2></div>' +
+      (adminFiles.length
+        ? '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">' + adminFiles.map(function(f){ return fileRow(f); }).join('') + '</div>'
+        : '<div style="color:var(--muted);font-size:13px;padding:16px 0;margin-bottom:24px">Aucun document partagé pour le moment.</div>') +
+      '<div style="border-top:1px solid var(--border);padding-top:20px">' +
+        '<div style="font-weight:600;font-size:14px;color:var(--navy);margin-bottom:12px">Vos dépôts</div>' +
+        (clientFiles.length
+          ? '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">' + clientFiles.map(function(f){ return fileRow(f); }).join('') + '</div>'
+          : '<div style="color:var(--muted);font-size:13px;margin-bottom:16px">Aucun fichier déposé.</div>') +
+        '<label style="display:block;padding:20px;border:2px dashed var(--border);border-radius:12px;cursor:pointer;text-align:center;color:var(--muted);font-size:13px" for="cli-file-upload-' + pid + '">' +
+          '+ Déposer un fichier<input type="file" id="cli-file-upload-' + pid + '" style="display:none" onchange="cliUploadFile(\'' + pid + '\',this)">' +
+        '</label>' +
+      '</div>' +
+    '</div>';
+  }
+
+  window.cliUploadFile = function(pid, input) {
+    if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    var fd = new FormData();
+    fd.append('file', file);
+    var storedCode = sessionStorage.getItem('spaceCode') || '';
+    fetch(API_BASE + '/files', { method: 'POST', headers: storedCode ? { 'x-space-code': storedCode } : {}, body: fd })
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function() { toast('Fichier deposé ✓'); var pd = getPD(pid); if (pd) { fetch(API_BASE).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){ if(data) renderApp(data); }); } })
+      .catch(function() { toast('Erreur upload', true); });
+  };
 
   function showError() {
     document.getElementById('app').innerHTML =
