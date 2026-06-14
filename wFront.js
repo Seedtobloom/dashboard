@@ -8,6 +8,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
 :root {
   --brown: #412F21;
   --navy: #051833;
+  --sidebar-bg: #051833;
   --lavender: #E4D1FE;
   --blue-light: #BAD1FD;
   --cream: #EFE1B0;
@@ -89,7 +90,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 /* Sidebar : brand = marron, nav = navy */
 .sidebar {
-  width: 260px; background: var(--navy); border-right: none;
+  width: 260px; background: var(--sidebar-bg); border-right: none;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
 .sidebar-header { padding: 22px 20px 18px; background: var(--brown); border-bottom: 1px solid rgba(239,225,176,0.12); }
@@ -270,6 +271,7 @@ const CLIENT_CSS = String.raw`/* Client portal — DA Seed to Bloom */
 :root {
   --brown: #412F21;
   --navy: #051833;
+  --sidebar-bg: #051833;
   --lavender: #E4D1FE;
   --blue-light: #BAD1FD;
   --cream: #EFE1B0;
@@ -302,7 +304,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 
 /* Sidebar navy */
 .cp-sidebar {
-  width: var(--sw); flex-shrink: 0; background: var(--navy);
+  width: var(--sw); flex-shrink: 0; background: var(--sidebar-bg);
   display: flex; flex-direction: column; position: fixed;
   top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10;
 }
@@ -493,7 +495,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-home { margin-left: 0; padding: 20px 20px 48px; }
   .cp-proj-grid { grid-template-columns: repeat(2, 1fr); }
   .cp-sidebar { display: none; }
-  .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--navy); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
+  .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--sidebar-bg); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .cp-topbar__logo { font-family: 'Alegreya', serif; font-size: 15px; color: var(--cream); font-style: italic; }
   .cp-topbar__name { font-size: 13px; color: var(--blue-light); opacity: 0.65; }
   .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(5,24,51,0.04); border-bottom: 1px solid var(--border); }
@@ -548,6 +550,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ── Couleurs personnalisees ─────────────────────────────────────────────────
   var COLOR_DEFAULTS = {
     '--navy':       '#051833',
+    '--sidebar-bg': '#051833',
     '--brown':      '#412F21',
     '--sidebar-text':'#BAD1FD',
     '--lavender':   '#E4D1FE',
@@ -565,7 +568,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   var COLOR_LABELS = [
-    { key: '--navy',       label: 'Fond sidebar',       section: 'Sidebar' },
+    { key: '--sidebar-bg', label: 'Fond sidebar',       section: 'Sidebar' },
     { key: '--brown',      label: 'En-tete sidebar',    section: 'Sidebar' },
     { key: '--sidebar-text',label:'Texte projets',        section: 'Sidebar' },
     { key: '--cream',      label: 'Texte en-tete',      section: 'Sidebar' },
@@ -606,6 +609,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   function loadTheme() {
     var saved = localStorage.getItem('bloom_colors');
     var colors = saved ? JSON.parse(saved) : Object.assign({}, COLOR_DEFAULTS);
+    // Migration : --navy controlait avant le fond sidebar ET les boutons.
+    // On deplace l'ancienne valeur vers --sidebar-bg et on rend --navy aux boutons,
+    // pour que personnaliser la sidebar ne rende plus le texte des boutons illisible.
+    if (saved && colors['--navy'] && colors['--sidebar-bg'] === undefined) {
+      colors['--sidebar-bg'] = colors['--navy'];
+      colors['--navy'] = COLOR_DEFAULTS['--navy'];
+      localStorage.setItem('bloom_colors', JSON.stringify(colors));
+    }
     applyColors(colors);
   }
 
@@ -5380,6 +5391,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // ── Couleurs espace client ─────────────────────────────────────────────────
   var CP_COLOR_DEFAULTS = {
     '--navy':        '#051833',
+    '--sidebar-bg':  '#051833',
     '--brown':       '#412F21',
     '--sidebar-text':'#BAD1FD',
     '--cream':       '#EFE1B0',
@@ -5390,7 +5402,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   var CP_COLOR_LABELS = [
-    { key: '--navy',        label: 'Fond sidebar',       section: 'Sidebar' },
+    { key: '--sidebar-bg',  label: 'Fond sidebar',       section: 'Sidebar' },
     { key: '--brown',       label: 'En-tete sidebar',    section: 'Sidebar' },
     { key: '--sidebar-text',label: 'Texte nav',          section: 'Sidebar' },
     { key: '--cream',       label: 'Texte en-tete',      section: 'Sidebar' },
@@ -5419,6 +5431,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // On ne stocke/applique que les couleurs explicitement personnalisees
     var saved = localStorage.getItem('bloom_cp_colors');
     var colors = saved ? JSON.parse(saved) : {};
+    // Migration : --navy gerait avant le fond sidebar ET les boutons.
+    if (saved && colors['--navy'] && colors['--sidebar-bg'] === undefined) {
+      colors['--sidebar-bg'] = colors['--navy'];
+      delete colors['--navy'];
+      localStorage.setItem('bloom_cp_colors', JSON.stringify(colors));
+    }
     applyCpColors(colors);
   }
 
