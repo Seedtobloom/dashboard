@@ -790,6 +790,27 @@ async function handleTokens(request, env, url) {
     await saveToken(env, revoked);
     return jsonResponse({ success: true });
   }
+  const deleteMatch = url.pathname.match(/^\/api\/tokens\/([a-f0-9]{64})$/);
+  if (method === "DELETE" && deleteMatch) {
+    const tokenStr = deleteMatch[1];
+    const existing = await getToken(env, tokenStr);
+    if (!existing)
+      return errorResponse("Token not found", 404);
+    await env.BLOOM_KV.delete(`token:${tokenStr}`);
+    if (existing.projectId) {
+      const key = `tokens:project:${existing.projectId}`;
+      const data = await env.BLOOM_KV.get(key);
+      const list = (data ? JSON.parse(data) : []).filter((t) => t !== tokenStr);
+      await env.BLOOM_KV.put(key, JSON.stringify(list));
+    }
+    if (existing.clientEmail) {
+      const key = `tokens:client:${existing.clientEmail.toLowerCase()}`;
+      const data = await env.BLOOM_KV.get(key);
+      const list = (data ? JSON.parse(data) : []).filter((t) => t !== tokenStr);
+      await env.BLOOM_KV.put(key, JSON.stringify(list));
+    }
+    return jsonResponse({ success: true });
+  }
   return errorResponse("Not found", 404);
 }
 

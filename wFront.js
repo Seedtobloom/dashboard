@@ -219,10 +219,10 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .projects-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .projects-table tr:last-child td { border-bottom: none; }
 .projects-table tr:hover td { background: var(--surface); cursor: pointer; }
-.proj-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.proj-toolbar input[type=search] { flex: 1; min-width: 220px; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; background: var(--white); color: var(--text); }
+.proj-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.proj-toolbar input[type=search] { flex: 1; min-width: 180px; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: var(--white); color: var(--text); }
 .proj-toolbar input[type=search]:focus { outline: none; border-color: var(--navy); }
-.proj-toolbar select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: var(--white); color: var(--text); cursor: pointer; }
+.proj-toolbar select { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; background: var(--white); color: var(--text); cursor: pointer; }
 .proj-toolbar select:focus { outline: none; border-color: var(--navy); }
 
 .inbox-list {
@@ -1052,7 +1052,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<td style="white-space:nowrap;display:flex;gap:6px" onclick="event.stopPropagation()">' +
           (!t.revoked ? '<a class="btn btn--outline btn--sm" href="' + esc(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir →</a>' : '') +
           (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')">Copier</button>' : '') +
-          (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="event.stopPropagation();revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+          '<button class="btn btn--danger btn--sm" onclick="event.stopPropagation();deleteSpaceToken(\'' + t.token + '\')">Supprimer</button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -1083,6 +1084,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         .then(function(r) { if (!r.ok) throw new Error(); toast('Accès révoqué'); showSpaces(); })
         .catch(function() { toast('Erreur', true); });
     }, { title: 'Révoquer l\'accès', okLabel: 'Révoquer', danger: true });
+  };
+
+  window.deleteSpaceToken = function(token) {
+    showConfirm('Ce lien d\'accès sera définitivement supprimé. Cette action est irréversible.', function() {
+      apiFetch('/api/tokens/' + token, { method: 'DELETE' })
+        .then(function(r) { if (!r.ok) throw new Error(); toast('Espace supprimé'); showSpaces(); })
+        .catch(function() { toast('Erreur', true); });
+    }, { title: 'Supprimer l\'espace', okLabel: 'Supprimer définitivement', danger: true });
   };
 
   // ── Hub partage ────────────────────────────────────────────────────────────
@@ -1248,15 +1257,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       Object.entries(STATUS_LABELS).map(function(e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
 
     var toolbar = '<div class="proj-toolbar">' +
-      '<input type="search" id="dash-search" placeholder="🔍 Rechercher un client, un projet…" oninput="applyProjectFilters()" aria-label="Rechercher">' +
+      '<input type="search" id="dash-search" placeholder="Rechercher…" oninput="applyProjectFilters()" aria-label="Rechercher">' +
       '<select id="dash-type" onchange="applyProjectFilters()" aria-label="Filtrer par type">' + typeFilterOpts + '</select>' +
       '<select id="dash-status" onchange="applyProjectFilters()" aria-label="Filtrer par statut">' + statusFilterOpts + '</select>' +
       '<select id="dash-sort" onchange="applyProjectFilters()" aria-label="Trier">' +
-        '<option value="updated">Tri : récemment modifié</option>' +
-        '<option value="client">Tri : client (A→Z)</option>' +
-        '<option value="title">Tri : projet (A→Z)</option>' +
-        '<option value="deadline">Tri : deadline</option>' +
-        '<option value="status">Tri : statut</option>' +
+        '<option value="updated">Récents</option>' +
+        '<option value="client">Client A→Z</option>' +
+        '<option value="title">Projet A→Z</option>' +
+        '<option value="deadline">Deadline</option>' +
+        '<option value="status">Statut</option>' +
       '</select>' +
     '</div>';
 
