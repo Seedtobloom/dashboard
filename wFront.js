@@ -1732,6 +1732,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '<div class="card-body" id="questionnaire-admin-container">' + buildQuestionnaireAdminView(project) + '</div>' +
             '</div>' +
             '<div class="card">' +
+              '<div class="card-header"><span class="card-title">Cards espace client</span><button class="btn btn--sage btn--sm" onclick="openClientCardEditor()">+ Ajouter</button></div>' +
+              '<div class="card-body" id="client-cards-admin-container">' + buildClientCardsAdminView(project) + '</div>' +
+            '</div>' +
+            '<div class="card">' +
               '<div class="card-header"><span class="card-title">Notifications email</span><button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button></div>' +
               '<div class="card-body">' +
                 '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Historique des 10 derniers emails</div>' +
@@ -2483,6 +2487,170 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }).join('');
   }
 
+  function buildClientCardsAdminView(project) {
+    var cards = (project.clientCards || []);
+    if (!cards.length) {
+      return '<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">Aucune card. Cliquez sur + Ajouter pour commencer.</p>';
+    }
+    return cards.map(function(card) {
+      var steps = card.steps || [];
+      var done = steps.filter(function(s) { return s.done; }).length;
+      var cv = steps.filter(function(s) { return s.clientValidation; }).length;
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div style="width:28px;height:28px;border-radius:6px;flex-shrink:0;background:' + esc(card.bannerColor || '#051833') + '"></div>' +
+          '<div>' +
+            '<div style="font-size:13px;font-weight:600;color:var(--navy)">' + esc(card.title) + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
+              (card.statusLabel ? esc(card.statusLabel) + ' · ' : '') +
+              done + '/' + steps.length + ' etapes' +
+              (cv ? ' · ' + cv + ' validation' + (cv > 1 ? 's' : '') + ' client' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button onclick="openClientCardEditor(\'' + card.id + '\')" class="btn btn--outline btn--sm">Modifier</button>' +
+          '<button onclick="deleteClientCard(\'' + card.id + '\')" style="background:none;border:1.5px solid #ffd0d0;color:#c44;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">Suppr.</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.openClientCardEditor = function(cardId) {
+    var project = window._currentProject;
+    if (!project) return;
+    var isNew = !cardId;
+    var existingCard = cardId ? (project.clientCards || []).find(function(c) { return c.id === cardId; }) : null;
+    var card = existingCard
+      ? Object.assign({}, existingCard)
+      : { id: 'cc' + Date.now(), title: '', statusLabel: 'Decouverte', bannerColor: '#051833', startDate: '', duration: '', steps: [] };
+    var steps = (card.steps || []).map(function(s) { return Object.assign({}, s); });
+
+    var existing = document.getElementById('_cce-overlay');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = '_cce-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+
+    function collectSteps() {
+      var labels = ov.querySelectorAll('[data-step-label]');
+      var result = [];
+      labels.forEach(function(inp, i) {
+        var idx = parseInt(inp.dataset.stepLabel);
+        var cv  = ov.querySelector('[data-step-cv="' + idx + '"]');
+        var dn  = ov.querySelector('[data-step-done="' + idx + '"]');
+        result.push({
+          id: (steps[idx] && steps[idx].id) ? steps[idx].id : ('s' + Date.now() + i),
+          label: inp.value,
+          clientValidation: cv ? cv.checked : false,
+          done: dn ? dn.checked : false,
+        });
+      });
+      return result.filter(function(s) { return s.label.trim(); });
+    }
+
+    function renderPanel() {
+      var stepsHtml = steps.map(function(s, i) {
+        return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">' +
+          '<input type="text" value="' + esc(s.label) + '" data-step-label="' + i + '" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" placeholder="Etape ' + (i+1) + '">' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" data-step-cv="' + i + '"' + (s.clientValidation ? ' checked' : '') + '> Client valide</label>' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" data-step-done="' + i + '"' + (s.done ? ' checked' : '') + '> Faite</label>' +
+          '<button onclick="window._cceRemoveStep(' + i + ')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;color:var(--muted);font-size:12px">✕</button>' +
+        '</div>';
+      }).join('');
+      var curColor = card.bannerColor || '#051833';
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:560px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18);max-height:88vh;overflow-y:auto">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+          '<strong style="font-size:16px;color:var(--navy)">' + (isNew ? 'Nouvelle card' : 'Modifier la card') + '</strong>' +
+          '<button onclick="document.getElementById(\'_cce-overlay\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted)">✕</button>' +
+        '</div>' +
+        '<div class="form-field"><label>Titre</label><input id="_cce-title" type="text" value="' + esc(card.title) + '" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" placeholder="Ex: Identite visuelle"></div>' +
+        '<div class="form-row">' +
+          '<div class="form-field"><label>Badge statut</label><input id="_cce-status" type="text" value="' + esc(card.statusLabel || '') + '" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" placeholder="Ex: Decouverte"></div>' +
+          '<div class="form-field"><label>Couleur banniere</label>' +
+            '<div style="display:flex;gap:8px;align-items:center">' +
+              '<input id="_cce-color" type="color" value="' + esc(curColor) + '" style="width:42px;height:36px;border:none;cursor:pointer;border-radius:6px;padding:2px">' +
+              '<input id="_cce-color-hex" type="text" value="' + esc(curColor) + '" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-row">' +
+          '<div class="form-field"><label>Date de debut</label><input id="_cce-start" type="date" value="' + esc(card.startDate || '') + '" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px"></div>' +
+          '<div class="form-field"><label>Duree</label><input id="_cce-duration" type="text" value="' + esc(card.duration || '') + '" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" placeholder="Ex: 3 sem."></div>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:600;color:var(--navy);margin:4px 0 8px">Etapes</div>' +
+        '<div id="_cce-steps">' + stepsHtml + '</div>' +
+        '<button onclick="window._cceAddStep()" style="width:100%;padding:9px;border:1.5px dashed var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:16px">+ Ajouter une etape</button>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<button onclick="document.getElementById(\'_cce-overlay\').remove()" style="padding:9px 18px;border:1.5px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;color:var(--muted)">Annuler</button>' +
+          '<button onclick="window._cceSave()" style="padding:9px 18px;border:none;border-radius:8px;background:var(--navy);color:var(--sidebar-text);cursor:pointer;font-size:13px;font-weight:500">Sauvegarder</button>' +
+        '</div>' +
+      '</div>';
+
+      var cp = ov.querySelector('#_cce-color');
+      var hx = ov.querySelector('#_cce-color-hex');
+      if (cp && hx) {
+        cp.addEventListener('input', function() { hx.value = cp.value; card.bannerColor = cp.value; });
+        hx.addEventListener('input', function() { if (/^#[0-9a-fA-F]{6}$/.test(hx.value)) { cp.value = hx.value; card.bannerColor = hx.value; } });
+      }
+    }
+
+    window._cceRemoveStep = function(i) {
+      steps = collectSteps();
+      steps.splice(i, 1);
+      renderPanel();
+    };
+    window._cceAddStep = function() {
+      steps = collectSteps();
+      steps.push({ id: 's' + Date.now(), label: '', clientValidation: false, done: false });
+      renderPanel();
+      var all = ov.querySelectorAll('[data-step-label]');
+      if (all.length) all[all.length - 1].focus();
+    };
+    window._cceSave = async function() {
+      var title = (ov.querySelector('#_cce-title') || {}).value || '';
+      if (!title.trim()) { toast('Le titre est requis', true); return; }
+      var updated = Object.assign({}, card, {
+        title: title.trim(),
+        statusLabel: (ov.querySelector('#_cce-status') || {}).value || '',
+        bannerColor: (ov.querySelector('#_cce-color-hex') || {}).value || '#051833',
+        startDate:   (ov.querySelector('#_cce-start') || {}).value || '',
+        duration:    (ov.querySelector('#_cce-duration') || {}).value || '',
+        steps: collectSteps(),
+      });
+      var cards2 = (window._currentProject.clientCards || []).slice();
+      var idx = cards2.findIndex(function(c) { return c.id === updated.id; });
+      if (idx >= 0) { cards2[idx] = updated; } else { cards2.push(updated); }
+      var body = Object.assign({}, window._currentProject, { clientCards: cards2 });
+      var r = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
+      if (r.ok) {
+        window._currentProject.clientCards = cards2;
+        toast('Card sauvegardee ✓');
+        ov.remove();
+        var el = document.getElementById('client-cards-admin-container');
+        if (el) el.innerHTML = buildClientCardsAdminView(window._currentProject);
+      } else { toast('Erreur', true); }
+    };
+
+    renderPanel();
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  };
+
+  window.deleteClientCard = async function(cardId) {
+    var project = window._currentProject;
+    if (!project) return;
+    var cards2 = (project.clientCards || []).filter(function(c) { return c.id !== cardId; });
+    var body = Object.assign({}, project, { clientCards: cards2 });
+    var r = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(body) });
+    if (r.ok) {
+      window._currentProject.clientCards = cards2;
+      toast('Card supprimee ✓');
+      var el = document.getElementById('client-cards-admin-container');
+      if (el) el.innerHTML = buildClientCardsAdminView(window._currentProject);
+    } else { toast('Erreur', true); }
+  };
+
   window.openQuestionnaireEditor = function() {
     var project = window._currentProject;
     if (!project) return;
@@ -3171,6 +3339,120 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     pills; // Après la topbar, visible uniquement sur mobile via CSS
   }
 
+  function buildClientCardsSection(project) {
+    var cards = (project.clientCards || []);
+    if (!cards.length) return '';
+    var validations = project.clientCardValidations || {};
+    var html = cards.map(function(card) {
+      var steps = card.steps || [];
+      var totalDone = steps.reduce(function(count, s) {
+        if (s.done) return count + 1;
+        if (s.clientValidation && validations[card.id + ':' + s.id]) return count + 1;
+        return count;
+      }, 0);
+      var pct = steps.length ? Math.round(totalDone / steps.length * 100) : 0;
+      var bannerColor = card.bannerColor || 'var(--navy)';
+      var bannerHex = card.bannerColor && card.bannerColor.charAt(0) === '#' ? card.bannerColor : null;
+      var light = bannerHex && cpHexLum(bannerHex) > 160;
+      var badgeTx = light ? '#051833' : '#fff';
+      var badgeBg = light ? 'rgba(5,24,51,0.12)' : 'rgba(255,255,255,0.22)';
+      return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);display:block;width:100%">' +
+        '<div class="cp-proj-banner" style="background:' + bannerColor + '">' +
+          (card.statusLabel ? '<span class="cp-proj-banner__badge" style="background:' + badgeBg + ';color:' + badgeTx + ';backdrop-filter:none">' + esc(card.statusLabel) + '</span>' : '') +
+        '</div>' +
+        '<div class="cp-proj-card__body">' +
+          '<div class="cp-proj-card__title" style="font-style:italic">' + esc(card.title) + '</div>' +
+          '<div class="cp-proj-card__meta">' +
+            (card.startDate ? '<span>' + fmtShort(card.startDate) + '</span>' : '') +
+            (card.duration ? '<span>' + esc(card.duration) + '</span>' : '') +
+          '</div>' +
+          '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="cp-proj-card__pct"><span>' + pct + '% complete</span><span>' + totalDone + '/' + steps.length + ' etapes</span></div>' +
+        '</div>' +
+      '</button>';
+    }).join('');
+    return '<div class="cp-proj-grid" style="margin-bottom:14px">' + html + '</div>';
+  }
+
+  window.cpOpenClientCard = function(cardId, projectId) {
+    var pd = appData.projects.find(function(x) { return x.project.id === projectId; });
+    if (!pd) return;
+    var project = pd.project;
+    var card = (project.clientCards || []).find(function(c) { return c.id === cardId; });
+    if (!card) return;
+    var steps = card.steps || [];
+
+    var existing = document.getElementById('_cp-card-detail-ov');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = '_cp-card-detail-ov';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:flex-end;justify-content:center';
+
+    function render() {
+      var validations = project.clientCardValidations || {};
+      var stepsHtml = steps.length ? steps.map(function(s) {
+        var isAdminDone = s.done;
+        var isClientValidated = s.clientValidation && validations[card.id + ':' + s.id];
+        var isDone = isAdminDone || isClientValidated;
+        var dotBg = isDone ? 'var(--sage)' : (s.clientValidation ? 'rgba(5,24,51,0.08)' : 'var(--border)');
+        var dotTx = isDone ? '#fff' : (s.clientValidation ? 'var(--navy)' : 'var(--muted)');
+        return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">' +
+          '<div style="width:22px;height:22px;border-radius:50%;background:' + dotBg + ';color:' + dotTx + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">' + (isDone ? '✓' : '') + '</div>' +
+          '<div style="flex:1">' +
+            '<div style="font-size:13px;font-weight:' + (isDone ? '400' : '500') + ';color:' + (isDone ? 'var(--muted)' : 'var(--text)') + ';text-decoration:' + (isDone ? 'line-through' : 'none') + '">' + esc(s.label) + '</div>' +
+            (s.clientValidation && !isAdminDone
+              ? (isClientValidated
+                  ? '<div style="font-size:12px;color:var(--sage);margin-top:3px">Valide par vous ✓</div>'
+                  : '<button onclick="window.cpValidateCardStep(\'' + cardId + '\',\'' + s.id + '\',\'' + projectId + '\')" style="margin-top:6px;padding:5px 14px;background:var(--navy);color:var(--sidebar-text);border:none;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">Marquer comme fait</button>')
+              : '') +
+          '</div>' +
+        '</div>';
+      }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">Aucune etape pour le moment.</div>';
+
+      var bannerColor = card.bannerColor || 'var(--navy)';
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(5,24,51,0.18);max-height:85vh;overflow-y:auto">' +
+        '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
+          (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
+          '<div style="font-size:19px;font-family:\'Alegreya\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
+          ((card.startDate || card.duration)
+            ? '<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px">' +
+                (card.startDate ? fmtDate(card.startDate) : '') +
+                (card.startDate && card.duration ? ' · ' : '') +
+                (card.duration ? esc(card.duration) : '') +
+              '</div>' : '') +
+          '<button onclick="document.getElementById(\'_cp-card-detail-ov\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.18);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;color:#fff;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>' +
+        '</div>' +
+        '<div style="padding:20px 24px">' +
+          '<div style="font-size:12px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Etapes</div>' +
+          stepsHtml +
+        '</div>' +
+      '</div>';
+    }
+
+    window.cpValidateCardStep = async function(cId, sId, pId) {
+      var pd2 = appData.projects.find(function(x) { return x.project.id === pId; });
+      if (!pd2) return;
+      var validations2 = Object.assign({}, pd2.project.clientCardValidations || {});
+      validations2[cId + ':' + sId] = true;
+      var r = await fetch(API_BASE + '/notes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: pId, clientCardValidations: validations2 })
+      });
+      if (r.ok) {
+        pd2.project.clientCardValidations = validations2;
+        render();
+        // Refresh card grid in project view
+        var grid = document.querySelector('[data-cp-cards="' + pId + '"]');
+        if (grid) grid.outerHTML = buildClientCardsSection(pd2.project);
+      }
+    };
+
+    render();
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  };
+
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
@@ -3339,9 +3621,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</button>';
     }
 
+    var clientCardsHtml = (project.clientCards && project.clientCards.length)
+      ? '<div data-cp-cards="' + project.id + '">' + buildClientCardsSection(project) + '</div>'
+      : '';
+
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
-        '<div class="cp-grid__main">' + banner + questionnaireCard + progress + '</div>' +
+        '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + progress + '</div>' +
         '<div class="cp-grid__side">' + sideCol + '</div>' +
       '</div></div>';
   }

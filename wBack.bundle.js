@@ -1189,9 +1189,10 @@ async function handleClientApi(request, env, url) {
     if (body.notes !== undefined) project2.notes = body.notes;
     if (body.resources !== undefined) project2.resources = body.resources;
     if (body.questionnaireAnswers !== undefined) project2.questionnaireAnswers = body.questionnaireAnswers;
+    if (body.clientCardValidations !== undefined) project2.clientCardValidations = body.clientCardValidations;
     project2.updatedAt = new Date().toISOString();
     await saveProject(env, project2);
-    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [], questionnaireAnswers: project2.questionnaireAnswers || {} });
+    return jsonResponse({ success: true, notes: project2.notes || '', resources: project2.resources || [], questionnaireAnswers: project2.questionnaireAnswers || {}, clientCardValidations: project2.clientCardValidations || {} });
   }
   // PATCH /forfait — update monthlyHours on the project
   if (method === "PATCH" && subPathRaw === "/forfait") {
