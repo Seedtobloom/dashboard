@@ -1306,6 +1306,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function buildSidebarHtml(activeSection, allProjs, unreadMap, msgBadgeOverride) {
     unreadMap = unreadMap || {};
+    // Grouper par client
     var _cmap = {};
     allProjs.forEach(function(p) {
       var key = (p.clientName || '').trim().toLowerCase() || '_';
