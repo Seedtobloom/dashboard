@@ -773,6 +773,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     x:          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
     star:       '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
     invoice:    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+    folder:     '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
   };
 
   function icon(name, size, color) {
@@ -976,7 +977,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const allTokens = await Promise.all(projs.map(async function(p) {
       const r = await apiFetch('/api/projects/' + p.id + '/tokens');
       const toks = r.ok ? await r.json() : [];
-      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, projectId: p.id }); });
+      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, clientEmail: p.clientEmail, projectId: p.id, projectStatus: p.status, projectType: p.type }); });
     }));
     // Tokens par email (espace multi-projets) — pour chaque email client unique
     var emailMap = {};
@@ -995,16 +996,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     var rows = tokens.map(function(t) {
       var url = window.location.origin + '/p/' + t.token;
-      return '<tr style="' + (t.revoked ? 'opacity:0.5' : '') + '">' +
-        '<td style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</td>' +
-        '<td>' + esc(t.projectTitle) + (t.isClientSpace ? ' <span style="font-size:10px;background:var(--lavender);color:var(--navy);padding:1px 7px;border-radius:999px;font-weight:600">Espace client</span>' : '') + '</td>' +
-        '<td>' + esc(t.label || '—') + '</td>' +
-        '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,12) + '…' + '</td>' +
+      var goProj = t.projectId ? 'adminNav(\'/admin/projects/' + t.projectId + '\');' : '';
+      return '<tr style="cursor:pointer;' + (t.revoked ? 'opacity:0.5' : '') + '" onclick="' + goProj + '">' +
+        '<td><div style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(t.clientEmail||'') + '</div></td>' +
+        '<td><div>' + esc(t.projectTitle) + (t.isClientSpace ? ' <span style="font-size:10px;background:var(--lavender);color:var(--navy);padding:1px 7px;border-radius:999px;font-weight:600">Multi-projets</span>' : '') + '</div>' +
+          (t.projectType ? '<div style="font-size:11px;color:var(--muted)">' + esc(TYPE_LABELS[t.projectType]||t.projectType) + '</div>' : '') + '</td>' +
+        '<td>' + (t.projectStatus ? adminStatusBadge(t.projectStatus) : '—') + '</td>' +
+        '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,10) + '…' + '</td>' +
         '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : 'Jamais') + '</td>' +
         '<td style="font-size:12px;color:' + (t.revoked ? 'var(--red)' : 'var(--sage)') + '">' + (t.revoked ? 'Révoqué' : 'Actif') + '</td>' +
-        '<td style="white-space:nowrap;display:flex;gap:6px">' +
-          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copySpaceUrl(\'' + esc(url) + '\')">Copier lien</button>' : '') +
-          (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+        '<td style="white-space:nowrap;display:flex;gap:6px" onclick="event.stopPropagation()">' +
+          (!t.revoked ? '<a class="btn btn--outline btn--sm" href="' + esc(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir →</a>' : '') +
+          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')">Copier</button>' : '') +
+          (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="event.stopPropagation();revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
         '</td>' +
       '</tr>';
     }).join('');
@@ -1018,7 +1022,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
           '</div>' +
           (tokens.length ? '<div class="projects-table"><table>' +
-            '<thead><tr><th>Client</th><th>Projet</th><th>Label</th><th>URL</th><th>Dernière visite</th><th>Statut</th><th></th></tr></thead>' +
+            '<thead><tr><th>Client</th><th>Projet / Type</th><th>Statut projet</th><th>Lien</th><th>Dernière visite</th><th>Accès</th><th></th></tr></thead>' +
             '<tbody>' + rows + '</tbody></table></div>' :
             '<div style="text-align:center;padding:60px 0;color:var(--muted)">Aucun espace client créé.</div>') +
         '</div></main>' +
