@@ -974,7 +974,8 @@ async function allowedProjects(env, clientToken) {
   return [];
 }
 async function clientFileDownload(env, projects, fileKey) {
-  const ownerId = fileKey.split("/")[0];
+  const parts = fileKey.split("/");
+  const ownerId = parts[0] === "projects" ? parts[1] : parts[0];
   const project = projects.find((p) => p.id === ownerId);
   if (!project)
     return errorResponse("File not found", 404);

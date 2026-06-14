@@ -3963,9 +3963,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (_canEdit || project.clientPage) {
       if (!_pageDraft || _cpbPid !== project.id) {
         _pageDraft = cpbGetPage(project, files);
-        if (_pageDraft) _pageDraft._project = project;
+        if (_pageDraft) { _pageDraft._project = project; _pageDraft._files = files; }
         _cpbPid = project.id;
-      }
+      } else if (_pageDraft) { _pageDraft._project = project; _pageDraft._files = files; }
       _cpbPd = pd;
       _cpbToken = TOKEN;
       return header + '<div data-cpb-page="1">' + cpbRenderPage(_pageDraft, _canEdit) + '</div>';
@@ -4055,8 +4055,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var cardsProj = _pageDraft && _pageDraft._project ? _pageDraft._project : {};
       return cardsProj.clientCards && cardsProj.clientCards.length ? buildClientCardsSection(cardsProj) : '<div style="color:var(--muted);font-size:13px;padding:10px">Aucune carte.</div>';
     }
-    if (sec.type === 'files') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Fichiers partages]</div>';
-    if (sec.type === 'fileexchange') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Echange de fichiers]</div>';
+    if (sec.type === 'files' || sec.type === 'fileexchange') {
+      var fxProj = _pageDraft && _pageDraft._project ? _pageDraft._project : {};
+      var fxFiles = _pageDraft && _pageDraft._files ? _pageDraft._files : [];
+      return buildClientFileExchange(fxProj.id, fxFiles);
+    }
     if (sec.type === 'practical') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Infos pratiques]</div>';
     if (sec.type === 'meeting') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Lien de reunion]</div>';
     if (sec.type === 'help') return '<div style="color:var(--muted);font-size:13px;padding:10px">[Messagerie / Aide]</div>';
@@ -5408,12 +5411,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? convData.map(convoMsgHtml).join('')
       : '<div class="cp-empty">Pas encore de messages.<br>Écrivez à Cindy !</div>';
 
-    var convoHtml = '<div class="cp-card" style="padding:0;overflow:hidden">' +
-      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface)">' +
+    var convoHtml = '<div class="cp-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:480px">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0">' +
         '<div style="font-family:\'Alegreya\',serif;font-style:italic;color:var(--navy);font-size:16px">Conversation avec Cindy</div>' +
       '</div>' +
-      '<div class="cp-msgs" id="cp-convo-list" style="padding:20px;max-height:480px;overflow-y:auto;margin-bottom:0">' + msgs + '</div>' +
-      '<form class="cp-msg-form" id="cp-convo-form" style="padding:16px 20px;border-top:1px solid var(--border)">' +
+      '<div class="cp-msgs" id="cp-convo-list" style="padding:20px;flex:1;overflow-y:auto;margin-bottom:0">' + msgs + '</div>' +
+      '<form class="cp-msg-form" id="cp-convo-form" style="padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0">' +
         '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
         '<div class="cp-msg-form__row"><button type="submit" class="cp-btn cp-btn--dark">Envoyer →</button></div>' +
       '</form>' +
@@ -5425,10 +5428,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<button onclick="refreshConvo()" class="cp-btn cp-btn--sage" style="margin-top:4px" aria-label="Actualiser les messages">↻ Actualiser</button>' +
     '</div>';
     return header +
-      '<div class="cp-content"><div class="cp-grid" style="grid-template-columns:300px 1fr">' +
-        '<div class="cp-card" style="padding:0;overflow:hidden"><div class="cp-nav__label" style="color:var(--muted);padding:14px 18px 4px">Conversation</div>' + summary + '</div>' +
-        '<div>' + convoHtml + '</div>' +
-      '</div></div>';
+      '<div class="cp-content cp-content--wide">' + convoHtml + '</div>';
   }
 
   function attachConvoForm() {
@@ -5908,8 +5908,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     document.getElementById('app').innerHTML =
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg,#f8f6f2);padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:36px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(5,24,51,0.10)">' +
-        '<div style="font-family:\'Alegreya\',serif;font-size:24px;color:var(--navy);margin-bottom:8px;font-style:italic">Espace prive</div>' +
-        '<p style="color:#8090a8;font-size:14px;margin:0 0 24px">Entrez le code d\'acces fourni par votre agence.</p>' +
+        '<div style="font-family:\'Alegreya\',serif;font-size:24px;color:var(--navy);margin-bottom:8px;font-style:italic">Bienvenue dans votre espace</div>' +
+        '<p style="color:#8090a8;font-size:14px;margin:0 0 24px">Entrez le code que Cindy vous a transmis pour retrouver votre projet chez Seed to Bloom.</p>' +
         '<input id="_code-inp" type="text" placeholder="CODE D\'ACCES" style="width:100%;padding:14px;text-align:center;font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border:2px solid #e2dbd0;border-radius:12px;font-family:monospace;box-sizing:border-box;margin-bottom:12px" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
         '<div id="_code-err" style="color:#c44;font-size:13px;min-height:20px;margin-bottom:12px"></div>' +
         '<button onclick="cpSubmitCode()" class="cp-btn cp-btn--dark" style="width:100%;justify-content:center;padding:12px">Acceder →</button>' +
