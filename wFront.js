@@ -1575,7 +1575,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     };
     var STEP_CARD_CLS = { upcoming:'', in_progress:' step-card--active', waiting_client:' step-card--waiting', done:' step-card--done' };
 
-    const stepsHtml = '<div class="step-cards">' + ([...project.steps].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
+    const stepsHtml = '<div class="step-cards">' + ([...(project.steps||[])].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
       var dot = STEP_DOT_STYLE[step.status] || STEP_DOT_STYLE.upcoming;
       var cardCls = 'step-card' + (STEP_CARD_CLS[step.status]||'');
       var badgeSty = STEP_BADGE_STYLE[step.status] || STEP_BADGE_STYLE.upcoming;
@@ -1670,7 +1670,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('');
 
-    const emailLogsHtml = [...emailLogs].reverse().slice(0,10).map(function(l) {
+    const emailLogsHtml = [...(emailLogs||[])].reverse().slice(0,10).map(function(l) {
       return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:10px;align-items:center">' +
         '<span style="color:' + (l.status === 'sent' ? 'var(--sage)' : 'var(--red)') + '">' + (l.status === 'sent' ? '✓' : '✗') + '</span>' +
         '<span style="flex:1">' + esc(l.subject) + '</span>' +
