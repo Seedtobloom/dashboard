@@ -933,6 +933,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       showMessages();
     } else if (hash === '#spaces') {
       showSpaces();
+    } else if (hash === '#hub') {
+      showHub();
     } else {
       showDashboard();
     }
@@ -1033,6 +1035,91 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         .then(function(r) { if (!r.ok) throw new Error(); toast('Accès révoqué'); showSpaces(); })
         .catch(function() { toast('Erreur', true); });
     }, { title: 'Révoquer l\'accès', okLabel: 'Révoquer', danger: true });
+  };
+
+  // ── Hub partage ────────────────────────────────────────────────────────────
+  var hubData = { sections: [] };
+
+  async function showHub() {
+    const res = await apiFetch('/api/hub');
+    if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur', true); return; }
+    hubData = await res.json();
+    if (!hubData.sections) hubData.sections = [];
+    const allProjs = await apiFetch('/api/projects').then(function(r){ return r.ok ? r.json() : []; });
+    renderHub(allProjs);
+  }
+
+  function renderHub(allProjs) {
+    function sectionHtml(sec, idx) {
+      var content = '';
+      if (sec.type === 'text') {
+        content = '<textarea id="hub-sec-content-' + idx + '" rows="5" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
+      } else if (sec.type === 'links') {
+        content = '<textarea id="hub-sec-content-' + idx + '" rows="4" placeholder="Un lien par ligne" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
+      } else {
+        content = '<textarea id="hub-sec-content-' + idx + '" rows="3" placeholder="Description des fichiers" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
+      }
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
+          '<input type="text" id="hub-sec-title-' + idx + '" value="' + esc(sec.title||'') + '" placeholder="Titre de la section" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:\'Ambra Sans\',sans-serif;font-size:14px">' +
+          '<select id="hub-sec-type-' + idx + '" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:\'Ambra Sans\',sans-serif;font-size:13px">' +
+            '<option value="text"' + (sec.type==='text'?' selected':'') + '>Texte</option>' +
+            '<option value="links"' + (sec.type==='links'?' selected':'') + '>Liens</option>' +
+            '<option value="files"' + (sec.type==='files'?' selected':'') + '>Fichiers</option>' +
+          '</select>' +
+          '<button class="btn btn--outline btn--sm" onclick="hubDeleteSection(' + idx + ')">Supprimer</button>' +
+        '</div>' +
+        content +
+      '</div>';
+    }
+    var sectionsHtml = hubData.sections.map(sectionHtml).join('');
+    document.getElementById('app').innerHTML =
+      '<div class="app">' +
+        buildSidebarHtml('hub', allProjs, {}) +
+        '<main class="main"><div class="main-inner">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">' +
+            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
+            '<div style="display:flex;gap:10px">' +
+              '<button class="btn btn--outline" onclick="hubAddSection()">+ Section</button>' +
+              '<button class="btn btn--primary" onclick="hubSave()">Enregistrer</button>' +
+            '</div>' +
+          '</div>' +
+          (hubData.sections.length ? '' : '<div style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">Aucune section pour le moment. Cliquez sur "+ Section" pour commencer.</div>') +
+          '<div id="hub-sections">' + sectionsHtml + '</div>' +
+        '</div></main>' +
+      '</div>';
+  }
+
+  window.hubDeleteSection = function(idx) {
+    hubData.sections.splice(idx, 1);
+    apiFetch('/api/projects').then(function(r){ return r.ok ? r.json() : []; }).then(function(projs){ renderHub(projs); });
+  };
+
+  window.hubAddSection = function() {
+    hubData.sections.forEach(function(sec, idx) {
+      var t = document.getElementById('hub-sec-title-' + idx);
+      var c = document.getElementById('hub-sec-content-' + idx);
+      var ty = document.getElementById('hub-sec-type-' + idx);
+      if (t) sec.title = t.value;
+      if (c) sec.content = c.value;
+      if (ty) sec.type = ty.value;
+    });
+    hubData.sections.push({ id: 'sec' + Date.now(), title: '', content: '', type: 'text' });
+    apiFetch('/api/projects').then(function(r){ return r.ok ? r.json() : []; }).then(function(projs){ renderHub(projs); });
+  };
+
+  window.hubSave = function() {
+    hubData.sections.forEach(function(sec, idx) {
+      var t = document.getElementById('hub-sec-title-' + idx);
+      var c = document.getElementById('hub-sec-content-' + idx);
+      var ty = document.getElementById('hub-sec-type-' + idx);
+      if (t) sec.title = t.value;
+      if (c) sec.content = c.value;
+      if (ty) sec.type = ty.value;
+    });
+    apiFetch('/api/hub', { method: 'PUT', body: JSON.stringify(hubData) })
+      .then(function(r){ if(!r.ok) throw new Error(); toast('Hub enregistre ✓'); })
+      .catch(function(){ toast('Erreur, reessayez.', true); });
   };
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -1234,6 +1321,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         icon('messages',15)+' Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
       '</button>' +
       '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">'+icon('link',15)+' Espaces clients</button>' +
+      '<button class="side-tab' + (activeSection === 'hub' ? ' active' : '') + '" onclick="window.location.hash=\'hub\'">'+icon('folder',15)+' Hub partage</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">' +
@@ -3433,6 +3521,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span class="cp-nav__text"><div class="cp-nav__title">Messages</div></span>' +
         (totalUnread() > 0 ? '<span class="cp-nav__badge">' + totalUnread() + '</span>' : '') +
       '</button>' +
+      (portal ? '<button class="cp-nav__item' + (currentView==='hub'?' active':'') + '" aria-label="Ressources partagees" onclick="cpGoHub()">' +
+        cpIcon('folder',15) +
+        '<span class="cp-nav__text"><div class="cp-nav__title">Ressources</div></span>' +
+      '</button>' : '') +
     '</div>';
     // Section projets, regroupés par type d'offre (sections non vides uniquement)
     function navItem(pd) {
@@ -4935,9 +5027,33 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
   }
 
+  function buildHubView() {
+    if (!_hubCache) return '<div class="cp-content" style="padding:60px;text-align:center;color:var(--muted)">Chargement…</div>';
+    var sections = (_hubCache && _hubCache.sections) || [];
+    if (!sections.length) return '<div class="cp-content"><div style="margin-bottom:20px"><div style="font-size:20px;font-weight:700;color:var(--navy);font-family:\'Alegreya\',serif;font-style:italic">Ressources partagees</div></div><div style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">Aucune ressource disponible pour le moment.</div></div>';
+    var secHtml = sections.map(function(sec) {
+      var contentHtml = '';
+      if (sec.type === 'links') {
+        var links = (sec.content || '').split('\n').filter(Boolean);
+        contentHtml = '<div style="display:flex;flex-direction:column;gap:6px">' + links.map(function(l) {
+          var url = l.trim();
+          return '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="color:var(--navy);font-size:14px;word-break:break-all">→ ' + esc(url) + '</a>';
+        }).join('') + '</div>';
+      } else {
+        contentHtml = '<p style="font-size:14px;color:var(--text);white-space:pre-wrap;margin:0">' + esc(sec.content||'') + '</p>';
+      }
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">' +
+        (sec.title ? '<div style="font-weight:700;font-size:15px;color:var(--navy);margin-bottom:10px">' + esc(sec.title) + '</div>' : '') +
+        contentHtml +
+      '</div>';
+    }).join('');
+    return '<div class="cp-content"><div style="margin-bottom:20px"><div style="font-size:20px;font-weight:700;color:var(--navy);font-family:\'Alegreya\',serif;font-style:italic">Ressources partagees</div></div>' + secHtml + '</div>';
+  }
+
   function mainForView() {
     if (currentView === 'messages') return buildConversation();
     if (currentView === 'project') return buildProjectView(getPD(currentId));
+    if (currentView === 'hub') return buildHubView();
     return buildHome();
   }
 
@@ -4991,6 +5107,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpGoHome = function() {
     currentView = 'home';
+    renderShell();
+  };
+
+  var _hubCache = null;
+
+  window.cpGoHub = function() {
+    _hubCache = null;
+    currentView = 'hub';
+    fetch(API_BASE + '/hub').then(function(r){ return r.ok ? r.json() : { sections: [] }; })
+      .then(function(data) { _hubCache = data; renderShell(); })
+      .catch(function(){ _hubCache = { sections: [] }; renderShell(); });
     renderShell();
   };
 

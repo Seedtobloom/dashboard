@@ -1041,6 +1041,11 @@ async function handleClientApi(request, env, url) {
     const fileKey = decodeURIComponent(dl[2]);
     return clientFileDownload(env, projects2, fileKey);
   }
+  const hubMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/hub$/);
+  if (hubMatch && request.method === "GET") {
+    const hubData = await env.BLOOM_KV.get("shared:hub");
+    return jsonResponse(hubData ? JSON.parse(hubData) : { sections: [] });
+  }
   const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/notes|\/invoices|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match)
     return errorResponse("Not found", 404);
@@ -1354,6 +1359,18 @@ var wBack_default = {
       }
       if (pathname === "/api/invoices" || pathname.match(/^\/api\/invoices\//)) {
         return handleInvoices(request, env, url);
+      }
+      if (pathname === "/api/hub") {
+        if (request.method === "GET") {
+          const hubData = await env.BLOOM_KV.get("shared:hub");
+          return jsonResponse(hubData ? JSON.parse(hubData) : { sections: [] });
+        }
+        if (request.method === "PUT") {
+          const body = await request.json().catch(() => ({}));
+          await env.BLOOM_KV.put("shared:hub", JSON.stringify(body));
+          return jsonResponse({ success: true });
+        }
+        return errorResponse("Method not allowed", 405);
       }
       return errorResponse("Not found", 404);
     } catch (err) {
