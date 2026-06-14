@@ -347,6 +347,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 
 /* Home cards view */
 .cp-home { flex: 1; min-height: 100vh; padding: 40px 44px 64px; background: var(--bg); }
+.cp-home__inner { max-width: 1100px; margin: 0 auto; }
 .cp-home__greeting { font-family: 'Alegreya', serif; font-size: 28px; color: var(--navy); font-style: italic; margin-bottom: 6px; }
 .cp-home__sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
@@ -3579,13 +3580,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    return '<div class="cp-home">' +
+    return '<div class="cp-home"><div class="cp-home__inner">' +
       (homeBannerHtml ||
         '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + ' ✦</h1>' +
         '<div class="cp-home__sub">Retrouvez vos projets ci-dessous</div>'
       ) +
       activeHtml + archivedHtml +
-    '</div>';
+    '</div></div>';
   }
 
   function totalUnread() {
