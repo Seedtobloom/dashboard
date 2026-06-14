@@ -1797,7 +1797,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '</div>' +
                 '</div>' +
                 '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : (project.bannerColor||'#412F21').split('|')[0])+';border:1.5px solid var(--border)"></div>' +
-              '</div>' +
               '<div class="form-field" style="margin-top:12px">' +
                 '<label>Banniere d\'accueil espace client</label>' +
                 '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
