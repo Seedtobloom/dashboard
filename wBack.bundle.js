@@ -1041,6 +1041,30 @@ async function handleClientApi(request, env, url) {
     const fileKey = decodeURIComponent(dl[2]);
     return clientFileDownload(env, projects2, fileKey);
   }
+  // Client file upload: POST /api/client/{token}/files
+  const uploadMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/files$/);
+  if (uploadMatch && request.method === "POST") {
+    const clientTokenUp = await verifyClientToken(uploadMatch[1], env);
+    if (!clientTokenUp) return errorResponse("Invalid or expired token", 403);
+    const projectsUp = await allowedProjects(env, clientTokenUp);
+    if (!projectsUp.length) return errorResponse("No project", 404);
+    const projectUp = projectsUp[0];
+    try {
+      const formData = await request.formData();
+      const file = formData.get("file");
+      if (!file || !file.name) return errorResponse("No file", 400);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._\-À-ɏ ]/g, "_");
+      const fileKey = "projects/" + projectUp.id + "/client-files/" + Date.now() + "-" + safeName;
+      await env.BLOOM_R2.put(fileKey, file.stream(), { httpMetadata: { contentType: file.type || "application/octet-stream" } });
+      const files = await getProjectFiles(env, projectUp.id);
+      files.push({ key: fileKey, name: file.name, type: file.type || "application/octet-stream", size: file.size || 0, uploadedAt: new Date().toISOString(), source: "client" });
+      await saveProjectFiles(env, projectUp.id, files);
+      return jsonResponse({ success: true, key: fileKey });
+    } catch (e) {
+      return errorResponse("Upload failed", 500);
+    }
+  }
+
   const hubMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/hub$/);
   if (hubMatch && request.method === "GET") {
     const hubData = await env.BLOOM_KV.get("shared:hub");
@@ -1062,6 +1086,14 @@ async function handleClientApi(request, env, url) {
   const clientName = projects[0]?.clientName || "";
   const refProjectId = projects[0]?.id || "";
   if (method === "GET" && !subPath) {
+    // Check space access code if set on any project
+    const projectWithCode = projects.find(p => p.spaceCode);
+    if (projectWithCode && projectWithCode.spaceCode) {
+      const providedCode = (request.headers.get('x-space-code') || url.searchParams.get('code') || '').trim().toUpperCase();
+      const requiredCode = projectWithCode.spaceCode.trim().toUpperCase();
+      if (!providedCode) return jsonResponse({ locked: true, requiresCode: true });
+      if (providedCode !== requiredCode) return jsonResponse({ locked: true, wrongCode: true });
+    }
     const projectsData = await Promise.all(
       projects.map(async (project2) => {
         const messages = await getMessages(env, project2.id);

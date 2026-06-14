@@ -1306,16 +1306,27 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function buildSidebarHtml(activeSection, allProjs, unreadMap, msgBadgeOverride) {
     unreadMap = unreadMap || {};
-    var items = allProjs.map(function(p) {
-      var u = unreadMap[p.id] || 0;
-      return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
-        '<div class="project-item__name">' + esc(p.clientName) + '</div>' +
-        '<div class="project-item__title">' + esc(p.projectTitle) + '</div>' +
-        '<div class="project-item__meta">' +
-          adminStatusBadge(p.status) +
-          (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') +
-        '</div>' +
-      '</a>';
+    var _cmap = {};
+    allProjs.forEach(function(p) {
+      var key = (p.clientName || '').trim().toLowerCase() || '_';
+      if (!_cmap[key]) _cmap[key] = { name: p.clientName || '—', items: [] };
+      _cmap[key].items.push(p);
+    });
+    var items = Object.keys(_cmap).sort().map(function(key) {
+      var grp = _cmap[key];
+      var rows = grp.items.map(function(p) {
+        var u = unreadMap[p.id] || 0;
+        return '<a class="project-item" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
+          (grp.items.length > 1
+            ? '<div class="project-item__title" style="padding-left:8px">' + esc(p.projectTitle) + '</div>'
+            : '<div><div class="project-item__name">' + esc(p.clientName) + '</div><div class="project-item__title">' + esc(p.projectTitle) + '</div></div>') +
+          '<div class="project-item__meta">' + adminStatusBadge(p.status) + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
+        '</a>';
+      }).join('');
+      if (grp.items.length > 1) {
+        return '<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--blue-light);opacity:.55;padding:8px 16px 3px">' + esc(grp.name) + '</div>' + rows + '</div>';
+      }
+      return rows;
     }).join('');
     var totalUnread = (typeof msgBadgeOverride === 'number') ? msgBadgeOverride : Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
     return '<nav class="sidebar">' +
@@ -1623,13 +1634,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('');
 
+    const clientUpFiles = files.filter(function(f){ return f.source === 'client'; });
     const filesHtml = files.map(function(f) {
-      return '<div class="file-row">' +
-        '<span>' + (f.type.startsWith('image/') ? icon('image',14) : f.type.includes('pdf') ? icon('file',14) : icon('file',14)) + '</span>' +
-        '<span class="file-name-col">' + esc(f.name) + '</span>' +
-        '<span style="font-size:12px;color:var(--muted)">' + f.category + '</span>' +
+      var isClient = f.source === 'client';
+      return '<div class="file-row"' + (isClient ? ' style="background:rgba(186,209,253,0.08);border-left:3px solid var(--blue-light)"' : '') + '>' +
+        '<span>' + (f.type && f.type.startsWith('image/') ? icon('image',14) : icon('file',14)) + '</span>' +
+        '<span class="file-name-col">' + esc(f.name) + (isClient ? ' <span style="font-size:10px;background:var(--blue-light);color:var(--navy);padding:1px 6px;border-radius:999px;font-weight:700">Client</span>' : '') + '</span>' +
+        '<span style="font-size:12px;color:var(--muted)">' + (f.category || (isClient ? 'depot client' : '')) + '</span>' +
         '<a class="btn btn--outline btn--sm" href="/api/projects/' + project.id + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">↓</a>' +
-        '<button class="btn btn--danger btn--sm" onclick="deleteFile(\'' + f.key.replace(/\'/g, "\'") + '\')">Suppr.</button>' +
+        (!isClient ? '<button class="btn btn--danger btn--sm" onclick="deleteFile(\'' + f.key.replace(/'/g, "\\'") + '\')">Suppr.</button>' : '') +
       '</div>';
     }).join('');
 
@@ -1746,6 +1759,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
                 '</div>' +
                 '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
+                '<div class="form-field"><label>Code d\'acces espace client</label>' +
+                  '<div style="display:flex;gap:8px;align-items:center">' +
+                    '<input type="text" id="edit-spaceCode" value="' + esc(project.spaceCode || '') + '" placeholder="Ex: BLOOM2025 (vide = acces libre)" style="flex:1;font-family:monospace;letter-spacing:1px;text-transform:uppercase" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
+                    '<button type="button" class="btn btn--outline btn--sm" onclick="document.getElementById(\'edit-spaceCode\').value=Math.random().toString(36).slice(2,8).toUpperCase()">Generer</button>' +
+                  '</div>' +
+                  '<small style="color:var(--muted);font-size:11px">Si defini, le client devra entrer ce code avant d\'acceder a son espace.</small>' +
+                '</div>' +
                 (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
                 '<div class="form-field"><label>Image de bannière</label>' +
                   '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
@@ -2150,6 +2170,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       status: document.getElementById('edit-status').value,
       deadline: document.getElementById('edit-deadline').value || undefined,
       meetingLink: document.getElementById('edit-meetingLink').value || undefined,
+      spaceCode: (document.getElementById('edit-spaceCode')||{}).value || undefined,
       bannerUrl: (document.getElementById('edit-bannerData') && document.getElementById('edit-bannerData').value) || document.getElementById('edit-bannerUrl').value || undefined,
       bannerColor: _bannerColor || undefined,
       monthlyHours: parseFloat((document.getElementById('edit-monthlyHours')||{}).value) || undefined,
@@ -3818,11 +3839,33 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     function panelHidden(id) { return (sideTabs.length && sideTabs[0].id === id) ? '' : ' hidden'; }
 
-    var filesPanel = files.length ? '<div id="cp-panel-files" class="cp-panel' + panelHidden('files') + '">' +
-      filesGroup('Livrables', bycat.deliverable) +
-      filesGroup('Documents', bycat.document) +
-      filesGroup('Références', bycat.reference) +
-    '</div>' : '';
+    var clientUploadedFiles = files.filter(function(f){ return f.source === 'client'; });
+    var adminSharedFiles = files.filter(function(f){ return f.source !== 'client'; });
+    var adminBycat = { deliverable: adminSharedFiles.filter(function(f){ return f.category==='deliverable'; }), document: adminSharedFiles.filter(function(f){ return !f.category||f.category==='document'; }), reference: adminSharedFiles.filter(function(f){ return f.category==='reference'; }) };
+    var uploadPid = project.id;
+    var uploadSection = '<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">' +
+      '<div class="cp-files-group__label" style="margin-bottom:10px">Vos depots</div>' +
+      (clientUploadedFiles.length ? clientUploadedFiles.map(function(f){
+        return '<a class="cp-file" href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">' +
+          '<span class="cp-file__icon">' + fileIcon(f.type) + '</span>' +
+          '<span class="cp-file__name">' + esc(f.name) + '</span>' +
+          '<span class="cp-file__size">' + fmtSize(f.size) + '</span>' +
+          '<span class="cp-file__dl">↓</span>' +
+        '</a>';
+      }).join('') : '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Aucun fichier deposé.</div>') +
+      '<label style="display:flex;align-items:center;gap:10px;padding:14px 16px;border:2px dashed var(--border);border-radius:12px;cursor:pointer;color:var(--muted);font-size:13px;margin-top:8px" for="cli-file-up-' + uploadPid + '">' +
+        cpIcon('upload', 14) + ' Deposer un fichier' +
+        '<input type="file" id="cli-file-up-' + uploadPid + '" style="display:none" onchange="cliUploadClientFile(\'' + uploadPid + '\',this)">' +
+      '</label>' +
+    '</div>';
+    var hasFiles = adminSharedFiles.length || true;
+    if (!sideTabs.find(function(t){ return t.id==='files'; })) sideTabs.push({ id:'files', label:'Fichiers' });
+    var filesPanel = '<div id="cp-panel-files" class="cp-panel' + panelHidden('files') + '">' +
+      (adminSharedFiles.length
+        ? filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference)
+        : '<div style="color:var(--muted);font-size:13px;margin-bottom:4px">Aucun document partage pour le moment.</div>') +
+      uploadSection +
+    '</div>';
 
     var pracPanel = project.practicalInfo.sections.length ? '<div id="cp-panel-prac" class="cp-panel' + panelHidden('prac') + '">' +
       project.practicalInfo.sections.map(function(s) {
@@ -4799,6 +4842,28 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).catch(function(){ toast('Erreur, réessayez.'); });
   }
 
+  window.cliUploadClientFile = function(pid, input) {
+    if (!input || !input.files || !input.files[0]) return;
+    var file = input.files[0];
+    var label = input.closest ? input.closest('label') : null;
+    if (label) label.textContent = 'Envoi en cours…';
+    var fd = new FormData();
+    fd.append('file', file);
+    var storedCode = sessionStorage.getItem('_sc') || '';
+    var headers = {};
+    if (storedCode) headers['x-space-code'] = storedCode;
+    fetch(API_BASE + '/files', { method:'POST', headers: headers, body: fd })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(){
+        toast('Fichier deposé ✓');
+        // Reload project data
+        fetch(API_BASE, { headers: headers })
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(data){ if(data && !data.locked) renderApp(data); });
+      })
+      .catch(function(){ toast('Erreur lors du depot', true); });
+  };
+
   window.cliDeleteTask = function(pid, taskId) {
     showConfirm('Cette tâche sera définitivement supprimée.', function() {
       fetch(API_BASE + '/tasks/' + taskId + '?projectId=' + pid, { method:'DELETE', headers:{'Content-Type':'application/json'} })
@@ -5439,12 +5504,52 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     document.body.appendChild(panel);
   };
 
+  function showCodeEntry() {
+    document.getElementById('app').innerHTML =
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg,#f8f6f2);padding:20px">' +
+      '<div style="background:#fff;border-radius:20px;padding:36px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(5,24,51,0.10)">' +
+        '<div style="font-family:\'Alegreya\',serif;font-size:24px;color:var(--navy);margin-bottom:8px;font-style:italic">Espace prive</div>' +
+        '<p style="color:#8090a8;font-size:14px;margin:0 0 24px">Entrez le code d\'acces fourni par votre agence.</p>' +
+        '<input id="_code-inp" type="text" placeholder="CODE D\'ACCES" style="width:100%;padding:14px;text-align:center;font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border:2px solid #e2dbd0;border-radius:12px;font-family:monospace;box-sizing:border-box;margin-bottom:12px" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
+        '<div id="_code-err" style="color:#c44;font-size:13px;min-height:20px;margin-bottom:12px"></div>' +
+        '<button onclick="cpSubmitCode()" class="cp-btn cp-btn--dark" style="width:100%;justify-content:center;padding:12px">Acceder →</button>' +
+      '</div></div>';
+    setTimeout(function(){ var i=document.getElementById('_code-inp'); if(i){ i.focus(); i.addEventListener('keydown', function(e){ if(e.key==='Enter') window.cpSubmitCode(); }); } }, 60);
+  }
+
+  window.cpSubmitCode = function() {
+    var code = ((document.getElementById('_code-inp')||{}).value || '').trim().toUpperCase();
+    if (!code) { var err = document.getElementById('_code-err'); if(err) err.textContent='Entrez le code.'; return; }
+    sessionStorage.setItem('_sc', code);
+    loadClientApp();
+  };
+
+  function loadClientApp() {
+    var storedCode = sessionStorage.getItem('_sc') || '';
+    var headers = {};
+    if (storedCode) headers['x-space-code'] = storedCode;
+    fetch(API_BASE, { headers: headers })
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(data) {
+        if (data.locked) {
+          sessionStorage.removeItem('_sc');
+          showCodeEntry();
+          return;
+        }
+        if (data.wrongCode) {
+          sessionStorage.removeItem('_sc');
+          showCodeEntry();
+          setTimeout(function(){ var err=document.getElementById('_code-err'); if(err) err.textContent='Code incorrect. Reessayez.'; }, 80);
+          return;
+        }
+        renderApp(data);
+      })
+      .catch(showError);
+  }
+
   loadCpColors();
   if (!TOKEN || !API_BASE) { showError(); return; }
-  fetch(API_BASE)
-    .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
-    .then(renderApp)
-    .catch(showError);
+  loadClientApp();
 })();`;
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
