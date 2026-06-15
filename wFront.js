@@ -2012,8 +2012,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : bannerColors[0];
     var _bc = bannerColors[0].replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
     var bannerIsLight = !project.bannerUrl && (0.299*_r+0.587*_g+0.114*_b) > 160;
-    var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client'],['page','Personnaliser']];
-    var tabNav = '<div class="proj-tabnav">' +
+    var TYPE_SHORT_SH = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre', custom:'Personnalise' };
+    var typeLabel = TYPE_SHORT_SH[project.type] || project.type || 'Autre';
+
+    var tabs = [['accueil','Apercu'],['taches','Planning'],['client','Client'],['page','Personnaliser']];
+    var tabNav = '<div class="proj-tabnav" style="padding:0 40px;background:#FAF8F4">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
         return '<button class="proj-tabnav__btn'+(act?' active':'')+'" onclick="adminProjTab(\''+tb[0]+'\')" data-tab="'+tb[0]+'">'+tb[1]+'</button>';
@@ -2025,19 +2028,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
 
-          '<div class="proj-banner" style="background:' + bannerBg + '" id="proj-banner-el"' + (bannerIsLight ? ' data-light' : '') + '>' +
-            '<div class="proj-banner__inner">' +
-              '<div>' +
-                '<h1 class="proj-banner__title">' + esc(project.projectTitle) + '</h1>' +
-                '<p class="proj-banner__sub">' + esc(project.clientName) + ' · ' + esc(project.clientEmail) + '</p>' +
-              '</div>' +
-              '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
-                '<button class="btn btn--ghost" onclick="adminNav(\'/admin\')">← Dashboard</button>' +
-                '<button class="btn btn--ghost" onclick="addProjectForClient()">+ Nouveau projet</button>' +
-                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Apercu espace client</button>' : '') +
-                '<button class="btn btn--ghost" onclick="openBannerEditor()" title="Changer la couleur ou l\'image" style="padding:6px 10px;font-size:18px">&#9998;</button>' +
-                '<button class="btn btn--ghost btn--ghost-danger" onclick="confirmDelete()">Supprimer</button>' +
-              '</div>' +
+          '<div style="position:relative;height:180px;background:'+bannerBg+';background-size:cover;background-position:center" id="proj-banner-el">' +
+            '<div style="position:absolute;inset:0;background:rgba(20,12,6,0.35);pointer-events:none"></div>' +
+            '<button onclick="adminNav(\'/admin\')" style="position:absolute;top:18px;left:24px;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;border:0;background:rgba(20,12,6,0.55);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">&#8592; Tous les espaces</button>' +
+            '<div style="position:absolute;top:18px;right:24px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,0.18);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">'+typeLabel+'</div>' +
+          '</div>' +
+
+          '<div style="padding:24px 40px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px;background:#FAF8F4">' +
+            '<div>' +
+              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:42px;color:#5c4633;font-weight:400;line-height:1.1;margin:0 0 6px">'+esc(project.clientName)+'</h1>' +
+              '<p style="color:#8a6f54;font-size:15px;margin:0">'+esc(project.clientEmail)+(project.projectTitle?' \xB7 '+esc(project.projectTitle):'')+'</p>' +
+            '</div>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-top:6px">' +
+              (project.clientEmail ? '<button class="btn btn--outline" onclick="previewClientSpace()">Voir le portail</button>' : '') +
+              '<button class="btn btn--primary" onclick="openBannerEditor()">Personnaliser</button>' +
+              '<button class="btn btn--danger" onclick="confirmDelete()">Supprimer</button>' +
             '</div>' +
           '</div>' +
 
