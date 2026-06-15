@@ -108,7 +108,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   width: 260px; background: #5c4633; border-right: none;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
-.sidebar-header { padding: 22px 20px 18px; background: #412F21; border-bottom: 1px solid rgba(239,225,176,0.12); }
+.sidebar-header { padding: 26px 24px 22px; background: #5c4633; border-bottom: 1px solid rgba(239,225,176,0.12); }
 .sidebar-logo { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: #EFE1B0; font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
 .sidebar-logo img { max-height: 36px; width: auto; }
 .sidebar-sub { font-size: 9px; color: rgba(239,225,176,0.6); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.2em; }
@@ -1782,7 +1782,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }).join('');
     var totalUnread = (typeof msgBadgeOverride === 'number') ? msgBadgeOverride : Object.values(unreadMap).reduce(function(a, b) { return a + b; }, 0);
     return '<nav class="sidebar">' +
-      '<div class="sidebar-header"><div class="sidebar-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:36px;width:auto"></div><div class="sidebar-sub">Administration</div></div>' +
+      '<div class="sidebar-header">' +
+        '<div style="display:flex;align-items:center;gap:11px">' +
+          '<span style="color:#E4D1FE;flex-shrink:0">' + icon('flower',22,'color:#E4D1FE') + '</span>' +
+          '<div style="line-height:1.15">' +
+            '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:19px;color:#EFE1B0;white-space:nowrap">Seed to Bloom</div>' +
+            '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.2em;text-transform:uppercase;margin-top:2px">Panel atelier</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
       '<button class="side-tab' + (activeSection === 'dashboard' ? ' active' : '') + '" onclick="adminNav(\'/admin\')">'+icon('dashboard',15)+' Dashboard</button>' +
       '<button class="side-tab' + (activeSection === 'messages' ? ' active' : '') + '" onclick="window.location.hash=\'messages\'">' +
         icon('messages',15)+' Messages' + (totalUnread > 0 ? '<span class="side-tab__badge">' + totalUnread + '</span>' : '') +
@@ -1792,12 +1800,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<button class="side-tab' + (activeSection === 'settings' ? ' active' : '') + '" onclick="window.location.hash=\'settings\'">'+icon('settings',15)+' Reglages</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
-      '<div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">' +
-        '<button onclick="doLogout()" style="background:none;border:none;color:rgba(212,228,240,0.5);font-size:12px;cursor:pointer;padding:0">Deconnexion</button>' +
-        '<button id="_theme-btn" onclick="openColorPanel()" title="Couleurs" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;gap:3px;align-items:center">' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:var(--lavender);display:inline-block"></span>' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:var(--cream);display:inline-block"></span>' +
-        '</button>' +
+      '<div style="padding:16px 20px;border-top:1px solid rgba(239,225,176,0.12);display:flex;align-items:center;gap:11px">' +
+        '<span style="width:36px;height:36px;border-radius:50%;background:rgba(239,225,176,0.15);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:15px;color:#EFE1B0;flex-shrink:0">C</span>' +
+        '<div style="line-height:1.2;flex:1;min-width:0">' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:17px;color:#EFE1B0">Cindy</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.1em;text-transform:uppercase">Fondatrice</div>' +
+        '</div>' +
+        '<button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;color:rgba(239,225,176,0.4);cursor:pointer;padding:4px;display:grid;place-items:center">' + icon('logout',16) + '</button>' +
       '</div>' +
     '</nav>';
   }
@@ -4635,9 +4644,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' : '') +
       '</div>';
 
+      var homeUnread = totalUnread();
       var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
         cpIcon('chat',18,'color:var(--terre)') +
-        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:var(--terre)">Ecrire a Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);margin-top:2px">Reponse sous 24 h</div></div>' +
+        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:var(--terre)">Ecrire a Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);margin-top:2px">' + (homeUnread > 0 ? homeUnread+' non lu' : 'Reponse sous 24 h') + '</div></div>' +
         cpIcon('arrow',15,'color:var(--terre-600)') +
       '</button>';
 
