@@ -2084,6 +2084,48 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('');
 
+    // ── Carte « Acces a l'espace » (code d'acces + lien portail), bien visible ──
+    var _origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
+    var _activeTokens = tokens.filter(function(t){ return !t.revoked; });
+    var _primaryLink = _activeTokens.length ? (_origin + '/p/' + _activeTokens[0].token) : '';
+    var hasCode = !!(project.spaceCode && project.spaceCode.trim());
+    const accessCardHtml =
+      '<div class="card">' +
+        '<div class="card-header"><span class="card-title">Acces a l\'espace</span>' +
+          (hasCode ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#6c4ea4"><span style="width:7px;height:7px;border-radius:2px;background:#a98bd6;transform:rotate(45deg)"></span>Protege par code</span>'
+                   : '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#8a6f54">Acces libre</span>') +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">' +
+            // Code d'acces
+            '<div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#8a6f54;margin-bottom:8px">Code d\'acces</div>' +
+              '<div style="display:flex;gap:8px;align-items:center">' +
+                '<input id="acc-spaceCode" type="text" value="' + esc(project.spaceCode || '') + '" placeholder="Aucun (acces libre)" maxlength="20" oninput="this.value=this.value.toUpperCase()" style="flex:1;padding:11px 14px;border:1px solid var(--bone-d);border-radius:10px;background:' + (hasCode ? '#f7efff' : '#fff') + ';font-family:monospace;font-size:17px;letter-spacing:3px;text-transform:uppercase;color:#5c4633;outline:none">' +
+                '<button class="btn btn--outline btn--sm" type="button" onclick="document.getElementById(\'acc-spaceCode\').value=Math.random().toString(36).slice(2,8).toUpperCase()" title="Generer un code">Generer</button>' +
+                '<button class="btn btn--primary btn--sm" type="button" onclick="saveSpaceCode()">Enregistrer</button>' +
+              '</div>' +
+              '<small style="color:#8a6f54;font-size:11px;display:block;margin-top:7px;line-height:1.5">' + (hasCode ? 'Le client doit saisir ce code avant d\'acceder a son espace.' : 'Laissez vide pour un acces libre, ou definissez un code a communiquer au client.') + '</small>' +
+            '</div>' +
+            // Lien du portail
+            '<div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#8a6f54;margin-bottom:8px">Lien du portail</div>' +
+              (_primaryLink ?
+                '<div style="display:flex;gap:8px;align-items:center">' +
+                  '<input type="text" readonly value="' + esc(_primaryLink) + '" onclick="this.select()" style="flex:1;padding:11px 14px;border:1px solid var(--bone-d);border-radius:10px;background:#fff;font-family:monospace;font-size:12.5px;color:#5c4633;outline:none">' +
+                  '<button class="btn btn--primary btn--sm" type="button" onclick="copyToken(\'' + _activeTokens[0].token + '\')">Copier</button>' +
+                '</div>' +
+                '<small style="color:#8a6f54;font-size:11px;display:block;margin-top:7px;line-height:1.5">' + _activeTokens.length + ' lien' + (_activeTokens.length>1?'s':'') + ' actif' + (_activeTokens.length>1?'s':'') + ' \xB7 gerez-les ci-dessous.</small>'
+                :
+                '<div style="padding:14px;border:1px dashed var(--bone-d);border-radius:10px;text-align:center">' +
+                  '<div style="color:#8a6f54;font-size:12.5px;margin-bottom:10px">Aucun lien d\'acces genere.</div>' +
+                  '<button class="btn btn--sage btn--sm" type="button" onclick="genClientSpaceToken()">Generer le lien d\'espace</button>' +
+                '</div>') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
     const clientUpFiles = files.filter(function(f){ return f.source === 'client'; });
     const filesHtml = files.map(function(f) {
       var isClient = f.source === 'client';
@@ -2339,6 +2381,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
 
           '<div id="tab-client" class="main-inner proj-main" style="' + (_adminProjTab==='client' ? '' : 'display:none') + '">' +
+            accessCardHtml +
             '<div class="card">' +
               '<div class="card-header"><span class="card-title">Fichiers</span><button class="btn btn--sage btn--sm" onclick="document.getElementById(\'file-input\').click()">+ Uploader</button><input type="file" id="file-input" style="display:none" onchange="uploadFile(this)"></div>' +
               '<div class="card-body" id="files-container">' + (filesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun fichier.</p>') + '</div>' +
@@ -3078,6 +3121,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.copyToken = function(token) {
     const url = window.location.origin + '/p/' + token;
     navigator.clipboard.writeText(url).then(function() { toast('Lien copié ✓'); });
+  };
+
+  window.saveSpaceCode = async function() {
+    var el = document.getElementById('acc-spaceCode');
+    var code = el ? el.value.trim().toUpperCase() : '';
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { spaceCode: code || undefined })) });
+    if (res.ok) { toast(code ? 'Code d\'acces enregistre ✓' : 'Acces libre (code retire)'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
   };
 
   window.revokeToken = async function(token) {
