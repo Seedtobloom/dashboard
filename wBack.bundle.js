@@ -1127,22 +1127,26 @@ async function handleClientApi(request, env, url) {
     const conversation = threadEmail ? await getClientMessages(env, threadEmail) : [];
     let studioHolidays = [];
     let studioName = "Seed to Bloom";
+    let studioAccentMode = "type";
+    let studioAccentForced = "glycine";
     try {
       const sData = await env.BLOOM_KV.get("studio:settings");
       if (sData) {
         const sObj = JSON.parse(sData);
         if (Array.isArray(sObj.holidays)) studioHolidays = sObj.holidays;
         if (sObj.studioName) studioName = sObj.studioName;
+        if (sObj.accentMode) studioAccentMode = sObj.accentMode;
+        if (sObj.accentForced) studioAccentForced = sObj.accentForced;
       }
     } catch (e) {
     }
     if (clientToken.clientEmail) {
-      return jsonResponse({ type: "client", clientName, projects: projectsData, conversation, studioHolidays, studioName });
+      return jsonResponse({ type: "client", clientName, projects: projectsData, conversation, studioHolidays, studioName, studioAccentMode, studioAccentForced });
     }
     const single = projectsData[0];
     if (!single)
       return errorResponse("Project not found", 404);
-    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation, studioHolidays, studioName });
+    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation, studioHolidays, studioName, studioAccentMode, studioAccentForced });
   }
   if (subPath === "/conversation") {
     if (!threadEmail)

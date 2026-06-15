@@ -6931,6 +6931,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     } else { appData = data; }
     convData = Array.isArray(data.conversation) ? data.conversation : [];
     cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : [];
+    // Apply studio accent mode to portal CSS variables
+    if (data.studioAccentMode === 'forced' && data.studioAccentForced) {
+      var TONE_VARS = {
+        glycine: { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
+        brume:   { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
+        ocre:    { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12' },
+        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
+        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#586c8e', ink:'#2b3d5f' },
+      };
+      var tv = TONE_VARS[data.studioAccentForced] || TONE_VARS.glycine;
+      var el = document.getElementById('cp-accent-style');
+      if (!el) { el = document.createElement('style'); el.id = 'cp-accent-style'; document.head.appendChild(el); }
+      el.textContent = ':root{--glycine:'+tv.mid+';--glycine-50:'+tv.soft+';--glycine-200:'+tv.mid+';--glycine-700:'+tv.deep+';--glycine-900:'+tv.ink+';}';
+    }
     if (!appData.projects.length) { showError(); return; }
     applyClientTheme(appData.projects);
     var portal = appData.type === 'client';
