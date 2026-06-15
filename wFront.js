@@ -562,6 +562,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-btn--dark { background: var(--nuit); color: var(--brume); }
 .cp-btn--sage { background: var(--glycine); color: var(--terre); text-decoration: none; }
 .cp-btn--outline { background: transparent; border: 1px solid color-mix(in oklab, var(--terre) 35%, transparent); color: var(--terre); }
+.cp-btn--secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-fg); border: 1px solid var(--btn-secondary-fg); }
 
 /* Files */
 .cp-files-group + .cp-files-group { margin-top: 20px; }
@@ -2084,47 +2085,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('');
 
-    // ── Carte « Acces a l'espace » (code d'acces + lien portail), bien visible ──
+    // ── Variables pour le tab Acces ─────────────────────────────────────────────
     var _origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
     var _activeTokens = tokens.filter(function(t){ return !t.revoked; });
     var _primaryLink = _activeTokens.length ? (_origin + '/p/' + _activeTokens[0].token) : '';
     var hasCode = !!(project.spaceCode && project.spaceCode.trim());
-    const accessCardHtml =
-      '<div class="card">' +
-        '<div class="card-header"><span class="card-title">Acces a l\'espace</span>' +
-          (hasCode ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#6c4ea4"><span style="width:7px;height:7px;border-radius:2px;background:#a98bd6;transform:rotate(45deg)"></span>Protege par code</span>'
-                   : '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#8a6f54">Acces libre</span>') +
-        '</div>' +
-        '<div class="card-body">' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">' +
-            // Code d'acces
-            '<div>' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#8a6f54;margin-bottom:8px">Code d\'acces</div>' +
-              '<div style="display:flex;gap:8px;align-items:center">' +
-                '<input id="acc-spaceCode" type="text" value="' + esc(project.spaceCode || '') + '" placeholder="Aucun (acces libre)" maxlength="20" oninput="this.value=this.value.toUpperCase()" style="flex:1;padding:11px 14px;border:1px solid var(--bone-d);border-radius:10px;background:' + (hasCode ? '#f7efff' : '#fff') + ';font-family:monospace;font-size:17px;letter-spacing:3px;text-transform:uppercase;color:#5c4633;outline:none">' +
-                '<button class="btn btn--outline btn--sm" type="button" onclick="document.getElementById(\'acc-spaceCode\').value=Math.random().toString(36).slice(2,8).toUpperCase()" title="Generer un code">Generer</button>' +
-                '<button class="btn btn--primary btn--sm" type="button" onclick="saveSpaceCode()">Enregistrer</button>' +
-              '</div>' +
-              '<small style="color:#8a6f54;font-size:11px;display:block;margin-top:7px;line-height:1.5">' + (hasCode ? 'Le client doit saisir ce code avant d\'acceder a son espace.' : 'Laissez vide pour un acces libre, ou definissez un code a communiquer au client.') + '</small>' +
-            '</div>' +
-            // Lien du portail
-            '<div>' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#8a6f54;margin-bottom:8px">Lien du portail</div>' +
-              (_primaryLink ?
-                '<div style="display:flex;gap:8px;align-items:center">' +
-                  '<input type="text" readonly value="' + esc(_primaryLink) + '" onclick="this.select()" style="flex:1;padding:11px 14px;border:1px solid var(--bone-d);border-radius:10px;background:#fff;font-family:monospace;font-size:12.5px;color:#5c4633;outline:none">' +
-                  '<button class="btn btn--primary btn--sm" type="button" onclick="copyToken(\'' + _activeTokens[0].token + '\')">Copier</button>' +
-                '</div>' +
-                '<small style="color:#8a6f54;font-size:11px;display:block;margin-top:7px;line-height:1.5">' + _activeTokens.length + ' lien' + (_activeTokens.length>1?'s':'') + ' actif' + (_activeTokens.length>1?'s':'') + ' \xB7 gerez-les ci-dessous.</small>'
-                :
-                '<div style="padding:14px;border:1px dashed var(--bone-d);border-radius:10px;text-align:center">' +
-                  '<div style="color:#8a6f54;font-size:12.5px;margin-bottom:10px">Aucun lien d\'acces genere.</div>' +
-                  '<button class="btn btn--sage btn--sm" type="button" onclick="genClientSpaceToken()">Generer le lien d\'espace</button>' +
-                '</div>') +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
 
     const clientUpFiles = files.filter(function(f){ return f.source === 'client'; });
     const filesHtml = files.map(function(f) {
@@ -2206,14 +2171,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
           '<div style="padding:24px 40px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">' +
             '<div style="min-width:0">' +
+              (function(){
+                var isRevoked = project.status==='revoked', isArch = project.status==='archived';
+                var stColor = isArch ? '#8a6f54' : isRevoked ? '#9b3a2e' : '#5c4633';
+                var stLabel = isArch ? 'Archive' : isRevoked ? 'Acces revoque' : 'Espace actif';
+                var stIcon = isArch ? '▣' : isRevoked ? '🔒' : '✓';
+                return '<div style="display:inline-flex;align-items:center;gap:6px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:'+stColor+';margin-bottom:8px">'+stIcon+' '+stLabel+'</div>';
+              })() +
               '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:42px;color:#5c4633;font-weight:400;line-height:1.1;margin:0 0 6px">' + esc(project.clientName) + '</h1>' +
-              '<p style="color:#8a6f54;font-size:15px;margin:0">' + esc(project.clientEmail) + (project.projectTitle ? ' \xB7 ' + esc(project.projectTitle) : '') + '</p>' +
+              '<p style="color:#8a6f54;font-size:16px;margin:0">' + esc(project.clientEmail) + (project.projectTitle ? ' \xB7 ' + esc(project.projectTitle) : '') + '</p>' +
             '</div>' +
             '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
-              '<button class="btn btn--outline" onclick="addProjectForClient()">+ Nouveau projet</button>' +
+              '<button class="btn btn--outline btn--sm" onclick="addProjectForClient()">+ Nouveau projet</button>' +
               (project.clientEmail ? '<button class="btn btn--outline" onclick="previewClientSpace()">Voir le portail</button>' : '') +
-              '<button class="btn btn--outline" onclick="openBannerEditor()" title="Changer la couleur ou l\'image">Personnaliser</button>' +
-              '<button class="btn btn--danger" onclick="confirmDelete()">Supprimer</button>' +
+              '<button class="btn btn--primary" onclick="openBannerEditor()" title="Changer la couleur ou l\'image">Personnaliser →</button>' +
             '</div>' +
           '</div>' +
 
@@ -2539,6 +2510,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var isRevoked = project.status === 'revoked';
               var isArchived = project.status === 'archived';
               var archiveCard = '<div class="card" style="padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
+                icon('archive',20,'color:#8a6f54;flex-shrink:0') +
                 '<div style="flex:1">' +
                   '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#5c4633">' + (isArchived ? 'Sortir des archives' : 'Archiver l\'espace') + '</div>' +
                   '<p style="font-size:13px;color:#8a6f54;margin-top:2px">' + (isArchived ? 'Le projet reapparait parmi les espaces actifs.' : 'Range les projets termines. Reversible — rien n\'est supprime.') + '</p>' +
@@ -2547,6 +2519,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>';
 
               var revokeCard = '<div class="card" style="padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
+                icon('lock',20,'color:#8a6f54;flex-shrink:0') +
                 '<div style="flex:1">' +
                   '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#5c4633">' + (isRevoked ? 'Retablir l\'acces' : 'Revoquer l\'acces') + '</div>' +
                   '<p style="font-size:13px;color:#8a6f54;margin-top:2px">' + (isRevoked ? 'Le client pourra de nouveau entrer avec son code.' : 'Coupe l\'entree au portail sans rien supprimer. Reversible.') + '</p>' +
@@ -2555,11 +2528,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>';
 
               var deleteCard = '<div style="background:#fbf1ee;border:1px solid #e7c6bd;border-radius:14px;padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
+                icon('trash',20,'color:#9b3a2e;flex-shrink:0') +
                 '<div style="flex:1">' +
                   '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#9b3a2e">Supprimer definitivement</div>' +
                   '<p style="font-size:13px;color:#9b3a2e;opacity:0.85;margin-top:2px">Efface l\'espace et tout son contenu. Action irreversible.</p>' +
                 '</div>' +
-                '<button class="btn btn--danger" onclick="confirmDelete()">Supprimer</button>' +
+                '<button class="btn btn--danger" onclick="confirmDelete()">' + icon('trash',14) + ' Supprimer</button>' +
               '</div>';
 
               // Email notifications
@@ -6911,15 +6885,27 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function applyClientTheme(projects) {
-    var color = (projects[0] && projects[0].project && projects[0].project.bannerColor) ? projects[0].project.bannerColor.split('|')[0] : null;
-    if (!color) return;
+    var p0 = projects[0] && projects[0].project;
+    var color = (p0 && p0.bannerColor) ? p0.bannerColor.split('|')[0] : null;
+    var btn = (p0 && p0.btn) || null;
+    var vars = '';
+    if (color) {
+      var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
+      var lum = 0.299*_r+0.587*_g+0.114*_b;
+      var accent = lum > 160 ? '#051833' : color;
+      vars += '--navy:'+accent+';--brown:'+color+';';
+    }
+    if (btn) {
+      if (btn.primaryBg) vars += '--btn-primary-bg:'+btn.primaryBg+';';
+      if (btn.primaryFg) vars += '--btn-primary-fg:'+btn.primaryFg+';';
+      if (btn.secondaryBg !== undefined) vars += '--btn-secondary-bg:'+btn.secondaryBg+';';
+      if (btn.secondaryFg) vars += '--btn-secondary-fg:'+btn.secondaryFg+';';
+    }
+    if (!vars) return;
     // Element distinct du theme utilisateur (cp-theme-style) pour ne pas l'ecraser
     var el = document.getElementById('cp-banner-style');
     if (!el) { el = document.createElement('style'); el.id = 'cp-banner-style'; document.head.appendChild(el); }
-    var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
-    var lum = 0.299*_r+0.587*_g+0.114*_b;
-    var accent = lum > 160 ? '#051833' : color;
-    el.textContent = ':root{--navy:'+accent+';--brown:'+color+';}';
+    el.textContent = ':root{'+vars+'}';
     // Garder le theme utilisateur prioritaire (dernier dans le head)
     var u = document.getElementById('cp-theme-style');
     if (u) document.head.appendChild(u);
