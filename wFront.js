@@ -3827,6 +3827,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     });
   }
 
+  window.openNewProject = function() { openModal('modal-new-project'); };
+
   window.createProject = async function() {
     const type = document.getElementById('new-type').value;
     const body = {
@@ -3840,6 +3842,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       steps: templateSteps(type),
     };
     if (!body.clientName || !body.projectTitle) { toast('Nom et titre requis', true); return; }
+    // Message d'accueil par defaut (depuis les reglages du studio)
+    try {
+      var welcome = (studioSettings && studioSettings.welcomeMessage) ? studioSettings.welcomeMessage : '';
+      if (!welcome) {
+        var sres = await apiFetch('/api/settings');
+        if (sres.ok) { var sj = await sres.json(); welcome = (sj && sj.welcomeMessage) || ''; }
+      }
+      if (welcome) body.homeBanner = { subtitle: welcome };
+    } catch (e) {}
     const res = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
