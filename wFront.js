@@ -350,9 +350,9 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   /* status */
   --st-todo:#a98bd6; --st-progress:#7c9bdc; --st-review:#c9952f; --st-done:#5c4633;
   /* fonts */
-  --font-display:'Alegreya','EB Garamond',Georgia,serif;
+  --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
   --font-body:'EB Garamond',Georgia,'Times New Roman',serif;
-  --font-micro:'Ambra Sans',ui-sans-serif,system-ui,sans-serif;
+  --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   /* type scale */
   --fs-micro:11px; --fs-small:14px; --fs-body:17px; --fs-lead:20px;
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
