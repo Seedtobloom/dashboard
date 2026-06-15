@@ -920,6 +920,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return '<span class="status-badge" style="background:' + bg + ';color:' + fg + '">' + (STATUS_LABELS[status] || status) + '</span>';
   }
 
+  var ADMIN_TYPE_TONES = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', support:'brume', custom:'terre' };
+  var ADMIN_TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Supports', custom:'Personnalise' };
+  var ADMIN_TYPE_ACCENT = {
+    glycine: { soft:'rgba(228,209,254,0.22)', color:'rgba(228,209,254,0.9)', fg:'#fff' },
+    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(186,209,253,0.9)', fg:'#fff' },
+    terre:   { soft:'rgba(239,225,176,0.22)', color:'rgba(239,225,176,0.9)', fg:'#5c4633' },
+  };
+  function adminTypeBadge(type) {
+    var tone = ADMIN_TYPE_TONES[type] || 'glycine';
+    var a = ADMIN_TYPE_ACCENT[tone];
+    var label = ADMIN_TYPE_SHORT[type] || (type || 'Autre');
+    return '<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:'+a.color+';color:'+a.fg+';font-family:\'Inter Tight\',sans-serif;font-size:9.5px;font-weight:500;letter-spacing:0.03em">'+esc(label)+'</span>';
+  }
+
   const TYPE_LABELS = {
     identite: 'Identité visuelle',
     site: 'Site web',
@@ -1637,12 +1651,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         else if (days<=7) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c9952f">dans '+days+' j</span>';
         else deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+formatDate(p.deadline)+'</span>';
       }
-      return '<button onclick="adminNav(\'/admin/projects/'+p.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:1px solid #e2d9ce;border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms" onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
+      var isRevCard = p.status === 'revoked';
+      var isArchCard = p.status === 'archived';
+      return '<button onclick="adminNav(\'/admin/projects/'+p.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:1px solid #e2d9ce;border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'" onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
         '<div style="position:relative;height:118px;background:'+bannerBg+'">' +
-          '<div style="position:absolute;top:11px;left:12px">' +
-            '<span style="display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,0.14);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9.5px;font-weight:500;letter-spacing:0.03em">'+typeLabel+'</span>' +
+          '<div style="position:absolute;top:11px;left:12px;display:flex;gap:7px">' +
+            adminTypeBadge(p.type) +
           '</div>' +
-          (u>0 ? '<div style="position:absolute;top:11px;right:12px;display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">\U0001f4ac '+u+'</div>' : '') +
+          '<div style="position:absolute;top:11px;right:12px;display:flex;gap:7px">' +
+            (u>0 ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">' + icon('chat',12) + ' '+u+'</span>' : '') +
+            (isArchCard ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase">' + icon('archive',11) + ' Archive</span>' : '') +
+            (isRevCard && !isArchCard ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase">' + icon('lock',11) + ' Revoque</span>' : '') +
+          '</div>' +
         '</div>' +
         '<div style="padding:18px 22px 22px">' +
           '<div style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#5c4633;margin-bottom:3px">'+esc(p.clientName)+'</div>' +
@@ -2166,7 +2186,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="position:relative;height:180px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el">' +
             '<div style="position:absolute;inset:0;background:rgba(20,12,6,0.32);pointer-events:none"></div>' +
             '<button onclick="adminNav(\'/admin\')" style="position:absolute;top:18px;left:24px;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;border:0;background:rgba(20,12,6,0.55);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">← Tous les espaces</button>' +
-            '<div style="position:absolute;top:18px;right:24px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,0.18);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">' + sheetTypeLabel + '</div>' +
+            '<div style="position:absolute;top:18px;right:24px">' + adminTypeBadge(project.type) + '</div>' +
           '</div>' +
 
           '<div style="padding:24px 40px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">' +
@@ -2175,8 +2195,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 var isRevoked = project.status==='revoked', isArch = project.status==='archived';
                 var stColor = isArch ? '#8a6f54' : isRevoked ? '#9b3a2e' : '#5c4633';
                 var stLabel = isArch ? 'Archive' : isRevoked ? 'Acces revoque' : 'Espace actif';
-                var stIcon = isArch ? '▣' : isRevoked ? '🔒' : '✓';
-                return '<div style="display:inline-flex;align-items:center;gap:6px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:'+stColor+';margin-bottom:8px">'+stIcon+' '+stLabel+'</div>';
+                var stIconName = isArch ? 'archive' : isRevoked ? 'lock' : 'check';
+                return '<div style="display:inline-flex;align-items:center;gap:6px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:'+stColor+';margin-bottom:8px">'+icon(stIconName,13,'color:'+stColor)+' '+stLabel+'</div>';
               })() +
               '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:42px;color:#5c4633;font-weight:400;line-height:1.1;margin:0 0 6px">' + esc(project.clientName) + '</h1>' +
               '<p style="color:#8a6f54;font-size:16px;margin:0">' + esc(project.clientEmail) + (project.projectTitle ? ' \xB7 ' + esc(project.projectTitle) : '') + '</p>' +
@@ -2203,16 +2223,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var isPartenaire = project.type === 'partenaire';
               var trackLabel = isPartenaire ? 'taches' : isMaint ? 'interventions' : 'etapes';
               var tiles = [
-                { v: pct+'%', k:'Avancement' },
-                { v: dn+'/'+allSteps.length, k: trackLabel+' faites' },
-                { v: unread, k:'Messages non lus' },
-                { v: files.length, k:'Fichiers' }
+                { v: pct+'%', k:'Avancement', icon:'tasks' },
+                { v: dn+'/'+allSteps.length, k: trackLabel+' faites', icon:'check' },
+                { v: unread, k:'Messages non lus', icon:'chat' },
+                { v: files.length, k:'Fichiers', icon:'paperclip' }
               ];
               // Stat tiles
               var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">' +
                 tiles.map(function(t){
                   return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
-                    '<div style="width:34px;height:34px;border-radius:9px;background:'+sht.soft+';border:1px solid '+sht.mid+';margin-bottom:12px"></div>' +
+                    '<div style="width:34px;height:34px;border-radius:9px;background:'+sht.soft+';border:1px solid '+sht.mid+';margin-bottom:12px;display:grid;place-items:center;color:'+sht.ink+'">' + icon(t.icon,17) + '</div>' +
                     '<div style="font-family:\'Cormorant Garamond\',serif;font-size:30px;color:#5c4633;line-height:1;margin-bottom:4px">'+t.v+'</div>' +
                     '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+t.k+'</div>' +
                   '</div>';
@@ -2352,9 +2372,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var SH_ACCENT2 = { glycine:{soft:'#f7efff',mid:'#E4D1FE'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD'}, terre:{soft:'#ece2d0',mid:'#c8b29a'} };
               var sht2 = SH_ACCENT2[TYPE_TONES_SHEET[project.type]] || SH_ACCENT2.glycine;
               var tiles3Html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">' +
-                [{ v:startDisp, k:'Demarrage' }, { v:dueDisp+(project.deadlineExtended?' (prolongee)':''), k:'Echeance' }, { v:dur, k:'Duree' }].map(function(t){
+                [{ v:startDisp, k:'Demarrage', i:'calendar' }, { v:dueDisp+(project.deadlineExtended?' (prolongee)':''), k:'Echeance', i:'calendar' }, { v:dur, k:'Duree', i:'clock' }].map(function(t){
                   return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
-                    '<div style="width:34px;height:34px;border-radius:9px;background:'+sht2.soft+';border:1px solid '+sht2.mid+';margin-bottom:12px"></div>' +
+                    '<div style="width:34px;height:34px;border-radius:9px;background:'+sht2.soft+';border:1px solid '+sht2.mid+';margin-bottom:12px;display:grid;place-items:center;color:#8a6f54">' + icon(t.i,17) + '</div>' +
                     '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#5c4633;line-height:1.1;margin-bottom:4px">'+esc(t.v)+'</div>' +
                     '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+t.k+'</div>' +
                   '</div>';
@@ -4847,7 +4867,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       cpIcon('arrow', 12, 'color:var(--terre-400)') +
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
-        '<button class="cp-ptopbar__guide" onclick="" title="Guide">' + cpIcon('question',13) + ' Guide</button>' +
+        '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('question',13) + ' Guide</button>' +
         (accessCode ? '<span class="cp-ptopbar__code">' + cpIcon('lock',13) + ' ' + esc(accessCode) + '</span>' : '') +
         '<span class="cp-ptopbar__av">' + avInitial + '</span>' +
       '</div>' +
@@ -6791,29 +6811,71 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildHubView() {
     if (!_hubCache) return '<div class="fade-up" style="text-align:center;padding:60px 0;color:var(--terre-600)">Chargement…</div>';
     var sections = (_hubCache && _hubCache.sections) || [];
-    if (!sections.length) return '<div class="fade-up">' +
-      '<h2 style="font-family:var(--font-display);font-size:28px;color:var(--terre);font-style:italic;font-weight:400;margin-bottom:24px">Ressources partagees</h2>' +
-      '<p style="color:var(--terre-600);font-size:14px">Aucune ressource disponible pour le moment.</p></div>';
-    var secHtml = sections.map(function(sec) {
-      var contentHtml = '';
-      if (sec.type === 'links') {
+
+    // "Ressources communes" — shared hub sections
+    var commonHtml = '';
+    if (sections.length) {
+      var docCards = sections.filter(function(s){ return s.type === 'links' || s.type === 'link'; }).map(function(sec) {
         var links = (sec.content || '').split('\n').filter(Boolean);
-        contentHtml = '<div style="display:flex;flex-direction:column;gap:8px">' + links.map(function(l) {
+        return links.map(function(l) {
           var url = l.trim();
-          return '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;color:var(--terre);font-size:14px;word-break:break-all;text-decoration:none">' +
-            cpIcon('external',14,'color:var(--terre-400)') + esc(url) + '</a>';
-        }).join('') + '</div>';
-      } else {
-        contentHtml = '<p style="font-size:14px;color:var(--terre-600);white-space:pre-wrap;line-height:1.65;margin:0">' + esc(sec.content||'') + '</p>';
-      }
-      return '<div class="card" style="padding:20px 24px;margin-bottom:14px">' +
-        (sec.title ? '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:12px;font-style:italic;font-weight:400">' + esc(sec.title) + '</div>' : '') +
-        contentHtml +
+          var label = sec.title || url.replace(/^https?:\/\//, '');
+          return '<button onclick="window.open(\''+esc(url)+'\',\'_blank\')" class="card" style="padding:15px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;width:100%;border:none" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+            '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);display:grid;place-items:center;color:var(--glycine-900);flex:0 0 auto">' + cpIcon('external',18) + '</span>' +
+            '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre);line-height:1.2">' + esc(label) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(url.replace(/^https?:\/\//,''))+'</div></div>' +
+            cpIcon('download',15,'color:var(--terre-600)') +
+          '</button>';
+        }).join('');
+      }).join('');
+      var textCards = sections.filter(function(s){ return s.type !== 'links' && s.type !== 'link'; }).map(function(sec) {
+        return '<div class="card" style="padding:16px 18px;background:var(--glycine-50);border-color:var(--glycine-200)">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + cpIcon('info',14,'color:var(--glycine-900)') + (sec.title ? '<span style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(sec.title) + '</span>' : '') + '</div>' +
+          '<p style="font-size:13px;color:var(--terre-600);line-height:1.5;margin:0;white-space:pre-wrap">' + esc(sec.content||'') + '</p>' +
+        '</div>';
+      }).join('');
+      commonHtml = '<div style="margin-bottom:30px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' + cpIcon('flower',16,'color:var(--terre-400)') +
+          '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Ressources communes</h3>' +
+          '<span style="margin-left:auto;font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase">Commun a tous mes clients</span>' +
+        '</div>' +
+        (docCards ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:'+(textCards?'12':'0')+'px">' + docCards + '</div>' : '') +
+        (textCards ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' + textCards + '</div>' : '') +
+      '</div>';
+    }
+
+    // "Ressources de votre projet" — from project.resources
+    var firstProj = appData.projects.length ? appData.projects[0].project : null;
+    var projectResources = firstProj && firstProj.resources ? firstProj.resources : [];
+    var projResItems = projectResources.map(function(r) {
+      var url = r.url || '';
+      var label = r.title || url.replace(/^https?:\/\//,'');
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-2);border:1px solid var(--bone-d);background:var(--bone)">' +
+        '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);display:grid;place-items:center;color:var(--glycine-900);flex:0 0 auto">' + cpIcon('external',18) + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(label) + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(url.replace(/^https?:\/\//,'')) + '</div>' +
+        '</div>' +
+        (url ? '<a href="'+esc(url.startsWith('http')?url:'https://'+url)+'" target="_blank" rel="noreferrer" style="width:26px;height:26px;display:grid;place-items:center;color:var(--terre-600);text-decoration:none">'+cpIcon('download',14)+'</a>' : '') +
       '</div>';
     }).join('');
+    var projFolderHtml = '<div class="card" style="padding:18px 20px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+        cpIcon('folder',16,'color:var(--terre-400)') +
+        '<span style="font-family:var(--font-display);font-size:19px;color:var(--terre)">Documents partages</span>' +
+        '<span style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400)">' + projectResources.length + '</span>' +
+      '</div>' +
+      '<div style="display:grid;gap:9px">' +
+        (projResItems || '<p style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400);margin:0">Dossier vide.</p>') +
+      '</div>' +
+    '</div>';
+
     return '<div class="fade-up">' +
-      '<h2 style="font-family:var(--font-display);font-size:28px;color:var(--terre);font-style:italic;font-weight:400;margin-bottom:24px">Ressources partagees</h2>' +
-      secHtml + '</div>';
+      (commonHtml || (!projectResources.length ? '<p style="color:var(--terre-600);font-size:14px;margin-bottom:24px">Aucune ressource disponible pour le moment.</p>' : '')) +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
+        '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('folder',16,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Ressources de votre projet</h3></div>' +
+      '</div>' +
+      '<div style="display:grid;gap:16px">' + projFolderHtml + '</div>' +
+    '</div>';
   }
 
   function buildFichiersView() {
@@ -7005,6 +7067,68 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     currentView = 'messages';
     renderShell();
     markConvoRead();
+  };
+
+  window.cpOpenGuide = function() {
+    var firstProj = appData.projects.length ? appData.projects[0].project : null;
+    var clientType = firstProj ? (firstProj.type || 'identite') : 'identite';
+    var suiviLabel = clientType === 'maintenance' ? 'Interventions' : clientType === 'site' ? 'Suivi du site' : 'Etapes du projet';
+    var suiviText = clientType === 'maintenance'
+      ? 'Ouvrez un ticket en decrivant votre besoin, suivez son statut et gardez un oeil sur votre quota d\'heures du mois.'
+      : clientType === 'site'
+      ? 'Parcourez les phases de votre site ; cliquez-en une pour voir sa checklist, cocher ce qui est fait et suivre l\'avancement.'
+      : 'Suivez les etapes une a une ; cliquez-en une pour ouvrir sa page detaillee et voir son statut.';
+    var steps = [
+      { icon:'flower', title:'Bienvenue dans votre espace !', text:'Cet espace prive reunit tout votre projet avec le studio. Laissez-vous guider — on passe en revue chaque partie.' },
+      { icon:'home', title:'Le menu de gauche', text:'Toute la navigation est ici : accueil, suivi, messagerie, fichiers et ressources. Cliquez une entree pour ouvrir la section.' },
+      { icon:'tasks', title:suiviLabel, text:suiviText },
+      { icon:'chat', title:'Ecrire a Cindy', text:'Posez vos questions ici, comme une conversation. Pas besoin d\'e-mail — tout reste au meme endroit.' },
+      { icon:'paperclip', title:'Partager des fichiers', text:'Deposez vos elements (textes, photos, logos) et recuperez les livrables. Le partage marche dans les deux sens.' },
+      { icon:'folder', title:'Vos ressources', text:'Retrouvez ici les documents partages par le studio et les ressources de votre projet.' },
+      { icon:'check', title:'A vous de jouer', text:'Besoin d\'un point ? Le bouton « Rejoindre la visio » est en bas a gauche. Et ce guide reste accessible via « Guide », en haut.' },
+    ];
+    var existing = document.getElementById('cp-guide-overlay');
+    if (existing) existing.remove();
+    var idx = 0;
+    function render() {
+      var s = steps[idx]; var last = idx === steps.length - 1;
+      var el = document.getElementById('cp-guide-overlay');
+      el.innerHTML = '<div style="position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:179" onclick="document.getElementById(\'cp-guide-overlay\').remove()"></div>' +
+        '<div class="card" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:180;width:340px;padding:0;overflow:hidden;box-shadow:var(--shadow-3)">' +
+          '<div style="display:flex;align-items:center;gap:12px;padding:15px 18px 13px;border-bottom:1px solid var(--bone-d)">' +
+            '<span style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--nuit);color:var(--brume);flex:0 0 auto">' + cpIcon(s.icon,18) + '</span>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px">Etape '+(idx+1)+' / '+steps.length+'</div>' +
+              '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre)">' + esc(s.title) + '</div>' +
+            '</div>' +
+            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:28px;height:28px;display:grid;place-items:center;border:0;background:var(--bone);border-radius:var(--radius-2);cursor:pointer;color:var(--terre-600);flex:0 0 auto">' + cpIcon('x',14) + '</button>' +
+          '</div>' +
+          '<div style="padding:14px 18px 16px">' +
+            '<p style="font-size:14px;color:var(--terre-600);line-height:1.6;margin-bottom:15px">' + esc(s.text) + '</p>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+              '<div style="display:flex;gap:6px">' +
+                steps.map(function(_,j){ return '<span style="width:'+(j===idx?16:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'var(--terre)':'var(--bone-d)')+';transition:width 200ms"></span>'; }).join('') +
+              '</div>' +
+              '<div style="display:flex;gap:8px">' +
+                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" class="btn btn--outline btn--sm" style="background:#fff">Precedent</button>' : '') +
+                '<button onclick="window._cpGuideNav(1)" class="btn btn--primary btn--sm">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+    window._cpGuideNav = function(dir) {
+      var el = document.getElementById('cp-guide-overlay');
+      if (!el) return;
+      if (dir === 1 && idx === steps.length - 1) { el.remove(); return; }
+      idx = Math.max(0, Math.min(steps.length - 1, idx + dir));
+      render();
+    };
+    var overlay = document.createElement('div');
+    overlay.id = 'cp-guide-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:178;pointer-events:auto';
+    document.body.appendChild(overlay);
+    render();
   };
 
   // Bouton actualiser dans la messagerie — pas de polling automatique.
