@@ -1427,6 +1427,21 @@ var wBack_default = {
         }
         return errorResponse("Method not allowed", 405);
       }
+      if (pathname === "/api/settings") {
+        if (request.method === "GET") {
+          const sData = await env.BLOOM_KV.get("studio:settings");
+          return jsonResponse(sData ? JSON.parse(sData) : {});
+        }
+        if (request.method === "PUT" || request.method === "PATCH") {
+          const prev = await env.BLOOM_KV.get("studio:settings");
+          const prevObj = prev ? JSON.parse(prev) : {};
+          const body = await request.json().catch(() => ({}));
+          const merged = { ...prevObj, ...body, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
+          await env.BLOOM_KV.put("studio:settings", JSON.stringify(merged));
+          return jsonResponse(merged);
+        }
+        return errorResponse("Method not allowed", 405);
+      }
       return errorResponse("Not found", 404);
     } catch (err) {
       console.error("Back worker error:", err);

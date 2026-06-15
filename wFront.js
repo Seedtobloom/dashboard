@@ -1122,6 +1122,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       showSpaces();
     } else if (hash === '#hub') {
       showHub();
+    } else if (hash === '#settings') {
+      showSettings();
     } else {
       showDashboard();
     }
@@ -1343,6 +1345,170 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     });
     apiFetch('/api/hub', { method: 'PUT', body: JSON.stringify(hubData) })
       .then(function(r){ if(!r.ok) throw new Error(); toast('Hub enregistre ✓'); })
+      .catch(function(){ toast('Erreur, reessayez.', true); });
+  };
+
+  // ── Reglages (parametres du studio) ────────────────────────────────────────
+  var studioSettings = {};
+  var SETTINGS_DEFAULTS = {
+    studioName: 'Seed to Bloom',
+    studioSignature: 'Cindy',
+    accentMode: 'type',        // 'type' | 'forced'
+    accentForced: 'glycine',   // when accentMode==='forced'
+    welcomeMessage: '',
+    holidays: [],              // [{ from, to, message }]
+    notifications: {
+      waiting:   { enabled: true,  recipients: '', message: '' },
+      message:   { enabled: true,  recipients: '', message: '' },
+      progress:  { enabled: false, recipients: '', message: '' },
+      delivered: { enabled: true,  recipients: '', message: '' },
+    },
+  };
+
+  async function showSettings() {
+    const res = await apiFetch('/api/settings');
+    if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur chargement', true); return; }
+    var loaded = await res.json().catch(function(){ return {}; });
+    studioSettings = Object.assign({}, SETTINGS_DEFAULTS, loaded);
+    studioSettings.notifications = Object.assign({}, SETTINGS_DEFAULTS.notifications, loaded.notifications || {});
+    if (!Array.isArray(studioSettings.holidays)) studioSettings.holidays = [];
+    const allProjs = await apiFetch('/api/projects').then(function(r){ return r.ok ? r.json() : []; });
+    renderSettings(allProjs);
+  }
+
+  function settingsCard(title, sub, inner) {
+    return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:26px 28px;margin-bottom:20px">' +
+      '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:23px;color:#5c4633;font-weight:400;margin:0 0 4px">' + title + '</h2>' +
+      (sub ? '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12.5px;color:#8a6f54;margin:0 0 18px;line-height:1.5">' + sub + '</p>' : '<div style="height:14px"></div>') +
+      inner +
+    '</div>';
+  }
+
+  function renderSettings(allProjs) {
+    var s = studioSettings;
+    var lbl = 'font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#8a6f54;display:block;margin-bottom:6px';
+    var inp = 'width:100%;padding:9px 12px;border:1px solid #e2d9ce;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:13.5px;color:#5c4633;background:#fff;box-sizing:border-box;outline:none';
+
+    // 1. Identite du studio
+    var identite =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+        '<div><label style="' + lbl + '">Nom du studio</label><input id="set-studioName" type="text" value="' + esc(s.studioName||'') + '" style="' + inp + '"></div>' +
+        '<div><label style="' + lbl + '">Signature (prenom)</label><input id="set-studioSignature" type="text" value="' + esc(s.studioSignature||'') + '" style="' + inp + '"></div>' +
+      '</div>';
+
+    // 2. Couleur des espaces
+    var TONES = [['glycine','Glycine','#E4D1FE'],['brume','Brume','#BAD1FD'],['ocre','Ocre','#e7cd97'],['terre','Terre','#c8b29a'],['nuit','Nuit','#b3c4e0']];
+    var accent =
+      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+        [['type','Par type d\'offre'],['forced','Couleur unique']].map(function(m){
+          var act = (s.accentMode||'type')===m[0];
+          return '<button onclick="setAccentMode(\''+m[0]+'\')" style="padding:8px 15px;border-radius:999px;border:1px solid '+(act?'#5c4633':'#e2d9ce')+';background:'+(act?'#5c4633':'#fff')+';color:'+(act?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.05em;cursor:pointer">'+m[1]+'</button>';
+        }).join('') +
+      '</div>' +
+      '<div id="set-forced-row" style="display:' + ((s.accentMode==='forced')?'flex':'none') + ';gap:10px;flex-wrap:wrap">' +
+        TONES.map(function(t){
+          var act = (s.accentForced||'glycine')===t[0];
+          return '<button onclick="setAccentForced(\''+t[0]+'\')" title="'+t[1]+'" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 9px;border-radius:999px;border:'+(act?'2px solid #5c4633':'1px solid #e2d9ce')+';background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#5c4633"><span style="width:16px;height:16px;border-radius:5px;background:'+t[2]+';display:inline-block"></span>'+t[1]+'</button>';
+        }).join('') +
+      '</div>';
+
+    // 3. Notifications e-mail
+    var NOTIF = [
+      ['waiting','En attente d\'action','Quand une etape requiert une action du client'],
+      ['message','Nouveau message','Quand le client envoie un message'],
+      ['progress','Point d\'avancement','Recapitulatif periodique de l\'avancement'],
+      ['delivered','Projet termine','Quand un projet passe en livre'],
+    ];
+    var notifs = NOTIF.map(function(n){
+      var cfg = (s.notifications && s.notifications[n[0]]) || { enabled:false, recipients:'', message:'' };
+      return '<div style="padding:16px 0;border-bottom:1px solid #efe9e0">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:500;color:#5c4633">'+n[1]+'</div>' +
+            '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#8a6f54;margin-top:2px">'+n[2]+'</div></div>' +
+          '<label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;cursor:pointer">' +
+            '<input type="checkbox" id="set-notif-'+n[0]+'-enabled" '+(cfg.enabled?'checked':'')+' onchange="toggleNotifRow(\''+n[0]+'\')" style="opacity:0;width:0;height:0">' +
+            '<span id="set-notif-'+n[0]+'-track" style="position:absolute;inset:0;border-radius:999px;background:'+(cfg.enabled?'#5c4633':'#d4c4b0')+';transition:background 160ms"></span>' +
+            '<span id="set-notif-'+n[0]+'-knob" style="position:absolute;top:3px;left:'+(cfg.enabled?'21px':'3px')+';width:18px;height:18px;border-radius:50%;background:#fff;transition:left 160ms"></span>' +
+          '</label>' +
+        '</div>' +
+        '<div id="set-notif-'+n[0]+'-fields" style="display:'+(cfg.enabled?'grid':'none')+';grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">' +
+          '<div><label style="'+lbl+'">Destinataires</label><input id="set-notif-'+n[0]+'-recipients" type="text" value="'+esc(cfg.recipients||'')+'" placeholder="email1, email2" style="'+inp+'"></div>' +
+          '<div><label style="'+lbl+'">Message personnalise</label><input id="set-notif-'+n[0]+'-message" type="text" value="'+esc(cfg.message||'')+'" placeholder="(facultatif)" style="'+inp+'"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    notifs += '<p style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#a89a86;margin-top:14px">L\'envoi reel des e-mails depend de la configuration Resend cote serveur.</p>';
+
+    // 4. Conges / absences
+    var holidays = (s.holidays.length ? s.holidays.map(function(h, i){
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:10px;align-items:end;margin-bottom:10px" data-hol="'+i+'">' +
+        '<div><label style="'+lbl+'">Du</label><input type="date" id="set-hol-from-'+i+'" value="'+esc(h.from||'')+'" style="'+inp+'"></div>' +
+        '<div><label style="'+lbl+'">Au</label><input type="date" id="set-hol-to-'+i+'" value="'+esc(h.to||'')+'" style="'+inp+'"></div>' +
+        '<div><label style="'+lbl+'">Message (bandeau portail)</label><input type="text" id="set-hol-msg-'+i+'" value="'+esc(h.message||'')+'" style="'+inp+'"></div>' +
+        '<button onclick="removeHoliday('+i+')" class="btn btn--danger btn--sm" style="margin-bottom:1px">Suppr.</button>' +
+      '</div>';
+    }).join('') : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12.5px;color:#a89a86;margin:0 0 12px">Aucune periode d\'absence.</p>');
+    holidays += '<button onclick="addHoliday()" class="btn btn--outline btn--sm">+ Ajouter une periode</button>';
+
+    // 5. Message d'accueil par defaut
+    var welcome = '<textarea id="set-welcomeMessage" rows="4" placeholder="Message affiche par defaut sur la page d\'accueil des nouveaux espaces…" style="'+inp+';resize:vertical;line-height:1.6">'+esc(s.welcomeMessage||'')+'</textarea>';
+
+    document.getElementById('app').innerHTML =
+      '<div class="app">' +
+        buildSidebarHtml('settings', allProjs, {}, _globalMsgUnread) +
+        '<main class="main" style="overflow-y:auto">' +
+          '<div style="padding:34px 40px 60px;max-width:860px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;flex-wrap:wrap;gap:12px">' +
+              '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:#8a6f54;margin-bottom:6px">Atelier</div>' +
+                '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:38px;color:#5c4633;font-weight:400;line-height:1;margin:0">Reglages</h1></div>' +
+              '<button class="btn btn--primary" onclick="saveSettings()">Enregistrer</button>' +
+            '</div>' +
+            settingsCard('Identite du studio', 'Nom et signature utilises dans les e-mails et le portail.', identite) +
+            settingsCard('Couleur des espaces', 'Une couleur par type d\'offre, ou une teinte unique pour tous les espaces.', accent) +
+            settingsCard('Notifications e-mail', 'Quatre declencheurs, chacun avec ses destinataires et un message optionnel.', notifs) +
+            settingsCard('Conges et absences', 'Affiche un bandeau d\'information en haut du portail client pendant ces periodes.', holidays) +
+            settingsCard('Message d\'accueil par defaut', 'Pre-rempli sur la page d\'accueil des nouveaux espaces.', welcome) +
+          '</div>' +
+        '</main>' +
+      '</div>';
+    refreshMsgBadge();
+  }
+
+  function collectSettings() {
+    var s = studioSettings;
+    s.studioName = (document.getElementById('set-studioName')||{}).value || '';
+    s.studioSignature = (document.getElementById('set-studioSignature')||{}).value || '';
+    s.welcomeMessage = (document.getElementById('set-welcomeMessage')||{}).value || '';
+    ['waiting','message','progress','delivered'].forEach(function(k){
+      var en = document.getElementById('set-notif-'+k+'-enabled');
+      var rc = document.getElementById('set-notif-'+k+'-recipients');
+      var ms = document.getElementById('set-notif-'+k+'-message');
+      s.notifications[k] = { enabled: en ? en.checked : false, recipients: rc ? rc.value : '', message: ms ? ms.value : '' };
+    });
+    s.holidays = s.holidays.map(function(h, i){
+      var f = document.getElementById('set-hol-from-'+i), t = document.getElementById('set-hol-to-'+i), m = document.getElementById('set-hol-msg-'+i);
+      return { from: f?f.value:'', to: t?t.value:'', message: m?m.value:'' };
+    });
+  }
+
+  window.setAccentMode = function(m){ collectSettings(); studioSettings.accentMode = m; apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
+  window.setAccentForced = function(t){ collectSettings(); studioSettings.accentForced = t; apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
+  window.toggleNotifRow = function(k){
+    var en = document.getElementById('set-notif-'+k+'-enabled');
+    var fields = document.getElementById('set-notif-'+k+'-fields');
+    var track = document.getElementById('set-notif-'+k+'-track');
+    var knob = document.getElementById('set-notif-'+k+'-knob');
+    if (en && fields) fields.style.display = en.checked ? 'grid' : 'none';
+    if (track) track.style.background = en.checked ? '#5c4633' : '#d4c4b0';
+    if (knob) knob.style.left = en.checked ? '21px' : '3px';
+  };
+  window.addHoliday = function(){ collectSettings(); studioSettings.holidays.push({ from:'', to:'', message:'' }); apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
+  window.removeHoliday = function(i){ collectSettings(); studioSettings.holidays.splice(i,1); apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
+  window.saveSettings = function(){
+    collectSettings();
+    apiFetch('/api/settings', { method:'PUT', body: JSON.stringify(studioSettings) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(saved){ studioSettings = Object.assign({}, SETTINGS_DEFAULTS, saved); toast('Reglages enregistres ✓'); })
       .catch(function(){ toast('Erreur, reessayez.', true); });
   };
 
@@ -1599,6 +1765,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</button>' +
       '<button class="side-tab' + (activeSection === 'spaces' ? ' active' : '') + '" onclick="window.location.hash=\'spaces\'">'+icon('link',15)+' Espaces clients</button>' +
       '<button class="side-tab' + (activeSection === 'hub' ? ' active' : '') + '" onclick="window.location.hash=\'hub\'">'+icon('folder',15)+' Hub partage</button>' +
+      '<button class="side-tab' + (activeSection === 'settings' ? ' active' : '') + '" onclick="window.location.hash=\'settings\'">'+icon('settings',15)+' Reglages</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">' +
