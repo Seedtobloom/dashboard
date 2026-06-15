@@ -1784,47 +1784,64 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     };
     var STEP_CARD_CLS = { upcoming:'', in_progress:' step-card--active', waiting_client:' step-card--waiting', done:' step-card--done' };
 
-    const stepsHtml = '<div class="step-cards">' + ([...(project.steps||[])].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
-      var dot = STEP_DOT_STYLE[step.status] || STEP_DOT_STYLE.upcoming;
-      var cardCls = 'step-card' + (STEP_CARD_CLS[step.status]||'');
-      var badgeSty = STEP_BADGE_STYLE[step.status] || STEP_BADGE_STYLE.upcoming;
-      var statusSelect = '<select onchange="updateStepStatus(\'' + step.id + '\',this.value)" style="font-size:11px;padding:3px 7px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);color:var(--text)">' +
+    var ADM_STEP_STATUS_COLORS = { upcoming:'var(--terre-200)', in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)' };
+    var ADM_STEP_STATUS_LABELS = { upcoming:'A venir', in_progress:'En cours', waiting_client:'Action client', done:'Termine' };
+    const stepsHtml = '<div style="display:grid;gap:14px">' + ([...(project.steps||[])].sort(function(a, b) { return a.order - b.order; }).map(function(step, idx, arr) {
+      var isDone = step.status === 'done';
+      var aGlyc = { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' };
+      var numBg = isDone ? aGlyc.soft : '#f2ede6';
+      var numBdr = isDone ? aGlyc.mid : '#d4c4b0';
+      var statusCol = ADM_STEP_STATUS_COLORS[step.status] || 'var(--terre-200)';
+      var statusSelect = '<select onchange="updateStepStatus(\'' + step.id + '\',this.value)" style="font-size:10.5px;padding:5px 8px;border:1px solid var(--bone-d,#d4c4b0);border-radius:8px;background:#fff;color:#5c4633;font-family:inherit">' +
         ['upcoming','in_progress','waiting_client','done'].map(function(s) {
-          return '<option value="' + s + '"' + (s === step.status ? ' selected' : '') + '>' + (STEP_STATUS_LABELS[s] || s) + '</option>';
+          return '<option value="' + s + '"' + (s === step.status ? ' selected' : '') + '>' + (ADM_STEP_STATUS_LABELS[s] || s) + '</option>';
         }).join('') + '</select>';
-      return '<div class="' + cardCls + '" data-step-id="' + step.id + '">' +
-        '<div class="step-card__top">' +
-          '<div class="step-card__dot" style="background:' + dot.bg + ';color:' + dot.color + '">' + dot.label + '</div>' +
-          '<div class="step-card__body">' +
-            '<div class="step-card__title">' + esc(step.title) + '</div>' +
-            (step.description ? '<div class="step-card__desc">' + esc(step.description) + '</div>' : '') +
-            '<div class="step-card__meta">' +
-              '<span class="step-card__badge" style="' + badgeSty + '">' + (STEP_STATUS_LABELS[step.status]||step.status) + '</span>' +
-              (step.dueDate ? '<span style="font-size:12px;color:var(--muted)">📅 ' + formatDate(step.dueDate) + '</span>' : '') +
-              (step.clientAction ? '<span style="font-size:12px;color:var(--brown)">🎯 Action client</span>' : '') +
-            '</div>' +
+      return '<div style="border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px;background:#fff;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:start" data-step-id="' + step.id + '">' +
+        '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+(idx+1)+'</span>' +
+        '<div style="min-width:0">' +
+          '<div style="font-weight:600;font-size:14px;color:#2b1a0e;margin-bottom:4px">' + esc(step.title) + '</div>' +
+          (step.description ? '<div style="font-size:13px;color:#8a6f54;line-height:1.55;margin-top:3px">' + esc(step.description) + '</div>' : '') +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
+            '<span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.04em;color:#5c4633">' +
+              '<span style="width:7px;height:7px;border-radius:2px;background:'+statusCol+';transform:rotate(45deg);display:inline-block"></span>' +
+              (ADM_STEP_STATUS_LABELS[step.status]||step.status) +
+            '</span>' +
+            (step.dueDate ? '<span style="font-size:12px;color:#8a6f54">Echeance : ' + formatDate(step.dueDate) + '</span>' : '') +
+            (step.clientAction ? '<span style="font-size:11px;color:#c9952f;font-family:\'Inter Tight\',sans-serif;font-weight:500">Action client</span>' : '') +
           '</div>' +
         '</div>' +
-        '<div class="step-card__actions">' +
-          '<div class="step-card__move">' +
-            (idx > 0 ? '<button class="btn btn--outline btn--sm" onclick="moveStep(\'' + step.id + '\',\'up\')" aria-label="Monter" title="Monter">↑</button>' : '<span style="width:32px"></span>') +
-            (idx < arr.length-1 ? '<button class="btn btn--outline btn--sm" onclick="moveStep(\'' + step.id + '\',\'down\')" aria-label="Descendre" title="Descendre">↓</button>' : '<span style="width:32px"></span>') +
+        '<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">' +
+          '<div style="display:flex;gap:4px">' +
+            (idx > 0 ? '<button style="padding:4px 8px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#8a6f54" onclick="moveStep(\'' + step.id + '\',\'up\')" title="Monter">↑</button>' : '') +
+            (idx < arr.length-1 ? '<button style="padding:4px 8px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#8a6f54" onclick="moveStep(\'' + step.id + '\',\'down\')" title="Descendre">↓</button>' : '') +
           '</div>' +
           statusSelect +
           '<div style="display:flex;gap:6px">' +
-            '<button class="btn btn--outline btn--sm" onclick="openEditStep(' + JSON.stringify(JSON.stringify(step)) + ')">Modifier</button>' +
-            '<button class="btn btn--danger btn--sm" onclick="deleteStep(\'' + step.id + '\')">Suppr.</button>' +
+            '<button style="padding:4px 10px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#5c4633" onclick="openEditStep(' + JSON.stringify(JSON.stringify(step)) + ')">Modifier</button>' +
+            '<button style="padding:4px 10px;border:1px solid #e7c6bd;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#9b3a2e" onclick="deleteStep(\'' + step.id + '\')">Suppr.</button>' +
           '</div>' +
         '</div>' +
       '</div>';
-    }).join('') || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune étape.</p>') + '</div>';
+    }).join('') || '<p style="color:#8a6f54;text-align:center;padding:20px 0">Aucune etape.</p>') + '</div>';
 
     const messagesHtml = messages.map(function(m) {
-      return '<div class="msg-row">' +
-        '<div style="flex:1">' +
-          '<div class="msg-author ' + (m.author === 'client' ? 'client' : '') + '">' + (m.author === 'cindy' ? 'Cindy' : esc(project.clientName)) + '</div>' +
-          '<div class="msg-content">' + esc(m.content) + '</div>' +
-          '<div class="msg-meta">' + formatDate(m.createdAt) + (!m.readByAdmin && m.author === 'client' ? ' · <strong style="color:var(--orange)">non lu</strong>' : '') + '</div>' +
+      var isCindy = m.author === 'cindy';
+      var initials = isCindy ? 'C' : (project.clientName||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      var avBg = isCindy ? '#5c4633' : '#E4D1FE';
+      var avFg = isCindy ? '#EFE1B0' : '#6c4ea4';
+      var bubbleBg = isCindy ? '#fff' : '#E4D1FE';
+      var bubbleBdr = isCindy ? '1px solid #e2d9ce' : 'none';
+      var brL = isCindy ? '4px' : '14px';
+      var brR = isCindy ? '14px' : '4px';
+      var isUnread = !m.readByAdmin && m.author === 'client';
+      return '<div style="display:flex;gap:10px;flex-direction:'+(isCindy?'row':'row-reverse')+';align-items:flex-end;padding:6px 0">' +
+        '<span style="width:28px;height:28px;border-radius:50%;background:'+avBg+';color:'+avFg+';display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:13px;flex-shrink:0">'+initials+'</span>' +
+        '<div>' +
+          '<div style="max-width:540px;padding:11px 15px;border-radius:13px;border-bottom-left-radius:'+brL+';border-bottom-right-radius:'+brR+';background:'+bubbleBg+';border:'+bubbleBdr+';font-size:14.5px;color:#2b1a0e;line-height:1.55">' + esc(m.content) + '</div>' +
+          '<div style="font-size:9.5px;color:#8a6f54;margin-top:4px;text-align:'+(isCindy?'left':'right')+';opacity:0.7;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.03em">' +
+            (isCindy?'Cindy':esc(project.clientName)) + ' · ' + formatDate(m.createdAt) +
+            (isUnread ? ' · <strong style="color:#c9952f">non lu</strong>' : '') +
+          '</div>' +
         '</div>' +
       '</div>';
     }).join('');
