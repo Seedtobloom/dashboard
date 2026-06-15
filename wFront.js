@@ -3749,37 +3749,75 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   var STATUS_COLORS = { discovery:'#d4e4f0', in_progress:'#7fa688', waiting_client:'#e8a87c', review:'#b0a0d4', delivered:'#1a2744', archived:'#aaa' };
 
+  var ACCENTS = {
+    glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
+    brume:  { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
+    ocre:   { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12' },
+    terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
+    nuit:   { soft:'#dde6f5', mid:'#b3c4e0', deep:'#586c8e', ink:'#2b3d5f' },
+  };
+  function acc(name) { return ACCENTS[name] || ACCENTS.glycine; }
+
   var CP_ICONS = {
-    home:     'M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10',
-    messages: 'M4 5h16v11H9l-4 3v-3H4z',
-    folder:   'M3 6h6l2 2h10v11H3z',
-    pencil:   'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
-    chevron_r:'M9 18l6-6-6-6',
-    flower:   'M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 9.5C12 7 10.5 5 12 3c1.5 2 0 4 0 6.5zM12 14.5c0 2.5 1.5 4.5 0 6.5-1.5-2 0-4 0-6.5zM9.5 12C7 12 5 10.5 3 12c2 1.5 4 0 6.5 0zM14.5 12c2.5 0 4.5-1.5 6.5 0-2 1.5-4 0-6.5 0z',
-    arrow:    'M5 12h14M13 6l6 6-6 6',
-    arrowLeft:'M19 12H5M11 18l-6-6 6-6',
-    chat:     'M4 5h16v11H9l-4 3v-3H4z',
-    paperclip:'M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8',
-    check:    'M5 12l5 5L20 6',
-    x:        'M6 6l12 12M18 6 6 18',
-    calendar: 'M4 6h16v15H4zM4 10h16M8 3v4M16 3v4',
-    download: 'M12 4v11M7 11l5 5 5-5M5 20h14',
-    upload:   'M12 20V9M7 13l5-5 5 5M5 4h14',
-    file:     'M6 3h8l4 4v14H6zM14 3v4h4',
-    lock:     'M6 11h12v9H6zM9 11V8a3 3 0 0 1 6 0v3',
-    user:     'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
-    send:     'M4 12l16-7-7 16-2-7-7-2z',
-    plus:     'M12 5v14M5 12h14',
-    trash:    'M5 7h14M10 7V4h4v3M6 7l1 13h10l1-13',
-    eye:      'M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
-    clock:    'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
-    external: 'M14 4h6v6M20 4l-9 9M18 13v6H5V6h6',
-    settings: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 2.5h-5L9 5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4L5 10a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.5 2.5h5l.5-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z',
-    grid:     'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
-    chart:    'M4 20V4M4 20h16M8 18v-6M12 18V8M16 18v-9',
-    calBig:   'M3 6h18v15H3zM3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2M14 17h2',
-    question: 'M9 9a3 3 0 1 1 4 2.8c-.8.5-1 1-1 2M12 17h.01',
-    dot:      'M12 12h.01',
+    home:'M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10',
+    tasks:'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
+    chat:'M4 5h16v11H9l-4 3v-3H4z',
+    folder:'M3 6h6l2 2h10v11H3z',
+    flower:'M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 9.5C12 7 10.5 5 12 3c1.5 2 0 4 0 6.5zM12 14.5c0 2.5 1.5 4.5 0 6.5-1.5-2 0-4 0-6.5zM9.5 12C7 12 5 10.5 3 12c2 1.5 4 0 6.5 0zM14.5 12c2.5 0 4.5-1.5 6.5 0-2 1.5-4 0-6.5 0z',
+    arrow:'M5 12h14M13 6l6 6-6 6',
+    'arrow-left':'M19 12H5M11 18l-6-6 6-6',
+    'arrow-right':'M5 12h14M13 6l6 6-6 6',
+    'arrow-up':'M12 19V5M6 11l6-6 6 6',
+    'arrow-down':'M12 5v14M18 13l-6 6-6-6',
+    check:'M20 6L9 17l-5-5',
+    'check-circle':'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3',
+    close:'M18 6L6 18M6 6l12 12',
+    plus:'M12 5v14M5 12h14',
+    minus:'M5 12h14',
+    edit:'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z',
+    trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
+    search:'M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z',
+    settings:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+    user:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+    users:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    calendar:'M3 4h18v17H3zM16 2v4M8 2v4M3 10h18',
+    clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
+    bell:'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+    mail:'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6',
+    link:'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+    download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+    upload:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+    eye:'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+    'eye-off':'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22',
+    lock:'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4',
+    send:'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
+    image:'M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z',
+    file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+    'file-text':'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+    star:'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+    tag:'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82zM7 7h.01',
+    filter:'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
+    sort:'M3 6h18M6 12h12M9 18h6',
+    grip:'M9 3h2v2H9zM13 3h2v2h-2zM9 7h2v2H9zM13 7h2v2h-2zM9 11h2v2H9zM13 11h2v2h-2zM9 15h2v2H9zM13 15h2v2h-2z',
+    columns:'M12 3h9v18h-9zM3 3h9v18H3z',
+    list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+    grid:'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+    pin:'M12 22V12M17.5 6.5A2.121 2.121 0 0 0 20 9c0 3.5-3.5 6-8 9-4.5-3-8-5.5-8-9a2.121 2.121 0 0 0 2.5-2.5L9 3h6l2.5 3.5z',
+    archive:'M21 8V21H3V8M23 3H1v5h22zM10 12h4',
+    logout:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+    copy:'M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
+    ellipsis:'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+    timer:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2M10 2h4',
+    flame:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072 2.143-.224 4.143 1 5.5C11.5 15 12 16.5 12 17.5A2.5 2.5 0 0 1 9.5 20h5a2.5 2.5 0 0 1-2.5-2.5c0-1-.5-2.5-.5-2.5M9.5 7c.5 1 .5 3 .5 3s.5-1 .5-3',
+    hourglass:'M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2',
+    heading:'M4 12h16M4 6h16M6 18h12',
+    bold:'M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6zM6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z',
+    text:'M4 7V4h16v3M9 20h6M12 4v16',
+    divider:'M5 12h14M12 5v14',
+    banner:'M4 4h16v9H4zM4 17h16',
+    steps:'M4 8h4v4H4zM10 8h4v4h-4zM16 8h4v4h-4zM6 12v4M12 12v4M18 12v4M6 16h12',
+    cards:'M3 5h7v7H3zM14 5h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+    bullet:'M8 12h.01M8 6h.01M8 18h.01M12 12h8M12 6h8M12 18h8',
   };
   function cpIcon(name, size, extra) {
     size = size || 16;
@@ -3804,23 +3842,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var today = new Date(); today.setHours(0,0,0,0);
     var d = new Date(due); d.setHours(0,0,0,0);
     var days = Math.round((d - today) / 86400000);
-    if (done) return '<span class="cp-dpill done">'+cpIcon('check',11)+' Termine</span>';
-    if (days < 0) return '<span class="cp-dpill late">Retard '+Math.abs(days)+' j</span>';
-    if (days <= 7) return '<span class="cp-dpill soon">dans '+days+' j</span>';
-    return '<span class="cp-dpill">'+fmtShort(due)+'</span>';
+    var calIcon = cpIcon('calendar', 13);
+    if (done) return '<span class="cp-dpill done" style="display:inline-flex;align-items:center;gap:4px">'+cpIcon('check',12)+' Termine</span>';
+    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#9b3a2e">'+calIcon+' retard '+Math.abs(days)+' j</span>';
+    if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#c9952f">'+calIcon+' dans '+days+' j</span>';
+    return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Echeance '+fmtShort(due)+'</span>';
   }
   var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre' };
   var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', autre:'terre' };
-  function cpTypeBadge(type, onColor) {
+  function cpTypeBadge(type, size, onColor) {
+    size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
     var tone  = CP_TYPE_TONES[type] || 'terre';
-    var cls   = onColor ? 'cp-typebadge cp-typebadge--oncolor' : ('cp-typebadge cp-typebadge--'+tone);
-    return '<span class="'+cls+'">'+cpIcon(type==='site'?'external':type==='partenaire'?'calBig':type==='maintenance'?'settings':'flower',11)+' '+esc(label)+'</span>';
+    var a = acc(tone);
+    var pad = size === 'md' ? '5px 11px' : '4px 9px';
+    var fs  = size === 'md' ? '10.5px' : '9.5px';
+    var bg  = onColor ? 'rgba(255,255,255,0.14)' : a.soft;
+    var fg  = onColor ? '#fff' : a.ink;
+    return '<span style="display:inline-block;padding:'+pad+';border-radius:999px;background:'+bg+';color:'+fg+';font-size:'+fs+';font-family:var(--font-ui);font-weight:500;letter-spacing:.03em;white-space:nowrap">'+label+'</span>';
   }
   function cpBadge(n, tone) {
-    var bg = tone==='glycine' ? 'var(--glycine)' : 'var(--brume)';
-    var fg = tone==='glycine' ? 'var(--terre)' : 'var(--nuit)';
-    return '<span style="min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:inline-grid;place-items:center;background:'+bg+';color:'+fg+';font-family:var(--font-micro);font-size:10px;font-weight:600">'+n+'</span>';
+    if (!n) return '';
+    tone = tone || 'glycine';
+    var a = acc(tone);
+    return '<span style="display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:'+a.mid+';color:'+a.ink+';font-size:10px;font-family:var(--font-ui);font-weight:600">'+n+'</span>';
+  }
+  function cpProgressBar(value, tone, height) {
+    tone = tone || 'brume';
+    height = height || 4;
+    var a = acc(tone);
+    return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
   var STATUS_TEXT = { discovery:'#051833', in_progress:'#0d2b16', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
