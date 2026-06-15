@@ -7,24 +7,27 @@ const SESSION_TTL = 7 * 24 * 3600;
 const STYLE_CSS = `/* Seed to Bloom — DA officielle */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600&display=swap');
 :root {
-  --brown: #412F21;
-  --navy: #051833;
+  /* Ecrin — legacy tokens remappes vers la palette terre/glycine/brume/paille (aucun vert) */
+  --brown: #5c4633;
+  --navy: #5c4633;
   --sidebar-bg: #5c4633;
   --lavender: #E4D1FE;
-  --blue-light: #BAD1FD;
+  --blue-light: #EFE1B0;
   --cream: #EFE1B0;
   --bg: #FAF8F4;
   --white: #FFFFFF;
-  --text: #1A1A1A;
-  --muted: #7A7A7A;
-  --border: #EBEBEB;
-  --surface: #F5F2EC;
-  --sage: #7fa688;
+  --text: #2b1a0e;
+  --muted: #8a6f54;
+  --border: #e2d9ce;
+  --surface: #f3ede4;
+  --sage: #5c4633;
   --sky: #BAD1FD;
-  --sidebar-text: #BAD1FD;
-  --red: #C94040;
+  --sidebar-text: #EFE1B0;
+  --red: #9b3a2e;
   --radius: 10px;
   --terre: #5c4633;
+  --terre-600: #8a6f54;
+  --terre-200: #c8b29a;
   --paille: #EFE1B0;
   --bone: #FAF8F4;
   --bone-d: #e2d9ce;
@@ -32,9 +35,9 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
   --brume: #BAD1FD;
   --glycine: #E4D1FE;
   --st-todo: #d4c4b0;
-  --st-progress: #7fa688;
+  --st-progress: #7c9bdc;
   --st-review: #c9952f;
-  --st-done: #6c9e74;
+  --st-done: #5c4633;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -192,7 +195,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .step-cards { display: grid; gap: 12px; }
 .step-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 18px; background: var(--white); transition: box-shadow 0.15s; position: relative; }
 .step-card:hover { box-shadow: 0 3px 14px rgba(5,24,51,0.07); }
-.step-card--done { border-color: var(--sage); background: #f6faf7; }
+.step-card--done { border-color: var(--terre-200); background: #f7efff; }
 .step-card--waiting { border-color: var(--lavender); background: #f9f7ff; }
 .step-card--active { border-color: var(--sky); background: #f5f8ff; }
 .step-card__top { display: flex; align-items: flex-start; gap: 12px; }
@@ -252,7 +255,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   transition: background 0.12s;
 }
 .inbox-item:hover { background: var(--surface); }
-.inbox-item.active { background: #f0f4ff; border-left: 3px solid var(--navy); }
+.inbox-item.active { background: #f7efff; border-left: 3px solid var(--terre); }
 .inbox-convo {
   flex: 1;
   display: flex;
@@ -1548,7 +1551,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     // Hero banner
     var heroBanner = '<div style="padding:24px 40px 0">' +
-      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#a98bd6,#7c9bdc)">' +
+      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:#5c4633">' +
         '<div style="padding:22px 28px">' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
           '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400">Espaces clients</h1>' +
