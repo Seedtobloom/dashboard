@@ -2004,6 +2004,29 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           tabNav +
 
           '<div id="tab-accueil" class="main-inner proj-main" style="' + (_adminProjTab==='accueil' ? '' : 'display:none') + '">' +
+            (function(){
+              var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD',ink:'#4a6ba8'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#5c4633'} };
+              var sht = SH_ACCENT[TYPE_TONES_SHEET[project.type]] || SH_ACCENT.glycine;
+              var allSteps = project.steps || [];
+              var dn = allSteps.filter(function(s){ return s.status==='done'; }).length;
+              var pct = allSteps.length ? Math.round(dn/allSteps.length*100) : 0;
+              var unread = messages.filter(function(m){ return !m.readByAdmin && m.author==='client'; }).length;
+              var tiles = [
+                { v: pct+'%', k:'Avancement' },
+                { v: dn+'/'+allSteps.length, k:'Etapes faites' },
+                { v: unread, k:'Messages non lus' },
+                { v: files.length, k:'Fichiers' },
+              ];
+              return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px">' +
+                tiles.map(function(t){
+                  return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+                    '<div style="width:34px;height:34px;border-radius:9px;background:'+sht.soft+';border:1px solid '+sht.mid+';margin-bottom:12px"></div>' +
+                    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:30px;color:#5c4633;line-height:1;margin-bottom:4px">'+t.v+'</div>' +
+                    '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+t.k+'</div>' +
+                  '</div>';
+                }).join('') +
+              '</div>';
+            })() +
             '<div class="proj-grid">' +
             '<div class="proj-col">' +
             '<div class="card" id="card-info">' +
