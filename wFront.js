@@ -5,10 +5,11 @@ const SESSION_TTL = 7 * 24 * 3600;
 // ── CSS ──────────────────────────────────────────────────────────────────────
 
 const STYLE_CSS = `/* Seed to Bloom — DA officielle */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600&display=swap');
 :root {
   --brown: #412F21;
   --navy: #051833;
-  --sidebar-bg: #051833;
+  --sidebar-bg: #5c4633;
   --lavender: #E4D1FE;
   --blue-light: #BAD1FD;
   --cream: #EFE1B0;
@@ -23,11 +24,22 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
   --sidebar-text: #BAD1FD;
   --red: #C94040;
   --radius: 10px;
+  --terre: #5c4633;
+  --paille: #EFE1B0;
+  --bone: #FAF8F4;
+  --bone-d: #e2d9ce;
+  --nuit: #2b3d5f;
+  --brume: #BAD1FD;
+  --glycine: #E4D1FE;
+  --st-todo: #d4c4b0;
+  --st-progress: #7fa688;
+  --st-review: #c9952f;
+  --st-done: #6c9e74;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-body { font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+body { font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
 /* Le curseur texte (I-beam) et la sélection ne s'affichent que sur les vrais contenus éditables/lisibles */
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .file-name-col, .cp-file__name {
@@ -36,7 +48,7 @@ input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 input, textarea, select, [contenteditable="true"] { cursor: text; }
 a, button, .btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
 
-h1, h2, h3, h4, .serif { font-family: 'Alegreya', Georgia, serif; font-weight: 400; }
+h1, h2, h3, h4, .serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 400; }
 em, .italic { font-style: italic; }
 
 .loading-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
@@ -49,13 +61,13 @@ em, .italic { font-style: italic; }
 .modal-backdrop { position: fixed; inset: 0; background: rgba(5,24,51,0.35); z-index: 200; display: none; align-items: center; justify-content: center; }
 .modal-backdrop.open { display: flex; }
 .modal { background: #fff; border-radius: 14px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 48px rgba(5,24,51,0.15); }
-.modal h3 { font-family: 'Alegreya', serif; font-size: 20px; color: var(--navy); margin-bottom: 18px; font-weight: 400; font-style: italic; }
+.modal h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--navy); margin-bottom: 18px; font-weight: 400; font-style: italic; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.6px; }
 input[type=text], input[type=email], input[type=date], input[type=url], input[type=password], textarea, select {
   width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
-  font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--text);
+  font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--text);
   background: var(--white); outline: none; transition: border-color 0.2s;
 }
 input:focus, textarea:focus, select:focus { border-color: var(--navy); }
@@ -64,7 +76,7 @@ textarea { resize: vertical; min-height: 72px; }
 .form-row.full { grid-template-columns: 1fr; }
 .form-field { margin-bottom: 14px; }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s, box-shadow 0.15s; text-decoration: none; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s, box-shadow 0.15s; text-decoration: none; white-space: nowrap; }
 .btn:hover { opacity: 0.82; }
 .btn:active { opacity: 0.65; transform: scale(0.98); }
 .btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
@@ -88,36 +100,37 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 .app { display: flex; height: 100vh; overflow: hidden; }
 
-/* Sidebar : brand = marron, nav = navy */
+/* Sidebar : Écrin — terre sidebar, paille text, glycine active */
 .sidebar {
-  width: 260px; background: var(--sidebar-bg); border-right: none;
+  width: 260px; background: #5c4633; border-right: none;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
-.sidebar-header { padding: 22px 20px 18px; background: var(--brown); border-bottom: 1px solid rgba(239,225,176,0.12); }
-.sidebar-logo { font-family: 'Alegreya', serif; font-size: 17px; color: var(--cream); font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
+.sidebar-header { padding: 22px 20px 18px; background: #412F21; border-bottom: 1px solid rgba(239,225,176,0.12); }
+.sidebar-logo { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: #EFE1B0; font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
 .sidebar-logo img { max-height: 36px; width: auto; }
-.sidebar-sub { font-size: 11px; color: var(--cream); margin-top: 3px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.6px; }
+.sidebar-sub { font-size: 9px; color: rgba(239,225,176,0.6); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.2em; }
 .sidebar-new {
   margin: 10px 12px 4px; display: block; text-align: center; padding: 9px 12px;
-  background: var(--lavender); color: var(--navy); border-radius: 8px; text-decoration: none;
+  background: #E4D1FE; color: #5c4633; border-radius: 8px; text-decoration: none;
   font-size: 13px; font-weight: 600; transition: opacity 0.2s; cursor: pointer;
   border: none; font-family: inherit; width: calc(100% - 24px);
 }
 .sidebar-new:hover { opacity: 0.88; }
-/* Boutons de navigation sidebar — cohérents et lisibles */
+/* Boutons de navigation sidebar — Écrin */
 .side-tab {
   margin: 5px 12px 0; display: flex; align-items: center; gap: 8px;
   width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none;
-  cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500;
-  background: rgba(0,0,0,0.12); color: var(--sidebar-text); transition: background 0.15s, color 0.15s;
+  cursor: pointer; font-family: 'Inter Tight', sans-serif; font-size: 12px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  background: transparent; color: rgba(239,225,176,0.6); transition: background 0.15s, color 0.15s;
 }
-.side-tab:hover { background: rgba(0,0,0,0.22); }
-.side-tab.active { background: var(--lavender); color: var(--navy); font-weight: 600; }
-.side-tab__badge { margin-left: auto; background: var(--cream); color: var(--navy); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+.side-tab:hover { background: rgba(242,229,194,0.05); color: #EFE1B0; }
+.side-tab.active { background: rgba(242,229,194,0.10); color: #EFE1B0; }
+.side-tab__badge { margin-left: auto; background: #E4D1FE; color: #5c4633; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
 .side-cta {
   margin: 12px 12px 6px; display: flex; align-items: center; justify-content: center; gap: 6px;
   width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 600; background: var(--lavender); color: var(--navy);
+  font-family: 'Inter Tight', sans-serif; font-size: 13px; font-weight: 600; background: #E4D1FE; color: #5c4633;
   transition: opacity 0.15s;
 }
 .side-cta:hover { opacity: 0.88; }
@@ -128,13 +141,13 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 }
 .project-item:hover { background: rgba(0,0,0,0.15); }
 .project-item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
-.project-item.active { background: rgba(0,0,0,0.2); border-left-color: var(--lavender); }
-.project-item__name { font-size: 13px; font-weight: 500; color: var(--sidebar-text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.project-item__title { font-size: 12px; color: var(--sidebar-text); opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item.active { background: rgba(0,0,0,0.2); border-left-color: #E4D1FE; }
+.project-item__name { font-size: 13px; font-weight: 500; color: #EFE1B0; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item__title { font-size: 12px; color: rgba(239,225,176,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.unread-badge { background: var(--lavender); color: var(--navy); font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
-.deadline-badge { font-size: 10px; color: var(--cream); opacity: 0.8; }
+.unread-badge { background: #E4D1FE; color: #5c4633; font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
+.deadline-badge { font-size: 10px; color: rgba(239,225,176,0.75); }
 
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
 .main-inner { max-width: 1280px; margin: 0 auto; padding: 28px 32px 80px; }
@@ -146,7 +159,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .proj-banner[data-light]::after { background: rgba(0,0,0,0.08); }
 .proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.proj-banner__title { font-family: 'Alegreya', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.55); margin: 0; line-height: 1.25; }
+.proj-banner__title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.55); margin: 0; line-height: 1.25; }
 .proj-banner[data-light] .proj-banner__title { color: #051833; text-shadow: none; }
 .proj-banner__sub { color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 .proj-banner[data-light] .proj-banner__sub { color: rgba(5,24,51,0.7); text-shadow: none; }
@@ -170,7 +183,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; transition: border-color 0.15s; }
 .card:hover { border-color: var(--card-hover, var(--border)); }
 .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.card-title { font-family: 'Alegreya', serif; font-size: 18px; color: var(--navy); font-weight: 400; font-style: italic; }
+.card-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--navy); font-weight: 400; font-style: italic; }
 .card-body { padding: 20px; }
 
 .status-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
@@ -211,7 +224,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
 .stat-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
-.stat-card__num { font-family: 'Alegreya', serif; font-size: 36px; font-weight: 400; color: var(--navy); line-height: 1; margin-bottom: 6px; }
+.stat-card__num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 400; color: var(--navy); line-height: 1; margin-bottom: 6px; }
 .stat-card__label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
 .projects-table { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .projects-table table { width: 100%; border-collapse: collapse; }
@@ -220,9 +233,9 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .projects-table tr:last-child td { border-bottom: none; }
 .projects-table tr:hover td { background: var(--surface); cursor: pointer; }
 .proj-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
-.proj-toolbar input[type=search] { flex: 1; min-width: 180px; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: var(--white); color: var(--text); }
+.proj-toolbar input[type=search] { flex: 1; min-width: 180px; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: var(--white); color: var(--text); }
 .proj-toolbar input[type=search]:focus { outline: none; border-color: var(--navy); }
-.proj-toolbar select { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Ambra Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; background: var(--white); color: var(--text); cursor: pointer; }
+.proj-toolbar select { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; background: var(--white); color: var(--text); cursor: pointer; }
 .proj-toolbar select:focus { outline: none; border-color: var(--navy); }
 
 .inbox-list {
@@ -293,7 +306,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .apb-placeholder { font-size:12px;color:var(--muted);font-style:italic;padding:4px 0; }
 .apb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
 .apb-modal__box { background:#fff;border-radius:14px;padding:24px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto; }
-.apb-modal__title { font-family:'Alegreya',serif;font-size:19px;color:var(--navy);margin-bottom:16px;font-style:italic; }
+.apb-modal__title { font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .apb-modal label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin:0 0 5px; }
 .apb-modal input, .apb-modal select, .apb-modal textarea { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;box-sizing:border-box;margin-bottom:12px; }
 .apb-modal textarea { min-height:80px;resize:vertical; }
@@ -645,7 +658,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpb-add-blk:hover { border-color:var(--lavender);color:var(--navy); }
 .cpb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
 .cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(5,24,51,0.18); }
-.cpb-modal__title { font-family:'Alegreya',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
+.cpb-modal__title { font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .cpb-modal__row { margin-bottom:12px; }
 .cpb-modal__label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin-bottom:5px; }
 .cpb-modal__input { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--text);box-sizing:border-box; }
@@ -1215,7 +1228,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('spaces', projs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="margin-bottom:24px">' +
-            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
+            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
             '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
           '</div>' +
           (tokens.length ? '<div class="projects-table"><table>' +
@@ -1288,7 +1301,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('hub', allProjs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">' +
-            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
+            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
             '<div style="display:flex;gap:10px">' +
               '<button class="btn btn--outline" onclick="hubAddSection()">+ Section</button>' +
               '<button class="btn btn--primary" onclick="hubSave()">Enregistrer</button>' +
@@ -1432,7 +1445,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<main class="main">' +
           '<div class="main-inner">' +
             '<div style="margin-bottom:24px">' +
-              '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Bonjour Cindy</h1>' +
+              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Bonjour Cindy</h1>' +
               '<p style="color:var(--muted);font-size:14px">Voici l\'état de vos projets en cours.</p>' +
             '</div>' +
             '<div class="stat-grid">' +
@@ -1645,7 +1658,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('messages', projs, {}, totalUnreadAll) +
         '<main class="main" style="display:flex;flex-direction:column;overflow:hidden">' +
           '<div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px">' +
-            '<h2 style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
+            '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
             (totalUnreadAll > 0 ? '<span class="unread-badge">' + totalUnreadAll + ' non lu' + (totalUnreadAll > 1 ? 's' : '') + '</span>' : '') +
           '</div>' +
           '<div style="display:flex;flex:1;overflow:hidden">' +
@@ -2354,7 +2367,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   function apbBlockPreview(b) {
-    if (b.type === 'title') return '<div style="font-family:\'Alegreya\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
+    if (b.type === 'title') return '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
     if (b.type === 'text') return '<div style="white-space:pre-wrap">'+esc(b.content||'(texte vide)')+'</div>';
     if (b.type === 'list') {
       var items = (b.content||'').split('\n').filter(Boolean);
@@ -3734,7 +3747,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ov.id = 'token-modal-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
       '<p style="font-size:13px;color:#8090a8;margin-bottom:16px">Envoyez ce lien à votre cliente pour qu\'elle accède à son espace.</p>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">' +
         '<input id="token-modal-url" type="text" readonly value="' + url + '" style="flex:1;padding:10px 14px;border:1.5px solid #e2dbd0;border-radius:10px;font-size:13px;background:#f9f7f4;color:#051833;font-family:monospace">' +
@@ -4409,7 +4422,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(5,24,51,0.18);max-height:85vh;overflow-y:auto">' +
         '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
           (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
-          '<div style="font-size:19px;font-family:\'Alegreya\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
+          '<div style="font-size:19px;font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
           ((card.startDate || card.duration)
             ? '<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px">' +
                 (card.startDate ? fmtDate(card.startDate) : '') +
@@ -4671,7 +4684,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);margin-bottom:14px;display:block">' +
           '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
             '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
+            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
             (allAnswered
               ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
               : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
@@ -4822,7 +4835,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '';
     var body = '';
     if (b.type === 'title') {
-      body = '<div style="font-family:\'Alegreya\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
+      body = '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
     } else if (b.type === 'text') {
       body = '<div style="font-size:14px;color:var(--text);padding:6px 10px;white-space:pre-wrap">'+(b.content||'')+'</div>';
     } else if (b.type === 'list') {
@@ -5137,7 +5150,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44">✕</button>' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:\'Alegreya\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
@@ -5913,7 +5926,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
@@ -6468,7 +6481,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(5,24,51,0.2)">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
+          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
           '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
         '<div style="padding:24px 28px">' +
@@ -6615,7 +6628,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Alegreya\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
         '<p style="color:#8090a8;line-height:1.7;font-size:15px">Le lien a expiré ou a été révoqué.<br><br>' +
           'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#7fa688">Cindy</a> pour obtenir un nouveau lien.</p>' +
       '</div></div>';
@@ -6843,7 +6856,7 @@ const ERROR_HTML = `<!DOCTYPE html>
 <link rel="stylesheet" href="https://use.typekit.net/kww0ycw.css">
 <style>
 @font-face {
-  font-family: 'Ambra Sans';
+  font-family: 'Inter Tight';
   src: url('/fonts/ambra-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -6851,7 +6864,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 @font-face {
-  font-family: 'Ambra Sans';
+  font-family: 'Inter Tight';
   src: url('/fonts/ambra-bold.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
@@ -6861,9 +6874,9 @@ const ERROR_HTML = `<!DOCTYPE html>
 </style>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Ambra Sans',sans-serif;background:#FAF8F4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  body{font-family:'Inter Tight',sans-serif;background:#FAF8F4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(5,24,51,.08)}
-  h1{font-family:'Alegreya',serif;color:#051833;font-size:22px;margin:16px 0;font-weight:400;font-style:italic}
+  h1{font-family:'Cormorant Garamond',serif;color:#051833;font-size:22px;margin:16px 0;font-weight:400;font-style:italic}
   p{color:#8090a8;line-height:1.7;font-size:15px}
   a{color:#7fa688}
 </style>
@@ -6887,7 +6900,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <link rel="stylesheet" href="https://use.typekit.net/kww0ycw.css">
 <style>
 @font-face {
-  font-family: 'Ambra Sans';
+  font-family: 'Inter Tight';
   src: url('/fonts/ambra-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -6895,7 +6908,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
   unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
 }
 @font-face {
-  font-family: 'Ambra Sans';
+  font-family: 'Inter Tight';
   src: url('/fonts/ambra-bold.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
@@ -6916,7 +6929,7 @@ ${ADMIN_CSS}</style>
 <div class="modal-backdrop" id="modal-login">
   <div class="modal" style="width:360px">
     <div style="text-align:center;margin-bottom:24px">
-      <div style="font-family:'Alegreya',serif;font-size:22px;color:var(--navy);font-style:italic">✦ Seed to Bloom</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy);font-style:italic">✦ Seed to Bloom</div>
       <div style="color:var(--muted);font-size:13px;margin-top:4px">Espace administration</div>
     </div>
     <div class="form-field"><label>Identifiant</label><input type="text" id="login-username" autocomplete="username" placeholder="admin"></div>
