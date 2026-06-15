@@ -4625,6 +4625,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px">' +
           '<div class="cp-ph__banner-overlay">' +
             '<div class="cp-ph__banner-content">' +
+              (p.type ? '<div style="margin-bottom:12px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
               '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div>' +
           '</div>' +
