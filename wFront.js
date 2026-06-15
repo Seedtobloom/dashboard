@@ -4161,6 +4161,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   var appData = null;
+  var cpHolidays = []; // conges du studio (depuis les reglages)
   var convData = []; // fil de conversation unifié (espace client)
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages'
@@ -6584,10 +6585,35 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return buildHome();
   }
 
+  function buildCongesBanner() {
+    if (!cpHolidays || !cpHolidays.length) return '';
+    var today = new Date(); today.setHours(0,0,0,0);
+    var active = null, upcoming = null;
+    cpHolidays.forEach(function(h){
+      if (!h || !h.from) return;
+      var from = new Date(h.from); from.setHours(0,0,0,0);
+      var to = h.to ? new Date(h.to) : from; to.setHours(0,0,0,0);
+      if (today >= from && today <= to) { if (!active) active = h; }
+      else if (from > today) {
+        var diff = Math.round((from - today)/86400000);
+        if (diff <= 30 && (!upcoming || from < new Date(upcoming.from))) upcoming = h;
+      }
+    });
+    var h = active || upcoming;
+    if (!h) return '';
+    var range = formatDate(h.from) + (h.to && h.to !== h.from ? ' au ' + formatDate(h.to) : '');
+    var msg = h.message || (active ? 'Le studio est actuellement en conges.' : 'Le studio sera en conges prochainement.');
+    return '<div class="cp-conges">' +
+      '<span style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre);opacity:0.7;white-space:nowrap">' + (active ? 'Conges' : 'A venir') + '</span>' +
+      '<span style="flex:1">' + esc(msg) + '</span>' +
+      '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre);opacity:0.75;white-space:nowrap">' + range + '</span>' +
+    '</div>';
+  }
+
   function renderShell() {
     document.getElementById('app').innerHTML =
       '<div class="cp">' + buildSidebar() +
-        '<div class="cp-main" id="cp-main">' + buildTopbar() + mainForView() + '</div>' +
+        '<div class="cp-main" id="cp-main">' + buildCongesBanner() + buildTopbar() + mainForView() + '</div>' +
       '</div><div class="cp-toast" id="cp-toast"></div>';
     if (currentView === 'project') attachForm();
     if (currentView === 'messages') attachConvoForm();
@@ -6615,6 +6641,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         projects:[{ project:data.project, messages:data.messages, files:data.files }] };
     } else { appData = data; }
     convData = Array.isArray(data.conversation) ? data.conversation : [];
+    cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : [];
     if (!appData.projects.length) { showError(); return; }
     applyClientTheme(appData.projects);
     var portal = appData.type === 'client';

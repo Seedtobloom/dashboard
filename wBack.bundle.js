@@ -1125,13 +1125,24 @@ async function handleClientApi(request, env, url) {
       })
     );
     const conversation = threadEmail ? await getClientMessages(env, threadEmail) : [];
+    let studioHolidays = [];
+    let studioName = "Seed to Bloom";
+    try {
+      const sData = await env.BLOOM_KV.get("studio:settings");
+      if (sData) {
+        const sObj = JSON.parse(sData);
+        if (Array.isArray(sObj.holidays)) studioHolidays = sObj.holidays;
+        if (sObj.studioName) studioName = sObj.studioName;
+      }
+    } catch (e) {
+    }
     if (clientToken.clientEmail) {
-      return jsonResponse({ type: "client", clientName, projects: projectsData, conversation });
+      return jsonResponse({ type: "client", clientName, projects: projectsData, conversation, studioHolidays, studioName });
     }
     const single = projectsData[0];
     if (!single)
       return errorResponse("Project not found", 404);
-    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation });
+    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation, studioHolidays, studioName });
   }
   if (subPath === "/conversation") {
     if (!threadEmail)
