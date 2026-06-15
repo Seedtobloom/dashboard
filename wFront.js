@@ -101,6 +101,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .app { display: flex; height: 100vh; overflow: hidden; }
 
 /* Sidebar : Écrin — terre sidebar, paille text, glycine active */
+.sidebar { background: #5c4633; } /* --terre */
 .sidebar {
   width: 260px; background: #5c4633; border-right: none;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
@@ -350,9 +351,9 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   /* status */
   --st-todo:#a98bd6; --st-progress:#7c9bdc; --st-review:#c9952f; --st-done:#5c4633;
   /* fonts */
-  --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
+  --font-display:'Alegreya','EB Garamond',Georgia,serif;
   --font-body:'EB Garamond',Georgia,'Times New Roman',serif;
-  --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
+  --font-micro:'Ambra Sans',ui-sans-serif,system-ui,sans-serif;
   /* type scale */
   --fs-micro:11px; --fs-small:14px; --fs-body:17px; --fs-lead:20px;
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
@@ -658,7 +659,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpb-add-blk:hover { border-color:var(--lavender);color:var(--navy); }
 .cpb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
 .cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(5,24,51,0.18); }
-.cpb-modal__title { font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
+.cpb-modal__title { font-family:'Alegreya',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .cpb-modal__row { margin-bottom:12px; }
 .cpb-modal__label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin-bottom:5px; }
 .cpb-modal__input { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--text);box-sizing:border-box; }
@@ -1228,7 +1229,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('spaces', projs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="margin-bottom:24px">' +
-            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
+            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
             '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
           '</div>' +
           (tokens.length ? '<div class="projects-table"><table>' +
@@ -1301,7 +1302,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('hub', allProjs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">' +
-            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
+            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
             '<div style="display:flex;gap:10px">' +
               '<button class="btn btn--outline" onclick="hubAddSection()">+ Section</button>' +
               '<button class="btn btn--primary" onclick="hubSave()">Enregistrer</button>' +
@@ -1371,10 +1372,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const now = Date.now();
     const soonDeadline = function(p) { return p.deadline && new Date(p.deadline).getTime() - now < 7 * 24 * 3600 * 1000 && new Date(p.deadline).getTime() > now; };
 
-    const activeProjects = projs.filter(function(p) { return p.status !== 'archived'; });
-    const totalUnread = unreadCounts.reduce(function(a, b) { return a + b; }, 0);
-    const waitingClient = projs.filter(function(p) { return p.status === 'waiting_client'; }).length;
-    const nearDeadline = projs.filter(soonDeadline).length;
+    var activeProjects = projs.filter(function(p) { return p.status !== 'archived'; });
 
     // Grouper par client, tri alphabétique
     var _clientMap = {};
@@ -1417,35 +1415,29 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     dashProjs = projs.slice();
     dashUnreadMap = unreadMap;
 
-    var typesPresent = {};
-    projs.forEach(function(p) { typesPresent[p.type || 'custom'] = true; });
-    var typeFilterOpts = '<option value="">Tous les types</option>' +
-      Object.keys(typesPresent).map(function(t) { return '<option value="' + t + '">' + (TYPE_LABELS[t] || t) + '</option>'; }).join('');
-    var statusFilterOpts = '<option value="">Tous les statuts</option>' +
-      Object.entries(STATUS_LABELS).map(function(e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
-
-    var ADM_TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', custom:'Personnalise', autre:'Autre' };
-    var admTypeKeys = ['all'].concat(Object.keys(ADM_TYPE_SHORT).filter(function(t){ return projs.some(function(p){ return (p.type||'custom')===t; }); }));
-
+    // Hero banner
     var heroBanner = '<div style="padding:24px 40px 0">' +
-      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#a98bd6 0%,#7c9bdc 100%)">' +
+      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#a98bd6,#7c9bdc)">' +
         '<div style="padding:22px 28px">' +
-          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · '+activeProjects.length+' espaces actifs</div>' +
-          '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400;line-height:1.05">Espaces clients</h1>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
+          '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400">Espaces clients</h1>' +
         '</div>' +
         '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
       '</div>' +
     '</div>';
 
+    // Type tabs
+    var TYPE_LABELS_SHORT = { identite:'Identite', site:'Site', maintenance:'Maintenance', partenaire:'Partenaire' };
+    var typeTabsArr = [['all','Tous']].concat(Object.keys(TYPE_LABELS_SHORT).map(function(t){ return [t, TYPE_LABELS_SHORT[t]]; }));
     var typeTabsHtml = '<div style="padding:18px 40px 0;display:flex;gap:2px;border-bottom:1px solid #e2d9ce;flex-wrap:wrap">' +
-      admTypeKeys.map(function(t) {
-        var lab = t==='all' ? 'Tous' : (ADM_TYPE_SHORT[t]||t);
-        var cnt = t==='all' ? projs.filter(function(p){return p.status!=='archived';}).length : projs.filter(function(p){return (p.type||'custom')===t && p.status!=='archived';}).length;
-        var active = t==='all';
-        return '<button id="adm-type-'+t+'" onclick="admSetTypeFilter(\''+t+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(active?'#5c4633':'transparent')+';color:'+(active?'#5c4633':'#8a6f54')+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
+      typeTabsArr.map(function(pair) {
+        var id=pair[0], lab=pair[1];
+        var cnt = id==='all' ? projs.filter(function(p){ return p.status!=='archived'; }).length : projs.filter(function(p){ return p.type===id && p.status!=='archived'; }).length;
+        return '<button onclick="admSetTypeFilter(\''+id+'\')" id="adm-type-'+id+'" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(id==='all'?'#5c4633':'transparent')+';color:'+(id==='all'?'#5c4633':'#8a6f54')+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
       }).join('') +
     '</div>';
 
+    // Filter bar (sticky)
     var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(250,248,244,0.92);backdrop-filter:blur(8px);padding:14px 40px;border-bottom:1px solid #e2d9ce;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
       '<div style="position:relative;flex:1 1 200px;max-width:280px">' +
         '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher un espace…" style="width:100%;padding:8px 12px 8px 34px;border:1px solid #e2d9ce;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:13px;background:#fff;color:#5c4633;outline:none">' +
@@ -1456,14 +1448,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           return '<button id="adm-arch-'+pair[0]+'" onclick="admSetArchFilter(\''+pair[0]+'\')" style="padding:6px 13px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'#5c4633':'transparent')+';color:'+(active?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">'+pair[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<select id="dash-sort" onchange="applyProjectFilters()" style="margin-left:auto;padding:7px 12px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#5c4633;outline:none;cursor:pointer">' +
+      '<select id="dash-sort" onchange="applyProjectFilters()" style="margin-left:auto;padding:7px 12px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#5c4633;outline:none">' +
         '<option value="deadline">Echeance proche</option>' +
         '<option value="updated">Recents</option>' +
         '<option value="client">Nom (A-Z)</option>' +
-        '<option value="status">Statut</option>' +
       '</select>' +
     '</div>';
 
+    // Cards grid
     var cardsHtml = '<div id="dash-cards" style="padding:26px 40px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px">' +
       renderProjectCards(projs.filter(function(p){ return p.status!=='archived'; }), unreadMap) +
     '</div>';
@@ -1481,58 +1473,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var dashProjs = [], dashUnreadMap = {};
   var admTypeFilter = 'all';
   var admArchFilter = 'active';
-
-  function renderProjectCards(list, unreadMap) {
-    if (!list.length) return '<p style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#8a6f54">Aucun espace ne correspond.</p>';
-    var TYPE_TONES = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', autre:'terre', custom:'glycine' };
-    var TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre', custom:'Personnalise' };
-    var ACCENT_COLORS = {
-      glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-      brume:  { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
-      terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
-    };
-    return list.map(function(p) {
-      var u = unreadMap[p.id] || 0;
-      var tone = TYPE_TONES[p.type] || 'glycine';
-      var a = ACCENT_COLORS[tone] || ACCENT_COLORS.glycine;
-      var typeLabel = TYPE_SHORT[p.type] || p.type || 'Autre';
-      var steps = p.steps || [];
-      var done = steps.filter(function(s){ return s.status==='done'; }).length;
-      var pct = steps.length ? Math.round(done/steps.length*100) : 0;
-      var bannerBg = p.bannerUrl ? 'url('+p.bannerUrl+') center/cover no-repeat' : p.bannerColor ? p.bannerColor.split('|')[0] : a.deep;
-      var deadlineHtml = '';
-      if (p.deadline) {
-        var today = new Date(); today.setHours(0,0,0,0);
-        var d = new Date(p.deadline); d.setHours(0,0,0,0);
-        var days = Math.round((d-today)/86400000);
-        if (pct===100) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#6c9e74;display:inline-flex;align-items:center;gap:4px">✓ Termine</span>';
-        else if (days<0) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#9b3a2e">Retard '+Math.abs(days)+' j</span>';
-        else if (days<=7) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c9952f">dans '+days+' j</span>';
-        else deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+formatDate(p.deadline)+'</span>';
-      }
-      return '<button onclick="adminNav(\'/admin/projects/'+p.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:1px solid #e2d9ce;border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms" onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
-        '<div style="position:relative;height:118px;background:'+bannerBg+'">' +
-          '<div style="position:absolute;top:11px;left:12px">' +
-            '<span style="display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,0.14);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9.5px;font-weight:500;letter-spacing:0.03em">'+typeLabel+'</span>' +
-          '</div>' +
-          (u>0 ? '<div style="position:absolute;top:11px;right:12px;display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">💬 '+u+'</div>' : '') +
-        '</div>' +
-        '<div style="padding:18px 22px 22px">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#5c4633;margin-bottom:3px">'+esc(p.clientName)+'</div>' +
-          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#8a6f54;margin-bottom:16px;letter-spacing:0.03em">'+esc(p.clientEmail)+' \xB7 '+esc(p.projectTitle)+'</div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">' +
-            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
-            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+pct+'%</span>' +
-          '</div>' +
-          '<div style="width:100%;height:6px;background:'+a.soft+';border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+a.deep+';border-radius:6px"></div></div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px">' +
-            deadlineHtml +
-            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54">'+esc(p.type ? (TYPE_SHORT[p.type]||p.type) : '')+'</span>' +
-          '</div>' +
-        '</div>' +
-      '</button>';
-    }).join('');
-  }
 
   function renderProjectRows(list, unreadMap) {
     if (!list.length) return '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Aucun projet ne correspond.</td></tr>';
@@ -1554,13 +1494,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.applyProjectFilters = function() {
     var q = (document.getElementById('dash-search')||{}).value || '';
-    var sort = (document.getElementById('dash-sort')||{}).value || 'deadline';
+    var ft = (document.getElementById('dash-type')||{}).value || '';
+    var fs = (document.getElementById('dash-status')||{}).value || '';
+    var sort = (document.getElementById('dash-sort')||{}).value || 'updated';
     q = q.trim().toLowerCase();
 
     var list = dashProjs.filter(function(p) {
-      var archMatch = admArchFilter==='all' || (admArchFilter==='archived' ? p.status==='archived' : p.status!=='archived');
-      if (!archMatch) return false;
-      if (admTypeFilter && admTypeFilter!=='all' && (p.type||'custom')!==admTypeFilter) return false;
+      if (ft && (p.type||'custom') !== ft) return false;
+      if (fs && p.status !== fs) return false;
       if (q) {
         var hay = ((p.clientName||'') + ' ' + (p.clientEmail||'') + ' ' + (p.projectTitle||'')).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
@@ -1581,30 +1522,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
 
-    var cards = document.getElementById('dash-cards');
-    if (cards) cards.innerHTML = renderProjectCards(list, dashUnreadMap);
-  };
-
-  window.openNewProject = function() { openModal('modal-new-project'); };
-
-  window.admSetTypeFilter = function(t) {
-    admTypeFilter = t;
-    document.querySelectorAll('[id^="adm-type-"]').forEach(function(btn) {
-      var active = btn.id === 'adm-type-'+t;
-      btn.style.borderBottomColor = active ? '#5c4633' : 'transparent';
-      btn.style.color = active ? '#5c4633' : '#8a6f54';
-    });
-    applyProjectFilters();
-  };
-
-  window.admSetArchFilter = function(f) {
-    admArchFilter = f;
-    document.querySelectorAll('[id^="adm-arch-"]').forEach(function(btn) {
-      var active = btn.id === 'adm-arch-'+f;
-      btn.style.background = active ? '#5c4633' : 'transparent';
-      btn.style.color = active ? '#EFE1B0' : '#8a6f54';
-    });
-    applyProjectFilters();
+    var tbody = document.getElementById('dash-tbody');
+    if (tbody) tbody.innerHTML = renderProjectRows(list, dashUnreadMap);
   };
 
   // ── Messages (inbox) — une conversation par client (email) ─────────────────
@@ -1744,7 +1663,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('messages', projs, {}, totalUnreadAll) +
         '<main class="main" style="display:flex;flex-direction:column;overflow:hidden">' +
           '<div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px">' +
-            '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
+            '<h2 style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
             (totalUnreadAll > 0 ? '<span class="unread-badge">' + totalUnreadAll + ' non lu' + (totalUnreadAll > 1 ? 's' : '') + '</span>' : '') +
           '</div>' +
           '<div style="display:flex;flex:1;overflow:hidden">' +
@@ -2012,11 +1931,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : bannerColors[0];
     var _bc = bannerColors[0].replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
     var bannerIsLight = !project.bannerUrl && (0.299*_r+0.587*_g+0.114*_b) > 160;
-    var TYPE_SHORT_SH = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre', custom:'Personnalise' };
-    var typeLabel = TYPE_SHORT_SH[project.type] || project.type || 'Autre';
-
-    var tabs = [['accueil','Apercu'],['taches','Planning'],['client','Client'],['page','Personnaliser']];
-    var tabNav = '<div class="proj-tabnav" style="padding:0 40px;background:#FAF8F4">' +
+    var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client'],['page','Personnaliser']];
+    var tabNav = '<div class="proj-tabnav">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
         return '<button class="proj-tabnav__btn'+(act?' active':'')+'" onclick="adminProjTab(\''+tb[0]+'\')" data-tab="'+tb[0]+'">'+tb[1]+'</button>';
@@ -2028,21 +1944,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
 
-          '<div style="position:relative;height:180px;background:'+bannerBg+';background-size:cover;background-position:center" id="proj-banner-el">' +
-            '<div style="position:absolute;inset:0;background:rgba(20,12,6,0.35);pointer-events:none"></div>' +
-            '<button onclick="adminNav(\'/admin\')" style="position:absolute;top:18px;left:24px;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;border:0;background:rgba(20,12,6,0.55);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">&#8592; Tous les espaces</button>' +
-            '<div style="position:absolute;top:18px;right:24px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,0.18);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">'+typeLabel+'</div>' +
-          '</div>' +
-
-          '<div style="padding:24px 40px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px;background:#FAF8F4">' +
-            '<div>' +
-              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:42px;color:#5c4633;font-weight:400;line-height:1.1;margin:0 0 6px">'+esc(project.clientName)+'</h1>' +
-              '<p style="color:#8a6f54;font-size:15px;margin:0">'+esc(project.clientEmail)+(project.projectTitle?' \xB7 '+esc(project.projectTitle):'')+'</p>' +
-            '</div>' +
-            '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-top:6px">' +
-              (project.clientEmail ? '<button class="btn btn--outline" onclick="previewClientSpace()">Voir le portail</button>' : '') +
-              '<button class="btn btn--primary" onclick="openBannerEditor()">Personnaliser</button>' +
-              '<button class="btn btn--danger" onclick="confirmDelete()">Supprimer</button>' +
+          '<div class="proj-banner" style="background:' + bannerBg + '" id="proj-banner-el"' + (bannerIsLight ? ' data-light' : '') + '>' +
+            '<div class="proj-banner__inner">' +
+              '<div>' +
+                '<h1 class="proj-banner__title">' + esc(project.projectTitle) + '</h1>' +
+                '<p class="proj-banner__sub">' + esc(project.clientName) + ' · ' + esc(project.clientEmail) + '</p>' +
+              '</div>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+                '<button class="btn btn--ghost" onclick="adminNav(\'/admin\')">← Dashboard</button>' +
+                '<button class="btn btn--ghost" onclick="addProjectForClient()">+ Nouveau projet</button>' +
+                (project.clientEmail ? '<button class="btn btn--ghost" onclick="previewClientSpace()">Apercu espace client</button>' : '') +
+                '<button class="btn btn--ghost" onclick="openBannerEditor()" title="Changer la couleur ou l\'image" style="padding:6px 10px;font-size:18px">&#9998;</button>' +
+                '<button class="btn btn--ghost btn--ghost-danger" onclick="confirmDelete()">Supprimer</button>' +
+              '</div>' +
             '</div>' +
           '</div>' +
 
@@ -2458,7 +2372,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   function apbBlockPreview(b) {
-    if (b.type === 'title') return '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
+    if (b.type === 'title') return '<div style="font-family:\'Alegreya\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
     if (b.type === 'text') return '<div style="white-space:pre-wrap">'+esc(b.content||'(texte vide)')+'</div>';
     if (b.type === 'list') {
       var items = (b.content||'').split('\n').filter(Boolean);
@@ -3838,7 +3752,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ov.id = 'token-modal-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
+      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
       '<p style="font-size:13px;color:#8090a8;margin-bottom:16px">Envoyez ce lien à votre cliente pour qu\'elle accède à son espace.</p>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">' +
         '<input id="token-modal-url" type="text" readonly value="' + url + '" style="flex:1;padding:10px 14px;border:1.5px solid #e2dbd0;border-radius:10px;font-size:13px;background:#f9f7f4;color:#051833;font-family:monospace">' +
@@ -4513,7 +4427,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(5,24,51,0.18);max-height:85vh;overflow-y:auto">' +
         '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
           (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
-          '<div style="font-size:19px;font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
+          '<div style="font-size:19px;font-family:\'Alegreya\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
           ((card.startDate || card.duration)
             ? '<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px">' +
                 (card.startDate ? fmtDate(card.startDate) : '') +
@@ -4775,7 +4689,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);margin-bottom:14px;display:block">' +
           '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
             '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
+            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
             (allAnswered
               ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
               : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
@@ -4926,7 +4840,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '';
     var body = '';
     if (b.type === 'title') {
-      body = '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
+      body = '<div style="font-family:\'Alegreya\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
     } else if (b.type === 'text') {
       body = '<div style="font-size:14px;color:var(--text);padding:6px 10px;white-space:pre-wrap">'+(b.content||'')+'</div>';
     } else if (b.type === 'list') {
@@ -5241,7 +5155,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44">✕</button>' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
+      '<div style="font-family:\'Alegreya\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
@@ -6017,7 +5931,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
+      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
@@ -6572,7 +6486,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(5,24,51,0.2)">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
+          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
           '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
         '<div style="padding:24px 28px">' +
@@ -6719,7 +6633,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
+        '<h1 style="font-family:\'Alegreya\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
         '<p style="color:#8090a8;line-height:1.7;font-size:15px">Le lien a expiré ou a été révoqué.<br><br>' +
           'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#7fa688">Cindy</a> pour obtenir un nouveau lien.</p>' +
       '</div></div>';
