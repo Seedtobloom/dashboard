@@ -2256,9 +2256,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '</div>' +
                 '<div class="form-field"><label>Couleur de la bannière</label>' +
                   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
-                    [['#412F21','#EFE1B0','Marron'],['#051833','#BAD1FD','Navy'],['#2D4A2D','#d4edda','Forêt'],['#412F21','#E4D1FE','Brun–Lavande'],['#1a1a2e','#e8e0f0','Prune'],['#7C4A00','#fff3e0','Ambre']].map(function(c) {
-                      var isSelected = (project.bannerColor||'#412F21|#EFE1B0') === c[0]+'|'+c[1];
-                      return '<button type="button" title="'+esc(c[2])+'" onclick="pickBannerColor(\''+c[0]+'\',\''+c[1]+'\')" style="width:36px;height:36px;border-radius:8px;border:' + (isSelected?'3px solid var(--navy)':'2px solid transparent') + ';background:linear-gradient(135deg,'+c[0]+','+c[1]+');cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.15)" aria-label="'+esc(c[2])+'"></button>';
+                    [['#5c4633','#EFE1B0','Terre'],['#2b3d5f','#BAD1FD','Nuit'],['#a98bd6','#E4D1FE','Glycine'],['#7c9bdc','#BAD1FD','Brume'],['#c9952f','#EFE1B0','Ocre'],['#412F21','#EFE1B0','Brun fonce']].map(function(c) {
+                      var isSelected = (project.bannerColor||'#5c4633|#EFE1B0') === c[0]+'|'+c[1];
+                      return '<button type="button" title="'+esc(c[2])+'" onclick="pickBannerColor(\''+c[0]+'\',\''+c[1]+'\')" style="width:36px;height:36px;border-radius:8px;border:' + (isSelected?'3px solid var(--navy)':'2px solid transparent') + ';background:'+c[0]+';cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.15)" aria-label="'+esc(c[2])+'"></button>';
                     }).join('') +
                     '<input type="color" id="edit-bannerColorCustom" value="' + esc(project.bannerColor ? project.bannerColor.split('|')[0] : '#412F21') + '" onchange="pickBannerColor(this.value,null)" title="Couleur personnalisée" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
                   '</div>' +
@@ -2839,7 +2839,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (hidden) hidden.value = '';
     _bannerColor = null;
     var prev = document.getElementById('banner-preview');
-    if (prev) prev.style.background = 'linear-gradient(135deg,#412F21,#EFE1B0)';
+    if (prev) prev.style.background = '#5c4633';
     toast('Image supprimée');
   };
 
@@ -2854,7 +2854,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var urlEl = document.getElementById('edit-bannerUrl');
     if (urlEl) urlEl.value = '';
     prev.style.backgroundImage = '';
-    prev.style.background = 'linear-gradient(135deg,'+c1+','+(c2||c1)+'44)';
+    prev.style.background = c1;
     // Met à jour la sélection visuelle
     var btns = document.querySelectorAll('[onclick^="pickBannerColor"]');
     btns.forEach(function(b) { b.style.border = '2px solid transparent'; });
