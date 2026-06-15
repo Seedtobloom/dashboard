@@ -1424,50 +1424,115 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var statusFilterOpts = '<option value="">Tous les statuts</option>' +
       Object.entries(STATUS_LABELS).map(function(e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
 
-    var toolbar = '<div class="proj-toolbar">' +
-      '<input type="search" id="dash-search" placeholder="Rechercher…" oninput="applyProjectFilters()" aria-label="Rechercher">' +
-      '<select id="dash-type" onchange="applyProjectFilters()" aria-label="Filtrer par type">' + typeFilterOpts + '</select>' +
-      '<select id="dash-status" onchange="applyProjectFilters()" aria-label="Filtrer par statut">' + statusFilterOpts + '</select>' +
-      '<select id="dash-sort" onchange="applyProjectFilters()" aria-label="Trier">' +
-        '<option value="updated">Récents</option>' +
-        '<option value="client">Client A→Z</option>' +
-        '<option value="title">Projet A→Z</option>' +
-        '<option value="deadline">Deadline</option>' +
+    var ADM_TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', custom:'Personnalise', autre:'Autre' };
+    var admTypeKeys = ['all'].concat(Object.keys(ADM_TYPE_SHORT).filter(function(t){ return projs.some(function(p){ return (p.type||'custom')===t; }); }));
+
+    var heroBanner = '<div style="padding:24px 40px 0">' +
+      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#a98bd6 0%,#7c9bdc 100%)">' +
+        '<div style="padding:22px 28px">' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · '+activeProjects.length+' espaces actifs</div>' +
+          '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400;line-height:1.05">Espaces clients</h1>' +
+        '</div>' +
+        '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
+      '</div>' +
+    '</div>';
+
+    var typeTabsHtml = '<div style="padding:18px 40px 0;display:flex;gap:2px;border-bottom:1px solid #e2d9ce;flex-wrap:wrap">' +
+      admTypeKeys.map(function(t) {
+        var lab = t==='all' ? 'Tous' : (ADM_TYPE_SHORT[t]||t);
+        var cnt = t==='all' ? projs.filter(function(p){return p.status!=='archived';}).length : projs.filter(function(p){return (p.type||'custom')===t && p.status!=='archived';}).length;
+        var active = t==='all';
+        return '<button id="adm-type-'+t+'" onclick="admSetTypeFilter(\''+t+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(active?'#5c4633':'transparent')+';color:'+(active?'#5c4633':'#8a6f54')+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
+      }).join('') +
+    '</div>';
+
+    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(250,248,244,0.92);backdrop-filter:blur(8px);padding:14px 40px;border-bottom:1px solid #e2d9ce;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+      '<div style="position:relative;flex:1 1 200px;max-width:280px">' +
+        '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher un espace…" style="width:100%;padding:8px 12px 8px 34px;border:1px solid #e2d9ce;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:13px;background:#fff;color:#5c4633;outline:none">' +
+      '</div>' +
+      '<div style="display:inline-flex;background:#fff;border:1px solid #e2d9ce;border-radius:999px;padding:3px">' +
+        [['active','Actifs'],['archived','Archives'],['all','Tous']].map(function(pair) {
+          var active = pair[0]==='active';
+          return '<button id="adm-arch-'+pair[0]+'" onclick="admSetArchFilter(\''+pair[0]+'\')" style="padding:6px 13px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'#5c4633':'transparent')+';color:'+(active?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">'+pair[1]+'</button>';
+        }).join('') +
+      '</div>' +
+      '<select id="dash-sort" onchange="applyProjectFilters()" style="margin-left:auto;padding:7px 12px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#5c4633;outline:none;cursor:pointer">' +
+        '<option value="deadline">Echeance proche</option>' +
+        '<option value="updated">Recents</option>' +
+        '<option value="client">Nom (A-Z)</option>' +
         '<option value="status">Statut</option>' +
       '</select>' +
     '</div>';
 
-    var projectRows = renderProjectRows(projs, unreadMap);
+    var cardsHtml = '<div id="dash-cards" style="padding:26px 40px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px">' +
+      renderProjectCards(projs.filter(function(p){ return p.status!=='archived'; }), unreadMap) +
+    '</div>';
 
     document.getElementById('app').innerHTML =
       '<div class="app">' +
         buildSidebarHtml('dashboard', projs, unreadMap, _globalMsgUnread || undefined) +
-        '<main class="main">' +
-          '<div class="main-inner">' +
-            '<div style="margin-bottom:24px">' +
-              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Bonjour Cindy</h1>' +
-              '<p style="color:var(--muted);font-size:14px">Voici l\'état de vos projets en cours.</p>' +
-            '</div>' +
-            '<div class="stat-grid">' +
-              '<div class="stat-card"><div class="stat-card__num">' + activeProjects.length + '</div><div class="stat-card__label">Projets actifs</div></div>' +
-              '<div class="stat-card"><div class="stat-card__num" style="color:' + (totalUnread > 0 ? 'var(--orange)' : 'inherit') + '">' + totalUnread + '</div><div class="stat-card__label">Messages non lus</div></div>' +
-              '<div class="stat-card"><div class="stat-card__num">' + waitingClient + '</div><div class="stat-card__label">En attente client</div></div>' +
-              '<div class="stat-card"><div class="stat-card__num" style="color:' + (nearDeadline > 0 ? 'var(--red)' : 'inherit') + '">' + nearDeadline + '</div><div class="stat-card__label">Deadlines &lt; 7 jours</div></div>' +
-            '</div>' +
-            toolbar +
-            '<div class="projects-table">' +
-              '<table>' +
-                '<thead><tr><th>Client</th><th>Projet</th><th>Type</th><th>Statut</th><th>Deadline</th><th>Messages</th><th>Modifié</th></tr></thead>' +
-                '<tbody id="dash-tbody">' + projectRows + '</tbody>' +
-              '</table>' +
-            '</div>' +
-          '</div>' +
+        '<main class="main" style="overflow-y:auto">' +
+          heroBanner + typeTabsHtml + filterBar + cardsHtml +
         '</main>' +
       '</div>';
   }
 
   // ── Tri / filtre des projets sur le tableau de bord ────────────────────────
   var dashProjs = [], dashUnreadMap = {};
+  var admTypeFilter = 'all';
+  var admArchFilter = 'active';
+
+  function renderProjectCards(list, unreadMap) {
+    if (!list.length) return '<p style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#8a6f54">Aucun espace ne correspond.</p>';
+    var TYPE_TONES = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', autre:'terre', custom:'glycine' };
+    var TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre', custom:'Personnalise' };
+    var ACCENT_COLORS = {
+      glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
+      brume:  { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
+      terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
+    };
+    return list.map(function(p) {
+      var u = unreadMap[p.id] || 0;
+      var tone = TYPE_TONES[p.type] || 'glycine';
+      var a = ACCENT_COLORS[tone] || ACCENT_COLORS.glycine;
+      var typeLabel = TYPE_SHORT[p.type] || p.type || 'Autre';
+      var steps = p.steps || [];
+      var done = steps.filter(function(s){ return s.status==='done'; }).length;
+      var pct = steps.length ? Math.round(done/steps.length*100) : 0;
+      var bannerBg = p.bannerUrl ? 'url('+p.bannerUrl+') center/cover no-repeat' : p.bannerColor ? p.bannerColor.split('|')[0] : a.deep;
+      var deadlineHtml = '';
+      if (p.deadline) {
+        var today = new Date(); today.setHours(0,0,0,0);
+        var d = new Date(p.deadline); d.setHours(0,0,0,0);
+        var days = Math.round((d-today)/86400000);
+        if (pct===100) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#6c9e74;display:inline-flex;align-items:center;gap:4px">✓ Termine</span>';
+        else if (days<0) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#9b3a2e">Retard '+Math.abs(days)+' j</span>';
+        else if (days<=7) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c9952f">dans '+days+' j</span>';
+        else deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+formatDate(p.deadline)+'</span>';
+      }
+      return '<button onclick="adminNav(\'/admin/projects/'+p.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:1px solid #e2d9ce;border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms" onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
+        '<div style="position:relative;height:118px;background:'+bannerBg+'">' +
+          '<div style="position:absolute;top:11px;left:12px">' +
+            '<span style="display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,0.14);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9.5px;font-weight:500;letter-spacing:0.03em">'+typeLabel+'</span>' +
+          '</div>' +
+          (u>0 ? '<div style="position:absolute;top:11px;right:12px;display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">💬 '+u+'</div>' : '') +
+        '</div>' +
+        '<div style="padding:18px 22px 22px">' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#5c4633;margin-bottom:3px">'+esc(p.clientName)+'</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#8a6f54;margin-bottom:16px;letter-spacing:0.03em">'+esc(p.clientEmail)+' \xB7 '+esc(p.projectTitle)+'</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
+            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+pct+'%</span>' +
+          '</div>' +
+          '<div style="width:100%;height:6px;background:'+a.soft+';border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+a.deep+';border-radius:6px"></div></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px">' +
+            deadlineHtml +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54">'+esc(p.type ? (TYPE_SHORT[p.type]||p.type) : '')+'</span>' +
+          '</div>' +
+        '</div>' +
+      '</button>';
+    }).join('');
+  }
 
   function renderProjectRows(list, unreadMap) {
     if (!list.length) return '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Aucun projet ne correspond.</td></tr>';
@@ -1489,14 +1554,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.applyProjectFilters = function() {
     var q = (document.getElementById('dash-search')||{}).value || '';
-    var ft = (document.getElementById('dash-type')||{}).value || '';
-    var fs = (document.getElementById('dash-status')||{}).value || '';
-    var sort = (document.getElementById('dash-sort')||{}).value || 'updated';
+    var sort = (document.getElementById('dash-sort')||{}).value || 'deadline';
     q = q.trim().toLowerCase();
 
     var list = dashProjs.filter(function(p) {
-      if (ft && (p.type||'custom') !== ft) return false;
-      if (fs && p.status !== fs) return false;
+      var archMatch = admArchFilter==='all' || (admArchFilter==='archived' ? p.status==='archived' : p.status!=='archived');
+      if (!archMatch) return false;
+      if (admTypeFilter && admTypeFilter!=='all' && (p.type||'custom')!==admTypeFilter) return false;
       if (q) {
         var hay = ((p.clientName||'') + ' ' + (p.clientEmail||'') + ' ' + (p.projectTitle||'')).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
@@ -1517,8 +1581,30 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
 
-    var tbody = document.getElementById('dash-tbody');
-    if (tbody) tbody.innerHTML = renderProjectRows(list, dashUnreadMap);
+    var cards = document.getElementById('dash-cards');
+    if (cards) cards.innerHTML = renderProjectCards(list, dashUnreadMap);
+  };
+
+  window.openNewProject = function() { openModal('modal-new-project'); };
+
+  window.admSetTypeFilter = function(t) {
+    admTypeFilter = t;
+    document.querySelectorAll('[id^="adm-type-"]').forEach(function(btn) {
+      var active = btn.id === 'adm-type-'+t;
+      btn.style.borderBottomColor = active ? '#5c4633' : 'transparent';
+      btn.style.color = active ? '#5c4633' : '#8a6f54';
+    });
+    applyProjectFilters();
+  };
+
+  window.admSetArchFilter = function(f) {
+    admArchFilter = f;
+    document.querySelectorAll('[id^="adm-arch-"]').forEach(function(btn) {
+      var active = btn.id === 'adm-arch-'+f;
+      btn.style.background = active ? '#5c4633' : 'transparent';
+      btn.style.color = active ? '#EFE1B0' : '#8a6f54';
+    });
+    applyProjectFilters();
   };
 
   // ── Messages (inbox) — une conversation par client (email) ─────────────────
