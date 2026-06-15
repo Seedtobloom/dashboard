@@ -4778,6 +4778,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (navArchived.length ? '<div class="cp-nav__sublabel">Archives</div>' + navArchived.map(navItem).join('') : '') +
     '</div>' : '';
 
+    var visioLink = firstProj && firstProj.meetingLink ? firstProj.meetingLink.trim() : '';
+    var visioHtml = visioLink ? '<a href="' + esc(visioLink.startsWith('http') ? visioLink : 'https://'+visioLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:var(--brume);color:var(--nuit)">' +
+      cpIcon('eye',15) +
+      '<div style="line-height:1.15;flex:1;min-width:0">' +
+        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">Rejoindre la visio</div>' +
+        '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(visioLink.replace(/^https?:\/\//,'')) + '</div>' +
+      '</div>' +
+    '</a>' : '';
+
     return '<aside class="cp-sidebar">' +
       // Brand header
       '<div class="cp-sidebar__brand">' +
@@ -4792,8 +4801,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       // Nav
       mainNav + exchangeNav + projNav +
-      // Footer: Cindy
-      '<div class="cp-sidebar__footer">' +
+      // Footer: visio + Cindy
+      '<div class="cp-sidebar__footer" style="display:block">' +
+        visioHtml +
         '<div style="display:flex;align-items:center;gap:11px">' +
           cpAvatar('Cindy','cindy',34) +
           '<div style="line-height:1.2;min-width:0">' +
@@ -6830,14 +6840,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('download',14) + '</a>' : '') +
       '</div>';
     }).join('');
+    var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'">' +
+      cpIcon('upload',24,'color:var(--terre);margin:0 auto 10px;display:block') +
+      '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:4px">Glissez un fichier ici</div>' +
+      '<div style="font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600);letter-spacing:0.08em">ou cliquez pour parcourir — PDF, images, archives</div>' +
+      '<input type="file" id="cp-file-input" style="display:none" onchange="cpUploadFileInput(this)">' +
+    '</div>';
     return '<div class="fade-up">' +
-      '<h2 style="font-family:var(--font-display);font-size:28px;color:var(--terre);font-style:italic;font-weight:400;margin-bottom:8px">Fichiers</h2>' +
-      '<p style="font-size:14px;color:var(--terre-600);margin-bottom:24px">Tous vos fichiers partages avec le studio.</p>' +
-      (fileRows || '<p style="color:var(--terre-600);font-size:14px">Aucun fichier disponible pour le moment.</p>') +
-      '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-2);padding:30px;text-align:center;color:var(--terre-600);margin-top:20px;cursor:pointer" onclick="cpUploadFile()">' +
-        cpIcon('upload',24,'color:var(--terre-400);margin:0 auto 8px') +
-        '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;margin-top:8px">Deposer vos fichiers ici</div>' +
-      '</div>' +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:22px;max-width:560px">Deposez vos elements, recuperez les miens — le telechargement fonctionne dans les deux sens.</p>' +
+      uploadZone +
+      (allFiles.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' + fileRows + '</div>' :
+        '<p style="color:var(--terre-600);font-size:14px;text-align:center">Aucun fichier disponible pour le moment.</p>') +
     '</div>';
   }
 
