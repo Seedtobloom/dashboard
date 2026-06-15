@@ -360,7 +360,7 @@ input, textarea, select, [contenteditable="true"], .selectable, p, pre,
 .cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
 input, textarea, select, [contenteditable="true"] { cursor: text; }
 a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
-.cp { display: flex; min-height: 100vh; }
+.cp { display: grid; grid-template-columns: var(--sw) 1fr; min-height: 100vh; }
 ::selection { background: var(--glycine); color: var(--terre); }
 .micro { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
 .eyebrow { font-family: var(--font-micro); font-size: 12px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
@@ -372,9 +372,9 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 
 /* Sidebar */
 .cp-sidebar {
-  width: var(--sw); flex-shrink: 0; background: var(--nuit); color: var(--brume);
-  display: flex; flex-direction: column; position: fixed;
-  top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10;
+  background: var(--nuit); color: var(--brume);
+  display: flex; flex-direction: column; position: sticky;
+  top: 0; height: 100vh; overflow-y: auto; z-index: 10;
 }
 .cp-sidebar__brand { padding: 24px 22px 20px; border-bottom: 1px solid rgba(186,209,253,0.14); }
 .cp-sidebar__brand-row { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
@@ -409,6 +409,29 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__badge { background: var(--glycine); color: var(--terre); font-family: var(--font-micro); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 999px; flex-shrink: 0; min-width: 18px; text-align: center; }
 .cp-sidebar__footer { padding: 14px 18px; border-top: 1px solid rgba(186,209,253,0.1); margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
 
+/* Portal topbar — sticky breadcrumb (desktop) */
+.cp-ptopbar { position: sticky; top: 0; z-index: 20; background: rgba(250,248,244,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bone-d); padding: 15px 44px; display: flex; align-items: center; gap: 14px; }
+.cp-ptopbar__name { font-family: var(--font-micro); font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--terre-400); }
+.cp-ptopbar__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-weight: 400; }
+.cp-ptopbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.cp-ptopbar__guide { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--bone-d); background: #fff; color: var(--terre-600); cursor: pointer; font-family: var(--font-micro); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; transition: border-color 160ms; }
+.cp-ptopbar__guide:hover { border-color: var(--terre-400); }
+.cp-ptopbar__code { font-family: var(--font-micro); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--terre-600); display: inline-flex; align-items: center; gap: 7px; }
+.cp-ptopbar__av { width: 32px; height: 32px; border-radius: 50%; background: var(--glycine); color: var(--terre); display: grid; place-items: center; font-family: var(--font-display); font-style: italic; font-size: 13px; flex-shrink: 0; }
+
+/* TypeBadge */
+.cp-typebadge { display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 9.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+.cp-typebadge--oncolor { background: rgba(255,255,255,0.14); color: inherit; }
+.cp-typebadge--glycine { background: var(--glycine-50); color: var(--glycine-900); }
+.cp-typebadge--brume { background: var(--brume-50); color: var(--brume-900); }
+.cp-typebadge--terre { background: rgba(65,47,33,0.1); color: var(--terre); }
+
+/* Portal holidays banner */
+.cp-conges { background: var(--glycine-50); border-bottom: 1px solid var(--glycine-200); padding: 11px 44px; display: flex; align-items: center; gap: 11px; font-size: 13.5px; color: var(--terre); }
+
+/* Portal main content area */
+.cp-portal-main { flex: 1; padding: 40px 44px 100px; max-width: 1160px; width: 100%; margin: 0 auto; }
+
 /* Home cards view */
 .cp-home { flex: 1; min-height: 100vh; padding: 40px 44px 64px; background: var(--bone); }
 .cp-home__inner { max-width: 1160px; margin: 0 auto; }
@@ -433,7 +456,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-type-title { font-family: var(--font-display); font-size: 22px; color: var(--terre); font-style: italic; margin-bottom: 14px; font-weight: 400; }
 
 /* Main */
-.cp-main { flex: 1; margin-left: var(--sw); display: flex; flex-direction: column; min-height: 100vh; }
+.cp-main { display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
 .cp-header { background: var(--terre); padding: 32px 44px 28px; }
 .cp-header__status {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
@@ -3786,6 +3809,19 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (days <= 7) return '<span class="cp-dpill soon">dans '+days+' j</span>';
     return '<span class="cp-dpill">'+fmtShort(due)+'</span>';
   }
+  var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre' };
+  var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', autre:'terre' };
+  function cpTypeBadge(type, onColor) {
+    var label = CP_TYPE_LABELS[type] || type || '';
+    var tone  = CP_TYPE_TONES[type] || 'terre';
+    var cls   = onColor ? 'cp-typebadge cp-typebadge--oncolor' : ('cp-typebadge cp-typebadge--'+tone);
+    return '<span class="'+cls+'">'+cpIcon(type==='site'?'external':type==='partenaire'?'calBig':type==='maintenance'?'settings':'flower',11)+' '+esc(label)+'</span>';
+  }
+  function cpBadge(n, tone) {
+    var bg = tone==='glycine' ? 'var(--glycine)' : 'var(--brume)';
+    var fg = tone==='glycine' ? 'var(--terre)' : 'var(--nuit)';
+    return '<span style="min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:inline-grid;place-items:center;background:'+bg+';color:'+fg+';font-family:var(--font-micro);font-size:10px;font-weight:600">'+n+'</span>';
+  }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
   var STATUS_TEXT = { discovery:'#051833', in_progress:'#0d2b16', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
   function statusBadge(status) {
@@ -4097,22 +4133,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildSidebar() {
     var portal = appData.type === 'client';
     var unread = totalUnread();
-    // Votre espace
+    var firstProj = appData.projects.length ? appData.projects[0].project : null;
+    var clientType = firstProj ? (firstProj.type || '') : '';
+
+    function navBtn(id, icon, label, onclick, badge) {
+      var active = (currentView === id) || (id === 'project' && currentView === 'project');
+      return '<button class="cp-nav__item' + (active?' active':'') + '" onclick="'+onclick+'">' +
+        cpIcon(icon, 16) +
+        '<span class="cp-nav__text"><div class="cp-nav__title">' + label + '</div></span>' +
+        (badge ? '<span class="cp-nav__badge">' + badge + '</span>' : '') +
+      '</button>';
+    }
+
+    // Votre espace group
     var mainNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label">Votre espace</div>' +
-      (portal ? '<button class="cp-nav__item' + (currentView==='home'?' active':'') + '" onclick="cpGoHome()">' +
-        cpIcon('home',16) + '<span class="cp-nav__text"><div class="cp-nav__title">Accueil</div></span>' +
-      '</button>' : '') +
-      '<div class="cp-nav__label" style="padding-top:16px">Echanges</div>' +
-      '<button class="cp-nav__item' + (currentView==='messages'?' active':'') + '" onclick="cpOpenMessages()">' +
-        cpIcon('chat',16) + '<span class="cp-nav__text"><div class="cp-nav__title">Messagerie</div></span>' +
-        (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
-      '</button>' +
-      (portal ? '<button class="cp-nav__item' + (currentView==='hub'?' active':'') + '" onclick="cpGoHub()">' +
-        cpIcon('folder',16) + '<span class="cp-nav__text"><div class="cp-nav__title">Ressources</div></span>' +
-      '</button>' : '') +
+      (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
+      (portal && appData.projects.length === 1 ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
-    // Projets
+
+    // Echanges group
+    var exchangeNav = '<div class="cp-nav">' +
+      '<div class="cp-nav__label" style="padding-top:16px">Echanges</div>' +
+      navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
+      navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
+      (portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +
+    '</div>';
+
+    // Projects nav (multi-project or non-portal)
     function navItem(pd) {
       var p = pd.project;
       var act = (currentView==='project' && p.id === currentId) ? ' active' : '';
@@ -4127,64 +4175,84 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var navActive = appData.projects.filter(function(pd){ return pd.project.status !== 'archived'; });
     var navArchived = appData.projects.filter(function(pd){ return pd.project.status === 'archived'; });
     var navGroups = groupByType(navActive);
-    var projNav = '<div class="cp-nav">' +
+    var projNav = (appData.projects.length > 1) ? '<div class="cp-nav">' +
       (navGroups.length ? '<div class="cp-nav__label">Mes projets</div>' : '') +
       (navGroups.length ? navGroups.map(function(g) {
           return (navGroups.length > 1 ? '<div class="cp-nav__sublabel">' + esc(g.label) + '</div>' : '') +
             g.items.map(navItem).join('');
         }).join('') : '') +
       (navArchived.length ? '<div class="cp-nav__sublabel">Archives</div>' + navArchived.map(navItem).join('') : '') +
-    '</div>';
-    // Cindy avatar (initiales)
-    var cindyAv = '<span style="width:34px;height:34px;border-radius:50%;background:var(--terre);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--paille);flex-shrink:0">C</span>';
+    '</div>' : '';
+
     return '<aside class="cp-sidebar">' +
+      // Brand header
       '<div class="cp-sidebar__brand">' +
-        '<div class="cp-sidebar__brand-row">' +
-          '<span class="cp-sidebar__brand-icon">' + cpIcon('flower', 20) + '</span>' +
-          '<div class="cp-sidebar__brand-text">' +
+        '<div style="display:flex;align-items:center;gap:11px">' +
+          '<span style="color:var(--brume);flex-shrink:0">' + cpIcon('flower', 20) + '</span>' +
+          '<div style="line-height:1.12">' +
             '<div class="cp-sidebar__logo">Seed to Bloom</div>' +
             '<div class="cp-sidebar__name">' + esc(appData.clientName) + '</div>' +
           '</div>' +
         '</div>' +
+        (clientType ? '<div style="margin-top:14px">' + cpTypeBadge(clientType, true) + '</div>' : '') +
       '</div>' +
-      mainNav + projNav +
+      // Nav
+      mainNav + exchangeNav + projNav +
+      // Footer: Cindy
       '<div class="cp-sidebar__footer">' +
         '<div style="display:flex;align-items:center;gap:11px">' +
-          cindyAv +
-          '<div>' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--brume);line-height:1.2">Cindy</div>' +
+          cpAvatar('Cindy','cindy',34) +
+          '<div style="line-height:1.2;min-width:0">' +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--brume)">Cindy</div>' +
             '<div style="font-family:var(--font-micro);font-size:9px;color:rgba(186,209,253,0.5);letter-spacing:0.1em;text-transform:uppercase">Votre interlocutrice</div>' +
           '</div>' +
         '</div>' +
-        '<button id="_cp-color-btn" onclick="openCpColorPanel()" title="Couleurs" style="background:rgba(186,209,253,0.08);border:none;border-radius:var(--radius-2);padding:5px 8px;cursor:pointer;display:flex;gap:4px;align-items:center">' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:var(--glycine);display:inline-block"></span>' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:var(--paille);display:inline-block"></span>' +
-        '</button>' +
       '</div>' +
     '</aside>';
   }
 
   function buildTopbar() {
-    var multi = appData.projects.length > 1;
-    var pills = '';
-    if (multi) {
-      pills = '<div class="cp-pills">' +
+    // Mobile topbar (shown only below 768px via CSS)
+    var mobilePills = '';
+    if (appData.projects.length > 1) {
+      mobilePills = '<div class="cp-pills">' +
         appData.projects.map(function(pd) {
           var p = pd.project;
           var act = p.id === currentId ? ' active' : '';
           var unread = pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
           return '<button class="cp-pill' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
             esc(p.projectTitle) +
-            (unread > 0 ? ' <span style="background:#e8a87c;color:#fff;font-size:10px;padding:1px 5px;border-radius:999px">' + unread + '</span>' : '') +
+            (unread > 0 ? ' <span style="background:var(--glycine);color:var(--terre);font-size:10px;padding:1px 5px;border-radius:999px">' + unread + '</span>' : '') +
           '</button>';
         }).join('') + '</div>';
     }
-    // Sur desktop, la navigation se fait via la sidebar → pills uniquement sur mobile.
-    return '<div class="cp-topbar">' +
-      '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKcAAABkCAYAAADjaiD2AAAACXBIWXMAAC4jAAAuIwF4pT92AAAFg0lEQVR4nO2d2XHcMBBEsS4noAQUkoJ1SE5AIcg/YpmmccwJNMh+XyqtMDMEegcgLr2+vr4KIYj8WB0AIS0oTgILxUlgoTgJLBQngeXn6gAQ+fz9Sz2F8fb+8cqI5cm8OJX0F4soz+wm0PPzIsbOzPmNV5g7scuzUpwNRplklwY+04oZMWuWwheiUsr/jSZprLf3jxdqo96Fx4vzaePMnWC3fsEitl0EesS5y5Dk8Znzyi4NN5sV9UJxVqBA/+Woj9n18nhxtrpkCnQ9jxdnDwp07UQ9V4i+kQpxl5efUvrCkoiuN8V2fCaZD7bWGcV5QpsppZXes+uZ7I8akvSEqy0rKS+tN3brJ7Tf8M/fv75GDeH53Gt7BZKYpHFTnBeOlR+NUCWVfdjzZBpJ2Wt3bXkeK7Xn8GR3dutCNAK8lpGIKqKsZRyp+VvNEET6JezZZOYUIsk+58pvibk2FJCO+SRlW787fybNotbeo1VOm725fKnEswRo2WASURaJt/ePl7TumuJE2A2OEEPPjzQ+6bRLVFnP9E3Ndya9WNmtO9AIwCOWXbOklzBxIlSgNTNlZwg0Ye6y4NDs1i1THtHMjCGqK4y2bS0b8TzWutb4DntbX/1Nyo4h88vnse0RSWQcPTyrTC045nTQe4OWZv1jWGGZI7yWbZWr+aj9Te2zVgzW4ZCmzOOnkq5v3TWRXLupjCwo6RGiDqhpZhqkMdTsetfY1StE2ln+DKJjiOiCPMt00WU1Aur5l9jSlpH4PGC37mS04jJqhIyyo9+Phh8eHx6bV5g5AfzsQOZsRgvVmBNhi9bMGJ4qxBor6sLdrbMBSRa3GHPyC3JPbiFOck8oTgILxUlgcYkTYayHEAPJQSzOp00jkfWwWyewUJwElvRdSSvv2tESdVPFLn6lRB2u09oRr61bAoza4uWJwWK3R6RQov1mHAiMakOLnbRu3XPNyky0sUTFvsrvGc89TZp4rHZSxJlRkdE2PQfbvJuNV/hd5ctjR9StR9+BM7LhjSHCVtSG2dV+szYLS2Lx2gnNnEjddQupyGdcEDHDr3azMELGPAgTZ+1lRXMvzyo8O7p39NsDSZilGKeSorbhe3ZXe6520djwHAZb7VfDKEbt1TteO6UEZc7RXCZC9syYhtIep53p10NUe3ntcIVIwKovV5bfXjbz3P8UZefALc4ZK0ArutUIVvntxdD7POp4ddRzDsUpFUbUOJSsAU2YpRgyZ9TNFx6i5vky2XVaDQlzt77Tho4zdxs/aol6YT1f1RNhpwZfiBzsLPTorJlRFyZx7pI12aXX0bZf73Y6q18J8JkTvaF3ZvV85qhcV5w1YURmTeSsewdqU1lRN+rNSBq82fihzJ46sohZJU5P1rxb97zjyxBSG0Dfz8kMuI7s/aBRmMT5NGHxrd+H9Tng39YR2bFLj7ThtSMt2xRn5MlJ6waIu2SOFdyh7rbKnE8bTqAya29D+lRS9rYx7WlG76pG5KG6GX49NmYdR2752SpzXpndde081owi6+BfrS1TxZmZNa+2dzgrj+53NqPnFIvT2yVkClN7yhP57E9WvSEMC87b7CTPqbqfM+oEnsVGKwbrEVvNFSna+Ff5lfhYjeZyjOrRYO3dNrWNpyPHEXht144mzzj3s8qvhhnDpNEzhlyBGDknKkVqe7SDJmt5bpVfFEbiNq+tI61ERNiOPj6A7hcd6TM2M2evq45wbCEzk0X4QPLrsZ05PNPYUf9j1lLmjY8yjoOsGILM9uu55ifaxvGzxZZJnITMYOsVInJvKE4CC8VJYKE4CSwUJ4GF4iSwUJwEFoqTwEJxElgoTgILxUlgoTgJLBQngYXiJLBQnAQWipPAQnESWChOAgvFSWChOAksfwD7hgKCmgE0fgAAAABJRU5ErkJggg==" alt="Seed to Bloom" style="max-height:28px;width:auto">' +
+    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources' };
+    var pageTitle = pageTitles[currentView] || 'Espace client';
+    if (currentView === 'project' && currentId) {
+      var pd = getPD(currentId);
+      if (pd) pageTitle = esc(pd.project.projectTitle);
+    }
+    // Access code (hidden on mobile for privacy)
+    var accessCode = (appData.projects[0] && appData.projects[0].project && appData.projects[0].project.accessCode) || '';
+    // Client initial for avatar
+    var avInitial = appData.clientName ? appData.clientName.charAt(0).toUpperCase() : 'C';
+    // Desktop sticky topbar (breadcrumb)
+    var desktopBar = '<div class="cp-ptopbar">' +
+      '<span class="cp-ptopbar__name">' + esc(appData.clientName) + '</span>' +
+      cpIcon('arrow', 12, 'color:var(--terre-400)') +
+      '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
+      '<div class="cp-ptopbar__right">' +
+        '<button class="cp-ptopbar__guide" onclick="" title="Guide">' + cpIcon('question',13) + ' Guide</button>' +
+        (accessCode ? '<span class="cp-ptopbar__code">' + cpIcon('lock',13) + ' ' + esc(accessCode) + '</span>' : '') +
+        '<span class="cp-ptopbar__av">' + avInitial + '</span>' +
+      '</div>' +
+    '</div>';
+    // Mobile topbar (hidden on desktop via CSS)
+    var mobileBar = '<div class="cp-topbar">' +
+      cpIcon('flower', 18, 'color:var(--brume)') +
       '<div class="cp-topbar__name">' + esc(appData.clientName) + '</div>' +
-    '</div>' +
-    pills; // Après la topbar, visible uniquement sur mobile via CSS
+    '</div>' + mobilePills;
+    return desktopBar + mobileBar;
   }
 
   function buildClientCardsSection(project) {
@@ -5993,32 +6061,74 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function buildHubView() {
-    if (!_hubCache) return '<div class="cp-content" style="padding:60px;text-align:center;color:var(--muted)">Chargement…</div>';
+    if (!_hubCache) return '<div class="fade-up" style="text-align:center;padding:60px 0;color:var(--terre-600)">Chargement…</div>';
     var sections = (_hubCache && _hubCache.sections) || [];
-    if (!sections.length) return '<div class="cp-content"><div style="margin-bottom:20px"><div style="font-size:20px;font-weight:700;color:var(--navy);font-family:\'Alegreya\',serif;font-style:italic">Ressources partagees</div></div><div style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">Aucune ressource disponible pour le moment.</div></div>';
+    if (!sections.length) return '<div class="fade-up">' +
+      '<h2 style="font-family:var(--font-display);font-size:28px;color:var(--terre);font-style:italic;font-weight:400;margin-bottom:24px">Ressources partagees</h2>' +
+      '<p style="color:var(--terre-600);font-size:14px">Aucune ressource disponible pour le moment.</p></div>';
     var secHtml = sections.map(function(sec) {
       var contentHtml = '';
       if (sec.type === 'links') {
         var links = (sec.content || '').split('\n').filter(Boolean);
-        contentHtml = '<div style="display:flex;flex-direction:column;gap:6px">' + links.map(function(l) {
+        contentHtml = '<div style="display:flex;flex-direction:column;gap:8px">' + links.map(function(l) {
           var url = l.trim();
-          return '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="color:var(--navy);font-size:14px;word-break:break-all">→ ' + esc(url) + '</a>';
+          return '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;color:var(--terre);font-size:14px;word-break:break-all;text-decoration:none">' +
+            cpIcon('external',14,'color:var(--terre-400)') + esc(url) + '</a>';
         }).join('') + '</div>';
       } else {
-        contentHtml = '<p style="font-size:14px;color:var(--text);white-space:pre-wrap;margin:0">' + esc(sec.content||'') + '</p>';
+        contentHtml = '<p style="font-size:14px;color:var(--terre-600);white-space:pre-wrap;line-height:1.65;margin:0">' + esc(sec.content||'') + '</p>';
       }
-      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">' +
-        (sec.title ? '<div style="font-weight:700;font-size:15px;color:var(--navy);margin-bottom:10px">' + esc(sec.title) + '</div>' : '') +
+      return '<div class="card" style="padding:20px 24px;margin-bottom:14px">' +
+        (sec.title ? '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:12px;font-style:italic;font-weight:400">' + esc(sec.title) + '</div>' : '') +
         contentHtml +
       '</div>';
     }).join('');
-    return '<div class="cp-content"><div style="margin-bottom:20px"><div style="font-size:20px;font-weight:700;color:var(--navy);font-family:\'Alegreya\',serif;font-style:italic">Ressources partagees</div></div>' + secHtml + '</div>';
+    return '<div class="fade-up">' +
+      '<h2 style="font-family:var(--font-display);font-size:28px;color:var(--terre);font-style:italic;font-weight:400;margin-bottom:24px">Ressources partagees</h2>' +
+      secHtml + '</div>';
+  }
+
+  function buildFichiersView() {
+    // Collect all files from all projects
+    var allFiles = [];
+    appData.projects.forEach(function(pd) {
+      (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project }); });
+    });
+    // Upload zone + file list
+    var fileRows = allFiles.map(function(item) {
+      var f = item.f;
+      var isCindy = f.source !== 'client';
+      var tileBg = isCindy ? 'var(--brume-50)' : 'var(--glycine-50)';
+      var tileCol = isCindy ? 'var(--brume-900)' : 'var(--glycine-900)';
+      return '<div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">' +
+        '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:'+tileBg+';color:'+tileCol+';display:grid;place-items:center;flex-shrink:0">' +
+          cpIcon('file',18) +
+        '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name||f.filename||'Fichier') + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600);margin-top:2px;letter-spacing:0.06em;text-transform:uppercase">' +
+            esc(item.proj.projectTitle) + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '') +
+          '</div>' +
+        '</div>' +
+        (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('download',14) + '</a>' : '') +
+      '</div>';
+    }).join('');
+    return '<div class="fade-up">' +
+      '<h2 style="font-family:var(--font-display);font-size:28px;color:var(--terre);font-style:italic;font-weight:400;margin-bottom:8px">Fichiers</h2>' +
+      '<p style="font-size:14px;color:var(--terre-600);margin-bottom:24px">Tous vos fichiers partages avec le studio.</p>' +
+      (fileRows || '<p style="color:var(--terre-600);font-size:14px">Aucun fichier disponible pour le moment.</p>') +
+      '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-2);padding:30px;text-align:center;color:var(--terre-600);margin-top:20px;cursor:pointer" onclick="cpUploadFile()">' +
+        cpIcon('upload',24,'color:var(--terre-400);margin:0 auto 8px') +
+        '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;margin-top:8px">Deposer vos fichiers ici</div>' +
+      '</div>' +
+    '</div>';
   }
 
   function mainForView() {
-    if (currentView === 'messages') return buildConversation();
+    if (currentView === 'messages') return '<div class="cp-portal-main">' + buildConversation() + '</div>';
     if (currentView === 'project') return buildProjectView(getPD(currentId));
-    if (currentView === 'hub') return buildHubView();
+    if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
+    if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
     return buildHome();
   }
 
@@ -6072,6 +6182,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpGoHome = function() {
     currentView = 'home';
+    renderShell();
+  };
+
+  window.cpGoFichiers = function() {
+    currentView = 'fichiers';
     renderShell();
   };
 
