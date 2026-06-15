@@ -736,7 +736,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '--bg':         '#FAF8F4',
     '--surface':    '#F5F2EC',
     '--st-discovery':  '#d4e4f0',
-    '--st-in-progress':'#7fa688',
+    '--st-in-progress':'#7c9bdc',
     '--st-waiting':   '#e8a87c',
     '--st-review':    '#b0a0d4',
     '--st-delivered':  '#1a2744',
@@ -909,7 +909,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // RGAA 3.2 — texte lisible sur le fond du badge
   var STATUS_TEXT_VARS = {
-    discovery: 'var(--st-discovery-t,#051833)', in_progress: 'var(--st-in-progress-t,#0d2b16)',
+    discovery: 'var(--st-discovery-t,#2b3d5f)', in_progress: 'var(--st-in-progress-t,#2b3d5f)',
     waiting_client: 'var(--st-waiting-t,#5a2c0e)', review: 'var(--st-review-t,#2a1d4a)',
     delivered: 'var(--st-delivered-t,#FFFFFF)', archived: 'var(--st-archived-t,#2a2a2a)',
   };
@@ -1631,7 +1631,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         var today = new Date(); today.setHours(0,0,0,0);
         var d = new Date(p.deadline); d.setHours(0,0,0,0);
         var days = Math.round((d-today)/86400000);
-        if (pct===100) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#6c9e74;display:inline-flex;align-items:center;gap:4px">\u2713 Termine</span>';
+        if (pct===100) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#5c4633;display:inline-flex;align-items:center;gap:4px">\u2713 Termine</span>';
         else if (days<0) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#9b3a2e">Retard '+Math.abs(days)+' j</span>';
         else if (days<=7) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c9952f">dans '+days+' j</span>';
         else deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+formatDate(p.deadline)+'</span>';
@@ -2098,8 +2098,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     invoices.forEach(function(i){ window._adminInvReg[i.id] = i; });
     const ADM_INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente', draft:'Brouillon' };
-    const ADM_INV_COLOR  = { sent:'#7fa688', signed:'#BAD1FD', paid:'#412F21', overdue:'#c0392b', cancelled:'#aaa', pending:'#e8a87c', draft:'#ddd' };
-    const ADM_INV_TXT    = { sent:'#0d2b16', signed:'#051833', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e', draft:'#555' };
+    const ADM_INV_COLOR  = { sent:'#BAD1FD', signed:'#E4D1FE', paid:'#5c4633', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c', draft:'#ddd' };
+    const ADM_INV_TXT    = { sent:'#2b3d5f', signed:'#6c4ea4', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e', draft:'#555' };
     const invoicesHtml = invoices.map(function(inv) {
       var bg = ADM_INV_COLOR[inv.status] || '#aaa';
       var fg = ADM_INV_TXT[inv.status] || '#222';
@@ -2489,7 +2489,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Tab navigation ─────────────────────────────────────────────────────────
   var BANNER_COLORS = [
-    ['#412F21','Marron'],['#051833','Navy'],['#7fa688','Sauge'],['#C94040','Rouge'],
+    ['#5c4633','Terre'],['#2b3d5f','Nuit'],['#a98bd6','Glycine'],['#9b3a2e','Rouge brique'],
     ['#E4D1FE','Lavande'],['#BAD1FD','Bleu clair'],['#EFE1B0','Creme'],['#FAF8F4','Fond']
   ];
 
@@ -3661,7 +3661,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>' +
       '<div class="card-body">' +
         '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);margin-bottom:6px"><span>' + done + '/' + tasks.length + ' tâches terminées</span><span>' + pct + '%</span></div>' +
-        '<div class="cp-bar" style="background:rgba(5,24,51,0.08);border-radius:999px;height:10px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:var(--sage,#7fa688)"></div></div>' +
+        '<div class="cp-bar" style="background:rgba(5,24,51,0.08);border-radius:999px;height:10px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:var(--sage,#7c9bdc)"></div></div>' +
         '<div style="margin-top:12px;font-size:13px;color:var(--brown,#412F21)">⏱ Total heures suivies : <strong>' + totalH + ' h</strong> (' + totalMin + ' min)</div>' +
       '</div>' +
     '</div>';
@@ -4016,7 +4016,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var TOKEN = getToken();
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
-  var STATUS_COLORS = { discovery:'#d4e4f0', in_progress:'#7fa688', waiting_client:'#e8a87c', review:'#b0a0d4', delivered:'#1a2744', archived:'#aaa' };
+  var STATUS_COLORS = { discovery:'#d4e4f0', in_progress:'#BAD1FD', waiting_client:'#e8a87c', review:'#b0a0d4', delivered:'#2b3d5f', archived:'#aaa' };
 
   var ACCENTS = {
     glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
@@ -4143,7 +4143,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
-  var STATUS_TEXT = { discovery:'#051833', in_progress:'#0d2b16', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
+  var STATUS_TEXT = { discovery:'#2b3d5f', in_progress:'#2b3d5f', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
   function statusBadge(status) {
     var bg = STATUS_COLORS[status] || '#aaa';
     var fg = STATUS_TEXT[status] || '#1a1a1a';
@@ -5850,8 +5850,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Aucune facture ou devis pour le moment.</div></div>';
     }
     var INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente' };
-    var INV_COLOR  = { sent:'#7fa688', signed:'#BAD1FD', paid:'#412F21', overdue:'#c0392b', cancelled:'#aaa', pending:'#e8a87c' };
-    var INV_TXT    = { sent:'#0d2b16', signed:'#051833', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e' };
+    var INV_COLOR  = { sent:'#BAD1FD', signed:'#E4D1FE', paid:'#5c4633', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c' };
+    var INV_TXT    = { sent:'#2b3d5f', signed:'#6c4ea4', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e' };
     var devisItems = inv.filter(function(i){ return i.type === 'devis'; });
     var factItems  = inv.filter(function(i){ return i.type !== 'devis'; });
     function invRow(i) {
@@ -6896,7 +6896,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
         '<h1 style="font-family:\'Alegreya\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
         '<p style="color:#8090a8;line-height:1.7;font-size:15px">Le lien a expiré ou a été révoqué.<br><br>' +
-          'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#7fa688">Cindy</a> pour obtenir un nouveau lien.</p>' +
+          'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a> pour obtenir un nouveau lien.</p>' +
       '</div></div>';
   }
 
