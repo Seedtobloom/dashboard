@@ -4683,6 +4683,74 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return header + '<div data-cpb-page="1">' + cpbRenderPage(_pageDraft, _canEdit) + '</div>';
     }
 
+    // Espace site : PhasesView deux colonnes avec sous-checklist
+    if (project.type === 'site') {
+      var pvAccent = acc('brume');
+      var pvFilter = cpStepsStatusFilter;
+
+      var pvAllStatuses = ['in_progress','waiting_client','done','upcoming'];
+      var pvPresent = pvAllStatuses.filter(function(sk){ return steps.some(function(s){ return s.status===sk; }); });
+      var pvTabKeys = ['all'].concat(pvPresent);
+      var pvStatusTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
+        pvTabKeys.map(function(sk) {
+          var active = pvFilter===sk;
+          var cnt = sk==='all' ? steps.length : steps.filter(function(s){ return s.status===sk; }).length;
+          var dotHtml = sk!=='all' ? '<span style="width:7px;height:7px;border-radius:2px;background:'+(STEP_STATUS_COLORS[sk]||'var(--bone-d)')+';transform:rotate(45deg);display:inline-block;flex-shrink:0"></span> ' : '';
+          return '<button onclick="cpSetStepsFilter(\''+sk+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 14px;background:none;border:0;border-bottom:2px solid '+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--terre)':'var(--terre-600)')+';cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
+            dotHtml + (STEP_STATUS_LABELS[sk]||'Tout') +
+            ' <span style="opacity:0.55">'+cnt+'</span>' +
+          '</button>';
+        }).join('') +
+      '</div>';
+
+      var pvShown = pvFilter==='all' ? steps : steps.filter(function(s){ return s.status===pvFilter; });
+
+      var pvCardsHtml = pvShown.map(function(p) {
+        var i = steps.indexOf(p);
+        var isDone = p.status==='done';
+        var subItems = [];
+        if (p.description) subItems.push({ text: p.description, done: isDone });
+        if (p.clientAction && p.status==='waiting_client') subItems.push({ text: p.clientAction, done: false, action: true });
+        var subHtml = subItems.length
+          ? '<ul style="margin:0;padding:0;list-style:none;display:grid;gap:8px">' +
+              subItems.map(function(si) {
+                var iconHtml = isDone
+                  ? cpIcon('check', 14, 'style="color:var(--st-done);flex-shrink:0;margin-top:3px"')
+                  : '<span style="width:6px;height:6px;border-radius:50%;background:'+pvAccent.deep+';display:inline-block;flex-shrink:0;margin-top:5px"></span>';
+                return '<li style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--terre-600);line-height:1.45">'+iconHtml+'<span>'+esc(si.text)+'</span></li>';
+              }).join('') +
+            '</ul>'
+          : '';
+        return '<div class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:14px">' +
+          '<div style="display:flex;align-items:flex-start;gap:14px">' +
+            '<span style="width:36px;height:36px;flex:0 0 auto;border-radius:var(--radius-2);display:grid;place-items:center;background:'+pvAccent.soft+';color:'+pvAccent.ink+';font-family:var(--font-display);font-style:italic;font-size:17px">'+(i+1)+'</span>' +
+            '<div style="flex:1;min-width:0">' +
+              '<button onclick="cpSelHome(\''+project.id+'\')" class="open-title" style="font-family:var(--font-display);font-size:21px;color:var(--terre);text-align:left;background:none;border:0;padding:0;cursor:pointer;line-height:1.15;display:inline-flex;align-items:center;gap:8px">'+esc(p.title)+'<span class="open-arrow">'+cpIcon('arrow',14)+'</span></button>' +
+            '</div>' +
+          '</div>' +
+          subHtml +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:6px">' +
+            cpDeadlinePill(p.dueDate, isDone, true) +
+            cpStatusPill(p.status) +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      var phasesView = '<div>' +
+        '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:26px;max-width:640px">Parcourez les phases de votre site — cliquez-en une pour voir le detail et suivre l\'avancement.</p>' +
+        pvStatusTabsHtml +
+        (pvShown.length
+          ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:18px">'+pvCardsHtml+'</div>'
+          : '<div class="cp-empty">Aucune phase dans cette catégorie.</div>') +
+      '</div>';
+
+      return header +
+        '<div class="cp-content"><div class="cp-grid">' +
+          '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + phasesView + '</div>' +
+          '<div class="cp-grid__side">' + sideCol + '</div>' +
+        '</div></div>';
+    }
+
     return header +
       '<div class="cp-content"><div class="cp-grid">' +
         '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + progress + '</div>' +
