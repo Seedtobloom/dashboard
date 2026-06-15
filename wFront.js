@@ -629,7 +629,50 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpb-modal__textarea { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--text);resize:vertical;min-height:80px;box-sizing:border-box; }
 .cpb-modal__footer { display:flex;justify-content:flex-end;gap:10px;margin-top:18px; }
 .cpb-layout-btn { padding:7px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;color:var(--muted);transition:all 0.12s; }
-.cpb-layout-btn.active { border-color:var(--navy);background:var(--navy);color:var(--blue-light); }`;
+.cpb-layout-btn.active { border-color:var(--navy);background:var(--navy);color:var(--blue-light); }
+
+/* ── Portal home two-column layout ──────────────────────────────── */
+.cp-ph { display:grid;gap:22px; }
+.cp-ph__cols { display:grid;grid-template-columns:1.55fr 1fr;gap:22px;align-items:start; }
+@media (max-width:900px) { .cp-ph__cols { grid-template-columns:1fr; } }
+.cp-ph__left { display:grid;gap:20px; }
+.cp-ph__right { display:grid;gap:16px; }
+.cp-ph__banner { position:relative;width:100%;height:224px;border-radius:12px;overflow:hidden;background:var(--terre); }
+.cp-ph__banner-overlay { position:absolute;inset:0;background:linear-gradient(to top,rgba(20,12,6,0.55),rgba(20,12,6,0.08) 55%,transparent);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
+.cp-ph__banner-content { padding:26px 30px; }
+
+/* open-title — clickable step/phase name with trailing arrow */
+.open-title { display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--font-display);color:var(--terre);text-align:left;line-height:1.15; }
+.open-title:hover .open-arrow { transform:translateX(3px); }
+.open-arrow { transition:transform 160ms var(--ease);color:var(--terre-400); }
+
+/* status dot — rotated 8×8 square */
+.cp-sdot { width:8px;height:8px;border-radius:2px;transform:rotate(45deg);flex-shrink:0;display:inline-block; }
+
+/* status filter tabs */
+.cp-stabs { display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px; }
+.cp-stab { display:inline-flex;align-items:center;gap:7px;padding:10px 14px;background:none;border:0;border-bottom:2px solid transparent;color:var(--terre-600);cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px;transition:color 160ms,border-color 160ms; }
+.cp-stab.active { color:var(--terre);border-bottom-color:var(--terre); }
+.cp-stab:hover { color:var(--terre); }
+
+/* step list-view card */
+.cp-step-card { padding:22px 26px;display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:start; }
+.cp-step-num { width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:var(--bone);border:1px solid var(--bone-d);font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre); }
+.cp-step-num.done { background:var(--glycine-50);border-color:var(--glycine-200); }
+
+/* mini progress bar */
+.cp-prog { height:8px;border-radius:999px;background:var(--bone-d);overflow:hidden; }
+.cp-prog__fill { height:100%;border-radius:999px;background:var(--brume-700);transition:width 600ms var(--ease); }
+
+/* deadline pill */
+.cp-dpill { display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600); }
+.cp-dpill.done { color:var(--st-done); }
+.cp-dpill.late { color:#9b3a2e; }
+.cp-dpill.soon { color:var(--st-review); }
+
+/* fade-up entrance */
+@media (prefers-reduced-motion:no-preference) { .fade-up { animation:fadeUp var(--dur) var(--ease) both; } }
+`;
 
 // ── JavaScript ────────────────────────────────────────────────────────────────
 
@@ -3719,6 +3762,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     size = size || 16;
     var d = CP_ICONS[name] || CP_ICONS.dot;
     return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0'+(extra?';'+extra:'')+'" aria-hidden="true"><path d="'+d+'"/></svg>';
+  }
+  function cpAvatar(name, who, size) {
+    size = size || 34;
+    var isCindy = who === 'cindy';
+    var initials = name ? name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase() : '?';
+    var bg = isCindy ? 'var(--terre)' : 'var(--glycine)';
+    var fg = isCindy ? 'var(--paille)' : 'var(--terre)';
+    return '<span style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+bg+';color:'+fg+';display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:'+(Math.round(size*0.42))+'px;flex-shrink:0">'+initials+'</span>';
+  }
+  function cpStatusDot(status) {
+    var colors = { todo:'var(--st-todo)', in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', review:'var(--st-review)' };
+    var col = colors[status] || 'var(--bone-d)';
+    return '<span class="cp-sdot" style="background:'+col+'"></span>';
+  }
+  function cpDeadlinePill(due, done, compact) {
+    if (!due) return '';
+    var today = new Date(); today.setHours(0,0,0,0);
+    var d = new Date(due); d.setHours(0,0,0,0);
+    var days = Math.round((d - today) / 86400000);
+    if (done) return '<span class="cp-dpill done">'+cpIcon('check',11)+' Termine</span>';
+    if (days < 0) return '<span class="cp-dpill late">Retard '+Math.abs(days)+' j</span>';
+    if (days <= 7) return '<span class="cp-dpill soon">dans '+days+' j</span>';
+    return '<span class="cp-dpill">'+fmtShort(due)+'</span>';
   }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
   var STATUS_TEXT = { discovery:'#051833', in_progress:'#0d2b16', waiting_client:'#5a2c0e', review:'#2a1d4a', delivered:'#FFFFFF', archived:'#2a2a2a' };
