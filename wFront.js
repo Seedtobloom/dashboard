@@ -677,7 +677,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-ph__left { display:grid;gap:20px; }
 .cp-ph__right { display:grid;gap:16px; }
 .cp-ph__banner { position:relative;width:100%;height:224px;border-radius:12px;overflow:hidden;background:var(--terre); }
-.cp-ph__banner-overlay { position:absolute;inset:0;background:linear-gradient(to top,rgba(20,12,6,0.55),rgba(20,12,6,0.08) 55%,transparent);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
+.cp-ph__banner-overlay { position:absolute;inset:0;background:rgba(20,12,6,0.38);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
 .cp-ph__banner-content { padding:26px 30px; }
 
 /* open-title — clickable step/phase name with trailing arrow */
