@@ -6893,32 +6893,16 @@ const ERROR_HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lien invalide · Seed to Bloom</title>
-<link rel="stylesheet" href="https://use.typekit.net/kww0ycw.css">
-<style>
-@font-face {
-  font-family: 'Inter Tight';
-  src: url('/fonts/ambra-regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
-}
-@font-face {
-  font-family: 'Inter Tight';
-  src: url('/fonts/ambra-bold.ttf') format('truetype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
-}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter Tight',sans-serif;background:#FAF8F4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  .card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(5,24,51,.08)}
-  h1{font-family:'Cormorant Garamond',serif;color:#051833;font-size:22px;margin:16px 0;font-weight:400;font-style:italic}
-  p{color:#8090a8;line-height:1.7;font-size:15px}
-  a{color:#7fa688}
+  .card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(92,70,51,.08)}
+  h1{font-family:'Cormorant Garamond',serif;color:#5c4633;font-size:24px;margin:16px 0;font-weight:400;font-style:italic}
+  p{color:#8a6f54;line-height:1.7;font-size:15px}
+  a{color:#6c4ea4}
 </style>
 </head>
 <body>
@@ -6937,25 +6921,9 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin · Seed to Bloom</title>
-<link rel="stylesheet" href="https://use.typekit.net/kww0ycw.css">
-<style>
-@font-face {
-  font-family: 'Inter Tight';
-  src: url('/fonts/ambra-regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
-}
-@font-face {
-  font-family: 'Inter Tight';
-  src: url('/fonts/ambra-bold.ttf') format('truetype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  unicode-range: U+0020-002F, U+003A-00FF, U+0100-024F;
-}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>${STYLE_CSS}
 ${ADMIN_CSS}</style>
 </head>
