@@ -3919,6 +3919,102 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
 
+    // Single project: PortalHome two-column layout
+    if (active.length === 1) {
+      var pd = active[0];
+      var p = pd.project;
+      var steps = (p.steps || []).slice().sort(function(a,b){ return (a.order||0)-(b.order||0); });
+      var done = steps.filter(function(s){ return s.status==='done'; }).length;
+      var pct = steps.length ? Math.round(done/steps.length*100) : 0;
+      var next = steps.find(function(s){ return s.status !== 'done'; });
+      var firstFour = steps.slice(0,4);
+      var bannerStyle = p.bannerUrl
+        ? 'background-image:url('+esc(p.bannerUrl)+');background-size:cover;background-position:center'
+        : (p.bannerColor ? 'background:'+esc(p.bannerColor.split('|')[0]) : 'background:var(--terre)');
+      var dur = '';
+      if (p.startDate && p.deadline) {
+        var wks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
+        dur = wks + ' jours';
+      }
+
+      var nextCard = next ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
+        cpStatusDot(next.status) +
+        '<div style="flex:1">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine etape pour vous</div>' +
+          '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(next.title) + '</div>' +
+          (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
+        '</div>' +
+        '<button class="btn btn-primary btn-sm" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+      '</div>' : '';
+
+      var miniTrack = firstFour.length ? '<div class="card" style="padding:22px 24px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+          '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Les etapes</h3></div>' +
+          '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
+        '</div>' +
+        '<div style="display:grid;gap:9px">' +
+          firstFour.map(function(it) {
+            return '<div style="display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--bone-d)">' +
+              cpStatusDot(it.status) +
+              '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)">' + esc(it.title) + '</span>' +
+              cpDeadlinePill(it.dueDate, it.status==='done', true) +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>' : '';
+
+      var progressCard = '<div class="card" style="padding:22px 24px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px">' +
+          '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Avancement</span>' +
+          '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">'+pct+'<span style="font-size:15px">%</span></span>' +
+        '</div>' +
+        '<div class="cp-prog"><div class="cp-prog__fill" style="width:'+pct+'%"></div></div>' +
+        '<div style="margin-top:11px;font-family:var(--font-body);font-size:14px;font-style:italic;opacity:0.75;color:var(--terre)">'+done+' termine'+(done>1?'s':'')+' sur '+steps.length+'</div>' +
+      '</div>';
+
+      var datesCard = '<div class="card" style="padding:20px 24px;display:grid;gap:14px">' +
+        (p.deadline ? '<div style="display:flex;align-items:center;gap:12px">' +
+          cpIcon('calendar',16,'color:var(--terre-600)') +
+          '<div style="flex:1"><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Echeance</div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">'+fmtDate(p.deadline)+'</div></div>' +
+          (p.deadlineExtended ? '<span style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900)">prolonge</span>' : '') +
+        '</div>' : '') +
+        (p.deadline ? '<div style="height:1px;background:var(--bone-d)"></div>' : '') +
+        (dur ? '<div style="display:flex;align-items:center;gap:12px">' +
+          cpIcon('clock',16,'color:var(--terre-600)') +
+          '<div style="flex:1"><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Duree prevue</div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">'+dur+'</div></div>' +
+        '</div>' : '') +
+      '</div>';
+
+      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+        cpIcon('chat',18,'color:var(--terre)') +
+        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:var(--terre)">Ecrire a Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);margin-top:2px">Reponse sous 24 h</div></div>' +
+        cpIcon('arrow',15,'color:var(--terre-600)') +
+      '</button>';
+
+      return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
+        '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px">' +
+          '<div class="cp-ph__banner-overlay">' +
+            '<div class="cp-ph__banner-content">' +
+              '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="cp-ph__cols">' +
+          '<div class="cp-ph__left">' +
+            '<p style="font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancee de votre projet pas a pas — je depose les elements a valider, vous me laissez vos retours.</p>' +
+            nextCard +
+            miniTrack +
+          '</div>' +
+          '<div class="cp-ph__right">' +
+            progressCard +
+            datesCard +
+            msgCard +
+          '</div>' +
+        '</div>' +
+      '</div></div>';
+    }
+
+    // Multi-project: card grid
     function cardHtml(pd) {
       var p = pd.project;
       var steps = p.steps || [];
@@ -3930,15 +4026,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var urgent = days !== null && days <= 7 && days >= 0;
       var bannerStyle = p.bannerUrl
         ? 'background-image:url(' + esc(p.bannerUrl) + ');background-size:cover;background-position:center'
-        : (p.bannerColor
-            ? 'background:' + esc(p.bannerColor.split('|')[0])
-            : '');
+        : (p.bannerColor ? 'background:' + esc(p.bannerColor.split('|')[0]) : '');
       var duration = '';
       if (p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
         duration = weeks + ' sem.';
       }
-      return '<button type="button" class="cp-proj-card" aria-label="Ouvrir le projet ' + esc(p.projectTitle) + ' — ' + esc(label) + ', ' + pct + '% complété" onclick="cpSelHome(\'' + p.id + '\')">' +
+      return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '">' +
           '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
           (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
@@ -3951,7 +4045,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             (duration ? '<span>' + duration + '</span>' : '') +
           '</div>' +
           '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
+          '<div class="cp-proj-card__pct"><span>' + pct + '% complete</span><span>' + done + '/' + steps.length + ' etapes</span></div>' +
         '</div>' +
       '</button>';
     }
@@ -3970,7 +4064,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? '<div class="cp-archive-section"><h2 class="cp-archive-title">Archives</h2><div class="cp-proj-grid">' + archived.map(cardHtml).join('') + '</div></div>'
       : '';
 
-    // Bannière d'accueil configurable par l'admin
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
     var homeBannerHtml = '';
     if (firstProj && firstProj.homeBanner) {
@@ -4251,7 +4344,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var banner = '';
     if (actionStep) {
       banner = '<div class="cp-action">' +
-        '<div class="cp-action__icon">🎯</div>' +
+        '<div class="cp-action__icon">'+cpIcon('arrow',18,'color:var(--terre)')+'</div>' +
         '<div>' +
           '<div class="cp-action__title">Votre action est requise</div>' +
           '<div class="cp-action__text">' +
@@ -4261,17 +4354,21 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    var stepsHtml = steps.map(function(s) {
-      var isDone = s.status==='done', isWait = s.status==='waiting_client', isAct = s.status==='in_progress'||isWait;
-      var cls = 'cp-step' + (isDone?' cp-step--done':isWait?' cp-step--waiting':isAct?' cp-step--active':'');
-      return '<div class="' + cls + '">' +
-        '<div class="cp-step__dot">' + (isDone?'✓':'') + '</div>' +
-        '<div class="cp-step__body">' +
-          '<div class="cp-step__name">' + esc(s.title) + '</div>' +
-          '<span class="cp-step__badge">' + (STEP_LABELS[s.status]||s.status) + '</span>' +
-          (s.description ? '<div class="cp-step__desc">' + esc(s.description) + '</div>' : '') +
-          (s.dueDate ? '<div class="cp-step__desc">' + fmtDate(s.dueDate) + '</div>' : '') +
-          (isWait && s.clientAction ? '<div class="cp-step__action"><strong>Ce que vous devez faire</strong>' + esc(s.clientAction) + '</div>' : '') +
+    var stepsHtml = steps.map(function(s, i) {
+      var isDone = s.status === 'done';
+      return '<div class="card cp-step-card" style="margin-bottom:12px">' +
+        '<span class="cp-step-num'+(isDone?' done':'')+'">'+( isDone ? cpIcon('check',16,'color:var(--st-done)') : (i+1) )+'</span>' +
+        '<div style="min-width:0">' +
+          '<div style="margin-bottom:6px"><button onclick="cpSelHome(\''+project.id+'\')" class="open-title" style="font-size:22px">'+esc(s.title)+'<span class="open-arrow">'+cpIcon('arrow',14)+'</span></button></div>' +
+          (s.description ? '<p style="font-size:15px;color:var(--terre-600);line-height:1.55;margin-bottom:14px">'+esc(s.description)+'</p>' : '') +
+          '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">' +
+            cpDeadlinePill(s.dueDate, isDone) +
+          '</div>' +
+          (s.status === 'waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:var(--glycine-50);border-radius:var(--radius-2);border-left:3px solid var(--glycine-700)"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">' +
+          cpStatusDot(s.status) +
+          '<span style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);white-space:nowrap">'+(STEP_LABELS[s.status]||s.status)+'</span>' +
         '</div>' +
       '</div>';
     }).join('');
