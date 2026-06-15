@@ -79,10 +79,10 @@ textarea { resize: vertical; min-height: 72px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s, box-shadow 0.15s; text-decoration: none; white-space: nowrap; }
 .btn:hover { opacity: 0.82; }
 .btn:active { opacity: 0.65; transform: scale(0.98); }
-.btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid #5c4633; outline-offset: 2px; }
 .btn:active { opacity: 0.8; }
-.btn--primary { background: var(--navy); color: var(--blue-light); }
-.btn--sage { background: var(--lavender); color: var(--navy); }
+.btn--primary { background: #5c4633; color: #EFE1B0; }
+.btn--sage { background: #E4D1FE; color: #5c4633; }
 .btn--outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn--danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 .btn--sm { padding: 5px 12px; font-size: 12px; }
@@ -90,7 +90,7 @@ textarea { resize: vertical; min-height: 72px; }
 
 /* RGAA 10.7 — focus visible */
 a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
-  outline: 3px solid var(--lavender); outline-offset: 2px; border-radius: 4px;
+  outline: 2px solid #5c4633; outline-offset: 2px; border-radius: 4px;
 }
 .sidebar a:focus-visible, .sidebar button:focus-visible { outline-color: var(--cream); }
 
@@ -1492,19 +1492,37 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }).join('');
   }
 
+  window.admSetTypeFilter = function(t) {
+    admTypeFilter = t;
+    document.querySelectorAll('[id^="adm-type-"]').forEach(function(btn) {
+      var active = btn.id === 'adm-type-'+t;
+      btn.style.borderBottomColor = active ? '#5c4633' : 'transparent';
+      btn.style.color = active ? '#5c4633' : '#8a6f54';
+    });
+    applyProjectFilters();
+  };
+  window.admSetArchFilter = function(f) {
+    admArchFilter = f;
+    document.querySelectorAll('[id^="adm-arch-"]').forEach(function(btn) {
+      var active = btn.id === 'adm-arch-'+f;
+      btn.style.background = active ? '#5c4633' : 'transparent';
+      btn.style.color = active ? '#EFE1B0' : '#8a6f54';
+    });
+    applyProjectFilters();
+  };
+
   window.applyProjectFilters = function() {
     var q = (document.getElementById('dash-search')||{}).value || '';
-    var ft = (document.getElementById('dash-type')||{}).value || '';
-    var fs = (document.getElementById('dash-status')||{}).value || '';
     var sort = (document.getElementById('dash-sort')||{}).value || 'updated';
     q = q.trim().toLowerCase();
 
     var list = dashProjs.filter(function(p) {
-      if (ft && (p.type||'custom') !== ft) return false;
-      if (fs && p.status !== fs) return false;
+      var archMatch = admArchFilter==='all' || (admArchFilter==='archived' ? p.status==='archived' : p.status!=='archived');
+      if (!archMatch) return false;
+      if (admTypeFilter && admTypeFilter!=='all' && (p.type||'custom')!==admTypeFilter) return false;
       if (q) {
         var hay = ((p.clientName||'') + ' ' + (p.clientEmail||'') + ' ' + (p.projectTitle||'')).toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
+        if (hay.indexOf(q)===-1) return false;
       }
       return true;
     });
@@ -1522,8 +1540,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
 
-    var tbody = document.getElementById('dash-tbody');
-    if (tbody) tbody.innerHTML = renderProjectRows(list, dashUnreadMap);
+    var cards = document.getElementById('dash-cards');
+    if (cards) cards.innerHTML = renderProjectCards(list, dashUnreadMap);
   };
 
   // ── Messages (inbox) — une conversation par client (email) ─────────────────
