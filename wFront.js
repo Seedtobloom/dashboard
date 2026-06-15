@@ -2181,7 +2181,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var TYPE_TONES_SHEET = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', autre:'terre', custom:'glycine' };
     var TYPE_SHORT_SHEET = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre', custom:'Personnalise' };
     var sheetTypeLabel = TYPE_SHORT_SHEET[project.type] || project.type || 'Autre';
-    var tabs = [['accueil','Accueil'],['calendrier','Calendrier'],['taches','Tâches'],['suivi','Suivi'],['client','Client'],['page','Personnaliser']];
+    // Normalize old tab names to new 4-tab structure
+    if (['calendrier','taches','suivi','page'].indexOf(_adminProjTab) !== -1) _adminProjTab = 'apercu';
+    if (_adminProjTab === 'client') _adminProjTab = 'acces';
+    if (!_adminProjTab) _adminProjTab = 'apercu';
+    var tabs = [['apercu','Apercu'],['planning','Planning & echeance'],['couleurs','Couleurs des boutons'],['acces','Acces & archive']];
     var tabNav = '<div class="proj-tabnav" style="padding:0 40px">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
@@ -2215,7 +2219,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
           tabNav +
 
-          '<div id="tab-accueil" class="main-inner proj-main" style="' + (_adminProjTab==='accueil' ? '' : 'display:none') + '">' +
+          /* ===== TAB: APERCU ===== */
+          '<div id="tab-apercu" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:980px;' + (_adminProjTab==='apercu' ? '' : 'display:none') + '">' +
             (function(){
               var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD',ink:'#4a6ba8'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#5c4633'} };
               var sht = SH_ACCENT[TYPE_TONES_SHEET[project.type]] || SH_ACCENT.glycine;
@@ -2223,13 +2228,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var dn = allSteps.filter(function(s){ return s.status==='done'; }).length;
               var pct = allSteps.length ? Math.round(dn/allSteps.length*100) : 0;
               var unread = messages.filter(function(m){ return !m.readByAdmin && m.author==='client'; }).length;
+              var isMaint = project.type === 'maintenance';
+              var isPartenaire = project.type === 'partenaire';
+              var trackLabel = isPartenaire ? 'taches' : isMaint ? 'interventions' : 'etapes';
               var tiles = [
                 { v: pct+'%', k:'Avancement' },
-                { v: dn+'/'+allSteps.length, k:'Etapes faites' },
+                { v: dn+'/'+allSteps.length, k: trackLabel+' faites' },
                 { v: unread, k:'Messages non lus' },
-                { v: files.length, k:'Fichiers' },
+                { v: files.length, k:'Fichiers' }
               ];
-              return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px">' +
+              // Stat tiles
+              var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">' +
                 tiles.map(function(t){
                   return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
                     '<div style="width:34px;height:34px;border-radius:9px;background:'+sht.soft+';border:1px solid '+sht.mid+';margin-bottom:12px"></div>' +
@@ -2238,182 +2247,337 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '</div>';
                 }).join('') +
               '</div>';
-            })() +
-            '<div class="proj-grid">' +
-            '<div class="proj-col">' +
-            '<div class="card" id="card-info">' +
-              '<div class="card-header">' +
-                '<span class="card-title">Informations du projet</span>' +
-                '<div style="display:flex;gap:8px">' +
-                  '<button class="btn btn--outline btn--sm" id="btn-edit-info" onclick="toggleEditInfo()">Modifier</button>' +
-                  '<button class="btn btn--primary btn--sm" id="btn-save-info" onclick="saveProjectInfo()" style="display:none">Sauvegarder</button>' +
-                  '<button class="btn btn--outline btn--sm" id="btn-cancel-info" onclick="toggleEditInfo()" style="display:none">Annuler</button>' +
-                '</div>' +
-              '</div>' +
-              '<div class="card-body" id="info-view">' +
-                '<div class="form-row">' +
-                  '<div><label>Client</label><p>' + esc(project.clientName) + '</p></div>' +
-                  '<div><label>Email</label><p>' + esc(project.clientEmail) + '</p></div>' +
-                '</div>' +
-                '<div class="form-field"><label>Titre</label><p>' + esc(project.projectTitle) + '</p></div>' +
-                '<div class="form-field"><label>Description</label><p style="white-space:pre-wrap">' + esc(project.description) + '</p></div>' +
-                '<div class="form-row">' +
-                  '<div><label>Statut</label>' + adminStatusBadge(project.status) + '</div>' +
-                  '<div><label>Deadline</label><p>' + (project.deadline ? formatDate(project.deadline) : '—') + '</p></div>' +
-                '</div>' +
-                (project.meetingLink ? '<div class="form-field"><label>Lien visio</label><a href="' + esc(project.meetingLink) + '" target="_blank" style="color:var(--sage)">' + esc(project.meetingLink) + '</a></div>' : '') +
-              '</div>' +
-              '<div class="card-body" id="info-edit" style="display:none">' +
-                '<div class="form-row">' +
-                  '<div class="form-field"><label>Nom client</label><input type="text" id="edit-clientName" value="' + esc(project.clientName) + '"></div>' +
-                  '<div class="form-field"><label>Email client</label><input type="email" id="edit-clientEmail" value="' + esc(project.clientEmail) + '"></div>' +
-                '</div>' +
-                '<div class="form-field"><label>Titre</label><input type="text" id="edit-projectTitle" value="' + esc(project.projectTitle) + '"></div>' +
-                '<div class="form-field"><label>Description</label><textarea id="edit-description" rows="3">' + esc(project.description) + '</textarea></div>' +
-                '<div class="form-field"><label for="edit-type">Type d\'espace</label><select id="edit-type">' +
-                  ['identite','site','partenaire','support','custom'].map(function(tv) {
-                    return '<option value="' + tv + '"' + ((project.type||'custom') === tv ? ' selected' : '') + '>' + (TYPE_LABELS[tv]||tv) + '</option>';
-                  }).join('') +
-                '</select></div>' +
-                '<div class="form-row">' +
-                  '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
-                  '<div class="form-field"><label>Deadline' + (project.deadlineExtended ? ' <span style="color:var(--brown);font-size:10px;background:rgba(65,47,33,0.1);padding:1px 6px;border-radius:999px">↩ prolongée</span>' : '') + '</label><div style="display:flex;gap:8px;align-items:center"><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '" style="flex:1"><button class="btn btn--outline btn--sm" onclick="extendDeadline()" type="button">↩ Prolonger</button></div></div>' +
-                '</div>' +
-                '<div class="form-field"><label>Lien visio</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '"></div>' +
-                '<div class="form-field"><label>Code d\'acces espace client</label>' +
-                  '<div style="display:flex;gap:8px;align-items:center">' +
-                    '<input type="text" id="edit-spaceCode" value="' + esc(project.spaceCode || '') + '" placeholder="Ex: BLOOM2025 (vide = acces libre)" style="flex:1;font-family:monospace;letter-spacing:1px;text-transform:uppercase" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
-                    '<button type="button" class="btn btn--outline btn--sm" onclick="document.getElementById(\'edit-spaceCode\').value=Math.random().toString(36).slice(2,8).toUpperCase()">Generer</button>' +
-                  '</div>' +
-                  '<small style="color:var(--muted);font-size:11px">Si defini, le client devra entrer ce code avant d\'acceder a son espace.</small>' +
-                '</div>' +
-                (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
-                '<div class="form-field"><label>Image de bannière</label>' +
-                  '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
-                    '<input type="url" id="edit-bannerUrl" value="' + esc(project.bannerUrl && !project.bannerUrl.startsWith('data:') ? project.bannerUrl : '') + '" placeholder="https://… (ou choisir ci-dessous)" oninput="previewBanner()" style="flex:1">' +
-                    '<label style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--navy)">'+icon('upload',13)+' Choisir<input type="file" accept="image/*" style="display:none" onchange="uploadBannerImage(this)"></label>' +
-                    (project.bannerUrl ? '<button type="button" onclick="clearBannerImage()" style="padding:6px 10px;background:none;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;color:var(--muted)">✕ Supprimer</button>' : '') +
-                  '</div>' +
-                  '<small style="color:var(--muted);font-size:11px">Coller une URL ou choisir un fichier — laisser vide pour utiliser la couleur</small>' +
-                '</div>' +
-                '<div class="form-field"><label>Couleur de la bannière</label>' +
-                  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
-                    [['#5c4633','#EFE1B0','Terre'],['#2b3d5f','#BAD1FD','Nuit'],['#a98bd6','#E4D1FE','Glycine'],['#7c9bdc','#BAD1FD','Brume'],['#c9952f','#EFE1B0','Ocre'],['#412F21','#EFE1B0','Brun fonce']].map(function(c) {
-                      var isSelected = (project.bannerColor||'#5c4633|#EFE1B0') === c[0]+'|'+c[1];
-                      return '<button type="button" title="'+esc(c[2])+'" onclick="pickBannerColor(\''+c[0]+'\',\''+c[1]+'\')" style="width:36px;height:36px;border-radius:8px;border:' + (isSelected?'3px solid var(--navy)':'2px solid transparent') + ';background:'+c[0]+';cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.15)" aria-label="'+esc(c[2])+'"></button>';
-                    }).join('') +
-                    '<input type="color" id="edit-bannerColorCustom" value="' + esc(project.bannerColor ? project.bannerColor.split('|')[0] : '#412F21') + '" onchange="pickBannerColor(this.value,null)" title="Couleur personnalisée" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
-                  '</div>' +
-                '</div>' +
-                '<div id="banner-preview" style="margin-top:8px;height:70px;border-radius:10px;background:' + (project.bannerUrl ? 'url('+esc(project.bannerUrl)+') center/cover' : (project.bannerColor||'#412F21').split('|')[0])+';border:1.5px solid var(--border)"></div>' +
-              '<div class="form-field" style="margin-top:12px">' +
-                '<label>Banniere d\'accueil espace client</label>' +
-                '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
-                  '<input type="color" id="edit-homeBannerColor" value="' + esc((project.homeBanner && project.homeBanner.color) || '#051833') + '" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">' +
-                  '<input type="url" id="edit-homeBannerImg" value="' + esc((project.homeBanner && project.homeBanner.imageUrl) || '') + '" placeholder="URL image (optionnel)" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px">' +
-                '</div>' +
-                '<input type="text" id="edit-homeBannerSub" value="' + esc((project.homeBanner && project.homeBanner.subtitle) || '') + '" placeholder="Sous-titre (ex: Bienvenue dans votre espace…)" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px">' +
-                '<small style="color:var(--muted);font-size:11px;display:block;margin-top:4px">Couleur de fond + sous-titre affiches sur la page d\'accueil du portail client</small>' +
-              '</div>' +
-            '</div>' +
-            '</div>' +
 
-            (project.type === 'partenaire' ? buildPartenaireSection(project) : '') +
-
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
-              '<div class="card-body" id="steps-container" style="padding:8px 0">' + stepsHtml + '</div>' +
-            '</div>' +
-
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Infos pratiques</span><button class="btn btn--sage btn--sm" onclick="openAddSection()">+ Ajouter</button></div>' +
-              '<div class="card-body" id="sections-container">' +
-                (project.practicalInfo.sections.length ?
-                  project.practicalInfo.sections.map(function(s) {
-                    return '<div style="padding:12px 0;border-bottom:1px solid var(--border)" data-section-id="' + s.id + '">' +
-                      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-                        '<strong>' + esc(s.title) + '</strong>' +
-                        '<div style="display:flex;gap:6px">' +
-                          '<button class="btn btn--outline btn--sm" onclick="openEditSection(' + JSON.stringify(JSON.stringify(s)) + ')">Modifier</button>' +
-                          '<button class="btn btn--danger btn--sm" onclick="deleteSection(\'' + s.id + '\')">Suppr.</button>' +
-                        '</div>' +
+              // Items list (steps/tasks/tickets)
+              var ST_COLORS = { upcoming:'#d4c4b0', in_progress:'#7c9bdc', waiting_client:'#c9952f', done:'#5c4633', todo:'#d4c4b0', review:'#b0a0d4', open:'#7c9bdc', closed:'#8a6f54' };
+              var ST_LABELS = { upcoming:'A venir', in_progress:'En cours', waiting_client:'Action client', done:'Termine', todo:'A faire', review:'Revue', open:'Ouvert', closed:'Ferme' };
+              var itemsHtml = '<h4 style="font-family:\'Cormorant Garamond\',serif;font-size:24px;color:#5c4633;margin:0 0 14px;text-transform:capitalize">Les ' + trackLabel + '</h4>' +
+                '<div style="display:grid;gap:10px;margin-bottom:30px">' +
+                allSteps.map(function(t){
+                  var sc = ST_COLORS[t.status] || '#d4c4b0';
+                  var sl = ST_LABELS[t.status] || t.status;
+                  return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px">' +
+                    '<div style="width:9px;height:9px;border-radius:50%;background:'+sc+';flex-shrink:0"></div>' +
+                    '<div style="flex:1;min-width:0">' +
+                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;color:#5c4633">' + esc(t.title) + '</div>' +
+                      '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54;margin-top:2px">' +
+                        (t.dueDate ? 'Echeance ' + formatDate(t.dueDate) : 'Sans echeance') +
+                        (t.completedAt ? ' · fait le ' + formatDate(t.completedAt) : '') +
                       '</div>' +
-                      '<pre style="font-size:12px;color:var(--muted);white-space:pre-wrap;font-family:inherit;line-height:1.5">' + esc(s.content) + '</pre>' +
-                    '</div>';
-                  }).join('') :
-                  '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune section.</p>') +
-              '</div>' +
-            '</div>' +
+                    '</div>' +
+                    '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:'+sc+'22;color:'+sc+'">'+sl+'</span>' +
+                  '</div>';
+                }).join('') +
+                (allSteps.length === 0 ? '<p style="color:#8a6f54;text-align:center;padding:20px 0">Aucune etape.</p>' : '') +
+                '</div>';
 
-            '</div>' + /* fin proj-col gauche */
-            '<div class="proj-col">' +
-
-            ((project.questionnaireQuestions && project.questionnaireQuestions.length) ? '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Reponses questionnaire</span></div>' +
-              '<div class="card-body">' + buildQuestionnaireAdminView(project) + '</div>' +
-            '</div>' : '') +
-
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Messages</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
-              '<div class="card-body">' +
-                '<div id="messages-container" style="margin-bottom:16px;max-height:400px;overflow-y:auto">' + (messagesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun message.</p>') + '</div>' +
-                '<div style="display:flex;flex-direction:column;gap:10px">' +
-                  '<textarea id="admin-message" placeholder="Répondre au client…" rows="3"></textarea>' +
-                  '<div style="display:flex;justify-content:flex-end"><button class="btn btn--primary" onclick="sendAdminMessage()">Envoyer →</button></div>' +
+              // Messages thread (compact)
+              var msgHtml = '<div class="card" style="margin-bottom:24px">' +
+                '<div class="card-header"><span class="card-title">Messages</span><button class="btn btn--outline btn--sm" onclick="markAllRead()">Tout marquer lu</button></div>' +
+                '<div class="card-body">' +
+                  '<div id="messages-container" style="margin-bottom:16px;max-height:380px;overflow-y:auto">' + (messagesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun message.</p>') + '</div>' +
+                  '<div style="display:flex;flex-direction:column;gap:10px">' +
+                    '<textarea id="admin-message" placeholder="Repondre au client…" rows="3"></textarea>' +
+                    '<div style="display:flex;justify-content:flex-end"><button class="btn btn--primary" onclick="sendAdminMessage()">Envoyer →</button></div>' +
+                  '</div>' +
                 '</div>' +
-              '</div>' +
-            '</div>' +
+              '</div>';
 
-            '</div>' + /* fin proj-col droite */
-            '</div>' + /* fin proj-grid accueil */
-          '</div>' + /* fin tab-accueil */
+              // Infos projet (edit card)
+              var infoHtml = '<div class="card" id="card-info" style="margin-bottom:24px">' +
+                '<div class="card-header">' +
+                  '<span class="card-title">Informations du projet</span>' +
+                  '<div style="display:flex;gap:8px">' +
+                    '<button class="btn btn--outline btn--sm" id="btn-edit-info" onclick="toggleEditInfo()">Modifier</button>' +
+                    '<button class="btn btn--primary btn--sm" id="btn-save-info" onclick="saveProjectInfo()" style="display:none">Sauvegarder</button>' +
+                    '<button class="btn btn--outline btn--sm" id="btn-cancel-info" onclick="toggleEditInfo()" style="display:none">Annuler</button>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="card-body" id="info-view">' +
+                  '<div class="form-row">' +
+                    '<div><label>Client</label><p>' + esc(project.clientName) + '</p></div>' +
+                    '<div><label>Email</label><p>' + esc(project.clientEmail) + '</p></div>' +
+                  '</div>' +
+                  '<div class="form-field"><label>Titre</label><p>' + esc(project.projectTitle) + '</p></div>' +
+                  '<div class="form-field"><label>Description</label><p style="white-space:pre-wrap">' + esc(project.description) + '</p></div>' +
+                  '<div class="form-row">' +
+                    '<div><label>Statut</label>' + adminStatusBadge(project.status) + '</div>' +
+                    '<div><label>Deadline</label><p>' + (project.deadline ? formatDate(project.deadline) : '—') + '</p></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="card-body" id="info-edit" style="display:none">' +
+                  '<div class="form-row">' +
+                    '<div class="form-field"><label>Nom client</label><input type="text" id="edit-clientName" value="' + esc(project.clientName) + '"></div>' +
+                    '<div class="form-field"><label>Email client</label><input type="email" id="edit-clientEmail" value="' + esc(project.clientEmail) + '"></div>' +
+                  '</div>' +
+                  '<div class="form-field"><label>Titre</label><input type="text" id="edit-projectTitle" value="' + esc(project.projectTitle) + '"></div>' +
+                  '<div class="form-field"><label>Description</label><textarea id="edit-description" rows="3">' + esc(project.description) + '</textarea></div>' +
+                  '<div class="form-field"><label for="edit-type">Type d\'espace</label><select id="edit-type">' +
+                    ['identite','site','partenaire','support','custom'].map(function(tv) {
+                      return '<option value="' + tv + '"' + ((project.type||'custom') === tv ? ' selected' : '') + '>' + (TYPE_LABELS[tv]||tv) + '</option>';
+                    }).join('') +
+                  '</select></div>' +
+                  '<div class="form-row">' +
+                    '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
+                  '</div>' +
+                  (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
+                '</div>' +
+              '</div>';
 
-          '<div id="tab-calendrier" class="main-inner proj-main" style="' + (_adminProjTab==='calendrier' ? '' : 'display:none') + '">' +
-            buildCalendar(project) +
-          '</div>' +
+              // Steps management card
+              var stepsCardHtml = '<div class="card" style="margin-bottom:24px">' +
+                '<div class="card-header"><span class="card-title">Gerer les etapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
+                '<div class="card-body" id="steps-container" style="padding:8px 0">' + stepsHtml + '</div>' +
+              '</div>';
 
-          '<div id="tab-taches" class="main-inner proj-main" style="' + (_adminProjTab==='taches' ? '' : 'display:none') + '">' +
-            buildTaskList(project) +
-          '</div>' +
+              // Infos pratiques card
+              var practicalHtml = '<div class="card" style="margin-bottom:24px">' +
+                '<div class="card-header"><span class="card-title">Infos pratiques</span><button class="btn btn--sage btn--sm" onclick="openAddSection()">+ Ajouter</button></div>' +
+                '<div class="card-body" id="sections-container">' +
+                  (project.practicalInfo.sections.length ?
+                    project.practicalInfo.sections.map(function(s) {
+                      return '<div style="padding:12px 0;border-bottom:1px solid var(--border)" data-section-id="' + s.id + '">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+                          '<strong>' + esc(s.title) + '</strong>' +
+                          '<div style="display:flex;gap:6px">' +
+                            '<button class="btn btn--outline btn--sm" onclick="openEditSection(' + JSON.stringify(JSON.stringify(s)) + ')">Modifier</button>' +
+                            '<button class="btn btn--danger btn--sm" onclick="deleteSection(\'' + s.id + '\')">Suppr.</button>' +
+                          '</div>' +
+                        '</div>' +
+                        '<pre style="font-size:12px;color:var(--muted);white-space:pre-wrap;font-family:inherit;line-height:1.5">' + esc(s.content) + '</pre>' +
+                      '</div>';
+                    }).join('') :
+                    '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune section.</p>') +
+                '</div>' +
+              '</div>';
 
-          '<div id="tab-suivi" class="main-inner proj-main" style="' + (_adminProjTab==='suivi' ? '' : 'display:none') + '">' +
-            buildCharts(project) +
-          '</div>' +
+              // Personalize CTA
+              var ctaHtml = '<div style="background:#f7efff;border:1px solid #E4D1FE;border-radius:14px;padding:22px 26px;display:flex;align-items:center;gap:20px;margin-bottom:24px">' +
+                '<div style="flex:1">' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633">Mettre en page ce portail</div>' +
+                  '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#8a6f54;margin-top:3px">Composez les sections que verra ' + esc(project.clientName.split(' ')[0]) + '.</p>' +
+                '</div>' +
+                '<button class="btn btn--primary" onclick="openBannerEditor()">Personnaliser →</button>' +
+              '</div>';
 
-          '<div id="tab-client" class="main-inner proj-main" style="' + (_adminProjTab==='client' ? '' : 'display:none') + '">' +
-            accessCardHtml +
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Fichiers</span><button class="btn btn--sage btn--sm" onclick="document.getElementById(\'file-input\').click()">+ Uploader</button><input type="file" id="file-input" style="display:none" onchange="uploadFile(this)"></div>' +
-              '<div class="card-body" id="files-container">' + (filesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun fichier.</p>') + '</div>' +
-            '</div>' +
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">💳 Factures & Devis</span><button class="btn btn--sage btn--sm" onclick="openAddInvoice()">+ Ajouter</button></div>' +
-              '<div class="card-body" id="invoices-container">' + (invoicesHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune facture.</p>') + '</div>' +
-            '</div>' +
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Liens d\'accès client</span><div style="display:flex;gap:8px"><button class="btn btn--outline btn--sm" onclick="genClientSpaceToken()">🌐 Espace client</button><button class="btn btn--sage btn--sm" onclick="openGenToken()">+ Lien projet</button></div></div>' +
-              '<div class="card-body" id="tokens-container">' + (tokensHtml || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucun lien.</p>') + '</div>' +
-            '</div>' +
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Questionnaire client</span><button class="btn btn--sage btn--sm" onclick="openQuestionnaireEditor()">Modifier</button></div>' +
-              '<div class="card-body" id="questionnaire-admin-container">' + buildQuestionnaireAdminView(project) + '</div>' +
-            '</div>' +
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Cards espace client</span><button class="btn btn--sage btn--sm" onclick="openClientCardEditor()">+ Ajouter</button></div>' +
-              '<div class="card-body" id="client-cards-admin-container">' + buildClientCardsAdminView(project) + '</div>' +
-            '</div>' +
-            '<div class="card">' +
-              '<div class="card-header"><span class="card-title">Notifications email</span><button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button></div>' +
-              '<div class="card-body">' +
-                '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Historique des 10 derniers emails</div>' +
-                (emailLogsHtml || '<p style="color:var(--muted);text-align:center;padding:12px 0">Aucun email.</p>') +
-              '</div>' +
-            '</div>' +
-          '</div>' + /* fin tab-client */
+              return tilesHtml + itemsHtml + infoHtml + stepsCardHtml + practicalHtml + ctaHtml + msgHtml +
+                (isPartenaire ? buildPartenaireSection(project) : '') +
+                ((project.questionnaireQuestions && project.questionnaireQuestions.length) ?
+                  '<div class="card" style="margin-bottom:24px"><div class="card-header"><span class="card-title">Reponses questionnaire</span></div><div class="card-body">' + buildQuestionnaireAdminView(project) + '</div></div>' : '');
+            })() +
+          '</div>' + /* fin tab-apercu */
 
-          '<div id="tab-page" class="main-inner proj-main" style="' + (_adminProjTab==='page' ? '' : 'display:none') + '">' +
-            '<div id="apb-root"></div>' +
-          '</div>' +
+          /* ===== TAB: PLANNING & ECHEANCE ===== */
+          '<div id="tab-planning" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:720px;' + (_adminProjTab==='planning' ? '' : 'display:none') + '">' +
+            (function(){
+              var startDisp = project.startDate ? formatDate(project.startDate) : '—';
+              var dueDisp = project.deadline ? formatDate(project.deadline) : '—';
+              var dur = '—';
+              if (project.startDate && project.deadline) {
+                var ms = new Date(project.deadline) - new Date(project.startDate);
+                var days = Math.round(ms / 86400000);
+                if (days > 0) dur = days + ' j';
+              }
+              var SH_ACCENT2 = { glycine:{soft:'#f7efff',mid:'#E4D1FE'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD'}, terre:{soft:'#ece2d0',mid:'#c8b29a'} };
+              var sht2 = SH_ACCENT2[TYPE_TONES_SHEET[project.type]] || SH_ACCENT2.glycine;
+              var tiles3Html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">' +
+                [{ v:startDisp, k:'Demarrage' }, { v:dueDisp+(project.deadlineExtended?' (prolongee)':''), k:'Echeance' }, { v:dur, k:'Duree' }].map(function(t){
+                  return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+                    '<div style="width:34px;height:34px;border-radius:9px;background:'+sht2.soft+';border:1px solid '+sht2.mid+';margin-bottom:12px"></div>' +
+                    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#5c4633;line-height:1.1;margin-bottom:4px">'+esc(t.v)+'</div>' +
+                    '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+t.k+'</div>' +
+                  '</div>';
+                }).join('') +
+              '</div>';
+
+              var extendHtml = '<div class="card" style="padding:24px 26px;margin-bottom:18px">' +
+                '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:4px">Prolonger l\'echeance</div>' +
+                '<p style="font-size:13px;color:#8a6f54;margin-bottom:14px;line-height:1.5">Repoussez la date de fin. Une fois prolonge, le portail client affiche un repere <em>prolonge</em> avec la date initiale.</p>' +
+                (project.deadlineExtended ? '<p style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#6c4ea4;margin-bottom:12px">↩ Deja prolongee — date initiale : ' + (project.dueOriginal ? formatDate(project.dueOriginal) : '—') + '</p>' : '') +
+                '<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">' +
+                  '<div><div style="font-size:11px;color:#8a6f54;margin-bottom:4px">Nouvelle echeance</div><input type="date" id="plan-deadline" value="' + esc(project.deadline || '') + '" style="padding:8px 12px;border:1.5px solid #e2d9ce;border-radius:8px;font-size:13px;color:#5c4633"></div>' +
+                  '<button class="btn btn--primary" onclick="extendDeadlinePlanning()">↩ Prolonger</button>' +
+                '</div>' +
+              '</div>';
+
+              var visioHtml = '<div class="card" style="padding:24px 26px;margin-bottom:18px">' +
+                '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:4px">Lien de visio</div>' +
+                '<p style="font-size:13px;color:#8a6f54;margin-bottom:14px;line-height:1.5">Un lien fixe pour tous vos points avec ce client. Il apparait dans son portail, bouton <em>Rejoindre la visio</em>.</p>' +
+                '<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">' +
+                  '<div style="flex:1;min-width:240px"><div style="font-size:11px;color:#8a6f54;margin-bottom:4px">URL de la salle</div><input type="url" id="plan-visioLink" value="' + esc(project.meetingLink || '') + '" placeholder="meet.seedtobloom.fr/nom-client" style="width:100%;padding:8px 12px;border:1.5px solid #e2d9ce;border-radius:8px;font-size:13px;color:#5c4633"></div>' +
+                  '<button class="btn btn--primary" onclick="saveVisioLink()">Enregistrer</button>' +
+                '</div>' +
+              '</div>';
+
+              var tasksHtml2 = '<div class="card" style="padding:24px 26px;margin-bottom:18px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Taches</div>' +
+                  '<button class="btn btn--sage btn--sm" onclick="openAddTask()">+ Ajouter</button>' +
+                '</div>' +
+                buildTaskList(project) +
+              '</div>';
+
+              return tiles3Html + extendHtml + visioHtml + tasksHtml2;
+            })() +
+          '</div>' + /* fin tab-planning */
+
+          /* ===== TAB: COULEURS DES BOUTONS ===== */
+          '<div id="tab-couleurs" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:680px;' + (_adminProjTab==='couleurs' ? '' : 'display:none') + '">' +
+            (function(){
+              var btn = (project.btn) || { primaryBg:'#5c4633', primaryFg:'#EFE1B0', secondaryBg:'transparent', secondaryFg:'#5c4633' };
+              var SWATCHES = ['#E4D1FE','#BAD1FD','#EFE1B0','#412F21','#051833','#8a6f54','#c9952f','#FAF8F4','#ffffff'];
+              function swatchPicker(label, key, value, ghost) {
+                return '<div>' +
+                  '<div style="font-size:11px;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">' + label + '</div>' +
+                  '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">' +
+                  SWATCHES.map(function(c){
+                    var sel = value.toLowerCase() === c.toLowerCase();
+                    return '<button type="button" onclick="setBtnColor(\''+key+'\',\''+c+'\')" title="'+c+'" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:'+(c==='transparent'?'#fff':c)+';border:'+(sel?'2px solid #5c4633':'1px solid #e2d9ce')+';box-shadow:'+(sel?'0 0 0 2px #FAF8F4':'none')+'"></button>';
+                  }).join('') +
+                  '<label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer">' +
+                    '<span style="width:30px;height:30px;border-radius:8px;border:1px dashed #c8b29a;display:grid;place-items:center;background:'+value+';position:relative;overflow:hidden">' +
+                      '<input type="color" value="' + (/^#[0-9a-f]{6}$/i.test(value)?value:'#412f21') + '" onchange="setBtnColor(\''+key+'\',this.value)" style="position:absolute;inset:-4px;opacity:0;cursor:pointer">' +
+                    '</span>' +
+                    '<span style="font-size:9.5px;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;text-transform:uppercase;letter-spacing:0.08em">Libre</span>' +
+                  '</label>' +
+                  '</div>' +
+                '</div>';
+              }
+              function previewBtn(bg, fg, ghost) {
+                return '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:'+(ghost?'transparent':bg)+';color:'+fg+';border:'+(ghost?'1px solid '+fg:'none')+';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
+              }
+              return '<p style="color:#8a6f54;font-size:15px;line-height:1.6;margin-bottom:22px;max-width:620px">Personnalisez le fond et le texte des boutons. Tout changement s\'applique a la fois dans le panel et dans le portail de ' + esc(project.clientName.split(' ')[0]) + '.</p>' +
+                '<div id="btn-colors-state" data-btn=\'' + JSON.stringify(btn).replace(/'/g,'&#39;') + '\' style="display:none"></div>' +
+                '<div style="display:grid;gap:16px">' +
+                  '<div class="card" style="padding:22px 24px">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633">Bouton principal</div>' +
+                      '<div id="prev-primary">' + previewBtn(btn.primaryBg, btn.primaryFg, false) + '</div>' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">' +
+                      swatchPicker('Fond','primaryBg',btn.primaryBg,false) +
+                      swatchPicker('Texte','primaryFg',btn.primaryFg,false) +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="card" style="padding:22px 24px">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633">Bouton secondaire</div>' +
+                      '<div id="prev-secondary">' + previewBtn(btn.secondaryBg, btn.secondaryFg, true) + '</div>' +
+                    '</div>' +
+                    swatchPicker('Texte','secondaryFg',btn.secondaryFg,true) +
+                  '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">' +
+                  '<button class="btn btn--outline" onclick="resetBtnColors()">Reinitialiser</button>' +
+                  '<button class="btn btn--primary" onclick="saveBtnColors()">Enregistrer</button>' +
+                '</div>';
+            })() +
+          '</div>' + /* fin tab-couleurs */
+
+          /* ===== TAB: ACCES & ARCHIVE ===== */
+          '<div id="tab-acces" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:680px;' + (_adminProjTab==='acces' ? '' : 'display:none') + '">' +
+            (function(){
+              // Access code card
+              var code = project.spaceCode || '';
+              var portalUrl = project.clientEmail ? (window.location.origin + '/client?email=' + encodeURIComponent(project.clientEmail)) : '';
+              var codeCardHtml = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:4px">Code d\'acces du portail</div>' +
+                '<div style="display:flex;align-items:center;gap:14px;margin:10px 0 4px">' +
+                  '<input type="text" id="acc-spaceCode" value="' + esc(code) + '" placeholder="Ex: BLOOM2025 (vide = acces libre)" style="font-family:\'Inter Tight\',monospace;font-size:20px;letter-spacing:0.3em;color:#5c4633;border:none;background:transparent;flex:1;outline:none;text-transform:uppercase" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
+                  '<button class="btn btn--outline btn--sm" onclick="document.getElementById(\'acc-spaceCode\').value=Math.random().toString(36).slice(2,8).toUpperCase()">Generer</button>' +
+                  '<button class="btn btn--primary btn--sm" onclick="saveSpaceCode()">Enregistrer</button>' +
+                '</div>' +
+                '<p style="font-size:12px;color:#8a6f54;margin-top:12px">Communique au client — le studio l\'accueille a l\'entree de son espace.</p>' +
+              '</div>';
+
+              // Tokens & portal link
+              var tokensSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Liens d\'acces client</div>' +
+                  '<div style="display:flex;gap:8px"><button class="btn btn--outline btn--sm" onclick="genClientSpaceToken()">Espace client</button><button class="btn btn--sage btn--sm" onclick="openGenToken()">+ Lien projet</button></div>' +
+                '</div>' +
+                '<div id="tokens-container">' + (tokensHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucun lien.</p>') + '</div>' +
+              '</div>';
+
+              // Files
+              var filesSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Fichiers</div>' +
+                  '<button class="btn btn--sage btn--sm" onclick="document.getElementById(\'file-input\').click()">+ Uploader</button><input type="file" id="file-input" style="display:none" onchange="uploadFile(this)">' +
+                '</div>' +
+                '<div id="files-container">' + (filesHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucun fichier.</p>') + '</div>' +
+              '</div>';
+
+              // Invoices
+              var invoicesSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Factures & Devis</div>' +
+                  '<button class="btn btn--sage btn--sm" onclick="openAddInvoice()">+ Ajouter</button>' +
+                '</div>' +
+                '<div id="invoices-container">' + (invoicesHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucune facture.</p>') + '</div>' +
+              '</div>';
+
+              // Questionnaire
+              var questSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Questionnaire client</div>' +
+                  '<button class="btn btn--sage btn--sm" onclick="openQuestionnaireEditor()">Modifier</button>' +
+                '</div>' +
+                '<div id="questionnaire-admin-container">' + buildQuestionnaireAdminView(project) + '</div>' +
+              '</div>';
+
+              // Client cards
+              var clientCardsSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Cards espace client</div>' +
+                  '<button class="btn btn--sage btn--sm" onclick="openClientCardEditor()">+ Ajouter</button>' +
+                '</div>' +
+                '<div id="client-cards-admin-container">' + buildClientCardsAdminView(project) + '</div>' +
+              '</div>';
+
+              // Danger zone: archive, revoke, delete
+              var isRevoked = project.status === 'revoked';
+              var isArchived = project.status === 'archived';
+              var archiveCard = '<div class="card" style="padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
+                '<div style="flex:1">' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#5c4633">' + (isArchived ? 'Sortir des archives' : 'Archiver l\'espace') + '</div>' +
+                  '<p style="font-size:13px;color:#8a6f54;margin-top:2px">' + (isArchived ? 'Le projet reapparait parmi les espaces actifs.' : 'Range les projets termines. Reversible — rien n\'est supprime.') + '</p>' +
+                '</div>' +
+                '<button class="btn btn--outline" onclick="toggleArchiveProject()">' + (isArchived ? 'Desarchiver' : 'Archiver') + '</button>' +
+              '</div>';
+
+              var revokeCard = '<div class="card" style="padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
+                '<div style="flex:1">' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#5c4633">' + (isRevoked ? 'Retablir l\'acces' : 'Revoquer l\'acces') + '</div>' +
+                  '<p style="font-size:13px;color:#8a6f54;margin-top:2px">' + (isRevoked ? 'Le client pourra de nouveau entrer avec son code.' : 'Coupe l\'entree au portail sans rien supprimer. Reversible.') + '</p>' +
+                '</div>' +
+                '<button class="btn btn--outline" onclick="toggleRevokeProject()">' + (isRevoked ? 'Retablir' : 'Revoquer') + '</button>' +
+              '</div>';
+
+              var deleteCard = '<div style="background:#fbf1ee;border:1px solid #e7c6bd;border-radius:14px;padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
+                '<div style="flex:1">' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#9b3a2e">Supprimer definitivement</div>' +
+                  '<p style="font-size:13px;color:#9b3a2e;opacity:0.85;margin-top:2px">Efface l\'espace et tout son contenu. Action irreversible.</p>' +
+                '</div>' +
+                '<button class="btn btn--danger" onclick="confirmDelete()">Supprimer</button>' +
+              '</div>';
+
+              // Email notifications
+              var emailSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Notifications email</div>' +
+                  '<button class="btn btn--sage btn--sm" onclick="openNotifModal()">Envoyer</button>' +
+                '</div>' +
+                (emailLogsHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucun email.</p>') +
+              '</div>';
+
+              return codeCardHtml + tokensSection + filesSection + invoicesSection + questSection + clientCardsSection + emailSection +
+                '<div style="margin-top:8px">' +
+                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:12px">Zone sensible</div>' +
+                  archiveCard + revokeCard + deleteCard +
+                '</div>';
+            })() +
+          '</div>' + /* fin tab-acces */
 
         '</main>' +
       '</div>' +
@@ -2598,14 +2762,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.adminProjTab = function(tab) {
     _adminProjTab = tab;
-    ['accueil','calendrier','taches','suivi','client','page'].forEach(function(t) {
+    ['apercu','planning','couleurs','acces'].forEach(function(t) {
       var el = document.getElementById('tab-' + t);
       if (el) el.style.display = (t === tab ? '' : 'none');
     });
     document.querySelectorAll('.proj-tabnav__btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.tab === tab);
     });
-    if (tab === 'page') { apbInit(); apbRender(); }
   };
 
   // ── Page builder (admin) ─────────────────────────────────────────────────────
@@ -3156,6 +3319,68 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     else toast('Erreur envoi', true);
   };
 
+  window.extendDeadlinePlanning = async function() {
+    var el = document.getElementById('plan-deadline');
+    if (!el || !el.value) { toast('Entrez une date', true); return; }
+    var patch = Object.assign({}, window._currentProject, { deadline: el.value, deadlineExtended: true, dueOriginal: window._currentProject.dueOriginal || window._currentProject.deadline });
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(patch) });
+    if (res.ok) { toast('Echeance prolongee ✓'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
+  };
+
+  window.saveVisioLink = async function() {
+    var el = document.getElementById('plan-visioLink');
+    var val = el ? el.value.trim() : '';
+    var patch = Object.assign({}, window._currentProject, { meetingLink: val || undefined });
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(patch) });
+    if (res.ok) { toast('Lien visio enregistre ✓'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
+  };
+
+  // Button color state for tab-couleurs
+  var _btnColors = null;
+  window.setBtnColor = function(key, value) {
+    var state = document.getElementById('btn-colors-state');
+    if (!state) return;
+    if (!_btnColors) _btnColors = JSON.parse(state.dataset.btn || '{}');
+    _btnColors[key] = value;
+    // Update preview
+    if (key === 'primaryBg' || key === 'primaryFg') {
+      var prev = document.getElementById('prev-primary');
+      if (prev) prev.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:' + (_btnColors.primaryBg||'#5c4633') + ';color:' + (_btnColors.primaryFg||'#EFE1B0') + ';border:none;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
+    }
+    if (key === 'secondaryFg') {
+      var prev2 = document.getElementById('prev-secondary');
+      if (prev2) prev2.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:transparent;color:' + (_btnColors.secondaryFg||'#5c4633') + ';border:1px solid ' + (_btnColors.secondaryFg||'#5c4633') + ';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
+    }
+  };
+  window.resetBtnColors = function() { _btnColors = null; loadProject(currentProjectId); };
+  window.saveBtnColors = async function() {
+    if (!_btnColors) return;
+    var patch = Object.assign({}, window._currentProject, { btn: _btnColors });
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(patch) });
+    if (res.ok) { toast('Couleurs appliquees ✓'); _btnColors = null; setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
+  };
+
+  window.toggleArchiveProject = async function() {
+    var isArchived = window._currentProject && window._currentProject.status === 'archived';
+    var newStatus = isArchived ? 'in_progress' : 'archived';
+    var patch = Object.assign({}, window._currentProject, { status: newStatus });
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(patch) });
+    if (res.ok) { toast(isArchived ? 'Sorti des archives' : 'Espace archive'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
+  };
+
+  window.toggleRevokeProject = async function() {
+    var isRevoked = window._currentProject && window._currentProject.status === 'revoked';
+    var newStatus = isRevoked ? 'in_progress' : 'revoked';
+    var patch = Object.assign({}, window._currentProject, { status: newStatus });
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(patch) });
+    if (res.ok) { toast(isRevoked ? 'Acces retabli' : 'Acces revoqué'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    else toast('Erreur', true);
+  };
+
   window.confirmDelete = async function() {
     showConfirm('Toutes les tâches, messages et fichiers liés seront perdus. Cette action est irréversible.', async function() {
       const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'DELETE' });
@@ -3180,7 +3405,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   var _calSel = null;
   var _calFilter = '';
-  var _adminProjTab = 'accueil';
+  var _adminProjTab = 'apercu';
   var _adminTaskDrawer = null;
 
   function buildCalendar(project) {
