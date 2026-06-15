@@ -4574,7 +4574,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(next.title) + '</div>' +
           (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
         '</div>' +
-        '<button class="btn btn-primary btn-sm" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+        '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
       '</div>' : '';
 
       var miniTrack = firstFour.length ? '<div class="card" style="padding:22px 24px">' +
@@ -6746,7 +6746,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
       '<div style="padding:16px 20px;border-top:1px solid var(--bone-d);display:flex;gap:12px;align-items:flex-end;flex-shrink:0">' +
         '<textarea id="cp-convo-draft" placeholder="Ecrire un message a Cindy…" rows="1" style="flex:1;resize:none;min-height:46px;max-height:120px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto" onkeydown="cpConvoKey(event)"></textarea>' +
-        '<button onclick="cpConvoSend()" style="height:46px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:none;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:500;letter-spacing:0.08em;cursor:pointer">'+cpIcon('send',15)+' Envoyer</button>' +
+        '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
       '</div>' +
     '</div>';
 
