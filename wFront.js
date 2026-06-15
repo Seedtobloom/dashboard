@@ -252,8 +252,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   cursor: pointer;
   transition: background 0.12s;
 }
-.inbox-item:hover { background: var(--surface); }
-.inbox-item.active { background: #f0f4ff; border-left: 3px solid var(--navy); }
+.inbox-item:hover { background: #f7efff; }
+.inbox-item.active { background: #f7efff; border-left: 3px solid #5c4633; }
 .inbox-convo {
   flex: 1;
   display: flex;
@@ -351,9 +351,9 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   /* status */
   --st-todo:#a98bd6; --st-progress:#7c9bdc; --st-review:#c9952f; --st-done:#5c4633;
   /* fonts */
-  --font-display:'Alegreya','EB Garamond',Georgia,serif;
+  --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
   --font-body:'EB Garamond',Georgia,'Times New Roman',serif;
-  --font-micro:'Ambra Sans',ui-sans-serif,system-ui,sans-serif;
+  --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   /* type scale */
   --fs-micro:11px; --fs-small:14px; --fs-body:17px; --fs-lead:20px;
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
@@ -659,7 +659,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpb-add-blk:hover { border-color:var(--lavender);color:var(--navy); }
 .cpb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
 .cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(5,24,51,0.18); }
-.cpb-modal__title { font-family:'Alegreya',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
+.cpb-modal__title { font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .cpb-modal__row { margin-bottom:12px; }
 .cpb-modal__label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin-bottom:5px; }
 .cpb-modal__input { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--text);box-sizing:border-box; }
@@ -1008,12 +1008,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     opts = opts || {};
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:10px">' + (opts.title || 'Confirmation') + '</div>' +
       '<div style="font-size:14px;color:#5a6a7e;line-height:1.5;margin-bottom:22px">' + msg + '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_conf-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
-        '<button id="_conf-ok" style="padding:9px 20px;background:'+(opts.danger?'#c44':'#051833')+';color:'+(opts.danger?'#fff':'#BAD1FD')+';border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Confirmer') + '</button>' +
+        '<button id="_conf-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_conf-ok" style="padding:9px 20px;background:'+(opts.danger?'#c44':'#051833')+';color:'+(opts.danger?'#fff':'#BAD1FD')+';border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Confirmer') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -1028,14 +1028,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:6px">' + title + '</div>' +
       (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
       (opts.hint ? '<div style="font-size:12px;color:#aaa;margin-bottom:12px">' + opts.hint + '</div>' : '') +
-      '<input id="_prompt-input" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#051833" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<input id="_prompt-input" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#051833" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_prompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
-        '<button id="_prompt-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+        '<button id="_prompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_prompt-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -1229,7 +1229,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('spaces', projs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="margin-bottom:24px">' +
-            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
+            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
             '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
           '</div>' +
           (tokens.length ? '<div class="projects-table"><table>' +
@@ -1277,16 +1277,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     function sectionHtml(sec, idx) {
       var content = '';
       if (sec.type === 'text') {
-        content = '<textarea id="hub-sec-content-' + idx + '" rows="5" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
+        content = '<textarea id="hub-sec-content-' + idx + '" rows="5" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
       } else if (sec.type === 'links') {
-        content = '<textarea id="hub-sec-content-' + idx + '" rows="4" placeholder="Un lien par ligne" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
+        content = '<textarea id="hub-sec-content-' + idx + '" rows="4" placeholder="Un lien par ligne" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
       } else {
-        content = '<textarea id="hub-sec-content-' + idx + '" rows="3" placeholder="Description des fichiers" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
+        content = '<textarea id="hub-sec-content-' + idx + '" rows="3" placeholder="Description des fichiers" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical">' + esc(sec.content||'') + '</textarea>';
       }
       return '<div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
-          '<input type="text" id="hub-sec-title-' + idx + '" value="' + esc(sec.title||'') + '" placeholder="Titre de la section" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:\'Ambra Sans\',sans-serif;font-size:14px">' +
-          '<select id="hub-sec-type-' + idx + '" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:\'Ambra Sans\',sans-serif;font-size:13px">' +
+          '<input type="text" id="hub-sec-title-' + idx + '" value="' + esc(sec.title||'') + '" placeholder="Titre de la section" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:\'Inter Tight\',sans-serif;font-size:14px">' +
+          '<select id="hub-sec-type-' + idx + '" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:\'Inter Tight\',sans-serif;font-size:13px">' +
             '<option value="text"' + (sec.type==='text'?' selected':'') + '>Texte</option>' +
             '<option value="links"' + (sec.type==='links'?' selected':'') + '>Liens</option>' +
             '<option value="files"' + (sec.type==='files'?' selected':'') + '>Fichiers</option>' +
@@ -1302,7 +1302,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('hub', allProjs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">' +
-            '<h1 style="font-family:\'Alegreya\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
+            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Hub partage</h1>' +
             '<div style="display:flex;gap:10px">' +
               '<button class="btn btn--outline" onclick="hubAddSection()">+ Section</button>' +
               '<button class="btn btn--primary" onclick="hubSave()">Enregistrer</button>' +
@@ -1602,7 +1602,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div id="inbox-msgs" style="flex:1;overflow-y:auto;padding:20px">' + msgsHtml + '</div>' +
       '<div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--white)">' +
         '<div style="display:flex;gap:10px;align-items:flex-end">' +
-          '<textarea id="inbox-input" placeholder="Répondre à ' + esc(c.clientName||c.clientEmail) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
+          '<textarea id="inbox-input" placeholder="Répondre à ' + esc(c.clientName||c.clientEmail) + '…" rows="2" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'var(--border)\'" onkeydown="if(event.key===\'Enter\'&&(event.metaKey||event.ctrlKey))sendInboxMessage()"></textarea>' +
           '<button class="btn btn--primary" onclick="sendInboxMessage()" style="height:40px">Envoyer →</button>' +
         '</div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:6px">Ctrl+Entrée pour envoyer</div>' +
@@ -1663,7 +1663,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('messages', projs, {}, totalUnreadAll) +
         '<main class="main" style="display:flex;flex-direction:column;overflow:hidden">' +
           '<div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px">' +
-            '<h2 style="font-family:\'Alegreya\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
+            '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:var(--navy);font-style:italic">Messages</h2>' +
             (totalUnreadAll > 0 ? '<span class="unread-badge">' + totalUnreadAll + ' non lu' + (totalUnreadAll > 1 ? 's' : '') + '</span>' : '') +
           '</div>' +
           '<div style="display:flex;flex:1;overflow:hidden">' +
@@ -2372,7 +2372,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   function apbBlockPreview(b) {
-    if (b.type === 'title') return '<div style="font-family:\'Alegreya\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
+    if (b.type === 'title') return '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--navy)">'+esc(b.content||'(titre vide)')+'</div>';
     if (b.type === 'text') return '<div style="white-space:pre-wrap">'+esc(b.content||'(texte vide)')+'</div>';
     if (b.type === 'list') {
       var items = (b.content||'').split('\n').filter(Boolean);
@@ -2781,8 +2781,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var cats = ['document','deliverable','reference'];
     var catOv = document.createElement('div');
     catOv.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    catOv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:360px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif"><div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Catégorie du fichier</div>' +
-      cats.map(function(c){ var ico = c==='deliverable'?'📦':c==='reference'?'🎨':'📄'; var lbl = c==='deliverable'?'Livrable':c==='reference'?'Référence':'Document'; return '<button data-cat="'+c+'" style="display:block;width:100%;text-align:left;padding:12px 16px;border:1.5px solid #e2dbd0;border-radius:10px;margin-bottom:8px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-size:14px;background:#fff;color:#051833">'+ico+' '+lbl+'</button>'; }).join('') +
+    catOv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:360px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif"><div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Catégorie du fichier</div>' +
+      cats.map(function(c){ var ico = c==='deliverable'?'📦':c==='reference'?'🎨':'📄'; var lbl = c==='deliverable'?'Livrable':c==='reference'?'Référence':'Document'; return '<button data-cat="'+c+'" style="display:block;width:100%;text-align:left;padding:12px 16px;border:1.5px solid #e2dbd0;border-radius:10px;margin-bottom:8px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:14px;background:#fff;color:#051833">'+ico+' '+lbl+'</button>'; }).join('') +
       '<button id="_cat-cancel" style="width:100%;padding:9px;background:none;border:none;cursor:pointer;color:#aaa;font-size:13px;margin-top:4px">Annuler</button></div>';
     document.body.appendChild(catOv);
     var category = await new Promise(function(resolve) {
@@ -3752,13 +3752,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ov.id = 'token-modal-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
       '<p style="font-size:13px;color:#8090a8;margin-bottom:16px">Envoyez ce lien à votre cliente pour qu\'elle accède à son espace.</p>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">' +
         '<input id="token-modal-url" type="text" readonly value="' + url + '" style="flex:1;padding:10px 14px;border:1.5px solid #e2dbd0;border-radius:10px;font-size:13px;background:#f9f7f4;color:#051833;font-family:monospace">' +
-        '<button onclick="navigator.clipboard.writeText(document.getElementById(\'token-modal-url\').value).then(function(){var b=this;b.textContent=\'Copié ✓\';setTimeout(function(){b.textContent=\'Copier\';},2000);}.bind(this))" style="padding:10px 18px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;white-space:nowrap">Copier</button>' +
+        '<button onclick="navigator.clipboard.writeText(document.getElementById(\'token-modal-url\').value).then(function(){var b=this;b.textContent=\'Copié ✓\';setTimeout(function(){b.textContent=\'Copier\';},2000);}.bind(this))" style="padding:10px 18px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;white-space:nowrap">Copier</button>' +
       '</div>' +
-      '<div style="text-align:right"><button onclick="document.getElementById(\'token-modal-overlay\').remove()" style="padding:8px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8">Fermer</button></div>' +
+      '<div style="text-align:right"><button onclick="document.getElementById(\'token-modal-overlay\').remove()" style="padding:8px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8">Fermer</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -3969,13 +3969,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:6px">' + title + '</div>' +
       (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
-      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#051833" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#051833" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
-        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -4427,7 +4427,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(5,24,51,0.18);max-height:85vh;overflow-y:auto">' +
         '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
           (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
-          '<div style="font-size:19px;font-family:\'Alegreya\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
+          '<div style="font-size:19px;font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
           ((card.startDate || card.duration)
             ? '<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px">' +
                 (card.startDate ? fmtDate(card.startDate) : '') +
@@ -4689,7 +4689,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);margin-bottom:14px;display:block">' +
           '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
             '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
+            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
             (allAnswered
               ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
               : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
@@ -4840,7 +4840,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '';
     var body = '';
     if (b.type === 'title') {
-      body = '<div style="font-family:\'Alegreya\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
+      body = '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy);padding:6px 10px">'+(b.content||'')+'</div>';
     } else if (b.type === 'text') {
       body = '<div style="font-size:14px;color:var(--text);padding:6px 10px;white-space:pre-wrap">'+(b.content||'')+'</div>';
     } else if (b.type === 'list') {
@@ -5155,7 +5155,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44">✕</button>' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:\'Alegreya\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
@@ -5584,7 +5584,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div class="cp-bar" style="margin-bottom:14px"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
       filtersHtml +
-      (rows ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Ambra Sans\',sans-serif">' +
+      (rows ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Inter Tight\',sans-serif">' +
         '<thead><tr style="border-bottom:2px solid var(--border)">' +
           '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">État du brief</th>' +
           '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">Deadline</th>' +
@@ -5664,7 +5664,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="margin-bottom:16px">' +
         '<label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Notes libres</label>' +
-        '<textarea id="cli-notes-'+pid+'" style="width:100%;min-height:140px;font-family:\'Ambra Sans\',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;resize:vertical;color:var(--navy);background:var(--surface);line-height:1.6" placeholder="Vos notes, idées, points de suivi…">'+esc(notes)+'</textarea>' +
+        '<textarea id="cli-notes-'+pid+'" style="width:100%;min-height:140px;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;resize:vertical;color:var(--navy);background:var(--surface);line-height:1.6" placeholder="Vos notes, idées, points de suivi…">'+esc(notes)+'</textarea>' +
         '<div style="margin-top:8px;display:flex;justify-content:flex-end">' +
           '<button class="cp-btn cp-btn--sage" onclick="cliSaveNotes(\''+pid+'\')">Enregistrer les notes</button>' +
         '</div>' +
@@ -5769,8 +5769,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var donut = '<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto">' +
       '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="#e8e4dc" stroke-width="14"/>' +
       '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="var(--navy)" stroke-width="14" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+circ/4+'" stroke-linecap="round"/>' +
-      '<text x="70" y="66" text-anchor="middle" font-size="22" font-weight="700" fill="var(--navy)" font-family="Ambra Sans,sans-serif">'+pct+'%</text>' +
-      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#8090a8" font-family="Ambra Sans,sans-serif">heures utilisées</text>' +
+      '<text x="70" y="66" text-anchor="middle" font-size="22" font-weight="700" fill="var(--navy)" font-family="Inter Tight,sans-serif">'+pct+'%</text>' +
+      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#8090a8" font-family="Inter Tight,sans-serif">heures utilisées</text>' +
     '</svg>';
 
     function fmtH(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
@@ -5783,7 +5783,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start">' +
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Ambra Sans\',sans-serif">' +
+        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Inter Tight\',sans-serif">' +
           '<thead><tr style="border-bottom:2px solid var(--border)">' +
             '<th style="text-align:left;padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Mois</th>' +
             '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Forfait</th>' +
@@ -5818,20 +5818,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.id = '_maint-ticket-modal';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:17px;font-weight:700;color:#051833;margin-bottom:16px">Nouveau ticket de maintenance</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
-        '<input id="_maint-t-title" type="text" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833">' +
+        '<input id="_maint-t-title" type="text" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833">' +
       '</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
-        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;resize:vertical;line-height:1.5"></textarea>' +
+        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;resize:vertical;line-height:1.5"></textarea>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">' +
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
-          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
+          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
             '<option value="basse">Basse</option>' +
             '<option value="moyenne" selected>Moyenne</option>' +
             '<option value="haute">Haute</option>' +
@@ -5839,7 +5839,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
-          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
+          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
             '<option value="">— Catégorie —</option>' +
             '<option value="Bug">Bug</option>' +
             '<option value="Modification">Modification</option>' +
@@ -5851,8 +5851,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
-        '<button id="_maint-t-ok" style="padding:9px 22px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">Envoyer le ticket</button>' +
+        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_maint-t-ok" style="padding:9px 22px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Envoyer le ticket</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -5929,9 +5929,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.id = 'cli-add-task-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
-    var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Alegreya\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
@@ -5948,8 +5948,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8">Annuler</button>' +
-        '<button id="clt-submit" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
+        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8">Annuler</button>' +
+        '<button id="clt-submit" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -6165,14 +6165,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cliAddResource = function(pid) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Ambra Sans\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;margin-bottom:12px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Ambra Sans\',sans-serif">' +
+    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;margin-bottom:12px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Ajouter une ressource</div>' +
       '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
       '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">' +
-        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
-        '<button id="_res-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Ambra Sans\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
+        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8;font-size:14px">Annuler</button>' +
+        '<button id="_res-ok" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     setTimeout(function(){ ov.querySelector('#_res-url').focus(); }, 60);
@@ -6486,7 +6486,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(5,24,51,0.2)">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Alegreya\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
+          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
           '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
         '<div style="padding:24px 28px">' +
@@ -6633,7 +6633,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Alegreya\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
         '<p style="color:#8090a8;line-height:1.7;font-size:15px">Le lien a expiré ou a été révoqué.<br><br>' +
           'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#7fa688">Cindy</a> pour obtenir un nouveau lien.</p>' +
       '</div></div>';
