@@ -6913,7 +6913,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('download',14) + '</a>' : '') +
       '</div>';
     }).join('');
-    var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'">' +
+    var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput(event.dataTransfer)">' +
       cpIcon('upload',24,'color:var(--terre);margin:0 auto 10px;display:block') +
       '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:4px">Glissez un fichier ici</div>' +
       '<div style="font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600);letter-spacing:0.08em">ou cliquez pour parcourir — PDF, images, archives</div>' +
@@ -7060,6 +7060,37 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     currentId = id;
     currentView = 'project';
     renderShell();
+  };
+
+  window.cpUploadFile = function() {
+    var inp = document.getElementById('cp-file-input');
+    if (inp) inp.click();
+  };
+
+  window.cpUploadFileInput = function(inputOrEvent) {
+    var file;
+    if (inputOrEvent && inputOrEvent.dataTransfer) {
+      file = inputOrEvent.dataTransfer.files && inputOrEvent.dataTransfer.files[0];
+    } else {
+      file = inputOrEvent && inputOrEvent.files && inputOrEvent.files[0];
+    }
+    if (!file) return;
+    var pid = appData.projects.length ? appData.projects[0].project.id : null;
+    if (!pid) return;
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('category', 'document');
+    toast('Upload en cours…');
+    fetch(API_BASE + '/files', { method: 'POST', credentials: 'same-origin', body: fd })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(f) {
+        var pd = getPD(pid);
+        if (pd) pd.files = (pd.files || []).concat([f]);
+        toast('Fichier depose ' + cpIcon('check', 12));
+        currentView = 'fichiers'; renderShell();
+      })
+      .catch(function(){ toast('Erreur upload'); });
+    if (inputOrEvent && inputOrEvent.value !== undefined) inputOrEvent.value = '';
   };
 
   window.cpSetStepsView = function(v) {
