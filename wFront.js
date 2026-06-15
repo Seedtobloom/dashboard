@@ -533,11 +533,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg--client { flex-direction: row-reverse; }
 .cp-msg__av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-style: italic; font-size: 13px; font-weight: 400; overflow: hidden; background: var(--glycine-200); color: var(--terre); }
 .cp-msg__av--cindy { background: var(--terre); color: var(--paille); }
-.cp-msg__bubble { max-width: 72%; padding: 10px 14px; border-radius: 16px; font-size: var(--fs-small); line-height: 1.6; font-family: var(--font-body); }
-.cp-msg--cindy .cp-msg__bubble { background: var(--card); border: 1px solid var(--bone-d); border-bottom-left-radius: 4px; color: var(--terre); }
-.cp-msg--client .cp-msg__bubble { background: var(--nuit); border-bottom-right-radius: 4px; color: var(--brume); }
+.cp-msg__bubble { max-width: 68%; padding: 12px 16px; border-radius: 14px; font-size: 15.5px; line-height: 1.55; font-family: var(--font-body); color: var(--terre); }
+.cp-msg--cindy .cp-msg__bubble { background: #fff; border: 1px solid var(--bone-d); border-bottom-left-radius: 4px; border-bottom-right-radius: 14px; }
+.cp-msg--client .cp-msg__bubble { background: #E4D1FE; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
 .cp-msg__text { white-space: pre-wrap; word-break: break-word; }
-.cp-msg__date { font-family: var(--font-micro); font-size: 10px; opacity: 0.4; margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+.cp-msg__date { font-family: var(--font-micro); font-size: 9.5px; color: var(--terre-600); opacity: 0.7; margin-top: 5px; letter-spacing: 0.04em; }
 .cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--bone-d); border-radius: var(--radius-2); font-family: var(--font-body); font-size: var(--fs-small); resize: vertical; min-height: 80px; color: var(--terre); background: var(--card); outline: none; transition: border-color var(--dur) var(--ease); }
 .cp-msg-form textarea:focus { border-color: var(--glycine-700); }
 .cp-msg-form__row { display: flex; justify-content: flex-end; margin-top: 10px; }
@@ -6178,77 +6178,73 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // ── Vue conversation unifiée espace client (un seul fil) ─────────────────────
   function convoMsgHtml(m) {
     var isC = m.author === 'cindy';
+    var name = isC ? 'Cindy' : 'Vous';
+    var timeStr = fmtShort(m.createdAt);
     return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
-      '<div class="cp-msg__av cp-msg__av--' + (isC?'cindy':'client') + '">' + (isC?'C':clientInitial) + '</div>' +
-      '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(m.content) + '</div>' +
-      '<div class="cp-msg__date">' + (isC?'Cindy':'Vous') + ' · ' + fmtShort(m.createdAt) + '</div></div>' +
+      cpAvatar(isC?'Cindy':appData.clientName||'Client', isC?'cindy':'client', 30) +
+      '<div>' +
+        '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(m.content) + '</div></div>' +
+        '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + '</div>' +
+      '</div>' +
     '</div>';
   }
 
   function buildConversation() {
-    var unread = totalUnread();
-    var summary = '<button class="cp-nav__item active" style="border-radius:0" type="button">' +
-      cpIcon('messages',15) +
-      '<span class="cp-nav__text">' +
-        '<div class="cp-nav__title" style="color:var(--navy)">Cindy · Seed to Bloom</div>' +
-        '<div class="cp-nav__status" style="color:var(--muted)">Toute votre conversation</div>' +
-      '</span>' +
-      (unread > 0 ? '<span class="cp-nav__badge">' + unread + '</span>' : '') +
-    '</button>';
-
     var msgs = convData.length
       ? convData.map(convoMsgHtml).join('')
-      : '<div class="cp-empty">Pas encore de messages.<br>Écrivez à Cindy !</div>';
+      : '<div class="cp-empty" style="padding:40px 0;text-align:center;color:var(--terre-600)">Pas encore de messages.<br>Ecrivez a Cindy !</div>';
 
-    var convoHtml = '<div class="cp-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:480px">' +
-      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0">' +
-        '<div style="font-family:\'Alegreya\',serif;font-style:italic;color:var(--navy);font-size:16px">Conversation avec Cindy</div>' +
+    var convoHtml = '<div class="card fade-up" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:480px">' +
+      '<div style="padding:18px 24px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:12px;flex-shrink:0">' +
+        cpAvatar('Cindy', 'cindy', 38) +
+        '<div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">Cindy · Seed to Bloom</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.06em">Repond en general sous 24 h</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="cp-msgs" id="cp-convo-list" style="padding:20px;flex:1;overflow-y:auto;margin-bottom:0">' + msgs + '</div>' +
-      '<form class="cp-msg-form" id="cp-convo-form" style="padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0">' +
-        '<textarea name="content" placeholder="Écrivez votre message à Cindy…" rows="3" required></textarea>' +
-        '<div class="cp-msg-form__row"><button type="submit" class="cp-btn cp-btn--dark">Envoyer →</button></div>' +
-      '</form>' +
+      '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
+      '<div style="padding:16px 20px;border-top:1px solid var(--bone-d);display:flex;gap:12px;align-items:flex-end;flex-shrink:0">' +
+        '<textarea id="cp-convo-draft" placeholder="Ecrire un message a Cindy…" rows="1" style="flex:1;resize:none;min-height:46px;max-height:120px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto" onkeydown="cpConvoKey(event)"></textarea>' +
+        '<button onclick="cpConvoSend()" style="height:46px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:none;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:500;letter-spacing:0.08em;cursor:pointer">'+cpIcon('send',15)+' Envoyer</button>' +
+      '</div>' +
     '</div>';
 
-    var header = '<div class="cp-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
-      '<div><h1 class="cp-header__title">Messagerie</h1>' +
-      '<div class="cp-header__meta">Votre conversation avec Cindy</div></div>' +
-      '<button onclick="refreshConvo()" class="cp-btn cp-btn--sage" style="margin-top:4px" aria-label="Actualiser les messages">↻ Actualiser</button>' +
-    '</div>';
-    return header +
-      '<div class="cp-content cp-content--wide">' + convoHtml + '</div>';
+    return '<div class="cp-content cp-content--wide" style="padding-top:0">' + convoHtml + '</div>';
   }
 
   function attachConvoForm() {
-    var form = document.getElementById('cp-convo-form');
-    if (!form) return;
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      var content = form.content.value.trim();
-      if (!content) return;
-      var btn = form.querySelector('button[type=submit]');
-      btn.disabled = true; btn.textContent = 'Envoi…';
-      fetch(API_BASE + '/conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: content }) })
-        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-        .then(function(d) {
-          convData.push(d.message);
-          var list = document.getElementById('cp-convo-list');
-          var empty = list && list.querySelector('.cp-empty');
-          if (empty) empty.remove();
-          var div = document.createElement('div');
-          div.className = 'cp-msg cp-msg--client';
-          div.innerHTML = '<div class="cp-msg__av cp-msg__av--client">' + clientInitial + '</div>' +
-            '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(d.message.content) + '</div>' +
-            '<div class="cp-msg__date">Vous · maintenant</div></div>';
-          if (list) { list.appendChild(div); div.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-          form.content.value = '';
-          toast('Message envoyé ✓');
-        })
-        .catch(function(){ toast('Erreur, réessayez.'); })
-        .finally(function(){ btn.disabled = false; btn.textContent = 'Envoyer →'; });
-    });
+    // scroll to bottom on load
+    var list = document.getElementById('cp-convo-list');
+    if (list) list.scrollTop = list.scrollHeight;
   }
+
+  window.cpConvoKey = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.cpConvoSend(); }
+  };
+
+  window.cpConvoSend = function() {
+    var ta = document.getElementById('cp-convo-draft');
+    if (!ta) return;
+    var content = ta.value.trim();
+    if (!content) return;
+    ta.disabled = true;
+    fetch(API_BASE + '/conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: content }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(d) {
+        convData.push(d.message);
+        var list = document.getElementById('cp-convo-list');
+        var empty = list && list.querySelector('.cp-empty');
+        if (empty) empty.remove();
+        var div = document.createElement('div');
+        div.innerHTML = convoMsgHtml(d.message);
+        var node = div.firstChild;
+        if (list && node) { list.appendChild(node); node.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+        ta.value = '';
+        toast('Message envoye ✓');
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); })
+      .finally(function(){ ta.disabled = false; ta.focus(); });
+  };
 
   function buildHubView() {
     if (!_hubCache) return '<div class="fade-up" style="text-align:center;padding:60px 0;color:var(--terre-600)">Chargement…</div>';
