@@ -5083,7 +5083,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cliCalSelected = {};
   var cliCalFilter   = {};
   var cliPartTab     = {}; // pid -> 'cal'|'board'|'forfait'
-  var cliMaintTab    = {}; // pid -> 'tickets'|'notes'|'forfait'|'invoices'
+  var cliMaintTab    = {}; // pid -> 'demandes'|'suivi'|'conseils'|'retours'
+  var cliMaintStatusFilter = {}; // pid -> status filter
   var cliInvoices    = {}; // pid -> array of invoices (cached)
 
   function taskCardHtml(t, pid, files) {
@@ -5311,110 +5312,109 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return summaryBar + tabs;
   }
 
-  // ── Espace Maintenance ────────────────────────────────────────────────────
+  // ── Espace Maintenance — TicketsView design ──────────────────────────────
   function buildClientMaintenance(pd) {
     var project = pd.project;
     var pid = project.id;
-    var tab = cliMaintTab[pid] || 'tickets';
+    var cat = cliMaintTab[pid] || 'demandes';
+    var stFilter = cliMaintStatusFilter[pid] || 'all';
 
-    // Recap bar
     var tickets = Array.isArray(project.tickets) ? project.tickets : [];
-    var openTickets   = tickets.filter(function(t){ return t.status !== 'done' && t.status !== 'closed'; });
-    var closedTickets = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
-    var forfaitH = project.monthlyHours || 0;
+    var quotaMin = (project.monthlyHours || 0) * 60;
+    var usedMin  = tickets.reduce(function(n,t){ return n + (t.timeSpentMinutes||0); }, 0);
+    var remaining = quotaMin - usedMin;
+    var over = remaining < 0;
 
-    function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
-
-    var summaryBar = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
-      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
-        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tickets ouverts</div>' +
-        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+openTickets.length+'</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">en cours de traitement</div>' +
+    // Quota strip
+    var quotaBarPct = quotaMin ? Math.min(100, Math.round(usedMin / quotaMin * 100)) : 0;
+    var quotaStrip = '<div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-bottom:20px">' +
+      '<div class="card" style="flex:1;min-width:300px;padding:14px 20px;display:grid;gap:12px;border-color:'+(over?'#e7c6bd':'var(--bone-d)')+';background:'+(over?'#fbf1ee':'var(--card)')+'">' +
+        '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
+          '<div style="display:flex;align-items:baseline;gap:8px;white-space:nowrap">' +
+            cpIcon('timer', 15, 'style="color:'+(over?'#9b3a2e':'var(--terre-600)')+';"') +
+            '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Restant ce mois</span>' +
+            '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:'+(over?'#9b3a2e':'var(--terre)')+'">'+Math.abs(remaining)+'<span style="font-size:11px"> min</span></span>' +
+          '</div>' +
+          '<div style="flex:1;min-width:120px">'+cpProgressBar(quotaBarPct, 'glycine', 8)+'</div>' +
+          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">'+usedMin+' / '+quotaMin+' min</span>' +
+        '</div>' +
       '</div>' +
-      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
-        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tickets résolus</div>' +
-        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+closedTickets.length+'</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">traités au total</div>' +
-      '</div>' +
-      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
-        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait mensuel</div>' +
-        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+(forfaitH ? forfaitH+'h' : '—')+'</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(forfaitH ? 'inclus par mois' : 'non défini')+'</div>' +
-      '</div>' +
+      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="align-self:center;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border:none;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:13px;font-weight:500;cursor:pointer">'+cpIcon('plus',15)+' Ouvrir un ticket</button>' +
     '</div>';
 
-    var tabDefs = [['tickets','Tickets'],['notes','Notes'],['forfait','Forfait'],['invoices','Factures']];
-    var tabsHtml = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
-      '<div style="display:flex;gap:0">' +
-        tabDefs.map(function(t){
-          return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliMaintSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
+    // Category tabs
+    var MAINT_CATS = [
+      ['demandes','Demandes',tickets.length,'settings'],
+      ['notes','Notes',null,'file-text'],
+      ['forfait','Forfait mensuel',null,'timer'],
+      ['invoices','Factures',null,'folder'],
+    ];
+    var catTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
+      MAINT_CATS.map(function(c) {
+        var id=c[0], lab=c[1], n=c[2], ic=c[3];
+        var active = cat===id;
+        return '<button onclick="cliMaintSwitch(\''+pid+'\',\''+id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--terre)':'var(--terre-600)')+';cursor:pointer;font-family:var(--font-micro);font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
+          cpIcon(ic,13)+' '+lab+(n!=null?' <span style="opacity:0.55">'+n+'</span>':'')+
+        '</button>';
+      }).join('') +
+    '</div>';
+
+    function buildTicketsList() {
+      // Status filter tabs
+      var MAINT_ST_KEYS = ['all','open','in_progress','done','closed'];
+      var MAINT_ST_LABELS = { all:'Tout', open:'Ouvert', in_progress:'En cours', done:'Resolu', closed:'Ferme' };
+      var MAINT_ST_COLORS = { open:'#e8a87c', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
+      var presentSt = MAINT_ST_KEYS.filter(function(sk){ return sk==='all'||tickets.some(function(t){ return t.status===sk; }); });
+      var stTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
+        presentSt.map(function(sk) {
+          var active = stFilter===sk;
+          var cnt = sk==='all' ? tickets.length : tickets.filter(function(t){ return t.status===sk; }).length;
+          var dot = sk!=='all' ? '<span style="width:7px;height:7px;border-radius:2px;background:'+(MAINT_ST_COLORS[sk]||'var(--bone-d)')+';transform:rotate(45deg);display:inline-block;flex-shrink:0"></span> ' : '';
+          return '<button onclick="cliMaintFilterStatus(\''+pid+'\',\''+sk+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 14px;background:none;border:0;border-bottom:2px solid '+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--terre)':'var(--terre-600)')+';cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
+            dot+(MAINT_ST_LABELS[sk]||'Tout')+' <span style="opacity:0.55">'+cnt+'</span>'+
+          '</button>';
         }).join('') +
-      '</div>' +
-      (tab === 'tickets' ? '<button class="cp-btn cp-btn--dark" onclick="cliOpenSubmitTicket(\''+pid+'\')">+ Nouveau ticket</button>' : '') +
-    '</div>';
-
-    if (tab === 'tickets')  return summaryBar + tabsHtml + buildMaintTickets(pid, project);
-    if (tab === 'notes')    return summaryBar + tabsHtml + buildPartNotes(pid, project);
-    if (tab === 'forfait')  return summaryBar + tabsHtml + buildPartForfait(pid, [], project);
-    if (tab === 'invoices') return summaryBar + tabsHtml + buildPartInvoices(pid);
-    return summaryBar + tabsHtml;
-  }
-
-  function buildMaintTickets(pid, project) {
-    var tickets = Array.isArray(project.tickets) ? project.tickets : [];
-    var MAINT_STATUS = { open:'Ouvert', in_progress:'En cours', done:'Résolu', closed:'Fermé' };
-    var MAINT_STATUS_COLOR = { open:'#e8a87c', in_progress:'#BAD1FD', done:'#7fa688', closed:'#ccc' };
-    var MAINT_STATUS_TXT   = { open:'#5a2c0e', in_progress:'#051833', done:'#0d2b16', closed:'#555' };
-    var MAINT_PRIO = { haute:'Haute', moyenne:'Moyenne', basse:'Basse' };
-    var MAINT_PRIO_COLOR = { haute:'#c0392b', moyenne:'#e8a87c', basse:'#7fa688' };
-
-    if (!tickets.length) {
-      return '<div class="cp-card">' +
-        '<div class="cp-card__hd"><h2 class="cp-card__title">Tickets de maintenance</h2></div>' +
-        '<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Aucun ticket pour le moment.<br><button class="cp-btn cp-btn--dark" style="margin-top:12px" onclick="cliOpenSubmitTicket(\''+pid+'\')">+ Soumettre un ticket</button></div>' +
       '</div>';
-    }
 
-    var open   = tickets.filter(function(t){ return t.status !== 'done' && t.status !== 'closed'; });
-    var closed = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
+      var shown = stFilter==='all' ? tickets : tickets.filter(function(t){ return t.status===stFilter; });
 
-    function ticketRow(t) {
-      var sbg = MAINT_STATUS_COLOR[t.status] || '#eee';
-      var stx = MAINT_STATUS_TXT[t.status]   || '#333';
-      var badge = '<span style="display:inline-flex;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:'+sbg+';color:'+stx+'">'+(MAINT_STATUS[t.status]||t.status)+'</span>';
-      var prioDot = t.priority ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(MAINT_PRIO_COLOR[t.priority]||'#aaa')+';margin-right:5px;vertical-align:middle"></span><span style="font-size:12px;color:var(--muted)">'+(MAINT_PRIO[t.priority]||t.priority)+'</span>' : '';
-      var dateStr = t.createdAt ? '<span style="font-size:11px;color:var(--muted)">'+fmtDate(t.createdAt)+'</span>' : '';
-      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px">' +
-        '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">' +
+      function ticketCard(t) {
+        var isOpen = t.status!=='done' && t.status!=='closed';
+        var prio = t.priority || t.urgency;
+        var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#9b3a2e;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
+        var catBadge = t.category ? '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--radius-2);background:var(--brume-50);color:var(--brume-900);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.03em">'+esc(t.category)+'</span>' : '';
+        return '<div class="card" style="padding:15px 18px;display:flex;gap:14px;align-items:flex-start">' +
           '<div style="flex:1;min-width:0">' +
-            '<div style="font-weight:600;font-size:14px;color:var(--navy);margin-bottom:4px">'+esc(t.title||'Sans titre')+'</div>' +
-            (t.description ? '<div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:8px">'+esc(t.description)+'</div>' : '') +
-            '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
-              dateStr +
-              (prioDot ? '<span style="display:flex;align-items:center">'+prioDot+'</span>' : '') +
-              (t.category ? '<span style="font-size:11px;color:var(--muted);background:var(--border);padding:2px 8px;border-radius:6px">'+esc(t.category)+'</span>' : '') +
+            '<div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap">' +
+              prioHtml +
+              '<span style="font-family:var(--font-display);font-size:17.5px;color:var(--terre);line-height:1.15">'+esc(t.title||'Sans titre')+'</span>' +
+            '</div>' +
+            (t.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin-bottom:11px">'+esc(t.description)+'</p>' : '') +
+            '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+              catBadge +
+              cpDeadlinePill(t.dueDate||t.deadline, !isOpen, true) +
             '</div>' +
           '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
-            badge +
-            (t.status !== 'done' && t.status !== 'closed' ?
-              '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--muted)">Marquer résolu</button>' : '') +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:0 0 auto">' +
+            cpStatusPill(t.status) +
+            (isOpen ? '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Marquer resolu</button>' : '') +
           '</div>' +
-        '</div>' +
-      '</div>';
+        '</div>';
+      }
+
+      return stTabsHtml +
+        (shown.length
+          ? '<div style="display:grid;gap:11px">'+shown.map(ticketCard).join('')+'</div>'
+          : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucune demande ici.</p>');
     }
 
-    var openHtml = open.length
-      ? '<div style="margin-bottom:24px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Tickets ouverts ('+open.length+')</div>'+open.map(ticketRow).join('')+'</div>'
-      : '';
-    var closedHtml = closed.length
-      ? '<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Tickets résolus ('+closed.length+')</div>'+closed.map(ticketRow).join('')+'</div>'
-      : '';
+    var mainContent = '';
+    if (cat==='demandes') mainContent = buildTicketsList();
+    else if (cat==='notes')    mainContent = buildPartNotes(pid, project);
+    else if (cat==='forfait')  mainContent = buildPartForfait(pid, [], project);
+    else if (cat==='invoices') mainContent = buildPartInvoices(pid);
 
-    return '<div class="cp-card">' +
-      '<div class="cp-card__hd"><h2 class="cp-card__title">Tickets de maintenance</h2></div>' +
-      openHtml + closedHtml +
-    '</div>';
+    return quotaStrip + catTabsHtml + mainContent;
   }
 
   // ── Onglet Calendrier ─────────────────────────────────────────────────────
@@ -5772,6 +5772,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cliPartSwitch = function(pid, tab) { cliPartTab[pid] = tab; renderShell(); };
   window.cliMaintSwitch = function(pid, tab) { cliMaintTab[pid] = tab; renderShell(); };
+  window.cliMaintFilterStatus = function(pid, st) { cliMaintStatusFilter[pid] = st; renderShell(); };
   window.cliRefreshInvoices = function(pid) { delete cliInvoices[pid]; renderShell(); };
 
   window.cliOpenSubmitTicket = function(pid) {
