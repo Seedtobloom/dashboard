@@ -3883,12 +3883,24 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   var STATUS_LABELS = { discovery:'Découverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En révision', delivered:'Livré', archived:'Archivé' };
   var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
+  var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)' };
+  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'A venir', todo:'A faire' };
+  function cpStatusPill(status) {
+    var col = STEP_STATUS_COLORS[status] || 'var(--bone-d)';
+    var label = STEP_STATUS_LABELS[status] || status;
+    return '<div style="display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--bone-d);border-radius:999px;background:#fff;font-family:var(--font-micro);font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);white-space:nowrap;flex-shrink:0">' +
+      '<span style="width:7px;height:7px;border-radius:2px;background:'+col+';transform:rotate(45deg);display:inline-block"></span>' +
+      label +
+    '</div>';
+  }
 
   var appData = null;
   var convData = []; // fil de conversation unifié (espace client)
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages'
   var convoId = null; // projet sélectionné dans la messagerie
+  var cpStepsViewMode = (function(){ try{ return localStorage.getItem('cp-steps-view')||'list'; }catch(e){ return 'list'; } })();
+  var cpStepsStatusFilter = 'all';
   var clientInitial = 'C';
   var pollTimer = null;
 
@@ -4473,29 +4485,87 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    var stepsHtml = steps.map(function(s, i) {
-      var isDone = s.status === 'done';
-      return '<div class="card cp-step-card" style="margin-bottom:12px">' +
-        '<span class="cp-step-num'+(isDone?' done':'')+'">'+( isDone ? cpIcon('check',16,'color:var(--st-done)') : (i+1) )+'</span>' +
+    // StepsView — design-accurate list/gallery with status tabs
+    var svAccent = acc('glycine');
+    var svMode = cpStepsViewMode;
+    var svFilter = cpStepsStatusFilter;
+
+    // Status tabs
+    var svAllStatuses = ['in_progress','waiting_client','done','upcoming'];
+    var svPresent = svAllStatuses.filter(function(sk){ return steps.some(function(s){ return s.status===sk; }); });
+    var svTabKeys = ['all'].concat(svPresent);
+    var svStatusTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
+      svTabKeys.map(function(sk) {
+        var active = svFilter === sk;
+        var cnt = sk==='all' ? steps.length : steps.filter(function(s){ return s.status===sk; }).length;
+        var dotHtml = sk!=='all' ? '<span style="width:7px;height:7px;border-radius:2px;background:'+(STEP_STATUS_COLORS[sk]||'var(--bone-d)')+';transform:rotate(45deg);display:inline-block;flex-shrink:0"></span> ' : '';
+        return '<button onclick="cpSetStepsFilter(\''+sk+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 14px;background:none;border:0;border-bottom:2px solid '+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--terre)':'var(--terre-600)')+';cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
+          dotHtml + (STEP_STATUS_LABELS[sk]||'Tout') +
+          ' <span style="opacity:0.55">'+cnt+'</span>' +
+        '</button>';
+      }).join('') +
+    '</div>';
+
+    // View toggle
+    var svToggle = '<div style="display:inline-flex;background:#fff;border:1px solid var(--bone-d);border-radius:999px;padding:3px">' +
+      [['list','Liste','list'],['gallery','Galerie','grid']].map(function(pair) {
+        var id=pair[0], lab=pair[1], ic=pair[2];
+        var active = svMode===id;
+        return '<button onclick="cpSetStepsView(\''+id+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'var(--terre)':'transparent')+';color:'+(active?'var(--paille)':'var(--terre-600)')+';font-family:var(--font-micro);font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">'+
+          cpIcon(ic,13)+' '+lab+
+        '</button>';
+      }).join('') +
+    '</div>';
+
+    var svShown = svFilter==='all' ? steps : steps.filter(function(s){ return s.status===svFilter; });
+
+    function svListCard(s, i) {
+      var isDone = s.status==='done';
+      var numBg = isDone ? svAccent.soft : 'var(--bone)';
+      var numBdr = isDone ? svAccent.mid : 'var(--bone-d)';
+      return '<div class="card cp-step-card">' +
+        '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">'+(i+1)+'</span>' +
         '<div style="min-width:0">' +
           '<div style="margin-bottom:6px"><button onclick="cpSelHome(\''+project.id+'\')" class="open-title" style="font-size:22px">'+esc(s.title)+'<span class="open-arrow">'+cpIcon('arrow',14)+'</span></button></div>' +
           (s.description ? '<p style="font-size:15px;color:var(--terre-600);line-height:1.55;margin-bottom:14px">'+esc(s.description)+'</p>' : '') +
-          '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">' +
-            cpDeadlinePill(s.dueDate, isDone) +
-          '</div>' +
-          (s.status === 'waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:var(--glycine-50);border-radius:var(--radius-2);border-left:3px solid var(--glycine-700)"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
+          '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">'+cpDeadlinePill(s.dueDate, isDone)+'</div>' +
+          (s.status==='waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:'+svAccent.soft+';border-radius:var(--radius-2);border-left:3px solid '+svAccent.mid+'"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
         '</div>' +
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">' +
-          cpStatusDot(s.status) +
-          '<span style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);white-space:nowrap">'+(STEP_LABELS[s.status]||s.status)+'</span>' +
+        cpStatusPill(s.status) +
+      '</div>';
+    }
+
+    function svGalleryCard(s, i) {
+      var isDone = s.status==='done';
+      return '<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">' +
+        '<div style="position:relative;height:112px;background:'+svAccent.soft+'">' +
+          '<span style="position:absolute;top:10px;left:10px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.92);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)">'+(i+1)+'</span>' +
+        '</div>' +
+        '<div style="padding:15px 18px 18px;flex:1;display:flex;flex-direction:column;gap:9px">' +
+          '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.2">'+esc(s.title)+'</div>' +
+          (s.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(s.description)+'</p>' : '') +
+          '<div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">'+
+            cpDeadlinePill(s.dueDate, isDone, true)+' '+cpStatusPill(s.status)+
+          '</div>' +
         '</div>' +
       '</div>';
-    }).join('');
+    }
 
-    var progress = '<div class="cp-card">' +
-      '<div class="cp-card__hd"><span class="cp-card__title">Progression</span><span class="cp-card__pct">' + pct + '%</span></div>' +
-      '<div class="cp-bar"><div class="cp-bar__fill" style="width:' + pct + '%"></div></div>' +
-      (steps.length ? '<div class="cp-steps">' + stepsHtml + '</div>' : '<div class="cp-empty">Les étapes seront bientôt définies.</div>') +
+    var svCardsHtml = svMode==='gallery'
+      ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px">'+
+          svShown.map(function(s){ return svGalleryCard(s, steps.indexOf(s)); }).join('') +
+        '</div>'
+      : '<div style="display:grid;gap:16px">'+
+          svShown.map(function(s){ return svListCard(s, steps.indexOf(s)); }).join('') +
+        '</div>';
+
+    var progress = '<div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px;flex-wrap:wrap">' +
+        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les etapes une a une — cliquez pour ouvrir sa page.</p>' +
+        svToggle +
+      '</div>' +
+      svStatusTabsHtml +
+      (svShown.length ? svCardsHtml : '<div class="cp-empty">Aucune étape dans cette catégorie.</div>') +
     '</div>';
 
     // La messagerie est unifiée et accessible depuis le panneau « Messagerie ».
@@ -6255,6 +6325,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpSel = function(id) {
     currentId = id;
     currentView = 'project';
+    renderShell();
+  };
+
+  window.cpSetStepsView = function(v) {
+    cpStepsViewMode = v;
+    try{ localStorage.setItem('cp-steps-view', v); }catch(e){}
+    renderShell();
+  };
+
+  window.cpSetStepsFilter = function(f) {
+    cpStepsStatusFilter = f;
     renderShell();
   };
 
