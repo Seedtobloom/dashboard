@@ -84,7 +84,7 @@ textarea { resize: vertical; min-height: 72px; }
 .btn:active { opacity: 0.65; transform: scale(0.98); }
 .btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .btn:active { opacity: 0.8; }
-.btn--primary { background: var(--navy); color: var(--blue-light); }
+.btn--primary { background: #E4D1FE; color: #412F21; }
 .btn--sage { background: var(--lavender); color: var(--navy); }
 .btn--outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn--danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
@@ -2192,7 +2192,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (_adminProjTab === 'client') _adminProjTab = 'acces';
     if (!_adminProjTab) _adminProjTab = 'apercu';
     var tabs = [['apercu','Apercu'],['planning','Planning & echeance'],['couleurs','Couleurs des boutons'],['acces','Acces & archive']];
-    var tabNav = '<div class="proj-tabnav" style="padding:0 40px">' +
+    var tabNav = '<div class="proj-tabnav" style="padding:0 48px">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
         return '<button class="proj-tabnav__btn'+(act?' active':'')+'" onclick="adminProjTab(\''+tb[0]+'\')" data-tab="'+tb[0]+'">'+tb[1]+'</button>';
@@ -2210,7 +2210,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<div style="position:absolute;top:18px;right:24px">' + adminTypeBadge(project.type) + '</div>' +
           '</div>' +
 
-          '<div style="padding:24px 40px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">' +
+          '<div style="padding:28px 48px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">' +
             '<div style="min-width:0">' +
               (function(){
                 var isRevoked = project.status==='revoked', isArch = project.status==='archived';
@@ -2232,7 +2232,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           tabNav +
 
           /* ===== TAB: APERCU ===== */
-          '<div id="tab-apercu" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:980px;' + (_adminProjTab==='apercu' ? '' : 'display:none') + '">' +
+          '<div id="tab-apercu" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1040px;' + (_adminProjTab==='apercu' ? '' : 'display:none') + '">' +
             (function(){
               var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD',ink:'#4a6ba8'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#5c4633'} };
               var sht = SH_ACCENT[TYPE_TONES_SHEET[project.type]] || SH_ACCENT.glycine;
@@ -2380,7 +2380,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' + /* fin tab-apercu */
 
           /* ===== TAB: PLANNING & ECHEANCE ===== */
-          '<div id="tab-planning" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:720px;' + (_adminProjTab==='planning' ? '' : 'display:none') + '">' +
+          '<div id="tab-planning" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:760px;' + (_adminProjTab==='planning' ? '' : 'display:none') + '">' +
             (function(){
               var startDisp = project.startDate ? formatDate(project.startDate) : '—';
               var dueDisp = project.deadline ? formatDate(project.deadline) : '—';
@@ -2434,7 +2434,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' + /* fin tab-planning */
 
           /* ===== TAB: COULEURS DES BOUTONS ===== */
-          '<div id="tab-couleurs" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:680px;' + (_adminProjTab==='couleurs' ? '' : 'display:none') + '">' +
+          '<div id="tab-couleurs" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:720px;' + (_adminProjTab==='couleurs' ? '' : 'display:none') + '">' +
             (function(){
               var btn = (project.btn) || { primaryBg:'#5c4633', primaryFg:'#EFE1B0', secondaryBg:'transparent', secondaryFg:'#5c4633' };
               var SWATCHES = ['#E4D1FE','#BAD1FD','#EFE1B0','#412F21','#051833','#8a6f54','#c9952f','#FAF8F4','#ffffff'];
@@ -2487,7 +2487,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' + /* fin tab-couleurs */
 
           /* ===== TAB: ACCES & ARCHIVE ===== */
-          '<div id="tab-acces" class="main-inner proj-main" style="padding:32px 40px 70px;max-width:680px;' + (_adminProjTab==='acces' ? '' : 'display:none') + '">' +
+          '<div id="tab-acces" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:720px;' + (_adminProjTab==='acces' ? '' : 'display:none') + '">' +
             (function(){
               // Access code card
               var code = project.spaceCode || '';
@@ -2835,7 +2835,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }
     if (b.type === 'separator') return '<hr style="border:none;border-top:1px solid var(--border);margin:4px 0">';
     if (b.type === 'image') return b.src ? '<img src="'+esc(b.src)+'" alt="" style="max-width:100%;border-radius:6px">' : '<span class="apb-placeholder">(image sans URL)</span>';
-    if (b.type === 'mini-banner') return '<div style="background:var(--navy);color:#fff;border-radius:6px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;opacity:.7">'+esc(b.label||'')+'</div>'+esc(b.content||'')+'</div>';
+    if (b.type === 'mini-banner') return '<div style="background:#E4D1FE;color:#412F21;border-radius:8px;padding:10px 14px"><div style="font-size:9.5px;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:#8a6f54;margin-bottom:3px">'+esc(b.label||'')+'</div><div style="font-size:14px;font-weight:500;color:#412F21">'+esc(b.content||'')+'</div></div>';
     return '';
   }
 
@@ -5107,7 +5107,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var isDone = s.status==='done';
       var numBg = isDone ? svAccent.soft : 'var(--bone)';
       var numBdr = isDone ? svAccent.mid : 'var(--bone-d)';
-      return '<div class="card cp-step-card">' +
+      return '<div class="cp-card cp-step-card" style="background:var(--card);border:1px solid var(--bone-d)">' +
         '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">'+(i+1)+'</span>' +
         '<div style="min-width:0">' +
           '<div style="margin-bottom:6px"><button onclick="cpSelHome(\''+project.id+'\')" class="open-title" style="font-size:22px">'+esc(s.title)+'<span class="open-arrow">'+cpIcon('arrow',14)+'</span></button></div>' +
@@ -5121,7 +5121,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     function svGalleryCard(s, i) {
       var isDone = s.status==='done';
-      return '<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">' +
+      return '<div class="cp-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--bone-d);box-shadow:var(--shadow-1)">' +
         '<div style="position:relative;height:112px;background:'+svAccent.soft+'">' +
           '<span style="position:absolute;top:10px;left:10px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.92);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)">'+(i+1)+'</span>' +
         '</div>' +
@@ -7557,15 +7557,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     fetch(API_BASE, { headers: headers })
       .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
       .then(function(data) {
-        if (data.locked) {
-          sessionStorage.removeItem('_sc');
-          showCodeEntry();
-          return;
-        }
         if (data.wrongCode) {
           sessionStorage.removeItem('_sc');
           showCodeEntry();
           setTimeout(function(){ var err=document.getElementById('_code-err'); if(err) err.textContent='Code incorrect. Reessayez.'; }, 80);
+          return;
+        }
+        if (data.locked) {
+          sessionStorage.removeItem('_sc');
+          showCodeEntry();
           return;
         }
         if (_isAdminEdit) {
