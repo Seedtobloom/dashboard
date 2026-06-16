@@ -1415,18 +1415,30 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
 
     // 2. Couleur des espaces
-    var TONES = [['glycine','Glycine','#E4D1FE'],['brume','Brume','#BAD1FD'],['ocre','Ocre','#e7cd97'],['terre','Terre','#c8b29a'],['nuit','Nuit','#b3c4e0']];
+    var TONES = [
+      ['glycine','Glycine','#E4D1FE','#412F21'],
+      ['brume','Brume','#BAD1FD','#051833'],
+      ['paille','Paille','#EFE1B0','#412F21'],
+      ['terre','Terre','#c8b29a','#412F21'],
+      ['nuit','Nuit','#2b3d5f','#BAD1FD']
+    ];
     var accent =
-      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+      '<div style="display:flex;gap:8px;margin-bottom:20px">' +
         [['type','Par type d\'offre'],['forced','Couleur unique']].map(function(m){
           var act = (s.accentMode||'type')===m[0];
-          return '<button onclick="setAccentMode(\''+m[0]+'\')" style="padding:8px 15px;border-radius:999px;border:1px solid '+(act?'#5c4633':'#e2d9ce')+';background:'+(act?'#5c4633':'#fff')+';color:'+(act?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.05em;cursor:pointer">'+m[1]+'</button>';
+          return '<button onclick="setAccentMode(\''+m[0]+'\')" style="padding:9px 18px;border-radius:999px;border:1px solid '+(act?'#5c4633':'#e2d9ce')+';background:'+(act?'#5c4633':'#fff')+';color:'+(act?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.06em;cursor:pointer">'+m[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<div id="set-forced-row" style="display:' + ((s.accentMode==='forced')?'flex':'none') + ';gap:10px;flex-wrap:wrap">' +
+      '<div id="set-forced-row" style="display:' + ((s.accentMode==='forced')?'grid':'none') + ';grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">' +
         TONES.map(function(t){
           var act = (s.accentForced||'glycine')===t[0];
-          return '<button onclick="setAccentForced(\''+t[0]+'\')" title="'+t[1]+'" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 9px;border-radius:999px;border:'+(act?'2px solid #5c4633':'1px solid #e2d9ce')+';background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#5c4633"><span style="width:16px;height:16px;border-radius:5px;background:'+t[2]+';display:inline-block"></span>'+t[1]+'</button>';
+          return '<button onclick="setAccentForced(\''+t[0]+'\')" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:12px;border:'+(act?'2px solid #5c4633':'1px solid #e2d9ce')+';background:'+(act?'#faf4ee':'#fff')+';cursor:pointer;text-align:left">' +
+            '<span style="display:block;width:100%;height:36px;border-radius:8px;background:'+t[2]+'"></span>' +
+            '<div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:#5c4633;margin-bottom:6px">'+t[1]+'</div>' +
+              '<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:'+t[2]+';color:'+t[3]+';font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em">Apercu bouton</span>' +
+            '</div>' +
+          '</button>';
         }).join('') +
       '</div>';
 
@@ -5020,7 +5032,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var portal = appData.type === 'client';
     var extended = project.deadlineExtended
-      ? ' <span style="font-size:11px;background:var(--cream);color:var(--brown);padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">↩ Prolongée</span>'
+      ? ' <span style="font-size:11px;background:#EFE1B0;color:#5c4633;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
       : '';
     var hdrBg = project.bannerUrl
       ? 'background:url(' + esc(project.bannerUrl) + ') center/cover no-repeat'
@@ -5030,17 +5042,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Contraste du texte selon la luminosite de la banniere (comme la card)
     var bannerHex = (!project.bannerUrl && project.bannerColor) ? project.bannerColor.split('|')[0] : null;
     var bannerLight = bannerHex && bannerHex.charAt(0) === '#' && cpHexLum(bannerHex) > 160;
-    var titleCol = bannerLight ? '#1a2744' : 'var(--cream)';
-    var metaCol  = bannerLight ? 'rgba(26,39,68,0.72)' : 'var(--cream)';
+    var titleCol = bannerLight ? '#051833' : '#EFE1B0';
+    var metaCol  = bannerLight ? 'rgba(5,24,51,0.72)' : 'rgba(239,225,176,0.82)';
     var backBtnStyle = bannerLight
-      ? 'background:rgba(5,24,51,0.07);border:1.5px solid rgba(5,24,51,0.22);color:#1a2744'
-      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#fff';
+      ? 'background:rgba(5,24,51,0.07);border:1.5px solid rgba(5,24,51,0.22);color:#051833'
+      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#EFE1B0';
     var header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
       (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="' + backBtnStyle + ';font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
       '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
       '<h1 class="cp-header__title" style="color:' + titleCol + '">' + esc(project.projectTitle) + '</h1>' +
       '<div class="cp-header__meta" style="color:' + metaCol + ';opacity:1">Bonjour ' + esc(project.clientName) +
-        (project.deadline ? ' · Livraison prévue le ' + fmtDate(project.deadline) + extended : '') +
+        (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
       '</div>' +
     '</div>';
 
@@ -7007,16 +7019,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Apply studio accent mode to portal CSS variables
     if (data.studioAccentMode === 'forced' && data.studioAccentForced) {
       var TONE_VARS = {
-        glycine: { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-        brume:   { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
-        ocre:    { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12' },
-        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
-        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#586c8e', ink:'#2b3d5f' },
+        glycine: { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#412F21' },
+        brume:   { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8', btnBg:'#BAD1FD', btnFg:'#051833' },
+        paille:  { soft:'#fdf8ec', mid:'#EFE1B0', deep:'#c9b585', ink:'#7a6030', btnBg:'#EFE1B0', btnFg:'#412F21' },
+        ocre:    { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12', btnBg:'#e7cd97', btnFg:'#412F21' },
+        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633', btnBg:'#c8b29a', btnFg:'#412F21' },
+        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#586c8e', ink:'#2b3d5f', btnBg:'#2b3d5f', btnFg:'#BAD1FD' },
       };
       var tv = TONE_VARS[data.studioAccentForced] || TONE_VARS.glycine;
       var el = document.getElementById('cp-accent-style');
       if (!el) { el = document.createElement('style'); el.id = 'cp-accent-style'; document.head.appendChild(el); }
-      el.textContent = ':root{--glycine:'+tv.mid+';--glycine-50:'+tv.soft+';--glycine-200:'+tv.mid+';--glycine-700:'+tv.deep+';--glycine-900:'+tv.ink+';}';
+      el.textContent = ':root{--glycine:'+tv.mid+';--glycine-50:'+tv.soft+';--glycine-200:'+tv.mid+';--glycine-700:'+tv.deep+';--glycine-900:'+tv.ink+';--btn-primary-bg:'+tv.btnBg+';--btn-primary-fg:'+tv.btnFg+'}';
     }
     if (!appData.projects.length) { showError(); return; }
     applyClientTheme(appData.projects);
