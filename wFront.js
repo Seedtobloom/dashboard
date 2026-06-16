@@ -4786,7 +4786,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var mainNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label">Votre espace</div>' +
       (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
-      (portal && appData.projects.length === 1 ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
+      (portal && appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Interventions','cpOpenInterventions()','') : '') +
+      (portal && appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('cal','calendar','Calendrier','cpOpenCal()','') + navBtn('stats','chart','Statistiques','cpOpenStats()','') : '') +
+      (portal && appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
 
     // Echanges group
@@ -4873,7 +4875,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</button>';
         }).join('') + '</div>';
     }
-    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources' };
+    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Interventions', cal:'Calendrier partage', stats:'Statistiques' };
     var pageTitle = pageTitles[currentView] || 'Espace client';
     if (currentView === 'project' && currentId) {
       var pd = getPD(currentId);
@@ -5927,11 +5929,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
 
     // Category tabs
+    var counsels = Array.isArray(project.counsels) ? project.counsels : [];
+    var feedbacks = Array.isArray(project.feedbacks) ? project.feedbacks : [];
     var MAINT_CATS = [
-      ['demandes','Demandes',tickets.length,'settings'],
-      ['notes','Notes',null,'file-text'],
-      ['forfait','Forfait mensuel',null,'timer'],
-      ['invoices','Factures',null,'folder'],
+      ['demandes', 'Demandes', tickets.length, 'settings'],
+      ['suivi', 'Suivi mensuel', null, 'chart'],
+      ['conseils', 'Conseils & ameliorations', counsels.length || null, 'plus'],
+      ['retours', 'Retours clients', feedbacks.length || null, 'chat'],
     ];
     var catTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
       MAINT_CATS.map(function(c) {
@@ -5994,11 +5998,133 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var mainContent = '';
     if (cat==='demandes') mainContent = buildTicketsList();
-    else if (cat==='notes')    mainContent = buildPartNotes(pid, project);
-    else if (cat==='forfait')  mainContent = buildPartForfait(pid, [], project);
-    else if (cat==='invoices') mainContent = buildPartInvoices(pid);
+    else if (cat==='suivi')    mainContent = buildPartForfait(pid, [], project);
+    else if (cat==='conseils') mainContent = (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
+    else if (cat==='retours')  mainContent = (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour client pour le moment.</p>');
 
     return quotaStrip + catTabsHtml + mainContent;
+  }
+
+  // ── Stats partenaire ──────────────────────────────────────────────────────
+  function buildPartStats(pd) {
+    var project = pd.project;
+    var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    var forfaitH = project.monthlyHours || 0;
+    var todayStr0 = _todayStr();
+    var curMonthKey = todayStr0.slice(0,7);
+    function fmtH(h){ return Math.floor(h)+'h'+(Math.round((h-Math.floor(h))*60)||''); }
+
+    var monthReel = tasks.reduce(function(s,t){
+      var ref = (t.completedAt||t.dueDate||'');
+      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
+    }, 0);
+    var active = tasks.filter(function(t){ return t.status !== 'done' && !t.archived; });
+    var done = tasks.filter(function(t){ return t.status === 'done' && !t.archived; });
+    var archived = tasks.filter(function(t){ return t.archived; });
+
+    var tiles = [
+      { v: fmtH(monthReel), label: 'Heures du mois', icon: 'timer' },
+      { v: active.length, label: 'Taches actives', icon: 'tasks' },
+      { v: done.length, label: 'Livrees', icon: 'check' },
+      { v: archived.length, label: 'Archivees', icon: 'archive' },
+    ];
+    var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
+      tiles.map(function(t){
+        return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
+          '<div style="color:var(--brume-700);margin-bottom:12px">' + cpIcon(t.icon,20) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">' + t.label + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    var now = new Date();
+    var months = [];
+    for (var i=4; i>=0; i--) {
+      var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      var key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      var h = tasks.reduce(function(s,t){
+        var ref = (t.completedAt||t.dueDate||'');
+        return ref.slice(0,7)===key ? s+(t.timeSpentMinutes||0)/60 : s;
+      }, 0);
+      months.push({ key:key, label:d.toLocaleDateString('fr-FR',{month:'short'}).toUpperCase(), h:h });
+    }
+    var maxH = Math.max.apply(null, months.map(function(m){return m.h;})) || 1;
+    var barsHtml = '<div style="display:flex;align-items:flex-end;gap:14px;height:140px;margin-top:16px;padding-bottom:24px;border-bottom:1px solid var(--bone-d)">' +
+      months.map(function(m){
+        var pct = Math.round(m.h/maxH*100);
+        var isCurrent = m.key===curMonthKey;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">' + (m.h ? fmtH(m.h).toUpperCase() : '—') + '</div>' +
+          '<div style="width:100%;height:'+(m.h?pct:4)+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(isCurrent?'var(--brume-700)':'rgba(186,209,253,0.5)')+'"></div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;color:var(--terre-400)">' + m.label + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    var chartCard = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' +
+        cpIcon('chart',16,'color:var(--brume-700)') +
+        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Pour scaler</span>' +
+        '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
+      '</div>' +
+      barsHtml +
+      '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Heures travaillees par mois — pour ajuster le forfait quand l\'activite grandit.</p>' +
+    '</div>';
+
+    var forfaitLeft = forfaitH - monthReel;
+    var forfaitPct2 = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
+    var forfaitCard = forfaitH ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
+      '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px">' +
+        '<span style="font-family:var(--font-display);font-size:28px;font-style:italic;color:var(--terre)">' + fmtH(monthReel) + '</span>' +
+        '<span style="font-size:14px;color:var(--terre-600)">/ ' + forfaitH + ' h</span>' +
+      '</div>' +
+      '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:var(--brume-700);border-radius:999px;width:'+forfaitPct2+'%"></div></div>' +
+      '<div style="font-family:var(--font-micro);font-size:11px;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre-600)')+';margin-top:4px">' + (forfaitLeft>=0?fmtH(forfaitLeft)+' restantes ce mois-ci.':fmtH(-forfaitLeft)+' depassees ce mois.') + '</div>' +
+    '</div>' : '';
+
+    var archivedHtml = '<div style="margin-top:28px">' +
+      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">' +
+        cpIcon('archive',15,'color:var(--terre-600)') +
+        '<h2 style="font-family:var(--font-display);font-size:22px;font-style:italic;color:var(--terre);font-weight:400">Taches archivees</h2>' +
+      '</div>' +
+      (archived.length ? archived.map(function(t){
+        return '<div style="padding:12px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px;opacity:0.7">' +
+          '<div style="font-size:15px;color:var(--terre);text-decoration:line-through">' + esc(t.title) + '</div>' +
+        '</div>';
+      }).join('') : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune tache archivee pour le moment.</p>') +
+    '</div>';
+
+    return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
+      '<div>' + tilesHtml + chartCard + archivedHtml + '</div>' +
+      '<div>' + forfaitCard + '</div>' +
+    '</div>';
+  }
+
+  // ── Calendrier partenaire standalone ──────────────────────────────────────
+  function buildPartCalStandalone(pid, tasks, files, project) {
+    var forfaitH = project.monthlyHours || 0;
+    var todayStr0 = _todayStr();
+    var curMonthKey = todayStr0.slice(0,7);
+    var monthReel = tasks.reduce(function(s,t){
+      var ref = (t.completedAt||t.dueDate||'');
+      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
+    }, 0);
+    function fmtH(h){ return Math.floor(h)+'h'+(Math.round((h-Math.floor(h))*60)||''); }
+    var forfaitLeft = forfaitH - monthReel;
+    var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
+
+    var forfaitBar = forfaitH ? '<div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);margin-bottom:24px">' +
+      cpIcon('timer',14,'color:var(--terre-600)') +
+      '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600)">Forfait du mois</span>' +
+      '<span style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-right:4px">' + fmtH(monthReel) + '</span>' +
+      '<span style="font-size:13px;color:var(--terre-600)">/ ' + forfaitH + ' h</span>' +
+      '<div style="flex:1;height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:var(--brume-700);width:'+forfaitPct+'%"></div></div>' +
+      '<span style="font-family:var(--font-micro);font-size:11px;font-weight:500;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre)')+';white-space:nowrap">' + (forfaitLeft>=0?fmtH(forfaitLeft)+' restantes':fmtH(-forfaitLeft)+' depassees') + '</span>' +
+    '</div>' : '';
+
+    return forfaitBar + buildPartCal(pid, tasks, files, project);
   }
 
   // ── Onglet Calendrier ─────────────────────────────────────────────────────
@@ -6944,6 +7070,22 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (currentView === 'project') return buildProjectView(getPD(currentId));
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
+    if (currentView === 'interventions') {
+      var pd0 = getPD(currentId);
+      return pd0 ? '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
+    }
+    if (currentView === 'cal') {
+      var pd0 = getPD(currentId);
+      if (pd0) {
+        var tasks0 = Array.isArray(pd0.project.tasks) ? pd0.project.tasks : [];
+        return '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
+      }
+      return buildHome();
+    }
+    if (currentView === 'stats') {
+      var pd0 = getPD(currentId);
+      return pd0 ? '<div class="cp-portal-main">' + buildPartStats(pd0) + '</div>' : buildHome();
+    }
     return buildHome();
   }
 
@@ -7122,6 +7264,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     renderShell();
     markConvoRead();
   };
+
+  window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell(); };
+  window.cpOpenCal = function() { currentView = 'cal'; renderShell(); };
+  window.cpOpenStats = function() { currentView = 'stats'; renderShell(); };
 
   window.cpOpenGuide = function() {
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
