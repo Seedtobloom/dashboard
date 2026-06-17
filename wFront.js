@@ -84,7 +84,7 @@ textarea { resize: vertical; min-height: 72px; }
 .btn:active { opacity: 0.65; transform: scale(0.98); }
 .btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .btn:active { opacity: 0.8; }
-.btn--primary { background: #E4D1FE; color: #412F21; }
+.btn--primary { background: var(--lavender); color: var(--brown); }
 .btn--sage { background: var(--lavender); color: var(--navy); }
 .btn--outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn--danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
@@ -105,16 +105,16 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 /* Sidebar : Écrin — terre sidebar, paille text, glycine active */
 .sidebar {
-  width: 260px; background: #5c4633; border-right: none;
+  width: 260px; background: var(--sidebar-bg); border-right: none;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
-.sidebar-header { padding: 26px 24px 22px; background: #5c4633; border-bottom: 1px solid rgba(239,225,176,0.12); }
-.sidebar-logo { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: #EFE1B0; font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
+.sidebar-header { padding: 26px 24px 22px; background: var(--brown); border-bottom: 1px solid rgba(239,225,176,0.12); }
+.sidebar-logo { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: var(--cream); font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
 .sidebar-logo img { max-height: 36px; width: auto; }
 .sidebar-sub { font-size: 9px; color: rgba(239,225,176,0.6); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.2em; }
 .sidebar-new {
   margin: 10px 12px 4px; display: block; text-align: center; padding: 9px 12px;
-  background: #E4D1FE; color: #5c4633; border-radius: 8px; text-decoration: none;
+  background: var(--lavender); color: var(--brown); border-radius: 8px; text-decoration: none;
   font-size: 13px; font-weight: 600; transition: opacity 0.2s; cursor: pointer;
   border: none; font-family: inherit; width: calc(100% - 24px);
 }
@@ -127,13 +127,13 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   letter-spacing: 0.08em; text-transform: uppercase;
   background: transparent; color: rgba(239,225,176,0.6); transition: background 0.15s, color 0.15s;
 }
-.side-tab:hover { background: rgba(242,229,194,0.05); color: #EFE1B0; }
-.side-tab.active { background: rgba(242,229,194,0.10); color: #EFE1B0; }
-.side-tab__badge { margin-left: auto; background: #E4D1FE; color: #5c4633; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+.side-tab:hover { background: rgba(242,229,194,0.05); color: var(--sidebar-text); }
+.side-tab.active { background: rgba(242,229,194,0.10); color: var(--sidebar-text); }
+.side-tab__badge { margin-left: auto; background: var(--lavender); color: var(--brown); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
 .side-cta {
   margin: 12px 12px 6px; display: flex; align-items: center; justify-content: center; gap: 6px;
   width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer;
-  font-family: 'Inter Tight', sans-serif; font-size: 13px; font-weight: 600; background: #E4D1FE; color: #5c4633;
+  font-family: 'Inter Tight', sans-serif; font-size: 13px; font-weight: 600; background: var(--lavender); color: var(--brown);
   transition: opacity 0.15s;
 }
 .side-cta:hover { opacity: 0.88; }
@@ -144,12 +144,12 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 }
 .project-item:hover { background: rgba(0,0,0,0.15); }
 .project-item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
-.project-item.active { background: rgba(0,0,0,0.2); border-left-color: #E4D1FE; }
-.project-item__name { font-size: 13px; font-weight: 500; color: #EFE1B0; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item.active { background: rgba(0,0,0,0.2); border-left-color: var(--lavender); }
+.project-item__name { font-size: 13px; font-weight: 500; color: var(--sidebar-text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__title { font-size: 12px; color: rgba(239,225,176,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.unread-badge { background: #E4D1FE; color: #5c4633; font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
+.unread-badge { background: var(--lavender); color: var(--brown); font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
 .deadline-badge { font-size: 10px; color: rgba(239,225,176,0.75); }
 
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
@@ -1495,6 +1495,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</div>' +
             settingsCard('Identite du studio', 'Nom et signature utilises dans les e-mails et le portail.', identite) +
             settingsCard('Couleur des espaces', 'Une couleur par type d\'offre, ou une teinte unique pour tous les espaces.', accent) +
+            settingsCard('Couleurs du tableau de bord', 'Personnalisez le panneau lateral, les cartes, les boutons et les badges de votre interface admin.',
+              '<button onclick="openColorPanel()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:1px solid #e2d9ce;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Personnaliser les couleurs</button>' +
+              '<button onclick="resetColors()" style="margin-left:8px;padding:10px 18px;border-radius:999px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Reinitialiser</button>') +
             settingsCard('Notifications e-mail', 'Quatre declencheurs, chacun avec ses destinataires et un message optionnel.', notifs) +
             settingsCard('Conges et absences', 'Affiche un bandeau d\'information en haut du portail client pendant ces periodes.', holidays) +
             settingsCard('Message d\'accueil par defaut', 'Pre-rempli sur la page d\'accueil des nouveaux espaces.', welcome) +
@@ -1735,8 +1738,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var isSel = !!admSelected[p.id];
       var clickAttr = admSelectMode ? 'onclick="admToggleSelect(\''+p.id+'\')"' : 'onclick="adminNav(\'/admin/projects/'+p.id+'\')"';
       var hoverAttr = admSelectMode ? '' : ' onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'"';
-      var selBorder = (admSelectMode && isSel) ? '#5c4633' : '#e2d9ce';
-      return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
+      var selBorder = (admSelectMode && isSel) ? 'var(--brown)' : 'var(--border)';
+      return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--surface);border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
         '<div style="position:relative;height:118px;background:'+bannerBg+'">' +
           (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#5c4633':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#5c4633':'#e2d9ce')+';display:flex;align-items:center;justify-content:center;color:#EFE1B0;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
           '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
@@ -1868,9 +1871,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return '<nav class="sidebar">' +
       '<div class="sidebar-header">' +
         '<div style="display:flex;align-items:center;gap:11px">' +
-          '<span style="color:#E4D1FE;flex-shrink:0">' + icon('flower',22,'color:#E4D1FE') + '</span>' +
+          '<span style="color:var(--lavender);flex-shrink:0">' + icon('flower',22,'color:var(--lavender)') + '</span>' +
           '<div style="line-height:1.15">' +
-            '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:19px;color:#EFE1B0;white-space:nowrap">Seed to Bloom</div>' +
+            '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:19px;color:var(--cream);white-space:nowrap">Seed to Bloom</div>' +
             '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.2em;text-transform:uppercase;margin-top:2px">Panel atelier</div>' +
           '</div>' +
         '</div>' +
@@ -1885,9 +1888,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
       '<div style="padding:16px 20px;border-top:1px solid rgba(239,225,176,0.12);display:flex;align-items:center;gap:11px">' +
-        '<span style="width:36px;height:36px;border-radius:50%;background:rgba(239,225,176,0.15);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:15px;color:#EFE1B0;flex-shrink:0">C</span>' +
+        '<span style="width:36px;height:36px;border-radius:50%;background:rgba(239,225,176,0.15);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:15px;color:var(--cream);flex-shrink:0">C</span>' +
         '<div style="line-height:1.2;flex:1;min-width:0">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:17px;color:#EFE1B0">Cindy</div>' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:17px;color:var(--cream)">Cindy</div>' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.1em;text-transform:uppercase">Fondatrice</div>' +
         '</div>' +
         '<button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;color:rgba(239,225,176,0.4);cursor:pointer;padding:4px;display:grid;place-items:center">' + icon('logout',16) + '</button>' +
