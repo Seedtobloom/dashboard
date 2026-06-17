@@ -7292,15 +7292,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         : '<div style="font-size:12px;font-weight:600;color:var(--muted,#8090a8)">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
-        var urgTx = PART_URGENCY_TX[t.urgency]||'#333';
         var isDone = t.status==='done';
         var isActive = cliSelTask[pid]===t.id;
-        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:4px 6px;border-radius:6px;background:'+urg+';color:'+urgTx+';cursor:pointer;margin-top:3px;'+(isDone?'opacity:0.5':'')+(isActive?';box-shadow:0 0 0 2px #c9952f':'')+'">' +
-          '<div style="display:flex;align-items:center;gap:3px">' +
-            '<span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:'+urgTx+';transform:rotate(45deg);flex-shrink:0;opacity:0.6"></span>' +
-            '<span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:4px 7px;border-radius:6px;background:'+(isActive?'#fff':'var(--surface,#FAF8F4)')+';border:1px solid var(--bone-d,#e8e0d4);border-left:3px solid '+urg+';cursor:pointer;margin-top:3px;'+(isDone?'opacity:0.45':'')+(isActive?';box-shadow:0 0 0 1.5px #c9952f':'')+'">' +
+          '<div style="display:flex;align-items:center;gap:4px">' +
+            '<span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
+            '<span style="font-size:11px;font-weight:600;color:var(--navy,#051833);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
           '</div>' +
-          (t.dueDate ? '<div style="font-size:9px;opacity:0.7;margin-top:1px">'+fmtDate(t.dueDate)+'</div>' : '') +
+          (t.dueDate ? '<div style="font-size:9px;color:var(--muted,#8090a8);margin-top:1px">'+fmtDate(t.dueDate)+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">+'+(dt.length-3)+'</div>':'');
       cells += '<div style="min-height:80px;padding:8px 6px;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;cursor:default;'+(isToday?'border-color:#c9952f;background:rgba(201,149,47,0.04)':'')+'">' +
