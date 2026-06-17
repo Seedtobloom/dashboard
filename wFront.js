@@ -6246,6 +6246,105 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
   };
 
+  function buildStepModal(pid, steps) {
+    if (!cpOpenStepId) return '';
+    var step = steps.find(function(s){ return s.id === cpOpenStepId; });
+    if (!step) return '';
+    var isDone = step.status === 'done';
+
+    // Read-only page blocks
+    var blocksHtml = '';
+    if (step.pageBlocks && step.pageBlocks.length) {
+      blocksHtml = step.pageBlocks.map(function(blk) {
+        if (blk.type === 'title') {
+          return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);font-weight:400;margin:0 0 4px 0">' + esc(blk.content || '') + '</h2>';
+        }
+        if (blk.type === 'text') {
+          return '<p style="font-size:14.5px;color:var(--terre-600);line-height:1.6;margin:0">' + esc(blk.content || '') + '</p>';
+        }
+        if (blk.type === 'checklist') {
+          var items = Array.isArray(blk.items) ? blk.items : [];
+          return '<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">' +
+            items.map(function(it) {
+              return '<li style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--terre-600)">' +
+                '<input type="checkbox"' + (it.done ? ' checked' : '') + ' disabled style="width:16px;height:16px;accent-color:var(--terre);flex-shrink:0">' +
+                '<span' + (it.done ? ' style="text-decoration:line-through;opacity:0.6"' : '') + '>' + esc(it.text || '') + '</span>' +
+              '</li>';
+            }).join('') +
+          '</ul>';
+        }
+        if (blk.type === 'separator') {
+          return '<hr style="border:none;border-top:1px solid var(--bone-d);margin:8px 0">';
+        }
+        if (blk.type === 'image') {
+          return blk.url ? '<img src="' + esc(blk.url) + '" alt="" style="max-width:100%;border-radius:8px">' : '';
+        }
+        if (blk.type === 'progress') {
+          var pct = Math.min(100, Math.max(0, blk.value || 0));
+          return '<div>' +
+            (blk.label ? '<div style="font-size:13px;color:var(--terre-600);margin-bottom:6px">' + esc(blk.label) + '</div>' : '') +
+            '<div style="height:8px;border-radius:4px;background:var(--bone-d);overflow:hidden">' +
+              '<div style="height:100%;border-radius:4px;background:var(--terre);width:' + pct + '%"></div>' +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--terre-400);margin-top:4px;text-align:right">' + pct + '%</div>' +
+          '</div>';
+        }
+        return '';
+      }).join('');
+    }
+
+    // Add block menu (visual only)
+    var addBlockTypes = [
+      { icon: 'title',    label: 'Titre' },
+      { icon: 'text',     label: 'Texte' },
+      { icon: 'check',    label: 'Cases à cocher' },
+      { icon: 'progress', label: 'Barre de progression' },
+      { icon: 'image',    label: 'Image' },
+      { icon: 'minus',    label: 'Séparateur' },
+    ];
+    var addBlockMenu = '<div style="margin-top:18px">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' +
+        addBlockTypes.map(function(bt) {
+          return '<button style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:not-allowed;opacity:0.7" disabled>' +
+            cpIcon(bt.icon, 13) + ' ' + bt.label +
+          '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+    var addBlockBtn = '<button style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:default;margin-top:20px" disabled>' +
+      cpIcon('plus', 13, 'color:var(--terre-400)') + ' AJOUTER UN BLOC' +
+    '</button>';
+
+    var panel = '<div style="max-width:780px;width:100%;max-height:90vh;border-radius:16px;background:#fff;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">' +
+      // Header
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px;border-bottom:1px solid var(--bone-d);flex-shrink:0">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          cpStatusPill(step.status) +
+          (isDone ? '<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:10px;color:var(--st-done);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 12, 'color:var(--st-done)') + ' Terminé</span>' : '') +
+        '</div>' +
+        '<button onclick="cpCloseStepModal()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--bone-d);background:transparent;color:var(--terre-400);cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1">×</button>' +
+      '</div>' +
+      // Body
+      '<div style="padding:28px 32px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">' +
+        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:34px;color:var(--terre);font-weight:400;margin:0;line-height:1.15">' + esc(step.title) + '</h1>' +
+        '<hr style="border:none;border-top:1px solid var(--bone-d);margin:0">' +
+        (step.description ? '<p style="font-size:15px;color:var(--terre-600);font-style:italic;line-height:1.6;margin:0">' + esc(step.description) + '</p>' : '') +
+        (blocksHtml ? '<div style="display:flex;flex-direction:column;gap:14px">' + blocksHtml + '</div>' : '') +
+        addBlockBtn +
+        addBlockMenu +
+      '</div>' +
+      // Footer
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
+        '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' +
+        '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
+      '</div>' +
+    '</div>';
+
+    return '<div style="position:fixed;inset:0;background:rgba(20,12,6,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px" onclick="cpCloseStepModal()">' +
+      panel +
+    '</div>';
+  }
+
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
@@ -6500,6 +6599,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Espace site : PhasesView deux colonnes avec sous-checklist
     if (project.type === 'site') {
       var pvAccent = acc('brume');
+      var cpPvView = window._cpPvView || 'grid';
       var pvFilter = cpStepsStatusFilter;
 
       var pvAllStatuses = ['in_progress','waiting_client','done','upcoming'];
@@ -6519,42 +6619,70 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
       var pvShown = pvFilter==='all' ? steps : steps.filter(function(s){ return s.status===pvFilter; });
 
-      var pvCardsHtml = pvShown.map(function(p) {
+      var pvIsGrid = cpPvView !== 'list';
+
+      // Boutons toggle
+      var pvToggle = '<div style="display:flex;gap:6px">' +
+        '<button onclick="cpSetPvView(\'list\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;border:1.5px solid '+(pvIsGrid?'var(--bone-d)':'var(--terre)')+';background:'+(pvIsGrid?'transparent':'var(--terre)')+';color:'+(pvIsGrid?'var(--terre-600)':'var(--paille)')+';cursor:pointer">' +
+          cpIcon('list',14) + ' LISTE' +
+        '</button>' +
+        '<button onclick="cpSetPvView(\'grid\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;border:1.5px solid '+(pvIsGrid?'var(--terre)':'var(--bone-d)')+';background:'+(pvIsGrid?'var(--terre)':'transparent')+';color:'+(pvIsGrid?'var(--paille)':'var(--terre-600)')+';cursor:pointer">' +
+          cpIcon('cards',14) + ' GALERIE' +
+        '</button>' +
+      '</div>';
+
+      var pvHeaderRow = '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap">' +
+        '<p style="margin:0;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:600px">' + esc(project.description || 'Cliquez sur une étape pour voir son detail.') + '</p>' +
+        pvToggle +
+      '</div>';
+
+      var pvGalleryHtml = pvShown.map(function(p) {
         var i = steps.indexOf(p);
-        var isDone = p.status==='done';
-        var subItems = [];
-        if (p.description) subItems.push({ text: p.description, done: isDone });
-        if (p.clientAction && p.status==='waiting_client') subItems.push({ text: p.clientAction, done: false, action: true });
-        var subHtml = subItems.length
-          ? '<ul style="margin:0;padding:0;list-style:none;display:grid;gap:8px">' +
-              subItems.map(function(si) {
-                var iconHtml = isDone
-                  ? cpIcon('check', 14, 'style="color:var(--st-done);flex-shrink:0;margin-top:3px"')
-                  : '<span style="width:6px;height:6px;border-radius:50%;background:'+pvAccent.deep+';display:inline-block;flex-shrink:0;margin-top:5px"></span>';
-                return '<li style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--terre-600);line-height:1.45">'+iconHtml+'<span>'+esc(si.text)+'</span></li>';
-              }).join('') +
-            '</ul>'
-          : '';
-        return '<div class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:14px">' +
-          '<div style="display:flex;align-items:flex-start;gap:14px">' +
-            '<span style="width:36px;height:36px;flex:0 0 auto;border-radius:var(--radius-2);display:grid;place-items:center;background:'+pvAccent.soft+';color:'+pvAccent.ink+';font-family:var(--font-display);font-style:italic;font-size:17px">'+(i+1)+'</span>' +
-            '<div style="flex:1;min-width:0">' +
-              '<button onclick="cpSelHome(\''+project.id+'\')" class="open-title" style="font-family:var(--font-display);font-size:21px;color:var(--terre);text-align:left;background:none;border:0;padding:0;cursor:pointer;line-height:1.15;display:inline-flex;align-items:center;gap:8px">'+esc(p.title)+'<span class="open-arrow">'+cpIcon('arrow',14)+'</span></button>' +
+        var isDone = p.status === 'done';
+        var bannerBg = p.bannerUrl
+          ? 'background:url(' + esc(p.bannerUrl) + ') center/cover no-repeat;'
+          : (p.bannerColor ? 'background:' + esc(p.bannerColor.split('|')[0]) + ';' : 'background:' + pvAccent.soft + ';');
+        var coverHtml = '<div style="position:relative;height:130px;' + bannerBg + 'border-radius:8px 8px 0 0;overflow:hidden">' +
+          '<span style="position:absolute;top:10px;left:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.9);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:13px;color:' + pvAccent.ink + '">' + (i+1) + '</span>' +
+          (!p.bannerUrl ? '<div style="position:absolute;inset:0;display:grid;place-items:center">' + cpIcon('image', 32, 'color:' + pvAccent.deep + ';opacity:0.35') + '</div>' : '') +
+        '</div>';
+        return '<button onclick="cpOpenStepModal(\'' + p.id + '\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:10px;width:100%;display:flex;flex-direction:column;transition:transform 180ms,box-shadow 180ms" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 6px 24px rgba(92,70,51,0.1)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
+          coverHtml +
+          '<div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;flex:1">' +
+            '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);line-height:1.2;font-weight:400">' + esc(p.title) + '</div>' +
+            (p.description ? '<div style="font-size:13.5px;color:var(--terre-600);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(p.description) + '</div>' : '') +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:4px">' +
+              cpDeadlinePill(p.dueDate, isDone, true) +
+              cpStatusPill(p.status) +
             '</div>' +
           '</div>' +
-          subHtml +
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:6px">' +
-            cpDeadlinePill(p.dueDate, isDone, true) +
-            cpStatusPill(p.status) +
+        '</button>';
+      }).join('');
+
+      var pvListHtml = pvShown.map(function(p) {
+        var i = steps.indexOf(p);
+        var isDone = p.status === 'done';
+        return '<button onclick="cpOpenStepModal(\'' + p.id + '\')" style="width:100%;text-align:left;padding:20px 24px;background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;display:flex;align-items:flex-start;gap:18px;transition:box-shadow 150ms" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(92,70,51,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
+          '<span style="width:36px;height:36px;flex-shrink:0;border-radius:50%;background:' + pvAccent.soft + ';display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:16px;color:' + pvAccent.ink + '">' + (i+1) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
+              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);font-weight:400;line-height:1.15;display:inline-flex;align-items:center;gap:8px">' + esc(p.title) + ' ' + cpIcon('arrow', 14, 'color:var(--terre-400)') + '</div>' +
+              cpStatusPill(p.status) +
+            '</div>' +
+            (p.description ? '<div style="margin-top:6px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(p.description) + '</div>' : '') +
+            (isDone ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;color:var(--st-done);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 12, 'color:var(--st-done)') + ' Terminé</div>' : '') +
+            (p.dueDate && !isDone ? '<div style="margin-top:8px">' + cpDeadlinePill(p.dueDate, false, true) + '</div>' : '') +
           '</div>' +
-        '</div>';
+        '</button>';
       }).join('');
 
       var phasesView = '<div>' +
-        '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:26px;max-width:640px">Parcourez les phases de votre site — cliquez-en une pour voir le detail et suivre l\'avancement.</p>' +
+        pvHeaderRow +
         pvStatusTabsHtml +
         (pvShown.length
-          ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:18px">'+pvCardsHtml+'</div>'
+          ? (pvIsGrid
+            ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px">' + pvGalleryHtml + '</div>'
+            : '<div style="display:flex;flex-direction:column;gap:12px">' + pvListHtml + '</div>')
           : '<div class="cp-empty">Aucune phase dans cette catégorie.</div>') +
       '</div>';
 
@@ -6562,7 +6690,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-content"><div class="cp-grid">' +
           '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + phasesView + '</div>' +
           '<div class="cp-grid__side">' + sideCol + '</div>' +
-        '</div></div>';
+        '</div></div>' +
+        buildStepModal(project.id, steps);
     }
 
     return header +
@@ -6906,6 +7035,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cliMaintStatusFilter = {}; // pid -> status filter
   var cliInvoices    = {}; // pid -> array of invoices (cached)
   var cliSelTask     = {}; // pid -> taskId sélectionné dans le drawer
+  var cpOpenStepId   = null; // id de l'étape ouverte dans la modale
 
   function taskCardHtml(t, pid, files) {
     var comments = Array.isArray(t.comments)?t.comments:[];
@@ -8876,6 +9006,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     cpStepsStatusFilter = f;
     renderShell();
   };
+
+  window.cpSetPvView = function(v) { window._cpPvView = v; renderShell(); };
+
+  window.cpOpenStepModal = function(stepId) { cpOpenStepId = stepId; renderShell(); };
+  window.cpCloseStepModal = function() { cpOpenStepId = null; renderShell(); };
 
   window.cpOpenMessages = function() {
     currentView = 'messages';
