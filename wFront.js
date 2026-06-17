@@ -556,7 +556,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg__bubble { max-width: 68%; padding: 12px 16px; border-radius: 14px; font-size: 15.5px; line-height: 1.55; font-family: var(--font-body); color: var(--terre); }
 .cp-msg--cindy .cp-msg__bubble { background: #fff; border: 1px solid var(--bone-d); border-bottom-left-radius: 4px; border-bottom-right-radius: 14px; }
 .cp-msg--client .cp-msg__bubble { background: #E4D1FE; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
-.cp-msg__text { white-space: pre-wrap; word-break: break-word; }
+.cp-msg__text { white-space: pre-wrap; overflow-wrap: break-word; }
 .cp-msg__date { font-family: var(--font-micro); font-size: 9.5px; color: var(--terre-600); opacity: 0.7; margin-top: 5px; letter-spacing: 0.04em; }
 .cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--bone-d); border-radius: var(--radius-2); font-family: var(--font-body); font-size: var(--fs-small); resize: vertical; min-height: 80px; color: var(--terre); background: var(--card); outline: none; transition: border-color var(--dur) var(--ease); }
 .cp-msg-form textarea:focus { border-color: var(--glycine-700); }
