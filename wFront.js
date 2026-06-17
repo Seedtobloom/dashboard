@@ -1232,7 +1232,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var rows = tokens.map(function(t) {
       var url = window.location.origin + '/p/' + t.token;
       var goProj = t.projectId ? 'adminNav(\'/admin/projects/' + t.projectId + '\');' : '';
-      return '<tr style="cursor:pointer;' + (t.revoked ? 'opacity:0.5' : '') + '" onclick="' + goProj + '">' +
+      return '<tr data-token="' + esc(t.token) + '" style="' + (t.revoked ? 'opacity:0.5' : '') + '" onclick="if(!window._spSelMode){' + goProj + '}">' +
+        '<td class="sp-chk-cell" style="display:none" onclick="event.stopPropagation()"><input type="checkbox" data-token="' + esc(t.token) + '" onchange="spToggleRow(this)" style="cursor:pointer"></td>' +
         '<td><div style="font-weight:500;color:var(--navy)">' + esc(t.clientName) + '</div><div style="font-size:12px;color:var(--muted)">' + esc(t.clientEmail||'') + '</div></td>' +
         '<td><div>' + esc(t.projectTitle) + (t.isClientSpace ? ' <span style="font-size:10px;background:var(--lavender);color:var(--navy);padding:1px 7px;border-radius:999px;font-weight:600">Multi-projets</span>' : '') + '</div>' +
           (t.projectType ? '<div style="font-size:11px;color:var(--muted)">' + esc(TYPE_LABELS[t.projectType]||t.projectType) + '</div>' : '') + '</td>' +
@@ -1253,14 +1254,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div class="app">' +
         buildSidebarHtml('spaces', projs, {}, _globalMsgUnread) +
         '<main class="main"><div class="main-inner">' +
-          '<div style="margin-bottom:24px">' +
-            '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
-            '<p style="color:var(--muted);font-size:14px">Tous les liens d\'accès générés, par projet.</p>' +
+          '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap">' +
+            '<div>' +
+              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:var(--navy);margin-bottom:4px;font-style:italic">Espaces clients</h1>' +
+              '<p style="color:var(--muted);font-size:14px">Tous les liens d\'acces generes, par projet.</p>' +
+            '</div>' +
+            (tokens.length ? '<div style="display:flex;align-items:center;gap:10px">' +
+              '<button id="sp-sel-btn" onclick="spToggleSelect()" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1.5px solid #5c4633;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#5c4633">☑ Selection multiple</button>' +
+              '<button id="sp-del-btn" onclick="spDeleteSelected()" style="display:none;padding:7px 15px;border:none;border-radius:999px;background:#9b3a2e;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#fff">Supprimer (<span id="sp-sel-count">0</span>)</button>' +
+            '</div>' : '') +
           '</div>' +
           (tokens.length ? '<div class="projects-table"><table>' +
-            '<thead><tr><th>Client</th><th>Projet / Type</th><th>Statut projet</th><th>Lien</th><th>Dernière visite</th><th>Accès</th><th></th></tr></thead>' +
+            '<thead><tr><th id="sp-chk-all-th" style="display:none;width:40px"><input type="checkbox" onchange="spSelectAll(this.checked)" style="cursor:pointer"></th><th>Client</th><th>Projet / Type</th><th>Statut projet</th><th>Lien</th><th>Derniere visite</th><th>Acces</th><th></th></tr></thead>' +
             '<tbody>' + rows + '</tbody></table></div>' :
-            '<div style="text-align:center;padding:60px 0;color:var(--muted)">Aucun espace client créé.</div>') +
+            '<div style="text-align:center;padding:60px 0;color:var(--muted)">Aucun espace client cree.</div>') +
         '</div></main>' +
       '</div>';
     refreshMsgBadge();
@@ -1284,6 +1291,46 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         .then(function(r) { if (!r.ok) throw new Error(); toast('Espace supprimé'); showSpaces(); })
         .catch(function() { toast('Erreur', true); });
     }, { title: 'Supprimer l\'espace', okLabel: 'Supprimer définitivement', danger: true });
+  };
+
+  // ── Sélection multiple page Espaces clients ───────────────────────────────
+  window._spSelMode = false;
+  window._spSelected = {};
+  window.spToggleSelect = function() {
+    window._spSelMode = !window._spSelMode;
+    window._spSelected = {};
+    var btn = document.getElementById('sp-sel-btn');
+    var delBtn = document.getElementById('sp-del-btn');
+    if (btn) { btn.style.background = window._spSelMode ? '#5c4633' : '#fff'; btn.style.color = window._spSelMode ? '#EFE1B0' : '#5c4633'; }
+    document.querySelectorAll('.sp-chk-cell').forEach(function(td){ td.style.display = window._spSelMode ? '' : 'none'; });
+    var th = document.getElementById('sp-chk-all-th'); if (th) th.style.display = window._spSelMode ? '' : 'none';
+    document.querySelectorAll('input[data-token]').forEach(function(cb){ cb.checked = false; });
+    if (delBtn) delBtn.style.display = 'none';
+  };
+  window.spToggleRow = function(cb) {
+    var tok = cb.getAttribute('data-token');
+    if (cb.checked) window._spSelected[tok] = true; else delete window._spSelected[tok];
+    var n = Object.keys(window._spSelected).length;
+    var delBtn = document.getElementById('sp-del-btn');
+    var cnt = document.getElementById('sp-sel-count');
+    if (delBtn) delBtn.style.display = n ? '' : 'none';
+    if (cnt) cnt.textContent = n;
+  };
+  window.spSelectAll = function(checked) {
+    document.querySelectorAll('input[data-token]').forEach(function(cb){ cb.checked = checked; window.spToggleRow(cb); });
+  };
+  window.spDeleteSelected = function() {
+    var toks = Object.keys(window._spSelected);
+    if (!toks.length) return;
+    showConfirm('Supprimer ' + toks.length + ' espace' + (toks.length>1?'s':'') + ' definitivement ?', async function() {
+      var ok = 0;
+      for (var i=0;i<toks.length;i++) {
+        try { var r = await apiFetch('/api/tokens/' + toks[i], { method: 'DELETE' }); if (r.ok) ok++; } catch(e){}
+      }
+      toast(ok + ' espace' + (ok>1?'s':'') + ' supprime' + (ok>1?'s':''));
+      window._spSelMode = false; window._spSelected = {};
+      showSpaces();
+    }, { title: 'Supprimer ' + toks.length + ' espace' + (toks.length>1?'s':''), okLabel: 'Supprimer', danger: true });
   };
 
   // ── Hub partage ────────────────────────────────────────────────────────────
@@ -2301,7 +2348,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (['calendrier','taches','suivi','page'].indexOf(_adminProjTab) !== -1) _adminProjTab = 'apercu';
     if (_adminProjTab === 'client') _adminProjTab = 'acces';
     if (!_adminProjTab) _adminProjTab = 'apercu';
-    var tabs = [['apercu','Apercu'],['planning','Planning & echeance'],['couleurs','Couleurs des boutons'],['acces','Acces & archive']];
+    var isPartenaire = project.type === 'partenaire';
+    var isMaint = project.type === 'maintenance';
+    var tabs = [['apercu','Apercu'],['planning','Planning']];
+    if (isPartenaire) tabs.push(['missions','Calendrier & missions']);
+    if (isMaint) tabs.push(['tickets','Tickets maintenance']);
+    tabs.push(['couleurs','Couleurs'],['acces','Acces']);
+    var tabIds = tabs.map(function(t){ return t[0]; });
     var tabNav = '<div class="proj-tabnav" style="padding:0 48px">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
@@ -2487,12 +2540,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<div>' + itemsHtml + stepsCardHtml + '</div>' +
                   '<div>' + infoHtml + practicalHtml + msgHtml + ctaHtml + '</div>' +
                 '</div>' +
-                (isPartenaire ? '<div id="apt-section">' + buildPartenaireSection(project) + '</div>' : '') +
-                (isMaint ? '<div id="amt-section">' + buildMaintenanceSection(project) + '</div>' : '') +
                 ((project.questionnaireQuestions && project.questionnaireQuestions.length) ?
                   '<div class="card" style="margin-bottom:24px"><div class="card-header"><span class="card-title">Reponses questionnaire</span></div><div class="card-body">' + buildQuestionnaireAdminView(project) + '</div></div>' : '');
             })() +
           '</div>' + /* fin tab-apercu */
+
+          /* ===== TAB: CALENDRIER & MISSIONS (partenaire) ===== */
+          '<div id="tab-missions" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1240px;' + (_adminProjTab==='missions' ? '' : 'display:none') + '">' +
+            (isPartenaire ? '<div id="apt-section">' + buildPartenaireSection(project) + '</div>' : '') +
+          '</div>' +
+
+          /* ===== TAB: TICKETS (maintenance) ===== */
+          '<div id="tab-tickets" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1040px;' + (_adminProjTab==='tickets' ? '' : 'display:none') + '">' +
+            (isMaint ? '<div id="amt-section">' + buildMaintenanceSection(project) + '</div>' : '') +
+          '</div>' +
 
           /* ===== TAB: PLANNING & ECHEANCE ===== */
           '<div id="tab-planning" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:760px;' + (_adminProjTab==='planning' ? '' : 'display:none') + '">' +
@@ -2892,7 +2953,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   window.adminProjTab = function(tab) {
     _adminProjTab = tab;
-    ['apercu','planning','couleurs','acces'].forEach(function(t) {
+    ['apercu','planning','missions','tickets','couleurs','acces'].forEach(function(t) {
       var el = document.getElementById('tab-' + t);
       if (el) el.style.display = (t === tab ? '' : 'none');
     });
@@ -5774,13 +5835,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var curKey = _todayStr().slice(0,7);
         var usedH = (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===curKey ? s+(t.timeSpentMinutes||0)/60 : s; }, 0);
         var fpct = forfaitH ? Math.min(100, Math.round(usedH/forfaitH*100)) : 0;
-        if (forfaitH) forfaitCard = '<div class="card" style="padding:22px 24px">' +
+        forfaitCard = '<div class="card" style="padding:22px 24px">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
-          '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">' +
-            '<span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre)">'+usedH.toFixed(1).replace('.0','')+'</span>' +
-            '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600)">/ '+forfaitH+' h utilisees</span>' +
-          '</div>' +
-          '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+fpct+'%;background:var(--brume-700,#7da2e0);border-radius:999px"></div></div>' +
+          (forfaitH
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">' +
+                '<span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre)">'+usedH.toFixed(1).replace('.0','')+'</span>' +
+                '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600)">/ '+forfaitH+' h utilisees</span>' +
+              '</div>' +
+              '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+fpct+'%;background:#c9952f;border-radius:999px"></div></div>'
+            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non configure — contactez le studio.</div>'
+          ) +
         '</div>';
       }
 
@@ -5824,7 +5888,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
-            '<p style="font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancee de votre projet pas a pas — je depose les elements a valider, vous me laissez vos retours.</p>' +
+            '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avance de vos demandes pas a pas : je depose les elements a valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancee de votre projet pas a pas — je depose les elements a valider, vous me laissez vos retours.') + '</p>' +
             nextCard +
             miniTrack +
           '</div>' +
