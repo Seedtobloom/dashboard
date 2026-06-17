@@ -7387,10 +7387,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       sep +
       // Temps passé
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Temps passe studio</span></div>' +
-      '<div style="display:flex;align-items:center;gap:12px;margin-top:8px">' +
-        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8);padding:0;text-decoration:underline">- 0,5 H</button>' +
-        '<span style="font-size:16px;font-weight:700;color:var(--navy,#051833);min-width:44px;text-align:center">'+timeH+' H</span>' +
-        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="padding:6px 14px;border:none;border-radius:999px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:12px;font-weight:700">+ 0,5 H</button>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">' +
+        '<input type="number" step="0.5" min="0" value="'+timeH+'" onchange="cliSetTime(\''+pid+'\',\''+t.id+'\',this.value)" style="width:90px;font-size:15px;font-weight:700;color:var(--navy,#051833);padding:7px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;background:#fff;box-sizing:border-box">' +
+        '<span style="font-size:13px;color:var(--muted,#8090a8)">heures</span>' +
       '</div>' +
       sep +
       // Livrable
@@ -7399,7 +7398,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         ? '<a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a>'
         : (t.livrableUrl
           ? '<a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy,#051833);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a>'
-          : '<div style="border:1.5px dashed var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:var(--muted,#8090a8);font-size:12px;font-style:italic">Le studio deposera le livrable ici</div>')) +
+          : '<div id="_pdrop-'+t.id+'" onclick="document.getElementById(\'_pfile-'+t.id+'\').click()" ondragover="event.preventDefault();this.style.borderColor=\'#c9952f\';this.style.background=\'rgba(201,149,47,0.06)\'" ondragleave="this.style.borderColor=\'\';this.style.background=\'\'" ondrop="cliDropDeliverable(event,\''+pid+'\',\''+t.id+'\')" style="border:1.5px dashed var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:var(--muted,#8090a8);font-size:12px;cursor:pointer">Glisser un fichier ou cliquer<input type="file" id="_pfile-'+t.id+'" style="display:none" onchange="cliUploadDeliverable(\''+pid+'\',\''+t.id+'\',this)"></div>')) +
       sep +
       // Echanges
       '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
@@ -8058,6 +8057,54 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       })
       .catch(function(){ toast('Erreur lors du depot', true); });
   };
+
+  window.cliSetTime = function(pid, taskId, val) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    var hours = parseFloat(val); if (isNaN(hours) || hours < 0) hours = 0;
+    t.timeSpentMinutes = Math.round(hours * 60);
+    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({timeSpentMinutes:t.timeSpentMinutes})}).catch(function(){});
+    renderShell();
+  };
+
+  window.cliDropDeliverable = function(ev, pid, taskId) {
+    ev.preventDefault();
+    var zone = document.getElementById('_pdrop-'+taskId);
+    if (zone) { zone.style.borderColor=''; zone.style.background=''; }
+    if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files[0]) return;
+    cliUploadDeliverableFile(pid, taskId, ev.dataTransfer.files[0], zone);
+  };
+
+  window.cliUploadDeliverable = function(pid, taskId, input) {
+    if (!input || !input.files || !input.files[0]) return;
+    var zone = document.getElementById('_pdrop-'+taskId);
+    cliUploadDeliverableFile(pid, taskId, input.files[0], zone);
+  };
+
+  function cliUploadDeliverableFile(pid, taskId, file, zone) {
+    if (zone) zone.innerHTML = 'Envoi en cours…';
+    var fd = new FormData();
+    fd.append('file', file);
+    var storedCode = sessionStorage.getItem('_sc') || '';
+    var headers = {};
+    if (storedCode) headers['x-space-code'] = storedCode;
+    fetch(API_BASE + '/files', { method:'POST', headers: headers, body: fd })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(fileData){
+        if (!fileData || !fileData.key) throw new Error();
+        // Link file to task
+        return fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({deliverableFileKey:fileData.key})})
+          .then(function(){
+            var pd = getPD(pid);
+            var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+            if (t) t.deliverableFileKey = fileData.key;
+            if (pd) { if(!Array.isArray(pd.project.files)) pd.project.files=[]; pd.project.files.push(fileData); }
+            toast('Livrable depose ✓'); renderShell();
+          });
+      })
+      .catch(function(){ toast('Erreur lors du depot', true); renderShell(); });
+  }
 
   window.cliDeleteTask = function(pid, taskId) {
     showConfirm('Cette tâche sera définitivement supprimée.', function() {
