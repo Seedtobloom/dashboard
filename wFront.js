@@ -143,6 +143,10 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   transition: background 0.12s; text-decoration: none; display: block; color: inherit;
 }
 .project-item:hover { background: rgba(0,0,0,0.15); }
+.project-item-wrap { position: relative; }
+.project-item-del { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(0,0,0,0.25); border: none; color: rgba(239,225,176,0.55); cursor: pointer; width: 26px; height: 26px; border-radius: 7px; display: none; align-items: center; justify-content: center; padding: 0; }
+.project-item-wrap:hover .project-item-del { display: flex; }
+.project-item-del:hover { background: var(--red); color: #fff; }
 .project-item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
 .project-item.active { background: rgba(0,0,0,0.2); border-left-color: var(--lavender); }
 .project-item__name { font-size: 13px; font-weight: 500; color: var(--sidebar-text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1693,18 +1697,43 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ids = Object.keys(admSelected);
     if (!ids.length) { toast('Aucun espace selectionne', true); return; }
     showConfirm('Vous etes sur le point de supprimer ' + ids.length + ' espace' + (ids.length>1?'s':'') + '. Toutes les taches, messages et fichiers lies seront perdus. Cette action est irreversible.', async function() {
-      var ok = 0, fail = 0;
+      var ok = 0, fail = 0, deleted = [];
       for (var i=0;i<ids.length;i++) {
         try {
           var res = await apiFetch('/api/projects/' + ids[i], { method: 'DELETE' });
-          if (res.ok) ok++; else fail++;
+          if (res.ok) { ok++; deleted.push(ids[i]); } else fail++;
         } catch(e) { fail++; }
       }
       toast(ok + ' espace' + (ok>1?'s supprimes':' supprime') + (fail?(' \xB7 '+fail+' echec'+(fail>1?'s':'')):''), fail>0);
       admSelectMode = false;
       admSelected = {};
-      setTimeout(function(){ showDashboard(); }, 500);
+      // Mise a jour optimiste : on retire tout de suite les espaces supprimes du menu et des cartes
+      // (KV est eventuellement coherent — un re-fetch immediat pourrait encore les renvoyer).
+      var removeDeleted = function(arr){ return (arr||[]).filter(function(p){ return deleted.indexOf(p.id)===-1; }); };
+      projects = removeDeleted(projects);
+      dashProjs = removeDeleted(dashProjs);
+      renderDashboard(projects);
+      // Puis on resynchronise avec le serveur apres un court delai.
+      setTimeout(function(){ showDashboard(); }, 800);
     }, { title: 'Supprimer ' + ids.length + ' espace' + (ids.length>1?'s':''), okLabel: 'Supprimer definitivement', danger: true });
+  };
+
+  // Suppression d'un projet unique (depuis le menu lateral ou la fiche projet).
+  window.adminDeleteProject = function(id, name) {
+    if (!id) return;
+    showConfirm('« ' + (name||'Cet espace') + ' » sera supprime definitivement, avec toutes ses taches, messages et fichiers. Cette action est irreversible.', async function() {
+      var okDel = false;
+      try { var res = await apiFetch('/api/projects/' + id, { method: 'DELETE' }); okDel = res.ok; } catch(e) { okDel = false; }
+      if (!okDel) { toast('Erreur lors de la suppression', true); return; }
+      toast('Espace supprime');
+      var removeDeleted = function(arr){ return (arr||[]).filter(function(p){ return p.id!==id; }); };
+      projects = removeDeleted(projects);
+      dashProjs = removeDeleted(dashProjs);
+      if (currentProjectId === id) currentProjectId = null;
+      // Retour au dashboard avec menu a jour, puis resync serveur.
+      renderDashboard(projects);
+      setTimeout(function(){ showDashboard(); }, 800);
+    }, { title: 'Supprimer cet espace', okLabel: 'Supprimer definitivement', danger: true });
   };
 
   function renderProjectCards(list, unreadMap) {
@@ -1857,12 +1886,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var grp = _cmap[key];
       var rows = grp.items.map(function(p) {
         var u = unreadMap[p.id] || 0;
-        return '<a class="project-item' + (activeSection === 'project-' + p.id ? ' active' : '') + '" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;">' +
-          (grp.items.length > 1
-            ? '<div class="project-item__title" style="padding-left:8px">' + esc(p.projectTitle) + '</div>'
-            : '<div><div class="project-item__name">' + esc(p.clientName) + '</div><div class="project-item__title">' + esc(p.projectTitle) + '</div></div>') +
-          '<div class="project-item__meta">' + adminStatusBadge(p.status) + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
-        '</a>';
+        var delName = (grp.items.length > 1 ? p.projectTitle : p.clientName) || p.projectTitle || '';
+        return '<div class="project-item-wrap">' +
+          '<a class="project-item' + (activeSection === 'project-' + p.id ? ' active' : '') + '" href="/admin/projects/' + p.id + '" onclick="adminNav(\'/admin/projects/' + p.id + '\');return false;" style="padding-right:42px">' +
+            (grp.items.length > 1
+              ? '<div class="project-item__title" style="padding-left:8px">' + esc(p.projectTitle) + '</div>'
+              : '<div><div class="project-item__name">' + esc(p.clientName) + '</div><div class="project-item__title">' + esc(p.projectTitle) + '</div></div>') +
+            '<div class="project-item__meta">' + adminStatusBadge(p.status) + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
+          '</a>' +
+          '<button class="project-item-del" title="Supprimer cet espace" onclick="event.stopPropagation();adminDeleteProject(\'' + p.id + '\',\'' + esc((delName||'').replace(/'/g,"\\'")) + '\')">' + icon('trash',14) + '</button>' +
+        '</div>';
       }).join('');
       if (grp.items.length > 1) {
         return '<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--blue-light);opacity:.55;padding:8px 16px 3px">' + esc(grp.name) + '</div>' + rows + '</div>';
