@@ -7211,27 +7211,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   // ── Calendrier partenaire standalone ──────────────────────────────────────
   function buildPartCalStandalone(pid, tasks, files, project) {
-    var forfaitH = project.monthlyHours || 0;
-    var todayStr0 = _todayStr();
-    var curMonthKey = todayStr0.slice(0,7);
-    var monthReel = tasks.reduce(function(s,t){
-      var ref = (t.completedAt||t.dueDate||'');
-      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
-    }, 0);
-    function fmtH(h){ return Math.floor(h)+'h'+(Math.round((h-Math.floor(h))*60)||''); }
-    var forfaitLeft = forfaitH - monthReel;
-    var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
-
-    var forfaitBar = forfaitH ? '<div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);margin-bottom:24px">' +
-      cpIcon('timer',14,'color:var(--terre-600)') +
-      '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600)">Forfait du mois</span>' +
-      '<span style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-right:4px">' + fmtH(monthReel) + '</span>' +
-      '<span style="font-size:13px;color:var(--terre-600)">/ ' + forfaitH + ' h</span>' +
-      '<div style="flex:1;height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:var(--brume-700);width:'+forfaitPct+'%"></div></div>' +
-      '<span style="font-family:var(--font-micro);font-size:11px;font-weight:500;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre)')+';white-space:nowrap">' + (forfaitLeft>=0?fmtH(forfaitLeft)+' restantes':fmtH(-forfaitLeft)+' depassees') + '</span>' +
-    '</div>' : '';
-
-    return forfaitBar + buildPartCal(pid, tasks, files, project);
+    return buildPartCal(pid, tasks, files, project);
   }
 
   // ── Onglet Calendrier ─────────────────────────────────────────────────────
@@ -7240,93 +7220,106 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var cm = cliCalMonth[pid];
     var year = cm.getFullYear(), month = cm.getMonth();
     var monthName = cm.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+    var monthNameCap = monthName.charAt(0).toUpperCase()+monthName.slice(1);
     var dim = new Date(year,month+1,0).getDate();
     var todayStr = _todayStr();
-    var sel = cliCalSelected[pid] || todayStr;
     if (!cliCalFilter[pid]) cliCalFilter[pid] = { urgency:'', status:'' };
     var flt = cliCalFilter[pid];
 
     var filtered = tasks.filter(function(t){
       if (flt.urgency && t.urgency !== flt.urgency) return false;
-      if (flt.status && t.status !== flt.status) return false;
       return true;
     });
 
-    // Filtre urgences partenaire
-    var filtersHtml = '<div class="cp-cal-filters">' +
-      ['','tranquille','normal','urgent','critique'].map(function(u){
-        var bg = u ? (PART_URGENCY[u]||'#aaa') : '';
-        var lbl = u ? ('<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+bg+';transform:rotate(45deg);margin-right:5px;vertical-align:middle;display:inline-block"></span>'+(PART_URG_LABEL[u]||u)) : 'Toutes';
-        return '<button class="cp-cal-filter'+(flt.urgency===u?' active':'')+'" onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')">'+lbl+'</button>';
-      }).join('') +
-      '<span style="width:1px;background:var(--border);height:18px;display:inline-block;margin:0 4px;align-self:center"></span>' +
-      ['','todo','in_progress','done'].map(function(s){
-        var lbl = {'':'Tous statuts',todo:'A faire',in_progress:'En cours',done:'Termines'}[s]||s;
-        return '<button class="cp-cal-filter'+(flt.status===s?' active':'')+'" onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s+'\')">'+lbl+'</button>';
-      }).join('') +
+    // Forfait bar
+    var forfaitH = project.monthlyHours || 0;
+    var curMonthKey = todayStr.slice(0,7);
+    var monthReel = tasks.reduce(function(s,t){
+      var ref = (t.completedAt||t.dueDate||'');
+      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
+    }, 0);
+    function fmtH(h){ return h.toFixed(1).replace('.0','')+' h'; }
+    var forfaitLeft = forfaitH - monthReel;
+    var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
+    var forfaitBar = forfaitH
+      ? '<div style="display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--surface,#FAF8F4);border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;margin-bottom:16px;flex-wrap:wrap">' +
+          '<span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a5a12;white-space:nowrap">Forfait du mois</span>' +
+          '<span style="font-size:13px;font-weight:600;color:#412F21;white-space:nowrap">'+monthReel.toFixed(1)+'/'+forfaitH+'h</span>' +
+          '<div style="flex:1;min-width:80px;height:5px;background:#e8e0d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#c9952f;width:'+forfaitPct+'%;border-radius:999px"></div></div>' +
+          '<span style="font-size:12px;font-weight:600;color:'+(forfaitLeft<0?'#9b3a2e':'#412F21')+';white-space:nowrap">'+(forfaitLeft>=0?fmtH(forfaitLeft)+' restantes':fmtH(-forfaitLeft)+' depassees')+'</span>' +
+        '</div>'
+      : '';
+
+    // Header: ← Mois → | AUJOURD'HUI | filtres | + AJOUTER
+    var urgFilters = ['','tranquille','normal','urgent','critique'].map(function(u){
+      var bg = u ? PART_URGENCY[u] : 'transparent';
+      var tx = u ? PART_URGENCY_TX[u] : 'var(--navy,#051833)';
+      var active = flt.urgency===u;
+      var lbl = u
+        ? '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+(active?'#412F21':PART_URGENCY[u])+';transform:rotate(45deg);margin-right:4px;vertical-align:middle;border:1px solid rgba(0,0,0,0.12)"></span>'+(PART_URG_LABEL[u]||u).toUpperCase()
+        : 'TOUTES';
+      return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')" style="padding:5px 10px;border-radius:999px;border:1.5px solid '+(active?'#c9952f':'var(--bone-d,#e8e0d4)')+';background:'+(active?'#e7cd97':'transparent')+';color:'+(active?'#412F21':'var(--muted,#8090a8)')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+lbl+'</button>';
+    }).join('');
+
+    var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy,#051833);padding:4px 6px;line-height:1">←</button>' +
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--navy,#051833);min-width:140px;text-align:center">'+monthNameCap+'</span>' +
+        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy,#051833);padding:4px 6px;line-height:1">→</button>' +
+      '</div>' +
+      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:5px 12px;border-radius:999px;border:1.5px solid var(--bone-d,#e8e0d4);background:var(--surface,#FAF8F4);color:var(--navy,#051833);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
+      '<div style="margin-left:auto">' +
+        '<button onclick="cliOpenAddTask(\''+pid+'\',\''+todayStr+'\')" style="padding:7px 14px;border-radius:999px;border:none;background:var(--navy,#051833);color:#FAF8F4;font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">+ AJOUTER UNE TACHE</button>' +
+      '</div>' +
     '</div>';
 
-    // Calendrier lundi-vendredi uniquement
+    // Grid cells
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
     var cells = '';
-    var firstDow = (new Date(year,month,1).getDay()+6)%7; // 0=lun..4=ven,5=sam,6=dim
+    var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow < 5 ? firstDow : 0;
     for (var i=0;i<offset;i++) cells += '<div></div>';
     for (var dd=1;dd<=dim;dd++) {
       var dow = (new Date(year,month,dd).getDay()+6)%7;
-      if (dow >= 5) continue; // skip sam/dim
+      if (dow >= 5) continue;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
       var dt = filtered.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
-      var isToday = ds===todayStr, isSel = ds===sel;
-      var cls = 'cp-cal-day'+(isToday?' today':'')+(isSel?' selected':'');
+      var isToday = ds===todayStr;
+      var isSelTask = cliSelTask[pid] && dt.some(function(t){return t.id===cliSelTask[pid];});
+      var numHtml = isToday
+        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--navy,#051833);color:#FAF8F4;font-size:12px;font-weight:700">'+dd+'</div>'
+        : '<div style="font-size:12px;font-weight:600;color:var(--muted,#8090a8)">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
         var urgTx = PART_URGENCY_TX[t.urgency]||'#333';
         var isDone = t.status==='done';
-        var selTask = cliSelTask[pid];
-        return '<div class="cp-cal-pill" style="background:'+urg+';color:'+urgTx+';'+(isDone?'opacity:0.55':'')+'" onclick="cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')">' +
-          '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">' +
-            '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0;border:1px solid rgba(0,0,0,0.15)"></span>' +
-            (isDone?'<span style="font-size:9px">✓</span>':'') +
-            '<span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+esc(t.title)+'</span>' +
+        var isActive = cliSelTask[pid]===t.id;
+        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:4px 6px;border-radius:6px;background:'+urg+';color:'+urgTx+';cursor:pointer;margin-top:3px;'+(isDone?'opacity:0.5':'')+(isActive?';box-shadow:0 0 0 2px #c9952f':'')+'">' +
+          '<div style="display:flex;align-items:center;gap:3px">' +
+            '<span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:'+urgTx+';transform:rotate(45deg);flex-shrink:0;opacity:0.6"></span>' +
+            '<span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
           '</div>' +
-          (t.pole ? '<div style="font-size:10px;opacity:.75;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(t.pole)+'</div>' : '') +
-          '<div style="display:flex;gap:4px;align-items:center;margin-top:2px">' +
-            '<span style="font-size:9px;opacity:.7">'+(PART_URG_LABEL[t.urgency]||'')+'</span>' +
-          '</div>' +
+          (t.dueDate ? '<div style="font-size:9px;opacity:0.7;margin-top:1px">'+fmtDate(t.dueDate)+'</div>' : '') +
         '</div>';
-      }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted);text-align:center">+'+(dt.length-3)+' autres</div>':'');
-      cells += '<div class="'+cls+'" onclick="cliSelDay(\''+pid+'\',\''+ds+'\')">' +
-        '<div class="cp-cal-day__num">'+dd+(isToday?'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--navy);margin-left:3px;vertical-align:middle"></span>':'')+'</div>'+pills+'</div>';
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">+'+(dt.length-3)+'</div>':'');
+      cells += '<div style="min-height:80px;padding:8px 6px;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;cursor:default;'+(isToday?'border-color:#c9952f;background:rgba(201,149,47,0.04)':'')+'">' +
+        numHtml + pills +
+      '</div>';
     }
 
-    var calCard = '<div class="cp-card">' +
-      '<div class="cp-card__hd"><h2 class="cp-card__title" style="font-size:19px;text-transform:capitalize">'+esc(monthName)+'</h2>' +
-        '<span style="display:flex;gap:8px"><button class="cp-btn cp-btn--sage" style="padding:7px 15px" onclick="cliCalNav(\''+pid+'\',-1)" aria-label="Mois precedent">←</button><button class="cp-btn cp-btn--sage" style="padding:7px 15px" onclick="cliCalNav(\''+pid+'\',1)" aria-label="Mois suivant">→</button></span>' +
+    var calGrid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px">' +
+        dayNames.map(function(n){return '<div style="text-align:center;font-size:10px;font-weight:700;color:var(--muted,#8090a8);letter-spacing:0.08em;padding-bottom:4px">'+n+'</div>';}).join('') +
       '</div>' +
-      filtersHtml +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:5px">'+dayNames.map(function(n){return '<div style="text-align:center;font-size:12px;font-weight:600;color:var(--muted)">'+n+'</div>';}).join('')+'</div>' +
-      '<div class="cp-cal-grid" style="grid-template-columns:repeat(5,1fr)">'+cells+'</div>' +
-    '</div>';
-
-    var selTasks = filtered.filter(function(t){return (t.dueDate||'').slice(0,10)===sel;});
-    var selLabel = sel===todayStr ? "Aujourd'hui" : (function(){ var d=new Date(sel+'T12:00:00'); return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); })();
-    var dayPanel = '<div class="cp-task-panel">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">' +
-        '<h3 style="font-size:15px;font-weight:600;color:var(--navy);text-transform:capitalize">'+esc(selLabel)+'</h3>' +
-        '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\''+sel+'\')">+ Ajouter</button>' +
-      '</div>' +
-      (cliSelTask[pid]
-        ? '<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px 0">Cliquez une tache pour voir le detail →</div>'
-        : (selTasks.length ? '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+selTasks.length+' tache'+(selTasks.length>1?'s':'')+' ce jour — cliquez pour ouvrir</div>' :
-          '<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px 0">Aucune tache ce jour — cliquez + Ajouter</div>')) +
-    '</div>';
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">'+cells+'</div>';
 
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
 
-    return '<div style="display:grid;grid-template-columns:1fr'+(cliSelTask[pid]?' 340px':'')+';gap:16px;align-items:start">' +
+    return '<div style="display:grid;grid-template-columns:1fr'+(cliSelTask[pid]?' minmax(0,360px)':'')+';gap:20px;align-items:start">' +
       '<div>' +
-        '<div class="cp-cal-layout">' + calCard + dayPanel + '</div>' +
+        calHeader +
+        forfaitBar +
+        calGrid +
       '</div>' +
       drawer +
     '</div>';
@@ -7342,94 +7335,112 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var comments = Array.isArray(t.comments) ? t.comments : [];
     var deliverable = t.deliverableFileKey ? (files||[]).find(function(f){return f.key===t.deliverableFileKey;}) : null;
     var timeSpent = t.timeSpentMinutes || 0;
-    var timeH = Math.floor(timeSpent/60), timeM = timeSpent%60;
-    var timeStr = timeH+'h'+(timeM?String(timeM).padStart(2,'0'):'');
+    var timeH = (timeSpent/60).toFixed(1);
 
     var urgBg = PART_URGENCY[t.urgency] || '#EFE1B0';
     var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
+    var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
-    var statusOpts = [['todo','A faire'],['in_progress','En cours'],['review','En relecture'],['done','Fait']].map(function(o){
-      return '<option value="'+o[0]+'"'+(t.status===o[0]?' selected':'')+'>'+o[1]+'</option>';
+    var statusMap = {todo:'A faire',in_progress:'En cours',review:'En relecture',done:'Fait'};
+    var statusOpts = ['todo','in_progress','review','done'].map(function(s){
+      return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+statusMap[s]+'</option>';
     }).join('');
 
     var dueDateStr = (t.dueDate||'').slice(0,10);
-    var daysUntilDue = dueDateStr ? Math.ceil((new Date(dueDateStr) - new Date()) / 86400000) : null;
-    var daysLabel = daysUntilDue !== null ? (daysUntilDue < 0 ? '<span style="color:#c00;font-size:11px">J'+daysUntilDue+'</span>' : (daysUntilDue===0?'<span style="color:#c00;font-size:11px">Aujourd\'hui</span>':'<span style="font-size:11px;color:var(--muted)">J+'+daysUntilDue+'</span>')) : '';
+    var daysUntilDue = dueDateStr ? Math.ceil((new Date(dueDateStr+'T12:00:00') - new Date()) / 86400000) : null;
+    var daysLabel = daysUntilDue !== null
+      ? (daysUntilDue < 0 ? ' <span style="color:#c00;font-size:10px">J'+daysUntilDue+'</span>'
+        : daysUntilDue===0 ? ' <span style="color:#c00;font-size:10px">Aujourd\'hui</span>'
+        : ' <span style="font-size:10px;color:var(--muted,#8090a8)">J+'+daysUntilDue+'</span>') : '';
 
     var commentsHtml = comments.map(function(c){
-      return '<div style="padding:8px 0;border-bottom:1px solid var(--bone-d,#e8e0d4)">' +
-        '<div style="font-size:11px;font-weight:600;color:var(--navy,#051833);margin-bottom:2px">'+(c.author==='cindy'?'Cindy':'Vous')+' <span style="font-weight:400;color:var(--muted,#8090a8)">· '+fmtShort(c.createdAt)+'</span></div>' +
-        '<div style="font-size:13px;color:var(--text,#051833)">'+esc(c.text)+'</div>' +
+      var isStudio = c.author === 'studio';
+      return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
+        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'var(--surface,#FAF8F4)')+';border:1px solid '+(isStudio?'#c9952f':'var(--bone-d,#e8e0d4)')+';">' +
+          '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#412F21':'var(--muted,#8090a8)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
+          '<div style="font-size:13px;color:'+(isStudio?'#412F21':'var(--navy,#051833)')+'">'+esc(c.text)+'</div>' +
+        '</div>' +
       '</div>';
     }).join('');
 
-    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-top:3px solid #e7cd97;border-radius:var(--radius-3,12px);padding:20px;position:sticky;top:24px">' +
-      // Header
+    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
+
+    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-top:3px solid #c9952f;border-radius:12px;padding:20px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
+      // Top row: urgence badge + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
-        '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8);padding:4px 8px">✕ Fermer</button>' +
-        '<span style="display:inline-block;width:14px;height:14px;border-radius:2px;background:'+urgBg+';transform:rotate(45deg)" title="'+(PART_URG_LABEL[t.urgency]||'')+'"></span>' +
+        '<span style="display:inline-flex;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.08em;background:'+urgBg+';color:'+urgTx+'">'+urgLabel+'</span>' +
+        '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
-      '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:0 0 14px">' +
       // Titre
-      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--navy,#051833);line-height:1.3;margin-bottom:10px">'+esc(t.title)+'</div>' +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#051833);line-height:1.3;margin-bottom:14px">'+esc(t.title)+'</div>' +
+      // Statut + Echeance
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
+        '<select onchange="cliToggleTask(\''+pid+'\',\''+t.id+'\',this.value)" style="padding:5px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;font-weight:600">'+statusOpts+'</select>' +
+        (dueDateStr?'<span style="font-size:12px;color:var(--muted,#8090a8)">'+fmtDate(dueDateStr)+daysLabel+'</span>':'') +
+      '</div>' +
+      sep +
+      // Proprietes
+      (t.pole?'<div style="margin-bottom:10px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Categorie</span><div style="font-size:13px;color:var(--navy,#051833);margin-top:3px">'+esc(t.pole)+'</div></div>':'') +
       // Contenu
-      (t.content?'<div style="font-size:13px;color:var(--muted,#8090a8);white-space:pre-wrap;line-height:1.6;margin-bottom:14px">'+esc(t.content)+'</div>':'') +
-      // Statut
-      '<div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin-bottom:14px">' +
-        '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted,#8090a8)">Statut</span>' +
-        '<select onchange="cliToggleTask(\''+pid+'\',\''+t.id+'\',this.value)" style="padding:5px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer">'+statusOpts+'</select>' +
-      '</div>' +
-      // Echeance
-      (dueDateStr?'<div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin-bottom:14px">' +
-        '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted,#8090a8)">Echeance</span>' +
-        '<span style="font-size:13px;color:var(--text,#051833)">'+fmtDate(dueDateStr)+' '+daysLabel+'</span>' +
-      '</div>':'') +
-      '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:0 0 14px">' +
+      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
+      '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#051833);background:var(--surface,#FAF8F4);box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
+      sep +
       // Temps passé
-      '<div style="margin-bottom:14px">' +
-        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted,#8090a8);margin-bottom:8px">Temps passe (Studio)</div>' +
-        '<div style="display:flex;align-items:center;gap:10px">' +
-          '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="padding:4px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:14px">− 0.5h</button>' +
-          '<span style="font-size:15px;font-weight:600;color:var(--navy,#051833);min-width:40px;text-align:center">'+timeStr+'</span>' +
-          '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="padding:4px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:14px">+ 0.5h</button>' +
-        '</div>' +
-        '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:4px">Renseigne par le studio apres livraison</div>' +
+      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Temps passe studio</span></div>' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-top:8px">' +
+        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8);padding:0;text-decoration:underline">- 0,5 H</button>' +
+        '<span style="font-size:16px;font-weight:700;color:var(--navy,#051833);min-width:44px;text-align:center">'+timeH+' H</span>' +
+        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="padding:6px 14px;border:none;border-radius:999px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:12px;font-weight:700">+ 0,5 H</button>' +
       '</div>' +
-      '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:0 0 14px">' +
+      sep +
       // Livrable
-      '<div style="margin-bottom:14px">' +
-        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted,#8090a8);margin-bottom:8px">Livrable</div>' +
-        (deliverable
-          ? '<a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a>'
-          : (t.livrableUrl
-            ? '<a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy,#051833);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a>'
-            : '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic">Le studio deposera le fichier ici</div>')) +
+      '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Livrable</span></div>' +
+      (deliverable
+        ? '<a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a>'
+        : (t.livrableUrl
+          ? '<a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy,#051833);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a>'
+          : '<div style="border:1.5px dashed var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:var(--muted,#8090a8);font-size:12px;font-style:italic">Le studio deposera le livrable ici</div>')) +
+      sep +
+      // Echanges
+      '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
+      '<div style="min-height:40px;margin-bottom:10px">' +
+        (commentsHtml || '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
       '</div>' +
-      '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:0 0 14px">' +
-      // Commentaires
-      '<div style="margin-bottom:14px">' +
-        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted,#8090a8);margin-bottom:8px">Echanges sur cette tache</div>' +
-        (commentsHtml ? '<div style="margin-bottom:10px">'+commentsHtml+'</div>' : '<div style="font-size:12px;color:var(--muted,#8090a8);margin-bottom:10px;font-style:italic">Aucun echange pour le moment.</div>') +
-        '<div style="display:flex;gap:6px">' +
-          '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:7px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px">' +
-          '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:7px 12px;background:var(--navy,#051833);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">→</button>' +
-        '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-family:inherit">' +
+        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#051833);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
       '</div>' +
-      '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:0 0 14px">' +
+      sep +
       // Actions
-      '<div style="display:flex;flex-direction:column;gap:8px">' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-          '<button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\','+(t.pinned?'\'todo\'':'\'done\'')+')" style="flex:1;padding:7px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Epingler</button>' +
-          '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
-          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px 10px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>' +
-        '</div>' +
-        '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:10px;border:none;border-radius:8px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:600">Marquer termine & prevenir Lea</button>' +
+      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer termine & prevenir</button>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
+        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>' +
       '</div>' +
     '</div>';
   }
 
   window.cliOpenTaskDrawer = function(pid, taskId) { cliSelTask[pid] = taskId; renderShell(); };
   window.cliCloseTaskDrawer = function(pid) { delete cliSelTask[pid]; renderShell(); };
+  window.cliCalGoToday = function(pid) { var d=new Date(); d.setDate(1); d.setHours(0,0,0,0); cliCalMonth[pid]=d; renderShell(); };
+  window._ptaskSelUrg = function(u) {
+    document.getElementById('_ptask-urgency').value = u;
+    ['tranquille','normal','urgent','critique'].forEach(function(x){
+      var btn = document.getElementById('_ptask-urg-'+x);
+      if (!btn) return;
+      var bg = PART_URGENCY[x]; var tx = PART_URGENCY_TX[x];
+      btn.style.background = x===u ? bg : 'transparent';
+      btn.style.color = x===u ? tx : tx;
+      btn.style.borderColor = bg;
+    });
+  };
+  window.cliSaveTaskContent = function(pid, taskId, val) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    t.content = val;
+    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:val})}).catch(function(){});
+  };
 
   window.cliAdjustTime = function(pid, taskId, deltaMin) {
     var pd = getPD(pid);
@@ -7909,46 +7920,35 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ov.id = '_cp-partenaire-task-ov';
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
       var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#051833)';
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:500px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18);max-height:90vh;overflow-y:auto">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-          '<strong style="font-size:16px;color:var(--navy,#051833)">Nouvelle demande</strong>' +
-          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8)">✕</button>' +
+      var urgPills = ['tranquille','normal','urgent','critique'].map(function(u){
+        var bg = PART_URGENCY[u]; var tx = PART_URGENCY_TX[u];
+        return '<button type="button" id="_ptask-urg-'+u+'" onclick="window._ptaskSelUrg(\''+u+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+bg+';background:transparent;color:'+tx+';font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.05em">'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
+      }).join('');
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18);max-height:90vh;overflow-y:auto">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#051833)">Ajouter une tache</span>' +
+          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
         '</div>' +
-        '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">Titre *</label>' +
-          '<input id="_ptask-title" type="text" placeholder="Ex: Visuel Instagram – collection été" style="'+S+'"></div>' +
-        '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">Detail / Contenu</label>' +
-          '<textarea id="_ptask-content" rows="4" style="'+S+';resize:vertical" placeholder="Format, ton, references, contraintes..."></textarea></div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
-          '<div><label style="font-size:12px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">Date dans le calendrier</label>' +
-            '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
-          '<div><label style="font-size:12px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">Echeance</label>' +
-            '<input id="_ptask-deadline" type="date" style="'+S+'"></div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">' +
-          '<div><label style="font-size:12px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">Urgence</label>' +
-            '<select id="_ptask-urgency" style="'+S+'">' +
-              '<option value="tranquille">Tranquille</option>' +
-              '<option value="normal" selected>Normal</option>' +
-              '<option value="urgent">Urgent</option>' +
-              '<option value="critique">Critique</option>' +
-            '</select></div>' +
-          '<div><label style="font-size:12px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">Categorie / Pole</label>' +
-            '<select id="_ptask-pole" style="'+S+'">' +
-              '<option value="">— Choisir —</option>' +
-              '<option value="Reseaux sociaux">Reseaux sociaux</option>' +
-              '<option value="Print">Print</option>' +
-              '<option value="Web">Web</option>' +
-              '<option value="Identite">Identite</option>' +
-              '<option value="Autre">Autre</option>' +
-            '</select></div>' +
-        '</div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre *</label>' +
+          '<input id="_ptask-title" type="text" placeholder="Ex: Visuel Instagram – collection ete" style="'+S+'"></div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Categorie</label>' +
+          '<input id="_ptask-pole" type="text" placeholder="Ex: Reseaux sociaux, Print, Web..." style="'+S+'"></div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Urgence</label>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">'+urgPills+'</div>' +
+          '<input type="hidden" id="_ptask-urgency" value="normal"></div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Date dans le calendrier</label>' +
+          '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
+        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Detail / Contenu</label>' +
+          '<textarea id="_ptask-content" rows="3" style="'+S+';resize:vertical" placeholder="Format, ton, references, contraintes..."></textarea></div>' +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 18px;border:none;border-radius:8px;background:var(--navy,#051833);color:#fff;cursor:pointer;font-size:13px;font-weight:500">Ajouter la demande</button>' +
+          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
+          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#051833);color:#fff;cursor:pointer;font-size:13px;font-weight:600">AJOUTER</button>' +
         '</div>' +
       '</div>';
       document.body.appendChild(ov);
       ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+      // Pre-select "normal" urgence pill
+      setTimeout(function(){ window._ptaskSelUrg('normal'); }, 0);
     } else {
       cliTaskOverlay(pid, { dueDate: ds, onSubmit: cliDoAddTask });
     }
@@ -7961,7 +7961,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var dueDate  = (document.getElementById('_ptask-dueDate')||{}).value || undefined;
     var deadline = (document.getElementById('_ptask-deadline')||{}).value || undefined;
     var urgency  = (document.getElementById('_ptask-urgency')||{}).value || 'normal';
-    var pole     = (document.getElementById('_ptask-pole')||{}).value || undefined;
+    var poleEl   = document.getElementById('_ptask-pole');
+    var pole     = poleEl ? (poleEl.value.trim() || undefined) : undefined;
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };
