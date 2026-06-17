@@ -1614,6 +1614,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<option value="updated">Recents</option>' +
         '<option value="client">Nom (A-Z)</option>' +
       '</select>' +
+      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="padding:7px 14px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#5c4633">Selectionner</button>' +
+    '</div>' +
+    '<div id="adm-bulk-bar" style="display:none;position:sticky;top:54px;z-index:19;background:#5c4633;color:#EFE1B0;padding:11px 40px;align-items:center;gap:16px;font-family:\'Inter Tight\',sans-serif">' +
+      '<span id="adm-bulk-count" style="font-size:13px">0 espace selectionne</span>' +
+      '<button onclick="admSelectAll()" style="background:none;border:1px solid rgba(239,225,176,0.4);border-radius:999px;color:#EFE1B0;padding:5px 12px;cursor:pointer;font-family:inherit;font-size:11px">Tout selectionner</button>' +
+      '<button onclick="admDeleteSelected()" style="margin-left:auto;background:#9b3a2e;border:0;border-radius:999px;color:#fff;padding:7px 16px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:500">Supprimer la selection</button>' +
+      '<button onclick="admToggleSelectMode()" style="background:none;border:0;color:rgba(239,225,176,0.7);cursor:pointer;font-family:inherit;font-size:12px">Annuler</button>' +
     '</div>';
 
     // Cards grid
@@ -1634,6 +1641,66 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var dashProjs = [], dashUnreadMap = {};
   var admTypeFilter = 'all';
   var admArchFilter = 'active';
+  var admSelectMode = false;
+  var admSelected = {};
+
+  function admUpdateBulkBar() {
+    var bar = document.getElementById('adm-bulk-bar');
+    var toggle = document.getElementById('adm-select-toggle');
+    if (bar) bar.style.display = admSelectMode ? 'flex' : 'none';
+    if (toggle) {
+      toggle.style.background = admSelectMode ? '#5c4633' : '#fff';
+      toggle.style.color = admSelectMode ? '#EFE1B0' : '#5c4633';
+    }
+    var n = Object.keys(admSelected).length;
+    var cnt = document.getElementById('adm-bulk-count');
+    if (cnt) cnt.textContent = n + ' espace' + (n>1?'s':'') + ' selectionne' + (n>1?'s':'');
+  }
+  window.admToggleSelectMode = function() {
+    admSelectMode = !admSelectMode;
+    admSelected = {};
+    applyProjectFilters();
+    admUpdateBulkBar();
+  };
+  window.admToggleSelect = function(id) {
+    if (admSelected[id]) delete admSelected[id]; else admSelected[id] = true;
+    applyProjectFilters();
+    admUpdateBulkBar();
+  };
+  window.admSelectAll = function() {
+    var cards = document.getElementById('dash-cards');
+    // selectionne tous les projets actuellement filtres/affiches
+    var q = ((document.getElementById('dash-search')||{}).value || '').trim().toLowerCase();
+    dashProjs.forEach(function(p) {
+      var archMatch = admArchFilter==='all' || (admArchFilter==='archived' ? p.status==='archived' : p.status!=='archived');
+      if (!archMatch) return;
+      if (admTypeFilter && admTypeFilter!=='all' && (p.type||'custom')!==admTypeFilter) return;
+      if (q) {
+        var hay = ((p.clientName||'')+' '+(p.clientEmail||'')+' '+(p.projectTitle||'')).toLowerCase();
+        if (hay.indexOf(q)===-1) return;
+      }
+      admSelected[p.id] = true;
+    });
+    applyProjectFilters();
+    admUpdateBulkBar();
+  };
+  window.admDeleteSelected = function() {
+    var ids = Object.keys(admSelected);
+    if (!ids.length) { toast('Aucun espace selectionne', true); return; }
+    showConfirm('Vous etes sur le point de supprimer ' + ids.length + ' espace' + (ids.length>1?'s':'') + '. Toutes les taches, messages et fichiers lies seront perdus. Cette action est irreversible.', async function() {
+      var ok = 0, fail = 0;
+      for (var i=0;i<ids.length;i++) {
+        try {
+          var res = await apiFetch('/api/projects/' + ids[i], { method: 'DELETE' });
+          if (res.ok) ok++; else fail++;
+        } catch(e) { fail++; }
+      }
+      toast(ok + ' espace' + (ok>1?'s supprimes':' supprime') + (fail?(' \xB7 '+fail+' echec'+(fail>1?'s':'')):''), fail>0);
+      admSelectMode = false;
+      admSelected = {};
+      setTimeout(function(){ showDashboard(); }, 500);
+    }, { title: 'Supprimer ' + ids.length + ' espace' + (ids.length>1?'s':''), okLabel: 'Supprimer definitivement', danger: true });
+  };
 
   function renderProjectCards(list, unreadMap) {
     if (!list.length) return '<p style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#8a6f54">Aucun espace ne correspond.</p>';
@@ -1665,9 +1732,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }
       var isRevCard = p.status === 'revoked';
       var isArchCard = p.status === 'archived';
-      return '<button onclick="adminNav(\'/admin/projects/'+p.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:1px solid #e2d9ce;border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'" onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
+      var isSel = !!admSelected[p.id];
+      var clickAttr = admSelectMode ? 'onclick="admToggleSelect(\''+p.id+'\')"' : 'onclick="adminNav(\'/admin/projects/'+p.id+'\')"';
+      var hoverAttr = admSelectMode ? '' : ' onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'"';
+      var selBorder = (admSelectMode && isSel) ? '#5c4633' : '#e2d9ce';
+      return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:#fff;border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
         '<div style="position:relative;height:118px;background:'+bannerBg+'">' +
-          '<div style="position:absolute;top:11px;left:12px;display:flex;gap:7px">' +
+          (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#5c4633':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#5c4633':'#e2d9ce')+';display:flex;align-items:center;justify-content:center;color:#EFE1B0;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
+          '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
             adminTypeBadge(p.type) +
           '</div>' +
           '<div style="position:absolute;top:11px;right:12px;display:flex;gap:7px">' +
