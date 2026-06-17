@@ -986,6 +986,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     folder:     '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
     archive:    '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
     pin:        '<line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-3V7a1 1 0 0 1 1-1V4H6.5v2a1 1 0 0 1 1 1v7z"/>',
+    leaf:       '<path d="M2 22 16 8"/><path d="M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14"/>',
+    zap:        '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    flame:      '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
   };
 
   function icon(name, size, color) {
@@ -4125,6 +4128,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var ADMIN_PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
   var ADMIN_PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var ADMIN_PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
+  var ADMIN_PART_URG_ICON   = { tranquille:'leaf', normal:'clock', urgent:'zap', critique:'flame' };
+  function aptUrgIcon(u, size) {
+    var iName = ADMIN_PART_URG_ICON[u] || 'alert';
+    var col = ADMIN_PART_URGENCY_TX[u] || '#8a6f54';
+    return icon(iName, size || 12, col);
+  }
   var ADMIN_PART_STATUS     = { todo:'A faire', in_progress:'En cours', review:'En relecture', done:'Fait' };
   var ADMIN_PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
   // Ocre / Ecrin
@@ -4193,7 +4202,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var filterBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
       [''].concat(ADMIN_PART_URG_ORDER).map(function(u){
         var act = aptUrgFilter===u;
-        var dot = u ? '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+ADMIN_PART_URGENCY[u]+';transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span>' : '';
+        var dot = u ? '<span style="display:inline-flex;align-items:center;margin-right:5px;vertical-align:middle">'+aptUrgIcon(u,11)+'</span>' : '';
         var lbl = u ? ADMIN_PART_URG_LABEL[u] : 'Toutes';
         return '<button onclick="aptSetUrgFilter(\''+u+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#e2d9ce')+';background:'+(act?APT_OCRE_SOFT:'#fff')+';color:'+(act?APT_OCRE_INK:'#8a6f54')+'">'+dot+lbl+'</button>';
       }).join('') +
@@ -4265,7 +4274,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
       'style="background:'+(isDone?'#f3ede2':soft)+';border-radius:7px;padding:6px 8px;margin-top:5px;cursor:pointer">' +
       '<div style="display:flex;align-items:center;gap:5px">' +
-        '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
+        aptUrgIcon(t.urgency, 11) +
         (t.pinned ? icon('pin',11,APT_OCRE_INK) : '') +
         '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'#5c4633')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
       '</div>' +
@@ -7018,6 +7027,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
   var PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
+  var PART_URG_CP_ICONS = { tranquille:'M2 22 16 8M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14', normal:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', urgent:'M13 2 3 14h9l-1 8 10-12h-9z', critique:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z' };
+  function cliUrgIcon(u, size) {
+    var d = PART_URG_CP_ICONS[u] || PART_URG_CP_ICONS.normal;
+    var col = PART_URGENCY_TX[u] || 'var(--terre-600)';
+    size = size || 11;
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="'+d+'"/></svg>';
+  }
   var CLI_TSTATUS    = { todo:'A faire', in_progress:'En cours', done:'Termine' };
   var CLI_BRIEF = {
     pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
@@ -7567,7 +7583,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
         return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
-            '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
+            cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
