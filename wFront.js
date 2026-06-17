@@ -4199,26 +4199,34 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     var filtered = aptUrgFilter ? tasks.filter(function(t){ return t.urgency===aptUrgFilter; }) : tasks;
 
-    // ── Grille lun→ven ──
+    // ── Grille lun→ven (table unifiée bordurée) ──
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
+    var BORD = '#e3ddd0';
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow < 5 ? firstDow : 0;
-    var cells = '';
-    for (var i=0;i<offset;i++) cells += '<div></div>';
+    var emptyCell = '<div style="min-height:120px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#faf7f1"></div>';
+    var dayCells = [];
     for (var dd=1; dd<=dim; dd++) {
       if (((new Date(year,month,dd).getDay()+6)%7) >= 5) continue;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
       var dt = filtered.filter(function(t){ return (t.dueDate||'').slice(0,10)===ds; });
       var isToday = ds===todayStr;
       var pills = dt.slice(0,4).map(function(t){ return aptPillHtml(t); }).join('') +
-        (dt.length>4 ? '<div style="font-size:10px;color:#8a6f54;text-align:center;margin-top:2px">+'+(dt.length-4)+' autres</div>' : '');
-      cells += '<div ondragover="aptDragOver(event,this)" ondragleave="aptDragLeave(this)" ondrop="aptDrop(event,\''+ds+'\')" '+
-        'style="position:relative;min-height:92px;border:1.5px solid '+(isToday?APT_OCRE_MID:'#e8e2d6')+';border-radius:10px;padding:5px 6px;background:'+(isToday?APT_OCRE_SOFT:'#fff')+'" class="apt-day" data-ds="'+ds+'">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">' +
-          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:'+(isToday?'700':'500')+';color:'+(isToday?APT_OCRE_INK:'#8a6f54')+'">'+dd+'</span>' +
-          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tache" style="width:18px;height:18px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
-        '</div>' + pills + '</div>';
+        (dt.length>4 ? '<div style="font-size:10px;color:#8a6f54;text-align:center;margin-top:3px">+'+(dt.length-4)+' autres</div>' : '');
+      var numHtml = isToday
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:700">'+dd+'</span>'
+        : '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:600;color:#8a6f54">'+dd+'</span>';
+      dayCells.push('<div ondragover="aptDragOver(event,this)" ondragleave="aptDragLeave(this)" ondrop="aptDrop(event,\''+ds+'\')" '+
+        'style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff" class="apt-day" data-ds="'+ds+'">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+          numHtml +
+          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tache" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
+        '</div>' + pills + '</div>');
     }
+    var allCells = [];
+    for (var i=0;i<offset;i++) allCells.push(emptyCell);
+    allCells = allCells.concat(dayCells);
+    while (allCells.length % 5 !== 0) allCells.push(emptyCell);
 
     var calCard = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">' +
@@ -4231,8 +4239,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</div>' +
       '</div>' +
       filterBar +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px">'+dayNames.map(function(n){return '<div style="text-align:center;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8a6f54">'+n+'</div>';}).join('')+'</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">'+cells+'</div>' +
+      '<div style="border:1px solid '+BORD+';border-radius:14px;overflow:hidden">' +
+        '<div style="display:grid;grid-template-columns:repeat(5,1fr);background:#faf6ee;border-bottom:1px solid '+BORD+'">'+dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;'+(idx<4?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('')+'</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(5,1fr)">'+allCells.join('')+'</div>' +
+      '</div>' +
     '</div>';
 
     var drawer = aptSelTask ? aptBuildDrawer(project) : '';
@@ -4243,20 +4253,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   function aptPillHtml(t) {
+    var APT_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
     var urg = ADMIN_PART_URGENCY[t.urgency] || '#ddd';
-    var urgTx = ADMIN_PART_URGENCY_TX[t.urgency] || '#333';
+    var soft = APT_URG_SOFT[t.urgency] || '#f3ede2';
     var isDone = t.status==='done';
     var info = [];
     if (t.pole) info.push(esc(t.pole));
     if (t.timeSpentMinutes) info.push(aptFmtH(t.timeSpentMinutes));
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
-      'style="background:'+APT_OCRE_SOFT+';border:1px solid #ece2cf;border-radius:7px;padding:4px 6px;margin-bottom:4px;cursor:pointer;'+(isDone?'opacity:0.55':'')+'">' +
+      'style="background:'+(isDone?'#f3ede2':soft)+';border-radius:7px;padding:6px 8px;margin-top:5px;cursor:pointer">' +
       '<div style="display:flex;align-items:center;gap:5px">' +
-        '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0;border:1px solid rgba(0,0,0,0.12)"></span>' +
+        '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
         (t.pinned ? icon('pin',11,APT_OCRE_INK) : '') +
-        '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#5c4633;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+        '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'#5c4633')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
       '</div>' +
-      (info.length ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+info.join(' · ')+'</div>' : '') +
+      (info.length ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#a89a86;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+info.join(' · ')+'</div>' : '') +
     '</div>';
   }
 
@@ -7368,75 +7379,85 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var forfaitLeft = forfaitH - monthReel;
     var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
     var forfaitBar = forfaitH
-      ? '<div style="display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--surface,#FAF8F4);border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;margin-bottom:16px;flex-wrap:wrap">' +
-          '<span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a5a12;white-space:nowrap">Forfait du mois</span>' +
-          '<span style="font-size:13px;font-weight:600;color:#412F21;white-space:nowrap">'+monthReel.toFixed(1)+'/'+forfaitH+'h</span>' +
-          '<div style="flex:1;min-width:80px;height:5px;background:#e8e0d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#c9952f;width:'+forfaitPct+'%;border-radius:999px"></div></div>' +
-          '<span style="font-size:12px;font-weight:600;color:'+(forfaitLeft<0?'#9b3a2e':'#412F21')+';white-space:nowrap">'+(forfaitLeft>=0?fmtH(forfaitLeft)+' restantes':fmtH(-forfaitLeft)+' depassees')+'</span>' +
+      ? '<div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap;box-shadow:var(--shadow-1)">' +
+          cpIcon('timer',16,'color:#8a6f54') +
+          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;white-space:nowrap">Forfait du mois</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#5c4633);white-space:nowrap">'+monthReel.toFixed(1).replace('.0','')+'</span>' +
+          '<span style="font-size:13px;color:#8a6f54;white-space:nowrap;margin-left:-8px">/ '+forfaitH+' h</span>' +
+          '<div style="flex:1;min-width:120px;height:6px;background:#ece4d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#7da2e0;width:'+forfaitPct+'%;border-radius:999px"></div></div>' +
+          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#5c4633)')+';white-space:nowrap">'+(forfaitLeft>=0?fmtH(forfaitLeft)+' restantes':fmtH(-forfaitLeft)+' depassees')+'</span>' +
         '</div>'
       : '';
 
     // Header: ← Mois → | AUJOURD'HUI | filtres | + AJOUTER
     var urgFilters = ['','tranquille','normal','urgent','critique'].map(function(u){
-      var bg = u ? PART_URGENCY[u] : 'transparent';
-      var tx = u ? PART_URGENCY_TX[u] : 'var(--navy,#051833)';
       var active = flt.urgency===u;
-      var lbl = u
-        ? '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+(active?'#412F21':PART_URGENCY[u])+';transform:rotate(45deg);margin-right:4px;vertical-align:middle;border:1px solid rgba(0,0,0,0.12)"></span>'+(PART_URG_LABEL[u]||u).toUpperCase()
-        : 'TOUTES';
-      return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')" style="padding:5px 10px;border-radius:999px;border:1.5px solid '+(active?'#c9952f':'var(--bone-d,#e8e0d4)')+';background:'+(active?'#e7cd97':'transparent')+';color:'+(active?'#412F21':'var(--muted,#8090a8)')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+lbl+'</button>';
+      if (!u) {
+        return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#051833':'#e3ddd0')+';background:'+(active?'#051833':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">TOUTES</button>';
+      }
+      return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?PART_URGENCY[u]:'#e3ddd0')+';background:'+(active?PART_URGENCY[u]:'transparent')+';color:'+(active?PART_URGENCY_TX[u]:'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+PART_URGENCY[u]+';transform:rotate(45deg);border:1px solid rgba(0,0,0,0.12)"></span>'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
     }).join('');
 
     var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
       '<div style="display:flex;align-items:center;gap:6px">' +
-        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy,#051833);padding:4px 6px;line-height:1">←</button>' +
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--navy,#051833);min-width:140px;text-align:center">'+monthNameCap+'</span>' +
-        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy,#051833);padding:4px 6px;line-height:1">→</button>' +
+        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#5c4633);padding:4px 6px;line-height:1">←</button>' +
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#5c4633);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
+        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#5c4633);padding:4px 6px;line-height:1">→</button>' +
       '</div>' +
-      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:5px 12px;border-radius:999px;border:1.5px solid var(--bone-d,#e8e0d4);background:var(--surface,#FAF8F4);color:var(--navy,#051833);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
+      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#FAF8F4);color:var(--terre,#5c4633);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
       '<div style="margin-left:auto">' +
-        '<button onclick="cliOpenAddTask(\''+pid+'\',\''+todayStr+'\')" style="padding:7px 14px;border-radius:999px;border:none;background:var(--navy,#051833);color:#FAF8F4;font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">+ AJOUTER UNE TACHE</button>' +
+        '<button onclick="cliOpenAddTask(\''+pid+'\',\''+todayStr+'\')" style="padding:8px 16px;border-radius:999px;border:none;background:#051833;color:#FAF8F4;font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">+ AJOUTER UNE TACHE</button>' +
       '</div>' +
     '</div>';
 
-    // Grid cells
+    // Grid cells — table unifiée bordurée
+    var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
-    var cells = '';
+    var BORD = '#e3ddd0';
+    var emptyCell = '<div style="min-height:120px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#faf7f1"></div>';
+    var dayCells = [];
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow < 5 ? firstDow : 0;
-    for (var i=0;i<offset;i++) cells += '<div></div>';
     for (var dd=1;dd<=dim;dd++) {
       var dow = (new Date(year,month,dd).getDay()+6)%7;
       if (dow >= 5) continue;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
       var dt = filtered.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
       var isToday = ds===todayStr;
-      var isSelTask = cliSelTask[pid] && dt.some(function(t){return t.id===cliSelTask[pid];});
       var numHtml = isToday
-        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--navy,#051833);color:#FAF8F4;font-size:12px;font-weight:700">'+dd+'</div>'
-        : '<div style="font-size:12px;font-weight:600;color:var(--muted,#8090a8)">'+dd+'</div>';
+        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#FAF8F4;font-size:12px;font-weight:700">'+dd+'</div>'
+        : '<div style="font-size:13px;font-weight:600;color:#8a6f54">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
+        var soft = PART_URG_SOFT[t.urgency]||'#f3ede2';
         var isDone = t.status==='done';
         var isActive = cliSelTask[pid]===t.id;
-        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:4px 7px;border-radius:6px;background:'+(isActive?'#fff':'var(--surface,#FAF8F4)')+';border:1px solid var(--bone-d,#e8e0d4);border-left:3px solid '+urg+';cursor:pointer;margin-top:3px;'+(isDone?'opacity:0.45':'')+(isActive?';box-shadow:0 0 0 1.5px #c9952f':'')+'">' +
-          '<div style="display:flex;align-items:center;gap:4px">' +
-            '<span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
-            '<span style="font-size:11px;font-weight:600;color:var(--navy,#051833);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+        var timeMin = t.timeSpentMinutes||0;
+        var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
+        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 0 0 2px #c9952f':'')+'">' +
+          '<div style="display:flex;align-items:center;gap:5px">' +
+            '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
+            '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
-          (t.dueDate ? '<div style="font-size:9px;color:var(--muted,#8090a8);margin-top:1px">'+fmtDate(t.dueDate)+'</div>' : '') +
+          (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
         '</div>';
-      }).join('') + (dt.length>3?'<div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">+'+(dt.length-3)+'</div>':'');
-      cells += '<div style="min-height:80px;padding:8px 6px;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;cursor:default;'+(isToday?'border-color:#c9952f;background:rgba(201,149,47,0.04)':'')+'">' +
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
+      dayCells.push('<div style="min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
         numHtml + pills +
-      '</div>';
+      '</div>');
     }
+    var allCells = [];
+    for (var i=0;i<offset;i++) allCells.push(emptyCell);
+    allCells = allCells.concat(dayCells);
+    while (allCells.length % 5 !== 0) allCells.push(emptyCell);
 
-    var calGrid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px">' +
-        dayNames.map(function(n){return '<div style="text-align:center;font-size:10px;font-weight:700;color:var(--muted,#8090a8);letter-spacing:0.08em;padding-bottom:4px">'+n+'</div>';}).join('') +
+    var calGrid = '<div style="border:1px solid '+BORD+';border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow-1)">' +
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);background:#faf6ee;border-bottom:1px solid '+BORD+'">' +
+        dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#8a6f54;letter-spacing:0.08em;text-transform:uppercase;'+(idx<4?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">'+cells+'</div>';
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr)">'+allCells.join('')+'</div>' +
+    '</div>';
 
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
 
