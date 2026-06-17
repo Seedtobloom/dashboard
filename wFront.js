@@ -550,6 +550,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 /* Messages */
 .cp-msgs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; min-height: 60px; }
 .cp-msg { display: flex; align-items: flex-end; gap: 10px; }
+.cp-msg > div { flex: 1; min-width: 0; }
 .cp-msg--client { flex-direction: row-reverse; }
 .cp-msg__av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-style: italic; font-size: 13px; font-weight: 400; overflow: hidden; background: var(--glycine-200); color: var(--terre); }
 .cp-msg__av--cindy { background: var(--terre); color: var(--paille); }
@@ -7375,17 +7376,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var ref = (t.completedAt||t.dueDate||'');
       return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
     }, 0);
-    function fmtH(h){ return h.toFixed(1).replace('.0','')+' h'; }
     var forfaitLeft = forfaitH - monthReel;
     var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
     var forfaitBar = forfaitH
-      ? '<div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap;box-shadow:var(--shadow-1)">' +
+      ? '<div style="display:flex;align-items:center;gap:14px;padding:14px 22px;background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap">' +
           cpIcon('timer',16,'color:#8a6f54') +
-          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;white-space:nowrap">Forfait du mois</span>' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#5c4633);white-space:nowrap">'+monthReel.toFixed(1).replace('.0','')+'</span>' +
-          '<span style="font-size:13px;color:#8a6f54;white-space:nowrap;margin-left:-8px">/ '+forfaitH+' h</span>' +
-          '<div style="flex:1;min-width:120px;height:6px;background:#ece4d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#7da2e0;width:'+forfaitPct+'%;border-radius:999px"></div></div>' +
-          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#5c4633)')+';white-space:nowrap">'+(forfaitLeft>=0?fmtH(forfaitLeft)+' restantes':fmtH(-forfaitLeft)+' depassees')+'</span>' +
+          '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54;white-space:nowrap">Forfait du mois</span>' +
+          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#5c4633)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#8a6f54">/'+forfaitH+' h</span></span>' +
+          '<div style="flex:1;min-width:120px;height:8px;background:#ece4d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#7da2e0;width:'+forfaitPct+'%;border-radius:999px;transition:width .3s"></div></div>' +
+          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#5c4633)')+';white-space:nowrap">'+(forfaitLeft>=0?forfaitLeft.toFixed(1)+' H RESTANTES':(-forfaitLeft).toFixed(1)+' H DEPASSEES')+'</span>' +
         '</div>'
       : '';
 
@@ -7525,8 +7524,25 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (dueDateStr?'<span style="font-size:12px;color:var(--muted,#8090a8)">'+fmtDate(dueDateStr)+daysLabel+'</span>':'') +
       '</div>' +
       sep +
-      // Proprietes
-      (t.pole?'<div style="margin-bottom:10px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Categorie</span><div style="font-size:13px;color:var(--navy,#051833);margin-top:3px">'+esc(t.pole)+'</div></div>':'') +
+      // Proprietes custom
+      (function(){
+        var props = Array.isArray(t.customProps) ? t.customProps : [];
+        var rows = props.map(function(p){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bone-d,#e8e0d4)">' +
+            '<span style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);min-width:80px">'+esc(p.name)+'</span>' +
+            '<input value="'+esc(p.value||'')+'" onchange="cliEditProp(\''+pid+'\',\''+t.id+'\',\''+p.id+'\',this.value)" style="flex:2;font-size:13px;padding:4px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:6px;font-family:inherit;color:var(--navy,#051833);background:#fff;min-width:0">' +
+            '<button onclick="cliDeleteProp(\''+pid+'\',\''+t.id+'\',\''+p.id+'\')" style="background:none;border:none;cursor:pointer;color:#c44;font-size:14px;padding:2px 4px;flex-shrink:0" title="Supprimer">✕</button>' +
+          '</div>';
+        }).join('');
+        return '<div style="margin-bottom:14px">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+            '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Proprietes</span>' +
+            '<button onclick="cliAddPropRow(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.06em;padding:3px 10px;cursor:pointer;color:var(--terre,#5c4633)">+ Ajouter</button>' +
+          '</div>' +
+          (rows || '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic">Aucune propriete. Cliquez sur + Ajouter.</div>') +
+          '<div id="_prop-add-'+t.id+'"></div>' +
+        '</div>';
+      })() +
       // Contenu
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
       '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#051833);background:var(--surface,#FAF8F4);box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
@@ -7578,6 +7594,54 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       btn.style.color = x===u ? tx : tx;
       btn.style.borderColor = bg;
     });
+  };
+  function cliPatchTaskProps(pid, taskId) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({customProps:t.customProps||[]})}).catch(function(){});
+  }
+  window.cliAddPropRow = function(pid, taskId) {
+    var zone = document.getElementById('_prop-add-'+taskId);
+    if (!zone || zone.querySelector('._prop-new-form')) return;
+    var form = document.createElement('div');
+    form.className = '_prop-new-form';
+    form.style.cssText = 'display:flex;gap:6px;margin-top:8px;align-items:center';
+    form.innerHTML = '<input id="_pnk-'+taskId+'" placeholder="Nom" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #c9952f;border-radius:6px;font-family:inherit">' +
+      '<input id="_pnv-'+taskId+'" placeholder="Valeur" style="flex:2;font-size:12px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:6px;font-family:inherit">' +
+      '<button onclick="cliConfirmAddProp(\''+pid+'\',\''+taskId+'\')" style="padding:5px 12px;background:#e7cd97;color:#412F21;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">OK</button>' +
+      '<button onclick="this.closest(\'._prop-new-form\').remove()" style="background:none;border:none;cursor:pointer;color:#999;font-size:16px;padding:0 4px">✕</button>';
+    zone.appendChild(form);
+    form.querySelector('#_pnk-'+taskId).focus();
+  };
+  window.cliConfirmAddProp = function(pid, taskId) {
+    var nameEl = document.getElementById('_pnk-'+taskId);
+    var valEl = document.getElementById('_pnv-'+taskId);
+    var name = (nameEl && nameEl.value.trim()) || '';
+    var value = (valEl && valEl.value.trim()) || '';
+    if (!name) { if(nameEl) nameEl.focus(); return; }
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    if (!Array.isArray(t.customProps)) t.customProps = [];
+    t.customProps.push({id:'p'+Date.now(), name:name, value:value});
+    cliPatchTaskProps(pid, taskId);
+    renderShell();
+  };
+  window.cliEditProp = function(pid, taskId, propId, value) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t || !Array.isArray(t.customProps)) return;
+    var p = t.customProps.find(function(x){return x.id===propId;});
+    if (p) { p.value = value; cliPatchTaskProps(pid, taskId); }
+  };
+  window.cliDeleteProp = function(pid, taskId, propId) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t || !Array.isArray(t.customProps)) return;
+    t.customProps = t.customProps.filter(function(x){return x.id!==propId;});
+    cliPatchTaskProps(pid, taskId);
+    renderShell();
   };
   window.cliSaveTaskContent = function(pid, taskId, val) {
     var pd = getPD(pid);
