@@ -162,7 +162,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .proj-section { padding: 0 32px 28px; }
 /* Project banner */
 .proj-banner { width: 100%; min-height: 130px; display: flex; align-items: flex-end; position: relative; }
-.proj-banner::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.28); pointer-events: none; }
+.proj-banner::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.12); pointer-events: none; }
 .proj-banner[data-light]::after { background: rgba(0,0,0,0.08); }
 .proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -533,7 +533,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-step--waiting .cp-step__badge { background: rgba(201,149,47,0.12); color: var(--st-review); }
 .cp-step--done .cp-step__badge { background: rgba(92,70,51,0.1); color: var(--st-done); }
 .cp-step__desc { font-size: var(--fs-small); color: var(--terre-600); margin-top: 4px; line-height: 1.6; }
-.cp-step__action { margin-top: 8px; background: rgba(201,149,47,0.06); border-left: 2px solid var(--st-review); padding: 10px 12px; border-radius: 0 var(--radius-2) var(--radius-2) 0; font-size: var(--fs-small); color: var(--terre); line-height: 1.6; }
+.cp-step__action { margin-top: 8px; background: rgba(201,149,47,0.06); padding: 10px 14px; border-radius: var(--radius-2); font-size: var(--fs-small); color: var(--terre); line-height: 1.6; }
 .cp-step__action strong { display: block; color: var(--st-review); font-family: var(--font-micro); font-size: 10px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em; }
 
 /* Tabs */
@@ -683,7 +683,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-ph__left { display:grid;gap:20px; }
 .cp-ph__right { display:grid;gap:16px; }
 .cp-ph__banner { position:relative;width:100%;height:224px;border-radius:12px;overflow:hidden;background:var(--terre); }
-.cp-ph__banner-overlay { position:absolute;inset:0;background:rgba(20,12,6,0.38);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
+.cp-ph__banner-overlay { position:absolute;inset:0;background:rgba(20,12,6,0.18);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
 .cp-ph__banner-content { padding:26px 30px; }
 
 /* open-title — clickable step/phase name with trailing arrow */
@@ -7434,7 +7434,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var isActive = cliSelTask[pid]===t.id;
         var timeMin = t.timeSpentMinutes||0;
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
-        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 0 0 2px #c9952f':'')+'">' +
+        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0"></span>' +
             '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
@@ -7510,7 +7510,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
 
-    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-top:3px solid #c9952f;border-radius:12px;padding:20px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
+    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
       // Top row: urgence badge + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<span style="display:inline-flex;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.08em;background:'+urgBg+';color:'+urgTx+'">'+urgLabel+'</span>' +
@@ -7545,7 +7545,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       })() +
       // Contenu
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
-      '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#051833);background:var(--surface,#FAF8F4);box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
+      '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#051833);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
       sep +
       // Temps passé
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Temps passe studio</span></div>' +
