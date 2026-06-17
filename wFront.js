@@ -8736,6 +8736,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (u) document.head.appendChild(u);
   }
 
+  var CP_TYPE_THEMES = {
+    partenaire:  { dk:'#051833', lt:'#BAD1FD', rgb:'186,209,253' },
+    maintenance: { dk:'#051833', lt:'#BAD1FD', rgb:'186,209,253' },
+    identite:    { dk:'#4a2c5e', lt:'#E4D1FE', rgb:'228,209,254' },
+    support:     { dk:'#5c4633', lt:'#EFE1B0', rgb:'239,225,176' },
+  };
+  function applyTypeTheme(type) {
+    var t = CP_TYPE_THEMES[type] || CP_TYPE_THEMES.partenaire;
+    var dk = t.dk, lt = t.lt, rgb = t.rgb;
+    var css = [
+      '.cp-sidebar{background:'+dk+'}',
+      '.cp-sidebar__brand{border-bottom-color:rgba('+rgb+',.14)}',
+      '.cp-sidebar__brand-icon,.cp-sidebar__name{color:'+lt+'}',
+      '.cp-sidebar__logo,.cp-sidebar__greeting{color:rgba('+rgb+',.6)}',
+      '.cp-cindy__name{color:'+lt+'}.cp-cindy{border-bottom-color:rgba('+rgb+',.1)}',
+      '.cp-nav__label,.cp-nav__sublabel{color:rgba('+rgb+',.45)}',
+      '.cp-nav__item{color:rgba('+rgb+',.7)}',
+      '.cp-nav__item>svg{color:rgba('+rgb+',.55)}',
+      '.cp-nav__item:hover{background:rgba('+rgb+',.08);color:'+lt+'}',
+      '.cp-nav__item:hover>svg,.cp-nav__item.active>svg{color:'+lt+'}',
+      '.cp-nav__item.active{background:rgba('+rgb+',.12);color:'+lt+';font-weight:600}',
+      '.cp-nav__badge{background:'+lt+';color:'+dk+'}',
+      '.cp-sidebar__footer{border-top-color:rgba('+rgb+',.1)}',
+      '.cp-sidebar a:focus-visible,.cp-sidebar button:focus-visible{outline-color:rgba('+rgb+',.8)}',
+    ].join('');
+    var el = document.getElementById('cp-type-style');
+    if (!el) { el = document.createElement('style'); el.id = 'cp-type-style'; document.head.appendChild(el); }
+    el.textContent = css;
+  }
+
   function renderApp(data) {
     if (!data.type) {
       appData = { type:'project', clientName:data.project.clientName,
@@ -8760,6 +8790,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     if (!appData.projects.length) { showError(); return; }
     applyClientTheme(appData.projects);
+    var _p0type = (appData.projects[0] && appData.projects[0].project && appData.projects[0].project.type) || 'partenaire';
+    applyTypeTheme(_p0type);
     var portal = appData.type === 'client';
     currentId = appData.projects[0].project.id;
     convoId = currentId;
