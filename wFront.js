@@ -978,6 +978,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     star:       '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
     invoice:    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
     folder:     '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    archive:    '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
+    pin:        '<line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-3V7a1 1 0 0 1 1-1V4H6.5v2a1 1 0 0 1 1 1v7z"/>',
   };
 
   function icon(name, size, color) {
@@ -2448,7 +2450,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '</div>';
 
               return tilesHtml + itemsHtml + infoHtml + stepsCardHtml + practicalHtml + ctaHtml + msgHtml +
-                (isPartenaire ? buildPartenaireSection(project) : '') +
+                (isPartenaire ? '<div id="apt-section">' + buildPartenaireSection(project) + '</div>' : '') +
                 ((project.questionnaireQuestions && project.questionnaireQuestions.length) ?
                   '<div class="card" style="margin-bottom:24px"><div class="card-header"><span class="card-title">Reponses questionnaire</span></div><div class="card-body">' + buildQuestionnaireAdminView(project) + '</div></div>' : '');
             })() +
@@ -4015,23 +4017,502 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // ESPACE PARTENAIRE — cote studio/admin (refonte Ecrin, ocre, lun→ven)
+  // ─────────────────────────────────────────────────────────────────────────
+  var ADMIN_PART_URGENCY    = { tranquille:'#BAD1FD', normal:'#EFE1B0', urgent:'#e7cd97', critique:'#e8a87c' };
+  var ADMIN_PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
+  var ADMIN_PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
+  var ADMIN_PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
+  var ADMIN_PART_STATUS     = { todo:'A faire', in_progress:'En cours', review:'En relecture', done:'Fait' };
+  var ADMIN_PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
+  // Ocre / Ecrin
+  var APT_OCRE_SOFT = '#f6efe0', APT_OCRE_MID = '#e7cd97', APT_OCRE_DEEP = '#c9952f', APT_OCRE_INK = '#8a5a12';
+
+  var aptCalMonth = null;     // Date du 1er du mois affiche
+  var aptUrgFilter = '';      // filtre urgence
+  var aptSelTask = null;      // taskId ouvert dans le drawer
+  var aptTab = 'cal';         // 'cal' | 'stats'
+  var aptDragId = null;
+
+  function aptTodayStr() { var n = new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+  function aptFmtH(min) {
+    min = min || 0; var h = Math.floor(min/60), m = min%60;
+    return m ? (h+'h'+String(m).padStart(2,'0')) : (h+' h');
+  }
+
   function buildPartenaireSection(project) {
-    var tasks = tasksOf(project);
-    var done = tasks.filter(function(t){return t.status==='done';}).length;
-    var pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
-    var totalMin = tasks.reduce(function(a,t){return a+(t.timeSpentMinutes||0);},0);
-    var totalH = Math.round(totalMin/6)/10;
-    var progress = '<div class="card">' +
-      '<div class="card-header"><span class="card-title">Espace partenaire · avancement</span>' +
-        '<button class="btn btn--outline btn--sm" onclick="archiveProject()">📦 Archiver</button>' +
+    var tasks = tasksOf(project).filter(function(t){ return !t.archived; });
+    if (window._adminTaskReg) tasksOf(project).forEach(function(t){ window._adminTaskReg[t.id]=t; });
+    else { window._adminTaskReg = {}; tasksOf(project).forEach(function(t){ window._adminTaskReg[t.id]=t; }); }
+
+    var tabBar = '<div style="display:flex;gap:8px;margin-bottom:18px">' +
+      [['cal','Calendrier'],['stats','Statistiques']].map(function(tb){
+        var act = aptTab===tb[0];
+        return '<button onclick="aptSetTab(\''+tb[0]+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;padding:8px 18px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#e2d9ce')+';background:'+(act?APT_OCRE_DEEP:'#fff')+';color:'+(act?'#fff':'#8a6f54')+'">'+tb[1]+'</button>';
+      }).join('') +
+      '<button onclick="archiveProject()" style="margin-left:auto;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #e2d9ce;background:#fff;color:#8a6f54;display:inline-flex;align-items:center;gap:6px">'+icon('archive',14)+' Archiver</button>' +
+    '</div>';
+
+    var body = aptTab==='stats' ? aptBuildStats(project, tasks) : aptBuildCalendar(project, tasks);
+    return '<div style="margin-bottom:24px">' + tabBar + body + '</div>';
+  }
+
+  // ── Calendrier mensuel lun→ven ───────────────────────────────────────────
+  function aptBuildCalendar(project, tasks) {
+    if (!aptCalMonth) { var d0 = new Date(); d0.setDate(1); d0.setHours(0,0,0,0); aptCalMonth = d0; }
+    var cm = aptCalMonth;
+    var year = cm.getFullYear(), month = cm.getMonth();
+    var monthName = cm.toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+    var monthKey = year + '-' + String(month+1).padStart(2,'0');
+    var dim = new Date(year, month+1, 0).getDate();
+    var todayStr = aptTodayStr();
+
+    // ── En-tete : forfait du mois (seule metrique) ──
+    var allTasks = tasksOf(project);
+    var consumedMin = allTasks.reduce(function(s,t){
+      var ref = (t.completedAt || t.dueDate || '').slice(0,7);
+      return ref === monthKey ? s + (t.timeSpentMinutes||0) : s;
+    }, 0);
+    var forfaitH = parseFloat(project.monthlyHours) || 0;
+    var forfaitMin = forfaitH * 60;
+    var leftMin = forfaitMin - consumedMin;
+    var pctF = forfaitMin ? Math.min(100, Math.round(consumedMin/forfaitMin*100)) : 0;
+    var forfaitBar = '<div style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
+      icon('clock',16,APT_OCRE_INK) +
+      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">Forfait du mois</span>' +
+      '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:#5c4633">' + aptFmtH(consumedMin) + '</span>' +
+      '<span style="font-size:13px;color:#8a6f54">/ ' + (forfaitH ? forfaitH+' h' : 'non defini') + '</span>' +
+      '<div style="flex:1;min-width:120px;height:7px;background:'+APT_OCRE_SOFT+';border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+APT_OCRE_DEEP+';width:'+pctF+'%"></div></div>' +
+      (forfaitH ? '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;white-space:nowrap;color:'+(leftMin<0?'#9b3a2e':APT_OCRE_INK)+'">' + (leftMin>=0 ? aptFmtH(leftMin)+' restantes' : aptFmtH(-leftMin)+' depassees') + '</span>' : '') +
+      '<button onclick="aptEditForfait()" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;cursor:pointer">Modifier</button>' +
+    '</div>';
+
+    // ── Filtre urgence ──
+    var filterBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
+      [''].concat(ADMIN_PART_URG_ORDER).map(function(u){
+        var act = aptUrgFilter===u;
+        var dot = u ? '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+ADMIN_PART_URGENCY[u]+';transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span>' : '';
+        var lbl = u ? ADMIN_PART_URG_LABEL[u] : 'Toutes';
+        return '<button onclick="aptSetUrgFilter(\''+u+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#e2d9ce')+';background:'+(act?APT_OCRE_SOFT:'#fff')+';color:'+(act?APT_OCRE_INK:'#8a6f54')+'">'+dot+lbl+'</button>';
+      }).join('') +
+    '</div>';
+
+    var filtered = aptUrgFilter ? tasks.filter(function(t){ return t.urgency===aptUrgFilter; }) : tasks;
+
+    // ── Grille lun→ven ──
+    var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
+    var firstDow = (new Date(year,month,1).getDay()+6)%7;
+    var offset = firstDow < 5 ? firstDow : 0;
+    var cells = '';
+    for (var i=0;i<offset;i++) cells += '<div></div>';
+    for (var dd=1; dd<=dim; dd++) {
+      if (((new Date(year,month,dd).getDay()+6)%7) >= 5) continue;
+      var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+      var dt = filtered.filter(function(t){ return (t.dueDate||'').slice(0,10)===ds; });
+      var isToday = ds===todayStr;
+      var pills = dt.slice(0,4).map(function(t){ return aptPillHtml(t); }).join('') +
+        (dt.length>4 ? '<div style="font-size:10px;color:#8a6f54;text-align:center;margin-top:2px">+'+(dt.length-4)+' autres</div>' : '');
+      cells += '<div ondragover="aptDragOver(event,this)" ondragleave="aptDragLeave(this)" ondrop="aptDrop(event,\''+ds+'\')" '+
+        'style="position:relative;min-height:92px;border:1.5px solid '+(isToday?APT_OCRE_MID:'#e8e2d6')+';border-radius:10px;padding:5px 6px;background:'+(isToday?APT_OCRE_SOFT:'#fff')+'" class="apt-day" data-ds="'+ds+'">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:'+(isToday?'700':'500')+';color:'+(isToday?APT_OCRE_INK:'#8a6f54')+'">'+dd+'</span>' +
+          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tache" style="width:18px;height:18px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
+        '</div>' + pills + '</div>';
+    }
+
+    var calCard = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">' +
+        '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:#5c4633;text-transform:capitalize;margin:0">'+esc(monthName)+'</h2>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<button onclick="aptCalToday()" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:6px 12px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Aujourd\'hui</button>' +
+          '<button onclick="aptCalNav(-1)" aria-label="Mois precedent" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:15px">←</button>' +
+          '<button onclick="aptCalNav(1)" aria-label="Mois suivant" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:15px">→</button>' +
+          '<button onclick="aptOpenAddTask(\''+todayStr+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">+ Ajouter une tache</button>' +
+        '</div>' +
       '</div>' +
-      '<div class="card-body">' +
-        '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);margin-bottom:6px"><span>' + done + '/' + tasks.length + ' tâches terminées</span><span>' + pct + '%</span></div>' +
-        '<div class="cp-bar" style="background:rgba(5,24,51,0.08);border-radius:999px;height:10px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:var(--sage,#7c9bdc)"></div></div>' +
-        '<div style="margin-top:12px;font-size:13px;color:var(--brown,#412F21)">⏱ Total heures suivies : <strong>' + totalH + ' h</strong> (' + totalMin + ' min)</div>' +
+      filterBar +
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px">'+dayNames.map(function(n){return '<div style="text-align:center;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8a6f54">'+n+'</div>';}).join('')+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">'+cells+'</div>' +
+    '</div>';
+
+    var drawer = aptSelTask ? aptBuildDrawer(project) : '';
+    return forfaitBar +
+      '<div style="display:grid;grid-template-columns:1fr'+(aptSelTask?' 360px':'')+';gap:18px;align-items:start">' +
+        '<div>' + calCard + '</div>' + drawer +
+      '</div>';
+  }
+
+  function aptPillHtml(t) {
+    var urg = ADMIN_PART_URGENCY[t.urgency] || '#ddd';
+    var urgTx = ADMIN_PART_URGENCY_TX[t.urgency] || '#333';
+    var isDone = t.status==='done';
+    var info = [];
+    if (t.pole) info.push(esc(t.pole));
+    if (t.timeSpentMinutes) info.push(aptFmtH(t.timeSpentMinutes));
+    return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
+      'style="background:'+APT_OCRE_SOFT+';border:1px solid #ece2cf;border-radius:7px;padding:4px 6px;margin-bottom:4px;cursor:pointer;'+(isDone?'opacity:0.55':'')+'">' +
+      '<div style="display:flex;align-items:center;gap:5px">' +
+        '<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+urg+';transform:rotate(45deg);flex-shrink:0;border:1px solid rgba(0,0,0,0.12)"></span>' +
+        (t.pinned ? icon('pin',11,APT_OCRE_INK) : '') +
+        '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#5c4633;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+      '</div>' +
+      (info.length ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+info.join(' · ')+'</div>' : '') +
+    '</div>';
+  }
+
+  // ── Drawer detail tache ───────────────────────────────────────────────────
+  function aptBuildDrawer(project) {
+    var t = (project.tasks||[]).find(function(x){ return x.id===aptSelTask; });
+    if (!t) { aptSelTask = null; return ''; }
+    var schema = Array.isArray(project.propertySchema) ? project.propertySchema : [];
+    var props = t.properties || {};
+    var comments = Array.isArray(t.comments) ? t.comments : [];
+    var timeMin = t.timeSpentMinutes || 0;
+
+    // compte a rebours
+    var countdown = '';
+    if (t.dueDate) {
+      var d = new Date(t.dueDate.slice(0,10)+'T12:00:00');
+      var n = new Date(); n.setHours(12,0,0,0);
+      var diff = Math.round((d-n)/86400000);
+      countdown = diff===0 ? "Aujourd'hui" : diff>0 ? 'J-'+diff : '<span style="color:#9b3a2e">J+'+(-diff)+' (en retard)</span>';
+    }
+
+    var urgSel = '<select onchange="aptPatch(\''+t.id+'\',{urgency:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%">' +
+      ADMIN_PART_URG_ORDER.map(function(u){ return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>'; }).join('') + '</select>';
+    var statusSel = '<select onchange="aptPatch(\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%">' +
+      Object.keys(ADMIN_PART_STATUS).map(function(s){ return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+ADMIN_PART_STATUS[s]+'</option>'; }).join('') + '</select>';
+    var poleSel = '<select onchange="aptPatch(\''+t.id+'\',{pole:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%">' +
+      '<option value="">—</option>' + ADMIN_PART_POLES.map(function(p){ return '<option value="'+esc(p)+'"'+(t.pole===p?' selected':'')+'>'+esc(p)+'</option>'; }).join('') + '</select>';
+
+    function lbl(s){ return '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;margin:14px 0 6px">'+s+'</div>'; }
+
+    // proprietes partagees
+    var propsHtml = schema.map(function(p){
+      var val = props[p.id]!=null ? props[p.id] : '';
+      var field;
+      if (p.type==='Liste') {
+        field = '<select onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;flex:1">' +
+          '<option value="">—</option>' + (p.options||[]).map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') + '</select>';
+      } else {
+        var inputType = p.type==='Nombre' ? 'number' : p.type==='Date' ? 'date' : 'text';
+        field = '<input type="'+inputType+'" value="'+esc(val)+'" onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;flex:1">';
+      }
+      return '<div style="margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#5c4633;flex:1">'+esc(p.name)+' <span style="color:#b09b80;font-weight:400">('+p.type+')</span></span>' +
+          '<button onclick="aptEditPropDef(\''+p.id+'\')" title="Modifier" style="background:none;border:none;cursor:pointer;color:#8a6f54;padding:2px">'+icon('pencil',12)+'</button>' +
+          '<button onclick="aptDeletePropDef(\''+p.id+'\')" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#9b3a2e;padding:2px">'+icon('trash',12)+'</button>' +
+        '</div>' +
+        '<div style="display:flex">'+field+'</div>' +
+      '</div>';
+    }).join('');
+
+    // commentaires
+    var commentsHtml = comments.map(function(c){
+      return '<div style="background:#faf7f1;border-radius:8px;padding:7px 10px;margin-bottom:6px">' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:'+APT_OCRE_INK+'">'+(c.author==='cindy'?'Studio':esc(project.clientName))+' <span style="color:#b09b80;font-weight:400">· '+formatDate(c.createdAt)+'</span></div>' +
+        '<div style="font-size:12px;color:#5c4633;margin-top:2px;white-space:pre-wrap">'+esc(c.text)+'</div>' +
+      '</div>';
+    }).join('');
+
+    var deliverable = t.deliverableFileKey ? (project.files||[]).find(function(f){return f.key===t.deliverableFileKey;}) : null;
+
+    return '<div style="background:#fff;border:1px solid #e2d9ce;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:14px;padding:0;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto">' +
+      '<div style="padding:18px 20px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">' +
+          '<input value="'+esc(t.title)+'" onchange="aptPatch(\''+t.id+'\',{title:this.value})" style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633;border:none;border-bottom:1px solid transparent;background:none;flex:1;padding:2px 0" onfocus="this.style.borderBottomColor=\''+APT_OCRE_MID+'\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+          '<button onclick="aptCloseDrawer()" style="background:none;border:none;cursor:pointer;color:#8a6f54;font-size:20px;line-height:1;padding:0">×</button>' +
+        '</div>' +
+        '<textarea onchange="aptPatch(\''+t.id+'\',{content:this.value})" rows="3" placeholder="Detail / contenu (format, ton, references, contraintes)" style="font-family:inherit;font-size:12px;color:#5c4633;width:100%;border:1.5px solid #e2d9ce;border-radius:8px;padding:7px 9px;resize:vertical">'+esc(t.content||'')+'</textarea>' +
+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+          '<div>'+lbl('Statut')+statusSel+'</div>' +
+          '<div>'+lbl('Urgence')+urgSel+'</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+          '<div>'+lbl('Echeance')+'<input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%"></div>' +
+          '<div>'+lbl('Categorie / Pole')+poleSel+'</div>' +
+        '</div>' +
+        (countdown ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#8a6f54;margin-top:8px">'+icon('calendar',12)+' '+countdown+'</div>' : '') +
+
+        // Temps passe
+        lbl('Temps passe') +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<button onclick="aptAddTime(\''+t.id+'\',-30)" style="width:30px;height:30px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:14px">−</button>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+APT_OCRE_INK+';min-width:56px;text-align:center">'+aptFmtH(timeMin)+'</span>' +
+          '<button onclick="aptAddTime(\''+t.id+'\',30)" style="width:30px;height:30px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:14px">+</button>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#b09b80;margin-left:4px">Renseigne par le studio · 0,5 h</span>' +
+        '</div>' +
+
+        // Proprietes partagees
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px">' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">Proprietes</span>' +
+          '<button onclick="aptAddPropDef()" style="font-size:11px;padding:3px 9px;border:1px solid '+APT_OCRE_MID+';border-radius:7px;background:'+APT_OCRE_SOFT+';color:'+APT_OCRE_INK+';cursor:pointer">+ Ajouter une propriete</button>' +
+        '</div>' +
+        (propsHtml || '<div style="font-size:11px;color:#b09b80;font-style:italic;margin-bottom:6px">Aucune propriete partagee.</div>') +
+
+        // Livrable
+        lbl('Livrable') +
+        (deliverable ? '<div style="font-size:12px;color:'+APT_OCRE_INK+';margin-bottom:6px">'+icon('file',12)+' '+esc(deliverable.name||'fichier')+'</div>' : '') +
+        '<div style="display:flex;gap:6px">' +
+          '<button onclick="attachDeliverable(\''+t.id+'\')" style="font-size:11px;padding:5px 10px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer">'+icon('upload',12)+' Deposer un fichier</button>' +
+        '</div>' +
+        '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="aptPatch(\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%;margin-top:6px">' +
+
+        // Echange
+        lbl('Echange sur la tache') +
+        (commentsHtml || '<div style="font-size:11px;color:#b09b80;font-style:italic;margin-bottom:6px">Aucun message.</div>') +
+        '<div style="display:flex;gap:6px;margin-top:6px">' +
+          '<input id="apt-comment-'+t.id+'" placeholder="Repondre…" style="font-family:inherit;font-size:12px;flex:1;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px">' +
+          '<button onclick="aptAddComment(\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Envoyer</button>' +
+        '</div>' +
+
+        // Actions
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:18px;padding-top:14px;border-top:1px solid #efe7da">' +
+          '<button onclick="aptDoneNotify(\''+t.id+'\')" style="font-size:11px;padding:6px 11px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Marquer termine &amp; prevenir</button>' +
+          '<button onclick="aptPatch(\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="font-size:11px;padding:6px 11px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer">'+(t.pinned?'Desepingler':'Epingler')+'</button>' +
+          '<button onclick="aptArchiveTask(\''+t.id+'\')" style="font-size:11px;padding:6px 11px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer">Archiver</button>' +
+          '<button onclick="aptDeleteTask(\''+t.id+'\')" style="font-size:11px;padding:6px 11px;border:1.5px solid #f0d0cc;border-radius:8px;background:#fff;color:#9b3a2e;cursor:pointer">Supprimer</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
-    return progress + buildCalendar(project) + buildTaskList(project) + buildCharts(project);
+  }
+
+  // ── Statistiques ──────────────────────────────────────────────────────────
+  function aptBuildStats(project, tasks) {
+    var all = tasksOf(project);
+    var now = new Date();
+    var monthKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    var monthMin = all.reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||'').slice(0,7); return ref===monthKey?s+(t.timeSpentMinutes||0):s; },0);
+    var active = tasks.filter(function(t){ return t.status!=='done'; }).length;
+    var delivered = all.filter(function(t){ return t.status==='done'; }).length;
+    var archived = all.filter(function(t){ return t.archived; });
+    var forfaitH = parseFloat(project.monthlyHours)||0;
+    var leftMin = forfaitH*60 - monthMin;
+
+    var kpis = [
+      { v: aptFmtH(monthMin), k:'Heures du mois' },
+      { v: active, k:'Taches actives' },
+      { v: delivered, k:'Taches livrees' },
+      { v: archived.length, k:'Taches archivees' },
+    ];
+    var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">' +
+      kpis.map(function(k){
+        return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:28px;color:'+APT_OCRE_INK+';line-height:1.1;margin-bottom:4px">'+k.v+'</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+k.k+'</div>' +
+        '</div>';
+      }).join('') + '</div>';
+
+    // heures par mois sur 5 derniers mois
+    var months = [];
+    for (var i=4;i>=0;i--) { var d=new Date(now.getFullYear(),now.getMonth()-i,1); months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
+    var byMonth = {};
+    months.forEach(function(m){ byMonth[m]=0; });
+    all.forEach(function(t){ var ref=(t.completedAt||t.dueDate||'').slice(0,7); if (byMonth[ref]!=null) byMonth[ref]+=(t.timeSpentMinutes||0); });
+    var maxM = Math.max.apply(null, months.map(function(m){return byMonth[m];}).concat([1]));
+    var chart = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px;margin-bottom:22px">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#5c4633;margin:0 0 16px">Pour scaler · heures par mois</h3>' +
+      '<div style="display:flex;align-items:flex-end;gap:14px;height:120px">' +
+        months.map(function(m){
+          var v = byMonth[m]; var h = Math.round(v/maxM*100);
+          var lab = new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'});
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end">' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:'+APT_OCRE_INK+'">'+aptFmtH(v)+'</span>' +
+            '<div style="width:100%;height:'+h+'%;min-height:3px;background:'+APT_OCRE_DEEP+';border-radius:5px 5px 0 0"></div>' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+lab+'</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+    var forfaitReminder = '<div style="background:'+APT_OCRE_SOFT+';border:1px solid '+APT_OCRE_MID+';border-radius:14px;padding:16px 20px;margin-bottom:22px;font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#5c4633">' +
+      'Forfait : <strong>'+(forfaitH?forfaitH+' h':'non defini')+'</strong> / mois' +
+      (forfaitH ? ' · ' + (leftMin>=0 ? '<span style="color:'+APT_OCRE_INK+'">'+aptFmtH(leftMin)+' restantes ce mois</span>' : '<span style="color:#9b3a2e">'+aptFmtH(-leftMin)+' depassees</span>') : '') +
+    '</div>';
+
+    var archHtml = archived.length ? '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#5c4633;margin:0 0 14px">Taches archivees</h3>' +
+      archived.map(function(t){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #f0e9dc">' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#5c4633">'+esc(t.title)+'</span>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#8a6f54">'+aptFmtH(t.timeSpentMinutes||0)+'</span>' +
+          '<button onclick="aptPatch(\''+t.id+'\',{archived:false})" style="font-size:11px;padding:4px 9px;border:1px solid #e2d9ce;border-radius:7px;background:#fff;color:#8a6f54;cursor:pointer">Restaurer</button>' +
+        '</div>';
+      }).join('') +
+    '</div>' : '';
+
+    return kpiHtml + chart + forfaitReminder + archHtml;
+  }
+
+  // ── Re-render partenaire (sans recharger toute la page) ───────────────────
+  async function aptRefresh() {
+    var r = await apiFetch('/api/projects/' + currentProjectId);
+    if (!r.ok) return;
+    var p = await r.json();
+    window._currentProject = p;
+    var el = document.getElementById('tab-apercu');
+    // simple : recharge la section partenaire en place
+    var holder = document.getElementById('apt-section');
+    if (holder) { holder.innerHTML = buildPartenaireSection(p); }
+    else if (currentProjectId) { loadProject(currentProjectId); }
+  }
+
+  // ── Window functions admin partenaire ─────────────────────────────────────
+  window.aptSetTab = function(tab){ aptTab = tab; aptRender(); };
+  window.aptSetUrgFilter = function(u){ aptUrgFilter = (aptUrgFilter===u?'':u); aptRender(); };
+  window.aptCalNav = function(delta){ if(!aptCalMonth){aptCalMonth=new Date();aptCalMonth.setDate(1);} aptCalMonth.setMonth(aptCalMonth.getMonth()+delta); aptRender(); };
+  window.aptCalToday = function(){ var n=new Date(); aptCalMonth=new Date(n.getFullYear(),n.getMonth(),1); aptRender(); };
+  window.aptOpenDrawer = function(id){ aptSelTask = id; aptRender(); };
+  window.aptCloseDrawer = function(){ aptSelTask = null; aptRender(); };
+
+  function aptRender(){
+    var p = window._currentProject;
+    if (!p) return;
+    var holder = document.getElementById('apt-section');
+    if (holder) holder.innerHTML = buildPartenaireSection(p);
+  }
+
+  window.aptPatch = async function(id, fields){
+    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+id, { method:'PUT', body: JSON.stringify(fields) });
+    if (res.ok) { var t = await res.json(); var p = window._currentProject; if (p && p.tasks){ var i=p.tasks.findIndex(function(x){return x.id===id;}); if(i>=0) p.tasks[i]=t; } if (window._adminTaskReg) window._adminTaskReg[id]=t; aptRender(); }
+    else toast('Erreur', true);
+  };
+  window.aptAddTime = function(id, delta){
+    var p = window._currentProject; var t = p && p.tasks && p.tasks.find(function(x){return x.id===id;});
+    var cur = (t && t.timeSpentMinutes) || 0;
+    var next = Math.max(0, cur + delta);
+    window.aptPatch(id, { timeSpentMinutes: next });
+  };
+  window.aptSetProp = function(id, propId, value){
+    var p = window._currentProject; var t = p && p.tasks && p.tasks.find(function(x){return x.id===id;});
+    var props = Object.assign({}, (t && t.properties) || {});
+    props[propId] = value;
+    window.aptPatch(id, { properties: props });
+  };
+  window.aptAddComment = async function(id){
+    var input = document.getElementById('apt-comment-'+id);
+    if (!input) return; var text = input.value.trim(); if (!text) return;
+    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+id+'/comments', { method:'POST', body: JSON.stringify({ author:'cindy', text:text }) });
+    if (res.ok) { await aptRefresh(); } else toast('Erreur', true);
+  };
+  window.aptDoneNotify = async function(id){
+    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+id, { method:'PUT', body: JSON.stringify({ status:'done' }) });
+    if (res.ok) { var t = await res.json(); var p = window._currentProject; if (p && p.tasks){ var i=p.tasks.findIndex(function(x){return x.id===id;}); if(i>=0) p.tasks[i]=t; } toast('E-mail envoye a ' + ((p&&p.clientName)||'la cliente')); aptRender(); }
+    else toast('Erreur', true);
+  };
+  window.aptArchiveTask = function(id){ aptSelTask=null; window.aptPatch(id, { archived:true }); };
+  window.aptDeleteTask = function(id){
+    showConfirm('Cette tache sera supprimee definitivement.', async function(){
+      var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+id, { method:'DELETE' });
+      if (res.ok){ aptSelTask=null; var p=window._currentProject; if(p&&p.tasks) p.tasks=p.tasks.filter(function(x){return x.id!==id;}); aptRender(); }
+      else toast('Erreur', true);
+    }, { title:'Supprimer la tache', okLabel:'Supprimer', danger:true });
+  };
+  window.aptEditForfait = function(){
+    var p = window._currentProject;
+    showPrompt('Forfait mensuel', 'Nombre d\'heures incluses par mois (ex: 20)', String((p&&p.monthlyHours)||''), async function(v){
+      var h = parseFloat(v); if (isNaN(h)||h<0){ toast('Valeur invalide', true); return; }
+      var res = await apiFetch('/api/projects/'+currentProjectId+'/forfait', { method:'PATCH', body: JSON.stringify({ monthlyHours: h, projectId: currentProjectId }) });
+      if (res.ok){ p.monthlyHours = h; aptRender(); } else toast('Erreur', true);
+    }, { type:'number', okLabel:'Enregistrer', placeholder:'ex: 20' });
+  };
+
+  // ── Creation de tache ──
+  window.aptOpenAddTask = function(dateStr){
+    var ov = document.getElementById('_apt-add'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id='_apt-add';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:16px;padding:26px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:#5c4633;margin:0">Nouvelle demande</h3><button onclick="document.getElementById(\'_apt-add\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre</label><input id="_apt-title" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Detail (format, ton, references, contraintes)</label><textarea id="_apt-content" rows="3" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;resize:vertical"></textarea></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
+      '</div>' +
+      '<div style="margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Categorie / Pole</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Creer la demande</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    setTimeout(function(){ var el=document.getElementById('_apt-title'); if(el) el.focus(); }, 50);
+  };
+  window.aptCreateTask = async function(){
+    var title = document.getElementById('_apt-title').value.trim();
+    if (!title){ toast('Titre requis', true); return; }
+    var dueDate = document.getElementById('_apt-date').value;
+    var content = document.getElementById('_apt-content').value;
+    var urgency = document.getElementById('_apt-urgency').value;
+    var pole = document.getElementById('_apt-pole').value;
+    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify({ title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo' }) });
+    if (!res.ok){ toast('Erreur', true); return; }
+    var task = await res.json();
+    if (pole) { var r2 = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+task.id, { method:'PUT', body: JSON.stringify({ pole:pole }) }); if (r2.ok) task = await r2.json(); }
+    var p = window._currentProject; if (p){ if(!p.tasks) p.tasks=[]; p.tasks.push(task); }
+    var ov = document.getElementById('_apt-add'); if (ov) ov.remove();
+    toast('Demande creee'); aptRender();
+  };
+
+  // ── Drag & drop replanification ──
+  window.aptDragStart = function(e, id){ aptDragId = id; if (e.dataTransfer) e.dataTransfer.effectAllowed='move'; };
+  window.aptDragOver = function(e, el){ e.preventDefault(); el.style.borderColor = APT_OCRE_DEEP; el.style.background = APT_OCRE_SOFT; };
+  window.aptDragLeave = function(el){ var ds=el.getAttribute('data-ds'); var isToday = ds===aptTodayStr(); el.style.borderColor = isToday?APT_OCRE_MID:'#e8e2d6'; el.style.background = isToday?APT_OCRE_SOFT:'#fff'; };
+  window.aptDrop = function(e, ds){ e.preventDefault(); if (!aptDragId) return; var id=aptDragId; aptDragId=null; window.aptPatch(id, { dueDate: ds }); };
+
+  // ── Schema de proprietes partagees ──
+  window.aptAddPropDef = function(){
+    showPrompt('Nouvelle propriete', 'Nom de la propriete', '', function(name){
+      name = (name||'').trim(); if (!name) return;
+      showPrompt('Type de propriete', 'Texte, Nombre, Liste ou Date', 'Texte', async function(type){
+        type = (type||'Texte').trim();
+        if (['Texte','Nombre','Liste','Date'].indexOf(type)<0) type='Texte';
+        var finish = async function(options){
+          var p = window._currentProject;
+          var schema = Array.isArray(p.propertySchema) ? p.propertySchema.slice() : [];
+          schema.push({ id:'prop'+Date.now(), name:name, type:type, options:options||[] });
+          await aptSaveSchema(schema);
+        };
+        if (type==='Liste') {
+          showPrompt('Options de la liste', 'Separees par des virgules', '', function(opts){
+            finish((opts||'').split(',').map(function(s){return s.trim();}).filter(Boolean));
+          }, { okLabel:'Creer' });
+        } else { finish([]); }
+      }, { okLabel:'Suivant' });
+    }, { okLabel:'Suivant' });
+  };
+  window.aptEditPropDef = function(propId){
+    var p = window._currentProject;
+    var schema = Array.isArray(p.propertySchema) ? p.propertySchema.slice() : [];
+    var def = schema.find(function(x){return x.id===propId;}); if (!def) return;
+    showPrompt('Renommer la propriete', 'Nom', def.name, async function(name){
+      name=(name||'').trim(); if(!name) return;
+      schema = schema.map(function(x){ return x.id===propId ? Object.assign({},x,{name:name}) : x; });
+      await aptSaveSchema(schema);
+    }, { okLabel:'Enregistrer' });
+  };
+  window.aptDeletePropDef = function(propId){
+    showConfirm('Cette propriete sera retiree de toutes les taches.', async function(){
+      var p = window._currentProject;
+      var schema = (Array.isArray(p.propertySchema)?p.propertySchema:[]).filter(function(x){return x.id!==propId;});
+      // retire la valeur de chaque tache
+      var tasks = (p.tasks||[]).filter(function(t){ return t.properties && t.properties[propId]!==undefined; });
+      await aptSaveSchema(schema);
+      for (var i=0;i<tasks.length;i++){
+        var props = Object.assign({}, tasks[i].properties); delete props[propId];
+        await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+tasks[i].id, { method:'PUT', body: JSON.stringify({ properties: props }) });
+        var ti = p.tasks.findIndex(function(x){return x.id===tasks[i].id;}); if(ti>=0) p.tasks[ti].properties = props;
+      }
+      aptRender();
+    }, { title:'Supprimer la propriete', okLabel:'Supprimer', danger:true });
+  };
+  async function aptSaveSchema(schema){
+    var p = window._currentProject;
+    var body = Object.assign({}, p, { propertySchema: schema });
+    var res = await apiFetch('/api/projects/'+currentProjectId, { method:'PUT', body: JSON.stringify(body) });
+    if (res.ok){ p.propertySchema = schema; aptRender(); } else toast('Erreur', true);
   }
 
   window.calNav = function(delta) {
