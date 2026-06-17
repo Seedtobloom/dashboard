@@ -552,6 +552,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg { display: flex; align-items: flex-end; gap: 10px; }
 .cp-msg > div { flex: 1; min-width: 0; }
 .cp-msg--client { flex-direction: row-reverse; }
+.cp-msg--client > div { display: flex; flex-direction: column; align-items: flex-end; }
 .cp-msg__av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-style: italic; font-size: 13px; font-weight: 400; overflow: hidden; background: var(--glycine-200); color: var(--terre); }
 .cp-msg__av--cindy { background: var(--terre); color: var(--paille); }
 .cp-msg__bubble { max-width: 68%; padding: 12px 16px; border-radius: 14px; font-size: 15.5px; line-height: 1.55; font-family: var(--font-body); color: var(--terre); }
