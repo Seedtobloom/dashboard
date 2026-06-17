@@ -5688,6 +5688,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var pct = steps.length ? Math.round(done/steps.length*100) : 0;
       var next = steps.find(function(s){ return s.status !== 'done'; });
       var firstFour = steps.slice(0,4);
+      var isPart = p.type === 'partenaire';
+      var partTasks = (p.tasks||[]).filter(function(t){ return !t.archived; }).slice().sort(function(a,b){
+        if ((a.status==='done')!==(b.status==='done')) return a.status==='done'?1:-1;
+        return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
+      });
+      var nextTask = partTasks.find(function(t){ return t.status!=='done'; });
+      function partDiamond(urg){ var c=PART_URGENCY[urg]||'#c9952f'; return '<span style="display:inline-block;width:9px;height:9px;border-radius:1px;background:'+c+';transform:rotate(45deg);flex-shrink:0"></span>'; }
       var bannerStyle = p.bannerUrl
         ? 'background-image:url('+esc(p.bannerUrl)+');background-size:cover;background-position:center'
         : (p.bannerColor ? 'background:'+esc(p.bannerColor.split('|')[0]) : 'background:var(--terre)');
@@ -5697,31 +5704,81 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         dur = wks + ' jours';
       }
 
-      var nextCard = next ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
-        cpStatusDot(next.status) +
-        '<div style="flex:1">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine etape pour vous</div>' +
-          '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(next.title) + '</div>' +
-          (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
-        '</div>' +
-        '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
-      '</div>' : '';
+      var nextCard;
+      if (isPart) {
+        nextCard = nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#EFE1B0);background:var(--paille-50,#FBF3DC)">' +
+          partDiamond(nextTask.urgency) +
+          '<div style="flex:1">' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine etape pour vous</div>' +
+            '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(nextTask.title) + '</div>' +
+            (nextTask.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(nextTask.dueDate, false, true) + '</div>' : '') +
+          '</div>' +
+          '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+        '</div>' : '';
+      } else {
+        nextCard = next ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
+          cpStatusDot(next.status) +
+          '<div style="flex:1">' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine etape pour vous</div>' +
+            '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(next.title) + '</div>' +
+            (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
+          '</div>' +
+          '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+        '</div>' : '';
+      }
 
-      var miniTrack = firstFour.length ? '<div class="card" style="padding:22px 24px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
-          '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Les etapes</h3></div>' +
-          '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
-        '</div>' +
-        '<div style="display:grid;gap:9px">' +
-          firstFour.map(function(it) {
-            return '<div style="display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--bone-d)">' +
-              cpStatusDot(it.status) +
-              '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)">' + esc(it.title) + '</span>' +
-              cpDeadlinePill(it.dueDate, it.status==='done', true) +
-            '</div>';
-          }).join('') +
-        '</div>' +
-      '</div>' : '';
+      var miniTrack;
+      if (isPart) {
+        miniTrack = '<div class="card" style="padding:22px 24px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+            '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Demandes en cours</h3></div>' +
+            '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
+          '</div>' +
+          (partTasks.length ? '<div style="display:grid;gap:9px">' +
+            partTasks.slice(0,5).map(function(t) {
+              return '<div style="display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--bone-d)">' +
+                partDiamond(t.urgency) +
+                '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(t.status==='done'?';opacity:0.55':'')+'">' + esc(t.title) + '</span>' +
+                (t.status==='done'
+                  ? '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);display:inline-flex;align-items:center;gap:4px;white-space:nowrap">' + cpIcon('check',12) + ' Termine</span>'
+                  : cpDeadlinePill(t.dueDate, false, true)) +
+              '</div>';
+            }).join('') +
+          '</div>' : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600);padding:8px 4px">Aucune demande en cours pour le moment.</div>') +
+        '</div>';
+      } else {
+        miniTrack = firstFour.length ? '<div class="card" style="padding:22px 24px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+            '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Les etapes</h3></div>' +
+            '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
+          '</div>' +
+          '<div style="display:grid;gap:9px">' +
+            firstFour.map(function(it) {
+              return '<div style="display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--bone-d)">' +
+                cpStatusDot(it.status) +
+                '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)">' + esc(it.title) + '</span>' +
+                cpDeadlinePill(it.dueDate, it.status==='done', true) +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' : '';
+      }
+
+      var forfaitCard = '';
+      if (isPart) {
+        var forfaitH = p.monthlyHours || 0;
+        var curKey = _todayStr().slice(0,7);
+        var usedH = (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===curKey ? s+(t.timeSpentMinutes||0)/60 : s; }, 0);
+        var fpct = forfaitH ? Math.min(100, Math.round(usedH/forfaitH*100)) : 0;
+        if (forfaitH) forfaitCard = '<div class="card" style="padding:22px 24px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
+          '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">' +
+            '<span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre)">'+usedH.toFixed(1).replace('.0','')+'</span>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600)">/ '+forfaitH+' h utilisees</span>' +
+          '</div>' +
+          '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+fpct+'%;background:var(--brume-700,#7da2e0);border-radius:999px"></div></div>' +
+        '</div>';
+      }
 
       var progressCard = '<div class="card" style="padding:22px 24px">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px">' +
@@ -5770,6 +5827,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div class="cp-ph__right">' +
             progressCard +
             datesCard +
+            forfaitCard +
             msgCard +
           '</div>' +
         '</div>' +
