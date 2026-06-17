@@ -1623,7 +1623,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<option value="updated">Recents</option>' +
         '<option value="client">Nom (A-Z)</option>' +
       '</select>' +
-      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="padding:7px 14px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#5c4633">Selectionner</button>' +
+      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1.5px solid #5c4633;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#5c4633;white-space:nowrap">' + icon('check',14,'color:#5c4633') + ' Selection multiple</button>' +
     '</div>' +
     '<div id="adm-bulk-bar" style="display:none;position:sticky;top:54px;z-index:19;background:#5c4633;color:#EFE1B0;padding:11px 40px;align-items:center;gap:16px;font-family:\'Inter Tight\',sans-serif">' +
       '<span id="adm-bulk-count" style="font-size:13px">0 espace selectionne</span>' +
@@ -2342,7 +2342,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           tabNav +
 
           /* ===== TAB: APERCU ===== */
-          '<div id="tab-apercu" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1040px;' + (_adminProjTab==='apercu' ? '' : 'display:none') + '">' +
+          '<div id="tab-apercu" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1240px;' + (_adminProjTab==='apercu' ? '' : 'display:none') + '">' +
             (function(){
               var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD',ink:'#4a6ba8'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#5c4633'} };
               var sht = SH_ACCENT[TYPE_TONES_SHEET[project.type]] || SH_ACCENT.glycine;
@@ -2482,7 +2482,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<button class="btn btn--primary" onclick="openBannerEditor()">Personnaliser →</button>' +
               '</div>';
 
-              return tilesHtml + itemsHtml + infoHtml + stepsCardHtml + practicalHtml + ctaHtml + msgHtml +
+              return tilesHtml +
+                '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:24px;align-items:start;margin-bottom:24px">' +
+                  '<div>' + itemsHtml + stepsCardHtml + '</div>' +
+                  '<div>' + infoHtml + practicalHtml + msgHtml + ctaHtml + '</div>' +
+                '</div>' +
                 (isPartenaire ? '<div id="apt-section">' + buildPartenaireSection(project) + '</div>' : '') +
                 (isMaint ? '<div id="amt-section">' + buildMaintenanceSection(project) + '</div>' : '') +
                 ((project.questionnaireQuestions && project.questionnaireQuestions.length) ?
