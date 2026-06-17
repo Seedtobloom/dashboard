@@ -76,6 +76,36 @@ export default {
         return getEmailHistory(request, env, url);
       }
 
+      // Hub partage (GET/PUT)
+      if (pathname === '/api/hub') {
+        const json = { 'Content-Type': 'application/json' };
+        if (request.method === 'GET') {
+          const data = await env.BLOOM_KV.get('hub_data', 'json') || { sections: [] };
+          return new Response(JSON.stringify(data), { headers: json });
+        }
+        if (request.method === 'PUT') {
+          const body = await request.json() as Record<string, unknown>;
+          await env.BLOOM_KV.put('hub_data', JSON.stringify(body));
+          return new Response(JSON.stringify({ ok: true }), { headers: json });
+        }
+        return errorResponse('Method not allowed', 405);
+      }
+
+      // Réglages studio (GET/PUT)
+      if (pathname === '/api/settings') {
+        const json = { 'Content-Type': 'application/json' };
+        if (request.method === 'GET') {
+          const data = await env.BLOOM_KV.get('studio_settings', 'json') || {};
+          return new Response(JSON.stringify(data), { headers: json });
+        }
+        if (request.method === 'PUT') {
+          const body = await request.json() as Record<string, unknown>;
+          await env.BLOOM_KV.put('studio_settings', JSON.stringify(body));
+          return new Response(JSON.stringify({ ok: true }), { headers: json });
+        }
+        return errorResponse('Method not allowed', 405);
+      }
+
       return errorResponse('Not found', 404);
     } catch (err) {
       console.error('Back worker error:', err);
