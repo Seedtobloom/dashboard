@@ -2484,6 +2484,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
               return tilesHtml + itemsHtml + infoHtml + stepsCardHtml + practicalHtml + ctaHtml + msgHtml +
                 (isPartenaire ? '<div id="apt-section">' + buildPartenaireSection(project) + '</div>' : '') +
+                (isMaint ? '<div id="amt-section">' + buildMaintenanceSection(project) + '</div>' : '') +
                 ((project.questionnaireQuestions && project.questionnaireQuestions.length) ?
                   '<div class="card" style="margin-bottom:24px"><div class="card-header"><span class="card-title">Reponses questionnaire</span></div><div class="card-body">' + buildQuestionnaireAdminView(project) + '</div></div>' : '');
             })() +
@@ -4548,6 +4549,498 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (res.ok){ p.propertySchema = schema; aptRender(); } else toast('Erreur', true);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // ESPACE MAINTENANCE (terre) — cote studio/admin — tickets sur quota minutes
+  // ─────────────────────────────────────────────────────────────────────────
+  var AMT_TERRE_DEEP = '#5c4633', AMT_TERRE_MID = '#8a6f54', AMT_TERRE_SOFT = '#c8b29a', AMT_PAILLE = '#EFE1B0';
+  var AMT_SOFT_BG = '#f3ece0';
+  var AMT_STATUS  = { open:'Ouvert', in_progress:'En cours', done:'Resolu', closed:'Ferme' };
+  var AMT_STATUS_COL = { open:'#8a6f54', in_progress:'#7c9bdc', done:'#5c4633', closed:'#b09b80' };
+  var AMT_CATS = [
+    ['question','Question/conseil','#cfddf6','#3f5a86'],
+    ['bug','Bug','#e8a87c','#7a3417'],
+    ['ajustement','Ajustement','#dccaf0','#5a3f86'],
+    ['contenu','Mise a jour de contenu','#efe1b0','#6b5310']
+  ];
+  function amtCatMeta(c){ for (var i=0;i<AMT_CATS.length;i++){ if (AMT_CATS[i][0]===c) return AMT_CATS[i]; } return null; }
+
+  var amtTab = {};         // pid -> 'demandes'|'suivi'|'conseils'|'retours'
+  var amtStFilter = {};    // pid -> 'all'|status
+  var amtOpenTicket = {};  // pid -> ticketId (inline detail panel)
+
+  function amtMonthKey(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); }
+  function amtFmtMin(min){ min=Math.round(min||0); var h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60; var s=(h?h+'h'+(m?String(m).padStart(2,'0'):''):m+' min'); return (min<0?'-':'')+s; }
+  function amtTicketsOf(p){ return Array.isArray(p.tickets)?p.tickets:[]; }
+  function amtConsumedFor(p, monthKey){
+    return amtTicketsOf(p).reduce(function(s,t){
+      var ref=((t.resolvedAt||t.createdAt)||'').slice(0,7);
+      return ref===monthKey ? s+(t.timeSpentMinutes||0) : s;
+    }, 0);
+  }
+
+  function buildMaintenanceSection(project){
+    var pid = project.id;
+    var tab = amtTab[pid] || 'demandes';
+    var counsels = Array.isArray(project.counsels)?project.counsels:[];
+    var feedbacks = Array.isArray(project.feedbacks)?project.feedbacks:[];
+    var tickets = amtTicketsOf(project);
+
+    var TABS = [
+      ['demandes','Demandes', tickets.length, 'settings'],
+      ['suivi','Suivi mensuel', null, 'calendar'],
+      ['conseils','Conseils & ameliorations', counsels.length||null, 'plus'],
+      ['retours','Retours clients', feedbacks.length||null, 'messages']
+    ];
+    var tabBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid #e2d9ce">' +
+      TABS.map(function(tb){
+        var act = tab===tb[0];
+        return '<button onclick="amtSetTab(\''+pid+'\',\''+tb[0]+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 15px;background:none;border:0;border-bottom:2px solid '+(act?AMT_TERRE_DEEP:'transparent')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
+          icon(tb[3],13)+' '+tb[1]+(tb[2]!=null?' <span style="opacity:0.55">'+tb[2]+'</span>':'')+
+        '</button>';
+      }).join('') +
+    '</div>';
+
+    var body;
+    if (tab==='suivi') body = amtBuildSuivi(project);
+    else if (tab==='conseils') body = amtBuildConseils(project);
+    else if (tab==='retours') body = amtBuildRetours(project);
+    else body = amtBuildDemandes(project);
+
+    return '<div class="card" style="margin-bottom:24px"><div class="card-body" style="padding:24px 26px">' + tabBar + body + '</div></div>';
+  }
+
+  // ── DEMANDES ──────────────────────────────────────────────────────────────
+  function amtBuildDemandes(project){
+    var pid = project.id;
+    var tickets = amtTicketsOf(project);
+    var mk = amtMonthKey();
+    var quotaMin = (parseFloat(project.monthlyHours)||0)*60;
+    var usedMin = amtConsumedFor(project, mk);
+    var remaining = quotaMin - usedMin;
+    var over = remaining < 0;
+    var pct = quotaMin ? Math.min(100, Math.round(usedMin/quotaMin*100)) : 0;
+
+    var quotaBar = '<div style="display:flex;align-items:center;gap:14px;background:'+(over?'#fbf1ee':'#fff')+';border:1px solid '+(over?'#e7c6bd':'#e2d9ce')+';border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
+      icon('clock',16,(over?'#9b3a2e':AMT_TERRE_DEEP)) +
+      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:'+AMT_TERRE_MID+'">Temps restant ce mois</span>' +
+      '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+'">'+amtFmtMin(remaining)+'</span>' +
+      '<span style="font-size:13px;color:'+AMT_TERRE_MID+'">'+usedMin+' / '+(quotaMin||'—')+' min</span>' +
+      '<div style="flex:1;min-width:120px;height:7px;background:'+AMT_SOFT_BG+';border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+';width:'+pct+'%"></div></div>' +
+      '<button onclick="amtEditForfait(\''+pid+'\')" style="font-size:11px;padding:5px 11px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Modifier le forfait</button>' +
+      '<button onclick="amtOpenAddTicket(\''+pid+'\')" style="font-size:12px;font-weight:600;padding:7px 14px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">+ Ouvrir un ticket</button>' +
+    '</div>';
+
+    // Status filter
+    var stFilter = amtStFilter[pid] || 'all';
+    var ST_KEYS = ['all','open','in_progress','done','closed'];
+    var stBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">' +
+      ST_KEYS.map(function(sk){
+        var act = stFilter===sk;
+        var cnt = sk==='all' ? tickets.length : tickets.filter(function(t){return t.status===sk;}).length;
+        var lab = sk==='all' ? 'Tout' : AMT_STATUS[sk];
+        var dot = sk!=='all' ? '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+AMT_STATUS_COL[sk]+';transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span>' : '';
+        return '<button onclick="amtSetStFilter(\''+pid+'\',\''+sk+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?AMT_TERRE_DEEP:'#e2d9ce')+';background:'+(act?AMT_SOFT_BG:'#fff')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+'">'+dot+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
+      }).join('') +
+    '</div>';
+
+    var shown = stFilter==='all' ? tickets : tickets.filter(function(t){ return t.status===stFilter; });
+    var listHtml = shown.length
+      ? '<div style="display:grid;gap:11px">' + shown.map(function(t){ return amtTicketRow(pid, t); }).join('') + '</div>'
+      : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_SOFT+';text-align:center;padding:24px 0">Aucune demande ici.</p>';
+
+    return quotaBar + stBar + listHtml;
+  }
+
+  function amtTicketRow(pid, t){
+    var urgent = (t.priority==='haute');
+    var urgHtml = urgent ? '<span title="Urgent" style="width:9px;height:9px;border-radius:1px;background:#9b3a2e;transform:rotate(45deg);display:inline-block;flex:0 0 auto"></span>' : '';
+    var cm = amtCatMeta(t.category);
+    var catBadge = cm ? '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:'+amtCatBg(cm)+';color:'+cm[3]+';font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500">'+cm[1]+'</span>' : '';
+    var stCol = AMT_STATUS_COL[t.status]||AMT_TERRE_MID;
+
+    var catSel = '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{category:this.value})" style="font-family:inherit;font-size:11px;padding:4px 7px;border:1.5px solid #e2d9ce;border-radius:7px;color:'+AMT_TERRE_DEEP+'">' +
+      '<option value="">Type…</option>' + AMT_CATS.map(function(c){ return '<option value="'+c[0]+'"'+(t.category===c[0]?' selected':'')+'>'+c[1]+'</option>'; }).join('') + '</select>';
+    var stSel = '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:11px;padding:4px 7px;border:1.5px solid #e2d9ce;border-radius:7px;color:'+AMT_TERRE_DEEP+'">' +
+      Object.keys(AMT_STATUS).map(function(s){ return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+AMT_STATUS[s]+'</option>'; }).join('') + '</select>';
+    var minInput = '<span style="display:inline-flex;align-items:center;gap:4px;font-family:\'Inter Tight\',sans-serif;font-size:11px;color:'+AMT_TERRE_MID+'">'+
+      '<input type="number" min="0" step="5" value="'+(t.timeSpentMinutes||0)+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{timeSpentMinutes:Math.max(0,parseInt(this.value,10)||0)})" style="width:62px;font-family:inherit;font-size:11px;padding:4px 6px;border:1.5px solid #e2d9ce;border-radius:7px;color:'+AMT_TERRE_DEEP+'"> min</span>';
+
+    var isOpen = amtOpenTicket[pid]===t.id;
+    var detail = isOpen ? amtTicketDetail(pid, t) : '';
+
+    return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:14px 18px">' +
+      '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px">' +
+            urgHtml +
+            '<button onclick="amtToggleTicket(\''+pid+'\',\''+t.id+'\')" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font-family:\'Cormorant Garamond\',serif;font-size:18px;color:'+AMT_TERRE_DEEP+'">'+esc(t.title||'Sans titre')+'</button>' +
+            catBadge +
+          '</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_MID+'">'+
+            (t.dueDate ? 'Echeance '+formatDate(t.dueDate) : 'Sans echeance') +
+            (t.resolvedAt ? ' \xB7 resolu le '+formatDate(t.resolvedAt) : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          catSel + stSel + minInput +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:'+stCol+'22;color:'+stCol+'">'+(AMT_STATUS[t.status]||t.status)+'</span>' +
+          '<button onclick="amtDeleteTicket(\''+pid+'\',\''+t.id+'\')" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#9b3a2e;padding:2px">'+icon('trash',14)+'</button>' +
+        '</div>' +
+      '</div>' + detail +
+    '</div>';
+  }
+  function amtCatBg(cm){
+    var map = { question:'#eaf1fc', bug:'#fbeadf', ajustement:'#f3edfb', contenu:'#fbf5dd' };
+    return map[cm[0]] || cm[1];
+  }
+
+  function amtTicketDetail(pid, t){
+    var comments = Array.isArray(t.comments)?t.comments:[];
+    var commentsHtml = comments.map(function(c){
+      return '<div style="background:'+AMT_SOFT_BG+';border-radius:8px;padding:7px 10px;margin-bottom:6px">' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:'+AMT_TERRE_DEEP+'">'+(c.author==='cindy'?'Studio':esc(c.author||'Client'))+'<span style="color:'+AMT_TERRE_SOFT+';font-weight:400"> \xB7 '+(c.createdAt?formatDate(c.createdAt):'')+'</span></div>' +
+        '<div style="font-size:12px;color:'+AMT_TERRE_DEEP+';margin-top:2px;white-space:pre-wrap">'+esc(c.text||c.content||'')+'</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #efe7da">' +
+      '<div style="display:grid;gap:10px">' +
+        '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Objet</label>'+
+          '<input value="'+esc(t.title||'')+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{title:this.value})" style="width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"></div>' +
+        '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Detail</label>'+
+          '<textarea rows="3" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{description:this.value})" style="width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+';resize:vertical">'+esc(t.description||'')+'</textarea></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+          '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Echeance</label>'+
+            '<input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{dueDate:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"></div>' +
+          '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Urgent</label>'+
+            '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{priority:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"><option value="moyenne"'+(t.priority!=='haute'?' selected':'')+'>Non</option><option value="haute"'+(t.priority==='haute'?' selected':'')+'>Oui — blocage du site</option></select></div>' +
+        '</div>' +
+        '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:6px">Echange</label>'+
+          (commentsHtml || '<div style="font-size:11px;color:'+AMT_TERRE_SOFT+';font-style:italic;margin-bottom:6px">Aucun message.</div>') +
+          '<div style="display:flex;gap:6px;margin-top:6px"><input id="amt-comment-'+t.id+'" placeholder="Repondre…" style="flex:1;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px"><button onclick="amtAddComment(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Envoyer</button></div></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ── SUIVI MENSUEL ───────────────────────────────────────────────────────────
+  function amtBuildSuivi(project){
+    var pid = project.id;
+    var tickets = amtTicketsOf(project);
+    var quotaMin = (parseFloat(project.monthlyHours)||0)*60;
+    var reguls = (project.maintReguls && typeof project.maintReguls==='object') ? project.maintReguls : {};
+    var mk = amtMonthKey();
+
+    // build month list from earliest ticket / startDate to now (>=5)
+    var byMonth = {};
+    tickets.forEach(function(t){ var ref=((t.resolvedAt||t.createdAt)||'').slice(0,7); if(ref){ byMonth[ref]=(byMonth[ref]||0)+(t.timeSpentMinutes||0); } });
+    var knownKeys = Object.keys(byMonth).concat(Object.keys(reguls));
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth()-4, 1);
+    knownKeys.forEach(function(k){ var d=new Date(k+'-01'); if(d<start) start=d; });
+    var months = [];
+    var cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    var end = new Date(now.getFullYear(), now.getMonth(), 1);
+    while (cur<=end){ months.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')); cur.setMonth(cur.getMonth()+1); }
+
+    var consumedNow = byMonth[mk]||0;
+    var knownMonthsWithData = months.filter(function(m){ return byMonth[m]!=null; });
+    var avg = knownMonthsWithData.length ? Math.round(months.reduce(function(s,m){ return s+(byMonth[m]||0); },0)/knownMonthsWithData.length) : 0;
+    var toRegul = months.reduce(function(s,m){ var c=byMonth[m]||0; var over=c-quotaMin; var r=(reguls[m]!=null)?reguls[m]:(over>0?over:0); return s+r; }, 0);
+
+    var kpis = [
+      { v: amtFmtMin(consumedNow), k:'Consomme ce mois' },
+      { v: amtFmtMin(toRegul), k:'A regulariser' },
+      { v: amtFmtMin(avg), k:'Moyenne mensuelle' }
+    ];
+    var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">' +
+      kpis.map(function(k){ return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:'+AMT_TERRE_DEEP+';line-height:1.1;margin-bottom:4px">'+k.v+'</div>' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:'+AMT_TERRE_MID+'">'+k.k+'</div>' +
+      '</div>'; }).join('') + '</div>';
+
+    // chart (last >=5 months)
+    var chartMonths = months.slice(-Math.max(5, months.length>12?12:months.length));
+    var maxM = Math.max.apply(null, chartMonths.map(function(m){return byMonth[m]||0;}).concat([1]));
+    var chart = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px;margin-bottom:22px">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin:0 0 16px">Consommation par mois</h3>' +
+      '<div style="display:flex;align-items:flex-end;gap:12px;height:120px">' +
+        chartMonths.map(function(m){ var v=byMonth[m]||0; var h=Math.round(v/maxM*100); var lab=new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'}); var over=quotaMin&&v>quotaMin;
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end">' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+'">'+amtFmtMin(v)+'</span>' +
+            '<div style="width:100%;height:'+h+'%;min-height:3px;background:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+';border-radius:5px 5px 0 0"></div>' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_MID+'">'+lab+'</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+    // history table
+    var rows = months.slice().reverse().map(function(m){
+      var c = byMonth[m]||0;
+      var rest = quotaMin - c;
+      var over = rest<0;
+      var regVal = (reguls[m]!=null)?reguls[m]:'';
+      var mLab = new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      return '<tr style="'+(over?'background:#fbf1ee':'')+'">' +
+        '<td style="padding:9px 12px;font-size:13px;text-transform:capitalize;white-space:nowrap;color:'+AMT_TERRE_DEEP+'">'+esc(mLab)+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:'+AMT_TERRE_MID+'">'+(quotaMin||'—')+(quotaMin?' min':'')+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:'+AMT_TERRE_DEEP+'">'+c+' min</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+'">'+amtFmtMin(rest)+'</td>' +
+        '<td style="padding:9px 12px;text-align:center"><input type="number" value="'+esc(regVal)+'" placeholder="0" onchange="amtSetRegul(\''+pid+'\',\''+m+'\',this.value)" style="width:70px;font-family:inherit;font-size:12px;padding:4px 6px;border:1.5px solid #e2d9ce;border-radius:7px;text-align:center;color:'+AMT_TERRE_DEEP+'"></td>' +
+      '</tr>';
+    }).join('');
+    var table = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:18px 20px;margin-bottom:22px;overflow-x:auto">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin:0 0 14px">Historique mensuel</h3>' +
+      '<table style="width:100%;border-collapse:collapse;font-family:\'Inter Tight\',sans-serif">' +
+        '<thead><tr style="border-bottom:2px solid #e2d9ce">'+
+          ['Mois','Quota','Consomme','Restant','Regularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:'+AMT_TERRE_MID+';text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
+        '</tr></thead><tbody>'+(rows||'<tr><td colspan="5" style="padding:14px;text-align:center;color:'+AMT_TERRE_SOFT+'">Aucune donnee.</td></tr>')+'</tbody>' +
+      '</table>' +
+    '</div>';
+
+    var note = (project.maintNote!=null)?project.maintNote:'';
+    var cards = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+      '<div style="background:'+AMT_SOFT_BG+';border:1px solid '+AMT_TERRE_SOFT+';border-radius:14px;padding:18px 20px">' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:'+AMT_TERRE_MID+';margin-bottom:10px">A retenir</div>' +
+        '<textarea rows="3" onchange="amtSaveField(\''+pid+'\',\'maintNote\',this.value)" placeholder="Note libre pour ce client…" style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+';resize:vertical;background:#fff">'+esc(note)+'</textarea>' +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin-bottom:6px">Reserve ton call</div>' +
+        '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_MID+';margin:0 0 12px">Un point sur le mois ou les priorites.</p>' +
+        '<input type="url" value="'+esc(project.maintCallUrl||'')+'" onchange="amtSaveField(\''+pid+'\',\'maintCallUrl\',this.value)" placeholder="Lien de reservation (URL)" style="width:100%;font-family:inherit;font-size:12px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+';margin-bottom:10px">' +
+        (project.maintCallUrl ? '<a href="'+esc(project.maintCallUrl)+'" target="_blank" rel="noopener" style="align-self:flex-start;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';text-decoration:none">Ouvrir le lien</a>' : '') +
+      '</div>' +
+    '</div>';
+
+    return kpiHtml + chart + table + cards;
+  }
+
+  // ── CONSEILS & AMELIORATIONS ────────────────────────────────────────────────
+  function amtBuildConseils(project){
+    var pid = project.id;
+    var counsels = Array.isArray(project.counsels)?project.counsels:[];
+    var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button onclick="amtAddCounsel(\''+pid+'\')" style="font-size:12px;font-weight:600;padding:8px 15px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">+ Ajouter un conseil</button></div>';
+    var BADGES = { integrer:['A integrer','#efe1b0','#6b5310'], etudier:['A etudier','#dccaf0','#5a3f86'] };
+    var list = counsels.length ? '<div style="display:grid;gap:12px">' + counsels.map(function(c){
+      var b = BADGES[c.badge] || BADGES.integrer;
+      return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:16px 18px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-size:18px;color:'+AMT_TERRE_DEEP+';flex:1">'+esc(c.title||'')+'</span>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;padding:3px 10px;border-radius:999px;background:'+b[1]+';color:'+b[2]+'">'+b[0]+'</span>' +
+          '<button onclick="amtEditCounsel(\''+pid+'\',\''+c.id+'\')" title="Modifier" style="background:none;border:none;cursor:pointer;color:'+AMT_TERRE_MID+';padding:2px">'+icon('pencil',13)+'</button>' +
+          '<button onclick="amtDeleteCounsel(\''+pid+'\',\''+c.id+'\')" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#9b3a2e;padding:2px">'+icon('trash',13)+'</button>' +
+        '</div>' +
+        (c.body ? '<p style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:'+AMT_TERRE_MID+';margin:0;white-space:pre-wrap">'+esc(c.body)+'</p>' : '') +
+      '</div>';
+    }).join('') + '</div>' : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_SOFT+';text-align:center;padding:24px 0">Aucun conseil pour le moment.</p>';
+    return addBtn + list;
+  }
+
+  // ── RETOURS CLIENTS ─────────────────────────────────────────────────────────
+  function amtBuildRetours(project){
+    var pid = project.id;
+    var feedbacks = Array.isArray(project.feedbacks)?project.feedbacks:[];
+    var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button onclick="amtAddFeedback(\''+pid+'\')" style="font-size:12px;font-weight:600;padding:8px 15px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">+ Ajouter un retour</button></div>';
+    var list = feedbacks.length ? '<div style="display:grid;gap:12px">' + feedbacks.map(function(f){
+      return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:16px 18px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-size:17px;color:'+AMT_TERRE_DEEP+';flex:1">'+esc(f.author||'Retour')+'</span>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_SOFT+'">'+(f.createdAt?formatDate(f.createdAt):'')+'</span>' +
+          '<button onclick="amtDeleteFeedback(\''+pid+'\',\''+f.id+'\')" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#9b3a2e;padding:2px">'+icon('trash',13)+'</button>' +
+        '</div>' +
+        (f.content||f.body ? '<p style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:'+AMT_TERRE_MID+';margin:0;white-space:pre-wrap">'+esc(f.content||f.body)+'</p>' : '') +
+      '</div>';
+    }).join('') + '</div>' : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_SOFT+';text-align:center;padding:24px 0">Aucun retour client pour le moment.</p>';
+    return addBtn + list;
+  }
+
+  // ── Re-render local ─────────────────────────────────────────────────────────
+  function amtRender(){
+    var p = window._currentProject; if (!p) return;
+    var holder = document.getElementById('amt-section');
+    if (holder) holder.innerHTML = buildMaintenanceSection(p);
+    else if (currentProjectId) loadProject(currentProjectId);
+  }
+  async function amtPersist(fields){
+    var p = window._currentProject;
+    var body = Object.assign({}, p, fields);
+    var res = await apiFetch('/api/projects/'+currentProjectId, { method:'PUT', body: JSON.stringify(body) });
+    if (res.ok){ Object.assign(p, fields); amtRender(); return true; }
+    toast('Erreur', true); return false;
+  }
+  function amtUid(){ return (Date.now().toString(36)+Math.random().toString(36).slice(2,7)); }
+
+  // ── Window funcs ─────────────────────────────────────────────────────────────
+  window.amtSetTab = function(pid, tab){ amtTab[pid]=tab; amtRender(); };
+  window.amtSetStFilter = function(pid, sk){ amtStFilter[pid]=sk; amtRender(); };
+  window.amtToggleTicket = function(pid, id){ amtOpenTicket[pid] = (amtOpenTicket[pid]===id?null:id); amtRender(); };
+
+  window.amtPatch = async function(pid, id, fields){
+    var p = window._currentProject; var tickets = amtTicketsOf(p).slice();
+    var i = tickets.findIndex(function(t){return t.id===id;}); if (i<0) return;
+    var next = Object.assign({}, tickets[i], fields);
+    if ((fields.status==='done'||fields.status==='closed') && !next.resolvedAt) next.resolvedAt = new Date().toISOString();
+    tickets[i] = next;
+    await amtPersist({ tickets: tickets });
+  };
+  window.amtDeleteTicket = function(pid, id){
+    showConfirm('Ce ticket sera supprime definitivement.', async function(){
+      var p = window._currentProject;
+      var tickets = amtTicketsOf(p).filter(function(t){return t.id!==id;});
+      if (amtOpenTicket[pid]===id) amtOpenTicket[pid]=null;
+      await amtPersist({ tickets: tickets });
+    }, { title:'Supprimer le ticket', okLabel:'Supprimer', danger:true });
+  };
+  window.amtAddComment = async function(pid, id){
+    var input = document.getElementById('amt-comment-'+id); if (!input) return;
+    var text = input.value.trim(); if (!text) return;
+    var p = window._currentProject; var tickets = amtTicketsOf(p).slice();
+    var i = tickets.findIndex(function(t){return t.id===id;}); if (i<0) return;
+    var comments = Array.isArray(tickets[i].comments)?tickets[i].comments.slice():[];
+    comments.push({ id:amtUid(), author:'cindy', text:text, createdAt:new Date().toISOString() });
+    tickets[i] = Object.assign({}, tickets[i], { comments:comments });
+    await amtPersist({ tickets: tickets });
+  };
+  window.amtEditForfait = function(pid){
+    var p = window._currentProject;
+    showPrompt('Forfait mensuel', 'Nombre d\'heures incluses par mois (le quota en minutes = heures x 60)', String((p&&p.monthlyHours)||''), async function(v){
+      var h = parseFloat(v); if (isNaN(h)||h<0){ toast('Valeur invalide', true); return; }
+      await amtPersist({ monthlyHours: h });
+    }, { type:'number', okLabel:'Enregistrer', placeholder:'ex: 4' });
+  };
+  window.amtSetRegul = async function(pid, monthKey, val){
+    var p = window._currentProject;
+    var reguls = Object.assign({}, (p.maintReguls&&typeof p.maintReguls==='object')?p.maintReguls:{});
+    var n = parseInt(val,10);
+    if (val==='' || isNaN(n)) delete reguls[monthKey]; else reguls[monthKey]=n;
+    await amtPersist({ maintReguls: reguls });
+  };
+  window.amtSaveField = async function(pid, field, val){
+    var fields = {}; fields[field] = val;
+    await amtPersist(fields);
+  };
+
+  // ── Ouvrir un ticket (studio) ──
+  window.amtOpenAddTicket = function(pid){
+    var ov = document.getElementById('_amt-add'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id='_amt-add';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
+    var L='font-size:11px;font-weight:600;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px';
+    ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+AMT_TERRE_DEEP+';border-radius:16px;padding:26px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:'+AMT_TERRE_DEEP+';margin:0">Ouvrir un ticket</h3><button onclick="document.getElementById(\'_amt-add\').remove()" style="background:none;border:none;font-size:22px;color:'+AMT_TERRE_MID+';cursor:pointer">×</button></div>' +
+      '<div style="margin-bottom:12px"><label style="'+L+'">Objet</label><input id="_amt-title" style="'+S+'"></div>' +
+      '<div style="margin-bottom:12px"><label style="'+L+'">Contexte / detail</label><textarea id="_amt-desc" rows="3" style="'+S+';resize:vertical"></textarea></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+        '<div><label style="'+L+'">Type de demande</label><select id="_amt-cat" style="'+S+'"><option value="">—</option>'+AMT_CATS.map(function(c){return '<option value="'+c[0]+'">'+c[1]+'</option>';}).join('')+'</select></div>' +
+        '<div><label style="'+L+'">Echeance souhaitee</label><input type="date" id="_amt-due" style="'+S+'"></div>' +
+      '</div>' +
+      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:13px;color:'+AMT_TERRE_DEEP+';cursor:pointer"><input type="checkbox" id="_amt-urgent"> Urgent — blocage du site</label>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtCreateTicket(\''+pid+'\')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Creer le ticket</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    setTimeout(function(){ var el=document.getElementById('_amt-title'); if(el) el.focus(); }, 50);
+  };
+  window.amtCreateTicket = async function(pid){
+    var title = document.getElementById('_amt-title').value.trim();
+    if (!title){ toast('Objet requis', true); return; }
+    var ticket = {
+      id: amtUid(),
+      title: title,
+      description: document.getElementById('_amt-desc').value.trim(),
+      category: document.getElementById('_amt-cat').value || '',
+      priority: document.getElementById('_amt-urgent').checked ? 'haute' : 'moyenne',
+      dueDate: document.getElementById('_amt-due').value || '',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      timeSpentMinutes: 0,
+      comments: []
+    };
+    var p = window._currentProject;
+    var tickets = [ticket].concat(amtTicketsOf(p));
+    var ov = document.getElementById('_amt-add'); if (ov) ov.remove();
+    if (await amtPersist({ tickets: tickets })) toast('Ticket cree');
+  };
+
+  // ── Conseils CRUD ──
+  function amtCounselForm(pid, existing){
+    var ov = document.getElementById('_amt-counsel'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id='_amt-counsel';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
+    var L='font-size:11px;font-weight:600;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px';
+    var e = existing || {};
+    ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+AMT_TERRE_DEEP+';border-radius:16px;padding:26px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:'+AMT_TERRE_DEEP+';margin:0">'+(existing?'Modifier le conseil':'Nouveau conseil')+'</h3><button onclick="document.getElementById(\'_amt-counsel\').remove()" style="background:none;border:none;font-size:22px;color:'+AMT_TERRE_MID+';cursor:pointer">×</button></div>' +
+      '<div style="margin-bottom:12px"><label style="'+L+'">Titre</label><input id="_amt-c-title" value="'+esc(e.title||'')+'" style="'+S+'"></div>' +
+      '<div style="margin-bottom:12px"><label style="'+L+'">Corps</label><textarea id="_amt-c-body" rows="4" style="'+S+';resize:vertical">'+esc(e.body||'')+'</textarea></div>' +
+      '<div style="margin-bottom:18px"><label style="'+L+'">Badge</label><select id="_amt-c-badge" style="'+S+'"><option value="integrer"'+(e.badge!=='etudier'?' selected':'')+'>A integrer</option><option value="etudier"'+(e.badge==='etudier'?' selected':'')+'>A etudier</option></select></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-counsel\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtSaveCounsel(\''+pid+'\','+(existing?'\''+existing.id+'\'':'null')+')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Enregistrer</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(ev){ if(ev.target===ov) ov.remove(); });
+    setTimeout(function(){ var el=document.getElementById('_amt-c-title'); if(el) el.focus(); }, 50);
+  }
+  window.amtAddCounsel = function(pid){ amtCounselForm(pid, null); };
+  window.amtEditCounsel = function(pid, id){
+    var p = window._currentProject; var c = (p.counsels||[]).find(function(x){return x.id===id;});
+    amtCounselForm(pid, c);
+  };
+  window.amtSaveCounsel = async function(pid, id){
+    var title = document.getElementById('_amt-c-title').value.trim();
+    if (!title){ toast('Titre requis', true); return; }
+    var body = document.getElementById('_amt-c-body').value.trim();
+    var badge = document.getElementById('_amt-c-badge').value;
+    var p = window._currentProject;
+    var counsels = Array.isArray(p.counsels)?p.counsels.slice():[];
+    if (id){ var i=counsels.findIndex(function(x){return x.id===id;}); if(i>=0) counsels[i]=Object.assign({},counsels[i],{title:title,body:body,badge:badge}); }
+    else counsels.push({ id:amtUid(), title:title, body:body, badge:badge });
+    var ov = document.getElementById('_amt-counsel'); if (ov) ov.remove();
+    await amtPersist({ counsels: counsels });
+  };
+  window.amtDeleteCounsel = function(pid, id){
+    showConfirm('Ce conseil sera supprime.', async function(){
+      var p = window._currentProject;
+      var counsels = (p.counsels||[]).filter(function(x){return x.id!==id;});
+      await amtPersist({ counsels: counsels });
+    }, { title:'Supprimer le conseil', okLabel:'Supprimer', danger:true });
+  };
+
+  // ── Retours CRUD ──
+  window.amtAddFeedback = function(pid){
+    var ov = document.getElementById('_amt-fb'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id='_amt-fb';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
+    var L='font-size:11px;font-weight:600;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px';
+    ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+AMT_TERRE_DEEP+';border-radius:16px;padding:26px;max-width:460px;width:100%">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:'+AMT_TERRE_DEEP+';margin:0">Nouveau retour</h3><button onclick="document.getElementById(\'_amt-fb\').remove()" style="background:none;border:none;font-size:22px;color:'+AMT_TERRE_MID+';cursor:pointer">×</button></div>' +
+      '<div style="margin-bottom:12px"><label style="'+L+'">Auteur</label><input id="_amt-fb-author" style="'+S+'"></div>' +
+      '<div style="margin-bottom:18px"><label style="'+L+'">Contenu</label><textarea id="_amt-fb-content" rows="4" style="'+S+';resize:vertical"></textarea></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-fb\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtSaveFeedback(\''+pid+'\')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Enregistrer</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(ev){ if(ev.target===ov) ov.remove(); });
+    setTimeout(function(){ var el=document.getElementById('_amt-fb-author'); if(el) el.focus(); }, 50);
+  };
+  window.amtSaveFeedback = async function(pid){
+    var author = document.getElementById('_amt-fb-author').value.trim() || 'Client';
+    var content = document.getElementById('_amt-fb-content').value.trim();
+    if (!content){ toast('Contenu requis', true); return; }
+    var p = window._currentProject;
+    var feedbacks = Array.isArray(p.feedbacks)?p.feedbacks.slice():[];
+    feedbacks.unshift({ id:amtUid(), author:author, content:content, createdAt:new Date().toISOString() });
+    var ov = document.getElementById('_amt-fb'); if (ov) ov.remove();
+    await amtPersist({ feedbacks: feedbacks });
+  };
+  window.amtDeleteFeedback = function(pid, id){
+    showConfirm('Ce retour sera supprime.', async function(){
+      var p = window._currentProject;
+      var feedbacks = (p.feedbacks||[]).filter(function(x){return x.id!==id;});
+      await amtPersist({ feedbacks: feedbacks });
+    }, { title:'Supprimer le retour', okLabel:'Supprimer', danger:true });
+  };
+
   window.calNav = function(delta) {
     if (!_calMonth) { _calMonth = new Date(); _calMonth.setDate(1); }
     _calMonth.setMonth(_calMonth.getMonth() + delta);
@@ -6533,11 +7026,90 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var mainContent = '';
     if (cat==='demandes') mainContent = buildTicketsList();
-    else if (cat==='suivi')    mainContent = buildPartForfait(pid, [], project);
+    else if (cat==='suivi')    mainContent = buildMaintSuiviClient(project);
     else if (cat==='conseils') mainContent = (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
     else if (cat==='retours')  mainContent = (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour client pour le moment.</p>');
 
     return quotaStrip + catTabsHtml + mainContent;
+  }
+
+  // ── Suivi mensuel maintenance — cote CLIENT (lecture seule) ─────────────────
+  function buildMaintSuiviClient(project){
+    var tickets = Array.isArray(project.tickets)?project.tickets:[];
+    var quotaMin = (parseFloat(project.monthlyHours)||0)*60;
+    var reguls = (project.maintReguls && typeof project.maintReguls==='object') ? project.maintReguls : {};
+    function fmtMin(min){ min=Math.round(min||0); var h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60; var s=(h?h+'h'+(m?String(m).padStart(2,'0'):''):m+' min'); return (min<0?'-':'')+s; }
+    var n=new Date(); var mk=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
+
+    var byMonth = {};
+    tickets.forEach(function(t){ var ref=((t.resolvedAt||t.createdAt)||'').slice(0,7); if(ref){ byMonth[ref]=(byMonth[ref]||0)+(t.timeSpentMinutes||0); } });
+    var knownKeys = Object.keys(byMonth).concat(Object.keys(reguls));
+    var start = new Date(n.getFullYear(), n.getMonth()-4, 1);
+    knownKeys.forEach(function(k){ var d=new Date(k+'-01'); if(d<start) start=d; });
+    var months = [];
+    var cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    var end = new Date(n.getFullYear(), n.getMonth(), 1);
+    while (cur<=end){ months.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')); cur.setMonth(cur.getMonth()+1); }
+
+    var consumedNow = byMonth[mk]||0;
+    var knownData = months.filter(function(m){ return byMonth[m]!=null; });
+    var avg = knownData.length ? Math.round(months.reduce(function(s,m){ return s+(byMonth[m]||0); },0)/knownData.length) : 0;
+    var toRegul = months.reduce(function(s,m){ var c=byMonth[m]||0; var over=c-quotaMin; var r=(reguls[m]!=null)?reguls[m]:(over>0?over:0); return s+r; }, 0);
+
+    var kpis = [
+      { v: fmtMin(consumedNow), k:'Consomme ce mois' },
+      { v: fmtMin(toRegul), k:'A regulariser' },
+      { v: fmtMin(avg), k:'Moyenne mensuelle' }
+    ];
+    var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">' +
+      kpis.map(function(k){ return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px">' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre);line-height:1;margin-bottom:4px">'+k.v+'</div>' +
+        '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">'+k.k+'</div>' +
+      '</div>'; }).join('') + '</div>';
+
+    var chartMonths = months.slice(-Math.max(5, months.length>12?12:months.length));
+    var maxM = Math.max.apply(null, chartMonths.map(function(m){return byMonth[m]||0;}).concat([1]));
+    var chart = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:16px">Consommation par mois</div>' +
+      '<div style="display:flex;align-items:flex-end;gap:14px;height:130px">' +
+        chartMonths.map(function(m){ var v=byMonth[m]||0; var h=Math.round(v/maxM*100); var lab=new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'}); var over=quotaMin&&v>quotaMin;
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">' +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:'+(over?'#9b3a2e':'var(--terre-600)')+'">'+fmtMin(v)+'</span>' +
+            '<div style="width:100%;height:'+h+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(over?'#9b3a2e':'var(--terre)')+'"></div>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+lab+'</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+    var rows = months.slice().reverse().map(function(m){
+      var c = byMonth[m]||0; var rest = quotaMin-c; var over = rest<0;
+      var regVal = (reguls[m]!=null)?reguls[m]:0;
+      var mLab = new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      return '<tr style="'+(over?'background:#fbf1ee':'')+'">' +
+        '<td style="padding:9px 12px;font-size:13px;text-transform:capitalize;white-space:nowrap;color:var(--terre)">'+esc(mLab)+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(quotaMin||'—')+(quotaMin?' min':'')+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre)">'+c+' min</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#9b3a2e':'var(--terre)')+'">'+fmtMin(rest)+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(regVal?fmtMin(regVal):'—')+'</td>' +
+      '</tr>';
+    }).join('');
+    var table = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:20px 22px;overflow-x:auto">' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:14px">Historique mensuel</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-family:var(--font-ui)">' +
+        '<thead><tr style="border-bottom:2px solid var(--bone-d)">'+
+          ['Mois','Quota','Consomme','Restant','Regularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--terre-600);text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
+        '</tr></thead><tbody>'+(rows||'<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--terre-400)">Aucune donnee.</td></tr>')+'</tbody>' +
+      '</table>' +
+    '</div>';
+
+    var noteCard = project.maintNote ? '<div style="background:var(--bone-50,#f3ece0);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:18px 20px;margin-top:18px">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">A retenir</div>' +
+      '<p style="font-family:var(--font-ui);font-size:13px;color:var(--terre);margin:0;white-space:pre-wrap">'+esc(project.maintNote)+'</p>' +
+    '</div>' : '';
+    var callCard = project.maintCallUrl ? '<div style="margin-top:18px;text-align:center"><a href="'+esc(project.maintCallUrl)+'" target="_blank" rel="noopener" style="display:inline-block;font-family:var(--font-ui);font-size:13px;font-weight:500;padding:10px 20px;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);text-decoration:none">Reserve ton call</a></div>' : '';
+
+    return kpiHtml + chart + table + noteCard + callCard;
   }
 
   // ── Stats partenaire ──────────────────────────────────────────────────────
