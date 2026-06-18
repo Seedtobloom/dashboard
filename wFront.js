@@ -6714,32 +6714,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var isDone = s.status==='done';
       var numBg = isDone ? svAccent.soft : 'var(--bone)';
       var numBdr = isDone ? svAccent.mid : 'var(--bone-d)';
-      return '<div class="cp-card cp-step-card" style="background:var(--card);border:1px solid var(--bone-d)">' +
-        '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">'+(i+1)+'</span>' +
-        '<div style="min-width:0">' +
-          '<div style="margin-bottom:6px"><button onclick="cpSelHome(\''+project.id+'\')" class="open-title" style="font-size:22px">'+esc(s.title)+'<span class="open-arrow">'+cpIcon('arrow',14)+'</span></button></div>' +
-          (s.description ? '<p style="font-size:15px;color:var(--terre-600);line-height:1.55;margin-bottom:14px">'+esc(s.description)+'</p>' : '') +
-          '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">'+cpDeadlinePill(s.dueDate, isDone)+'</div>' +
-          (s.status==='waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:'+svAccent.soft+';border-radius:var(--radius-2);border-left:3px solid '+svAccent.mid+'"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
+      return '<button onclick="cpOpenStepModal(\''+s.id+'\')" style="width:100%;text-align:left;padding:0;background:none;border:none;cursor:pointer">' +
+        '<div class="cp-card cp-step-card" style="background:var(--card);border:1px solid var(--bone-d);transition:box-shadow 150ms" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(92,70,51,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
+          '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">'+(i+1)+'</span>' +
+          '<div style="min-width:0">' +
+            '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px">'+esc(s.title)+' '+cpIcon('arrow',14,'color:var(--terre-400)')+'</div>' +
+            (s.description ? '<p style="font-size:15px;color:var(--terre-600);line-height:1.55;margin-bottom:14px">'+esc(s.description)+'</p>' : '') +
+            '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">'+cpDeadlinePill(s.dueDate, isDone)+'</div>' +
+            (s.status==='waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:'+svAccent.soft+';border-radius:var(--radius-2);border-left:3px solid '+svAccent.mid+'"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
+          '</div>' +
+          cpStatusPill(s.status) +
         '</div>' +
-        cpStatusPill(s.status) +
-      '</div>';
+      '</button>';
     }
 
     function svGalleryCard(s, i) {
       var isDone = s.status==='done';
-      return '<div class="cp-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--bone-d);box-shadow:var(--shadow-1)">' +
-        '<div style="position:relative;height:112px;background:'+svAccent.soft+'">' +
-          '<span style="position:absolute;top:10px;left:10px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.92);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)">'+(i+1)+'</span>' +
+      var bannerBg = s.bannerUrl ? 'url('+esc(s.bannerUrl)+') center/cover no-repeat' : (s.bannerColor ? s.bannerColor.split('|')[0] : svAccent.soft);
+      return '<button onclick="cpOpenStepModal(\''+s.id+'\')" style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--card);border:1px solid var(--bone-d);border-radius:10px;width:100%;display:flex;flex-direction:column;transition:transform 180ms,box-shadow 180ms" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 6px 24px rgba(92,70,51,0.1)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
+        '<div style="position:relative;height:130px;background:'+bannerBg+';border-radius:10px 10px 0 0;overflow:hidden">' +
+          '<span style="position:absolute;top:10px;left:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.9);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:13px;color:'+svAccent.ink+'">'+(i+1)+'</span>' +
+          (!s.bannerUrl ? '<div style="position:absolute;inset:0;display:grid;place-items:center">'+cpIcon('image',32,'color:'+svAccent.deep+';opacity:0.35')+'</div>' : '') +
         '</div>' +
-        '<div style="padding:15px 18px 18px;flex:1;display:flex;flex-direction:column;gap:9px">' +
-          '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.2">'+esc(s.title)+'</div>' +
-          (s.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(s.description)+'</p>' : '') +
-          '<div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">'+
-            cpDeadlinePill(s.dueDate, isDone, true)+' '+cpStatusPill(s.status)+
-          '</div>' +
+        '<div style="padding:18px 20px 20px;flex:1;display:flex;flex-direction:column;gap:10px">' +
+          '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);line-height:1.2">'+esc(s.title)+'</div>' +
+          (s.description ? '<div style="font-size:13.5px;color:var(--terre-600);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(s.description)+'</div>' : '') +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;flex-wrap:wrap">'+cpDeadlinePill(s.dueDate, isDone, true)+' '+cpStatusPill(s.status)+'</div>' +
         '</div>' +
-      '</div>';
+      '</button>';
     }
 
     var svCardsHtml = svMode==='gallery'
@@ -6982,7 +6984,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div>' + progress + '</div>' +
           '<div>' + sideCol + '</div>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      buildStepModal(project.id, steps);
   }
 
   // ── Page builder ──────────────────────────────────────────────────────────────
