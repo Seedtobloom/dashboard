@@ -2061,7 +2061,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             (grp.items.length > 1
               ? '<div class="project-item__title" style="padding-left:8px">' + esc(p.projectTitle) + '</div>'
               : '<div><div class="project-item__name">' + esc(p.clientName) + '</div><div class="project-item__title">' + esc(p.projectTitle) + '</div></div>') +
-            '<div class="project-item__meta">' + adminStatusBadge(p.status) + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
+            '<div class="project-item__meta">' + adminStatusBadge(p.status) + '<span style="font-size:9px;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:rgba(239,225,176,0.45);white-space:nowrap">' + esc(ADMIN_TYPE_SHORT[p.type]||p.type||'') + '</span>' + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
           '</a>' +
           '<button class="project-item-del" title="Supprimer cet espace" onclick="event.stopPropagation();adminDeleteProject(\'' + p.id + '\',\'' + esc((delName||'').replace(/'/g,"\\'")) + '\')">' + icon('trash',14) + '</button>' +
         '</div>';
