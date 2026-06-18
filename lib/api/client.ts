@@ -122,6 +122,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
         priority: body.priority || 'moyenne',
         category: body.category || '',
         status: 'open',
+        attachments: Array.isArray(body.attachments) ? body.attachments : [],
         createdAt: new Date().toISOString(),
       };
       project.tickets.unshift(ticket);
@@ -134,10 +135,24 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       const tickets = project.tickets!;
       const idx = tickets.findIndex((t) => t.id === ticketId);
       if (idx === -1) return errorResponse('Ticket not found', 404);
+      if (typeof body.title === 'string' && body.title.trim()) tickets[idx].title = body.title.trim();
+      if (typeof body.description === 'string') tickets[idx].description = body.description;
+      if (body.priority) tickets[idx].priority = body.priority;
+      if (body.category !== undefined) tickets[idx].category = body.category;
+      if (Array.isArray(body.attachments)) tickets[idx].attachments = body.attachments;
       if (body.status) tickets[idx].status = body.status;
       if (body.status === 'done' || body.status === 'closed') tickets[idx].resolvedAt = new Date().toISOString();
+      if (body.status && body.status !== 'done' && body.status !== 'closed') tickets[idx].resolvedAt = undefined;
       await saveProject(env, project);
       return jsonResponse(tickets[idx]);
+    }
+
+    if (method === 'DELETE' && ticketId) {
+      const before = project.tickets.length;
+      project.tickets = project.tickets.filter((t) => t.id !== ticketId);
+      if (project.tickets.length === before) return errorResponse('Ticket not found', 404);
+      await saveProject(env, project);
+      return jsonResponse({ ok: true });
     }
 
     return errorResponse('Method not allowed', 405);

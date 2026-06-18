@@ -5383,6 +5383,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Urgent</label>'+
             '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{priority:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"><option value="moyenne"'+(t.priority!=='haute'?' selected':'')+'>Non</option><option value="haute"'+(t.priority==='haute'?' selected':'')+'>Oui — blocage du site</option></select></div>' +
         '</div>' +
+        (Array.isArray(t.attachments)&&t.attachments.length ? '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:6px">Pièces jointes</label><div style="display:flex;flex-wrap:wrap;gap:7px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="/api/projects/'+pid+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:'+AMT_SOFT_BG+';border:1px solid #e2d9ce;border-radius:8px;font-size:11.5px;color:'+AMT_TERRE_DEEP+';text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div></div>' : '') +
         '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:6px">Echange</label>'+
           (commentsHtml || '<div style="font-size:11px;color:'+AMT_TERRE_SOFT+';font-style:italic;margin-bottom:6px">Aucun message.</div>') +
           '<div style="display:flex;gap:6px;margin-top:6px"><input id="amt-comment-'+t.id+'" placeholder="Repondre…" style="flex:1;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px"><button onclick="amtAddComment(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Envoyer</button></div></div>' +
@@ -7960,6 +7961,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span style="font-family:var(--font-display);font-size:17.5px;color:var(--terre);line-height:1.15">'+esc(t.title||'Sans titre')+'</span>' +
             '</div>' +
             (t.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin-bottom:11px">'+esc(t.description)+'</p>' : '') +
+            (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#faf7f1);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
             '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
               catBadge +
               cpDeadlinePill(t.dueDate||t.deadline, !isOpen, true) +
@@ -7968,6 +7970,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:0 0 auto">' +
             cpStatusPill(t.status) +
             (isOpen ? '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Marquer resolu</button>' : '') +
+            (isOpen ? '<div style="display:flex;gap:5px">' +
+              '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Modifier</button>' +
+              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid #f0d0cc;background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:#c44">Suppr.</button>' +
+            '</div>' : '') +
           '</div>' +
         '</div>';
       }
@@ -8248,7 +8254,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#FAF8F4);color:var(--terre,#5c4633);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
-      '<button onclick="cliOpenAddTask(\''+pid+'\',\'\')" style="margin-left:auto;padding:7px 16px;border-radius:999px;border:none;background:var(--navy,#051833);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.06em;cursor:pointer;white-space:nowrap">+ AJOUTER UNE TÂCHE</button>' +
     '</div>';
 
     // Grid cells — table unifiée bordurée
@@ -8906,59 +8911,109 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cliMaintFilterStatus = function(pid, st) { cliMaintStatusFilter[pid] = st; renderShell(); };
   window.cliRefreshInvoices = function(pid) { delete cliInvoices[pid]; renderShell(); };
 
-  window.cliOpenSubmitTicket = function(pid) {
-    // Build a simple inline modal for ticket submission
+  // Upload un fichier client vers /files → {key,name,type}
+  function cliUploadFile(file) {
+    var fd = new FormData(); fd.append('file', file);
+    var storedCode = sessionStorage.getItem('_sc') || '';
+    var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
+    return fetch(API_BASE + '/files', { method:'POST', headers: headers, body: fd })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(f){ if(!f||!f.key) throw new Error(); return { key:f.key, name:f.name, type:f.type }; });
+  }
+
+  window.cliMaintEditTicket = function(pid, ticketId) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tickets||[]).find(function(x){return x.id===ticketId;});
+    if (t) cliOpenSubmitTicket(pid, t);
+  };
+  window.cliMaintDeleteTicket = function(pid, ticketId) {
+    showConfirm('Cette demande sera définitivement supprimée.', function() {
+      fetch(API_BASE + '/tickets/' + ticketId + '?projectId=' + pid, { method:'DELETE', headers:{'Content-Type':'application/json'} })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(){
+          var pd = getPD(pid);
+          if (pd) pd.project.tickets = (pd.project.tickets||[]).filter(function(x){return x.id!==ticketId;});
+          toast('Demande supprimée'); renderShell();
+        }).catch(function(){ toast('Erreur, réessayez.'); });
+    }, { title:'Supprimer la demande', okLabel:'Supprimer', danger:true });
+  };
+
+  window.cliOpenSubmitTicket = function(pid, edit) {
     var existing = document.getElementById('_maint-ticket-modal');
     if (existing) existing.remove();
+    // Pièces jointes en attente pour cette session du modal
+    var pending = edit && Array.isArray(edit.attachments) ? edit.attachments.slice() : [];
 
     var ov = document.createElement('div');
     ov.id = '_maint-ticket-modal';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:17px;font-weight:700;color:#051833;margin-bottom:16px">Nouveau ticket de maintenance</div>' +
+    var cats = ['Bug','Modification','Ajout de contenu','Performance','Sécurité','Autre'];
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:17px;font-weight:700;color:#051833;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
-        '<input id="_maint-t-title" type="text" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833">' +
+        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833">' +
       '</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
-        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;resize:vertical;line-height:1.5"></textarea>' +
+        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
           '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
-            '<option value="basse">Basse</option>' +
-            '<option value="moyenne" selected>Moyenne</option>' +
-            '<option value="haute">Haute</option>' +
+            ['basse','moyenne','haute'].map(function(p){ return '<option value="'+p+'"'+(((edit&&edit.priority)||'moyenne')===p?' selected':'')+'>'+(p.charAt(0).toUpperCase()+p.slice(1))+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
           '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
             '<option value="">— Catégorie —</option>' +
-            '<option value="Bug">Bug</option>' +
-            '<option value="Modification">Modification</option>' +
-            '<option value="Ajout de contenu">Ajout de contenu</option>' +
-            '<option value="Performance">Performance</option>' +
-            '<option value="Sécurité">Sécurité</option>' +
-            '<option value="Autre">Autre</option>' +
+            cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
       '</div>' +
+      '<div style="margin-bottom:18px">' +
+        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
+        '<div id="_maint-t-files" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>' +
+        '<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#8a6f54">+ Ajouter un fichier<input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
+      '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
-        '<button id="_maint-t-ok" style="padding:9px 22px;background:#5c4633;color:#EFE1B0;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Envoyer le ticket</button>' +
+        '<button id="_maint-t-ok" style="padding:9px 22px;background:#5c4633;color:#EFE1B0;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
 
     var titleInp = ov.querySelector('#_maint-t-title');
     setTimeout(function(){ titleInp.focus(); }, 60);
-
     function close() { ov.remove(); }
     ov.querySelector('#_maint-t-cancel').onclick = close;
     ov.addEventListener('click', function(e){ if (e.target === ov) close(); });
+
+    function renderFiles() {
+      var box = ov.querySelector('#_maint-t-files');
+      box.innerHTML = pending.length ? pending.map(function(f, i){
+        var isImg = (f.type||'').indexOf('image')===0;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7f3ed;border-radius:8px;font-size:13px;color:#051833">' +
+          '<span>'+(isImg?'🖼️':'📎')+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name||'fichier')+'</span>' +
+          '<button data-rm="'+i+'" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1">×</button>' +
+        '</div>';
+      }).join('') : '<div style="font-size:12px;color:#b0a89a;font-style:italic">Aucun fichier joint.</div>';
+      box.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(){ pending.splice(parseInt(b.getAttribute('data-rm')),1); renderFiles(); }; });
+    }
+    renderFiles();
+
+    ov.querySelector('#_maint-t-fileinput').onchange = function() {
+      var files = Array.prototype.slice.call(this.files||[]); this.value='';
+      if (!files.length) return;
+      var box = ov.querySelector('#_maint-t-files');
+      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#8a6f54">Envoi en cours…</div>');
+      Promise.all(files.map(cliUploadFile)).then(function(res){
+        res.forEach(function(f){ pending.push(f); });
+        renderFiles();
+      }).catch(function(){ toast('Erreur upload fichier', true); var u=document.getElementById('_maint-t-uploading'); if(u)u.remove(); });
+    };
 
     ov.querySelector('#_maint-t-ok').onclick = function() {
       var title = titleInp.value.trim();
@@ -8967,19 +9022,30 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var prio  = ov.querySelector('#_maint-t-prio').value;
       var cat   = ov.querySelector('#_maint-t-cat').value;
       close();
-      var body = { projectId: pid, title: title, description: desc, priority: prio, category: cat || undefined, status: 'open', createdAt: new Date().toISOString() };
-      fetch(API_BASE + '/tickets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-        .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
-        .then(function(ticket) {
-          var pd2 = getPD(pid);
-          if (pd2) {
-            if (!Array.isArray(pd2.project.tickets)) pd2.project.tickets = [];
-            pd2.project.tickets.unshift(ticket);
-          }
-          toast('Ticket envoyé ✓');
-          renderShell();
-        })
-        .catch(function(){ toast('Erreur lors de l\'envoi du ticket.'); });
+      if (edit) {
+        var body = { projectId: pid, title: title, description: desc, priority: prio, category: cat || '', attachments: pending };
+        fetch(API_BASE + '/tickets/' + edit.id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+          .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+          .then(function(ticket) {
+            var pd2 = getPD(pid);
+            if (pd2 && Array.isArray(pd2.project.tickets)) {
+              var idx = pd2.project.tickets.findIndex(function(x){return x.id===ticket.id;});
+              if (idx !== -1) pd2.project.tickets[idx] = ticket;
+            }
+            toast('Demande mise à jour ✓'); renderShell();
+          })
+          .catch(function(){ toast('Erreur lors de la mise à jour.'); });
+      } else {
+        var body2 = { projectId: pid, title: title, description: desc, priority: prio, category: cat || undefined, status: 'open', attachments: pending, createdAt: new Date().toISOString() };
+        fetch(API_BASE + '/tickets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body2) })
+          .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+          .then(function(ticket) {
+            var pd2 = getPD(pid);
+            if (pd2) { if (!Array.isArray(pd2.project.tickets)) pd2.project.tickets = []; pd2.project.tickets.unshift(ticket); }
+            toast('Demande envoyée ✓'); renderShell();
+          })
+          .catch(function(){ toast('Erreur lors de l\'envoi.'); });
+      }
     };
   };
 
