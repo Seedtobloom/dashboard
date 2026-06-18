@@ -9072,7 +9072,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cliDragOver  = function(e, el) { e.preventDefault(); el.style.background = '#f5f0e8'; };
   window.cliDragLeave = function(el) { el.style.background = '#fff'; };
   window.cliDrop = function(e, pid, ds) {
-    e.preventDefault(); el && (el.style.background = '#fff');
+    e.preventDefault(); if (e.currentTarget) e.currentTarget.style.background = '#fff';
     var id = _cliDragId; _cliDragId = null; if (!id) return;
     var pd = getPD(pid);
     var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===id;});
