@@ -2252,7 +2252,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   function getInbox(email) { return inboxData.find(function(c){ return c.clientEmail === email; }) || null; }
 
   async function loadConvoMessages(c) {
-    if (c.messages) return;
     c.messages = await apiFetch('/api/conversations/' + encodeURIComponent(c.clientEmail)).then(function(r){ return r.ok ? r.json() : []; });
   }
 
@@ -2474,7 +2473,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           statusSelect +
           '<div style="display:flex;gap:6px">' +
-            '<button style="padding:4px 10px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#5c4633" onclick="openEditStep(' + JSON.stringify(JSON.stringify(step)) + ')">Modifier</button>' +
+            '<button style="padding:4px 10px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#5c4633" onclick="openEditStep(' + JSON.stringify(step) + ')">Modifier</button>' +
             '<button style="padding:4px 10px;border:1px solid #e7c6bd;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#9b3a2e" onclick="deleteStep(\'' + step.id + '\')">Suppr.</button>' +
           '</div>' +
         '</div>' +
@@ -2736,14 +2735,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '</select></div>' +
                   '<div class="form-row">' +
                     '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
+                    '<div class="form-field"><label>Date limite (deadline)</label><input type="date" id="edit-deadline" value="' + (project.deadline || '') + '"></div>' +
                   '</div>' +
+                  '<div class="form-field"><label>Lien de réunion</label><input type="url" id="edit-meetingLink" value="' + esc(project.meetingLink || '') + '" placeholder="https://meet.google.com/..."></div>' +
                   ((project.type === 'partenaire' || project.type === 'maintenance') ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 4"></div>' : '') +
                 '</div>' +
               '</div>';
 
               // Steps management card
               var stepsCardHtml = '<div class="card" style="margin-bottom:24px">' +
-                '<div class="card-header"><span class="card-title">Gerer les etapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
+                '<div class="card-header"><span class="card-title">Gérer les étapes</span><button class="btn btn--sage btn--sm" onclick="openAddStep()">+ Ajouter</button></div>' +
                 '<div class="card-body" id="steps-container" style="padding:8px 0">' + stepsHtml + '</div>' +
               '</div>';
 
@@ -2751,13 +2752,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var practicalHtml = '<div class="card" style="margin-bottom:24px">' +
                 '<div class="card-header"><span class="card-title">Infos pratiques</span><button class="btn btn--sage btn--sm" onclick="openAddSection()">+ Ajouter</button></div>' +
                 '<div class="card-body" id="sections-container">' +
-                  (project.practicalInfo.sections.length ?
-                    project.practicalInfo.sections.map(function(s) {
+                  (((project.practicalInfo||{}).sections||[]).length ?
+                    ((project.practicalInfo||{}).sections||[]).map(function(s) {
                       return '<div style="padding:12px 0;border-bottom:1px solid var(--border)" data-section-id="' + s.id + '">' +
                         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
                           '<strong>' + esc(s.title) + '</strong>' +
                           '<div style="display:flex;gap:6px">' +
-                            '<button class="btn btn--outline btn--sm" onclick="openEditSection(' + JSON.stringify(JSON.stringify(s)) + ')">Modifier</button>' +
+                            '<button class="btn btn--outline btn--sm" onclick="openEditSection(' + JSON.stringify(s) + ')">Modifier</button>' +
                             '<button class="btn btn--danger btn--sm" onclick="deleteSection(\'' + s.id + '\')">Suppr.</button>' +
                           '</div>' +
                         '</div>' +
@@ -3528,8 +3529,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       description: document.getElementById('edit-description').value,
       type: document.getElementById('edit-type').value,
       status: document.getElementById('edit-status').value,
-      deadline: document.getElementById('edit-deadline').value || undefined,
-      meetingLink: document.getElementById('edit-meetingLink').value || undefined,
+      deadline: (document.getElementById('edit-deadline')||{}).value || undefined,
+      meetingLink: (document.getElementById('edit-meetingLink')||{}).value || undefined,
       spaceCode: (document.getElementById('edit-spaceCode')||{}).value || undefined,
       bannerUrl: (document.getElementById('edit-bannerData') && document.getElementById('edit-bannerData').value) || document.getElementById('edit-bannerUrl').value || undefined,
       bannerColor: _bannerColor || undefined,
@@ -3631,6 +3632,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     const projRes = await apiFetch('/api/projects/' + currentProjectId);
     const proj = await projRes.json();
+    if (!proj.practicalInfo) proj.practicalInfo = { sections: [] };
+    if (!Array.isArray(proj.practicalInfo.sections)) proj.practicalInfo.sections = [];
     if (id) {
       const idx = proj.practicalInfo.sections.findIndex(function(s) { return s.id === id; });
       if (idx !== -1) proj.practicalInfo.sections[idx] = { id, title, content };
@@ -3646,6 +3649,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     showConfirm('Cette section sera supprimée.', async function() {
     const projRes = await apiFetch('/api/projects/' + currentProjectId);
     const proj = await projRes.json();
+      if (!proj.practicalInfo) proj.practicalInfo = { sections: [] };
+      if (!Array.isArray(proj.practicalInfo.sections)) proj.practicalInfo.sections = [];
       proj.practicalInfo.sections = proj.practicalInfo.sections.filter(function(s) { return s.id !== id; });
       const res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(proj) });
       if (res.ok) { toast('Section supprimée'); setTimeout(function() { loadProject(currentProjectId); }, 400); }
@@ -3722,6 +3727,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (label) body.label = label;
     if (expiresAt) body.expiresAt = new Date(expiresAt).toISOString();
     const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify(body) });
+    if (!res.ok) { toast('Erreur lors de la création du lien', true); return; }
     const data = await res.json();
     if (res.ok) {
       _lastTokenUrl = data.url;
@@ -3778,7 +3784,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!el || !el.value) { toast('Entrez une date', true); return; }
     var patch = Object.assign({}, window._currentProject, { deadline: el.value, deadlineExtended: true, dueOriginal: window._currentProject.dueOriginal || window._currentProject.deadline });
     var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(patch) });
-    if (res.ok) { toast('Echeance prolongee ✓'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
+    if (res.ok) { toast('Échéance prolongée ✓'); setTimeout(function(){ loadProject(currentProjectId); }, 400); }
     else toast('Erreur', true);
   };
 
@@ -4612,7 +4618,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         'style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff" class="apt-day" data-ds="'+ds+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
           numHtml +
-          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tache" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
+          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
         '</div>' + pills + '</div>');
     }
     var allCells = [];
@@ -5476,7 +5482,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin:0 0 14px">Historique mensuel</h3>' +
       '<table style="width:100%;border-collapse:collapse;font-family:\'Inter Tight\',sans-serif">' +
         '<thead><tr style="border-bottom:2px solid #e2d9ce">'+
-          ['Mois','Quota','Consomme','Restant','Regularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:'+AMT_TERRE_MID+';text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
+          ['Mois','Quota','Consommé','Restant','Régularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:'+AMT_TERRE_MID+';text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
         '</tr></thead><tbody>'+(rows||'<tr><td colspan="5" style="padding:14px;text-align:center;color:'+AMT_TERRE_SOFT+'">Aucune donnee.</td></tr>')+'</tbody>' +
       '</table>' +
     '</div>';
@@ -5808,7 +5814,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
   window.updateTaskStatus = async function(id, status) {
     var res = await apiFetch('/api/projects/' + currentProjectId + '/tasks/' + id, { method: 'PUT', body: JSON.stringify({ status: status }) });
-    if (res.ok) { toast(status === 'done' ? 'Tache terminee' : 'Statut mis a jour'); await refreshTasksOnly(); }
+    if (res.ok) { toast(status === 'done' ? 'Tâche terminée ✓' : 'Statut mis à jour ✓'); await refreshTasksOnly(); }
     else toast('Erreur', true);
   };
   window.setTaskTime = async function(id) {
@@ -6026,7 +6032,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.genClientSpaceToken = async function() {
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
-    showPrompt('Créer un espace client', 'Nom du lien (ex: Emilie — Accès principal)', email, async function(label) {
+    showPrompt('Créer un espace client', 'Nom du lien (ex: Emilie — Accès principal)', '', async function(label) {
       const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email, clientEmail: email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
@@ -6250,9 +6256,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;background:' + bg + ';color:' + fg + '">' + esc(label) + '</span>';
   }
   var STATUS_LABELS = { discovery:'Decouverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En revision', delivered:'Livre', archived:'Archive' };
-  var STEP_LABELS  = { upcoming:'A venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Termine' };
+  var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
   var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)' };
-  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'A venir', todo:'A faire', review:'En revision' };
+  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'À venir', todo:'À faire', review:'En révision' };
   function cpStatusPill(status) {
     var col = STEP_STATUS_COLORS[status] || 'var(--bone-d)';
     var label = STEP_STATUS_LABELS[status] || status;
@@ -6348,14 +6354,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '📎';
   }
   function renderMd(text) {
-    return text
+    if (!text) return '';
+    var s = text
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
       .replace(/\*(.+?)\*/g,'<em>$1</em>')
       .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
-      .replace(/^- (.+)$/gm,'<li>$1</li>')
-      .replace(/\n\n/g,'</p><p>')
-      .replace(/^/,'<p>').replace(/$/,'</p>');
+      .replace(/^- (.+)$/gm,'<li>$1</li>');
+    return s.split(/\n\n+/).map(function(p){ return '<p style="margin:0 0 0.75em">'+p.replace(/\n/g,'<br>')+'</p>'; }).join('');
   }
   function toast(msg) {
     var t = document.getElementById('cp-toast');
@@ -6427,7 +6433,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var dur = '';
       if (p.startDate && p.deadline) {
         var wks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
-        dur = wks + ' jours';
+        dur = wks + (wks <= 1 ? ' semaine' : ' semaines');
       }
 
       var nextCard;
@@ -6701,7 +6707,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var visioLink = firstProj && firstProj.meetingLink ? firstProj.meetingLink.trim() : '';
     var visioHtml = visioLink ? '<a href="' + esc(visioLink.startsWith('http') ? visioLink : 'https://'+visioLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:var(--brume);color:var(--nuit)">' +
-      cpIcon('eye',15) +
+      cpIcon('video',15) +
       '<div style="line-height:1.15;flex:1;min-width:0">' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">Rejoindre la visio</div>' +
         '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(visioLink.replace(/^https?:\/\//,'')) + '</div>' +
@@ -7157,7 +7163,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var adminSharedFiles = files.filter(function(f){ return f.source !== 'client'; });
     var sideTabs = [];
     if (adminSharedFiles.length) sideTabs.push({ id:'files', label:'Fichiers' });
-    if (project.practicalInfo.sections.length) sideTabs.push({ id:'prac', label:'Infos pratiques' });
+    if (((project.practicalInfo||{}).sections||[]).length) sideTabs.push({ id:'prac', label:'Infos pratiques' });
     if (project.meetingLink) sideTabs.push({ id:'meet', label:'Réunion' });
 
     var tabs = sideTabs.length ? '<div class="cp-tabs">' +
@@ -7193,8 +7199,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference) +
     '</div>' : '';
 
-    var pracPanel = project.practicalInfo.sections.length ? '<div id="cp-panel-prac" class="cp-panel' + panelHidden('prac') + '">' +
-      project.practicalInfo.sections.map(function(s) {
+    var pracPanel = ((project.practicalInfo||{}).sections||[]).length ? '<div id="cp-panel-prac" class="cp-panel' + panelHidden('prac') + '">' +
+      ((project.practicalInfo||{}).sections||[]).map(function(s) {
         return '<details class="cp-prac"><summary>' + esc(s.title) + '</summary>' +
           '<div class="cp-prac__body">' + renderMd(s.content) + '</div></details>';
       }).join('') + '</div>' : '';
@@ -7206,7 +7212,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div class="cp-meet__title">Rejoindre la réunion</div>' +
           '<div class="cp-meet__sub">Cliquez pour accéder à la visioconférence</div>' +
         '</div>' +
-        '<a class="cp-btn cp-btn--sage" href="' + esc(project.meetingLink) + '" target="_blank" rel="noopener">Rejoindre</a>' +
+        '<a class="cp-btn cp-btn--sage" href="' + esc(/^https?:\/\//i.test(project.meetingLink||'') ? project.meetingLink : 'https://'+project.meetingLink) + '" target="_blank" rel="noopener">Rejoindre</a>' +
       '</div>' +
     '</div>' : '';
 
@@ -7734,7 +7740,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     size = size || 11;
     return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="'+d+'"/></svg>';
   }
-  var CLI_TSTATUS    = { todo:'A faire', in_progress:'En cours', done:'Termine' };
+  var CLI_TSTATUS    = { todo:'À faire', in_progress:'En cours', done:'Terminé' };
   var CLI_BRIEF = {
     pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
     brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
@@ -7814,7 +7820,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button onclick="document.getElementById(\'_cp-ticket-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted)">✕</button>' +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Description *</label>' +
-        '<textarea id="_tkt-brief" rows="4" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical" placeholder="Decrivez votre demande..."></textarea></div>' +
+        '<textarea id="_tkt-brief" rows="4" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical" placeholder="Décrivez votre demande..."></textarea></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Type</label>' +
         '<select id="_tkt-type" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit">' +
           '<option value="bug">Bug / Dysfonctionnement</option>' +
@@ -7981,7 +7987,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function buildTicketsList() {
       // Status filter tabs
       var MAINT_ST_KEYS = ['all','open','in_progress','done','closed'];
-      var MAINT_ST_LABELS = { all:'Tout', open:'Ouvert', in_progress:'En cours', done:'Resolu', closed:'Ferme' };
+      var MAINT_ST_LABELS = { all:'Tout', open:'Ouvert', in_progress:'En cours', done:'Résolu', closed:'Fermé' };
       var MAINT_ST_COLORS = { open:'#e8a87c', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
       var presentSt = MAINT_ST_KEYS.filter(function(sk){ return sk==='all'||tickets.some(function(t){ return t.status===sk; }); });
       var stTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
@@ -8112,7 +8118,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var toRegul = months.reduce(function(s,m){ var c=byMonth[m]||0; var over=c-quotaMin; var r=(reguls[m]!=null)?reguls[m]:(over>0?over:0); return s+r; }, 0);
 
     var kpis = [
-      { v: fmtMin(consumedNow), k:'Consomme ce mois' },
+      { v: fmtMin(consumedNow), k:'Consommé ce mois' },
       { v: fmtMin(toRegul), k:'A regulariser' },
       { v: fmtMin(avg), k:'Moyenne mensuelle' }
     ];
@@ -8153,7 +8159,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:14px">Historique mensuel</div>' +
       '<table style="width:100%;border-collapse:collapse;font-family:var(--font-ui)">' +
         '<thead><tr style="border-bottom:2px solid var(--bone-d)">'+
-          ['Mois','Quota','Consomme','Restant','Regularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--terre-600);text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
+          ['Mois','Quota','Consommé','Restant','Régularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--terre-600);text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
         '</tr></thead><tbody>'+(rows||'<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--terre-400)">Aucune donnee.</td></tr>')+'</tbody>' +
       '</table>' +
     '</div>';
@@ -8373,7 +8379,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml +
-          '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Ajouter une tache" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:#5c4633;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
+          '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:#5c4633;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
         '</div>' + pills +
       '</div>');
     }
@@ -8421,7 +8427,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
-    var statusMap = {todo:'A faire',in_progress:'En cours',review:'En relecture',done:'Fait'};
+    var statusMap = {todo:'À faire',in_progress:'En cours',review:'En relecture',done:'Fait'};
     var statusOpts = ['todo','in_progress','review','done'].map(function(s){
       return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+statusMap[s]+'</option>';
     }).join('');
@@ -8537,7 +8543,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       sep +
       // Actions
-      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer termine & prevenir</button>' +
+      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
       '<div style="display:flex;gap:8px">' +
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#051833)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
         '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
@@ -8556,7 +8562,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (!btn) return;
       var bg = PART_URGENCY[x]; var tx = PART_URGENCY_TX[x];
       btn.style.background = x===u ? bg : 'transparent';
-      btn.style.color = x===u ? tx : tx;
+      btn.style.color = x===u ? tx : 'var(--terre-400)';
+      btn.style.opacity = x===u ? '1' : '0.5';
       btn.style.borderColor = bg;
     });
   };
@@ -8701,7 +8708,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!t) return;
     t.status = 'done'; t.completedAt = new Date().toISOString();
     fetch(API_BASE+'/tasks/'+taskId+'/complete', {method:'POST'}).catch(function(){});
-    toast('Tache marquee terminee');
+    toast('Tâche marquée terminée ✓');
     renderShell();
   };
 
@@ -8716,7 +8723,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).slice().sort(function(a,b){
       if (a.status==='done'&&b.status!=='done') return 1;
       if (b.status==='done'&&a.status!=='done') return -1;
-      var ua = {haute:0,moyenne:1,basse:2}[a.urgency]||1, ub = {haute:0,moyenne:1,basse:2}[b.urgency]||1;
+      var ua = {critique:0,urgent:1,normal:2,tranquille:3}[a.urgency]||2, ub = {critique:0,urgent:1,normal:2,tranquille:3}[b.urgency]||2;
       if (ua!==ub) return ua-ub;
       return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
     });
@@ -9269,7 +9276,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18);max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#051833)">Ajouter une tache</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#051833)">Ajouter une tâche</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
         '</div>' +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre *</label>' +
@@ -9672,7 +9679,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildConversation() {
     var msgs = convData.length
       ? convData.map(convoMsgHtml).join('')
-      : '<div class="cp-empty" style="padding:40px 0;text-align:center;color:var(--terre-600)">Pas encore de messages.<br>Ecrivez a Cindy !</div>';
+      : '<div class="cp-empty" style="padding:40px 0;text-align:center;color:var(--terre-600)">Pas encore de messages.<br>Écrivez à Cindy !</div>';
 
     var convoHtml = '<div class="card fade-up" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:480px">' +
       '<div style="padding:18px 24px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:12px;flex-shrink:0">' +
@@ -9684,7 +9691,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
       '<div style="padding:16px 20px;border-top:1px solid var(--bone-d);display:flex;gap:12px;align-items:flex-end;flex-shrink:0">' +
-        '<textarea id="cp-convo-draft" placeholder="Ecrire un message a Cindy…" rows="1" style="flex:1;resize:none;min-height:46px;max-height:120px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto" onkeydown="cpConvoKey(event)"></textarea>' +
+        '<textarea id="cp-convo-draft" placeholder="Écrire un message à Cindy…" rows="1" style="flex:1;resize:none;min-height:46px;max-height:160px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:hidden" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
         '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
       '</div>' +
     '</div>';
@@ -9821,14 +9828,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('download',14) + '</a>' : '') +
       '</div>';
     }).join('');
-    var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput(event.dataTransfer)">' +
+    var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput({files:event.dataTransfer.files})">' +
       cpIcon('upload',24,'color:var(--terre);margin:0 auto 10px;display:block') +
       '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:4px">Glissez un fichier ici</div>' +
       '<div style="font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600);letter-spacing:0.08em">ou cliquez pour parcourir — PDF, images, archives</div>' +
       '<input type="file" id="cp-file-input" style="display:none" onchange="cpUploadFileInput(this)">' +
     '</div>';
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:22px;max-width:560px">Deposez vos elements, recuperez les miens — le telechargement fonctionne dans les deux sens.</p>' +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:22px;max-width:560px">Déposez vos éléments, récupérez les miens — le téléchargement fonctionne dans les deux sens.</p>' +
       uploadZone +
       (allFiles.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' + fileRows + '</div>' :
         '<p style="color:var(--terre-600);font-size:14px;text-align:center">Aucun fichier disponible pour le moment.</p>') +
@@ -9875,10 +9882,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
     var h = active || upcoming;
     if (!h) return '';
-    var range = formatDate(h.from) + (h.to && h.to !== h.from ? ' au ' + formatDate(h.to) : '');
-    var msg = h.message || (active ? 'Le studio est actuellement en conges.' : 'Le studio sera en conges prochainement.');
+    var range = fmtDate(h.from) + (h.to && h.to !== h.from ? ' au ' + fmtDate(h.to) : '');
+    var msg = h.message || (active ? 'Le studio est actuellement en congés.' : 'Le studio sera en congés prochainement.');
     return '<div class="cp-conges">' +
-      '<span style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre);opacity:0.7;white-space:nowrap">' + (active ? 'Conges' : 'A venir') + '</span>' +
+      '<span style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre);opacity:0.7;white-space:nowrap">' + (active ? 'Congés' : 'À venir') + '</span>' +
       '<span style="flex:1">' + esc(msg) + '</span>' +
       '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre);opacity:0.75;white-space:nowrap">' + range + '</span>' +
     '</div>';
@@ -10138,7 +10145,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #eae5dc">' +
             '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#051833;color:#BAD1FD">' + cpIcon(s.icon,18) + '</span>' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#8a6f54;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Etape '+(idx+1)+' / '+steps.length+'</div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#8a6f54;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
               '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#412F21;line-height:1.2">' + esc(s.title) + '</div>' +
             '</div>' +
             '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#FAF8F4;border-radius:8px;cursor:pointer;color:#8a6f54;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
