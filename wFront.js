@@ -2223,10 +2223,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function inboxMsgHtml(c, m) {
     var isCindy = m.author === 'cindy';
+    var snippet = m.content.length > 60 ? m.content.slice(0,60)+'…' : m.content;
+    var quote = '↩ ' + esc(c.clientName||c.clientEmail).split(' ')[0] + ' : ' + snippet + '\n\n';
     return '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px' + (isCindy ? ';flex-direction:row-reverse' : '') + '">' +
       '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:' + (isCindy ? 'var(--sage)' : 'var(--sky)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:' + (isCindy ? '#fff' : 'var(--navy)') + '">' + (isCindy ? 'C' : esc(c.clientName||c.clientEmail).charAt(0).toUpperCase()) + '</div>' +
       '<div style="max-width:65%">' +
-        '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + '">' + (isCindy ? 'Vous' : esc(c.clientName||c.clientEmail)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:3px;' + (isCindy ? 'text-align:right' : '') + ';display:flex;align-items:center;gap:8px;' + (isCindy?'justify-content:flex-end':'') + '">' +
+          '<span>' + (isCindy ? 'Vous' : esc(c.clientName||c.clientEmail)) + ' · ' + new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</span>' +
+          (!isCindy ? '<button onclick="(function(){var inp=document.getElementById(\'inbox-input\');if(!inp)return;inp.value='+JSON.stringify(quote)+';inp.focus();inp.selectionStart=inp.selectionEnd=inp.value.length;inp.scrollIntoView({behavior:\'smooth\',block:\'nearest\'});})()" style="background:none;border:0;cursor:pointer;color:var(--orange);font-size:9.5px;font-weight:500;text-decoration:underline;padding:0;white-space:nowrap">↩ Répondre</button>' : '') +
+        '</div>' +
         '<div style="padding:10px 14px;border-radius:16px;border-' + (isCindy ? 'bottom-right' : 'bottom-left') + '-radius:4px;background:' + (isCindy ? 'var(--navy)' : 'var(--surface)') + ';color:' + (isCindy ? '#fff' : 'var(--text)') + ';font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border:' + (isCindy ? 'none' : '1px solid var(--border)') + '">' + esc(m.content) + '</div>' +
         (!m.readByAdmin && !isCindy ? '<div style="font-size:10px;color:var(--orange);margin-top:2px">● non lu</div>' : '') +
       '</div>' +
@@ -2496,13 +2501,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var brL = isCindy ? '4px' : '14px';
       var brR = isCindy ? '14px' : '4px';
       var isUnread = !m.readByAdmin && m.author === 'client';
+      var replySnippet = m.content.length > 60 ? m.content.slice(0,60)+'…' : m.content;
+      var replyQuote = '↩ ' + (project.clientName||'Client').split(' ')[0] + ' : ' + replySnippet + '\n\n';
       return '<div style="display:flex;gap:10px;flex-direction:'+(isCindy?'row':'row-reverse')+';align-items:flex-end;padding:6px 0">' +
         '<span style="width:28px;height:28px;border-radius:50%;background:'+avBg+';color:'+avFg+';display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:13px;flex-shrink:0">'+initials+'</span>' +
         '<div>' +
           '<div style="max-width:540px;padding:11px 15px;border-radius:13px;border-bottom-left-radius:'+brL+';border-bottom-right-radius:'+brR+';background:'+bubbleBg+';border:'+bubbleBdr+';font-size:14.5px;color:#2b1a0e;line-height:1.55">' + esc(m.content) + '</div>' +
-          '<div style="font-size:9.5px;color:#8a6f54;margin-top:4px;text-align:'+(isCindy?'left':'right')+';opacity:0.7;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.03em">' +
-            (isCindy?'Cindy':esc(project.clientName)) + ' · ' + formatDate(m.createdAt) +
-            (isUnread ? ' · <strong style="color:#c9952f">non lu</strong>' : '') +
+          '<div style="font-size:9.5px;color:#8a6f54;margin-top:4px;text-align:'+(isCindy?'left':'right')+';opacity:0.7;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.03em;display:flex;align-items:center;gap:8px;justify-content:'+(isCindy?'flex-start':'flex-end')+'">' +
+            '<span>' + (isCindy?'Cindy':esc(project.clientName)) + ' · ' + formatDate(m.createdAt) + (isUnread ? ' · <strong style="color:#c9952f">non lu</strong>' : '') + '</span>' +
+            (!isCindy ? '<button onclick="(function(){var ta=document.getElementById(\'admin-message\');if(!ta)return;ta.value='+JSON.stringify(replyQuote)+';ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;ta.scrollIntoView({behavior:\'smooth\',block:\'nearest\'});})()" style="background:none;border:0;cursor:pointer;color:#c9952f;font-family:\'Inter Tight\',sans-serif;font-size:9.5px;font-weight:500;text-decoration:underline;padding:0">↩ Répondre</button>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -6452,6 +6459,78 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         dur = wks + (wks <= 1 ? ' semaine' : ' semaines');
       }
 
+      var isMaint = p.type === 'maintenance';
+
+      // ── Maintenance home ────────────────────────────────────────────────────
+      if (isMaint) {
+        var mTickets = (p.tickets || []);
+        var mOpen = mTickets.filter(function(t){ return t.status!=='done'&&t.status!=='closed'; });
+        var mQuotaMin = (p.monthlyHours||0)*60;
+        var mUsedMin  = mTickets.reduce(function(n,t){ return n+(t.timeSpentMinutes||0); }, 0);
+        var mRemain   = mQuotaMin - mUsedMin;
+        var mOver     = mRemain < 0;
+        var mBarPct   = mQuotaMin ? Math.min(100, Math.round(mUsedMin/mQuotaMin*100)) : 0;
+        var mBarColor = mOver ? '#9b3a2e' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
+        var mRemH = mQuotaMin ? (Math.abs(mRemain)>=60 ? Math.floor(Math.abs(mRemain)/60)+'h'+(Math.abs(mRemain)%60?String(Math.abs(mRemain)%60).padStart(2,'0'):'') : Math.abs(mRemain)+' min') : '—';
+        var mTotH = mQuotaMin ? (mQuotaMin>=60 ? Math.floor(mQuotaMin/60)+'h'+(mQuotaMin%60?String(mQuotaMin%60).padStart(2,'0'):'') : mQuotaMin+' min') : '—';
+        var mUsedH= mQuotaMin ? (mUsedMin>=60 ? Math.floor(mUsedMin/60)+'h'+(mUsedMin%60?String(mUsedMin%60).padStart(2,'0'):'') : mUsedMin+' min') : '—';
+        var mHomeUnread = totalUnread();
+
+        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#e7c6bd;background:#fbf1ee':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
+          (mQuotaMin
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#9b3a2e':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
+              '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
+              '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' total</span></div>'
+            : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré — contactez le studio.</p>'
+          ) +
+        '</div>';
+
+        var mTicketsCard = '<div class="card" style="padding:22px 24px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+            '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Tickets ouverts</span>' +
+            '<button onclick="cpOpenInterventions()" style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;background:none;border:0;cursor:pointer;color:var(--terre-600);display:flex;align-items:center;gap:6px">Tout voir ' + cpIcon('arrow',12) + '</button>' +
+          '</div>' +
+          (mOpen.length
+            ? '<div style="display:grid;gap:8px">' + mOpen.slice(0,4).map(function(t){
+                return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--bone-d)">' +
+                  '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+(t.status==='in_progress'?'var(--st-progress)':'#e8a87c')+';transform:rotate(45deg)"></span>' +
+                  '<span style="flex:1;font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(t.title||'Sans titre') + '</span>' +
+                  cpDeadlinePill(t.dueDate||t.deadline, false, true) +
+                '</div>';
+              }).join('') + '</div>'
+            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400)">Aucun ticket ouvert — tout est à jour !</div>'
+          ) +
+        '</div>';
+
+        var mMsgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;'+(mHomeUnread>0?'border-color:#e8a87c;background:#fdf3e8':'')+'" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+          cpIcon('chat',18, mHomeUnread>0?'color:#c46a1a':'color:var(--terre)') +
+          '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:'+(mHomeUnread>0?'#7a3a0a':'var(--terre)')+'">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:'+(mHomeUnread>0?'#c46a1a':'var(--terre-600)')+';margin-top:2px">'+(mHomeUnread>0?mHomeUnread+' message'+(mHomeUnread>1?'s':'')+' non lu'+(mHomeUnread>1?'s':''):'Réponse sous 24 h')+'</div></div>' +
+          cpIcon('arrow',15, mHomeUnread>0?'color:#c46a1a':'color:var(--terre-600)') +
+        '</button>';
+
+        return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
+          '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px"'+(p.bannerUrl?' data-img':'')+'>' +
+            '<div class="cp-ph__banner-overlay"><div class="cp-ph__banner-content">' +
+              (p.type ? '<div style="margin-bottom:12px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
+              '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
+            '</div></div>' +
+          '</div>' +
+          '<div class="cp-ph__cols">' +
+            '<div class="cp-ph__left">' +
+              '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici vous suivez vos tickets, votre quota d\'heures et échangez avec le studio en temps réel.</p>' +
+              '<button onclick="cliOpenSubmitTicket(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:400px;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
+                cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
+              '</button>' +
+              mTicketsCard +
+            '</div>' +
+            '<div class="cp-ph__right">' +
+              mForfaitCard + mMsgCard +
+            '</div>' +
+          '</div>' +
+        '</div></div>';
+      }
+
       var nextCard;
       // Distinguish: is there a step waiting for the client specifically?
       var waitingStep = steps.find(function(s){ return s.status === 'waiting_client'; });
@@ -6466,7 +6545,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
             (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
           '</div>' +
-          '<button class="cp-btn" style="padding:8px 16px;font-size:10px;flex-shrink:0" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+          '<div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
+            '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">✓ J\'ai terminé</button>' +
+            '<button style="padding:6px 14px;font-size:10px;background:none;border:1px solid #e8a87c;border-radius:var(--radius-pill);cursor:pointer;color:#8a4a0e;font-family:var(--font-micro);letter-spacing:0.06em" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',12,'color:#8a4a0e') + '</button>' +
+          '</div>' +
         '</div>'
         : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#EFE1B0);background:var(--paille-50,#FBF3DC)">' +
           partDiamond(nextTask.urgency) +
@@ -6487,7 +6569,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
               (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
             '</div>' +
-            '<button class="cp-btn" style="padding:8px 16px;font-size:10px;flex-shrink:0" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+            '<div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
+              '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">✓ J\'ai terminé</button>' +
+              '<button style="padding:6px 14px;font-size:10px;background:none;border:1px solid #e8a87c;border-radius:var(--radius-pill);cursor:pointer;color:#8a4a0e;font-family:var(--font-micro);letter-spacing:0.06em" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',12,'color:#8a4a0e') + '</button>' +
+            '</div>' +
           '</div>';
         } else if (inProgressStep) {
           nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
@@ -6508,6 +6593,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
             '</div>' +
             '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+          '</div>';
+        } else if (pct === 100 && steps.length > 0) {
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--glycine-200);background:var(--glycine-50)">' +
+            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:var(--glycine-200);display:grid;place-items:center">' + cpIcon('check',18,'color:var(--glycine-900)') + '</div>' +
+            '<div style="flex:1">' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:var(--glycine-900);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">✨ Projet terminé</div>' +
+              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">Toutes les étapes sont complètes !</div>' +
+              '<div style="margin-top:6px;font-size:13px;color:var(--terre-600)">Merci pour votre confiance — à très bientôt pour de nouveaux projets.</div>' +
+            '</div>' +
           '</div>';
         } else {
           nextCard = '';
@@ -9871,12 +9965,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400)">' + projectResources.length + '</span>' +
       '</div>' +
       '<div style="display:grid;gap:9px">' +
-        (projResItems || '<p style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400);margin:0">Dossier vide.</p>') +
+        (projResItems || '<p style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400);margin:0">Cindy n\'a pas encore partagé de documents ici.</p>') +
       '</div>' +
     '</div>';
 
+    var hubEmpty = !commonHtml && !projectResources.length
+      ? '<div class="card" style="padding:36px 28px;text-align:center;margin-bottom:24px">' +
+          cpIcon('folder',32,'color:var(--terre-400);margin:0 auto 14px;display:block') +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
+          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:18px">Cindy déposera ici vos guides, accès et documents partagés.</div>' +
+          '<button class="cp-btn" style="margin:0 auto" onclick="cpOpenMessages()">Demander à Cindy ' + cpIcon('arrow',13) + '</button>' +
+        '</div>'
+      : '';
     return '<div class="fade-up">' +
-      (commonHtml || (!projectResources.length ? '<p style="color:var(--terre-600);font-size:14px;margin-bottom:24px">Aucune ressource disponible pour le moment.</p>' : '')) +
+      (commonHtml || hubEmpty || (!projectResources.length ? '' : '')) +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
         '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('folder',16,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Ressources de votre projet</h3></div>' +
       '</div>' +
@@ -9919,7 +10021,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:22px;max-width:560px">Déposez vos éléments, récupérez les miens — le téléchargement fonctionne dans les deux sens.</p>' +
       uploadZone +
       (allFiles.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' + fileRows + '</div>' :
-        '<p style="color:var(--terre-600);font-size:14px;text-align:center">Aucun fichier disponible pour le moment.</p>') +
+        '<div style="text-align:center;padding:20px 0 10px">' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre-600);margin-bottom:6px">Aucun fichier pour le moment</div>' +
+          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Déposez vos éléments ci-dessus, ou attendez que Cindy partage les livrables.</div>' +
+        '</div>') +
     '</div>';
   }
 
@@ -10073,6 +10178,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     currentView = portal ? 'home' : 'project';
     renderShell();
     startPoll();
+    if (portal) setTimeout(cpShowOnboarding, 700);
   }
 
   window.cpSelHome = function(id) {
@@ -10175,7 +10281,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   window.cpOpenFirstPending = function() {
-    // Navigate to the first project with a waiting_client step
     for (var i = 0; i < appData.projects.length; i++) {
       var pd = appData.projects[i];
       var pending = (pd.project.steps || []).find(function(s){ return s.status === 'waiting_client'; });
@@ -10187,6 +10292,80 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }
     }
   };
+
+  window.cpValidateStep = function(pid, stepId, stepTitle) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:8px">Confirmer votre action</div>' +
+      '<p style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-bottom:16px">Vous confirmez avoir complété : <strong>' + esc(stepTitle) + '</strong> ?<br><span style="font-size:12px;opacity:0.8">Cindy sera notifiée et validera l\'étape de son côté.</span></p>' +
+      '<textarea id="_cpval-comment" placeholder="Laisser un message à Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#8a6f54;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpval-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:var(--terre);color:var(--paille)">✓ Confirmer</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    function close(){ ov.remove(); }
+    ov.querySelector('#_cpval-cancel').onclick = close;
+    ov.querySelector('#_cpval-ok').onclick = function() {
+      var comment = (document.getElementById('_cpval-comment')||{}).value || '';
+      comment = comment.trim();
+      var msg = '✅ J\'ai terminé l\'étape : **' + stepTitle + '**' + (comment ? '\n\n' + comment : '');
+      ov.querySelector('#_cpval-ok').disabled = true;
+      fetch(API_BASE + '/conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: msg }) })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+        .then(function(d){ convData.push(d.message); close(); toast('Message envoyé à Cindy ✓'); })
+        .catch(function(){ close(); toast('Erreur, réessayez.'); });
+    };
+    ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
+  };
+
+  function cpShowOnboarding() {
+    if (!appData.projects.length) return;
+    var pid = appData.projects[0].project.id;
+    try { if (localStorage.getItem('bloom_seen_' + pid)) return; } catch(e) {}
+    try { localStorage.setItem('bloom_seen_' + pid, '1'); } catch(e) {}
+    var clientType = appData.projects[0].project.type || 'identite';
+    var items = clientType === 'maintenance'
+      ? [
+          { icon:'tasks', text: 'Ouvrez un ticket pour chaque besoin : bug, mise à jour de contenu, question technique…' },
+          { icon:'clock', text: 'La barre de forfait indique les heures utilisées ce mois-ci sur votre contrat.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+        ]
+      : clientType === 'partenaire'
+      ? [
+          { icon:'tasks', text: 'Suivez vos demandes en cours et leur statut en temps réel depuis le tableau de bord.' },
+          { icon:'zap', text: 'Quand votre retour est attendu, une bannière orange apparaît — cliquez pour confirmer.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+        ]
+      : [
+          { icon:'tasks', text: 'Suivez les étapes de votre projet et leur statut en temps réel.' },
+          { icon:'zap', text: 'Quand votre action est requise (valider un rendu, fournir des éléments), une bannière orange apparaît.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+        ];
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(5,24,51,0.25)">' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:8px">Bienvenue dans votre espace ✨</div>' +
+      '<p style="font-size:14px;color:var(--terre-600);line-height:1.6;margin-bottom:22px">Voici les points essentiels pour bien démarrer :</p>' +
+      '<div style="display:grid;gap:14px;margin-bottom:26px">' +
+        items.map(function(item){
+          return '<div style="display:flex;align-items:flex-start;gap:14px">' +
+            '<span style="width:34px;height:34px;border-radius:50%;background:var(--brume-50);display:grid;place-items:center;flex-shrink:0">' + cpIcon(item.icon,16,'color:var(--terre)') + '</span>' +
+            '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;padding-top:7px">' + esc(item.text) + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div style="display:flex;gap:10px;align-items:center">' +
+        '<button id="_cpob-ok" class="cp-btn" style="flex:1;justify-content:center">C\'est parti ' + cpIcon('arrow',14) + '</button>' +
+        '<button id="_cpob-guide" style="padding:9px 16px;background:none;border:1.5px solid var(--bone-d);border-radius:var(--radius-pill);cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em">Voir le guide complet</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#_cpob-ok').onclick = function(){ ov.remove(); };
+    ov.querySelector('#_cpob-guide').onclick = function(){ ov.remove(); cpOpenGuide(); };
+  }
 
   window.cpOpenGuide = function() {
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
