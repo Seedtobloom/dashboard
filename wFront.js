@@ -2705,7 +2705,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</div>' +
             '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
               '<button class="btn btn--outline btn--sm" onclick="addProjectForClient()">+ Nouveau projet</button>' +
-              (project.clientEmail ? '<button class="btn btn--outline" onclick="previewClientSpace()">Voir le portail</button>' : '') +
+              (project.clientEmail ? '<button class="btn btn--outline" onclick="editClientSpace()">Voir le portail</button>' : '') +
               '<button class="btn btn--primary" onclick="openBannerEditor()" title="Changer la couleur ou l\'image">Personnaliser →</button>' +
             '</div>' +
           '</div>' +
