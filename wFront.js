@@ -7926,19 +7926,33 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // Quota strip
     var quotaBarPct = quotaMin ? Math.min(100, Math.round(usedMin / quotaMin * 100)) : 0;
-    var quotaStrip = '<div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-bottom:20px">' +
-      '<div style="flex:1;min-width:300px;padding:14px 20px;display:grid;gap:12px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);border-color:'+(over?'#e7c6bd':'var(--bone-d)')+';background:'+(over?'#fbf1ee':'var(--card)')+'">' +
-        '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
-          '<div style="display:flex;align-items:baseline;gap:8px;white-space:nowrap">' +
-            cpIcon('timer', 15, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
-            '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Restant ce mois</span>' +
-            '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:'+(over?'#9b3a2e':'var(--terre)')+'">'+Math.abs(remaining)+'<span style="font-size:11px"> min</span></span>' +
-          '</div>' +
-          '<div style="flex:1;min-width:120px">'+cpProgressBar(quotaBarPct, 'glycine', 8)+'</div>' +
-          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">'+usedMin+' / '+quotaMin+' min</span>' +
+    var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '—';
+    var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '—';
+    var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '—';
+    var barColor = over ? '#c44' : (quotaBarPct > 75 ? '#e8a87c' : '#7a9a5a');
+    var quotaStrip = '<div style="margin-bottom:28px">' +
+      // Big CTA button first
+      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;margin-bottom:18px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
+        cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
+      '</button>' +
+      // Forfait card
+      '<div style="padding:18px 22px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+(over?'#e7c6bd':barColor.replace('#c44','#e7c6bd').replace('#e8a87c','#e8d5bc').replace('#7a9a5a','#c5d9b5'))+';border-radius:var(--radius-3)">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
+          cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
+          '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+          '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#9b3a2e':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
+          '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);letter-spacing:0.04em">restant'+(over?' · dépassement':' · sur '+totalH+' / mois')+'</span>' +
+        '</div>' +
+        '<div style="background:var(--bone-d,#e8dfd4);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
+          '<div style="height:100%;width:'+quotaBarPct+'%;background:'+barColor+';border-radius:20px;transition:width .4s ease"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)">' +
+          '<span>'+usedH+' utilisé</span>' +
+          '<span>'+totalH+' total</span>' +
         '</div>' +
       '</div>' +
-      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="align-self:center;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border:none;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:13px;font-weight:500;cursor:pointer">'+cpIcon('plus',15)+' Ouvrir un ticket</button>' +
     '</div>';
 
     // Category tabs
