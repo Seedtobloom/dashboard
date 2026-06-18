@@ -6442,6 +6442,22 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).filter(function(g) { return g.items.length; });
   }
 
+  function cpSecHidden(pid, id) {
+    try { return localStorage.getItem('cp-hide-' + pid + '-' + id) === '1'; } catch(e) { return false; }
+  }
+  function cpSecWrap(pid, id, content) {
+    if (!content) return '';
+    var hidden = cpSecHidden(pid, id);
+    if (!_isAdminEdit && hidden) return '';
+    if (!_isAdminEdit) return content;
+    return '<div style="position:relative;opacity:' + (hidden ? '0.4' : '1') + ';transition:opacity 160ms;margin-bottom:0">' +
+      '<button onclick="cpToggleSection(\'' + pid + '\',\'' + id + '\')" title="' + (hidden ? 'Afficher pour le client' : 'Masquer pour le client') + '" style="position:absolute;top:-8px;right:-8px;z-index:6;width:26px;height:26px;display:grid;place-items:center;border:1px solid var(--bone-d);background:var(--card);border-radius:7px;cursor:pointer;color:var(--terre-600);box-shadow:var(--shadow-1)">' +
+        cpIcon(hidden ? 'eye' : 'x', 12) +
+      '</button>' +
+      content +
+    '</div>';
+  }
+
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
@@ -6763,11 +6779,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
-            nextCard +
-            miniTrack +
+            cpSecWrap(p.id, 'prochaine', nextCard) +
+            cpSecWrap(p.id, 'suivi', miniTrack) +
           '</div>' +
           '<div class="cp-ph__right">' +
-            progressCard +
+            cpSecWrap(p.id, 'avancement', progressCard) +
             datesCard +
             forfaitCard +
             msgCard +
@@ -10040,28 +10056,129 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
     projectResources.forEach(function(r){ allResources.push(r); });
 
-    var hasContent = allResources.length > 0;
+    // Folder management (localStorage-backed)
+    var pid0 = firstProj ? firstProj.id : 'hub';
+    var folderKey = 'cp-hub-folders-' + pid0;
+    function loadFolders() {
+      try { var s = localStorage.getItem(folderKey); if (s) return JSON.parse(s); } catch(e) {}
+      return null;
+    }
+    function saveFolders(f) { try { localStorage.setItem(folderKey, JSON.stringify(f)); } catch(e) {} }
+    var folders = loadFolders();
+    if (!folders) {
+      folders = [{ id: 'f-default', name: 'Documents partagés', itemUrls: allResources.map(function(r){ return r.url; }) }];
+      saveFolders(folders);
+    }
+    // Build resource map by url
+    var resMap = {};
+    allResources.forEach(function(r){ resMap[r.url] = r; });
+
+    function folderHtml(folder) {
+      var items = (folder.itemUrls || []).map(function(url){ return resMap[url]; }).filter(Boolean);
+      var moveSelect = function(url) {
+        if (!_isAdminEdit) return '';
+        return '<select onchange="cpMoveResource(\''+pid0+'\',\''+esc(url)+'\',\''+folder.id+'\',this.value)" title="Déplacer vers…" style="border:1px solid var(--bone-d);border-radius:6px;background:#fff;font-family:var(--font-micro);font-size:10px;color:var(--terre-600);padding:4px 6px;flex-shrink:0">' +
+          folders.map(function(f){ return '<option value="'+esc(f.id)+'"'+(f.id===folder.id?' selected':'')+'>'+esc(f.name)+'</option>'; }).join('') +
+        '</select>';
+      };
+      var rowsHtml = items.map(function(r){
+        var url = r.url || '';
+        var label = r.title || url.replace(/^https?:\/\//,'');
+        var isFigma = url.includes('figma.com');
+        var isDrive = url.includes('drive.google') || url.includes('docs.google');
+        var iconName = isFigma || isDrive ? 'external' : 'folder';
+        var sub = r.description || (isFigma ? 'Fichier Figma' : isDrive ? 'Drive partagé' : url.replace(/^https?:\/\//,'').split('/')[0]);
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-2);border:1px solid var(--bone-d);background:var(--bone)">' +
+          '<span style="width:38px;height:38px;border-radius:var(--radius-2);background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon(iconName,17) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(label) + '</div>' +
+            (sub ? '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:2px;letter-spacing:0.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(sub) + '</div>' : '') +
+          '</div>' +
+          moveSelect(url) +
+          (url ? '<a href="'+esc(url.startsWith('http')?url:'https://'+url)+'" target="_blank" rel="noreferrer" style="width:34px;height:34px;display:grid;place-items:center;color:var(--terre-600);background:var(--bone);border:1px solid var(--bone-d);border-radius:var(--radius-2);text-decoration:none;flex-shrink:0">'+cpIcon('external',14)+'</a>' : '') +
+        '</div>';
+      }).join('');
+      var emptyHtml = items.length === 0 ? '<p style="font-family:var(--font-body);font-style:italic;font-size:14px;color:var(--terre-400);padding:6px 4px">Dossier vide.</p>' : '';
+      var removeBtn = _isAdminEdit ? '<button onclick="cpRemoveFolder(\''+pid0+'\',\''+folder.id+'\')" title="Supprimer le dossier" style="margin-left:auto;width:26px;height:26px;display:grid;place-items:center;border:0;background:none;color:var(--terre-400);cursor:pointer">' + cpIcon('x',13) + '</button>' : '';
+      return '<div class="card" style="padding:18px 20px;margin-bottom:14px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+          cpIcon('folder',16,'color:var(--terre-400)') +
+          '<span style="font-family:var(--font-display);font-size:19px;color:var(--terre)">' + esc(folder.name) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.06em">' + items.length + '</span>' +
+          removeBtn +
+        '</div>' +
+        '<div style="display:grid;gap:8px">' + emptyHtml + rowsHtml + '</div>' +
+      '</div>';
+    }
+
+    var addFolderHtml = _isAdminEdit
+      ? '<div style="display:flex;align-items:center;gap:8px;margin-top:4px">' +
+          '<input id="cp-new-folder-name" class="cp-input" placeholder="Nom du dossier…" onkeydown="if(event.key===\'Enter\')cpAddFolder(\''+pid0+'\')" style="flex:1;padding:8px 12px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-micro);font-size:12px;color:var(--terre);background:#fff">' +
+          '<button onclick="cpAddFolder(\''+pid0+'\')" class="cp-btn" style="padding:8px 14px;font-size:11px;white-space:nowrap">' + cpIcon('plus',13) + ' Dossier</button>' +
+        '</div>'
+      : '';
+
+    var foldersHtml = allResources.length > 0 || _isAdminEdit
+      ? folders.map(folderHtml).join('') + addFolderHtml
+      : '<div class="card" style="padding:36px 28px;text-align:center">' +
+          cpIcon('folder',32,'color:var(--terre-400);margin:0 auto 14px;display:block') +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
+          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:18px">Cindy déposera ici vos guides, accès et documents partagés.</div>' +
+          '<button class="cp-btn" style="margin:0 auto" onclick="cpOpenMessages()">Demander à Cindy ' + cpIcon('arrow',13) + '</button>' +
+        '</div>';
 
     return '<div class="fade-up">' +
       '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Retrouvez ici tous vos accès, guides et documents partagés par le studio.</p>' +
-      (hasContent
-        ? '<div style="margin-bottom:28px">' +
-            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-              cpIcon('folder',16,'color:var(--terre-400)') +
-              '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">Documents partagés</span>' +
-              '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">' + allResources.length + '</span>' +
-            '</div>' +
-            allResources.map(resRow).join('') +
-          '</div>'
-        : '<div class="card" style="padding:36px 28px;text-align:center">' +
-            cpIcon('folder',32,'color:var(--terre-400);margin:0 auto 14px;display:block') +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
-            '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:18px">Cindy déposera ici vos guides, accès et documents partagés.</div>' +
-            '<button class="cp-btn" style="margin:0 auto" onclick="cpOpenMessages()">Demander à Cindy ' + cpIcon('arrow',13) + '</button>' +
-          '</div>'
-      ) +
+      commonHtml +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
+        cpIcon('folder',16,'color:var(--terre-400)') +
+        '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">Ressources de votre projet</span>' +
+      '</div>' +
+      foldersHtml +
     '</div>';
   }
+
+  window.cpAddFolder = function(pid) {
+    var inp = document.getElementById('cp-new-folder-name');
+    var name = inp ? inp.value.trim() : '';
+    if (!name) return;
+    var key = 'cp-hub-folders-' + pid;
+    try {
+      var folders = JSON.parse(localStorage.getItem(key) || '[]');
+      folders.push({ id: 'f-' + Date.now(), name: name, itemUrls: [] });
+      localStorage.setItem(key, JSON.stringify(folders));
+    } catch(e) {}
+    renderShell();
+  };
+
+  window.cpRemoveFolder = function(pid, folderId) {
+    var key = 'cp-hub-folders-' + pid;
+    try {
+      var folders = JSON.parse(localStorage.getItem(key) || '[]');
+      var folder = folders.find(function(f){ return f.id === folderId; });
+      if (folder && folder.itemUrls && folder.itemUrls.length > 0) {
+        if (!confirm('Ce dossier contient des éléments. Les déplacer vers « Documents partagés » ?')) return;
+        var def = folders.find(function(f){ return f.id === 'f-default'; });
+        if (def) def.itemUrls = def.itemUrls.concat(folder.itemUrls);
+      }
+      localStorage.setItem(key, JSON.stringify(folders.filter(function(f){ return f.id !== folderId; })));
+    } catch(e) {}
+    renderShell();
+  };
+
+  window.cpMoveResource = function(pid, url, fromId, toId) {
+    if (fromId === toId) return;
+    var key = 'cp-hub-folders-' + pid;
+    try {
+      var folders = JSON.parse(localStorage.getItem(key) || '[]');
+      folders.forEach(function(f) {
+        if (f.id === fromId) f.itemUrls = f.itemUrls.filter(function(u){ return u !== url; });
+        if (f.id === toId && !f.itemUrls.includes(url)) f.itemUrls.push(url);
+      });
+      localStorage.setItem(key, JSON.stringify(folders));
+    } catch(e) {}
+    renderShell();
+  };
 
   function buildFichiersView() {
     var allFiles = [];
@@ -10294,6 +10411,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpGoHome = function() {
     currentView = 'home';
     renderShell({ resetScroll: true });
+  };
+
+  window.cpToggleSection = function(pid, id) {
+    try {
+      var key = 'cp-hide-' + pid + '-' + id;
+      if (localStorage.getItem(key) === '1') localStorage.removeItem(key);
+      else localStorage.setItem(key, '1');
+    } catch(e) {}
+    renderShell();
   };
 
   window.cpUploadBanner = function(pid, input) {
