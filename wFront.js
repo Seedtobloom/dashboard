@@ -811,13 +811,26 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     colors[key] = val;
     localStorage.setItem('bloom_colors', JSON.stringify(colors));
     applyColors(colors);
+    // Apply per-type theme overrides immediately
+    if (key.indexOf('--cp-') === 0) applyTypeThemeOverrides(colors);
   };
+
+  function applyTypeThemeOverrides(colors) {
+    var overrides = [
+      ['partenaire', colors['--cp-partenaire-dk'], colors['--cp-partenaire-lt']],
+      ['maintenance', colors['--cp-partenaire-dk'], colors['--cp-partenaire-lt']],
+      ['identite',   colors['--cp-identite-dk'],   colors['--cp-identite-lt']],
+      ['support',    colors['--cp-support-dk'],     colors['--cp-support-lt']],
+    ];
+    overrides.forEach(function(o) {
+      if (o[1]) CP_TYPE_THEMES[o[0]].dk = o[1];
+      if (o[2]) { CP_TYPE_THEMES[o[0]].lt = o[2]; }
+    });
+  }
 
   window.resetColors = function() {
     localStorage.removeItem('bloom_colors');
     applyColors(Object.assign({}, COLOR_DEFAULTS));
-    var panel = document.getElementById('_color-panel');
-    if (panel) { panel.remove(); openColorPanel(); }
   };
 
   window.openColorPanel = function() {
@@ -1194,6 +1207,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
     loadTheme();
+    try { applyTypeThemeOverrides(JSON.parse(localStorage.getItem('bloom_colors')||'{}')); } catch(e) {}
     const res = await fetch('/api/projects', {
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -1569,9 +1583,70 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</div>' +
             settingsCard('Identite du studio', 'Nom et signature utilises dans les e-mails et le portail.', identite) +
             settingsCard('Couleur des espaces', 'Une couleur par type d\'offre, ou une teinte unique pour tous les espaces.', accent) +
-            settingsCard('Couleurs du tableau de bord', 'Personnalisez le panneau lateral, les cartes, les boutons et les badges de votre interface admin.',
-              '<button onclick="openColorPanel()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:1px solid #e2d9ce;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Personnaliser les couleurs</button>' +
-              '<button onclick="resetColors()" style="margin-left:8px;padding:10px 18px;border-radius:999px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Reinitialiser</button>') +
+            settingsCard('Couleurs & thèmes', 'Personnalisez toutes les couleurs : interface admin, portail client, statuts, thèmes par type d\'offre.', (function(){
+              var saved = {}; try { saved = JSON.parse(localStorage.getItem('bloom_colors')||'{}'); } catch(e){}
+              var allColors = Object.assign({}, COLOR_DEFAULTS, saved);
+              var GROUPS = [
+                { title: 'Portail client — thèmes par type',
+                  items: [
+                    { key:'--cp-partenaire-dk', label:'Partenaire – fond sidebar', def:'#051833' },
+                    { key:'--cp-partenaire-lt', label:'Partenaire – accent clair', def:'#BAD1FD' },
+                    { key:'--cp-identite-dk',   label:'Identité – fond sidebar',  def:'#4a2c5e' },
+                    { key:'--cp-identite-lt',   label:'Identité – accent clair',  def:'#E4D1FE' },
+                    { key:'--cp-support-dk',    label:'Support – fond sidebar',   def:'#5c4633' },
+                    { key:'--cp-support-lt',    label:'Support – accent clair',   def:'#EFE1B0' },
+                  ]
+                },
+                { title: 'Interface admin — sidebar',
+                  items: [
+                    { key:'--sidebar-bg',   label:'Fond sidebar',        def: COLOR_DEFAULTS['--sidebar-bg'] },
+                    { key:'--brown',        label:'En-tête sidebar',     def: COLOR_DEFAULTS['--brown'] },
+                    { key:'--sidebar-text', label:'Texte navigation',    def: COLOR_DEFAULTS['--sidebar-text'] },
+                    { key:'--cream',        label:'Texte en-tête',       def: COLOR_DEFAULTS['--cream'] },
+                  ]
+                },
+                { title: 'Interface admin — général',
+                  items: [
+                    { key:'--navy',      label:'Fond bouton principal',   def: COLOR_DEFAULTS['--navy'] },
+                    { key:'--lavender',  label:'Fond bouton secondaire',  def: COLOR_DEFAULTS['--lavender'] },
+                    { key:'--blue-light',label:'Texte sur fond sombre',   def: COLOR_DEFAULTS['--blue-light'] },
+                    { key:'--bg',        label:'Fond de page',            def: COLOR_DEFAULTS['--bg'] },
+                    { key:'--surface',   label:'Fond des cartes',         def: COLOR_DEFAULTS['--surface'] },
+                    { key:'--card-hover',label:'Bordure card (survol)',    def: COLOR_DEFAULTS['--card-hover'] },
+                  ]
+                },
+                { title: 'Statuts des projets',
+                  items: [
+                    { key:'--st-discovery',  label:'Découverte',      def: COLOR_DEFAULTS['--st-discovery'] },
+                    { key:'--st-in-progress',label:'En cours',        def: COLOR_DEFAULTS['--st-in-progress'] },
+                    { key:'--st-waiting',    label:'Attente client',  def: COLOR_DEFAULTS['--st-waiting'] },
+                    { key:'--st-review',     label:'En révision',     def: COLOR_DEFAULTS['--st-review'] },
+                    { key:'--st-delivered',  label:'Livré',           def: COLOR_DEFAULTS['--st-delivered'] },
+                    { key:'--st-archived',   label:'Archivé',         def: COLOR_DEFAULTS['--st-archived'] },
+                  ]
+                },
+              ];
+              return GROUPS.map(function(g){
+                return '<div style="margin-bottom:22px">' +
+                  '<div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #ede8e0">'+g.title+'</div>' +
+                  '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">' +
+                    g.items.map(function(item){
+                      var val = allColors[item.key] || item.def;
+                      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid #ede8e0;border-radius:10px;background:#fdfaf6">' +
+                        '<span style="font-size:12px;color:#5c4633;flex:1">'+item.label+'</span>' +
+                        '<label style="position:relative;display:inline-block;cursor:pointer;flex-shrink:0">' +
+                          '<span id="sw-'+item.key.replace(/--/g,'').replace(/-/g,'')+'" style="display:block;width:36px;height:36px;border-radius:8px;border:1.5px solid #e0e0e0;background:'+val+'"></span>' +
+                          '<input type="color" value="'+val+'" onchange="updateColor(\''+item.key+'\',this.value);document.getElementById(\'sw-'+item.key.replace(/--/g,'').replace(/-/g,'')+'\').style.background=this.value" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer">' +
+                        '</label>' +
+                      '</div>';
+                    }).join('') +
+                  '</div>' +
+                '</div>';
+              }).join('') +
+              '<div style="display:flex;gap:8px;margin-top:8px">' +
+                '<button onclick="resetColors()" style="padding:8px 16px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;font-size:12px;cursor:pointer">Réinitialiser par défaut</button>' +
+              '</div>';
+            })()) +
             settingsCard('Notifications e-mail', 'Quatre declencheurs, chacun avec ses destinataires et un message optionnel.', notifs) +
             settingsCard('Conges et absences', 'Affiche un bandeau d\'information en haut du portail client pendant ces periodes.', holidays) +
             settingsCard('Message d\'accueil par defaut', 'Pre-rempli sur la page d\'accueil des nouveaux espaces.', welcome) +
@@ -7724,12 +7799,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var isActive = cliSelTask[pid]===t.id;
         var timeMin = t.timeSpentMinutes||0;
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
+        var propSchema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
+        var propVals = t.properties || {};
+        var propChipsHtml = propSchema.filter(function(def){ return propVals[def.id] != null && propVals[def.id] !== ''; }).map(function(def){
+          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#5c4633);white-space:nowrap">'+esc(def.name)+': '+esc(String(propVals[def.id]))+'</span>';
+        }).join(' ');
         return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
+          (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       dayCells.push('<div style="min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
@@ -7814,24 +7895,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (dueDateStr?'<span style="font-size:12px;color:var(--muted,#8090a8)">'+fmtDate(dueDateStr)+daysLabel+'</span>':'') +
       '</div>' +
       sep +
-      // Proprietes custom
+      // Proprietes personnalisees (lues depuis project.propertySchema + t.properties)
       (function(){
-        var props = Array.isArray(t.customProps) ? t.customProps : [];
-        var rows = props.map(function(p){
-          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bone-d,#e8e0d4)">' +
-            '<span style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);min-width:80px">'+esc(p.name)+'</span>' +
-            '<input value="'+esc(p.value||'')+'" onchange="cliEditProp(\''+pid+'\',\''+t.id+'\',\''+p.id+'\',this.value)" style="flex:2;font-size:13px;padding:4px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:6px;font-family:inherit;color:var(--navy,#051833);background:#fff;min-width:0">' +
-            '<button onclick="cliDeleteProp(\''+pid+'\',\''+t.id+'\',\''+p.id+'\')" style="background:none;border:none;cursor:pointer;color:#c44;font-size:14px;padding:2px 4px;flex-shrink:0" title="Supprimer">✕</button>' +
+        var schema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
+        if (!schema.length) return '';
+        var props = t.properties || {};
+        var rows = schema.filter(function(def){ return props[def.id] != null && props[def.id] !== ''; }).map(function(def){
+          return '<div style="display:flex;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid var(--bone-d,#e8e0d4)">' +
+            '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);min-width:80px;flex-shrink:0">'+esc(def.name)+'</span>' +
+            '<span style="font-size:13px;color:var(--navy,#051833)">'+esc(String(props[def.id]))+'</span>' +
           '</div>';
         }).join('');
+        if (!rows) return '';
         return '<div style="margin-bottom:14px">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-            '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Proprietes</span>' +
-            '<button onclick="cliAddPropRow(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.06em;padding:3px 10px;cursor:pointer;color:var(--terre,#5c4633)">+ Ajouter</button>' +
-          '</div>' +
-          (rows || '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic">Aucune propriete. Cliquez sur + Ajouter.</div>') +
-          '<div id="_prop-add-'+t.id+'"></div>' +
-        '</div>';
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:8px">Informations</div>' +
+          rows +
+        '</div>' + sep;
+      })() +
       })() +
       // Contenu
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
