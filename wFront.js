@@ -4470,7 +4470,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:8px">Cette semaine</div>' +
         '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:'+APT_OCRE_INK+'">'+weekDone.length+'</span>' +
-          '<span style="font-size:12px;color:#8a6f54">tâche'+(weekDone.length>1?'s':'')+' terminée'+(weekDone.length>1?'s':'')</span>' +
+          '<span style="font-size:12px;color:#8a6f54">tâche'+(weekDone.length>1?'s':'')+' terminée'+(weekDone.length>1?'s':'')+'</span>' +
           (weekMin ? ' · <span style="font-size:12px;color:#8a6f54">'+aptFmtH(weekMin)+' passées</span>' : '') +
         '</div>' +
         (weekDone.length ? '<div style="display:flex;flex-direction:column;gap:3px;max-height:80px;overflow:hidden">' +
