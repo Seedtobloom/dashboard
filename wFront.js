@@ -6737,9 +6737,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '</div>' +
           '</div>' +
         '</div>' +
+        monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
-            monthStripHtml +
             '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
             nextCard +
             miniTrack +
@@ -9882,6 +9882,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
+  function cpPortalBanner() {
+    var pd = getPD(currentId);
+    if (!pd) return '';
+    var p = pd.project;
+    var bannerStyle = p.bannerUrl
+      ? 'background-image:url('+esc(p.bannerUrl)+');background-size:cover;background-position:center'
+      : (p.bannerColor ? 'background:'+esc(p.bannerColor.split('|')[0]) : 'background:var(--terre)');
+    return '<div class="cp-ph__banner" style="'+bannerStyle+';border-radius:12px;margin:0 0 28px"'+(p.bannerUrl?' data-img':'')+'>' +
+      '<div class="cp-ph__banner-overlay">' +
+        '<div class="cp-ph__banner-content">' +
+          (p.type ? '<div style="margin-bottom:10px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
+          '<h1 style="font-family:var(--font-display);font-size:clamp(24px,3vw,36px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   function buildConversation() {
     var msgs = convData.length
       ? convData.map(convoMsgHtml).join('')
@@ -10102,25 +10119,26 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function mainForView() {
-    if (currentView === 'messages') return '<div class="cp-portal-main">' + buildConversation() + '</div>';
+    var banner = cpPortalBanner();
+    if (currentView === 'messages') return '<div class="cp-portal-main">' + banner + buildConversation() + '</div>';
     if (currentView === 'project') return buildProjectView(getPD(currentId));
-    if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
-    if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
+    if (currentView === 'hub') return '<div class="cp-portal-main">' + banner + buildHubView() + '</div>';
+    if (currentView === 'fichiers') return '<div class="cp-portal-main">' + banner + buildFichiersView() + '</div>';
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);
-      return pd0 ? '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
+      return pd0 ? '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + banner + buildClientMaintenance(pd0) + '</div>' : buildHome();
     }
     if (currentView === 'cal') {
       var pd0 = getPD(currentId);
       if (pd0) {
         var tasks0 = Array.isArray(pd0.project.tasks) ? pd0.project.tasks : [];
-        return '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
+        return '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + banner + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
       }
       return buildHome();
     }
     if (currentView === 'stats') {
       var pd0 = getPD(currentId);
-      return pd0 ? '<div class="cp-portal-main">' + buildPartStats(pd0) + '</div>' : buildHome();
+      return pd0 ? '<div class="cp-portal-main">' + banner + buildPartStats(pd0) + '</div>' : buildHome();
     }
     return buildHome();
   }
