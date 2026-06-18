@@ -2509,17 +2509,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }).join('');
 
     const tokensHtml = tokens.map(function(t) {
+      var tUrl = (typeof window !== 'undefined' && window.location ? window.location.origin : '') + '/p/' + t.token;
       return '<div class="token-row ' + (t.revoked ? 'token-revoked' : '') + '">' +
         '<div style="flex:1">' +
           '<div class="token-url" onclick="copyToken(\'' + t.token + '\')" title="Cliquer pour copier">/p/' + t.token.slice(0,16) + '…</div>' +
           '<div class="token-meta">' +
             (t.label ? esc(t.label) + ' · ' : '') +
             'Créé le ' + formatDate(t.createdAt) +
-            (t.lastUsedAt ? ' · Utilisé le ' + formatDate(t.lastUsedAt) : '') +
+            (t.lastUsedAt ? ' · Utilisé le ' + formatDate(t.lastUsedAt) : ' · <span style="color:#c9952f;font-weight:500">Jamais ouvert</span>') +
             (t.revoked ? ' · <span style="color:var(--red)">Révoqué</span>' : '') +
           '</div>' +
         '</div>' +
-        (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button><button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
+        (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button>' : '') +
+        (!t.revoked && !t.lastUsedAt ? '<button class="btn btn--sage btn--sm" onclick="navigator.clipboard.writeText(\'' + esc(tUrl) + '\').then(function(){toast(\'Lien copié — à renvoyer à la cliente ✓\')})" title="Copier le lien pour le renvoyer">↩ Renvoyer</button>' : '') +
+        (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
       '</div>';
     }).join('');
 
