@@ -7937,17 +7937,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
         '</div>' +
-        '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-          '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#9b3a2e':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
-          '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);letter-spacing:0.04em">restant'+(over?' · dépassement':' · sur '+totalH+' / mois')+'</span>' +
-        '</div>' +
-        '<div style="background:var(--bone-d,#e8dfd4);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
-          '<div style="height:100%;width:'+quotaBarPct+'%;background:'+barColor+';border-radius:20px;transition:width .4s ease"></div>' +
-        '</div>' +
-        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)">' +
-          '<span>'+usedH+' utilisé</span>' +
-          '<span>'+totalH+' total</span>' +
-        '</div>' +
+        (quotaMin
+          ? '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+              '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#9b3a2e':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
+              '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);letter-spacing:0.04em">restant'+(over?' · dépassement':' · sur '+totalH+' / mois')+'</span>' +
+            '</div>' +
+            '<div style="background:var(--bone-d,#e8dfd4);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
+              '<div style="height:100%;width:'+quotaBarPct+'%;background:'+barColor+';border-radius:20px;transition:width .4s ease"></div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)">' +
+              '<span>'+usedH+' utilisé</span>' +
+              '<span>'+totalH+' total</span>' +
+            '</div>'
+          : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré.</p>'
+        ) +
       '</div>' +
       // Big CTA button below the forfait
       '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
@@ -7991,9 +7994,22 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }).join('') +
       '</div>';
 
+      var PRIO_ORDER = { haute: 0, moyenne: 1, basse: 2 };
+      function sortTickets(arr) {
+        return arr.slice().sort(function(a, b) {
+          var da = a.dueDate || a.deadline || '', db = b.dueDate || b.deadline || '';
+          var pa = PRIO_ORDER[a.priority||a.urgency] != null ? PRIO_ORDER[a.priority||a.urgency] : 99;
+          var pb = PRIO_ORDER[b.priority||b.urgency] != null ? PRIO_ORDER[b.priority||b.urgency] : 99;
+          // no deadline goes last
+          if (da && !db) return -1;
+          if (!da && db) return 1;
+          if (da !== db) return da < db ? -1 : 1;
+          return pa - pb;
+        });
+      }
       var shown = stFilter==='all'
-        ? tickets.filter(function(t){ return t.status!=='done' && t.status!=='closed'; })
-        : tickets.filter(function(t){ return t.status===stFilter; });
+        ? sortTickets(tickets.filter(function(t){ return t.status!=='done' && t.status!=='closed'; }))
+        : sortTickets(tickets.filter(function(t){ return t.status===stFilter; }));
 
       function ticketCard(t) {
         var isOpen = t.status!=='done' && t.status!=='closed';
