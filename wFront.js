@@ -8108,7 +8108,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var dow = (new Date(year,month,dd).getDay()+6)%7;
       if (dow >= 5) continue;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
-      var dt = filtered.filter(function(t){return (t.dueDate||'').slice(0,10)===ds;});
+      var dt = filtered.filter(function(t){
+        var due = (t.dueDate||'').slice(0,10);
+        var start = (t.startDate||'').slice(0,10);
+        if (!due) return false;
+        if (start && start < due) return ds >= start && ds <= due;
+        return due === ds;
+      });
       var isToday = ds===todayStr;
       var numHtml = isToday
         ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#FAF8F4;font-size:12px;font-weight:700">'+dd+'</div>'
@@ -8125,7 +8131,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var propChipsHtml = propSchema.filter(function(def){ return propVals[def.id] != null && propVals[def.id] !== ''; }).map(function(def){
           return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#5c4633);white-space:nowrap">'+esc(def.name)+': '+esc(String(propVals[def.id]))+'</span>';
         }).join(' ');
-        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
+        var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
+        var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
+        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
@@ -8210,10 +8218,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       // Titre
       '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#051833);line-height:1.3;margin-bottom:14px">'+esc(t.title)+'</div>' +
-      // Statut + Echeance
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
+      // Statut
+      '<div style="margin-bottom:12px">' +
         '<select onchange="cliToggleTask(\''+pid+'\',\''+t.id+'\',this.value)" style="padding:5px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;font-weight:600">'+statusOpts+'</select>' +
-        (dueDateStr?'<span style="font-size:12px;color:var(--muted,#8090a8)">'+fmtDate(dueDateStr)+daysLabel+'</span>':'') +
+      '</div>' +
+      // Dates
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Début</div>' +
+          '<input type="date" value="'+esc((t.startDate||'').slice(0,10))+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{startDate:this.value||null})" style="width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Fin'+daysLabel+'</div>' +
+          '<input type="date" value="'+esc(dueDateStr)+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{dueDate:this.value})" style="width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
       '</div>' +
       sep +
       // Proprietes personnalisees — editables par le client
@@ -9035,6 +9049,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           .then(function(data){ if(data && !data.locked) renderApp(data); });
       })
       .catch(function(){ toast('Erreur lors du depot', true); });
+  };
+
+  window.cliPatchTask = function(pid, taskId, fields) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    Object.assign(t, fields);
+    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({projectId:pid},fields))}).catch(function(){});
+    renderShell();
   };
 
   window.cliSetTime = function(pid, taskId, val) {
