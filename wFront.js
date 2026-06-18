@@ -1930,6 +1930,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         else if (days<=7) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c9952f">dans '+days+' j</span>';
         else deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+formatDate(p.deadline)+'</span>';
       }
+      // Tâches (espace partenaire)
+      var tasks = Array.isArray(p.tasks) ? p.tasks.filter(function(t){ return !t.archived; }) : [];
+      var tasksDone = tasks.filter(function(t){ return t.status==='done'; }).length;
+      var tasksTotal = tasks.length;
+      var tasksHtml = (p.type==='partenaire' && tasksTotal>0)
+        ? '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+tasksDone+'/'+tasksTotal+' tâches</span>'
+        : '';
+      // Dernière activité
+      var lastUpd = p.updatedAt ? formatDate(p.updatedAt) : '';
       var isRevCard = p.status === 'revoked';
       var isArchCard = p.status === 'archived';
       var isSel = !!admSelected[p.id];
@@ -1937,13 +1946,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var hoverAttr = admSelectMode ? '' : ' onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'"';
       var selBorder = (admSelectMode && isSel) ? 'var(--brown)' : 'var(--border)';
       return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--surface);border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
-        '<div style="position:relative;height:118px;background:'+bannerBg+'">' +
+        '<div data-pid="'+p.id+'" style="position:relative;height:118px;background:'+bannerBg+'">' +
           (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#5c4633':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#5c4633':'#e2d9ce')+';display:flex;align-items:center;justify-content:center;color:#EFE1B0;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
           '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
             adminTypeBadge(p.type) +
           '</div>' +
-          (!admSelectMode ? '<label onclick="event.stopPropagation()" title="Changer la couleur de la bannière" style="position:absolute;bottom:10px;right:10px;z-index:3;cursor:pointer;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:'+(p.bannerColor||a.deep)+';display:block;box-shadow:0 2px 8px rgba(0,0,0,0.25)">' +
-            '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:a.deep)+'" onchange="admSetBannerColor(\''+p.id+'\',this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
+          (!admSelectMode ? '<label onclick="event.stopPropagation()" title="Changer la couleur de la bannière" style="position:absolute;bottom:8px;right:8px;z-index:3;cursor:pointer;width:22px;height:22px;border-radius:6px;background:rgba(0,0,0,0.25);display:grid;place-items:center;opacity:0.6;transition:opacity 0.15s" onmouseenter="this.style.opacity=\'1\'" onmouseleave="this.style.opacity=\'0.6\'">' +
+            icon('edit',11,'#fff') +
+            '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:'#5c4633')+'" onchange="admSetBannerColor(\''+p.id+'\',this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
           '</label>' : '') +
           '<div style="position:absolute;top:11px;right:12px;display:flex;gap:7px">' +
             (u>0 ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">' + icon('chat',12) + ' '+u+'</span>' : '') +
@@ -1959,10 +1969,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+pct+'%</span>' +
           '</div>' +
           '<div style="width:100%;height:6px;background:'+a.soft+';border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+a.deep+';border-radius:6px"></div></div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px">' +
-            deadlineHtml +
-            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54">'+esc(p.type ? (TYPE_SHORT[p.type]||p.type) : '')+'</span>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">' +
+            adminStatusBadge(p.status) +
+            (deadlineHtml ? '<span style="color:#c8b29a;font-size:11px">·</span>' + deadlineHtml : '') +
+            (tasksHtml ? '<span style="color:#c8b29a;font-size:11px">·</span>' + tasksHtml : '') +
           '</div>' +
+          (lastUpd || u > 0 ? '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid #f0ebe4">' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#b09b80">Mis à jour ' + lastUpd + '</span>' +
+            (u > 0 ? '<span style="display:inline-flex;align-items:center;gap:4px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#9b3a2e">' + icon('chat',11,'#9b3a2e') + ' ' + u + ' non lu' + (u>1?'s':'') + '</span>' : '') +
+          '</div>' : '') +
         '</div>' +
       '</button>';
     }).join('');
@@ -5477,12 +5492,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     input.click();
   };
   window.admSetBannerColor = async function(pid, color) {
-    var proj = (allProjs||[]).find(function(p){ return p.id===pid; });
+    var proj = dashProjs.find(function(p){ return p.id===pid; });
     if (!proj) return;
-    proj.bannerColor = color;
     var body = Object.assign({}, proj, { bannerColor: color });
     var res = await apiFetch('/api/projects/'+pid, { method:'PUT', body: JSON.stringify(body) });
-    if (!res.ok) { toast('Erreur lors de la sauvegarde', true); proj.bannerColor = proj.bannerColor; }
+    if (res.ok) {
+      proj.bannerColor = color;
+      // Met à jour la bannière visuellement sans rechargement
+      var banner = document.querySelector('[data-pid="'+pid+'"]');
+      if (banner) banner.style.background = color;
+    } else toast('Erreur lors de la sauvegarde', true);
   };
 
   window.archiveProject = async function() {
