@@ -2737,7 +2737,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<div class="form-row">' +
                     '<div class="form-field"><label>Statut</label><select id="edit-status">' + statusOptions + '</select></div>' +
                   '</div>' +
-                  (project.type === 'partenaire' ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 14"></div>' : '') +
+                  ((project.type === 'partenaire' || project.type === 'maintenance') ? '<div class="form-field"><label>Forfait mensuel (heures)</label><input type="number" id="edit-monthlyHours" value="' + (project.monthlyHours || '') + '" min="0" step="0.5" placeholder="Ex: 4"></div>' : '') +
                 '</div>' +
               '</div>';
 
