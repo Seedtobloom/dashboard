@@ -140,6 +140,30 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     return errorResponse('Method not allowed', 405);
   }
 
+  // Steps route: /api/client/{token}/steps/{stepId}
+  const stepsMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/steps\/([a-f0-9]{32})$/);
+  if (stepsMatch) {
+    const clientToken = await verifyClientToken(stepsMatch[1], env);
+    if (!clientToken) return errorResponse('Invalid or expired token', 403);
+    const projects = await allowedProjects(env, clientToken);
+    const stepId = stepsMatch[2];
+
+    if (method === 'PATCH') {
+      const body = (await request.json()) as Record<string, any>;
+      const project = projects.find((p) => p.id === body.projectId) || projects[0];
+      if (!project) return errorResponse('Project not found', 404);
+      const steps = project.steps || [];
+      const stepIdx = steps.findIndex((s: any) => s.id === stepId);
+      if (stepIdx === -1) return errorResponse('Step not found', 404);
+      if (body.pageBlocks !== undefined) steps[stepIdx].pageBlocks = body.pageBlocks;
+      project.steps = steps;
+      await saveProject(env, project);
+      return jsonResponse(steps[stepIdx]);
+    }
+
+    return errorResponse('Method not allowed', 405);
+  }
+
   const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match) return errorResponse('Not found', 404);
 
