@@ -51,6 +51,12 @@ export interface Task {
   createdAt: string;
 }
 
+export interface TicketAttachment {
+  key: string;
+  name: string;
+  type?: string;
+}
+
 export interface MaintenanceTicket {
   id: string;
   title: string;
@@ -58,6 +64,8 @@ export interface MaintenanceTicket {
   priority?: 'basse' | 'moyenne' | 'haute';
   category?: string;
   status: 'open' | 'in_progress' | 'done' | 'closed';
+  attachments?: TicketAttachment[];
+  timeSpentMinutes?: number;
   createdAt: string;
   resolvedAt?: string;
 }
