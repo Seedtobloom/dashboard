@@ -6540,15 +6540,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
           '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
           '<div style="flex:1">' +
-            '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">⚡ Votre action est requise</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:#c46a1a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
             (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
             (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
           '</div>' +
-          '<div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
-            '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">✓ J\'ai terminé</button>' +
-            '<button style="padding:6px 14px;font-size:10px;background:none;border:1px solid #e8a87c;border-radius:var(--radius-pill);cursor:pointer;color:#8a4a0e;font-family:var(--font-micro);letter-spacing:0.06em" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',12,'color:#8a4a0e') + '</button>' +
-          '</div>' +
+          '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none;flex-shrink:0" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir &amp; valider ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
         '</div>'
         : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#EFE1B0);background:var(--paille-50,#FBF3DC)">' +
           partDiamond(nextTask.urgency) +
@@ -6564,14 +6562,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
             '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
             '<div style="flex:1">' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">⚡ Votre action est requise</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+              '<div style="font-family:var(--font-micro);font-size:9px;color:#c46a1a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
               (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
               (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
-              '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">✓ J\'ai terminé</button>' +
-              '<button style="padding:6px 14px;font-size:10px;background:none;border:1px solid #e8a87c;border-radius:var(--radius-pill);cursor:pointer;color:#8a4a0e;font-family:var(--font-micro);letter-spacing:0.06em" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',12,'color:#8a4a0e') + '</button>' +
+              '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir &amp; valider ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
             '</div>' +
           '</div>';
         } else if (inProgressStep) {
@@ -6696,6 +6694,40 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         cpIcon('arrow',15, homeUnread > 0 ? 'color:#c46a1a' : 'color:var(--terre-600)') +
       '</button>';
 
+      // ── Barre récap mensuelle (partenaire) ──────────────────────────────────
+      var monthStripHtml = '';
+      if (isPart) {
+        var curMonKey = _todayStr().slice(0,7);
+        var MONTHS_FR = ['','Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+        var mLabel = (function(){ var d=new Date(); return MONTHS_FR[d.getMonth()+1]+' '+d.getFullYear(); })();
+        var livreCeMois = partTasks.filter(function(t){ return t.status==='done' && (t.completedAt||'').slice(0,7)===curMonKey; }).length;
+        var enCours = partTasks.filter(function(t){ return t.status!=='done' && !t.archived; }).length;
+        var mForfH = p.monthlyHours || 0;
+        var mUsedH2 = mForfH ? (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===curMonKey?s+(t.timeSpentMinutes||0)/60:s; },0) : 0;
+        var mFpct2 = mForfH ? Math.min(100, Math.round(mUsedH2/mForfH*100)) : 0;
+        monthStripHtml = '<div style="display:flex;align-items:center;border:1px solid var(--bone-d);border-radius:var(--radius-3);background:var(--card);margin-bottom:22px;overflow:hidden">' +
+          '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Ce mois-ci</div>' +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)">' + mLabel + '</div>' +
+          '</div>' +
+          '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1">' + livreCeMois + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">Livré ce mois</div>' +
+          '</div>' +
+          '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1">' + enCours + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">En cours</div>' +
+          '</div>' +
+          (mForfH ? '<div style="padding:16px 22px;flex:1;min-width:0">' +
+            '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+              '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase">Forfait du mois</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);font-weight:500">' + mUsedH2.toFixed(1).replace('.0','') + ' / ' + mForfH + ' h</div>' +
+            '</div>' +
+            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mFpct2>75?'var(--glycine-700)':'var(--terre)')+';border-radius:999px"></div></div>' +
+          '</div>' : '<div style="flex:1"></div>') +
+        '</div>';
+      }
+
       return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
         '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px"'+(p.bannerUrl?' data-img':'')+'>' +
           '<div class="cp-ph__banner-overlay">' +
@@ -6707,6 +6739,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
+            monthStripHtml +
             '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
             nextCard +
             miniTrack +
