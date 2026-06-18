@@ -9190,15 +9190,47 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : clientType === 'site'
       ? 'Parcourez les phases de votre site ; cliquez-en une pour voir sa checklist, cocher ce qui est fait et suivre l\'avancement.'
       : 'Suivez les etapes une a une ; cliquez-en une pour ouvrir sa page detaillee et voir son statut.';
-    var steps = [
-      { icon:'flower', title:'Bienvenue dans votre espace !', text:'Cet espace prive reunit tout votre projet avec le studio. Laissez-vous guider — on passe en revue chaque partie.' },
-      { icon:'home', title:'Le menu de gauche', text:'Toute la navigation est ici : accueil, suivi, messagerie, fichiers et ressources. Cliquez une entree pour ouvrir la section.' },
-      { icon:'tasks', title:suiviLabel, text:suiviText },
-      { icon:'chat', title:'Ecrire a Cindy', text:'Posez vos questions ici, comme une conversation. Pas besoin d\'e-mail — tout reste au meme endroit.' },
-      { icon:'paperclip', title:'Partager des fichiers', text:'Deposez vos elements (textes, photos, logos) et recuperez les livrables. Le partage marche dans les deux sens.' },
-      { icon:'folder', title:'Vos ressources', text:'Retrouvez ici les documents partages par le studio et les ressources de votre projet.' },
-      { icon:'check', title:'A vous de jouer', text:'Besoin d\'un point ? Le bouton « Rejoindre la visio » est en bas a gauche. Et ce guide reste accessible via « Guide », en haut.' },
-    ];
+    var GUIDE_BY_TYPE = {
+      partenaire: [
+        { icon:'flower', title:'Votre espace partenaire', text:'Bienvenue ! Cet espace est votre tableau de bord créatif. Chaque mois, vos demandes y sont planifiées, suivies et livrées. Ce guide vous présente chaque section en détail.' },
+        { icon:'calendar', title:'Le calendrier des demandes', text:'C\'est le cœur de votre espace. Chaque demande apparaît dans le calendrier à la date prévue. Vous voyez en un clin d\'œil ce qui est planifié, en cours ou terminé cette semaine.' },
+        { icon:'tasks', title:'Urgences et priorités', text:'Chaque demande a un niveau d\'urgence : Tranquille (feuille), Normal (horloge), Urgent (éclair) ou Critique (flamme). Ces niveaux aident le studio à prioriser votre travail dans le mois.' },
+        { icon:'check', title:'Statuts des demandes', text:'Une demande passe par plusieurs statuts : À faire → En cours → En relecture → Fait. Vous suivez l\'avancement en temps réel directement depuis le calendrier.' },
+        { icon:'clock', title:'Votre forfait mensuel', text:'En haut de la page, une barre indique les heures utilisées sur votre forfait du mois. Quand elle est pleine, les nouvelles demandes passent sur le mois suivant ou font l\'objet d\'un devis.' },
+        { icon:'chat', title:'Écrire au studio', text:'La section Messagerie vous permet d\'échanger directement avec Cindy. Pas besoin d\'e-mail : tout reste au même endroit, lié à votre espace.' },
+        { icon:'folder', title:'Fichiers et livrables', text:'Déposez vos éléments (textes, photos, inspirations) et récupérez les fichiers finaux dans la section Fichiers. Chaque livrable est accessible dès qu\'il est prêt.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, n\'hésitez pas à écrire dans la Messagerie — on répond rapidement.' },
+      ],
+      maintenance: [
+        { icon:'flower', title:'Votre espace maintenance', text:'Bienvenue ! Cet espace est dédié au suivi de votre contrat de maintenance. Ouvrez des tickets, suivez leur avancement et consultez votre quota d\'heures.' },
+        { icon:'tasks', title:'Ouvrir un ticket', text:'Cliquez sur « Nouvelle demande » pour décrire votre besoin : correction de bug, mise à jour de contenu, question technique… Choisissez la catégorie la plus proche.' },
+        { icon:'clock', title:'Votre quota d\'heures', text:'Chaque mois, votre contrat inclut un quota d\'heures. La barre en haut de page indique ce qui a déjà été utilisé. Les heures non utilisées ne sont pas reportées.' },
+        { icon:'calendar', title:'Suivi mensuel', text:'L\'onglet Suivi mensuel vous donne une vue d\'ensemble des interventions du mois : temps passé, tickets traités, solde d\'heures restantes.' },
+        { icon:'check', title:'Statuts des tickets', text:'Un ticket peut être : Ouvert (reçu), En cours (traitement en cours), Résolu (fini, en attente de validation) ou Fermé. Vous êtes notifié à chaque changement.' },
+        { icon:'chat', title:'Messagerie', text:'Pour toute question qui ne nécessite pas un ticket formel, la Messagerie est là. Échangez directement avec le studio en temps réel.' },
+        { icon:'folder', title:'Fichiers et ressources', text:'Retrouvez ici les accès, les guides techniques et les documents partagés par le studio pour la gestion de votre site.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie — on revient vers vous rapidement.' },
+      ],
+      identite: [
+        { icon:'flower', title:'Votre espace identité', text:'Bienvenue ! Cet espace réunit tout votre projet d\'identité visuelle avec le studio. Découvrez les étapes, partagez vos réponses et suivez l\'avancement en temps réel.' },
+        { icon:'tasks', title:'Les étapes du projet', text:'Votre projet se découpe en phases (Découverte, Création, Validation, Livraison…). Chaque étape a un statut et une échéance. Cliquez dessus pour voir le détail et les actions attendues de votre part.' },
+        { icon:'check', title:'Votre rôle dans le projet', text:'Certaines étapes nécessitent une action de votre part (retour, validation, contenu à fournir). Elles sont signalées clairement. Votre réactivité influence directement le calendrier du projet.' },
+        { icon:'home', title:'Le questionnaire', text:'Si un questionnaire est disponible, remplissez-le dès que possible — il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
+        { icon:'chat', title:'Messagerie', text:'Posez vos questions, partagez vos inspirations ou faites vos retours directement ici. Tout reste au même endroit, sans passer par e-mail.' },
+        { icon:'folder', title:'Fichiers et livrables', text:'Déposez vos éléments (photos, textes, logos existants) et retrouvez les fichiers livrés par le studio dès qu\'ils sont disponibles.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. N\'hésitez pas à écrire dans la Messagerie — on est là pour que le projet se passe au mieux.' },
+      ],
+      site: [
+        { icon:'flower', title:'Votre espace site web', text:'Bienvenue ! Cet espace vous permet de suivre la construction de votre site phase par phase, de valider chaque étape et d\'échanger avec le studio.' },
+        { icon:'tasks', title:'Les phases du projet', text:'Votre site est construit en plusieurs phases (Cadrage, Design, Développement, Tests, Mise en ligne…). Vous pouvez les voir en vue Galerie (cartes avec aperçu) ou en Liste (vue compacte).' },
+        { icon:'check', title:'Valider une phase', text:'Quand une phase passe au statut « En attente de votre retour », c\'est à vous de valider ou de demander des ajustements. Vos retours sont précieux pour avancer rapidement.' },
+        { icon:'clock', title:'Les échéances', text:'Chaque phase a une date cible. Si une phase est en retard, elle apparaît en rouge. Votre participation rapide (retours, contenus à fournir) permet de tenir le calendrier.' },
+        { icon:'chat', title:'Messagerie', text:'Partagez vos retours, posez vos questions ou envoyez des inspirations directement ici. C\'est plus rapide et tout reste tracé.' },
+        { icon:'folder', title:'Fichiers', text:'Déposez ici vos textes, images, logos et tout ce que le studio a besoin pour construire votre site. Les livrables finaux (export, accès) y seront aussi disponibles.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut. Bonne construction !' },
+      ],
+    };
+    var steps = GUIDE_BY_TYPE[clientType] || GUIDE_BY_TYPE.identite;
     var existing = document.getElementById('cp-guide-overlay');
     if (existing) existing.remove();
     var idx = 0;
