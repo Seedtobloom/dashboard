@@ -9904,23 +9904,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
-  function cpPortalBanner() {
-    var pd = getPD(currentId);
-    if (!pd) return '';
-    var p = pd.project;
-    var bannerStyle = p.bannerUrl
-      ? 'background-image:url('+esc(p.bannerUrl)+');background-size:cover;background-position:center'
-      : (p.bannerColor ? 'background:'+esc(p.bannerColor.split('|')[0]) : 'background:var(--terre)');
-    return '<div class="cp-ph__banner" style="'+bannerStyle+';border-radius:12px;margin:0 0 28px"'+(p.bannerUrl?' data-img':'')+'>' +
-      '<div class="cp-ph__banner-overlay">' +
-        '<div class="cp-ph__banner-content">' +
-          (p.type ? '<div style="margin-bottom:10px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
-          '<h1 style="font-family:var(--font-display);font-size:clamp(24px,3vw,36px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
-
   function buildConversation() {
     var msgs = convData.length
       ? convData.map(convoMsgHtml).join('')
