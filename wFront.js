@@ -3181,14 +3181,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     reader.onload = function(e) {
       var img = new Image();
       img.onload = async function() {
-        // Resize to max 1400px wide, JPEG quality 0.88
-        var maxW = 1400;
+        // Resize seulement si très grande (max 2400px), sinon garde l'original net.
+        var maxW = 2400;
         var w = img.width, h = img.height;
-        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-        var canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        var dataUrl;
+        if (w > maxW) {
+          h = Math.round(h * maxW / w); w = maxW;
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        } else {
+          dataUrl = e.target.result; // image d'origine, pleine netteté
+        }
         document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
         var banner = document.getElementById('proj-banner-el');
         if (banner) {
