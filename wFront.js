@@ -6318,6 +6318,24 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.querySelector('#_cpprompt-ok').onclick = submit;
     inp.addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); if(e.key==='Escape') close(); });
   }
+  // Confirmation côté client (le showConfirm admin n'est pas dans cette closure).
+  function showConfirm(msg, onOk, opts) {
+    opts = opts || {};
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
+      '<div style="font-size:13.5px;color:#5c4633;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#8a6f54;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#5c4633')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
+      '</div></div>';
+    document.body.appendChild(ov);
+    function close(){ ov.remove(); }
+    ov.querySelector('#_cpcf-cancel').onclick = close;
+    ov.querySelector('#_cpcf-ok').onclick = function(){ close(); onOk(); };
+    ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
+  }
   function fileIcon(t) {
     if (t.startsWith('image/')) return '🖼';
     if (t === 'application/pdf') return '📄';
@@ -8024,8 +8042,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var mainContent = '';
     if (cat==='demandes') mainContent = buildTicketsList();
     else if (cat==='suivi')    mainContent = buildMaintSuiviClient(project);
-    else if (cat==='conseils') mainContent = (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
-    else if (cat==='retours')  mainContent = (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour client pour le moment.</p>');
+    else if (cat==='conseils') {
+      var addC = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddCounsel(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un conseil</button></div>';
+      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#c44;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
+    }
+    else if (cat==='retours') {
+      var addR = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddFeedback(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un retour</button></div>';
+      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#c44;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
+    }
 
     return quotaStrip + catTabsHtml + mainContent;
   }
@@ -8948,6 +8972,41 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }).catch(function(){ toast('Erreur, réessayez.'); });
     }, { title:'Supprimer la demande', okLabel:'Supprimer', danger:true });
   };
+
+  function cliCRAdd(pid, field, body, okMsg) {
+    fetch(API_BASE + '/' + field, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({projectId:pid}, body)) })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+      .then(function(item){
+        var pd = getPD(pid);
+        if (pd) { if(!Array.isArray(pd.project[field])) pd.project[field]=[]; pd.project[field].unshift(item); }
+        toast(okMsg); renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  }
+  function cliCRDelete(pid, field, id) {
+    fetch(API_BASE + '/' + field + '/' + id + '?projectId=' + pid, { method:'DELETE' })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(){
+        var pd = getPD(pid);
+        if (pd && Array.isArray(pd.project[field])) pd.project[field] = pd.project[field].filter(function(x){return x.id!==id;});
+        renderShell();
+      }).catch(function(){ toast('Erreur, réessayez.'); });
+  }
+  window.cliAddCounsel = function(pid) {
+    cpShowPrompt('Ajouter un conseil', 'Titre du conseil', '', function(title) {
+      if (!title || !title.trim()) return;
+      cpShowPrompt('Détail (optionnel)', 'Décrivez le conseil ou l\'amélioration', '', function(bodyTxt) {
+        cliCRAdd(pid, 'counsels', { title: title.trim(), body: (bodyTxt||'').trim() }, 'Conseil ajouté ✓');
+      }, { textarea:true, okLabel:'Ajouter', allowEmpty:true });
+    }, { okLabel:'Suivant' });
+  };
+  window.cliDeleteCounsel = function(pid, id) { showConfirm('Supprimer ce conseil ?', function(){ cliCRDelete(pid, 'counsels', id); }, { title:'Supprimer', okLabel:'Supprimer', danger:true }); };
+  window.cliAddFeedback = function(pid) {
+    cpShowPrompt('Ajouter un retour', 'Votre retour', '', function(content) {
+      if (!content || !content.trim()) return;
+      cliCRAdd(pid, 'feedbacks', { content: content.trim() }, 'Retour ajouté ✓');
+    }, { textarea:true, okLabel:'Envoyer' });
+  };
+  window.cliDeleteFeedback = function(pid, id) { showConfirm('Supprimer ce retour ?', function(){ cliCRDelete(pid, 'feedbacks', id); }, { title:'Supprimer', okLabel:'Supprimer', danger:true }); };
 
   window.cliOpenSubmitTicket = function(pid, edit) {
     var existing = document.getElementById('_maint-ticket-modal');

@@ -1,6 +1,6 @@
-import type { Env, Project, MaintenanceTicket, Task } from '../types';
+import type { Env, Project, MaintenanceTicket, Task, ProjectFile } from '../types';
 import { verifyClientToken } from '../auth';
-import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage } from '../kv';
+import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage, addProjectFile } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
 import { sendAdminMessageNotification, sendClientThreadAdminNotification } from './notifications';
 
@@ -155,6 +155,63 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       return jsonResponse({ ok: true });
     }
 
+    return errorResponse('Method not allowed', 405);
+  }
+
+  // Upload fichier côté client : POST /api/client/{token}/files
+  const filesUploadMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/files$/);
+  if (filesUploadMatch && method === 'POST') {
+    const clientToken = await verifyClientToken(filesUploadMatch[1], env);
+    if (!clientToken) return errorResponse('Invalid or expired token', 403);
+    const projects = await allowedProjects(env, clientToken);
+    const contentType = request.headers.get('Content-Type') ?? '';
+    if (!contentType.includes('multipart/form-data')) return errorResponse('multipart/form-data required');
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const projectId = (formData.get('projectId') as string) || url.searchParams.get('projectId') || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId) || projects[0];
+    if (!project) return errorResponse('Project not found', 404);
+    if (!file) return errorResponse('file is required');
+    const key = `${project.id}/${generateId()}-${file.name}`;
+    await env.BLOOM_R2.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+    const projectFile: ProjectFile = {
+      key, name: file.name, size: file.size, type: file.type,
+      category: 'document', uploadedAt: new Date().toISOString(), uploadedBy: 'client',
+    };
+    await addProjectFile(env, project.id, projectFile);
+    return jsonResponse(projectFile, 201);
+  }
+
+  // Conseils & retours côté client : /api/client/{token}/counsels|feedbacks[/{id}]
+  const crMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/(counsels|feedbacks)(?:\/([a-f0-9]{32}))?$/);
+  if (crMatch) {
+    const clientToken = await verifyClientToken(crMatch[1], env);
+    if (!clientToken) return errorResponse('Invalid or expired token', 403);
+    const projects = await allowedProjects(env, clientToken);
+    const field = crMatch[2] as 'counsels' | 'feedbacks';
+    const itemId = crMatch[3];
+    const body = (await request.clone().json().catch(() => ({} as Record<string, any>))) as Record<string, any>;
+    const projectId = body.projectId || url.searchParams.get('projectId') || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId) || projects[0];
+    if (!project) return errorResponse('Project not found', 404);
+    const arr: any[] = Array.isArray((project as any)[field]) ? (project as any)[field] : [];
+
+    if (method === 'POST' && !itemId) {
+      const item = field === 'counsels'
+        ? { id: generateId(), title: (body.title || '').trim(), body: (body.body || '').trim(), badge: body.badge || '', author: 'client', createdAt: new Date().toISOString() }
+        : { id: generateId(), author: project.clientName || 'Client', content: (body.content || '').trim(), createdAt: new Date().toISOString() };
+      if (field === 'counsels' && !(item as any).title) return errorResponse('title is required');
+      if (field === 'feedbacks' && !(item as any).content) return errorResponse('content is required');
+      arr.unshift(item);
+      (project as any)[field] = arr;
+      await saveProject(env, project);
+      return jsonResponse(item, 201);
+    }
+    if (method === 'DELETE' && itemId) {
+      (project as any)[field] = arr.filter((x) => x.id !== itemId);
+      await saveProject(env, project);
+      return jsonResponse({ ok: true });
+    }
     return errorResponse('Method not allowed', 405);
   }
 
