@@ -8942,7 +8942,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               else field = '<input type="text" id="'+fid+'" style="'+S+'">';
               return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
             }).join('') + '</div>';
-        })() + +
+        })() +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
           '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#051833);color:#fff;cursor:pointer;font-size:13px;font-weight:600">AJOUTER</button>' +
