@@ -6942,12 +6942,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           : '<div class="cp-empty">Aucune phase dans cette catégorie.</div>') +
       '</div>';
 
-      return header +
-        '<div class="cp-content"><div class="cp-grid">' +
-          '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + phasesView + '</div>' +
-          '<div class="cp-grid__side">' + sideCol + '</div>' +
-        '</div></div>' +
-        buildStepModal(project.id, steps);
+      var stepsLayout = pvIsGrid
+        ? '<div class="cp-content cp-content--wide">' +
+            banner + clientCardsHtml + questionnaireCard + phasesView +
+            '<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:start;margin-top:28px">' +
+              '<div></div><div>' + sideCol + '</div>' +
+            '</div>' +
+          '</div>'
+        : '<div class="cp-content"><div class="cp-grid">' +
+            '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + phasesView + '</div>' +
+            '<div class="cp-grid__side">' + sideCol + '</div>' +
+          '</div></div>';
+      return header + stepsLayout + buildStepModal(project.id, steps);
     }
 
     return header +
