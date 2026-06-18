@@ -1,4 +1,4 @@
-import type { Env, Project, MaintenanceTicket } from '../types';
+import type { Env, Project, MaintenanceTicket, Task } from '../types';
 import { verifyClientToken } from '../auth';
 import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
@@ -63,11 +63,11 @@ async function clientTaskOp(
     return jsonResponse(comment, 201);
   }
   if (!body.title?.trim()) return errorResponse('title is required');
-  const task = {
+  const task: Task = {
     id: generateId(),
     title: body.title.trim(),
     content: body.content ?? '',
-    urgency: (body.urgency ?? 'moyenne') as 'basse' | 'moyenne' | 'haute',
+    urgency: (body.urgency ?? 'moyenne'),
     dueDate: body.dueDate,
     status: 'todo' as const,
     comments: [],
@@ -76,6 +76,9 @@ async function clientTaskOp(
     completedAt: null,
     createdAt: new Date().toISOString(),
   };
+  if (body.startDate) task.startDate = body.startDate;
+  if (body.pole) task.pole = body.pole;
+  if (body.properties && typeof body.properties === 'object') task.properties = body.properties;
   project.tasks.push(task);
   await saveProject(env, project);
   return jsonResponse(task, 201);
@@ -264,12 +267,14 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     const idx = (project.tasks || []).findIndex((t) => t.id === patchTaskId);
     if (idx === -1) return errorResponse('Task not found', 404);
     const prev = project.tasks[idx];
-    const allowed = ['content', 'status', 'timeSpentMinutes', 'properties'] as const;
+    const allowed = ['content', 'status', 'timeSpentMinutes', 'properties', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'pinned', 'archived', 'livrableUrl', 'deliverableFileKey'] as const;
     const patch: Record<string, any> = {};
     allowed.forEach((k) => { if (k in body) patch[k] = body[k]; });
     if (patch.properties && typeof patch.properties === 'object') {
       patch.properties = Object.assign({}, prev.properties || {}, patch.properties);
     }
+    if (patch.status === 'done' && !prev.completedAt) patch.completedAt = new Date().toISOString();
+    if (patch.status && patch.status !== 'done') patch.completedAt = null;
     project.tasks[idx] = Object.assign({}, prev, patch);
     await saveProject(env, project);
     return jsonResponse(project.tasks[idx]);
