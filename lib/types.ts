@@ -13,6 +13,8 @@ export interface Project {
   tasks?: Task[];
   tickets?: MaintenanceTicket[];
   propertySchema?: { id: string; name: string; type: string; options?: string[] }[];
+  counsels?: { id: string; title?: string; body?: string; badge?: string; author?: string; createdAt?: string }[];
+  feedbacks?: { id: string; author?: string; content?: string; createdAt?: string }[];
   monthlyHours?: number;
   forfaitOverrides?: Record<string, number>;
   notes?: string;
