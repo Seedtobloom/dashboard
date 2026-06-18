@@ -7931,12 +7931,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '—';
     var barColor = over ? '#c44' : (quotaBarPct > 75 ? '#e8a87c' : '#7a9a5a');
     var quotaStrip = '<div style="margin-bottom:28px">' +
-      // Big CTA button first
-      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;margin-bottom:18px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
-        cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
-      '</button>' +
-      // Forfait card
-      '<div style="padding:18px 22px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+(over?'#e7c6bd':barColor.replace('#c44','#e7c6bd').replace('#e8a87c','#e8d5bc').replace('#7a9a5a','#c5d9b5'))+';border-radius:var(--radius-3)">' +
+      // Forfait card first
+      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+(over?'#e7c6bd':barColor.replace('#c44','#e7c6bd').replace('#e8a87c','#e8d5bc').replace('#7a9a5a','#c5d9b5'))+';border-radius:var(--radius-3)">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
           cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
@@ -7953,6 +7949,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<span>'+totalH+' total</span>' +
         '</div>' +
       '</div>' +
+      // Big CTA button below the forfait
+      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
+        cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
+      '</button>' +
     '</div>';
 
     // Category tabs
