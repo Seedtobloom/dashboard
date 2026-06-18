@@ -10401,10 +10401,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   function renderShell(opts) {
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
+    var adminBar = _isAdminEdit
+      ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(5,24,51,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">' +
+          '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5)">Vue client</span>' +
+          '<div style="width:1px;height:14px;background:rgba(255,255,255,0.15)"></div>' +
+          '<button onclick="window.location.href=\'/admin/projects/' + (appData.projects[0] && appData.projects[0].project ? appData.projects[0].project.id : '') + '\'" style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:background 150ms" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.12)\'">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
+            'Repasser en vue admin' +
+          '</button>' +
+        '</div>'
+      : '';
     document.getElementById('app').innerHTML =
       '<div class="cp">' + buildSidebar() +
         '<div class="cp-main" id="cp-main">' + buildCongesBanner() + buildTopbar() + mainForView() + '</div>' +
-      '</div><div class="cp-toast" id="cp-toast"></div>';
+      '</div>' + adminBar + '<div class="cp-toast" id="cp-toast"></div>';
     if (currentView === 'project') attachForm();
     if (currentView === 'messages') attachConvoForm();
     window.scrollTo(0, scrollY);
