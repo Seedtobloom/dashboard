@@ -4618,9 +4618,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Temps passé</div>' +
           '<div style="display:flex;align-items:center;gap:10px">' +
             '<button onclick="aptAddTime(\''+t.id+'\',-30)" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
-            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:'+APT_OCRE_INK+';min-width:64px;text-align:center;flex-shrink:0">'+aptFmtH(timeMin)+'</span>' +
+            '<input id="apt-time-'+t.id+'" value="'+aptFmtH(timeMin)+'" onblur="aptSetTimeFromInput(\''+t.id+'\')" onkeydown="if(event.key===\'Enter\'){this.blur()}" style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:'+APT_OCRE_INK+';width:72px;text-align:center;border:none;border-bottom:1.5px solid transparent;background:transparent;padding:2px 4px;flex-shrink:0;outline:none" onfocus="this.style.borderBottomColor=\''+APT_OCRE_MID+'\'" onblur="aptSetTimeFromInput(\''+t.id+'\');this.style.borderBottomColor=\'transparent\'" title="Ex: 1h30 ou 90">' +
             '<button onclick="aptAddTime(\''+t.id+'\',30)" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
-            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c4b49e;line-height:1.4">Saisi par<br>le studio · par 30 min</span>' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c4b49e;line-height:1.4">Taper ex : 1h30<br>ou utiliser +/− (30 min)</span>' +
           '</div>' +
         '</div>' +
 
@@ -4771,6 +4771,28 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var cur = (t && t.timeSpentMinutes) || 0;
     var next = Math.max(0, cur + delta);
     window.aptPatch(id, { timeSpentMinutes: next });
+  };
+  window.aptSetTimeFromInput = function(id) {
+    var inp = document.getElementById('apt-time-'+id);
+    if (!inp) return;
+    var raw = inp.value.trim().toLowerCase();
+    var minutes = 0;
+    // formats: "1h30", "1h", "30", "1h 30", "1h30min", "90min", "0h45"
+    var mH = raw.match(/^(\d+)\s*h\s*(\d+)?/);
+    var mMin = raw.match(/^(\d+)\s*(?:min)?$/);
+    if (mH) {
+      minutes = parseInt(mH[1]) * 60 + (mH[2] ? parseInt(mH[2]) : 0);
+    } else if (mMin) {
+      minutes = parseInt(mMin[1]);
+    }
+    minutes = Math.max(0, minutes);
+    var p = window._currentProject; var t = p && p.tasks && p.tasks.find(function(x){return x.id===id;});
+    if (t && minutes !== (t.timeSpentMinutes||0)) {
+      window.aptPatch(id, { timeSpentMinutes: minutes });
+    } else {
+      // reset display to current value if parse failed or unchanged
+      inp.value = aptFmtH((t && t.timeSpentMinutes)||0);
+    }
   };
   window.aptSetProp = function(id, propId, value){
     var p = window._currentProject; var t = p && p.tasks && p.tasks.find(function(x){return x.id===id;});
