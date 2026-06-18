@@ -188,6 +188,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 /* Project banner */
 .proj-banner { width: 100%; min-height: 130px; display: flex; align-items: flex-end; position: relative; }
 .proj-banner::after { content: ""; position: absolute; inset: 0; background: transparent; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; opacity: 0.12; mix-blend-mode: screen; }
+.proj-banner[data-img]::after { display: none; }
 .proj-banner[data-light]::after { background: rgba(0,0,0,0.08); }
 .proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -487,6 +488,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-banner { height: 140px; background: var(--terre); background-size: cover; background-position: center; position: relative; }
 .cp-proj-banner::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; opacity: 0.12; mix-blend-mode: screen; }
+.cp-proj-banner[data-img]::after { display: none; }
+.cp-ph__banner[data-img]::after { display: none; }
 .grain-overlay { position:absolute;inset:0;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");background-repeat:repeat;background-size:256px 256px;opacity:0.12;mix-blend-mode:screen; }
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: white; }
 .cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #9b3a2e; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -2026,7 +2029,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var selBorder = (admSelectMode && isSel) ? 'var(--brown)' : 'var(--border)';
       return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--surface);border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
         '<div data-pid="'+p.id+'" style="position:relative;height:118px;background:'+bannerBg+'">' +
-          '<div class="grain-overlay"></div>' +
+          (!p.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
           (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#5c4633':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#5c4633':'#e2d9ce')+';display:flex;align-items:center;justify-content:center;color:#EFE1B0;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
           '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
             adminTypeBadge(p.type) +
@@ -2596,10 +2599,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
 
-          '<div style="position:relative;height:180px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el">' +
-            '<div style="position:absolute;inset:0;background:transparent;pointer-events:none"></div>' +
+          '<div style="position:relative;height:180px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
+            (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
             '<button onclick="adminNav(\'/admin\')" style="position:absolute;top:18px;left:24px;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;border:0;background:rgba(20,12,6,0.55);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">← Tous les espaces</button>' +
-            '<div style="position:absolute;top:18px;right:24px">' + adminTypeBadge(project.type) + '</div>' +
+            '<div style="position:absolute;top:18px;right:24px;display:flex;gap:8px;align-items:center">' +
+              adminTypeBadge(project.type) +
+              '<label title="Changer l\'image de bannière" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:0;background:rgba(20,12,6,0.5);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.08em">' +
+                icon('image',13,'#fff') + ' Photo' +
+                '<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)">' +
+              '</label>' +
+              (project.bannerUrl ? '<button onclick="applyBannerColor(null)" title="Retirer l\'image" style="padding:6px 12px;border-radius:999px;border:0;background:rgba(20,12,6,0.5);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;cursor:pointer">Retirer</button>' : '') +
+            '</div>' +
           '</div>' +
 
           '<div style="padding:28px 48px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">' +
@@ -6380,7 +6390,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</button>';
 
       return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
-        '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px">' +
+        '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px"'+(p.bannerUrl?' data-img':'')+'>' +
           '<div class="cp-ph__banner-overlay">' +
             '<div class="cp-ph__banner-content">' +
               (p.type ? '<div style="margin-bottom:12px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
@@ -6423,7 +6433,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         duration = weeks + ' sem.';
       }
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-        '<div class="cp-proj-banner" style="' + bannerStyle + '">' +
+        '<div class="cp-proj-banner" style="' + bannerStyle + '"'+(p.bannerUrl?' data-img':'')+'>'+
           '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
           (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
         '</div>' +
@@ -9412,14 +9422,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
-  function renderShell() {
+  function renderShell(opts) {
+    var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
     document.getElementById('app').innerHTML =
       '<div class="cp">' + buildSidebar() +
         '<div class="cp-main" id="cp-main">' + buildCongesBanner() + buildTopbar() + mainForView() + '</div>' +
       '</div><div class="cp-toast" id="cp-toast"></div>';
     if (currentView === 'project') attachForm();
     if (currentView === 'messages') attachConvoForm();
-    window.scrollTo(0, 0);
+    window.scrollTo(0, scrollY);
   }
 
   function applyClientTheme(projects) {
@@ -9522,12 +9533,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpGoHome = function() {
     currentView = 'home';
-    renderShell();
+    renderShell({ resetScroll: true });
   };
 
   window.cpGoFichiers = function() {
     currentView = 'fichiers';
-    renderShell();
+    renderShell({ resetScroll: true });
   };
 
   var _hubCache = null;
@@ -9544,7 +9555,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpSel = function(id) {
     currentId = id;
     currentView = 'project';
-    renderShell();
+    renderShell({ resetScroll: true });
   };
 
   window.cpUploadFile = function() {
@@ -9596,13 +9607,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpOpenMessages = function() {
     currentView = 'messages';
-    renderShell();
+    renderShell({ resetScroll: true });
     markConvoRead();
   };
 
-  window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell(); };
-  window.cpOpenCal = function() { currentView = 'cal'; renderShell(); };
-  window.cpOpenStats = function() { currentView = 'stats'; renderShell(); };
+  window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell({ resetScroll: true }); };
+  window.cpOpenCal = function() { currentView = 'cal'; renderShell({ resetScroll: true }); };
+  window.cpOpenStats = function() { currentView = 'stats'; renderShell({ resetScroll: true }); };
 
   window.cpOpenGuide = function() {
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
