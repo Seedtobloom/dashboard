@@ -1293,11 +1293,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           (t.projectType ? '<div style="font-size:11px;color:var(--muted)">' + esc(TYPE_LABELS[t.projectType]||t.projectType) + '</div>' : '') + '</td>' +
         '<td>' + (t.projectStatus ? adminStatusBadge(t.projectStatus) : '—') + '</td>' +
         '<td style="font-size:12px;font-family:monospace;color:var(--muted)">/p/' + t.token.slice(0,10) + '…' + '</td>' +
-        '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : 'Jamais') + '</td>' +
+        '<td style="font-size:12px;color:var(--muted)">' + (t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString('fr-FR') : '<span style="color:#c9952f;font-weight:500">Jamais ouvert</span>') + '</td>' +
         '<td style="font-size:12px;color:' + (t.revoked ? 'var(--red)' : 'var(--sage)') + '">' + (t.revoked ? 'Révoqué' : 'Actif') + '</td>' +
         '<td style="white-space:nowrap;display:flex;gap:6px" onclick="event.stopPropagation()">' +
           (!t.revoked ? '<a class="btn btn--outline btn--sm" href="' + esc(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir →</a>' : '') +
-          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')">Copier</button>' : '') +
+          (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')" title="Copier le lien à envoyer">Copier le lien</button>' : '') +
+          (!t.revoked && !t.lastUsedAt ? '<button class="btn btn--sage btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')" title="Copier le lien pour renvoyer l\'invitation">↩ Renvoyer</button>' : '') +
           (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
           '<button class="btn btn--danger btn--sm" onclick="event.stopPropagation();deleteSpaceToken(\'' + t.token + '\')">Supprimer</button>' +
         '</td>' +
@@ -2079,7 +2080,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           (lastUpd || u > 0 ? '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid #f0ebe4">' +
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#b09b80">Mis à jour ' + lastUpd + '</span>' +
-            (u > 0 ? '<span style="display:inline-flex;align-items:center;gap:4px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#9b3a2e">' + icon('chat',11,'#9b3a2e') + ' ' + u + ' non lu' + (u>1?'s':'') + '</span>' : '') +
+            (u > 0 ? '<span onclick="event.stopPropagation();adminNav(\'/admin/projects/'+p.id+'\');setTimeout(function(){var t=document.querySelector(\'[data-tab=messages],.proj-tab[onclick*=messages]\');if(t)t.click();},400);" style="display:inline-flex;align-items:center;gap:4px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#9b3a2e;cursor:pointer;padding:3px 7px;border-radius:999px;background:#fef0ed;border:1px solid #f5c4bc" title="Ouvrir les messages">' + icon('chat',11,'#9b3a2e') + ' ' + u + ' non lu' + (u>1?'s':'') + '</span>' : '') +
           '</div>' : '') +
         '</div>' +
       '</button>';
@@ -6768,6 +6769,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             (unread > 0 ? ' <span style="background:var(--glycine);color:var(--terre);font-size:10px;padding:1px 5px;border-radius:999px">' + unread + '</span>' : '') +
           '</button>';
         }).join('') + '</div>';
+    } else {
+      // Single-project: show nav pills on mobile too
+      var unreadSingle = appData.projects[0] ? appData.projects[0].messages.filter(function(m){ return m.author==='cindy'&&!m.readByClient; }).length : 0;
+      var navItems = [
+        { label: 'Projet', view: 'project', fn: 'cpSel(\'' + (appData.projects[0] ? appData.projects[0].project.id : '') + '\')' },
+        { label: 'Messages' + (unreadSingle > 0 ? ' · '+unreadSingle : ''), fn: 'cpOpenMessages()' },
+        { label: 'Fichiers', fn: 'cpSetView(\'fichiers\')' },
+        { label: 'Ressources', fn: 'cpSetView(\'hub\')' },
+      ];
+      mobilePills = '<div class="cp-pills">' +
+        navItems.map(function(item){
+          return '<button class="cp-pill" onclick="' + item.fn + '">' + item.label + '</button>';
+        }).join('') +
+      '</div>';
     }
     var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Interventions', cal:'Calendrier partage', stats:'Statistiques' };
     var pageTitle = pageTitles[currentView] || 'Espace client';
@@ -6779,15 +6794,21 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var accessCode = (appData.projects[0] && appData.projects[0].project && appData.projects[0].project.accessCode) || '';
     // Client initial for avatar
     var avInitial = appData.clientName ? appData.clientName.charAt(0).toUpperCase() : 'C';
+    // Pending actions count (étapes waiting_client + questionnaire incomplet)
+    var pendingActions = appData.projects.reduce(function(n, pd) {
+      var steps = pd.project.steps || [];
+      return n + steps.filter(function(s){ return s.status === 'waiting_client'; }).length;
+    }, 0);
     // Desktop sticky topbar (breadcrumb)
     var desktopBar = '<div class="cp-ptopbar">' +
       '<span class="cp-ptopbar__name">' + esc(appData.clientName) + '</span>' +
       cpIcon('arrow', 12, 'color:var(--terre-400)') +
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
+        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#8a4a0e;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#c46a1a') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
         '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('question',13) + ' Guide</button>' +
         (accessCode ? '<span class="cp-ptopbar__code">' + cpIcon('lock',13) + ' ' + esc(accessCode) + '</span>' : '') +
-        '<span class="cp-ptopbar__av">' + avInitial + '</span>' +
+        '<span class="cp-ptopbar__av" style="cursor:pointer" onclick="cpConfirmLogout()" title="Se déconnecter">' + avInitial + '</span>' +
       '</div>' +
     '</div>';
     // Mobile topbar (hidden on desktop via CSS)
@@ -9691,14 +9712,19 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildConversation() {
     var msgs = convData.length
       ? convData.map(convoMsgHtml).join('')
-      : '<div class="cp-empty" style="padding:40px 0;text-align:center;color:var(--terre-600)">Pas encore de messages.<br>Écrivez à Cindy !</div>';
+      : '<div style="padding:60px 24px;text-align:center">' +
+          '<div style="font-size:40px;margin-bottom:12px;opacity:0.3">💬</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de messages</div>' +
+          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:20px">Posez votre première question à Cindy — elle répond en général sous 24h</div>' +
+          '<button class="cp-btn" onclick="document.getElementById(\'cp-convo-draft\')&&document.getElementById(\'cp-convo-draft\').focus()">Écrire un message</button>' +
+        '</div>';
 
     var convoHtml = '<div class="card fade-up" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:480px">' +
       '<div style="padding:18px 24px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:12px;flex-shrink:0">' +
         cpAvatar('Cindy', 'cindy', 38) +
         '<div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">Cindy · Seed to Bloom</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.06em">Repond en general sous 24 h</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.06em">Répond en général sous 24 h</div>' +
         '</div>' +
       '</div>' +
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
@@ -10095,6 +10121,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell({ resetScroll: true }); };
   window.cpOpenCal = function() { currentView = 'cal'; renderShell({ resetScroll: true }); };
   window.cpOpenStats = function() { currentView = 'stats'; renderShell({ resetScroll: true }); };
+
+  window.cpSetView = function(v) { currentView = v; renderShell({ resetScroll: true }); };
+
+  window.cpConfirmLogout = function() {
+    showConfirm('Vous allez être déconnecté de votre espace.', function() {
+      sessionStorage.clear();
+      window.location.href = '/';
+    }, { title: 'Se déconnecter', okLabel: 'Déconnexion' });
+  };
+
+  window.cpOpenFirstPending = function() {
+    // Navigate to the first project with a waiting_client step
+    for (var i = 0; i < appData.projects.length; i++) {
+      var pd = appData.projects[i];
+      var pending = (pd.project.steps || []).find(function(s){ return s.status === 'waiting_client'; });
+      if (pending) {
+        currentId = pd.project.id;
+        currentView = 'project';
+        renderShell({ resetScroll: true });
+        return;
+      }
+    }
+  };
 
   window.cpOpenGuide = function() {
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
