@@ -384,7 +384,7 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --st-todo:#a98bd6; --st-progress:#7c9bdc; --st-review:#c9952f; --st-done:#5c4633;
   /* fonts */
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
-  --font-body:'EB Garamond',Georgia,'Times New Roman',serif;
+  --font-body:'Alegreya',Georgia,'Times New Roman',serif;
   --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   /* type scale */
   --fs-micro:11px; --fs-small:14px; --fs-body:17px; --fs-lead:20px;
@@ -4527,7 +4527,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     for (var dd=1; dd<=dim; dd++) {
       if (((new Date(year,month,dd).getDay()+6)%7) >= 5) continue;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
-      var dt = filtered.filter(function(t){ return (t.dueDate||'').slice(0,10)===ds; });
+      var dt = filtered.filter(function(t){
+        var due = (t.dueDate||'').slice(0,10);
+        var start = (t.startDate||'').slice(0,10);
+        if (!due) return false;
+        if (start && start < due) return ds >= start && ds <= due;
+        return due === ds;
+      });
       var isToday = ds===todayStr;
       var pills = dt.slice(0,4).map(function(t){ return aptPillHtml(t); }).join('') +
         (dt.length>4 ? '<div style="font-size:10px;color:#8a6f54;text-align:center;margin-top:3px">+'+(dt.length-4)+' autres</div>' : '');
@@ -4585,8 +4591,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var propChips = schema.filter(function(def){ return props[def.id] != null && props[def.id] !== ''; }).map(function(def){
       return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(String(props[def.id]))+'</span>';
     }).join(' ');
+    var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
+    var spanBar = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
-      'style="background:'+(isDone?'#f3ede2':soft)+';border-radius:7px;padding:6px 8px;margin-top:5px;cursor:pointer">' +
+      'style="background:'+(isDone?'#f3ede2':soft)+';border-radius:7px;padding:6px 8px;margin-top:5px;cursor:pointer;'+spanBar+'">' +
       '<div style="display:flex;align-items:center;gap:5px">' +
         aptUrgIcon(t.urgency, 11) +
         (t.pinned ? icon('pin',11,APT_OCRE_INK) : '') +
@@ -4690,9 +4698,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Urgence</div>'+urgSel+'</div>' +
         '</div>' +
 
-        // Échéance + Pôle
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Échéance</div><input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
+        // Dates + Pôle
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Début</div><input type="date" value="'+esc((t.startDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{startDate:this.value||null})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Fin / Échéance</div><input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
           '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Catégorie / Pôle</div>'+poleSel+'</div>' +
         '</div>' +
 
@@ -4920,8 +4929,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:#5c4633;margin:0">Nouvelle demande</h3><button onclick="document.getElementById(\'_apt-add\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre *</label><input id="_apt-title" placeholder="Ex: Visuel Instagram — collection été" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Détail / Contenu</label><textarea id="_apt-content" rows="3" placeholder="Format, ton, références, contraintes..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;resize:vertical"></textarea></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
-        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date dans le calendrier</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de début</label><input type="date" id="_apt-startdate" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de fin</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
         '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Catégorie</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
@@ -4952,6 +4962,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var title = document.getElementById('_apt-title').value.trim();
     if (!title){ toast('Titre requis', true); return; }
     var dueDate = document.getElementById('_apt-date').value;
+    var startDate = (document.getElementById('_apt-startdate')||{}).value || '';
     var content = document.getElementById('_apt-content').value;
     var urgency = document.getElementById('_apt-urgency').value;
     var pole = document.getElementById('_apt-pole').value;
@@ -4963,6 +4974,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       if (el && el.value !== '') properties[def.id] = el.value;
     });
     var body = { title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo', pole:pole, properties:properties };
+    if (startDate) body.startDate = startDate;
     var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify(body) });
     if (!res.ok){ toast('Erreur', true); return; }
     var task = await res.json();
@@ -4975,7 +4987,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.aptDragStart = function(e, id){ aptDragId = id; if (e.dataTransfer) e.dataTransfer.effectAllowed='move'; };
   window.aptDragOver = function(e, el){ e.preventDefault(); el.style.borderColor = APT_OCRE_DEEP; el.style.background = APT_OCRE_SOFT; };
   window.aptDragLeave = function(el){ var ds=el.getAttribute('data-ds'); var isToday = ds===aptTodayStr(); el.style.borderColor = isToday?APT_OCRE_MID:'#e8e2d6'; el.style.background = isToday?APT_OCRE_SOFT:'#fff'; };
-  window.aptDrop = function(e, ds){ e.preventDefault(); if (!aptDragId) return; var id=aptDragId; aptDragId=null; window.aptPatch(id, { dueDate: ds }); };
+  window.aptDrop = function(e, ds){ e.preventDefault(); if (!aptDragId) return; var id=aptDragId; aptDragId=null;
+    var p = window._currentProject; var t = p && (p.tasks||[]).find(function(x){return x.id===id;});
+    var patch = { dueDate: ds };
+    if (t && t.startDate && t.dueDate) {
+      var durMs = new Date(t.dueDate.slice(0,10)+'T12:00:00') - new Date(t.startDate.slice(0,10)+'T12:00:00');
+      var newDue = new Date(ds+'T12:00:00');
+      var newStart = new Date(newDue - durMs);
+      patch.startDate = newStart.toISOString().slice(0,10);
+    }
+    window.aptPatch(id, patch);
+  };
 
   // ── Schema de proprietes partagees ──
   window.aptAddPropDef = function(){
@@ -8868,10 +8890,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Urgence</label>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">'+urgPills+'</div>' +
           '<input type="hidden" id="_ptask-urgency" value="normal"></div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Date dans le calendrier</label>' +
-          '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+          '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Date de debut</label>' +
+            '<input id="_ptask-startDate" type="date" style="'+S+'"></div>' +
+          '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Date de fin</label>' +
+            '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
+        '</div>' +
         '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Detail / Contenu</label>' +
           '<textarea id="_ptask-content" rows="3" style="'+S+';resize:vertical" placeholder="Format, ton, references, contraintes..."></textarea></div>' +
+        (function(){
+          var schema = Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : [];
+          if (!schema.length) return '';
+          return '<div style="padding-top:12px;border-top:1px solid #f0ebe3;margin-bottom:14px">' +
+            '<div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#8090a8);margin-bottom:10px">Proprietes</div>' +
+            schema.map(function(def){
+              var fid = '_ptask-prop-'+def.id;
+              var field;
+              if (def.type==='Liste') field = '<select id="'+fid+'" style="'+S+'"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
+              else if (def.type==='Nombre') field = '<input type="number" id="'+fid+'" style="'+S+'">';
+              else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="'+S+'">';
+              else field = '<input type="text" id="'+fid+'" style="'+S+'">';
+              return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
+            }).join('') + '</div>';
+        })() + +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
           '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#051833);color:#fff;cursor:pointer;font-size:13px;font-weight:600">AJOUTER</button>' +
@@ -8889,18 +8930,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cliSavePartenaireTask = function(pid) {
     var title = (document.getElementById('_ptask-title')||{}).value || '';
     if (!title.trim()) { var el = document.getElementById('_ptask-title'); if(el){el.style.borderColor='red';el.focus();} return; }
-    var content  = (document.getElementById('_ptask-content')||{}).value || '';
-    var dueDate  = (document.getElementById('_ptask-dueDate')||{}).value || undefined;
-    var deadline = (document.getElementById('_ptask-deadline')||{}).value || undefined;
-    var urgency  = (document.getElementById('_ptask-urgency')||{}).value || 'normal';
-    var poleEl   = document.getElementById('_ptask-pole');
-    var pole     = poleEl ? (poleEl.value.trim() || undefined) : undefined;
+    var content   = (document.getElementById('_ptask-content')||{}).value || '';
+    var dueDate   = (document.getElementById('_ptask-dueDate')||{}).value || undefined;
+    var startDate = (document.getElementById('_ptask-startDate')||{}).value || undefined;
+    var urgency   = (document.getElementById('_ptask-urgency')||{}).value || 'normal';
+    var poleEl    = document.getElementById('_ptask-pole');
+    var pole      = poleEl ? (poleEl.value.trim() || undefined) : undefined;
+    var pd = getPD(pid);
+    var schema = Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : [];
+    var properties = {};
+    schema.forEach(function(def){ var el=document.getElementById('_ptask-prop-'+def.id); if(el&&el.value!=='') properties[def.id]=el.value; });
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };
-    if (dueDate)  body.dueDate  = dueDate;
-    if (deadline) body.deadline = deadline;
-    if (pole)     body.pole     = pole;
+    if (dueDate)   body.dueDate   = dueDate;
+    if (startDate) body.startDate = startDate;
+    if (pole)      body.pole      = pole;
+    if (Object.keys(properties).length) body.properties = properties;
     fetch(API_BASE + '/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
       .then(function(task) {
@@ -10124,7 +10170,7 @@ const ERROR_HTML = `<!DOCTYPE html>
 <title>Lien invalide · Seed to Bloom</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter Tight',sans-serif;background:#FAF8F4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -10152,7 +10198,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <title>Admin · Seed to Bloom</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>${STYLE_CSS}
 ${ADMIN_CSS}</style>
 </head>
@@ -10222,7 +10268,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
 <link rel="stylesheet" href="https://use.typekit.net/kww0ycw.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=EB+Garamond:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>${CLIENT_CSS}</style>
 </head>
 <body>
