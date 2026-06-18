@@ -1626,18 +1626,61 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   ]
                 },
               ];
+              var DA_SWATCHES = [
+                ['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],
+                ['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],
+                ['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],
+                ['#ecf2ff','#d4e4ff','#BAD1FD','#7c9bdc','#4a6ba8'],
+                ['#dde5f4','#8fa8cc','#3a5a8a','#0e2d56','#051833'],
+              ];
+              var daSwatchHtml = function(onClickFn) {
+                return '<div style="margin-bottom:14px;padding:10px 12px;background:#fdfaf6;border:1px solid #ede8e0;border-radius:10px">' +
+                  '<div style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#b09b80;margin-bottom:8px">Palette DA</div>' +
+                  '<div style="display:flex;gap:4px">' +
+                    DA_SWATCHES.map(function(col){
+                      return '<div style="display:flex;flex-direction:column;gap:3px">' +
+                        col.map(function(c){
+                          return '<span onclick="'+onClickFn.replace(/\{c\}/g,c)+'" title="'+c+'" style="display:block;width:24px;height:24px;border-radius:4px;background:'+c+';cursor:pointer;border:1.5px solid rgba(0,0,0,0.08)"></span>';
+                        }).join('') +
+                      '</div>';
+                    }).join('') +
+                  '</div>' +
+                '</div>';
+              };
+              window._daSwatchHtml = daSwatchHtml;
               return GROUPS.map(function(g){
                 return '<div style="margin-bottom:22px">' +
                   '<div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #ede8e0">'+g.title+'</div>' +
                   '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">' +
                     g.items.map(function(item){
                       var val = allColors[item.key] || item.def;
-                      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid #ede8e0;border-radius:10px;background:#fdfaf6">' +
-                        '<span style="font-size:12px;color:#5c4633;flex:1">'+item.label+'</span>' +
-                        '<label style="position:relative;display:inline-block;cursor:pointer;flex-shrink:0">' +
-                          '<span id="sw-'+item.key.replace(/--/g,'').replace(/-/g,'')+'" style="display:block;width:36px;height:36px;border-radius:8px;border:1.5px solid #e0e0e0;background:'+val+'"></span>' +
-                          '<input type="color" value="'+val+'" onchange="updateColor(\''+item.key+'\',this.value);document.getElementById(\'sw-'+item.key.replace(/--/g,'').replace(/-/g,'')+'\').style.background=this.value" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer">' +
-                        '</label>' +
+                      var swId = 'sw-'+item.key.replace(/--/g,'').replace(/-/g,'');
+                      var inpId = 'inp-'+item.key.replace(/--/g,'').replace(/-/g,'');
+                      var DA_SW = [
+                        ['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],
+                        ['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],
+                        ['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],
+                        ['#ecf2ff','#d4e4ff','#BAD1FD','#7c9bdc','#4a6ba8'],
+                        ['#dde5f4','#8fa8cc','#3a5a8a','#0e2d56','#051833'],
+                      ];
+                      var swatches = '<div style="display:flex;gap:2px">' +
+                        DA_SW.map(function(col){
+                          return '<div style="display:flex;flex-direction:column;gap:2px">' +
+                            col.map(function(c){
+                              return '<span onclick="updateColor(\''+item.key+'\',\''+c+'\');document.getElementById(\''+swId+'\').style.background=\''+c+'\';document.getElementById(\''+inpId+'\').value=\''+c+'\'" title="'+c+'" style="display:block;width:14px;height:14px;border-radius:2px;background:'+c+';cursor:pointer;border:1px solid rgba(0,0,0,0.07)"></span>';
+                            }).join('') +
+                          '</div>';
+                        }).join('') +
+                      '</div>';
+                      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #ede8e0;border-radius:10px;background:#fdfaf6">' +
+                        '<span style="font-size:12px;color:#5c4633;flex:1;min-width:0">'+item.label+'</span>' +
+                        '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
+                          swatches +
+                          '<label style="position:relative;display:inline-block;cursor:pointer;margin-left:4px;flex-shrink:0">' +
+                            '<span id="'+swId+'" style="display:block;width:28px;height:28px;border-radius:6px;border:1.5px solid #e0e0e0;background:'+val+'"></span>' +
+                            '<input id="'+inpId+'" type="color" value="'+val+'" onchange="updateColor(\''+item.key+'\',this.value);document.getElementById(\''+swId+'\').style.background=this.value" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer">' +
+                          '</label>' +
+                        '</div>' +
                       '</div>';
                     }).join('') +
                   '</div>' +
@@ -1949,10 +1992,22 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
             adminTypeBadge(p.type) +
           '</div>' +
-          (!admSelectMode ? '<label onclick="event.stopPropagation()" title="Changer la couleur de la bannière" style="position:absolute;bottom:8px;right:8px;z-index:3;cursor:pointer;width:22px;height:22px;border-radius:6px;background:rgba(0,0,0,0.25);display:grid;place-items:center;opacity:0.6;transition:opacity 0.15s" onmouseenter="this.style.opacity=\'1\'" onmouseleave="this.style.opacity=\'0.6\'">' +
+          (!admSelectMode ? '<div onclick="event.stopPropagation();admToggleBannerPicker(\''+p.id+'\')" title="Changer la couleur de la bannière" style="position:absolute;bottom:8px;right:8px;z-index:3;cursor:pointer;width:22px;height:22px;border-radius:6px;background:rgba(0,0,0,0.25);display:grid;place-items:center;opacity:0.6;transition:opacity 0.15s" onmouseenter="this.style.opacity=\'1\'" onmouseleave="this.style.opacity=\'0.6\'">' +
             icon('edit',11,'#fff') +
-            '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:'#5c4633')+'" onchange="admSetBannerColor(\''+p.id+'\',this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
-          '</label>' : '') +
+          '</div>' +
+          '<div id="bp-'+p.id+'" style="display:none;position:absolute;bottom:36px;right:8px;z-index:10;background:#fff;border-radius:10px;padding:8px;box-shadow:0 4px 20px rgba(0,0,0,0.18);display:none;flex-direction:column;gap:6px" onclick="event.stopPropagation()">' +
+            '<div style="display:flex;gap:5px;align-items:center">' +
+              [['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],['#ecf2ff','#d4e4ff','#BAD1FD','#7c9bdc','#4a6ba8'],['#dde5f4','#8fa8cc','#3a5a8a','#0e2d56','#051833']].map(function(col){
+                return '<div style="display:flex;flex-direction:column;gap:2px">' +
+                  col.map(function(c){ return '<span onclick="admSetBannerColor(\''+p.id+'\',\''+c+'\');admToggleBannerPicker(\''+p.id+'\')" title="'+c+'" style="display:block;width:16px;height:16px;border-radius:3px;background:'+c+';cursor:pointer;border:1px solid rgba(0,0,0,0.08)"></span>'; }).join('') +
+                '</div>';
+              }).join('') +
+              '<label style="position:relative;cursor:pointer;width:22px;height:22px;border-radius:5px;border:1.5px dashed #c8b29a;display:grid;place-items:center" title="Couleur personnalisée">' +
+                icon('edit',10,'#8a6f54') +
+                '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:'#5c4633')+'" onchange="admSetBannerColor(\''+p.id+'\',this.value);admToggleBannerPicker(\''+p.id+'\')" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
+              '</label>' +
+            '</div>' +
+          '</div>' : '') +
           '<div style="position:absolute;top:11px;right:12px;display:flex;gap:7px">' +
             (u>0 ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">' + icon('chat',12) + ' '+u+'</span>' : '') +
             (isArchCard ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase">' + icon('archive',11) + ' Archive</span>' : '') +
@@ -5500,6 +5555,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var banner = document.querySelector('[data-pid="'+pid+'"]');
       if (banner) banner.style.background = color;
     } else toast('Erreur lors de la sauvegarde', true);
+  };
+
+  window.admToggleBannerPicker = function(pid) {
+    document.querySelectorAll('[id^="bp-"]').forEach(function(el){ if(el.id!=='bp-'+pid) el.style.display='none'; });
+    var el = document.getElementById('bp-'+pid);
+    if (!el) return;
+    el.style.display = el.style.display==='flex' ? 'none' : 'flex';
+    if (el.style.display==='flex') {
+      var close = function(e){ if(!el.contains(e.target)){ el.style.display='none'; document.removeEventListener('click',close); } };
+      setTimeout(function(){ document.addEventListener('click',close); }, 0);
+    }
   };
 
   window.archiveProject = async function() {
