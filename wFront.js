@@ -1378,11 +1378,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var toks = Object.keys(window._spSelected);
     if (!toks.length) return;
     showConfirm('Supprimer ' + toks.length + ' espace' + (toks.length>1?'s':'') + ' definitivement ?', async function() {
-      var ok = 0;
+      var ok = 0, fail = 0;
       for (var i=0;i<toks.length;i++) {
-        try { var r = await apiFetch('/api/tokens/' + toks[i], { method: 'DELETE' }); if (r.ok) ok++; } catch(e){}
+        try {
+          var r = await apiFetch('/api/tokens/' + toks[i], { method: 'DELETE' });
+          if (r.ok || r.status === 404) ok++; else fail++;
+        } catch(e) { fail++; }
       }
-      toast(ok + ' espace' + (ok>1?'s':'') + ' supprime' + (ok>1?'s':''));
+      toast(ok + ' espace' + (ok>1?'s':'') + ' supprime' + (ok>1?'s':'') + (fail ? ' · ' + fail + ' echec' + (fail>1?'s':'') : ''), fail>0);
       window._spSelMode = false; window._spSelected = {};
       showSpaces();
     }, { title: 'Supprimer ' + toks.length + ' espace' + (toks.length>1?'s':''), okLabel: 'Supprimer', danger: true });
@@ -1843,14 +1846,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     dashProjs = projs.slice();
     dashUnreadMap = unreadMap;
 
-    // Hero banner
+    // Hero banner (personnalisable photo/couleur)
+    var _dashBannerData = (function(){ try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || 'null'); } catch(e){ return null; } })();
+    var _dashBannerStyle = _dashBannerData && _dashBannerData.url
+      ? 'background-image:url(' + _dashBannerData.url + ');background-size:cover;background-position:center'
+      : 'background:' + (_dashBannerData && _dashBannerData.color ? _dashBannerData.color : '#5c4633');
+    var _dashBannerColors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
     var heroBanner = '<div style="padding:24px 40px 0">' +
-      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:#5c4633">' +
-        '<div style="padding:22px 28px">' +
+      '<div id="dash-hero-banner" style="position:relative;height:150px;border-radius:10px;overflow:hidden;' + _dashBannerStyle + '">' +
+        '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.1) 100%)"></div>' +
+        '<div style="position:relative;padding:22px 28px">' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
           '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400">Espaces clients</h1>' +
         '</div>' +
         '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
+        '<button onclick="admEditDashBanner()" title="Personnaliser la bannière" style="position:absolute;bottom:12px;right:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid rgba(255,255,255,0.4);border-radius:999px;background:rgba(0,0,0,0.25);color:rgba(255,255,255,0.85);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">🖼 Personnaliser</button>' +
       '</div>' +
     '</div>';
 
@@ -1972,6 +1982,55 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       // Puis on resynchronise avec le serveur apres un court delai.
       setTimeout(function(){ showDashboard(); }, 800);
     }, { title: 'Supprimer ' + ids.length + ' espace' + (ids.length>1?'s':''), okLabel: 'Supprimer definitivement', danger: true });
+  };
+
+  // Personnalisation bannière page Espaces clients
+  window.admEditDashBanner = function() {
+    var colors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
+    var cur = (function(){ try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || 'null'); } catch(e){ return null; } })();
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:15px;font-weight:600;color:#051833;margin-bottom:16px">Personnaliser la bannière</div>' +
+      '<div style="font-size:12px;color:#8a6f54;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Couleur</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">' +
+        colors.map(function(c){ return '<button onclick="admSetDashBannerColor(\''+c+'\')" style="width:32px;height:32px;border-radius:50%;background:'+c+';border:'+(cur&&cur.color===c?'3px solid #5c4633':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)" title="'+c+'"></button>'; }).join('') +
+      '</div>' +
+      '<div style="font-size:12px;color:#8a6f54;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Photo</div>' +
+      '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px dashed #e2d9ce;border-radius:10px;cursor:pointer;font-size:13px;color:#5c4633">' +
+        '📷 Choisir une photo…' +
+        '<input type="file" accept="image/*" style="display:none" onchange="admSetDashBannerPhoto(this)">' +
+      '</label>' +
+      (cur && cur.url ? '<button onclick="admRemoveDashBanner()" style="margin-top:10px;width:100%;padding:8px;border:1px solid #e2d9ce;border-radius:8px;background:none;color:#9b3a2e;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Retirer la photo</button>' : '') +
+      '<div style="display:flex;justify-content:flex-end;margin-top:18px">' +
+        '<button id="_db-close" style="padding:8px 18px;background:none;border:1.5px solid #e2d9ce;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:13px">Fermer</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#_db-close').onclick = function(){ ov.remove(); };
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    window._dashBannerOv = ov;
+  };
+  window.admSetDashBannerColor = function(color) {
+    try { localStorage.setItem('bloom_dash_banner', JSON.stringify({ color: color })); } catch(e){}
+    if (window._dashBannerOv) window._dashBannerOv.remove();
+    showDashboard();
+  };
+  window.admSetDashBannerPhoto = function(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try { localStorage.setItem('bloom_dash_banner', JSON.stringify({ url: e.target.result })); } catch(err){}
+      if (window._dashBannerOv) window._dashBannerOv.remove();
+      showDashboard();
+    };
+    reader.readAsDataURL(file);
+  };
+  window.admRemoveDashBanner = function() {
+    try { localStorage.removeItem('bloom_dash_banner'); } catch(e){}
+    if (window._dashBannerOv) window._dashBannerOv.remove();
+    showDashboard();
   };
 
   // Suppression d'un projet unique (depuis le menu lateral ou la fiche projet).
@@ -6257,8 +6316,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#c9952f">'+calIcon+' dans '+days+' j</span>';
     return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Échéance '+fmtShort(due)+'</span>';
   }
-  var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre' };
-  var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'ocre', autre:'terre' };
+  var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Support de com', autre:'Autre' };
+  var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'ocre', support:'brume', autre:'terre' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
@@ -6456,6 +6515,54 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</button>' +
       content +
     '</div>';
+  }
+
+  function cpBuildEditableIntro(pid, isPart) {
+    var defaultText = isPart
+      ? 'Bienvenue ' + (appData.clientName||'').split(' ')[0] + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.'
+      : 'Bienvenue ' + (appData.clientName||'').split(' ')[0] + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.';
+    var stored;
+    try { stored = localStorage.getItem('cp-txt-intro-' + pid); } catch(e) {}
+    var text = (stored != null) ? stored : defaultText;
+    if (_isAdminEdit) {
+      return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;outline:none;border-radius:6px;cursor:text;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
+    }
+    return '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + esc(text) + '</p>';
+  }
+
+  function cpBuildHomeBlocks(pid) {
+    var blocks;
+    try { var s = localStorage.getItem('cp-home-blocks-' + pid); blocks = s ? JSON.parse(s) : []; } catch(e) { blocks = []; }
+    if (!blocks.length && !_isAdminEdit) return '';
+    var blocksHtml = blocks.map(function(b, i) {
+      var content = esc(b.content || '');
+      var del = _isAdminEdit ? '<button onclick="cpDeleteHomeBlock(\'' + pid + '\',' + i + ')" style="position:absolute;top:6px;right:6px;width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--bone-d);background:var(--card);border-radius:6px;cursor:pointer;color:var(--terre-400);opacity:0;transition:opacity 120ms" class="_hb-del">' + cpIcon('x', 11) + '</button>' : '';
+      if (b.type === 'title') {
+        return '<div style="position:relative;margin-bottom:14px" onmouseenter="var d=this.querySelector(\'._hb-del\');if(d)d.style.opacity=\'1\'" onmouseleave="var d=this.querySelector(\'._hb-del\');if(d)d.style.opacity=\'0\'">' +
+          (_isAdminEdit
+            ? '<h3 id="cp-hb-'+pid+'-'+i+'" contenteditable="true" onblur="cpSaveHomeBlock(\'' + pid + '\',' + i + ',this.innerText)" style="font-family:var(--font-display);font-size:22px;color:var(--terre);font-weight:400;margin:0;outline:none;border-radius:6px;cursor:text;padding:2px 6px;margin-left:-6px;box-shadow:inset 0 0 0 1px var(--bone-d)">' + content + '</h3>'
+            : '<h3 style="font-family:var(--font-display);font-size:22px;color:var(--terre);font-weight:400;margin:0">' + content + '</h3>') +
+          del + '</div>';
+      }
+      if (b.type === 'separator') {
+        return '<div style="position:relative;margin-bottom:14px" onmouseenter="var d=this.querySelector(\'._hb-del\');if(d)d.style.opacity=\'1\'" onmouseleave="var d=this.querySelector(\'._hb-del\');if(d)d.style.opacity=\'0\'">' +
+          '<hr style="border:none;border-top:1px solid var(--bone-d);margin:8px 0">' + del + '</div>';
+      }
+      // default: text
+      return '<div style="position:relative;margin-bottom:14px" onmouseenter="var d=this.querySelector(\'._hb-del\');if(d)d.style.opacity=\'1\'" onmouseleave="var d=this.querySelector(\'._hb-del\');if(d)d.style.opacity=\'0\'">' +
+        (_isAdminEdit
+          ? '<p id="cp-hb-'+pid+'-'+i+'" contenteditable="true" onblur="cpSaveHomeBlock(\'' + pid + '\',' + i + ',this.innerText)" style="font-family:var(--font-body);font-size:15px;line-height:1.65;color:var(--terre-600);margin:0;outline:none;border-radius:6px;cursor:text;padding:4px 8px;margin-left:-8px;box-shadow:inset 0 0 0 1px var(--bone-d)">' + content + '</p>'
+          : '<p style="font-family:var(--font-body);font-size:15px;line-height:1.65;color:var(--terre-600);margin:0">' + content + '</p>') +
+        del + '</div>';
+    }).join('');
+    var addBtns = _isAdminEdit
+      ? '<div style="display:flex;gap:7px;margin-top:' + (blocks.length ? '10' : '0') + 'px;flex-wrap:wrap">' +
+          '<button onclick="cpAddHomeBlock(\'' + pid + '\',\'text\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px dashed var(--bone-d);border-radius:var(--radius-2);background:none;color:var(--terre-600);cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em">' + cpIcon('plus',11) + ' Texte</button>' +
+          '<button onclick="cpAddHomeBlock(\'' + pid + '\',\'title\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px dashed var(--bone-d);border-radius:var(--radius-2);background:none;color:var(--terre-600);cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em">' + cpIcon('plus',11) + ' Titre</button>' +
+          '<button onclick="cpAddHomeBlock(\'' + pid + '\',\'separator\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px dashed var(--bone-d);border-radius:var(--radius-2);background:none;color:var(--terre-600);cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em">' + cpIcon('plus',11) + ' Séparateur</button>' +
+        '</div>'
+      : '';
+    return '<div style="margin-bottom:' + (blocks.length || _isAdminEdit ? '20' : '0') + 'px">' + blocksHtml + addBtns + '</div>';
   }
 
   function buildHome() {
@@ -6756,7 +6863,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
       }
 
-      var BANNER_PHOTOS = { partenaire:'ambiance de marque', identite:'flacons & matières', site:'champs au lever du jour', maintenance:'atelier & outils' };
+      var BANNER_PHOTOS = { partenaire:'ambiance de marque', identite:'flacons & matières', site:'champs au lever du jour', maintenance:'atelier & outils', support:'maquettes & impressions' };
       var photoHint = BANNER_PHOTOS[p.type] || 'photo de couverture';
       var uploadZoneHtml = !p.bannerUrl ? '<label title="Ajouter une photo de couverture" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:14px 20px;border-radius:10px;background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);border:1.5px dashed rgba(255,255,255,0.5);transition:background 150ms" onmouseenter="this.style.background=\'rgba(255,255,255,0.25)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.15)\'">' +
         cpIcon('image', 22, 'color:rgba(255,255,255,0.85)') +
@@ -6778,7 +6885,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
-            '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
+            cpBuildEditableIntro(p.id, isPart) +
+            cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
             cpSecWrap(p.id, 'suivi', miniTrack) +
           '</div>' +
@@ -10418,6 +10526,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var key = 'cp-hide-' + pid + '-' + id;
       if (localStorage.getItem(key) === '1') localStorage.removeItem(key);
       else localStorage.setItem(key, '1');
+    } catch(e) {}
+    renderShell();
+  };
+
+  window.cpSaveIntroText = function(pid, text) {
+    try { localStorage.setItem('cp-txt-intro-' + pid, text); } catch(e) {}
+  };
+
+  window.cpSaveHomeBlock = function(pid, i, text) {
+    try {
+      var blocks = JSON.parse(localStorage.getItem('cp-home-blocks-' + pid) || '[]');
+      if (blocks[i]) blocks[i].content = text;
+      localStorage.setItem('cp-home-blocks-' + pid, JSON.stringify(blocks));
+    } catch(e) {}
+  };
+
+  window.cpAddHomeBlock = function(pid, type) {
+    try {
+      var blocks = JSON.parse(localStorage.getItem('cp-home-blocks-' + pid) || '[]');
+      blocks.push({ type: type, content: type === 'title' ? 'Nouveau titre' : type === 'separator' ? '' : 'Nouveau texte' });
+      localStorage.setItem('cp-home-blocks-' + pid, JSON.stringify(blocks));
+    } catch(e) {}
+    renderShell();
+  };
+
+  window.cpDeleteHomeBlock = function(pid, i) {
+    try {
+      var blocks = JSON.parse(localStorage.getItem('cp-home-blocks-' + pid) || '[]');
+      blocks.splice(i, 1);
+      localStorage.setItem('cp-home-blocks-' + pid, JSON.stringify(blocks));
     } catch(e) {}
     renderShell();
   };
