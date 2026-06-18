@@ -1773,23 +1773,24 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }).join('') +
     '</div>';
 
-    // Filter bar (sticky)
-    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(250,248,244,0.92);backdrop-filter:blur(8px);padding:14px 40px;border-bottom:1px solid #e2d9ce;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-      '<div style="position:relative;flex:1 1 200px;max-width:280px">' +
-        '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher un espace…" style="width:100%;padding:8px 12px 8px 34px;border:1px solid #e2d9ce;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:13px;background:#fff;color:#5c4633;outline:none">' +
+    // Filter bar (sticky) — une seule ligne compacte
+    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(250,248,244,0.95);backdrop-filter:blur(8px);padding:10px 40px;border-bottom:1px solid #e2d9ce;display:flex;align-items:center;gap:10px">' +
+      '<div style="position:relative;flex:1;max-width:240px">' +
+        '<span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4">'+icon('search',13,'#5c4633')+'</span>' +
+        '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher…" style="width:100%;padding:7px 10px 7px 30px;border:1px solid #e2d9ce;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:12px;background:#fff;color:#5c4633;outline:none;box-sizing:border-box">' +
       '</div>' +
-      '<div style="display:inline-flex;background:#fff;border:1px solid #e2d9ce;border-radius:999px;padding:3px">' +
+      '<div style="display:inline-flex;background:#fff;border:1px solid #e2d9ce;border-radius:999px;padding:2px;flex-shrink:0">' +
         [['active','Actifs'],['archived','Archives'],['all','Tous']].map(function(pair) {
           var active = pair[0]==='active';
-          return '<button id="adm-arch-'+pair[0]+'" onclick="admSetArchFilter(\''+pair[0]+'\')" style="padding:6px 13px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'#5c4633':'transparent')+';color:'+(active?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">'+pair[1]+'</button>';
+          return '<button id="adm-arch-'+pair[0]+'" onclick="admSetArchFilter(\''+pair[0]+'\')" style="padding:5px 11px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'#5c4633':'transparent')+';color:'+(active?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap">'+pair[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<select id="dash-sort" onchange="applyProjectFilters()" style="margin-left:auto;padding:7px 12px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#5c4633;outline:none">' +
-        '<option value="deadline">Echeance proche</option>' +
-        '<option value="updated">Recents</option>' +
-        '<option value="client">Nom (A-Z)</option>' +
+      '<select id="dash-sort" onchange="applyProjectFilters()" style="padding:6px 10px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#5c4633;outline:none;flex-shrink:0">' +
+        '<option value="deadline">Échéance</option>' +
+        '<option value="updated">Récents</option>' +
+        '<option value="client">Nom A-Z</option>' +
       '</select>' +
-      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1.5px solid #5c4633;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#5c4633;white-space:nowrap">' + icon('check',14,'color:#5c4633') + ' Selection multiple</button>' +
+      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border:1.5px solid #e2d9ce;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8a6f54;white-space:nowrap;flex-shrink:0">' + icon('check',12,'color:#8a6f54') + ' Sélection</button>' +
     '</div>' +
     '<div id="adm-bulk-bar" style="display:none;position:sticky;top:54px;z-index:19;background:#5c4633;color:#EFE1B0;padding:11px 40px;align-items:center;gap:16px;font-family:\'Inter Tight\',sans-serif">' +
       '<span id="adm-bulk-count" style="font-size:13px">0 espace selectionne</span>' +
