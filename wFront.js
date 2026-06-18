@@ -1846,14 +1846,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     dashProjs = projs.slice();
     dashUnreadMap = unreadMap;
 
-    // Hero banner
+    // Hero banner (personnalisable photo/couleur)
+    var _dashBannerData = (function(){ try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || 'null'); } catch(e){ return null; } })();
+    var _dashBannerStyle = _dashBannerData && _dashBannerData.url
+      ? 'background-image:url(' + _dashBannerData.url + ');background-size:cover;background-position:center'
+      : 'background:' + (_dashBannerData && _dashBannerData.color ? _dashBannerData.color : '#5c4633');
+    var _dashBannerColors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
     var heroBanner = '<div style="padding:24px 40px 0">' +
-      '<div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:#5c4633">' +
-        '<div style="padding:22px 28px">' +
+      '<div id="dash-hero-banner" style="position:relative;height:150px;border-radius:10px;overflow:hidden;' + _dashBannerStyle + '">' +
+        '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.1) 100%)"></div>' +
+        '<div style="position:relative;padding:22px 28px">' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
           '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400">Espaces clients</h1>' +
         '</div>' +
         '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
+        '<button onclick="admEditDashBanner()" title="Personnaliser la bannière" style="position:absolute;bottom:12px;right:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid rgba(255,255,255,0.4);border-radius:999px;background:rgba(0,0,0,0.25);color:rgba(255,255,255,0.85);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">🖼 Personnaliser</button>' +
       '</div>' +
     '</div>';
 
@@ -1975,6 +1982,55 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       // Puis on resynchronise avec le serveur apres un court delai.
       setTimeout(function(){ showDashboard(); }, 800);
     }, { title: 'Supprimer ' + ids.length + ' espace' + (ids.length>1?'s':''), okLabel: 'Supprimer definitivement', danger: true });
+  };
+
+  // Personnalisation bannière page Espaces clients
+  window.admEditDashBanner = function() {
+    var colors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
+    var cur = (function(){ try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || 'null'); } catch(e){ return null; } })();
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:15px;font-weight:600;color:#051833;margin-bottom:16px">Personnaliser la bannière</div>' +
+      '<div style="font-size:12px;color:#8a6f54;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Couleur</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">' +
+        colors.map(function(c){ return '<button onclick="admSetDashBannerColor(\''+c+'\')" style="width:32px;height:32px;border-radius:50%;background:'+c+';border:'+(cur&&cur.color===c?'3px solid #5c4633':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)" title="'+c+'"></button>'; }).join('') +
+      '</div>' +
+      '<div style="font-size:12px;color:#8a6f54;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Photo</div>' +
+      '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px dashed #e2d9ce;border-radius:10px;cursor:pointer;font-size:13px;color:#5c4633">' +
+        '📷 Choisir une photo…' +
+        '<input type="file" accept="image/*" style="display:none" onchange="admSetDashBannerPhoto(this)">' +
+      '</label>' +
+      (cur && cur.url ? '<button onclick="admRemoveDashBanner()" style="margin-top:10px;width:100%;padding:8px;border:1px solid #e2d9ce;border-radius:8px;background:none;color:#9b3a2e;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Retirer la photo</button>' : '') +
+      '<div style="display:flex;justify-content:flex-end;margin-top:18px">' +
+        '<button id="_db-close" style="padding:8px 18px;background:none;border:1.5px solid #e2d9ce;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:13px">Fermer</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#_db-close').onclick = function(){ ov.remove(); };
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    window._dashBannerOv = ov;
+  };
+  window.admSetDashBannerColor = function(color) {
+    try { localStorage.setItem('bloom_dash_banner', JSON.stringify({ color: color })); } catch(e){}
+    if (window._dashBannerOv) window._dashBannerOv.remove();
+    showDashboard();
+  };
+  window.admSetDashBannerPhoto = function(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try { localStorage.setItem('bloom_dash_banner', JSON.stringify({ url: e.target.result })); } catch(err){}
+      if (window._dashBannerOv) window._dashBannerOv.remove();
+      showDashboard();
+    };
+    reader.readAsDataURL(file);
+  };
+  window.admRemoveDashBanner = function() {
+    try { localStorage.removeItem('bloom_dash_banner'); } catch(e){}
+    if (window._dashBannerOv) window._dashBannerOv.remove();
+    showDashboard();
   };
 
   // Suppression d'un projet unique (depuis le menu lateral ou la fiche projet).
