@@ -140,12 +140,13 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     return errorResponse('Method not allowed', 405);
   }
 
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})\/comments)?)?$/);
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match) return errorResponse('Not found', 404);
 
-  const [, tokenStr, subPathRaw, taskCommentId] = match;
+  const [, tokenStr, subPathRaw, taskIdFromPath, commentsSuffix] = match;
   const subPath = subPathRaw && subPathRaw.indexOf('/tasks') === 0 ? '/tasks' : subPathRaw;
-  const isTaskComment = !!(subPathRaw && subPathRaw.indexOf('/comments') !== -1);
+  const isTaskComment = !!(commentsSuffix);
+  const patchTaskId = taskIdFromPath && !commentsSuffix ? taskIdFromPath : null;
 
   const clientToken = await verifyClientToken(tokenStr, env);
   if (!clientToken) return errorResponse('Invalid or expired token', 403);
@@ -228,6 +229,26 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     await addMessage(env, message);
     sendAdminMessageNotification(env, project, message).catch(() => {});
     return jsonResponse({ success: true, message }, 201);
+  }
+
+  // PATCH /api/client/:token/tasks/:taskId — mise à jour partielle par le client (propriétés, contenu, statut, temps)
+  if (method === 'PATCH' && subPath === '/tasks' && patchTaskId) {
+    const body = (await request.json().catch(() => ({}))) as Record<string, any>;
+    const projectId = body.projectId || url.searchParams.get('projectId') || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId) || projects[0];
+    if (!project) return errorResponse('Project not found', 404);
+    const idx = (project.tasks || []).findIndex((t) => t.id === patchTaskId);
+    if (idx === -1) return errorResponse('Task not found', 404);
+    const prev = project.tasks[idx];
+    const allowed = ['content', 'status', 'timeSpentMinutes', 'properties'] as const;
+    const patch: Record<string, any> = {};
+    allowed.forEach((k) => { if (k in body) patch[k] = body[k]; });
+    if (patch.properties && typeof patch.properties === 'object') {
+      patch.properties = Object.assign({}, prev.properties || {}, patch.properties);
+    }
+    project.tasks[idx] = Object.assign({}, prev, patch);
+    await saveProject(env, project);
+    return jsonResponse(project.tasks[idx]);
   }
 
   if (method === 'POST' && subPath === '/tasks') {

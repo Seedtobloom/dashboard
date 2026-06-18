@@ -7907,20 +7907,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (dueDateStr?'<span style="font-size:12px;color:var(--muted,#8090a8)">'+fmtDate(dueDateStr)+daysLabel+'</span>':'') +
       '</div>' +
       sep +
-      // Proprietes personnalisees (lues depuis project.propertySchema + t.properties)
+      // Proprietes personnalisees — editables par le client
       (function(){
         var schema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         if (!schema.length) return '';
         var props = t.properties || {};
-        var rows = schema.filter(function(def){ return props[def.id] != null && props[def.id] !== ''; }).map(function(def){
-          return '<div style="display:flex;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid var(--bone-d,#e8e0d4)">' +
-            '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);min-width:80px;flex-shrink:0">'+esc(def.name)+'</span>' +
-            '<span style="font-size:13px;color:var(--navy,#051833)">'+esc(String(props[def.id]))+'</span>' +
+        var inpStyle = 'width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:7px;font-family:inherit;color:var(--navy,#051833);background:#fff;box-sizing:border-box';
+        var rows = schema.map(function(def){
+          var val = props[def.id] != null ? props[def.id] : '';
+          var field;
+          if (def.type === 'Liste' && Array.isArray(def.options) && def.options.length) {
+            field = '<select onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+';cursor:pointer">' +
+              '<option value="">—</option>' +
+              def.options.map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') +
+            '</select>';
+          } else if (def.type === 'Nombre') {
+            field = '<input type="number" value="'+esc(String(val))+'" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
+          } else if (def.type === 'Date') {
+            field = '<input type="date" value="'+esc(String(val).slice(0,10))+'" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
+          } else {
+            field = '<input type="text" value="'+esc(String(val))+'" placeholder="—" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
+          }
+          return '<div style="margin-bottom:10px">' +
+            '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">'+esc(def.name)+'</div>' +
+            field +
           '</div>';
         }).join('');
-        if (!rows) return '';
         return '<div style="margin-bottom:14px">' +
-          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:8px">Informations</div>' +
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
           rows +
         '</div>' + sep;
       })() +
@@ -8029,7 +8043,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
     if (!t) return;
     t.content = val;
-    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:val})}).catch(function(){});
+    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId:pid,content:val})}).catch(function(){});
+  };
+
+  window.cliSaveTaskProp = function(pid, taskId, propId, val) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    t.properties = Object.assign({}, t.properties||{});
+    t.properties[propId] = val;
+    var patch = { projectId: pid, properties: {} };
+    patch.properties[propId] = val;
+    fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
   };
 
   window.cliAdjustTime = function(pid, taskId, deltaMin) {
