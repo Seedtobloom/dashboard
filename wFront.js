@@ -4402,7 +4402,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var dim = new Date(year, month+1, 0).getDate();
     var todayStr = aptTodayStr();
 
-    // ── En-tete : forfait du mois (seule metrique) ──
+    // ── Calculs ──
     var allTasks = tasksOf(project);
     var consumedMin = allTasks.reduce(function(s,t){
       var ref = (t.completedAt || t.dueDate || '').slice(0,7);
@@ -4412,14 +4412,87 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var forfaitMin = forfaitH * 60;
     var leftMin = forfaitMin - consumedMin;
     var pctF = forfaitMin ? Math.min(100, Math.round(consumedMin/forfaitMin*100)) : 0;
-    var forfaitBar = '<div style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
+
+    // Couleur de la barre selon consommation
+    var barColor = pctF >= 100 ? '#9b3a2e' : pctF >= 80 ? '#c9952f' : '#5c7a3a';
+    var barBg    = pctF >= 100 ? '#fde8e6' : pctF >= 80 ? '#fff3e0' : APT_OCRE_SOFT;
+    var alertBanner = '';
+    if (forfaitH) {
+      if (pctF >= 100) alertBanner = '<div style="display:flex;align-items:center;gap:10px;background:#fde8e6;border:1.5px solid #f0b8b0;border-radius:12px;padding:11px 16px;margin-bottom:12px">' + icon('zap',15,'#9b3a2e') + '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:600;color:#9b3a2e">Forfait dépassé — ' + aptFmtH(-leftMin) + ' au-delà du quota</span></div>';
+      else if (pctF >= 80) alertBanner = '<div style="display:flex;align-items:center;gap:10px;background:#fff3e0;border:1.5px solid #f5d99a;border-radius:12px;padding:11px 16px;margin-bottom:12px">' + icon('clock',15,'#c9952f') + '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:600;color:#c9952f">Forfait presque atteint — plus que ' + aptFmtH(leftMin) + ' disponibles</span></div>';
+    }
+
+    // ── Forfait bar ──
+    var forfaitBar = alertBanner +
+      '<div style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
       icon('clock',16,APT_OCRE_INK) +
-      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">Forfait du mois</span>' +
+      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">Forfait ' + monthName + '</span>' +
       '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:#5c4633">' + aptFmtH(consumedMin) + '</span>' +
-      '<span style="font-size:13px;color:#8a6f54">/ ' + (forfaitH ? forfaitH+' h' : 'non defini') + '</span>' +
-      '<div style="flex:1;min-width:120px;height:7px;background:'+APT_OCRE_SOFT+';border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+APT_OCRE_DEEP+';width:'+pctF+'%"></div></div>' +
-      (forfaitH ? '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;white-space:nowrap;color:'+(leftMin<0?'#9b3a2e':APT_OCRE_INK)+'">' + (leftMin>=0 ? aptFmtH(leftMin)+' restantes' : aptFmtH(-leftMin)+' depassees') + '</span>' : '') +
+      '<span style="font-size:13px;color:#8a6f54">/ ' + (forfaitH ? forfaitH+' h' : 'non défini') + '</span>' +
+      '<div style="flex:1;min-width:120px;height:8px;background:'+barBg+';border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+barColor+';width:'+pctF+'%;transition:width 0.4s"></div></div>' +
+      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;white-space:nowrap;color:'+barColor+'">' + pctF + '%' + (forfaitH ? ' · ' + (leftMin>=0 ? aptFmtH(leftMin)+' restantes' : aptFmtH(-leftMin)+' dépassées') : '') + '</span>' +
       '<button onclick="aptEditForfait()" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;cursor:pointer">Modifier</button>' +
+    '</div>';
+
+    // ── Tâches en retard ──
+    var now = new Date(); now.setHours(0,0,0,0);
+    var overdue = tasks.filter(function(t){ return t.dueDate && t.status!=='done' && new Date(t.dueDate.slice(0,10)+'T12:00:00') < now; });
+    var overdueHtml = '';
+    if (overdue.length) {
+      overdueHtml = '<div style="background:#fde8e6;border:1.5px solid #f0b8b0;border-radius:14px;padding:14px 18px;margin-bottom:16px">' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#9b3a2e;margin-bottom:8px">' + icon('zap',11,'#9b3a2e') + ' ' + overdue.length + ' tâche' + (overdue.length>1?'s':'') + ' en retard</div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px">' +
+          overdue.map(function(t){
+            var daysLate = Math.round((now - new Date(t.dueDate.slice(0,10)+'T12:00:00'))/86400000);
+            return '<div onclick="aptSelTask=\''+t.id+'\';aptRender()" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;background:#fff;border-radius:9px;cursor:pointer" onmouseover="this.style.background=\'#fdf2f1\'" onmouseout="this.style.background=\'#fff\'">' +
+              '<span style="font-size:13px;color:#5c4633;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+              '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#9b3a2e;font-weight:600;flex-shrink:0">J+'+daysLate+'</span>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }
+
+    // ── Récap semaine en cours ──
+    var dayOfWeek = (now.getDay()+6)%7; // 0=lun
+    var weekStart = new Date(now); weekStart.setDate(now.getDate()-dayOfWeek);
+    var weekEnd   = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+    var weekDone  = allTasks.filter(function(t){
+      if (t.status!=='done') return false;
+      var ref = new Date((t.completedAt||t.dueDate||'').slice(0,10)+'T12:00:00');
+      return ref >= weekStart && ref <= weekEnd;
+    });
+    var weekMin = weekDone.reduce(function(s,t){ return s+(t.timeSpentMinutes||0); }, 0);
+    var backlog  = tasks.filter(function(t){ return !t.dueDate && t.status!=='done'; });
+    var weekHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">' +
+      // Récap semaine
+      '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px">' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:8px">Cette semaine</div>' +
+        '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:'+APT_OCRE_INK+'">'+weekDone.length+'</span>' +
+          '<span style="font-size:12px;color:#8a6f54">tâche'+(weekDone.length>1?'s':'')+' terminée'+(weekDone.length>1?'s':'')</span>' +
+          (weekMin ? ' · <span style="font-size:12px;color:#8a6f54">'+aptFmtH(weekMin)+' passées</span>' : '') +
+        '</div>' +
+        (weekDone.length ? '<div style="display:flex;flex-direction:column;gap:3px;max-height:80px;overflow:hidden">' +
+          weekDone.slice(0,3).map(function(t){ return '<div style="font-size:12px;color:#5c4633;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✓ '+esc(t.title)+'</div>'; }).join('') +
+          (weekDone.length>3 ? '<div style="font-size:11px;color:#b09b80">+'+(weekDone.length-3)+' autres</div>' : '') +
+        '</div>' : '<div style="font-size:12px;color:#c4b49e;font-style:italic">Aucune tâche terminée.</div>') +
+      '</div>' +
+      // Backlog
+      '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80">Sans date</div>' +
+          '<button onclick="aptOpenAddTask(\'\')" style="font-size:11px;padding:3px 9px;border:1px solid #e2d9ce;border-radius:7px;background:#fdfaf6;color:#8a6f54;cursor:pointer">+ Ajouter</button>' +
+        '</div>' +
+        (backlog.length ? '<div style="display:flex;flex-direction:column;gap:3px;max-height:88px;overflow-y:auto">' +
+          backlog.slice(0,5).map(function(t){
+            return '<div onclick="aptSelTask=\''+t.id+'\';aptRender()" style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:#5c4633" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
+              aptUrgIcon(t.urgency,10) + ' <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+            '</div>';
+          }).join('') +
+          (backlog.length>5 ? '<div style="font-size:11px;color:#b09b80;padding:2px 8px">+'+( backlog.length-5)+' autres</div>' : '') +
+        '</div>' : '<div style="font-size:12px;color:#c4b49e;font-style:italic">Tout est planifié ✓</div>') +
+      '</div>' +
     '</div>';
 
     // ── Filtre urgence ──
@@ -4482,7 +4555,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '</div>';
 
     var drawer = aptSelTask ? aptBuildDrawer(project) : '';
-    return forfaitBar +
+    return forfaitBar + overdueHtml + weekHtml +
       '<div style="display:grid;grid-template-columns:1fr'+(aptSelTask?' 360px':'')+';gap:18px;align-items:start">' +
         '<div>' + calCard + '</div>' + drawer +
       '</div>';
