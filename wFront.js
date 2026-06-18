@@ -7944,7 +7944,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }).join('') +
       '</div>';
 
-      var shown = stFilter==='all' ? tickets : tickets.filter(function(t){ return t.status===stFilter; });
+      var shown = stFilter==='all'
+        ? tickets.filter(function(t){ return t.status!=='done' && t.status!=='closed'; })
+        : tickets.filter(function(t){ return t.status===stFilter; });
 
       function ticketCard(t) {
         var isOpen = t.status!=='done' && t.status!=='closed';
@@ -7970,10 +7972,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
       }
 
+      var histHtml = '';
+      if (stFilter==='all') {
+        var resolved = tickets.filter(function(t){ return t.status==='done' || t.status==='closed'; })
+          .sort(function(a,b){ return (b.resolvedAt||b.createdAt||'').localeCompare(a.resolvedAt||a.createdAt||''); });
+        if (resolved.length) {
+          var groups = {}, order = [];
+          resolved.forEach(function(t){ var k=(t.resolvedAt||t.createdAt||'').slice(0,7); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(t); });
+          var body = order.map(function(k){
+            var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
+            label = label.charAt(0).toUpperCase()+label.slice(1);
+            var rows = groups[k].map(function(t){
+              return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px">' +
+                '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
+                '<span style="flex:1;font-size:12px;color:var(--terre,#5c4633);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
+                (t.category?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.category)+'</span>':'') +
+                '<button onclick="cliMaintReopenTicket(\''+pid+'\',\''+t.id+'\')" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid var(--bone-d);border-radius:6px;background:#fff;color:var(--terre-600);cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+              '</div>';
+            }).join('');
+            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+          }).join('');
+          histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
+            '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique — '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
+            '<div style="margin-top:12px;max-height:340px;overflow-y:auto">'+body+'</div></details>';
+        }
+      }
       return stTabsHtml +
         (shown.length
           ? '<div style="display:grid;gap:11px">'+shown.map(ticketCard).join('')+'</div>'
-          : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucune demande ici.</p>');
+          : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucune demande en cours.</p>') +
+        histHtml;
     }
 
     var mainContent = '';
@@ -8955,6 +8983,20 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     };
   };
 
+  window.cliMaintReopenTicket = function(pid, ticketId) { window.cliMaintSetStatus(pid, ticketId, 'open'); };
+  window.cliMaintSetStatus = function(pid, ticketId, status) {
+    fetch(API_BASE + '/tickets/' + ticketId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: status }) })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+      .then(function(ticket) {
+        var pd2 = getPD(pid);
+        if (pd2 && Array.isArray(pd2.project.tickets)) {
+          var idx = pd2.project.tickets.findIndex(function(t){ return t.id === ticketId; });
+          if (idx !== -1) pd2.project.tickets[idx] = ticket;
+        }
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur lors de la mise à jour.'); });
+  };
   window.cliMaintCloseTicket = function(pid, ticketId) {
     fetch(API_BASE + '/tickets/' + ticketId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: 'done' }) })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
