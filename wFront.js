@@ -6740,7 +6740,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
-            monthStripHtml +
             '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
             nextCard +
             miniTrack +
