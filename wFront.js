@@ -7912,7 +7912,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           rows +
         '</div>' + sep;
       })() +
-      })() +
       // Contenu
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
       '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#051833);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
