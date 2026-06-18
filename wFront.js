@@ -4437,7 +4437,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
   }
 
+  var DEFAULT_PARTENAIRE_SCHEMA = [
+    { id:'p_brief', name:'État du brief', type:'Liste', options:['Pas commencé','Brief en cours','Brief prêt','En projet','À retravailler'] },
+    { id:'p_typemission', name:'Type de mission', type:'Liste', options:['Devis/prospection','Site internet','Communication','Identité','Autre'] },
+    { id:'p_elements', name:'Élément du brief', type:'Texte', options:[] },
+    { id:'p_mois', name:'Mois', type:'Liste', options:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] },
+    { id:'p_realisation', name:'Date de réalisation', type:'Date', options:[] },
+  ];
+  var _seededSchemas = {};
   function buildPartenaireSection(project) {
+    // Initialise les propriétés par défaut sur les espaces partenaire existants (une fois).
+    if ((!Array.isArray(project.propertySchema) || !project.propertySchema.length) && !_seededSchemas[project.id]) {
+      _seededSchemas[project.id] = 1;
+      aptSaveSchema(DEFAULT_PARTENAIRE_SCHEMA.slice());
+    }
     var tasks = tasksOf(project).filter(function(t){ return !t.archived; });
     if (window._adminTaskReg) tasksOf(project).forEach(function(t){ window._adminTaskReg[t.id]=t; });
     else { window._adminTaskReg = {}; tasksOf(project).forEach(function(t){ window._adminTaskReg[t.id]=t; }); }

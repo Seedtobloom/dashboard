@@ -12,6 +12,7 @@ export interface Project {
   steps: Step[];
   tasks?: Task[];
   tickets?: MaintenanceTicket[];
+  propertySchema?: { id: string; name: string; type: string; options?: string[] }[];
   monthlyHours?: number;
   forfaitOverrides?: Record<string, number>;
   notes?: string;
