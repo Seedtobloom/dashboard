@@ -6086,12 +6086,24 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   async function openClientSpace(edit) {
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
-    const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: 'Aperçu admin' }) });
-    if (!res.ok) { toast('Erreur', true); return; }
-    const data = await res.json();
-    // Ouvre sur le MEME domaine que l'admin pour que le cookie de session soit transmis
-    // (sinon le mode edition ne peut pas verifier la session admin).
-    const sameOriginUrl = window.location.origin + '/p/' + data.token;
+    const pid = window._currentProject && window._currentProject.id;
+    // Réutilise le token "Aperçu admin" existant s'il y en a un, pour éviter les doublons
+    let token = null;
+    if (pid) {
+      const existing = await apiFetch('/api/projects/' + pid + '/tokens');
+      if (existing.ok) {
+        const toks = await existing.json();
+        const preview = toks.find(function(t) { return t.label === 'Aperçu admin' && !t.revoked; });
+        if (preview) token = preview.token;
+      }
+    }
+    if (!token) {
+      const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: 'Aperçu admin' }) });
+      if (!res.ok) { toast('Erreur', true); return; }
+      const data = await res.json();
+      token = data.token;
+    }
+    const sameOriginUrl = window.location.origin + '/p/' + token;
     window.open(sameOriginUrl + (edit ? '?edit=1' : ''), '_blank');
   }
   window.previewClientSpace = function() { return openClientSpace(false); };
