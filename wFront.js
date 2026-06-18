@@ -778,12 +778,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function applyColors(colors) {
     var vars = Object.keys(colors).map(function(k){ return k+':'+colors[k]+';'; }).join('');
-    // Auto-compute text contrast for status badge vars
-    ['--st-discovery','--st-in-progress','--st-waiting','--st-review','--st-delivered','--st-archived'].forEach(function(k) {
-      if (colors[k] && colors[k].startsWith('#')) {
+    // Auto-compute text contrast companion vars for every hex color
+    Object.keys(colors).forEach(function(k) {
+      if (colors[k] && typeof colors[k] === 'string' && colors[k].charAt(0) === '#') {
         var lum = hexLum(colors[k]);
-        var suffix = k.replace('--st-', '--st-') + '-t';
-        vars += suffix + ':' + (lum > 140 ? '#1a1a1a' : '#ffffff') + ';';
+        vars += k + '-t:' + (lum > 140 ? '#1a1a1a' : '#ffffff') + ';';
       }
     });
     var el = document.getElementById('bloom-theme-style');
@@ -942,9 +941,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var ADMIN_TYPE_TONES = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', support:'brume', custom:'terre' };
   var ADMIN_TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Supports', custom:'Personnalise' };
   var ADMIN_TYPE_ACCENT = {
-    glycine: { soft:'rgba(228,209,254,0.22)', color:'rgba(228,209,254,0.9)', fg:'#fff' },
-    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(186,209,253,0.9)', fg:'#fff' },
-    terre:   { soft:'rgba(239,225,176,0.22)', color:'rgba(239,225,176,0.9)', fg:'#5c4633' },
+    glycine: { soft:'rgba(228,209,254,0.22)', color:'rgba(30,16,54,0.7)', fg:'#E4D1FE' },
+    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(5,24,51,0.7)',  fg:'#BAD1FD' },
+    terre:   { soft:'rgba(239,225,176,0.22)', color:'rgba(38,27,18,0.7)', fg:'#DCC999' },
   };
   function adminTypeBadge(type) {
     var tone = ADMIN_TYPE_TONES[type] || 'glycine';
@@ -6656,8 +6655,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       { icon: 'image',    label: 'Image',               type: 'image' },
       { icon: 'minus',    label: 'Séparateur',          type: 'separator' },
     ];
-    var menuOpen = !!window._stepBlockMenuOpen;
-    var addBlockMenu = '<div style="margin-top:10px;display:' + (menuOpen ? 'block' : 'none') + '">' +
+    var addBlockMenu = '<div id="_step-block-menu" style="margin-top:10px;display:none">' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
         addBlockTypes.map(function(bt) {
           return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#ede8df)\'" onmouseout="this.style.background=\'var(--bone,#faf8f5)\'">' +
@@ -6666,7 +6664,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }).join('') +
       '</div>' +
     '</div>';
-    var addBlockBtn = '<button onclick="window._stepBlockMenuOpen=!window._stepBlockMenuOpen;renderShell()" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer;margin-top:20px" onmouseover="this.style.color=\'var(--terre-600)\'" onmouseout="this.style.color=\'var(--terre-400)\'">' +
+    var addBlockBtn = '<button onclick="var m=document.getElementById(\'_step-block-menu\');if(m){m.style.display=m.style.display===\'flex\'?\'none\':\'flex\';m.style.flexWrap=\'wrap\'}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer;margin-top:20px" onmouseover="this.style.color=\'var(--terre-600)\'" onmouseout="this.style.color=\'var(--terre-400)\'">' +
       cpIcon('plus', 13, 'color:inherit') + ' AJOUTER UN BLOC' +
     '</button>';
 
