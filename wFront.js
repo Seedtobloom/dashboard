@@ -6236,7 +6236,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (done) return '<span class="cp-dpill done" style="display:inline-flex;align-items:center;gap:4px">'+cpIcon('check',12)+' Termine</span>';
     if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#9b3a2e">'+calIcon+' retard '+Math.abs(days)+' j</span>';
     if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#c9952f">'+calIcon+' dans '+days+' j</span>';
-    return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Echeance '+fmtShort(due)+'</span>';
+    return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Échéance '+fmtShort(due)+'</span>';
   }
   var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre' };
   var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'ocre', autre:'terre' };
@@ -6453,26 +6453,65 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }
 
       var nextCard;
+      // Distinguish: is there a step waiting for the client specifically?
+      var waitingStep = steps.find(function(s){ return s.status === 'waiting_client'; });
+      var inProgressStep = steps.find(function(s){ return s.status === 'in_progress'; });
+
       if (isPart) {
-        nextCard = nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#EFE1B0);background:var(--paille-50,#FBF3DC)">' +
+        nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
+          '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
+          '<div style="flex:1">' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">⚡ Votre action est requise</div>' +
+            '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
+            (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
+            (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
+          '</div>' +
+          '<button class="cp-btn" style="padding:8px 16px;font-size:10px;flex-shrink:0" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+        '</div>'
+        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#EFE1B0);background:var(--paille-50,#FBF3DC)">' +
           partDiamond(nextTask.urgency) +
           '<div style="flex:1">' +
-            '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine etape pour vous</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine demande</div>' +
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(nextTask.title) + '</div>' +
             (nextTask.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(nextTask.dueDate, false, true) + '</div>' : '') +
           '</div>' +
           '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
-        '</div>' : '';
+        '</div>' : '');
       } else {
-        nextCard = next ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
-          cpStatusDot(next.status) +
-          '<div style="flex:1">' +
-            '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine etape pour vous</div>' +
-            '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(next.title) + '</div>' +
-            (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
-          '</div>' +
-          '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
-        '</div>' : '';
+        if (waitingStep) {
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
+            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
+            '<div style="flex:1">' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">⚡ Votre action est requise</div>' +
+              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
+              (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
+              (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
+            '</div>' +
+            '<button class="cp-btn" style="padding:8px 16px;font-size:10px;flex-shrink:0" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+          '</div>';
+        } else if (inProgressStep) {
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
+            cpStatusDot(inProgressStep.status) +
+            '<div style="flex:1">' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Cindy travaille actuellement sur</div>' +
+              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(inProgressStep.title) + '</div>' +
+              (inProgressStep.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(inProgressStep.dueDate, false, true) + '</div>' : '') +
+            '</div>' +
+            '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Suivre ' + cpIcon('arrow',13) + '</button>' +
+          '</div>';
+        } else if (next) {
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
+            cpStatusDot(next.status) +
+            '<div style="flex:1">' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine étape</div>' +
+              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(next.title) + '</div>' +
+              (next.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(next.dueDate, false, true) + '</div>' : '') +
+            '</div>' +
+            '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Voir ' + cpIcon('arrow',13) + '</button>' +
+          '</div>';
+        } else {
+          nextCard = '';
+        }
       }
 
       var miniTrack;
@@ -6488,7 +6527,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
                 partDiamond(t.urgency) +
                 '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(t.status==='done'?';opacity:0.55':'')+'">' + esc(t.title) + '</span>' +
                 (t.status==='done'
-                  ? '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);display:inline-flex;align-items:center;gap:4px;white-space:nowrap">' + cpIcon('check',12) + ' Termine</span>'
+                  ? '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);display:inline-flex;align-items:center;gap:4px;white-space:nowrap">' + cpIcon('check',12) + ' Terminé</span>'
                   : cpDeadlinePill(t.dueDate, false, true)) +
               '</div>';
             }).join('') +
@@ -6497,7 +6536,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       } else {
         miniTrack = firstFour.length ? '<div class="card" style="padding:22px 24px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
-            '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Les etapes</h3></div>' +
+            '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Les étapes</h3></div>' +
             '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
           '</div>' +
           '<div style="display:grid;gap:9px">' +
@@ -6523,41 +6562,41 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (forfaitH
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">' +
                 '<span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre)">'+usedH.toFixed(1).replace('.0','')+'</span>' +
-                '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600)">/ '+forfaitH+' h utilisees</span>' +
+                '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600)">/ '+forfaitH+' h utilisées</span>' +
               '</div>' +
               '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+fpct+'%;background:#c9952f;border-radius:999px"></div></div>'
-            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non configure — contactez le studio.</div>'
+            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non configuré — contactez le studio.</div>'
           ) +
         '</div>';
       }
 
       var progressCard = '<div class="card" style="padding:22px 24px">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px">' +
-          '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Avancement</span>' +
+          '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Avancement du projet</span>' +
           '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">'+pct+'<span style="font-size:15px">%</span></span>' +
         '</div>' +
         '<div class="cp-prog"><div class="cp-prog__fill" style="width:'+pct+'%"></div></div>' +
-        '<div style="margin-top:11px;font-family:var(--font-body);font-size:14px;font-style:italic;opacity:0.75;color:var(--terre)">'+done+' termine'+(done>1?'s':'')+' sur '+steps.length+'</div>' +
+        '<div style="margin-top:11px;font-family:var(--font-body);font-size:14px;font-style:italic;opacity:0.75;color:var(--terre)">'+done+' étape'+(done>1?'s':'')+(done>0?' terminée'+(done>1?'s':''):'')+ ' sur '+steps.length+'</div>' +
       '</div>';
 
       var datesCard = '<div class="card" style="padding:20px 24px;display:grid;gap:14px">' +
         (p.deadline ? '<div style="display:flex;align-items:center;gap:12px">' +
           cpIcon('calendar',16,'color:var(--terre-600)') +
-          '<div style="flex:1"><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Echeance</div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">'+fmtDate(p.deadline)+'</div></div>' +
-          (p.deadlineExtended ? '<span style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900)">prolonge</span>' : '') +
+          '<div style="flex:1"><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Échéance</div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">'+fmtDate(p.deadline)+'</div></div>' +
+          (p.deadlineExtended ? '<span style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900)">prolongée</span>' : '') +
         '</div>' : '') +
         (p.deadline ? '<div style="height:1px;background:var(--bone-d)"></div>' : '') +
         (dur ? '<div style="display:flex;align-items:center;gap:12px">' +
           cpIcon('clock',16,'color:var(--terre-600)') +
-          '<div style="flex:1"><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Duree prevue</div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">'+dur+'</div></div>' +
+          '<div style="flex:1"><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">Durée prévue</div><div style="font-family:var(--font-display);font-size:19px;color:var(--terre)">'+dur+'</div></div>' +
         '</div>' : '') +
       '</div>';
 
       var homeUnread = totalUnread();
-      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-        cpIcon('chat',18,'color:var(--terre)') +
-        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:var(--terre)">Ecrire a Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);margin-top:2px">' + (homeUnread > 0 ? homeUnread+' non lu' : 'Reponse sous 24 h') + '</div></div>' +
-        cpIcon('arrow',15,'color:var(--terre-600)') +
+      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms;' + (homeUnread > 0 ? 'border-color:#e8a87c;background:#fdf3e8' : '') + '" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+        cpIcon('chat',18, homeUnread > 0 ? 'color:#c46a1a' : 'color:var(--terre)') +
+        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:' + (homeUnread > 0 ? '#7a3a0a' : 'var(--terre)') + '">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:' + (homeUnread > 0 ? '#c46a1a' : 'var(--terre-600)') + ';margin-top:2px">' + (homeUnread > 0 ? homeUnread+' message'+(homeUnread>1?'s':'')+' non lu'+(homeUnread>1?'s':'') : 'Réponse sous 24 h') + '</div></div>' +
+        cpIcon('arrow',15, homeUnread > 0 ? 'color:#c46a1a' : 'color:var(--terre-600)') +
       '</button>';
 
       return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
@@ -6571,7 +6610,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
-            '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avance de vos demandes pas a pas : je depose les elements a valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancee de votre projet pas a pas — je depose les elements a valider, vous me laissez vos retours.') + '</p>' +
+            '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
             nextCard +
             miniTrack +
           '</div>' +
@@ -6610,13 +6649,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div class="cp-proj-card__body">' +
           '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
+          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
           '<div class="cp-proj-card__meta">' +
             (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
-            (p.deadlineExtended ? '<span class="cp-proj-card__ext">↩ Date prolongee</span>' : '') +
+            (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
             (duration ? '<span>' + duration + '</span>' : '') +
           '</div>' +
           '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="cp-proj-card__pct"><span>' + pct + '% complete</span><span>' + done + '/' + steps.length + ' etapes</span></div>' +
+          '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
         '</div>' +
       '</button>';
     }
@@ -6691,7 +6731,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // Echanges group
     var exchangeNav = '<div class="cp-nav">' +
-      '<div class="cp-nav__label" style="padding-top:16px">Echanges</div>' +
+      '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
       navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
       (portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +
