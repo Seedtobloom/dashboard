@@ -4271,6 +4271,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var info = [];
     if (t.pole) info.push(esc(t.pole));
     if (t.timeSpentMinutes) info.push(aptFmtH(t.timeSpentMinutes));
+    // custom props chips
+    var p = window._currentProject;
+    var schema = (p && Array.isArray(p.propertySchema)) ? p.propertySchema : [];
+    var props = t.properties || {};
+    var propsChips = schema.filter(function(def){ return props[def.id] != null && props[def.id] !== ''; }).map(function(def){
+      return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f0ebe3;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(String(props[def.id]))+'</span>';
+    }).join('');
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
       'style="background:'+(isDone?'#f3ede2':soft)+';border-radius:7px;padding:6px 8px;margin-top:5px;cursor:pointer">' +
       '<div style="display:flex;align-items:center;gap:5px">' +
@@ -4279,6 +4286,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'#5c4633')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
       '</div>' +
       (info.length ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#a89a86;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+info.join(' · ')+'</div>' : '') +
+      (propsChips ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">'+propsChips+'</div>' : '') +
     '</div>';
   }
 
@@ -4546,16 +4554,32 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.getElementById('_apt-add'); if (ov) ov.remove();
     ov = document.createElement('div'); ov.id='_apt-add';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:16px;padding:26px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">' +
+    var p = window._currentProject;
+    var schema = (p && Array.isArray(p.propertySchema)) ? p.propertySchema : [];
+    var customFieldsHtml = schema.length ? '<div style="margin-bottom:4px;padding-top:4px;border-top:1px solid #f0ebe3">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;margin:10px 0 8px">Propriétés personnalisées</div>' +
+      schema.map(function(def){
+        var inputHtml;
+        if (def.type==='Liste') {
+          inputHtml = '<select id="_apt-prop-'+def.id+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
+        } else {
+          var t = def.type==='Nombre'?'number':def.type==='Date'?'date':'text';
+          inputHtml = '<input type="'+t+'" id="_apt-prop-'+def.id+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">';
+        }
+        return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+inputHtml+'</div>';
+      }).join('') +
+    '</div>' : '';
+    ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:16px;padding:26px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:#5c4633;margin:0">Nouvelle demande</h3><button onclick="document.getElementById(\'_apt-add\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre</label><input id="_apt-title" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Detail (format, ton, references, contraintes)</label><textarea id="_apt-content" rows="3" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;resize:vertical"></textarea></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre *</label><input id="_apt-title" placeholder="Ex: Visuel Instagram — collection été" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Détail / Contenu</label><textarea id="_apt-content" rows="3" placeholder="Format, ton, références, contraintes..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;resize:vertical"></textarea></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
-        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date dans le calendrier</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
         '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
-      '<div style="margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Categorie / Pole</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Creer la demande</button></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Catégorie</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
+      customFieldsHtml +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Ajouter</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -4568,13 +4592,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var content = document.getElementById('_apt-content').value;
     var urgency = document.getElementById('_apt-urgency').value;
     var pole = document.getElementById('_apt-pole').value;
-    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify({ title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo' }) });
+    // collect custom properties
+    var p = window._currentProject;
+    var schema = (p && Array.isArray(p.propertySchema)) ? p.propertySchema : [];
+    var properties = {};
+    schema.forEach(function(def){
+      var el = document.getElementById('_apt-prop-'+def.id);
+      if (el && el.value !== '') properties[def.id] = el.value;
+    });
+    var body = { title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo', pole:pole, properties:properties };
+    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify(body) });
     if (!res.ok){ toast('Erreur', true); return; }
     var task = await res.json();
-    if (pole) { var r2 = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+task.id, { method:'PUT', body: JSON.stringify({ pole:pole }) }); if (r2.ok) task = await r2.json(); }
-    var p = window._currentProject; if (p){ if(!p.tasks) p.tasks=[]; p.tasks.push(task); }
+    if (p){ if(!p.tasks) p.tasks=[]; p.tasks.push(task); }
     var ov = document.getElementById('_apt-add'); if (ov) ov.remove();
-    toast('Demande creee'); aptRender();
+    toast('Demande créée'); aptRender();
   };
 
   // ── Drag & drop replanification ──
@@ -4585,24 +4617,50 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Schema de proprietes partagees ──
   window.aptAddPropDef = function(){
-    showPrompt('Nouvelle propriete', 'Nom de la propriete', '', function(name){
-      name = (name||'').trim(); if (!name) return;
-      showPrompt('Type de propriete', 'Texte, Nombre, Liste ou Date', 'Texte', async function(type){
-        type = (type||'Texte').trim();
-        if (['Texte','Nombre','Liste','Date'].indexOf(type)<0) type='Texte';
-        var finish = async function(options){
-          var p = window._currentProject;
-          var schema = Array.isArray(p.propertySchema) ? p.propertySchema.slice() : [];
-          schema.push({ id:'prop'+Date.now(), name:name, type:type, options:options||[] });
-          await aptSaveSchema(schema);
-        };
-        if (type==='Liste') {
-          showPrompt('Options de la liste', 'Separees par des virgules', '', function(opts){
-            finish((opts||'').split(',').map(function(s){return s.trim();}).filter(Boolean));
-          }, { okLabel:'Creer' });
-        } else { finish([]); }
-      }, { okLabel:'Suivant' });
-    }, { okLabel:'Suivant' });
+    var ov = document.createElement('div'); ov.id='_apt-prop-modal';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:24px;max-width:400px;width:100%;box-shadow:0 12px 40px rgba(40,28,12,0.18)">' +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#5c4633;margin-bottom:16px">Nouvelle propriété</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Nom</label><input id="_apd-name" placeholder="Ex: Format, Client final, Budget..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Type</label>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap" id="_apd-types">' +
+          ['Texte','Nombre','Liste','Date'].map(function(tp){
+            return '<button onclick="aptPropTypeSelect(\''+tp+'\')" data-t="'+tp+'" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e2d9ce;background:'+(tp==='Texte'?APT_OCRE_DEEP:'#fff')+';color:'+(tp==='Texte'?'#fff':'#8a6f54')+';font-family:inherit;font-size:12px;cursor:pointer">'+tp+'</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div id="_apd-options-row" style="display:none;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Options <span style="font-weight:400;color:#b09b80">(séparées par des virgules)</span></label><input id="_apd-options" placeholder="Ex: Story, Reel, Post, Carrousel" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-prop-modal\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptConfirmAddProp()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Créer</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    setTimeout(function(){ var el=document.getElementById('_apd-name'); if(el) el.focus(); }, 50);
+  };
+  window._aptPropType = 'Texte';
+  window.aptPropTypeSelect = function(tp) {
+    window._aptPropType = tp;
+    document.getElementById('_apd-types').querySelectorAll('button').forEach(function(b){
+      var active = b.getAttribute('data-t') === tp;
+      b.style.background = active ? APT_OCRE_DEEP : '#fff';
+      b.style.color = active ? '#fff' : '#8a6f54';
+    });
+    var row = document.getElementById('_apd-options-row');
+    if (row) row.style.display = tp==='Liste' ? 'block' : 'none';
+  };
+  window.aptConfirmAddProp = async function(){
+    var name = (document.getElementById('_apd-name')||{}).value||'';
+    name = name.trim(); if (!name){ toast('Nom requis', true); return; }
+    var type = window._aptPropType || 'Texte';
+    var options = [];
+    if (type==='Liste'){
+      var optsEl = document.getElementById('_apd-options');
+      options = (optsEl && optsEl.value) ? optsEl.value.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+    }
+    var p = window._currentProject;
+    var schema = Array.isArray(p.propertySchema) ? p.propertySchema.slice() : [];
+    schema.push({ id:'prop'+Date.now(), name:name, type:type, options:options });
+    var m = document.getElementById('_apt-prop-modal'); if (m) m.remove();
+    await aptSaveSchema(schema);
   };
   window.aptEditPropDef = function(propId){
     var p = window._currentProject;
