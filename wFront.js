@@ -3176,16 +3176,32 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.applyBannerFile = function(input) {
     var file = input.files[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { toast('Image trop lourde (max 4 Mo)', true); return; }
+    if (file.size > 8 * 1024 * 1024) { toast('Image trop lourde (max 8 Mo)', true); return; }
     var reader = new FileReader();
-    reader.onload = async function(e) {
-      var dataUrl = e.target.result;
-      document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
-      var banner = document.getElementById('proj-banner-el');
-      if (banner) banner.style.background = 'url('+dataUrl+') center/cover no-repeat';
-      var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { bannerUrl: dataUrl, bannerColor: undefined })) });
-      if (res.ok) toast('Banniere mise a jour');
-      else toast('Erreur', true);
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = async function() {
+        // Resize to max 1400px wide, JPEG quality 0.88
+        var maxW = 1400;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
+        var banner = document.getElementById('proj-banner-el');
+        if (banner) {
+          banner.style.background = 'url('+dataUrl+') center/cover no-repeat';
+          banner.setAttribute('data-img', '');
+          var grainDiv = banner.querySelector('.grain-overlay');
+          if (grainDiv) grainDiv.style.display = 'none';
+        }
+        var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { bannerUrl: dataUrl, bannerColor: undefined })) });
+        if (res.ok) { if (window._currentProject) window._currentProject.bannerUrl = dataUrl; toast('Banniere mise a jour'); }
+        else toast('Erreur', true);
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -8133,7 +8149,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }).join(' ');
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
-        return '<div onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
@@ -8142,7 +8158,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
-      dayCells.push('<div style="min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
+      dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
         numHtml + pills +
       '</div>');
     }
@@ -9049,6 +9065,24 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           .then(function(data){ if(data && !data.locked) renderApp(data); });
       })
       .catch(function(){ toast('Erreur lors du depot', true); });
+  };
+
+  var _cliDragId = null;
+  window.cliDragStart = function(e, id) { _cliDragId = id; if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; };
+  window.cliDragOver  = function(e, el) { e.preventDefault(); el.style.background = '#f5f0e8'; };
+  window.cliDragLeave = function(el) { el.style.background = '#fff'; };
+  window.cliDrop = function(e, pid, ds) {
+    e.preventDefault(); el && (el.style.background = '#fff');
+    var id = _cliDragId; _cliDragId = null; if (!id) return;
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===id;});
+    var patch = { dueDate: ds };
+    if (t && t.startDate && t.dueDate) {
+      var durMs = new Date(t.dueDate.slice(0,10)+'T12:00:00') - new Date(t.startDate.slice(0,10)+'T12:00:00');
+      var newDue = new Date(ds+'T12:00:00');
+      patch.startDate = new Date(newDue - durMs).toISOString().slice(0,10);
+    }
+    window.cliPatchTask(pid, id, patch);
   };
 
   window.cliPatchTask = function(pid, taskId, fields) {
