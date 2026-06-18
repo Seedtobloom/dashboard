@@ -778,12 +778,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function applyColors(colors) {
     var vars = Object.keys(colors).map(function(k){ return k+':'+colors[k]+';'; }).join('');
-    // Auto-compute text contrast for status badge vars
-    ['--st-discovery','--st-in-progress','--st-waiting','--st-review','--st-delivered','--st-archived'].forEach(function(k) {
-      if (colors[k] && colors[k].startsWith('#')) {
+    // Auto-compute text contrast companion vars for every hex color
+    Object.keys(colors).forEach(function(k) {
+      if (colors[k] && typeof colors[k] === 'string' && colors[k].charAt(0) === '#') {
         var lum = hexLum(colors[k]);
-        var suffix = k.replace('--st-', '--st-') + '-t';
-        vars += suffix + ':' + (lum > 140 ? '#1a1a1a' : '#ffffff') + ';';
+        vars += k + '-t:' + (lum > 140 ? '#1a1a1a' : '#ffffff') + ';';
       }
     });
     var el = document.getElementById('bloom-theme-style');
@@ -942,9 +941,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var ADMIN_TYPE_TONES = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', support:'brume', custom:'terre' };
   var ADMIN_TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Supports', custom:'Personnalise' };
   var ADMIN_TYPE_ACCENT = {
-    glycine: { soft:'rgba(228,209,254,0.22)', color:'rgba(228,209,254,0.9)', fg:'#fff' },
-    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(186,209,253,0.9)', fg:'#fff' },
-    terre:   { soft:'rgba(239,225,176,0.22)', color:'rgba(239,225,176,0.9)', fg:'#5c4633' },
+    glycine: { soft:'rgba(228,209,254,0.22)', color:'rgba(30,16,54,0.7)', fg:'#E4D1FE' },
+    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(5,24,51,0.7)',  fg:'#BAD1FD' },
+    terre:   { soft:'rgba(239,225,176,0.22)', color:'rgba(38,27,18,0.7)', fg:'#DCC999' },
   };
   function adminTypeBadge(type) {
     var tone = ADMIN_TYPE_TONES[type] || 'glycine';
@@ -4544,64 +4543,97 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     var deliverable = t.deliverableFileKey ? (project.files||[]).find(function(f){return f.key===t.deliverableFileKey;}) : null;
 
-    return '<div style="background:#fff;border:1px solid #e2d9ce;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:14px;padding:0;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto">' +
-      '<div style="padding:18px 20px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">' +
-          '<input value="'+esc(t.title)+'" onchange="aptPatch(\''+t.id+'\',{title:this.value})" style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633;border:none;border-bottom:1px solid transparent;background:none;flex:1;padding:2px 0" onfocus="this.style.borderBottomColor=\''+APT_OCRE_MID+'\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
-          '<button onclick="aptCloseDrawer()" style="background:none;border:none;cursor:pointer;color:#8a6f54;font-size:20px;line-height:1;padding:0">×</button>' +
-        '</div>' +
-        '<textarea onchange="aptPatch(\''+t.id+'\',{content:this.value})" rows="3" placeholder="Detail / contenu (format, ton, references, contraintes)" style="font-family:inherit;font-size:12px;color:#5c4633;width:100%;border:1.5px solid #e2d9ce;border-radius:8px;padding:7px 9px;resize:vertical">'+esc(t.content||'')+'</textarea>' +
+    var countdownPill = '';
+    if (countdown) {
+      var cpBg = countdown.indexOf('retard') >= 0 ? '#fde8e6' : (countdown.indexOf('J-') >= 0 && parseInt(countdown.split('-')[1]) <= 3 ? '#fff3e0' : '#f0f4ec');
+      var cpCol = countdown.indexOf('retard') >= 0 ? '#9b3a2e' : (countdown.indexOf('J-') >= 0 && parseInt(countdown.split('-')[1]) <= 3 ? '#9b6a00' : '#5c7a3a');
+      countdownPill = '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:'+cpBg+';color:'+cpCol+';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500">'+icon('calendar',11)+' '+countdown+'</span>';
+    }
 
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-          '<div>'+lbl('Statut')+statusSel+'</div>' +
-          '<div>'+lbl('Urgence')+urgSel+'</div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-          '<div>'+lbl('Echeance')+'<input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%"></div>' +
-          '<div>'+lbl('Categorie / Pole')+poleSel+'</div>' +
-        '</div>' +
-        (countdown ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#8a6f54;margin-top:8px">'+icon('calendar',12)+' '+countdown+'</div>' : '') +
+    return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden">' +
 
-        // Temps passe
-        lbl('Temps passe') +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          '<button onclick="aptAddTime(\''+t.id+'\',-30)" style="width:30px;height:30px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:14px">−</button>' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+APT_OCRE_INK+';min-width:56px;text-align:center">'+aptFmtH(timeMin)+'</span>' +
-          '<button onclick="aptAddTime(\''+t.id+'\',30)" style="width:30px;height:30px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:14px">+</button>' +
-          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#b09b80;margin-left:4px">Renseigne par le studio · 0,5 h</span>' +
+      // ── En-tête sticky ──
+      '<div style="padding:20px 22px 16px;border-bottom:1px solid #f0e8de;flex-shrink:0">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px">' +
+          '<input value="'+esc(t.title)+'" onchange="aptPatch(\''+t.id+'\',{title:this.value})" style="font-family:\'Cormorant Garamond\',serif;font-size:22px;color:#412F21;border:none;border-bottom:1.5px solid transparent;background:none;flex:1;padding:2px 0;line-height:1.25" onfocus="this.style.borderBottomColor=\''+APT_OCRE_MID+'\'" onblur="this.style.borderBottomColor=\'transparent\'" placeholder="Titre de la tâche">' +
+          '<button onclick="aptCloseDrawer()" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1">×</button>' +
         '</div>' +
-
-        // Proprietes partagees
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px">' +
-          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">Proprietes</span>' +
-          '<button onclick="aptAddPropDef()" style="font-size:11px;padding:3px 9px;border:1px solid '+APT_OCRE_MID+';border-radius:7px;background:'+APT_OCRE_SOFT+';color:'+APT_OCRE_INK+';cursor:pointer">+ Ajouter une propriete</button>' +
-        '</div>' +
-        (propsHtml || '<div style="font-size:11px;color:#b09b80;font-style:italic;margin-bottom:6px">Aucune propriete partagee.</div>') +
-
-        // Livrable
-        lbl('Livrable') +
-        (deliverable ? '<div style="font-size:12px;color:'+APT_OCRE_INK+';margin-bottom:6px">'+icon('file',12)+' '+esc(deliverable.name||'fichier')+'</div>' : '') +
-        '<div style="display:flex;gap:6px">' +
-          '<button onclick="attachDeliverable(\''+t.id+'\')" style="font-size:11px;padding:5px 10px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer">'+icon('upload',12)+' Deposer un fichier</button>' +
-        '</div>' +
-        '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="aptPatch(\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%;margin-top:6px">' +
-
-        // Echange
-        lbl('Echange sur la tache') +
-        (commentsHtml || '<div style="font-size:11px;color:#b09b80;font-style:italic;margin-bottom:6px">Aucun message.</div>') +
-        '<div style="display:flex;gap:6px;margin-top:6px">' +
-          '<input id="apt-comment-'+t.id+'" placeholder="Repondre…" style="font-family:inherit;font-size:12px;flex:1;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px">' +
-          '<button onclick="aptAddComment(\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Envoyer</button>' +
-        '</div>' +
-
-        // Actions
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:18px;padding-top:14px;border-top:1px solid #efe7da">' +
-          '<button onclick="aptDoneNotify(\''+t.id+'\')" style="font-size:11px;padding:6px 11px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Marquer termine &amp; prevenir</button>' +
-          '<button onclick="aptPatch(\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="font-size:11px;padding:6px 11px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer">'+(t.pinned?'Desepingler':'Epingler')+'</button>' +
-          '<button onclick="aptArchiveTask(\''+t.id+'\')" style="font-size:11px;padding:6px 11px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer">Archiver</button>' +
-          '<button onclick="aptDeleteTask(\''+t.id+'\')" style="font-size:11px;padding:6px 11px;border:1.5px solid #f0d0cc;border-radius:8px;background:#fff;color:#9b3a2e;cursor:pointer">Supprimer</button>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+          (countdownPill || '') +
+          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#fdf8ef;color:#b09668;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.04em">'+icon('pin',10)+' Épinglé</span>' : '') +
         '</div>' +
       '</div>' +
+
+      // ── Corps scrollable ──
+      '<div style="padding:20px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:20px">' +
+
+        // Description
+        '<div>' +
+          '<textarea onchange="aptPatch(\''+t.id+'\',{content:this.value})" rows="3" placeholder="Détail, format, références, contraintes…" style="font-family:inherit;font-size:13px;color:#5c4633;width:100%;border:1.5px solid #e2d9ce;border-radius:10px;padding:10px 12px;resize:vertical;background:#fdfaf6">'+esc(t.content||'')+'</textarea>' +
+        '</div>' +
+
+        // Statut + Urgence
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Statut</div>'+statusSel+'</div>' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Urgence</div>'+urgSel+'</div>' +
+        '</div>' +
+
+        // Échéance + Pôle
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Échéance</div><input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Catégorie / Pôle</div>'+poleSel+'</div>' +
+        '</div>' +
+
+        // Temps passé
+        '<div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Temps passé</div>' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<button onclick="aptAddTime(\''+t.id+'\',-30)" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
+            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:'+APT_OCRE_INK+';min-width:64px;text-align:center;flex-shrink:0">'+aptFmtH(timeMin)+'</span>' +
+            '<button onclick="aptAddTime(\''+t.id+'\',30)" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
+            '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c4b49e;line-height:1.4">Saisi par<br>le studio · par 30 min</span>' +
+          '</div>' +
+        '</div>' +
+
+        // Propriétés
+        '<div style="border-top:1px solid #f0e8de;padding-top:18px">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+            '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80">Propriétés</div>' +
+            '<button onclick="aptAddPropDef()" style="font-size:11px;padding:4px 10px;border:1px solid '+APT_OCRE_MID+';border-radius:8px;background:'+APT_OCRE_SOFT+';color:'+APT_OCRE_INK+';cursor:pointer;font-weight:500">+ Ajouter</button>' +
+          '</div>' +
+          (propsHtml || '<div style="font-size:12px;color:#c4b49e;font-style:italic">Aucune propriété partagée.</div>') +
+        '</div>' +
+
+        // Livrable
+        '<div style="border-top:1px solid #f0e8de;padding-top:18px">' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Livrable</div>' +
+          (deliverable ? '<div style="font-size:12px;color:'+APT_OCRE_INK+';margin-bottom:8px;display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f6f0e8;border-radius:8px">'+icon('file',13)+' '+esc(deliverable.name||'fichier')+'</div>' : '') +
+          '<div style="display:flex;gap:8px;align-items:center">' +
+            '<button onclick="attachDeliverable(\''+t.id+'\')" style="font-size:12px;padding:7px 14px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;display:flex;align-items:center;gap:6px">'+icon('upload',13)+' Déposer un fichier</button>' +
+          '</div>' +
+          '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="aptPatch(\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;margin-top:8px;background:#fdfaf6">' +
+        '</div>' +
+
+        // Échange
+        '<div style="border-top:1px solid #f0e8de;padding-top:18px">' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Échange sur la tâche</div>' +
+          (commentsHtml || '<div style="font-size:12px;color:#c4b49e;font-style:italic;margin-bottom:8px">Aucun message.</div>') +
+          '<div style="display:flex;gap:8px;margin-top:8px">' +
+            '<input id="apt-comment-'+t.id+'" placeholder="Écrire un message…" style="font-family:inherit;font-size:13px;flex:1;padding:8px 12px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6">' +
+            '<button onclick="aptAddComment(\''+t.id+'\')" style="font-size:12px;padding:8px 16px;border:none;border-radius:10px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer;font-weight:500;flex-shrink:0">Envoyer</button>' +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+
+      // ── Pied de page sticky ──
+      '<div style="padding:14px 22px;border-top:1px solid #f0e8de;background:#fdfaf6;border-radius:0 0 16px 16px;flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center">' +
+        '<button onclick="aptDoneNotify(\''+t.id+'\')" style="font-size:12px;padding:8px 16px;border:none;border-radius:10px;background:'+APT_OCRE_INK+';color:#EFE1B0;cursor:pointer;font-weight:500">✓ Terminer &amp; notifier</button>' +
+        '<button onclick="aptPatch(\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="font-size:12px;padding:8px 14px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fff;color:#5c4633;cursor:pointer">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
+        '<button onclick="aptArchiveTask(\''+t.id+'\')" style="font-size:12px;padding:8px 14px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fff;color:#5c4633;cursor:pointer">Archiver</button>' +
+        '<button onclick="aptDeleteTask(\''+t.id+'\')" style="font-size:12px;padding:8px 14px;border:1.5px solid #f0d0cc;border-radius:10px;background:#fff;color:#9b3a2e;cursor:pointer;margin-left:auto">Supprimer</button>' +
+      '</div>' +
+
     '</div>';
   }
 
@@ -6656,8 +6688,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       { icon: 'image',    label: 'Image',               type: 'image' },
       { icon: 'minus',    label: 'Séparateur',          type: 'separator' },
     ];
-    var menuOpen = !!window._stepBlockMenuOpen;
-    var addBlockMenu = '<div style="margin-top:10px;display:' + (menuOpen ? 'block' : 'none') + '">' +
+    var addBlockMenu = '<div id="_step-block-menu" style="margin-top:10px;display:none">' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
         addBlockTypes.map(function(bt) {
           return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#ede8df)\'" onmouseout="this.style.background=\'var(--bone,#faf8f5)\'">' +
@@ -6666,7 +6697,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }).join('') +
       '</div>' +
     '</div>';
-    var addBlockBtn = '<button onclick="window._stepBlockMenuOpen=!window._stepBlockMenuOpen;renderShell()" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer;margin-top:20px" onmouseover="this.style.color=\'var(--terre-600)\'" onmouseout="this.style.color=\'var(--terre-400)\'">' +
+    var addBlockBtn = '<button onclick="var m=document.getElementById(\'_step-block-menu\');if(m){m.style.display=m.style.display===\'flex\'?\'none\':\'flex\';m.style.flexWrap=\'wrap\'}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer;margin-top:20px" onmouseover="this.style.color=\'var(--terre-600)\'" onmouseout="this.style.color=\'var(--terre-400)\'">' +
       cpIcon('plus', 13, 'color:inherit') + ' AJOUTER UN BLOC' +
     '</button>';
 
