@@ -3173,44 +3173,46 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     else toast('Erreur', true);
   };
 
-  window.applyBannerFile = function(input) {
-    var file = input.files[0];
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) { toast('Image trop lourde (max 8 Mo)', true); return; }
+  // Traite une image de bannière : garde l'original si <= 2600px de large,
+  // sinon redimensionne en haute qualité. cb(dataUrl).
+  function processBannerImage(file, cb) {
     var reader = new FileReader();
     reader.onload = function(e) {
       var img = new Image();
-      img.onload = async function() {
-        // Resize seulement si très grande (max 2400px), sinon garde l'original net.
-        var maxW = 2400;
-        var w = img.width, h = img.height;
-        var dataUrl;
-        if (w > maxW) {
-          h = Math.round(h * maxW / w); w = maxW;
-          var canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          var ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, w, h);
-          dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        } else {
-          dataUrl = e.target.result; // image d'origine, pleine netteté
-        }
-        document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
-        var banner = document.getElementById('proj-banner-el');
-        if (banner) {
-          banner.style.background = 'url('+dataUrl+') center/cover no-repeat';
-          banner.setAttribute('data-img', '');
-          var grainDiv = banner.querySelector('.grain-overlay');
-          if (grainDiv) grainDiv.style.display = 'none';
-        }
-        var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { bannerUrl: dataUrl, bannerColor: undefined })) });
-        if (res.ok) { if (window._currentProject) window._currentProject.bannerUrl = dataUrl; toast('Banniere mise a jour'); }
-        else toast('Erreur', true);
+      img.onload = function() {
+        var maxW = 2600;
+        if (img.width <= maxW) { cb(e.target.result); return; }
+        var w = maxW, h = Math.round(img.height * maxW / img.width);
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+        cb(canvas.toDataURL('image/jpeg', 0.95));
       };
+      img.onerror = function(){ cb(e.target.result); };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  window.applyBannerFile = function(input) {
+    var file = input.files[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) { toast('Image trop lourde (max 15 Mo)', true); return; }
+    processBannerImage(file, async function(dataUrl) {
+      document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
+      var banner = document.getElementById('proj-banner-el');
+      if (banner) {
+        banner.style.background = 'url('+dataUrl+') center/cover no-repeat';
+        banner.setAttribute('data-img', '');
+        var grainDiv = banner.querySelector('.grain-overlay');
+        if (grainDiv) grainDiv.style.display = 'none';
+      }
+      var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { bannerUrl: dataUrl, bannerColor: undefined })) });
+      if (res.ok) { if (window._currentProject) window._currentProject.bannerUrl = dataUrl; toast('Banniere mise a jour'); }
+      else toast('Erreur', true);
+    });
   };
 
   window.adminProjTab = function(tab) {
@@ -3468,15 +3470,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.uploadBannerImage = function(input) {
     var file = input.files[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { toast('Image trop lourde (max 4 Mo)', true); input.value = ''; return; }
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var dataUrl = e.target.result;
+    if (file.size > 15 * 1024 * 1024) { toast('Image trop lourde (max 15 Mo)', true); input.value = ''; return; }
+    processBannerImage(file, function(dataUrl) {
       var prev = document.getElementById('banner-preview');
       var urlEl = document.getElementById('edit-bannerUrl');
       if (urlEl) urlEl.value = '';
       if (prev) prev.style.background = 'url(' + dataUrl + ') center/cover no-repeat';
-      // Store data URL in hidden field for save
       var hidden = document.getElementById('edit-bannerData');
       if (!hidden) {
         hidden = document.createElement('input');
@@ -3486,8 +3485,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }
       hidden.value = dataUrl;
       toast('Image chargée ✓');
-    };
-    reader.readAsDataURL(file);
+    });
     input.value = '';
   };
 
