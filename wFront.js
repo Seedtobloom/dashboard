@@ -1968,7 +1968,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
             '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+pct+'%</span>' +
           '</div>' +
-          '<div style="width:100%;height:6px;background:'+a.soft+';border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+a.deep+';border-radius:6px"></div></div>' +
+          '<div style="width:100%;height:7px;background:#e8e0d4;border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+a.ink+';border-radius:6px;transition:width 0.4s"></div></div>' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">' +
             adminStatusBadge(p.status) +
             (deadlineHtml ? '<span style="color:#c8b29a;font-size:11px">·</span>' + deadlineHtml : '') +
