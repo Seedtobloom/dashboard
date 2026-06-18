@@ -1942,6 +1942,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
             adminTypeBadge(p.type) +
           '</div>' +
+          (!admSelectMode ? '<label onclick="event.stopPropagation()" title="Changer la couleur de la bannière" style="position:absolute;bottom:10px;right:10px;z-index:3;cursor:pointer;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:'+(p.bannerColor||a.deep)+';display:block;box-shadow:0 2px 8px rgba(0,0,0,0.25)">' +
+            '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:a.deep)+'" onchange="admSetBannerColor(\''+p.id+'\',this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
+          '</label>' : '') +
           '<div style="position:absolute;top:11px;right:12px;display:flex;gap:7px">' +
             (u>0 ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:9px">' + icon('chat',12) + ' '+u+'</span>' : '') +
             (isArchCard ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase">' + icon('archive',11) + ' Archive</span>' : '') +
@@ -4251,7 +4254,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var ADMIN_PART_STATUS     = { todo:'A faire', in_progress:'En cours', review:'En relecture', done:'Fait' };
   var ADMIN_PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
   // Ocre / Ecrin
-  var APT_OCRE_SOFT = '#f6efe0', APT_OCRE_MID = '#e7cd97', APT_OCRE_DEEP = '#c9952f', APT_OCRE_INK = '#8a5a12';
+  var APT_OCRE_SOFT = '#f3ede6', APT_OCRE_MID = '#c8b29a', APT_OCRE_DEEP = '#5c4633', APT_OCRE_INK = '#412F21';
 
   var aptCalMonth = null;     // Date du 1er du mois affiche
   var aptUrgFilter = '';      // filtre urgence
@@ -5473,6 +5476,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     };
     input.click();
   };
+  window.admSetBannerColor = async function(pid, color) {
+    var proj = (allProjs||[]).find(function(p){ return p.id===pid; });
+    if (!proj) return;
+    proj.bannerColor = color;
+    var body = Object.assign({}, proj, { bannerColor: color });
+    var res = await apiFetch('/api/projects/'+pid, { method:'PUT', body: JSON.stringify(body) });
+    if (!res.ok) { toast('Erreur lors de la sauvegarde', true); proj.bannerColor = proj.bannerColor; }
+  };
+
   window.archiveProject = async function() {
     showConfirm('Le projet passera en statut "Archivé". Vous pourrez le retrouver dans les filtres.', async function() {
       var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) });
