@@ -6508,67 +6508,89 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!step) return '';
     var isDone = step.status === 'done';
 
-    // Read-only page blocks
+    var stepId = step.id;
+
+    // Editable page blocks
     var blocksHtml = '';
     if (step.pageBlocks && step.pageBlocks.length) {
       blocksHtml = step.pageBlocks.map(function(blk) {
+        var delBtn = '<button onclick="cliDeleteStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\')" style="margin-left:auto;flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--bone-d);background:transparent;color:var(--terre-400);font-size:14px;line-height:1;cursor:pointer;display:grid;place-items:center;opacity:0.7" title="Supprimer">×</button>';
         if (blk.type === 'title') {
-          return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);font-weight:400;margin:0 0 4px 0">' + esc(blk.content || '') + '</h2>';
+          return '<div style="display:flex;align-items:flex-start;gap:8px">' +
+            '<h2 contenteditable="true" onblur="cliSaveStepBlockContent(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\',this.innerText)" style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);font-weight:400;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px" onfocus="this.style.borderBottomColor=\'var(--terre-300)\'" onfocusout="this.style.borderBottomColor=\'transparent\'">' + esc(blk.content || '') + '</h2>' +
+            delBtn +
+          '</div>';
         }
         if (blk.type === 'text') {
-          return '<p style="font-size:14.5px;color:var(--terre-600);line-height:1.6;margin:0">' + esc(blk.content || '') + '</p>';
+          return '<div style="display:flex;align-items:flex-start;gap:8px">' +
+            '<p contenteditable="true" onblur="cliSaveStepBlockContent(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\',this.innerText)" style="font-size:14.5px;color:var(--terre-600);line-height:1.6;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px" onfocus="this.style.borderBottomColor=\'var(--terre-300)\'" onfocusout="this.style.borderBottomColor=\'transparent\'">' + esc(blk.content || '') + '</p>' +
+            delBtn +
+          '</div>';
         }
         if (blk.type === 'checklist') {
           var items = Array.isArray(blk.items) ? blk.items : [];
-          return '<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">' +
-            items.map(function(it) {
-              return '<li style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--terre-600)">' +
-                '<input type="checkbox"' + (it.done ? ' checked' : '') + ' disabled style="width:16px;height:16px;accent-color:var(--terre);flex-shrink:0">' +
-                '<span' + (it.done ? ' style="text-decoration:line-through;opacity:0.6"' : '') + '>' + esc(it.text || '') + '</span>' +
-              '</li>';
-            }).join('') +
-          '</ul>';
+          return '<div style="display:flex;align-items:flex-start;gap:8px">' +
+            '<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;flex:1">' +
+              items.map(function(it) {
+                return '<li style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--terre-600)">' +
+                  '<input type="checkbox"' + (it.done ? ' checked' : '') + ' disabled style="width:16px;height:16px;accent-color:var(--terre);flex-shrink:0">' +
+                  '<span' + (it.done ? ' style="text-decoration:line-through;opacity:0.6"' : '') + '>' + esc(it.text || '') + '</span>' +
+                '</li>';
+              }).join('') +
+            '</ul>' +
+            delBtn +
+          '</div>';
         }
         if (blk.type === 'separator') {
-          return '<hr style="border:none;border-top:1px solid var(--bone-d);margin:8px 0">';
+          return '<div style="display:flex;align-items:center;gap:8px">' +
+            '<hr style="border:none;border-top:1px solid var(--bone-d);margin:8px 0;flex:1">' +
+            delBtn +
+          '</div>';
         }
         if (blk.type === 'image') {
-          return blk.url ? '<img src="' + esc(blk.url) + '" alt="" style="max-width:100%;border-radius:8px">' : '';
+          return '<div style="display:flex;align-items:flex-start;gap:8px">' +
+            (blk.url ? '<img src="' + esc(blk.url) + '" alt="" style="max-width:100%;border-radius:8px;flex:1">' : '<span style="flex:1;font-size:13px;color:var(--terre-400);font-style:italic">Image (sans URL)</span>') +
+            delBtn +
+          '</div>';
         }
         if (blk.type === 'progress') {
           var pct = Math.min(100, Math.max(0, blk.value || 0));
-          return '<div>' +
-            (blk.label ? '<div style="font-size:13px;color:var(--terre-600);margin-bottom:6px">' + esc(blk.label) + '</div>' : '') +
-            '<div style="height:8px;border-radius:4px;background:var(--bone-d);overflow:hidden">' +
-              '<div style="height:100%;border-radius:4px;background:var(--terre);width:' + pct + '%"></div>' +
+          return '<div style="display:flex;align-items:flex-start;gap:8px">' +
+            '<div style="flex:1">' +
+              (blk.label ? '<div style="font-size:13px;color:var(--terre-600);margin-bottom:6px">' + esc(blk.label) + '</div>' : '') +
+              '<div style="height:8px;border-radius:4px;background:var(--bone-d);overflow:hidden">' +
+                '<div style="height:100%;border-radius:4px;background:var(--terre);width:' + pct + '%"></div>' +
+              '</div>' +
+              '<div style="font-size:12px;color:var(--terre-400);margin-top:4px;text-align:right">' + pct + '%</div>' +
             '</div>' +
-            '<div style="font-size:12px;color:var(--terre-400);margin-top:4px;text-align:right">' + pct + '%</div>' +
+            delBtn +
           '</div>';
         }
         return '';
       }).join('');
     }
 
-    // Add block menu (visual only)
+    // Add block menu
     var addBlockTypes = [
-      { icon: 'title',    label: 'Titre' },
-      { icon: 'text',     label: 'Texte' },
-      { icon: 'check',    label: 'Cases à cocher' },
-      { icon: 'progress', label: 'Barre de progression' },
-      { icon: 'image',    label: 'Image' },
-      { icon: 'minus',    label: 'Séparateur' },
+      { icon: 'title',    label: 'Titre',               type: 'title' },
+      { icon: 'text',     label: 'Texte',               type: 'text' },
+      { icon: 'check',    label: 'Cases à cocher',      type: 'checklist' },
+      { icon: 'progress', label: 'Barre de progression',type: 'progress' },
+      { icon: 'image',    label: 'Image',               type: 'image' },
+      { icon: 'minus',    label: 'Séparateur',          type: 'separator' },
     ];
-    var addBlockMenu = '<div style="margin-top:18px">' +
-      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' +
+    var menuOpen = !!window._stepBlockMenuOpen;
+    var addBlockMenu = '<div style="margin-top:10px;display:' + (menuOpen ? 'block' : 'none') + '">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
         addBlockTypes.map(function(bt) {
-          return '<button style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:not-allowed;opacity:0.7" disabled>' +
+          return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#ede8df)\'" onmouseout="this.style.background=\'var(--bone,#faf8f5)\'">' +
             cpIcon(bt.icon, 13) + ' ' + bt.label +
           '</button>';
         }).join('') +
       '</div>' +
     '</div>';
-    var addBlockBtn = '<button style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:default;margin-top:20px" disabled>' +
-      cpIcon('plus', 13, 'color:var(--terre-400)') + ' AJOUTER UN BLOC' +
+    var addBlockBtn = '<button onclick="window._stepBlockMenuOpen=!window._stepBlockMenuOpen;renderShell()" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1.5px dashed var(--bone-d);background:transparent;color:var(--terre-400);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer;margin-top:20px" onmouseover="this.style.color=\'var(--terre-600)\'" onmouseout="this.style.color=\'var(--terre-400)\'">' +
+      cpIcon('plus', 13, 'color:inherit') + ' AJOUTER UN BLOC' +
     '</button>';
 
     var panel = '<div style="max-width:780px;width:100%;max-height:90vh;border-radius:16px;background:#fff;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">' +
@@ -6942,25 +6964,25 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           : '<div class="cp-empty">Aucune phase dans cette catégorie.</div>') +
       '</div>';
 
-      var stepsLayout = pvIsGrid
-        ? '<div class="cp-content cp-content--wide">' +
-            banner + clientCardsHtml + questionnaireCard + phasesView +
-            '<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:start;margin-top:28px">' +
-              '<div></div><div>' + sideCol + '</div>' +
-            '</div>' +
-          '</div>'
-        : '<div class="cp-content"><div class="cp-grid">' +
-            '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + phasesView + '</div>' +
-            '<div class="cp-grid__side">' + sideCol + '</div>' +
-          '</div></div>';
-      return header + stepsLayout + buildStepModal(project.id, steps);
+      return header +
+        '<div class="cp-content cp-content--wide">' +
+          banner + clientCardsHtml + questionnaireCard +
+          '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
+            '<div>' + phasesView + '</div>' +
+            '<div>' + sideCol + '</div>' +
+          '</div>' +
+        '</div>' +
+        buildStepModal(project.id, steps);
     }
 
     return header +
-      '<div class="cp-content"><div class="cp-grid">' +
-        '<div class="cp-grid__main">' + banner + clientCardsHtml + questionnaireCard + progress + '</div>' +
-        '<div class="cp-grid__side">' + sideCol + '</div>' +
-      '</div></div>';
+      '<div class="cp-content cp-content--wide">' +
+        banner + clientCardsHtml + questionnaireCard +
+        '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
+          '<div>' + progress + '</div>' +
+          '<div>' + sideCol + '</div>' +
+        '</div>' +
+      '</div>';
   }
 
   // ── Page builder ──────────────────────────────────────────────────────────────
@@ -8060,6 +8082,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     t.customProps = t.customProps.filter(function(x){return x.id!==propId;});
     cliPatchTaskProps(pid, taskId);
     renderShell();
+  };
+
+  window.cliAddStepBlock = function(pid, stepId, type) {
+    var pd = getPD(pid);
+    var step = pd && (pd.project.steps||[]).find(function(s){return s.id===stepId;});
+    if (!step) return;
+    var blk = { id: (Date.now().toString(36)+Math.random().toString(36).slice(2)), type: type, content: type==='title'?'Nouveau titre':'', items:[], value:0, label:'' };
+    step.pageBlocks = (step.pageBlocks||[]).concat([blk]);
+    window._stepBlockMenuOpen = false;
+    renderShell();
+    fetch(API_BASE+'/steps/'+stepId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId:pid,pageBlocks:step.pageBlocks})}).catch(function(){});
+  };
+
+  window.cliSaveStepBlockContent = function(pid, stepId, blkId, val) {
+    var pd = getPD(pid);
+    var step = pd && (pd.project.steps||[]).find(function(s){return s.id===stepId;});
+    if (!step) return;
+    var blk = (step.pageBlocks||[]).find(function(b){return b.id===blkId;});
+    if (!blk) return;
+    blk.content = val;
+    fetch(API_BASE+'/steps/'+stepId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId:pid,pageBlocks:step.pageBlocks})}).catch(function(){});
+  };
+
+  window.cliDeleteStepBlock = function(pid, stepId, blkId) {
+    var pd = getPD(pid);
+    var step = pd && (pd.project.steps||[]).find(function(s){return s.id===stepId;});
+    if (!step) return;
+    step.pageBlocks = (step.pageBlocks||[]).filter(function(b){return b.id!==blkId;});
+    renderShell();
+    fetch(API_BASE+'/steps/'+stepId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId:pid,pageBlocks:step.pageBlocks})}).catch(function(){});
   };
   window.cliSaveTaskContent = function(pid, taskId, val) {
     var pd = getPD(pid);
