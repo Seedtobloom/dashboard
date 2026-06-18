@@ -6575,14 +6575,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '</div>' +
           '</div>';
         } else if (inProgressStep) {
-          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
-            cpStatusDot(inProgressStep.status) +
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:var(--glycine-200);background:var(--glycine-50)">' +
+            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:var(--glycine-200);display:grid;place-items:center">' + cpIcon('check',18,'color:var(--glycine-900)') + '</div>' +
             '<div style="flex:1">' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Cindy travaille actuellement sur</div>' +
-              '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(inProgressStep.title) + '</div>' +
-              (inProgressStep.dueDate ? '<div style="margin-top:6px">' + cpDeadlinePill(inProgressStep.dueDate, false, true) + '</div>' : '') +
+              '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:6px">Rien à faire de votre côté</div>' +
+              '<div style="font-size:14px;color:var(--terre-600);line-height:1.5">Cindy s\'occupe de « ' + esc(inProgressStep.title) + ' ». Je vous préviens dès qu\'un livrable attend votre validation.</div>' +
+              (inProgressStep.dueDate ? '<div style="margin-top:10px">' + cpDeadlinePill(inProgressStep.dueDate, false, true) + '</div>' : '') +
             '</div>' +
-            '<button class="cp-btn" style="padding:8px 16px;font-size:10px" onclick="cpSel(\''+p.id+'\')">Suivre ' + cpIcon('arrow',13) + '</button>' +
           '</div>';
         } else if (next) {
           nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--brume-200);background:var(--brume-50)">' +
@@ -6615,29 +6614,33 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Demandes en cours</h3></div>' +
             '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
           '</div>' +
-          (partTasks.length ? '<div style="display:grid;gap:9px">' +
-            partTasks.slice(0,5).map(function(t) {
-              return '<div style="display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--bone-d)">' +
+          (partTasks.length ? '<div style="display:grid;gap:0">' +
+            partTasks.slice(0,6).map(function(t) {
+              var isDone = t.status === 'done';
+              return '<div onclick="cliOpenTaskDrawer(\''+p.id+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);cursor:pointer;border-radius:6px;transition:background 120ms" onmouseenter="this.style.background=\'var(--bone)\'" onmouseleave="this.style.background=\'transparent\'">' +
                 partDiamond(t.urgency) +
-                '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(t.status==='done'?';opacity:0.55':'')+'">' + esc(t.title) + '</span>' +
-                (t.status==='done'
+                '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(isDone?';opacity:0.5;text-decoration:line-through':'')+'">' + esc(t.title) + '</span>' +
+                (isDone
                   ? '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);display:inline-flex;align-items:center;gap:4px;white-space:nowrap">' + cpIcon('check',12) + ' Terminé</span>'
                   : cpDeadlinePill(t.dueDate, false, true)) +
+                '<span style="color:var(--terre-400);flex-shrink:0">' + cpIcon('arrow',12) + '</span>' +
               '</div>';
             }).join('') +
           '</div>' : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600);padding:8px 4px">Aucune demande en cours pour le moment.</div>') +
         '</div>';
       } else {
-        miniTrack = firstFour.length ? '<div class="card" style="padding:22px 24px">' +
+        miniTrack = steps.length ? '<div class="card" style="padding:22px 24px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
             '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('tasks',17,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Les étapes</h3></div>' +
             '<button onclick="cpSel(\''+p.id+'\')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Tout voir ' + cpIcon('arrow',12) + '</button>' +
           '</div>' +
-          '<div style="display:grid;gap:9px">' +
-            firstFour.map(function(it) {
-              return '<div style="display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--bone-d)">' +
+          '<div style="display:grid;gap:0">' +
+            steps.map(function(it) {
+              var isActive = it.status === 'in_progress' || it.status === 'waiting_client';
+              return '<div style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);' + (isActive?'background:var(--glycine-50);border-radius:6px;':'') + '">' +
                 cpStatusDot(it.status) +
-                '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)">' + esc(it.title) + '</span>' +
+                '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(it.status==='done'?';opacity:0.5':'')+(isActive?';font-weight:500':'')+'">' + esc(it.title) + '</span>' +
+                (isActive ? '<span style="font-family:var(--font-micro);font-size:9px;color:var(--glycine-900);letter-spacing:0.06em;text-transform:uppercase;margin-right:4px">vous êtes ici</span>' : '') +
                 cpDeadlinePill(it.dueDate, it.status==='done', true) +
               '</div>';
             }).join('') +
@@ -9958,73 +9961,110 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (url ? '<a href="'+esc(url.startsWith('http')?url:'https://'+url)+'" target="_blank" rel="noreferrer" style="width:26px;height:26px;display:grid;place-items:center;color:var(--terre-600);text-decoration:none">'+cpIcon('external',14)+'</a>' : '') +
       '</div>';
     }).join('');
-    var projFolderHtml = '<div class="card" style="padding:18px 20px">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-        cpIcon('folder',16,'color:var(--terre-400)') +
-        '<span style="font-family:var(--font-display);font-size:19px;color:var(--terre)">Documents partages</span>' +
-        '<span style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400)">' + projectResources.length + '</span>' +
-      '</div>' +
-      '<div style="display:grid;gap:9px">' +
-        (projResItems || '<p style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400);margin:0">Cindy n\'a pas encore partagé de documents ici.</p>') +
-      '</div>' +
-    '</div>';
+    function resRow(r) {
+      var url = r.url || '';
+      var label = r.title || url.replace(/^https?:\/\//,'');
+      var isFigma = url.includes('figma.com');
+      var isDrive = url.includes('drive.google') || url.includes('docs.google');
+      var iconName = isFigma || isDrive ? 'external' : 'folder';
+      var sub = r.description || (isFigma ? 'Fichier Figma' : isDrive ? 'Drive partagé' : url.replace(/^https?:\/\//,'').split('/')[0]);
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px">' +
+        '<span style="width:38px;height:38px;border-radius:var(--radius-2);background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon(iconName,17) + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(label) + '</div>' +
+          (sub ? '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:2px;letter-spacing:0.07em;text-transform:uppercase">' + esc(sub.toUpperCase()) + '</div>' : '') +
+        '</div>' +
+        (url ? '<a href="'+esc(url.startsWith('http')?url:'https://'+url)+'" target="_blank" rel="noreferrer" style="width:34px;height:34px;display:grid;place-items:center;color:var(--terre-600);background:var(--bone);border:1px solid var(--bone-d);border-radius:var(--radius-2);text-decoration:none;flex-shrink:0">'+cpIcon('external',14)+'</a>' : '') +
+      '</div>';
+    }
 
-    var hubEmpty = !commonHtml && !projectResources.length
-      ? '<div class="card" style="padding:36px 28px;text-align:center;margin-bottom:24px">' +
-          cpIcon('folder',32,'color:var(--terre-400);margin:0 auto 14px;display:block') +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
-          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:18px">Cindy déposera ici vos guides, accès et documents partagés.</div>' +
-          '<button class="cp-btn" style="margin:0 auto" onclick="cpOpenMessages()">Demander à Cindy ' + cpIcon('arrow',13) + '</button>' +
-        '</div>'
-      : '';
+    var allResources = [];
+    sections.forEach(function(sec){
+      var links = (sec.content||'').split('\n').filter(Boolean);
+      links.forEach(function(l){ allResources.push({ url:l.trim(), title:sec.title||'', description:'' }); });
+    });
+    projectResources.forEach(function(r){ allResources.push(r); });
+
+    var hasContent = allResources.length > 0;
+
     return '<div class="fade-up">' +
-      (commonHtml || hubEmpty || (!projectResources.length ? '' : '')) +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
-        '<div style="display:flex;align-items:center;gap:10px">' + cpIcon('folder',16,'color:var(--terre-400)') + '<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Ressources de votre projet</h3></div>' +
-      '</div>' +
-      '<div style="display:grid;gap:16px">' + projFolderHtml + '</div>' +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Retrouvez ici tous vos accès, guides et documents partagés par le studio.</p>' +
+      (hasContent
+        ? '<div style="margin-bottom:28px">' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+              cpIcon('folder',16,'color:var(--terre-400)') +
+              '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">Documents partagés</span>' +
+              '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">' + allResources.length + '</span>' +
+            '</div>' +
+            allResources.map(resRow).join('') +
+          '</div>'
+        : '<div class="card" style="padding:36px 28px;text-align:center">' +
+            cpIcon('folder',32,'color:var(--terre-400);margin:0 auto 14px;display:block') +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de ressources partagées</div>' +
+            '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:18px">Cindy déposera ici vos guides, accès et documents partagés.</div>' +
+            '<button class="cp-btn" style="margin:0 auto" onclick="cpOpenMessages()">Demander à Cindy ' + cpIcon('arrow',13) + '</button>' +
+          '</div>'
+      ) +
     '</div>';
   }
 
   function buildFichiersView() {
-    // Collect all files from all projects
     var allFiles = [];
     appData.projects.forEach(function(pd) {
       (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project }); });
     });
-    // Upload zone + file list
-    var fileRows = allFiles.map(function(item) {
+
+    function fileTypeIcon(f) {
+      var name = (f.name||f.filename||'').toLowerCase();
+      var type = (f.type||f.contentType||'').toLowerCase();
+      if (type.startsWith('image/') || /\.(png|jpg|jpeg|gif|webp|svg)$/.test(name)) return { icon:'image', bg:'var(--glycine-50)', col:'var(--glycine-900)' };
+      if (type==='application/pdf' || name.endsWith('.pdf')) return { icon:'file', bg:'#fdf3e8', col:'#c46a1a' };
+      if (/zip|rar|tar|gz/.test(type+name)) return { icon:'file', bg:'var(--brume-50)', col:'var(--brume-900)' };
+      if (/figma|sketch/.test(name)) return { icon:'external', bg:'var(--glycine-50)', col:'var(--glycine-900)' };
+      return { icon:'file', bg:'var(--bone)', col:'var(--terre-600)' };
+    }
+
+    function fileRow(item) {
       var f = item.f;
       var isCindy = f.source !== 'client';
-      var tileBg = isCindy ? 'var(--brume-50)' : 'var(--glycine-50)';
-      var tileCol = isCindy ? 'var(--brume-900)' : 'var(--glycine-900)';
-      return '<div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">' +
-        '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:'+tileBg+';color:'+tileCol+';display:grid;place-items:center;flex-shrink:0">' +
-          cpIcon('file',18) +
-        '</span>' +
+      var ti = fileTypeIcon(f);
+      var sub = isCindy
+        ? 'Livré par Cindy' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '')
+        : 'Déposé par vous' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px">' +
+        '<span style="width:38px;height:38px;border-radius:var(--radius-2);background:'+ti.bg+';color:'+ti.col+';display:grid;place-items:center;flex-shrink:0">' + cpIcon(ti.icon,17) + '</span>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name||f.filename||'Fichier') + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600);margin-top:2px;letter-spacing:0.06em;text-transform:uppercase">' +
-            esc(item.proj.projectTitle) + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '') +
-          '</div>' +
+          '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name||f.filename||'Fichier') + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:2px;letter-spacing:0.07em;text-transform:uppercase">' + esc(sub) + '</div>' +
         '</div>' +
-        (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('external',14) + '</a>' : '') +
+        (f.url ? '<a href="'+esc(f.url)+'" target="_blank" style="width:34px;height:34px;display:grid;place-items:center;color:var(--terre-600);background:var(--bone);border:1px solid var(--bone-d);border-radius:var(--radius-2);text-decoration:none;flex-shrink:0" title="Télécharger">' + cpIcon('external',14) + '</a>' : '') +
       '</div>';
-    }).join('');
-    var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput({files:event.dataTransfer.files})">' +
-      cpIcon('upload',24,'color:var(--terre);margin:0 auto 10px;display:block') +
-      '<div style="font-family:var(--font-display);font-size:20px;color:var(--terre);margin-bottom:4px">Glissez un fichier ici</div>' +
-      '<div style="font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600);letter-spacing:0.08em">ou cliquez pour parcourir — PDF, images, archives</div>' +
-      '<input type="file" id="cp-file-input" style="display:none" onchange="cpUploadFileInput(this)">' +
-    '</div>';
+    }
+
+    var cindyFiles = allFiles.filter(function(x){ return x.f.source !== 'client'; });
+    var clientFiles = allFiles.filter(function(x){ return x.f.source === 'client'; });
+
+    function section(title, items, showUpload) {
+      return '<div style="margin-bottom:28px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+          cpIcon('folder',16,'color:var(--terre-400)') +
+          '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">' + esc(title) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em">' + items.length + '</span>' +
+        '</div>' +
+        items.map(fileRow).join('') +
+        (showUpload ? '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-2);padding:18px 20px;text-align:center;cursor:pointer;transition:all 180ms" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput({files:event.dataTransfer.files})">' +
+            '<input type="file" id="cp-file-input" style="display:none" onchange="cpUploadFileInput(this)">' +
+            cpIcon('upload',18,'color:var(--terre-400);display:inline-block;vertical-align:middle;margin-right:8px') +
+            '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600);letter-spacing:0.06em">+ Ajouter un fichier</span>' +
+          '</div>' : '') +
+        (items.length === 0 && !showUpload ? '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400);padding:8px 4px">Cindy n\'a pas encore partagé de fichiers ici.</div>' : '') +
+      '</div>';
+    }
+
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:22px;max-width:560px">Déposez vos éléments, récupérez les miens — le téléchargement fonctionne dans les deux sens.</p>' +
-      uploadZone +
-      (allFiles.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' + fileRows + '</div>' :
-        '<div style="text-align:center;padding:20px 0 10px">' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre-600);margin-bottom:6px">Aucun fichier pour le moment</div>' +
-          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Déposez vos éléments ci-dessus, ou attendez que Cindy partage les livrables.</div>' +
-        '</div>') +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Déposez vos éléments, récupérez les livrables — tout reste au même endroit.</p>' +
+      section('Fichiers du projet', cindyFiles, false) +
+      section('Mes documents', clientFiles, true) +
     '</div>';
   }
 
