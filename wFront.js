@@ -4401,6 +4401,37 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return m ? (h+'h'+String(m).padStart(2,'0')) : (h+' h');
   }
 
+  // Historique partagé : tâches terminées/archivées groupées par mois.
+  // mkOpen/mkReopen reçoivent l'id et renvoient l'expression JS du onclick.
+  function partHistoryHtml(allTasks, mkOpen, mkReopen) {
+    var hist = (allTasks||[]).filter(function(t){ return t.status==='done' || t.archived; })
+      .sort(function(a,b){ return (b.completedAt||b.dueDate||b.createdAt||'').localeCompare(a.completedAt||a.dueDate||a.createdAt||''); });
+    if (!hist.length) return '';
+    var groups = {}, order = [];
+    hist.forEach(function(t){
+      var k = (t.completedAt||t.dueDate||t.createdAt||'').slice(0,7);
+      if (!groups[k]) { groups[k]=[]; order.push(k); }
+      groups[k].push(t);
+    });
+    var body = order.map(function(k){
+      var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
+      label = label.charAt(0).toUpperCase()+label.slice(1);
+      var rows = groups[k].map(function(t){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
+          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:#5c4633;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
+          (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
+          (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+aptFmtH(t.timeSpentMinutes)+'</span>':'') +
+          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #e2d9ce;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+        '</div>';
+      }).join('');
+      return '<div style="margin-bottom:10px"><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+    }).join('');
+    return '<details style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px;margin-top:16px">' +
+      '<summary style="cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">📁 Historique — '+hist.length+' tâche'+(hist.length>1?'s':'')+' terminée'+(hist.length>1?'s':'')+'</summary>' +
+      '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
+  }
+
   function buildPartenaireSection(project) {
     var tasks = tasksOf(project).filter(function(t){ return !t.archived; });
     if (window._adminTaskReg) tasksOf(project).forEach(function(t){ window._adminTaskReg[t.id]=t; });
@@ -4531,7 +4562,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }).join('') +
     '</div>';
 
-    var filtered = aptUrgFilter ? tasks.filter(function(t){ return t.urgency===aptUrgFilter; }) : tasks;
+    var filtered = (aptUrgFilter ? tasks.filter(function(t){ return t.urgency===aptUrgFilter; }) : tasks).filter(function(t){ return t.status!=='done'; });
 
     // ── Grille lun→ven (table unifiée bordurée) ──
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
@@ -4587,9 +4618,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '</div>';
 
     var drawer = aptSelTask ? aptBuildDrawer(project) : '';
+    var historyCard = partHistoryHtml(tasksOf(project),
+      function(id){ return 'aptOpenDrawer(\''+id+'\')'; },
+      function(id){ return 'aptPatch(\''+id+'\',{status:\'todo\',archived:false})'; });
     return forfaitBar + overdueHtml + weekHtml +
       '<div style="display:grid;grid-template-columns:1fr'+(aptSelTask?' 360px':'')+';gap:18px;align-items:start">' +
-        '<div>' + calCard + '</div>' + drawer +
+        '<div>' + calCard + historyCard + '</div>' + drawer +
       '</div>';
   }
 
@@ -5234,12 +5268,49 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }).join('') +
     '</div>';
 
-    var shown = stFilter==='all' ? tickets : tickets.filter(function(t){ return t.status===stFilter; });
+    var shown = stFilter==='all'
+      ? tickets.filter(function(t){ return t.status!=='done' && t.status!=='closed'; })
+      : tickets.filter(function(t){ return t.status===stFilter; });
     var listHtml = shown.length
       ? '<div style="display:grid;gap:11px">' + shown.map(function(t){ return amtTicketRow(pid, t); }).join('') + '</div>'
-      : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_SOFT+';text-align:center;padding:24px 0">Aucune demande ici.</p>';
+      : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_SOFT+';text-align:center;padding:24px 0">Aucune demande en cours.</p>';
 
-    return quotaBar + stBar + listHtml;
+    var historyHtml = stFilter==='all' ? amtHistoryHtml(pid, tickets,
+      function(id){ return 'amtToggleTicket(\''+pid+'\',\''+id+'\')'; },
+      function(id){ return 'amtPatch(\''+pid+'\',\''+id+'\',{status:\'open\'})'; }) : '';
+
+    return quotaBar + stBar + listHtml + historyHtml;
+  }
+
+  // Historique tickets maintenance — résolus/fermés groupés par mois.
+  function amtHistoryHtml(pid, allTickets, mkOpen, mkReopen){
+    var hist = (allTickets||[]).filter(function(t){ return t.status==='done' || t.status==='closed'; })
+      .sort(function(a,b){ return (b.resolvedAt||b.createdAt||'').localeCompare(a.resolvedAt||a.createdAt||''); });
+    if (!hist.length) return '';
+    var groups = {}, order = [];
+    hist.forEach(function(t){
+      var k = (t.resolvedAt||t.createdAt||'').slice(0,7);
+      if (!groups[k]) { groups[k]=[]; order.push(k); }
+      groups[k].push(t);
+    });
+    var body = order.map(function(k){
+      var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
+      label = label.charAt(0).toUpperCase()+label.slice(1);
+      var rows = groups[k].map(function(t){
+        var cm = amtCatMeta(t.category);
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
+          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:'+AMT_TERRE_DEEP+';cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
+          (cm?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+cm[1]+'</span>':'') +
+          (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+amtFmtMin(t.timeSpentMinutes)+'</span>':'') +
+          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #e2d9ce;border-radius:6px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+        '</div>';
+      }).join('');
+      return '<div style="margin-bottom:10px"><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+    }).join('');
+    return '<details style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px;margin-top:16px">' +
+      '<summary style="cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+AMT_TERRE_MID+';list-style:none">📁 Historique — '+hist.length+' demande'+(hist.length>1?'s':'')+' résolue'+(hist.length>1?'s':'')+'</summary>' +
+      '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
   }
 
   function amtTicketRow(pid, t){
@@ -7585,6 +7656,37 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
   var PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
+  var PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
+  function partFmtH(min){ min = min || 0; var h = Math.floor(min/60), m = min%60; return m ? (h+'h'+String(m).padStart(2,'0')) : (h+' h'); }
+  // Historique client : tâches terminées/archivées groupées par mois.
+  function cliPartHistoryHtml(allTasks, mkOpen, mkReopen) {
+    var hist = (allTasks||[]).filter(function(t){ return t.status==='done' || t.archived; })
+      .sort(function(a,b){ return (b.completedAt||b.dueDate||b.createdAt||'').localeCompare(a.completedAt||a.dueDate||a.createdAt||''); });
+    if (!hist.length) return '';
+    var groups = {}, order = [];
+    hist.forEach(function(t){
+      var k = (t.completedAt||t.dueDate||t.createdAt||'').slice(0,7);
+      if (!groups[k]) { groups[k]=[]; order.push(k); }
+      groups[k].push(t);
+    });
+    var body = order.map(function(k){
+      var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
+      label = label.charAt(0).toUpperCase()+label.slice(1);
+      var rows = groups[k].map(function(t){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
+          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#5c4633);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
+          (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
+          (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
+          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #e2d9ce;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+        '</div>';
+      }).join('');
+      return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+    }).join('');
+    return '<details style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
+      '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">📁 Historique — '+hist.length+' tâche'+(hist.length>1?'s':'')+' terminée'+(hist.length>1?'s':'')+'</summary>' +
+      '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
+  }
   var PART_URG_CP_ICONS = { tranquille:'M2 22 16 8M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14', normal:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', urgent:'M13 2 3 14h9l-1 8 10-12h-9z', critique:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z' };
   function cliUrgIcon(u, size) {
     var d = PART_URG_CP_ICONS[u] || PART_URG_CP_ICONS.normal;
@@ -8070,6 +8172,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var flt = cliCalFilter[pid];
 
     var filtered = tasks.filter(function(t){
+      if (t.archived || t.status==='done') return false;
       if (flt.urgency && t.urgency !== flt.urgency) return false;
       return true;
     });
@@ -8178,12 +8281,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
 
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
+    var historyCard = cliPartHistoryHtml(tasks,
+      function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
+      function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; });
 
     return '<div style="display:grid;grid-template-columns:1fr'+(cliSelTask[pid]?' minmax(0,360px)':'')+';gap:20px;align-items:start">' +
       '<div>' +
         calHeader +
         forfaitBar +
         calGrid +
+        historyCard +
       '</div>' +
       drawer +
     '</div>';
@@ -8245,7 +8352,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
           '<select onchange="cliToggleTask(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+statusOpts+'</select></div>' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Urgence</div>' +
-          '<select onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{urgency:this.value})" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
+          '<select onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{urgency:this.value})" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
       // Dates + Pole
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">' +
@@ -8254,7 +8361,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Fin'+daysLabel+'</div>' +
           '<input type="date" value="'+esc(dueDateStr)+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{dueDate:this.value})" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Pôle</div>' +
-          '<select onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pole:this.value})" style="width:100%;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>'+ADMIN_PART_POLES.map(function(pp){return '<option value="'+esc(pp)+'"'+(t.pole===pp?' selected':'')+'>'+esc(pp)+'</option>';}).join('')+'</select></div>' +
+          '<select onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pole:this.value})" style="width:100%;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>'+PART_POLES.map(function(pp){return '<option value="'+esc(pp)+'"'+(t.pole===pp?' selected':'')+'>'+esc(pp)+'</option>';}).join('')+'</select></div>' +
       '</div>' +
       sep +
       // Proprietes personnalisees — editables par le client
@@ -8296,7 +8403,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Temps passe</span></div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">' +
         '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#051833);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
-        '<input id="cli-time-'+t.id+'" value="'+aptFmtH(timeSpent)+'" onkeydown="if(event.key===\'Enter\'){this.blur()}" onblur="cliSetTimeFromInput(\''+pid+'\',\''+t.id+'\')" style="width:80px;font-size:15px;font-weight:700;color:var(--navy,#051833);text-align:center;padding:7px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;background:#fff;box-sizing:border-box" title="Ex: 1h30 ou 90">' +
+        '<input id="cli-time-'+t.id+'" value="'+partFmtH(timeSpent)+'" onkeydown="if(event.key===\'Enter\'){this.blur()}" onblur="cliSetTimeFromInput(\''+pid+'\',\''+t.id+'\')" style="width:80px;font-size:15px;font-weight:700;color:var(--navy,#051833);text-align:center;padding:7px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;background:#fff;box-sizing:border-box" title="Ex: 1h30 ou 90">' +
         '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#051833);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
         '<span style="font-size:11px;color:var(--muted,#8090a8);line-height:1.3">Taper 1h30<br>ou +/− (30 min)</span>' +
       '</div>' +
