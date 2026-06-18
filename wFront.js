@@ -1426,6 +1426,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Reglages (parametres du studio) ────────────────────────────────────────
   var studioSettings = {};
+  var _taskPropSchema = [];
   var SETTINGS_DEFAULTS = {
     studioName: 'Seed to Bloom',
     studioSignature: 'Cindy',
@@ -1448,6 +1449,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     studioSettings = Object.assign({}, SETTINGS_DEFAULTS, loaded);
     studioSettings.notifications = Object.assign({}, SETTINGS_DEFAULTS.notifications, loaded.notifications || {});
     if (!Array.isArray(studioSettings.holidays)) studioSettings.holidays = [];
+    _taskPropSchema = Array.isArray(studioSettings.taskPropertySchema) ? studioSettings.taskPropertySchema : [];
     const allProjs = await apiFetch('/api/projects').then(function(r){ return r.ok ? r.json() : []; });
     renderSettings(allProjs);
   }
@@ -1541,6 +1543,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     // 5. Message d'accueil par defaut
     var welcome = '<textarea id="set-welcomeMessage" rows="4" placeholder="Message affiche par defaut sur la page d\'accueil des nouveaux espaces…" style="'+inp+';resize:vertical;line-height:1.6">'+esc(s.welcomeMessage||'')+'</textarea>';
 
+    // 6. Schema de proprietes de taches
+    var schemaRows = (Array.isArray(s.taskPropertySchema) ? s.taskPropertySchema : []).map(function(prop, i){
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:10px;align-items:end;margin-bottom:10px">' +
+        '<div><label style="'+lbl+'">Nom</label><input type="text" id="set-tprop-name-'+i+'" value="'+esc(prop.name||'')+'" style="'+inp+'"></div>' +
+        '<div><label style="'+lbl+'">Type</label><select id="set-tprop-type-'+i+'" style="'+inp+'">' +
+          ['Texte','Nombre','Liste','Date'].map(function(t){ return '<option value="'+t+'"'+(prop.type===t?' selected':'')+'>'+t+'</option>'; }).join('') +
+        '</select></div>' +
+        '<div><label style="'+lbl+'">Options (Liste: virgule-separees)</label><input type="text" id="set-tprop-opts-'+i+'" value="'+esc((prop.options||[]).join(', '))+'" style="'+inp+'" placeholder="opt1, opt2…"></div>' +
+        '<button onclick="removeTaskProp('+i+')" class="btn btn--danger btn--sm" style="margin-bottom:1px">Suppr.</button>' +
+      '</div>';
+    }).join('');
+    var taskPropsCard = (schemaRows || '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12.5px;color:#a89a86;margin:0 0 12px">Aucune propriete personnalisee.</p>') +
+      '<button onclick="addTaskProp()" class="btn btn--outline btn--sm">+ Ajouter une propriete</button>';
+
     document.getElementById('app').innerHTML =
       '<div class="app">' +
         buildSidebarHtml('settings', allProjs, {}, _globalMsgUnread) +
@@ -1559,6 +1575,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             settingsCard('Notifications e-mail', 'Quatre declencheurs, chacun avec ses destinataires et un message optionnel.', notifs) +
             settingsCard('Conges et absences', 'Affiche un bandeau d\'information en haut du portail client pendant ces periodes.', holidays) +
             settingsCard('Message d\'accueil par defaut', 'Pre-rempli sur la page d\'accueil des nouveaux espaces.', welcome) +
+            settingsCard('Proprietes des taches', 'Ajoutez des champs personnalises (Notion-style) affichables sur chaque tache du calendrier.', taskPropsCard) +
           '</div>' +
         '</main>' +
       '</div>';
@@ -1580,6 +1597,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var f = document.getElementById('set-hol-from-'+i), t = document.getElementById('set-hol-to-'+i), m = document.getElementById('set-hol-msg-'+i);
       return { from: f?f.value:'', to: t?t.value:'', message: m?m.value:'' };
     });
+    s.taskPropertySchema = (s.taskPropertySchema||[]).map(function(prop, i){
+      var nm = document.getElementById('set-tprop-name-'+i);
+      var ty = document.getElementById('set-tprop-type-'+i);
+      var op = document.getElementById('set-tprop-opts-'+i);
+      return {
+        id: prop.id || ('prop'+Date.now()+i),
+        name: nm ? nm.value.trim() : prop.name,
+        type: ty ? ty.value : prop.type,
+        options: op ? op.value.split(',').map(function(x){ return x.trim(); }).filter(Boolean) : (prop.options||[])
+      };
+    });
   }
 
   window.setAccentMode = function(m){ collectSettings(); studioSettings.accentMode = m; apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
@@ -1595,11 +1623,22 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
   window.addHoliday = function(){ collectSettings(); studioSettings.holidays.push({ from:'', to:'', message:'' }); apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
   window.removeHoliday = function(i){ collectSettings(); studioSettings.holidays.splice(i,1); apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
+  window.addTaskProp = function(){
+    collectSettings();
+    if (!Array.isArray(studioSettings.taskPropertySchema)) studioSettings.taskPropertySchema = [];
+    studioSettings.taskPropertySchema.push({ id:'prop'+Date.now(), name:'', type:'Texte', options:[] });
+    apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings);
+  };
+  window.removeTaskProp = function(i){
+    collectSettings();
+    if (Array.isArray(studioSettings.taskPropertySchema)) studioSettings.taskPropertySchema.splice(i,1);
+    apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings);
+  };
   window.saveSettings = function(){
     collectSettings();
     apiFetch('/api/settings', { method:'PUT', body: JSON.stringify(studioSettings) })
       .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-      .then(function(saved){ studioSettings = Object.assign({}, SETTINGS_DEFAULTS, saved); toast('Reglages enregistres ✓'); })
+      .then(function(saved){ studioSettings = Object.assign({}, SETTINGS_DEFAULTS, saved); _taskPropSchema = Array.isArray(saved.taskPropertySchema) ? saved.taskPropertySchema : []; toast('Reglages enregistres ✓'); })
       .catch(function(){ toast('Erreur, reessayez.', true); });
   };
 
@@ -4271,13 +4310,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var info = [];
     if (t.pole) info.push(esc(t.pole));
     if (t.timeSpentMinutes) info.push(aptFmtH(t.timeSpentMinutes));
-    // custom props chips
-    var p = window._currentProject;
-    var schema = (p && Array.isArray(p.propertySchema)) ? p.propertySchema : [];
-    var props = t.properties || {};
-    var propsChips = schema.filter(function(def){ return props[def.id] != null && props[def.id] !== ''; }).map(function(def){
-      return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f0ebe3;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(String(props[def.id]))+'</span>';
-    }).join('');
+    var customProps = t.customProps || {};
+    var propChips = _taskPropSchema.filter(function(def){ return customProps[def.id] !== undefined && customProps[def.id] !== ''; }).map(function(def){
+      return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(String(customProps[def.id]))+'</span>';
+    }).join(' ');
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
       'style="background:'+(isDone?'#f3ede2':soft)+';border-radius:7px;padding:6px 8px;margin-top:5px;cursor:pointer">' +
       '<div style="display:flex;align-items:center;gap:5px">' +
@@ -4286,7 +4322,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'#5c4633')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
       '</div>' +
       (info.length ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#a89a86;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+info.join(' · ')+'</div>' : '') +
-      (propsChips ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">'+propsChips+'</div>' : '') +
+      (propChips ? '<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px">'+propChips+'</div>' : '') +
     '</div>';
   }
 
@@ -4554,21 +4590,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.getElementById('_apt-add'); if (ov) ov.remove();
     ov = document.createElement('div'); ov.id='_apt-add';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var p = window._currentProject;
-    var schema = (p && Array.isArray(p.propertySchema)) ? p.propertySchema : [];
-    var customFieldsHtml = schema.length ? '<div style="margin-bottom:4px;padding-top:4px;border-top:1px solid #f0ebe3">' +
-      '<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;margin:10px 0 8px">Propriétés personnalisées</div>' +
-      schema.map(function(def){
-        var inputHtml;
-        if (def.type==='Liste') {
-          inputHtml = '<select id="_apt-prop-'+def.id+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
-        } else {
-          var t = def.type==='Nombre'?'number':def.type==='Date'?'date':'text';
-          inputHtml = '<input type="'+t+'" id="_apt-prop-'+def.id+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">';
-        }
-        return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+inputHtml+'</div>';
-      }).join('') +
-    '</div>' : '';
     ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:16px;padding:26px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:#5c4633;margin:0">Nouvelle demande</h3><button onclick="document.getElementById(\'_apt-add\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre *</label><input id="_apt-title" placeholder="Ex: Visuel Instagram — collection été" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
@@ -4577,9 +4598,20 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date dans le calendrier</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
         '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Catégorie</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
-      customFieldsHtml +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Ajouter</button></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Categorie / Pole</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
+      (_taskPropSchema.length ? '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:#8a6f54;margin-bottom:8px">Proprietes personnalisees</div>' + _taskPropSchema.map(function(def){
+        var fid = '_apt-cp-'+def.id;
+        if (def.type === 'Liste' && def.options && def.options.length) {
+          return '<div style="margin-bottom:8px"><label style="font-size:11px;color:#8a6f54;display:block;margin-bottom:3px">'+esc(def.name)+'</label><select id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+def.options.map(function(o){ return '<option value="'+esc(o)+'">'+esc(o)+'</option>'; }).join('')+'</select></div>';
+        } else if (def.type === 'Date') {
+          return '<div style="margin-bottom:8px"><label style="font-size:11px;color:#8a6f54;display:block;margin-bottom:3px">'+esc(def.name)+'</label><input type="date" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>';
+        } else if (def.type === 'Nombre') {
+          return '<div style="margin-bottom:8px"><label style="font-size:11px;color:#8a6f54;display:block;margin-bottom:3px">'+esc(def.name)+'</label><input type="number" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>';
+        } else {
+          return '<div style="margin-bottom:8px"><label style="font-size:11px;color:#8a6f54;display:block;margin-bottom:3px">'+esc(def.name)+'</label><input type="text" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>';
+        }
+      }).join('') + '</div>' : '') +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Creer la demande</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -4592,21 +4624,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var content = document.getElementById('_apt-content').value;
     var urgency = document.getElementById('_apt-urgency').value;
     var pole = document.getElementById('_apt-pole').value;
-    // collect custom properties
-    var p = window._currentProject;
-    var schema = (p && Array.isArray(p.propertySchema)) ? p.propertySchema : [];
-    var properties = {};
-    schema.forEach(function(def){
-      var el = document.getElementById('_apt-prop-'+def.id);
-      if (el && el.value !== '') properties[def.id] = el.value;
+    var customProps = {};
+    _taskPropSchema.forEach(function(def){
+      var el = document.getElementById('_apt-cp-'+def.id);
+      if (el && el.value !== '') customProps[def.id] = el.value;
     });
-    var body = { title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo', pole:pole, properties:properties };
-    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify(body) });
+    var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify({ title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo' }) });
     if (!res.ok){ toast('Erreur', true); return; }
     var task = await res.json();
-    if (p){ if(!p.tasks) p.tasks=[]; p.tasks.push(task); }
+    var patchData = {};
+    if (pole) patchData.pole = pole;
+    if (Object.keys(customProps).length) patchData.customProps = customProps;
+    if (Object.keys(patchData).length) { var r2 = await apiFetch('/api/projects/'+currentProjectId+'/tasks/'+task.id, { method:'PUT', body: JSON.stringify(patchData) }); if (r2.ok) task = await r2.json(); }
+    var p = window._currentProject; if (p){ if(!p.tasks) p.tasks=[]; p.tasks.push(task); }
     var ov = document.getElementById('_apt-add'); if (ov) ov.remove();
-    toast('Demande créée'); aptRender();
+    toast('Demande creee'); aptRender();
   };
 
   // ── Drag & drop replanification ──
