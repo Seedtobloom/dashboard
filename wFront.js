@@ -7929,10 +7929,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '—';
     var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '—';
     var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '—';
-    var barColor = over ? '#c44' : (quotaBarPct > 75 ? '#e8a87c' : '#7a9a5a');
+    var barColor = over ? '#9b3a2e' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
+    var borderColor = over ? '#e7c6bd' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
     var quotaStrip = '<div style="margin-bottom:28px">' +
       // Forfait card first
-      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+(over?'#e7c6bd':barColor.replace('#c44','#e7c6bd').replace('#e8a87c','#e8d5bc').replace('#7a9a5a','#c5d9b5'))+';border-radius:var(--radius-3)">' +
+      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
           cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
