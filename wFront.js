@@ -6504,7 +6504,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div class="cp-nav__label">Votre espace</div>' +
       (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
       (portal && appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Interventions','cpOpenInterventions()','') : '') +
-      (portal && appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('cal','calendar','Calendrier','cpOpenCal()','') + navBtn('stats','chart','Statistiques','cpOpenStats()','') : '') +
+      (portal && appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('project','tasks','Mon espace','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
       (portal && appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
 
@@ -8062,9 +8062,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#FAF8F4);color:var(--terre,#5c4633);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
-      '<div style="margin-left:auto">' +
-        '<button onclick="cliOpenAddTask(\''+pid+'\',\''+todayStr+'\')" style="padding:8px 16px;border-radius:999px;border:none;background:#051833;color:#FAF8F4;font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">+ AJOUTER UNE TACHE</button>' +
-      '</div>' +
     '</div>';
 
     // Grid cells — table unifiée bordurée
