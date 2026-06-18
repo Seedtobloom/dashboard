@@ -81,9 +81,8 @@ textarea { resize: vertical; min-height: 72px; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s, box-shadow 0.15s; text-decoration: none; white-space: nowrap; }
 .btn:hover { opacity: 0.82; }
-.btn:active { opacity: 0.65; transform: scale(0.98); }
+.btn:active { opacity: 0.75; transform: scale(0.98); }
 .btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
-.btn:active { opacity: 0.8; }
 .btn--primary { background: var(--lavender); color: var(--brown); }
 .btn--sage { background: var(--lavender); color: var(--navy); }
 .btn--outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
@@ -1032,6 +1031,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     leaf:       '<path d="M2 22 16 8"/><path d="M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14"/>',
     zap:        '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     flame:      '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    chat:       '<path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>',
+    edit:       '<path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>',
+    lock:       '<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>',
+    flower:     '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm0 0v11m0-11C12 4 8 2 6 4s0 6 2 6m4-6c0-2 4-4 6-2s0 6-2 6m-6 0h4m-2 5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/>',
+    tasks:      '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>',
+    paperclip:  '<path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>',
   };
 
   function icon(name, size, color) {
@@ -2207,8 +2212,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="padding:16px 20px;border-top:1px solid rgba(239,225,176,0.12);display:flex;align-items:center;gap:11px">' +
         '<span style="width:36px;height:36px;border-radius:50%;background:rgba(239,225,176,0.15);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:15px;color:var(--cream);flex-shrink:0">C</span>' +
         '<div style="line-height:1.2;flex:1;min-width:0">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:17px;color:var(--cream)">Cindy</div>' +
-          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.1em;text-transform:uppercase">Fondatrice</div>' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:17px;color:var(--cream)">' + ((studioSettings&&studioSettings.studioName)||'Studio') + '</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.1em;text-transform:uppercase">' + ((studioSettings&&studioSettings.studioSignature)||'Admin') + '</div>' +
         '</div>' +
         '<button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;color:rgba(239,225,176,0.4);cursor:pointer;padding:4px;display:grid;place-items:center">' + icon('logout',16) + '</button>' +
       '</div>' +
@@ -2589,6 +2594,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (isMaint) tabs.push(['tickets','Tickets maintenance']);
     tabs.push(['couleurs','Couleurs'],['acces','Acces']);
     var tabIds = tabs.map(function(t){ return t[0]; });
+    // Fix 19: validate saved tab against available tabs for this project type
+    if (tabIds.indexOf(_adminProjTab) === -1) _adminProjTab = 'apercu';
     var tabNav = '<div class="proj-tabnav" style="padding:0 48px">' +
       tabs.map(function(tb){
         var act = _adminProjTab === tb[0];
@@ -3348,7 +3355,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var s=_apbDraft.sections, i=s.findIndex(function(x){return x.id===id;}); if(i<0) return;
     var j=i+dir; if(j<0||j>=s.length) return; var t=s[i]; s[i]=s[j]; s[j]=t; apbRender();
   };
-  window.apbDelSec = function(id) { _apbDraft.sections = _apbDraft.sections.filter(function(x){return x.id!==id;}); apbRender(); };
+  window.apbDelSec = function(id) { showConfirm('Supprimer cet élément ?', function() { _apbDraft.sections = _apbDraft.sections.filter(function(x){return x.id!==id;}); apbRender(); }); };
   window.apbEditSec = function(id) {
     var s=_apbDraft.sections.find(function(x){return x.id===id;}); if(!s) return;
     apbModal('Renommer la section', '<label>Titre</label><input id="apb-f-title" value="'+esc(s.title||'')+'">', function(){ s.title=document.getElementById('apb-f-title').value; apbRender(); });
@@ -3384,8 +3391,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     });
   };
   window.apbDelBlk = function(secId, blkId) {
-    var s=_apbDraft.sections.find(function(x){return x.id===secId;}); if(!s) return;
-    s.blocks=(s.blocks||[]).filter(function(x){return x.id!==blkId;}); apbRender();
+    showConfirm('Supprimer cet élément ?', function() {
+      var s=_apbDraft.sections.find(function(x){return x.id===secId;}); if(!s) return;
+      s.blocks=(s.blocks||[]).filter(function(x){return x.id!==blkId;}); apbRender();
+    });
   };
 
   function apbModal(title, inner, onOk) {
@@ -4130,7 +4139,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('');
     return '<div class="card">' +
-      '<div class="card-header"><span class="card-title">Tâches du mois</span><button class="btn btn--sage btn--sm" onclick="openAddTask()">+ Ajouter</button></div>' +
+      '<div class="card-header"><span class="card-title">Toutes les tâches</span><button class="btn btn--sage btn--sm" onclick="openAddTask()">+ Ajouter</button></div>' +
       '<div class="card-body" id="tasks-container">' + (rows || '<p style="color:var(--muted);text-align:center;padding:20px 0">Aucune tâche.</p>') + '</div>' +
     '</div>';
   }
@@ -5288,7 +5297,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var stBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">' +
       ST_KEYS.map(function(sk){
         var act = stFilter===sk;
-        var cnt = sk==='all' ? tickets.length : tickets.filter(function(t){return t.status===sk;}).length;
+        var cnt = sk==='all' ? tickets.filter(function(t){ return t.status!=='done'&&t.status!=='closed'; }).length : tickets.filter(function(t){return t.status===sk;}).length;
         var lab = sk==='all' ? 'Tout' : AMT_STATUS[sk];
         var dot = sk!=='all' ? '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+AMT_STATUS_COL[sk]+';transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span>' : '';
         return '<button onclick="amtSetStFilter(\''+pid+'\',\''+sk+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?AMT_TERRE_DEEP:'#e2d9ce')+';background:'+(act?AMT_SOFT_BG:'#fff')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+'">'+dot+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
@@ -6192,6 +6201,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     paperclip:'M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48',
     question:'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
     dot:'M12 12m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0',
+    x:'M6 18L18 6M6 6l12 12',
+    external:'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
+    info:'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
   };
   function cpIcon(name, size, extra) {
     size = size || 16;
@@ -9748,7 +9760,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           return '<button onclick="window.open(\''+esc(url)+'\',\'_blank\')" class="card" style="padding:15px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;width:100%;border:none" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
             '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);display:grid;place-items:center;color:var(--glycine-900);flex:0 0 auto">' + cpIcon('external',18) + '</span>' +
             '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre);line-height:1.2">' + esc(label) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(url.replace(/^https?:\/\//,''))+'</div></div>' +
-            cpIcon('download',15,'color:var(--terre-600)') +
+            cpIcon('external',15,'color:var(--terre-600)') +
           '</button>';
         }).join('');
       }).join('');
@@ -9780,7 +9792,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(label) + '</div>' +
           '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(url.replace(/^https?:\/\//,'')) + '</div>' +
         '</div>' +
-        (url ? '<a href="'+esc(url.startsWith('http')?url:'https://'+url)+'" target="_blank" rel="noreferrer" style="width:26px;height:26px;display:grid;place-items:center;color:var(--terre-600);text-decoration:none">'+cpIcon('download',14)+'</a>' : '') +
+        (url ? '<a href="'+esc(url.startsWith('http')?url:'https://'+url)+'" target="_blank" rel="noreferrer" style="width:26px;height:26px;display:grid;place-items:center;color:var(--terre-600);text-decoration:none">'+cpIcon('external',14)+'</a>' : '') +
       '</div>';
     }).join('');
     var projFolderHtml = '<div class="card" style="padding:18px 20px">' +
@@ -9825,7 +9837,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             esc(item.proj.projectTitle) + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '') +
           '</div>' +
         '</div>' +
-        (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('download',14) + '</a>' : '') +
+        (f.url ? '<a href="'+esc(f.url)+'" target="_blank" class="btn btn-quiet btn-sm" style="flex-shrink:0">' + cpIcon('external',14) + '</a>' : '') +
       '</div>';
     }).join('');
     var uploadZone = '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-3);padding:30px 24px;text-align:center;cursor:pointer;transition:all 200ms var(--ease);margin-bottom:24px" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput({files:event.dataTransfer.files})">' +
