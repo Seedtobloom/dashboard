@@ -6728,6 +6728,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
       }
 
+      var PHOTO_HINTS = { partenaire:'ambiance de marque', identite:'flacons & matières', site:'champs au lever du jour', maintenance:'atelier & outils' };
+      var photoHint = PHOTO_HINTS[p.type] || 'photo de couverture';
+      var bannerUpload = !p.bannerUrl
+        ? '<label style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:14px 22px;border-radius:10px;background:rgba(255,255,255,0.14);backdrop-filter:blur(4px);border:1.5px dashed rgba(255,255,255,0.45);transition:background 150ms" onmouseenter="this.style.background=\'rgba(255,255,255,0.24)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.14)\'">' +
+            cpIcon('image', 22, 'color:rgba(255,255,255,0.85)') +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:rgba(255,255,255,0.9);letter-spacing:0.06em">photo · ' + photoHint + '</span>' +
+            '<span style="font-family:var(--font-body);font-size:11px;color:rgba(255,255,255,0.6);text-decoration:underline">ou parcourir</span>' +
+            '<input type="file" accept="image/*" style="display:none" onchange="cpUploadBanner(\''+p.id+'\',this)">' +
+          '</label>'
+        : '<button onclick="cpRemoveBanner(\''+p.id+'\')" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.38);border:0;border-radius:999px;padding:5px 12px;color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;cursor:pointer">Retirer la photo</button>';
+
       return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
         '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px"'+(p.bannerUrl?' data-img':'')+'>' +
           '<div class="cp-ph__banner-overlay">' +
@@ -6736,11 +6747,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div>' +
           '</div>' +
+          bannerUpload +
         '</div>' +
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
-            monthStripHtml +
             '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + (isPart ? 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.' : 'Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.') + '</p>' +
             nextCard +
             miniTrack +
@@ -10120,26 +10131,25 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function mainForView() {
-    var banner = cpPortalBanner();
-    if (currentView === 'messages') return '<div class="cp-portal-main">' + banner + buildConversation() + '</div>';
+    if (currentView === 'messages') return '<div class="cp-portal-main">' + buildConversation() + '</div>';
     if (currentView === 'project') return buildProjectView(getPD(currentId));
-    if (currentView === 'hub') return '<div class="cp-portal-main">' + banner + buildHubView() + '</div>';
-    if (currentView === 'fichiers') return '<div class="cp-portal-main">' + banner + buildFichiersView() + '</div>';
+    if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
+    if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);
-      return pd0 ? '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + banner + buildClientMaintenance(pd0) + '</div>' : buildHome();
+      return pd0 ? '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
     }
     if (currentView === 'cal') {
       var pd0 = getPD(currentId);
       if (pd0) {
         var tasks0 = Array.isArray(pd0.project.tasks) ? pd0.project.tasks : [];
-        return '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + banner + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
+        return '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
       }
       return buildHome();
     }
     if (currentView === 'stats') {
       var pd0 = getPD(currentId);
-      return pd0 ? '<div class="cp-portal-main">' + banner + buildPartStats(pd0) + '</div>' : buildHome();
+      return pd0 ? '<div class="cp-portal-main">' + buildPartStats(pd0) + '</div>' : buildHome();
     }
     return buildHome();
   }
@@ -10260,6 +10270,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       el.textContent = ':root{--glycine:'+tv.mid+';--glycine-50:'+tv.soft+';--glycine-200:'+tv.mid+';--glycine-700:'+tv.deep+';--glycine-900:'+tv.ink+';--btn-primary-bg:'+tv.btnBg+';--btn-primary-fg:'+tv.btnFg+'}';
     }
     if (!appData.projects.length) { showError(); return; }
+    appData.projects.forEach(function(pd) {
+      try { var b = localStorage.getItem('bloom_banner_' + pd.project.id); if (b && !pd.project.bannerUrl) pd.project.bannerUrl = b; } catch(ex) {}
+    });
     applyClientTheme(appData.projects);
     var _p0type = (appData.projects[0] && appData.projects[0].project && appData.projects[0].project.type) || 'partenaire';
     applyTypeTheme(_p0type);
@@ -10287,6 +10300,29 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpGoFichiers = function() {
     currentView = 'fichiers';
     renderShell({ resetScroll: true });
+  };
+
+  window.cpUploadBanner = function(pid, input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var dataUrl = e.target.result;
+      var pd = getPD(pid);
+      if (!pd) return;
+      pd.project.bannerUrl = dataUrl;
+      try { localStorage.setItem('bloom_banner_' + pid, dataUrl); } catch(ex) {}
+      renderShell();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.cpRemoveBanner = function(pid) {
+    var pd = getPD(pid);
+    if (!pd) return;
+    pd.project.bannerUrl = null;
+    try { localStorage.removeItem('bloom_banner_' + pid); } catch(ex) {}
+    renderShell();
   };
 
   var _hubCache = null;
