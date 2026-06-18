@@ -162,7 +162,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .proj-section { padding: 0 32px 28px; }
 /* Project banner */
 .proj-banner { width: 100%; min-height: 130px; display: flex; align-items: flex-end; position: relative; }
-.proj-banner::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.12); pointer-events: none; }
+.proj-banner::after { content: ""; position: absolute; inset: 0; background: transparent; pointer-events: none; }
 .proj-banner[data-light]::after { background: rgba(0,0,0,0.08); }
 .proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -684,7 +684,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-ph__left { display:grid;gap:20px; }
 .cp-ph__right { display:grid;gap:16px; }
 .cp-ph__banner { position:relative;width:100%;height:224px;border-radius:12px;overflow:hidden;background:var(--terre); }
-.cp-ph__banner-overlay { position:absolute;inset:0;background:rgba(20,12,6,0.18);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
+.cp-ph__banner-overlay { position:absolute;inset:0;background:transparent;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end; }
 .cp-ph__banner-content { padding:26px 30px; }
 
 /* open-title — clickable step/phase name with trailing arrow */
@@ -1587,6 +1587,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var saved = {}; try { saved = JSON.parse(localStorage.getItem('bloom_colors')||'{}'); } catch(e){}
               var allColors = Object.assign({}, COLOR_DEFAULTS, saved);
               var GROUPS = [
+                { title: 'Bannières par défaut — cartes projet',
+                  items: [
+                    { key:'--banner-partenaire', label:'Partenaire', def:'#412F21' },
+                    { key:'--banner-identite',   label:'Identité',   def:'#a98bd6' },
+                    { key:'--banner-site',        label:'Site web',   def:'#7c9bdc' },
+                    { key:'--banner-maintenance', label:'Maintenance',def:'#8a6f54' },
+                    { key:'--banner-support',     label:'Support',    def:'#6c4ea4' },
+                    { key:'--banner-custom',      label:'Autre',      def:'#DCC999' },
+                  ]
+                },
                 { title: 'Portail client — thèmes par type',
                   items: [
                     { key:'--cp-partenaire-dk', label:'Partenaire – fond sidebar', def:'#051833' },
@@ -1960,7 +1970,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var steps = p.steps || [];
       var done = steps.filter(function(s){ return s.status==='done'; }).length;
       var pct = steps.length ? Math.round(done/steps.length*100) : 0;
-      var bannerBg = p.bannerUrl ? 'url('+p.bannerUrl+') center/cover no-repeat' : p.bannerColor ? p.bannerColor.split('|')[0] : a.deep;
+      var typeBannerDef = (function(){try{var s=JSON.parse(localStorage.getItem('bloom_colors')||'{}');return s['--banner-'+(p.type||'custom')]||null;}catch(e){return null;}})();
+      var bannerBg = p.bannerUrl ? 'url('+p.bannerUrl+') center/cover no-repeat' : (p.bannerColor||typeBannerDef||a.deep);
       var deadlineHtml = '';
       if (p.deadline) {
         var today = new Date(); today.setHours(0,0,0,0);
@@ -2021,7 +2032,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
             '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+pct+'%</span>' +
           '</div>' +
-          '<div style="width:100%;height:7px;background:#e8e0d4;border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:a.ink)+';border-radius:6px;transition:width 0.4s"></div></div>' +
+          '<div style="width:100%;height:7px;background:#e8e0d4;border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(p.bannerColor||(typeBannerDef)||a.ink)+';border-radius:6px;transition:width 0.4s"></div></div>' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">' +
             adminStatusBadge(p.status) +
             (deadlineHtml ? '<span style="color:#c8b29a;font-size:11px">·</span>' + deadlineHtml : '') +
@@ -2558,7 +2569,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<main class="main">' +
 
           '<div style="position:relative;height:180px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el">' +
-            '<div style="position:absolute;inset:0;background:rgba(20,12,6,0.32);pointer-events:none"></div>' +
+            '<div style="position:absolute;inset:0;background:transparent;pointer-events:none"></div>' +
             '<button onclick="adminNav(\'/admin\')" style="position:absolute;top:18px;left:24px;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;border:0;background:rgba(20,12,6,0.55);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">← Tous les espaces</button>' +
             '<div style="position:absolute;top:18px;right:24px">' + adminTypeBadge(project.type) + '</div>' +
           '</div>' +
