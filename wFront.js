@@ -1474,6 +1474,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var SETTINGS_DEFAULTS = {
     studioName: 'Seed to Bloom',
     studioSignature: 'Cindy',
+    notificationEmail: '',
     accentMode: 'type',        // 'type' | 'forced'
     accentForced: 'glycine',   // when accentMode==='forced'
     welcomeMessage: '',
@@ -1516,7 +1517,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
         '<div><label style="' + lbl + '">Nom du studio</label><input id="set-studioName" type="text" value="' + esc(s.studioName||'') + '" style="' + inp + '"></div>' +
         '<div><label style="' + lbl + '">Signature (prenom)</label><input id="set-studioSignature" type="text" value="' + esc(s.studioSignature||'') + '" style="' + inp + '"></div>' +
-      '</div>';
+      '</div>' +
+      '<div style="margin-top:16px"><label style="' + lbl + '">Email de notification</label><input id="set-notificationEmail" type="email" value="' + esc(s.notificationEmail||'') + '" placeholder="ex: cindyflageul@gmail.com" style="' + inp + '"><div style="font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#a89a86;margin-top:5px">Adresse qui reçoit les alertes quand un client vous écrit ou agit sur la plateforme.</div></div>';
 
     // 2. Couleur des espaces
     var TONES = [
@@ -1744,6 +1746,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var s = studioSettings;
     s.studioName = (document.getElementById('set-studioName')||{}).value || '';
     s.studioSignature = (document.getElementById('set-studioSignature')||{}).value || '';
+    s.notificationEmail = (document.getElementById('set-notificationEmail')||{}).value || '';
     s.welcomeMessage = (document.getElementById('set-welcomeMessage')||{}).value || '';
     ['waiting','message','progress','delivered'].forEach(function(k){
       var en = document.getElementById('set-notif-'+k+'-enabled');

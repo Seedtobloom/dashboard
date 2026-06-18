@@ -6,6 +6,17 @@ import { getProject } from '../kv';
 
 const DEBOUNCE_MINUTES = 60;
 
+// Adresse qui reçoit les alertes admin : réglage studio > ADMIN_EMAIL > défaut.
+async function getAdminNotifyEmail(env: Env): Promise<string> {
+  try {
+    const settings = (await env.BLOOM_KV.get('studio_settings', 'json')) as { notificationEmail?: string } | null;
+    if (settings && settings.notificationEmail && settings.notificationEmail.trim()) {
+      return settings.notificationEmail.trim();
+    }
+  } catch { /* ignore */ }
+  return env.ADMIN_EMAIL ?? 'hello@seedtobloom.fr';
+}
+
 async function canSendEmail(env: Env, projectId: string, template: string): Promise<boolean> {
   const logs = await getEmailLogs(env, projectId);
   const recent = logs.filter(
@@ -126,7 +137,7 @@ export async function sendMessageNotification(env: Env, project: Project, _messa
 
 // Notifie Cindy (admin) qu'un client a envoyé un nouveau message.
 export async function sendAdminMessageNotification(env: Env, project: Project, _message: Message): Promise<void> {
-  const adminEmail = env.ADMIN_EMAIL ?? 'hello@seedtobloom.fr';
+  const adminEmail = await getAdminNotifyEmail(env);
   if (!adminEmail) return;
 
   const template = `admin_new_message_${project.id}`;
@@ -159,7 +170,7 @@ export async function sendClientThreadAdminNotification(
   clientName: string,
   refProjectId: string
 ): Promise<void> {
-  const adminEmail = env.ADMIN_EMAIL ?? 'hello@seedtobloom.fr';
+  const adminEmail = await getAdminNotifyEmail(env);
   if (!adminEmail) return;
   const template = `admin_client_msg_${clientEmail.toLowerCase()}`;
   if (!(await canSendEmail(env, refProjectId, template))) return;
