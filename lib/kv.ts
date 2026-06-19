@@ -1,4 +1,17 @@
-import type { Env, Project, Message, ClientToken, EmailLog, ProjectFile } from './types';
+import type { Env, Project, Message, ClientToken, EmailLog, ProjectFile, PortalHome } from './types';
+
+// --- Portal home customization ---
+
+export async function getPortalHome(env: Env, key: string): Promise<PortalHome | null> {
+  if (!key) return null;
+  const data = await env.BLOOM_KV.get(`portalhome:${key}`);
+  return data ? JSON.parse(data) : null;
+}
+
+export async function savePortalHome(env: Env, key: string, home: PortalHome): Promise<void> {
+  if (!key) return;
+  await env.BLOOM_KV.put(`portalhome:${key}`, JSON.stringify(home));
+}
 
 // --- Projects ---
 

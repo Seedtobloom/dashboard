@@ -6567,7 +6567,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function cpSecHidden(pid, id) {
-    try { return localStorage.getItem('cp-hide-' + pid + '-' + id) === '1'; } catch(e) { return false; }
+    var h = appData && appData.home && appData.home.hidden;
+    return !!(h && h[pid + '-' + id]);
   }
   function cpSecWrap(pid, id, content) {
     if (!content) return '';
@@ -6586,8 +6587,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var defaultText = isPart
       ? 'Bienvenue ' + (appData.clientName||'').split(' ')[0] + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.'
       : 'Bienvenue ' + (appData.clientName||'').split(' ')[0] + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.';
-    var stored;
-    try { stored = localStorage.getItem('cp-txt-intro-' + pid); } catch(e) {}
+    var stored = (appData && appData.home && appData.home.intro != null) ? appData.home.intro : null;
     var text = (stored != null) ? stored : defaultText;
     if (_isAdminEdit) {
       return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;outline:none;border-radius:6px;cursor:text;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
@@ -6596,8 +6596,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function cpBuildHomeBlocks(pid) {
-    var blocks;
-    try { var s = localStorage.getItem('cp-home-blocks-' + pid); blocks = s ? JSON.parse(s) : []; } catch(e) { blocks = []; }
+    var blocks = (appData && appData.home && Array.isArray(appData.home.blocks)) ? appData.home.blocks : [];
     if (!blocks.length && !_isAdminEdit) return '';
     var blocksHtml = blocks.map(function(b, i) {
       var content = esc(b.content || '');
@@ -10602,6 +10601,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       appData = { type:'project', clientName:data.project.clientName,
         projects:[{ project:data.project, messages:data.messages, files:data.files }] };
     } else { appData = data; }
+    // Personnalisation d'accueil (serveur) — partagée par espace client, visible par la cliente.
+    var h = data.home || {};
+    appData.home = { intro: (typeof h.intro === 'string' ? h.intro : null), blocks: Array.isArray(h.blocks) ? h.blocks : [], hidden: (h.hidden && typeof h.hidden === 'object') ? h.hidden : {} };
     convData = Array.isArray(data.conversation) ? data.conversation : [];
     cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : [];
     // Apply studio accent mode to portal CSS variables
@@ -10651,43 +10653,44 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     renderShell({ resetScroll: true });
   };
 
+  // Personnalisation d'accueil stockée côté serveur (appData.home), partagée par
+  // espace client et donc visible par la cliente + cohérente entre 1 et N offres.
+  function cpHome() { if (!appData.home) appData.home = { intro:null, blocks:[], hidden:{} }; return appData.home; }
+  function cpSaveHome() {
+    if (!API_BASE || !appData || !appData.home) return;
+    fetch(API_BASE + '/home', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(appData.home) })
+      .then(function(r){ if(!r.ok) throw new Error(); })
+      .catch(function(){ toast('Sauvegarde impossible, réessayez.'); });
+  }
+
   window.cpToggleSection = function(pid, id) {
-    try {
-      var key = 'cp-hide-' + pid + '-' + id;
-      if (localStorage.getItem(key) === '1') localStorage.removeItem(key);
-      else localStorage.setItem(key, '1');
-    } catch(e) {}
+    var h = cpHome(); if (!h.hidden) h.hidden = {};
+    var key = pid + '-' + id;
+    if (h.hidden[key]) delete h.hidden[key]; else h.hidden[key] = true;
+    cpSaveHome();
     renderShell();
   };
 
   window.cpSaveIntroText = function(pid, text) {
-    try { localStorage.setItem('cp-txt-intro-' + pid, text); } catch(e) {}
+    cpHome().intro = text;
+    cpSaveHome();
   };
 
   window.cpSaveHomeBlock = function(pid, i, text) {
-    try {
-      var blocks = JSON.parse(localStorage.getItem('cp-home-blocks-' + pid) || '[]');
-      if (blocks[i]) blocks[i].content = text;
-      localStorage.setItem('cp-home-blocks-' + pid, JSON.stringify(blocks));
-    } catch(e) {}
+    var h = cpHome();
+    if (Array.isArray(h.blocks) && h.blocks[i]) { h.blocks[i].content = text; cpSaveHome(); }
   };
 
   window.cpAddHomeBlock = function(pid, type) {
-    try {
-      var blocks = JSON.parse(localStorage.getItem('cp-home-blocks-' + pid) || '[]');
-      blocks.push({ type: type, content: type === 'title' ? 'Nouveau titre' : type === 'separator' ? '' : 'Nouveau texte' });
-      localStorage.setItem('cp-home-blocks-' + pid, JSON.stringify(blocks));
-    } catch(e) {}
+    var h = cpHome(); if (!Array.isArray(h.blocks)) h.blocks = [];
+    h.blocks.push({ type: type, content: type === 'title' ? 'Nouveau titre' : type === 'separator' ? '' : 'Nouveau texte' });
+    cpSaveHome();
     renderShell();
   };
 
   window.cpDeleteHomeBlock = function(pid, i) {
-    try {
-      var blocks = JSON.parse(localStorage.getItem('cp-home-blocks-' + pid) || '[]');
-      blocks.splice(i, 1);
-      localStorage.setItem('cp-home-blocks-' + pid, JSON.stringify(blocks));
-    } catch(e) {}
-    renderShell();
+    var h = cpHome();
+    if (Array.isArray(h.blocks)) { h.blocks.splice(i, 1); cpSaveHome(); renderShell(); }
   };
 
   window.cpUploadBanner = function(pid, input) {

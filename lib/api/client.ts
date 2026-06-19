@@ -1,6 +1,6 @@
-import type { Env, Project, MaintenanceTicket, Task, ProjectFile } from '../types';
+import type { Env, Project, MaintenanceTicket, Task, ProjectFile, PortalHome, PortalHomeBlock } from '../types';
 import { verifyClientToken } from '../auth';
-import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage, addProjectFile } from '../kv';
+import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage, addProjectFile, getPortalHome, savePortalHome } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
 import { sendAdminMessageNotification, sendClientThreadAdminNotification } from './notifications';
 
@@ -14,6 +14,33 @@ async function allowedProjects(env: Env, clientToken: { clientEmail?: string; pr
     return p ? [p] : [];
   }
   return [];
+}
+
+// Clé de personnalisation d'accueil : email du client si dispo (cohérent entre
+// 1 et plusieurs offres, et entre un token projet et un token email), sinon id du projet.
+function portalHomeKey(
+  clientToken: { clientEmail?: string },
+  projects: Project[]
+): string {
+  return (clientToken.clientEmail || projects[0]?.clientEmail || projects[0]?.id || '').toLowerCase();
+}
+
+// Normalise/valide la personnalisation reçue avant stockage.
+function sanitizePortalHome(body: any): PortalHome {
+  const blocks: PortalHomeBlock[] = Array.isArray(body?.blocks)
+    ? body.blocks.slice(0, 100)
+        .filter((b: any) => b && (b.type === 'title' || b.type === 'text' || b.type === 'separator'))
+        .map((b: any) => ({ type: b.type, content: typeof b.content === 'string' ? b.content : '' }))
+    : [];
+  const hidden: Record<string, boolean> = {};
+  if (body?.hidden && typeof body.hidden === 'object') {
+    for (const k of Object.keys(body.hidden)) if (body.hidden[k]) hidden[k] = true;
+  }
+  return {
+    intro: typeof body?.intro === 'string' ? body.intro : undefined,
+    blocks,
+    hidden,
+  };
 }
 
 // Téléchargement fichier côté client : /api/client/{token}/files/{fileKey}/download
@@ -158,6 +185,26 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     return errorResponse('Method not allowed', 405);
   }
 
+  // Personnalisation de l'accueil : GET/PUT /api/client/{token}/home
+  const homeMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/home$/);
+  if (homeMatch) {
+    const clientToken = await verifyClientToken(homeMatch[1], env);
+    if (!clientToken) return errorResponse('Invalid or expired token', 403);
+    const projects = await allowedProjects(env, clientToken);
+    const key = portalHomeKey(clientToken, projects);
+    if (!key) return errorResponse('No portal', 404);
+    if (method === 'GET') {
+      return jsonResponse((await getPortalHome(env, key)) || {});
+    }
+    if (method === 'PUT') {
+      const body = await request.json().catch(() => ({}));
+      const home = sanitizePortalHome(body);
+      await savePortalHome(env, key, home);
+      return jsonResponse({ success: true, home });
+    }
+    return errorResponse('Method not allowed', 405);
+  }
+
   // Upload fichier côté client : POST /api/client/{token}/files
   const filesUploadMatch = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})\/files$/);
   if (filesUploadMatch && method === 'POST') {
@@ -268,13 +315,14 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       })
     );
     const conversation = threadEmail ? await getClientMessages(env, threadEmail) : [];
+    const home = (await getPortalHome(env, portalHomeKey(clientToken, projects))) || {};
     if (clientToken.clientEmail) {
-      return jsonResponse({ type: 'client', clientName, projects: projectsData, conversation });
+      return jsonResponse({ type: 'client', clientName, projects: projectsData, conversation, home });
     }
     // Token projet seul : conserve le format simple + conversation rattachée.
     const single = projectsData[0];
     if (!single) return errorResponse('Project not found', 404);
-    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation });
+    return jsonResponse({ project: single.project, messages: single.messages, files: single.files, conversation, home });
   }
 
   // Conversation unifiée espace client
