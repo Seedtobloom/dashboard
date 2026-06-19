@@ -1064,7 +1064,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     opts = opts || {};
     opts.headers = opts.headers || {};
     opts.credentials = 'same-origin';
-    if (!opts.headers['Content-Type'] && !(opts.body instanceof FormData)) {
+    if (opts.method !== 'DELETE' && !opts.headers['Content-Type'] && !(opts.body instanceof FormData)) {
       opts.headers['Content-Type'] = 'application/json';
     }
     return fetch(path, opts);
@@ -11516,7 +11516,7 @@ function forwardToBack(request, env) {
   const req = new Request(request.url, {
     method: request.method,
     headers,
-    body: (request.method === 'GET' || request.method === 'HEAD') ? undefined : request.body,
+    body: (request.method === 'GET' || request.method === 'HEAD' || request.method === 'DELETE') ? undefined : request.body,
     redirect: 'manual',
   });
   return env.BLOOM_BACK.fetch(req);
