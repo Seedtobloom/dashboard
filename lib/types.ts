@@ -120,6 +120,20 @@ export interface ProjectFile {
   uploadedBy: 'cindy' | 'client';
 }
 
+export interface PortalHomeBlock {
+  type: 'title' | 'text' | 'separator';
+  content?: string;
+}
+
+// Personnalisation de la page d'accueil du portail, partagée par espace client
+// (clé = email du client si disponible, sinon id du projet). Stockée côté serveur
+// pour être visible par la cliente, et cohérente entre 1 et plusieurs offres.
+export interface PortalHome {
+  intro?: string;
+  blocks?: PortalHomeBlock[];
+  hidden?: Record<string, boolean>;
+}
+
 export interface ClientToken {
   token: string;
   projectId?: string;
