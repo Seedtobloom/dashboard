@@ -1910,12 +1910,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       ? 'background-image:url(' + _dashBannerData.url + ');background-size:cover;background-position:center'
       : 'background:' + (_dashBannerData && _dashBannerData.color ? _dashBannerData.color : '#5c4633');
     var _dashBannerColors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
+    var _dashTxt = (_dashBannerData && _dashBannerData.textColor) || '#fff';
     var heroBanner = '<div style="padding:24px 40px 0">' +
       '<div id="dash-hero-banner" style="position:relative;height:150px;border-radius:10px;overflow:hidden;' + _dashBannerStyle + '">' +
         '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.1) 100%)"></div>' +
         '<div style="position:relative;padding:22px 28px">' +
-          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
-          '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:#fff;font-weight:400">Espaces clients</h1>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:' + _dashTxt + ';opacity:0.85;margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
+          '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:' + _dashTxt + ';font-weight:400">Espaces clients</h1>' +
         '</div>' +
         '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
         '<button onclick="admEditDashBanner()" title="Personnaliser la bannière" style="position:absolute;bottom:12px;right:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid rgba(255,255,255,0.4);border-radius:999px;background:rgba(0,0,0,0.25);color:rgba(255,255,255,0.85);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">🖼 Personnaliser</button>' +
@@ -2060,6 +2061,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<input type="file" accept="image/*" style="display:none" onchange="admSetDashBannerPhoto(this)">' +
       '</label>' +
       (cur && cur.url ? '<button onclick="admRemoveDashBanner()" style="margin-top:10px;width:100%;padding:8px;border:1px solid #e2d9ce;border-radius:8px;background:none;color:#9b3a2e;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Retirer la photo</button>' : '') +
+      '<div style="font-size:12px;color:#8a6f54;margin:18px 0 10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Couleur du texte</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<button onclick="admSetDashBannerTextColor(\'#ffffff\')" title="Blanc" style="width:32px;height:32px;border-radius:50%;background:#fff;border:'+(!cur||!cur.textColor||cur.textColor==='#ffffff'?'3px solid #5c4633':'2px solid #e2d9ce')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.15)"></button>' +
+        '<button onclick="admSetDashBannerTextColor(\'#051833\')" title="Foncé" style="width:32px;height:32px;border-radius:50%;background:#051833;border:'+(cur&&cur.textColor==='#051833'?'3px solid #5c4633':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)"></button>' +
+        '<label title="Couleur personnalisée" style="width:32px;height:32px;border-radius:50%;border:2px solid #e2d9ce;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;position:relative">&#9998;<input type="color" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="admSetDashBannerTextColor(this.value)"></label>' +
+        '<span style="font-size:11px;color:#a89a88">Utile sur une photo claire</span>' +
+      '</div>' +
       '<div style="display:flex;justify-content:flex-end;margin-top:18px">' +
         '<button id="_db-close" style="padding:8px 18px;background:none;border:1.5px solid #e2d9ce;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:13px">Fermer</button>' +
       '</div>' +
@@ -2069,8 +2077,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     window._dashBannerOv = ov;
   };
+  function _dashBannerGet() { try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || '{}') || {}; } catch(e){ return {}; } }
+  function _dashBannerSet(patch) { var d = Object.assign(_dashBannerGet(), patch); try { localStorage.setItem('bloom_dash_banner', JSON.stringify(d)); } catch(e){} }
   window.admSetDashBannerColor = function(color) {
-    try { localStorage.setItem('bloom_dash_banner', JSON.stringify({ color: color })); } catch(e){}
+    // Choisir une couleur retire l'éventuelle photo, mais conserve la couleur du texte.
+    var d = _dashBannerGet(); d.color = color; delete d.url;
+    try { localStorage.setItem('bloom_dash_banner', JSON.stringify(d)); } catch(e){}
     if (window._dashBannerOv) window._dashBannerOv.remove();
     showDashboard();
   };
@@ -2079,11 +2091,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function(e) {
-      try { localStorage.setItem('bloom_dash_banner', JSON.stringify({ url: e.target.result })); } catch(err){}
+      _dashBannerSet({ url: e.target.result });
       if (window._dashBannerOv) window._dashBannerOv.remove();
       showDashboard();
     };
     reader.readAsDataURL(file);
+  };
+  window.admSetDashBannerTextColor = function(color) {
+    _dashBannerSet({ textColor: color || '#ffffff' });
+    if (window._dashBannerOv) window._dashBannerOv.remove();
+    showDashboard();
   };
   window.admRemoveDashBanner = function() {
     try { localStorage.removeItem('bloom_dash_banner'); } catch(e){}
@@ -2708,6 +2725,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var bannerBg = project.bannerUrl ? 'url(' + esc(project.bannerUrl) + ') center/cover no-repeat' : bannerColors[0];
     var _bc = bannerColors[0].replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
     var bannerIsLight = !project.bannerUrl && (0.299*_r+0.587*_g+0.114*_b) > 160;
+    // Couleur du texte sur la bannière (réglable, utile sur les photos claires). Défaut blanc.
+    var bannerTxt = project.bannerTextColor || '#fff';
     var TYPE_TONES_SHEET = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'glycine', autre:'terre', custom:'glycine' };
     var TYPE_SHORT_SHEET = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre', custom:'Personnalise' };
     var sheetTypeLabel = TYPE_SHORT_SHEET[project.type] || project.type || 'Autre';
@@ -2762,8 +2781,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '</div>' +
                   '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap">' +
                     '<div>' +
-                      '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:44px;color:#fff;font-weight:400;line-height:1.05;margin:0 0 4px;text-shadow:0 1px 8px rgba(0,0,0,0.25)">' + esc(project.clientName) + '</h1>' +
-                      '<p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
+                      '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:44px;color:'+bannerTxt+';font-weight:400;line-height:1.05;margin:0 0 4px;text-shadow:0 1px 8px rgba(0,0,0,0.25)">' + esc(project.clientName) + '</h1>' +
+                      '<p style="color:'+bannerTxt+';opacity:0.78;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
                     '</div>' +
                     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
                       '<button onclick="addProjectForClient()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">+ Nouveau projet</button>' +
@@ -3300,6 +3319,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;font-size:13px;color:#051833">Choisir une image<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
         '<button onclick="applyBannerColor(null)" style="margin-left:8px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;background:none;cursor:pointer;font-size:13px;color:#636363">Retirer l\'image</button>' +
       '</div>' +
+      '<div style="margin-bottom:6px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:8px">Couleur du texte</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<button onclick="applyBannerTextColor(\'#ffffff\')" title="Blanc" style="width:36px;height:36px;border-radius:8px;background:#fff;border:2px solid #e0e0e0;cursor:pointer"></button>' +
+          '<button onclick="applyBannerTextColor(\'#051833\')" title="Foncé" style="width:36px;height:36px;border-radius:8px;background:#051833;border:2px solid #e0e0e0;cursor:pointer"></button>' +
+          '<label title="Couleur personnalisee" style="width:36px;height:36px;border-radius:8px;border:2px solid #e0e0e0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative">&#9998;<input type="color" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="applyBannerTextColor(this.value)"></label>' +
+          '<span style="font-size:11px;color:#8a8a8a">Utile sur une photo claire</span>' +
+        '</div>' +
+      '</div>' +
     '</div>';
     ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
     document.body.appendChild(ov);
@@ -3317,6 +3344,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }
     var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, body)) });
     if (res.ok) toast('Banniere mise a jour');
+    else toast('Erreur', true);
+  };
+
+  window.applyBannerTextColor = async function(color) {
+    document.getElementById('_banner-editor') && document.getElementById('_banner-editor').remove();
+    if (window._currentProject) window._currentProject.bannerTextColor = color || undefined;
+    var res = await apiFetch('/api/projects/' + currentProjectId, { method: 'PUT', body: JSON.stringify(Object.assign({}, window._currentProject, { bannerTextColor: color || undefined })) });
+    if (res.ok) { toast('Couleur du texte mise à jour'); loadProject(currentProjectId); }
     else toast('Erreur', true);
   };
 
@@ -6712,7 +6747,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div class="cp-ph__banner" style="'+bannerStyle+';margin-bottom:22px"'+(p.bannerUrl?' data-img':'')+'>' +
             '<div class="cp-ph__banner-overlay"><div class="cp-ph__banner-content">' +
               (p.type ? '<div style="margin-bottom:12px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
-              '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
+              '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:'+(p.bannerTextColor||'#fff')+';max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div></div>' +
           '</div>' +
           '<div class="cp-ph__cols">' +
@@ -6941,7 +6976,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div class="cp-ph__banner-overlay">' +
             '<div class="cp-ph__banner-content">' +
               (p.type ? '<div style="margin-bottom:12px">' + cpTypeBadge(p.type, true) + '</div>' : '') +
-              '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:#fff;max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
+              '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:'+(p.bannerTextColor||'#fff')+';max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div>' +
           '</div>' +
           uploadZoneHtml +
