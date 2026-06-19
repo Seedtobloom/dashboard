@@ -514,7 +514,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 }
 .cp-header__title { font-family: var(--font-display); font-size: clamp(22px,2.5vw,34px); font-weight: 400; line-height: 1.25; color: var(--paille); margin-bottom: 6px; font-style: italic; }
 .cp-header__meta { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--paille); opacity: 0.75; letter-spacing: 0.08em; text-transform: uppercase; }
-.cp-content { flex: 1; padding: 36px 52px 80px; max-width: 1120px; }
+.cp-content { flex: 1; padding: 36px 52px 80px; max-width: 1160px; margin: 0 auto; width: 100%; }
 .cp-content--wide { max-width: none; }
 .cp-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 28px; align-items: start; }
 .cp-grid__main, .cp-grid__side { min-width: 0; }
@@ -2678,37 +2678,45 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         buildSidebarHtml('project', allProjects, unreadMapP).replace('class="project-item"', 'class="project-item"').replace('class="project-item" href="/admin/projects/' + project.id + '"', 'class="project-item active" href="/admin/projects/' + project.id + '"') +
         '<main class="main">' +
 
-          '<div style="position:relative;height:180px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
-            (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
-            '<button onclick="adminNav(\'/admin\')" style="position:absolute;top:18px;left:24px;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;border:0;background:rgba(20,12,6,0.55);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">← Tous les espaces</button>' +
-            '<div style="position:absolute;top:18px;right:24px;display:flex;gap:8px;align-items:center">' +
-              adminTypeBadge(project.type) +
-              '<label title="Changer l\'image de bannière" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:0;background:rgba(20,12,6,0.5);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.08em">' +
-                icon('image',13,'#fff') + ' Photo' +
-                '<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)">' +
-              '</label>' +
-              (project.bannerUrl ? '<button onclick="applyBannerColor(null)" title="Retirer l\'image" style="padding:6px 12px;border-radius:999px;border:0;background:rgba(20,12,6,0.5);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11px;cursor:pointer">Retirer</button>' : '') +
-            '</div>' +
-          '</div>' +
-
-          '<div style="padding:28px 48px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">' +
-            '<div style="min-width:0">' +
-              (function(){
-                var isRevoked = project.status==='revoked', isArch = project.status==='archived';
-                var stColor = isArch ? '#8a6f54' : isRevoked ? '#9b3a2e' : '#5c4633';
-                var stLabel = isArch ? 'Archive' : isRevoked ? 'Acces revoque' : 'Espace actif';
-                var stIconName = isArch ? 'archive' : isRevoked ? 'lock' : 'check';
-                return '<div style="display:inline-flex;align-items:center;gap:6px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:'+stColor+';margin-bottom:8px">'+icon(stIconName,13,'color:'+stColor)+' '+stLabel+'</div>';
-              })() +
-              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:42px;color:#5c4633;font-weight:400;line-height:1.1;margin:0 0 6px">' + esc(project.clientName) + '</h1>' +
-              '<p style="color:#8a6f54;font-size:16px;margin:0">' + esc(project.clientEmail) + (project.projectTitle ? ' \xB7 ' + esc(project.projectTitle) : '') + '</p>' +
-            '</div>' +
-            '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
-              '<button class="btn btn--outline btn--sm" onclick="addProjectForClient()">+ Nouveau projet</button>' +
-              (project.clientEmail ? '<button class="btn btn--outline" onclick="editClientSpace()">Voir le portail</button>' : '') +
-              '<button class="btn btn--primary" onclick="openBannerEditor()" title="Changer la couleur ou l\'image">Personnaliser →</button>' +
-            '</div>' +
-          '</div>' +
+          (function(){
+            var isRevoked = project.status==='revoked', isArch = project.status==='archived';
+            var stDot = isArch ? '#8a6f54' : isRevoked ? '#9b3a2e' : '#22c55e';
+            var stLabel = isArch ? 'Archivé' : isRevoked ? 'Accès révoqué' : 'Espace actif';
+            return '<div style="position:relative;height:220px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
+              (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
+              '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.18) 0%,rgba(0,0,0,0.52) 100%)"></div>' +
+              '<div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:18px 28px 22px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+                  '<button onclick="adminNav(\'/admin\')" style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.28);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(4px)">← Tous les espaces</button>' +
+                  '<div style="display:flex;gap:8px;align-items:center">' +
+                    adminTypeBadge(project.type) +
+                    '<label title="Changer la photo" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.28);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;backdrop-filter:blur(4px)">' +
+                      icon('image',12,'color:rgba(255,255,255,0.8)') + ' Photo' +
+                      '<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)">' +
+                    '</label>' +
+                    (project.bannerUrl ? '<button onclick="applyBannerColor(null)" title="Retirer" style="padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.28);color:rgba(255,255,255,0.8);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;cursor:pointer;backdrop-filter:blur(4px)">Retirer</button>' : '') +
+                  '</div>' +
+                '</div>' +
+                '<div>' +
+                  '<div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:8px">' +
+                    '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+';box-shadow:0 0 0 2px rgba(255,255,255,0.25)"></span>' +
+                    '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.75)">'+stLabel+'</span>' +
+                  '</div>' +
+                  '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap">' +
+                    '<div>' +
+                      '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:44px;color:#fff;font-weight:400;line-height:1.05;margin:0 0 4px;text-shadow:0 1px 8px rgba(0,0,0,0.25)">' + esc(project.clientName) + '</h1>' +
+                      '<p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
+                    '</div>' +
+                    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+                      '<button onclick="addProjectForClient()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">+ Nouveau projet</button>' +
+                      (project.clientEmail ? '<button onclick="editClientSpace()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">Voir le portail</button>' : '') +
+                      '<button onclick="openBannerEditor()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:rgba(255,255,255,0.92);color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Personnaliser →</button>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          })() +
 
           tabNav +
 
@@ -7571,18 +7579,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var fileExchangeCard = buildClientFileExchange(project.id, files);
     var sideCol = (adminSharedFiles.length ? tabs + filesPanel : '') + pracPanel + meetPanel + fileExchangeCard + helpCard;
 
-    // Espace partenaire : mise en page pleine largeur pour un grand calendrier.
+    // Espace partenaire
     if (project.type === 'partenaire') {
       return header +
-        '<div class="cp-content cp-content--wide">' + banner + buildClientPartenaire(pd) +
+        '<div class="cp-content">' + banner + buildClientPartenaire(pd) +
           (sideTabs.length ? '<div style="margin-top:14px">' + tabs + filesPanel + pracPanel + meetPanel + '</div>' : '') +
           helpCard +
         '</div>';
     }
 
-    // Espace maintenance : vue pleine largeur avec tickets, notes, forfait, factures.
+    // Espace maintenance
     if (project.type === 'maintenance') {
-      return header + '<div class="cp-content cp-content--wide">' + banner + buildClientMaintenance(pd) + helpCard + '</div>';
+      return header + '<div class="cp-content">' + banner + buildClientMaintenance(pd) + helpCard + '</div>';
     }
 
     var questionnaireCard = '';
@@ -10357,13 +10365,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);
-      return pd0 ? '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
+      return pd0 ? '<div class="cp-content" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
     }
     if (currentView === 'cal') {
       var pd0 = getPD(currentId);
       if (pd0) {
         var tasks0 = Array.isArray(pd0.project.tasks) ? pd0.project.tasks : [];
-        return '<div class="cp-content cp-content--wide" style="padding:36px 52px 80px">' + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
+        return '<div class="cp-content" style="padding:36px 52px 80px">' + buildPartCalStandalone(pd0.project.id, tasks0, pd0.files, pd0.project) + '</div>';
       }
       return buildHome();
     }
@@ -10401,6 +10409,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   function renderShell(opts) {
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
+    // Optimisation : ne reconstruire que cp-main si la sidebar est déjà là
+    var mainEl = !opts || !opts.full ? document.getElementById('cp-main') : null;
+    if (mainEl) {
+      mainEl.innerHTML = buildCongesBanner() + buildTopbar() + mainForView();
+      // Mise à jour de l'état actif dans la sidebar sans la reconstruire
+      document.querySelectorAll('[data-nav]').forEach(function(btn) {
+        var id = btn.getAttribute('data-nav');
+        var active = currentView === id || (id === 'project' && currentView === 'project');
+        btn.classList.toggle('active', active);
+      });
+      // Mise à jour du badge non-lus sur Messages
+      var unreadNow = totalUnread();
+      document.querySelectorAll('[data-nav="messages"] .cp-nav__badge').forEach(function(b){ b.remove(); });
+      if (unreadNow > 0) {
+        var msgBtn = document.querySelector('[data-nav="messages"]');
+        if (msgBtn) {
+          var b = document.createElement('span');
+          b.className = 'cp-nav__badge';
+          b.textContent = String(unreadNow);
+          msgBtn.appendChild(b);
+        }
+      }
+      if (currentView === 'project') attachForm();
+      if (currentView === 'messages') attachConvoForm();
+      window.scrollTo(0, scrollY);
+      return;
+    }
+    // Rebuild complet (premier chargement, ou opts.full)
     var adminBar = _isAdminEdit
       ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(5,24,51,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">' +
           '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5)">Vue client</span>' +
