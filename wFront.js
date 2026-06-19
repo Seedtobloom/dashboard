@@ -1259,29 +1259,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Espaces clients (tous les tokens) ─────────────────────────────────────
   async function showSpaces() {
-    const res = await apiFetch('/api/projects');
-    if (!res.ok) { if (res.status === 401) { showLogin(); return; } toast('Erreur', true); return; }
-    const projs = await res.json();
-    // Tokens par projet (liens /p/ rattachés à un projet précis)
-    const allTokens = await Promise.all(projs.map(async function(p) {
-      const r = await apiFetch('/api/projects/' + p.id + '/tokens');
-      const toks = r.ok ? await r.json() : [];
-      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: p.projectTitle, clientName: p.clientName, clientEmail: p.clientEmail, projectId: p.id, projectStatus: p.status, projectType: p.type }); });
-    }));
-    // Tokens par email (espace multi-projets) — pour chaque email client unique
-    var emailMap = {};
-    projs.forEach(function(p) { if (p.clientEmail) emailMap[p.clientEmail.toLowerCase()] = p.clientName; });
-    const emailTokenLists = await Promise.all(Object.keys(emailMap).map(async function(email) {
-      const r = await apiFetch('/api/tokens/client/' + encodeURIComponent(email));
-      const toks = r.ok ? await r.json() : [];
-      return toks.map(function(t) { return Object.assign({}, t, { projectTitle: 'Espace multi-projets', clientName: emailMap[email], isClientSpace: true }); });
-    }));
-
-    // Fusion + dédoublonnage par token
-    var seen = {};
-    var tokens = [].concat.apply([], allTokens).concat([].concat.apply([], emailTokenLists))
-      .filter(function(t) { if (seen[t.token]) return false; seen[t.token] = true; return true; })
-      .sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    // 1 seul aller-retour pour les projets (sidebar) + les tokens agrégés (table),
+    // au lieu de 1 + N(projets) + M(emails) appels séquentiels.
+    const [projRes, tokRes] = await Promise.all([
+      apiFetch('/api/projects'),
+      apiFetch('/api/tokens/all'),
+    ]);
+    if (!projRes.ok || !tokRes.ok) {
+      if (projRes.status === 401 || tokRes.status === 401) { showLogin(); return; }
+      toast('Erreur', true); return;
+    }
+    const projs = await projRes.json();
+    // Tokens déjà enrichis, dédoublonnés et triés côté backend (/api/tokens/all)
+    const tokens = await tokRes.json();
 
     var rows = tokens.map(function(t) {
       var url = window.location.origin + '/p/' + t.token;

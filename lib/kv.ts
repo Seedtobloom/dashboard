@@ -111,6 +111,29 @@ export async function addTokenToProject(env: Env, projectId: string, token: stri
   await env.BLOOM_KV.put(`tokens:project:${projectId}`, JSON.stringify(tokens));
 }
 
+export async function deleteToken(env: Env, clientToken: ClientToken): Promise<void> {
+  // Supprime la clé du token + le retire de l'index projet et/ou email
+  await env.BLOOM_KV.delete(`token:${clientToken.token}`);
+
+  if (clientToken.projectId) {
+    const key = `tokens:project:${clientToken.projectId}`;
+    const data = await env.BLOOM_KV.get(key);
+    if (data) {
+      const tokens: string[] = (JSON.parse(data) as string[]).filter((t) => t !== clientToken.token);
+      await env.BLOOM_KV.put(key, JSON.stringify(tokens));
+    }
+  }
+
+  if (clientToken.clientEmail) {
+    const key = `tokens:client:${clientToken.clientEmail.toLowerCase()}`;
+    const data = await env.BLOOM_KV.get(key);
+    if (data) {
+      const tokens: string[] = (JSON.parse(data) as string[]).filter((t) => t !== clientToken.token);
+      await env.BLOOM_KV.put(key, JSON.stringify(tokens));
+    }
+  }
+}
+
 // --- Files ---
 
 export async function getProjectFiles(env: Env, projectId: string): Promise<ProjectFile[]> {
