@@ -2759,40 +2759,49 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             var isRevoked = project.status==='revoked', isArch = project.status==='archived';
             var stDot = isArch ? '#8a6f54' : isRevoked ? '#9b3a2e' : '#22c55e';
             var stLabel = isArch ? 'Archivé' : isRevoked ? 'Accès révoqué' : 'Espace actif';
-            return '<div style="position:relative;height:220px;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
+            // Style "bannière portail client" : carte arrondie, texte adaptatif clair/foncé.
+            var onLight = bannerIsLight; // fond couleur clair (hors photo)
+            var hdrTitleCol = project.bannerTextColor || (onLight ? '#051833' : '#fff');
+            var ctlFg = onLight ? '#3a2e22' : '#fff';
+            var ctlBg = onLight ? 'rgba(5,24,51,0.06)' : 'rgba(0,0,0,0.28)';
+            var ctlBd = onLight ? 'rgba(5,24,51,0.18)' : 'rgba(255,255,255,0.32)';
+            return '<div style="padding:22px 28px 0">' +
+              '<div style="position:relative;height:208px;border-radius:14px;overflow:hidden;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
               (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
-              '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.18) 0%,rgba(0,0,0,0.52) 100%)"></div>' +
+              (project.bannerUrl ? '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.10) 0%,rgba(0,0,0,0.45) 100%)"></div>' : '') +
               '<div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:18px 28px 22px">' +
                 '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-                  '<button onclick="adminNav(\'/admin\')" style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.28);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(4px)">← Tous les espaces</button>' +
+                  '<button onclick="adminNav(\'/admin\')" style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(4px)">← Tous les espaces</button>' +
                   '<div style="display:flex;gap:8px;align-items:center">' +
-                    adminTypeBadge(project.type) +
-                    '<label title="Changer la photo" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.28);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;backdrop-filter:blur(4px)">' +
-                      icon('image',12,'color:rgba(255,255,255,0.8)') + ' Photo' +
+                    '<label title="Changer la photo" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;backdrop-filter:blur(4px)">' +
+                      icon('image',12,'color:'+ctlFg+'') + ' Photo' +
                       '<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)">' +
                     '</label>' +
-                    (project.bannerUrl ? '<button onclick="applyBannerColor(null)" title="Retirer" style="padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.28);color:rgba(255,255,255,0.8);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;cursor:pointer;backdrop-filter:blur(4px)">Retirer</button>' : '') +
+                    (project.bannerUrl ? '<button onclick="applyBannerColor(null)" title="Retirer" style="padding:6px 12px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;cursor:pointer;backdrop-filter:blur(4px)">Retirer</button>' : '') +
                   '</div>' +
                 '</div>' +
                 '<div>' +
-                  '<div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                    '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+';box-shadow:0 0 0 2px rgba(255,255,255,0.25)"></span>' +
-                    '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.75)">'+stLabel+'</span>' +
+                  '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">' +
+                    adminTypeBadge(project.type) +
+                    '<span style="display:inline-flex;align-items:center;gap:6px">' +
+                      '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+';box-shadow:0 0 0 2px '+(onLight?'rgba(5,24,51,0.12)':'rgba(255,255,255,0.25)')+'"></span>' +
+                      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:'+hdrTitleCol+';opacity:0.75">'+stLabel+'</span>' +
+                    '</span>' +
                   '</div>' +
                   '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap">' +
                     '<div>' +
-                      '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:44px;color:'+bannerTxt+';font-weight:400;line-height:1.05;margin:0 0 4px;text-shadow:0 1px 8px rgba(0,0,0,0.25)">' + esc(project.clientName) + '</h1>' +
-                      '<p style="color:'+bannerTxt+';opacity:0.78;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
+                      '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:'+hdrTitleCol+';font-weight:400;line-height:1.05;margin:0 0 4px'+(onLight?'':';text-shadow:0 1px 8px rgba(0,0,0,0.25)')+'">' + esc(project.clientName) + '</h1>' +
+                      '<p style="color:'+hdrTitleCol+';opacity:0.78;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
                     '</div>' +
                     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-                      '<button onclick="addProjectForClient()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">+ Nouveau projet</button>' +
-                      (project.clientEmail ? '<button onclick="editClientSpace()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(0,0,0,0.3);color:rgba(255,255,255,0.9);font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">Voir le portail</button>' : '') +
-                      '<button onclick="openBannerEditor()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:rgba(255,255,255,0.92);color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Personnaliser →</button>' +
+                      '<button onclick="addProjectForClient()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">+ Nouveau projet</button>' +
+                      (project.clientEmail ? '<button onclick="editClientSpace()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">Voir le portail</button>' : '') +
+                      '<button onclick="openBannerEditor()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#5c4633;color:#EFE1B0;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Personnaliser →</button>' +
                     '</div>' +
                   '</div>' +
                 '</div>' +
               '</div>' +
-            '</div>';
+            '</div></div>';
           })() +
 
           tabNav +
