@@ -10409,6 +10409,34 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   function renderShell(opts) {
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
+    // Optimisation : ne reconstruire que cp-main si la sidebar est déjà là
+    var mainEl = !opts || !opts.full ? document.getElementById('cp-main') : null;
+    if (mainEl) {
+      mainEl.innerHTML = buildCongesBanner() + buildTopbar() + mainForView();
+      // Mise à jour de l'état actif dans la sidebar sans la reconstruire
+      document.querySelectorAll('[data-nav]').forEach(function(btn) {
+        var id = btn.getAttribute('data-nav');
+        var active = currentView === id || (id === 'project' && currentView === 'project');
+        btn.classList.toggle('active', active);
+      });
+      // Mise à jour du badge non-lus sur Messages
+      var unreadNow = totalUnread();
+      document.querySelectorAll('[data-nav="messages"] .cp-nav__badge').forEach(function(b){ b.remove(); });
+      if (unreadNow > 0) {
+        var msgBtn = document.querySelector('[data-nav="messages"]');
+        if (msgBtn) {
+          var b = document.createElement('span');
+          b.className = 'cp-nav__badge';
+          b.textContent = String(unreadNow);
+          msgBtn.appendChild(b);
+        }
+      }
+      if (currentView === 'project') attachForm();
+      if (currentView === 'messages') attachConvoForm();
+      window.scrollTo(0, scrollY);
+      return;
+    }
+    // Rebuild complet (premier chargement, ou opts.full)
     var adminBar = _isAdminEdit
       ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(5,24,51,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">' +
           '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5)">Vue client</span>' +
