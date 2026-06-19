@@ -6487,7 +6487,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var TYPE_GROUPS = [
     { key:'identite', label:'Identité visuelle' },
     { key:'site', label:'Création de site' },
-    { key:'partenaire', label:'Partenaire créative' },
+    { key:'partenaire', label:'Accompagnement créatif' },
     { key:'maintenance', label:'Maintenance site internet' },
     { key:'support', label:'Supports de communication' },
     { key:'custom', label:'Autres' },
@@ -6911,20 +6911,43 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Multi-project: card grid
     function cardHtml(pd) {
       var p = pd.project;
+      var isPart = p.type === 'partenaire';
       var steps = p.steps || [];
       var done = steps.filter(function(s) { return s.status === 'done'; }).length;
       var pct = steps.length ? Math.round(done / steps.length * 100) : 0;
       var col = STATUS_COLORS[p.status] || '#aaa';
       var label = STATUS_LABELS[p.status] || p.status;
       var days = daysUntil(p.deadline);
-      var urgent = days !== null && days <= 7 && days >= 0;
+      var urgent = !isPart && days !== null && days <= 7 && days >= 0;
       var bannerStyle = p.bannerUrl
         ? 'background-image:url(' + esc(p.bannerUrl) + ');background-size:cover;background-position:center'
-        : (p.bannerColor ? 'background:' + esc(p.bannerColor.split('|')[0]) : '');
+        : (p.bannerColor ? 'background:' + esc(p.bannerColor.split('|')[0]) : (isPart ? 'background:linear-gradient(135deg,#c9952f,#e8c47a)' : ''));
       var duration = '';
-      if (p.startDate && p.deadline) {
+      if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
         duration = weeks + ' sem.';
+      }
+      // Partenaire: rendu comme accompagnement mensuel (pas un projet borné)
+      if (isPart) {
+        var partTasks = (p.tasks||[]).filter(function(t){ return !t.archived; });
+        var openTasks = partTasks.filter(function(t){ return t.status !== 'done'; });
+        var waitingPartStep = steps.find(function(s){ return s.status === 'waiting_client'; });
+        return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
+          '<div class="cp-proj-banner" style="' + bannerStyle + '"'+(p.bannerUrl?' data-img':'')+'>'+
+            '<span class="cp-proj-banner__badge" style="background:#c9952f;color:#fff;backdrop-filter:none">Accompagnement</span>' +
+            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#8a4a0e">Action requise</span>' : '') +
+          '</div>' +
+          '<div class="cp-proj-card__body">' +
+            '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
+            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+            '<div class="cp-proj-card__meta">' +
+              '<span>Mensuel · en cours</span>' +
+              (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
+            '</div>' +
+            '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:100%;background:linear-gradient(90deg,#c9952f,#e8c47a)"></div></div>' +
+            '<div class="cp-proj-card__pct"><span style="color:#8a6020">Accompagnement actif</span></div>' +
+          '</div>' +
+        '</button>';
       }
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '"'+(p.bannerUrl?' data-img':'')+'>'+
@@ -6976,11 +6999,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    return '<div class="cp-home"><div class="cp-home__inner">' +
+    var multiPid = TOKEN || (firstProj ? firstProj.id : 'multi');
+    var multiIntro = cpSecWrap(multiPid, 'intro', cpBuildEditableIntro(multiPid, false));
+    var multiBlocks = cpBuildHomeBlocks(multiPid);
+
+    return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
       (homeBannerHtml ||
-        '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>' +
-        '<div class="cp-home__sub">Retrouvez vos projets ci-dessous</div>'
+        '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
       ) +
+      multiIntro + multiBlocks +
       activeHtml + archivedHtml +
     '</div></div>';
   }
