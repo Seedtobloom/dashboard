@@ -357,7 +357,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     const projectId = peek.projectId || url.searchParams.get('projectId') || projects[0]?.id;
     const project = projects.find((p) => p.id === projectId);
     if (!project) return errorResponse('Project not found', 404);
-    return clientTaskOp(request, env, project, isTaskComment, taskCommentId);
+    return clientTaskOp(request, env, project, isTaskComment, taskIdFromPath);
   }
 
   return errorResponse('Method not allowed', 405);
