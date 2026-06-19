@@ -1299,6 +1299,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           (!t.revoked ? '<a class="btn btn--outline btn--sm" href="' + esc(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir →</a>' : '') +
           (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')" title="Copier le lien à envoyer">Copier le lien</button>' : '') +
           (!t.revoked && !t.lastUsedAt ? '<button class="btn btn--sage btn--sm" onclick="event.stopPropagation();copySpaceUrl(\'' + esc(url) + '\')" title="Copier le lien pour renvoyer l\'invitation">↩ Renvoyer</button>' : '') +
+          (t.isClientSpace && !t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();spConfigOffers(\'' + esc(t.token) + '\',\'' + esc(t.clientEmail||'') + '\')">Configurer les offres</button>' : '') +
           (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();revokeSpaceToken(\'' + t.token + '\')">Révoquer</button>' : '') +
           '<button class="btn btn--danger btn--sm" onclick="event.stopPropagation();deleteSpaceToken(\'' + t.token + '\')">Supprimer</button>' +
         '</td>' +
@@ -1346,6 +1347,73 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         .then(function(r) { if (!r.ok) throw new Error(); toast('Espace supprimé'); showSpaces(); })
         .catch(function() { toast('Erreur', true); });
     }, { title: 'Supprimer l\'espace', okLabel: 'Supprimer définitivement', danger: true });
+  };
+
+  window.spConfigOffers = async function(token, clientEmail) {
+    // Créer l'overlay modal
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center';
+    ov.innerHTML = '<div style="background:#fff;border-radius:12px;width:460px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.18)">' +
+      '<div style="padding:20px 24px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">' +
+        '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:var(--navy);font-style:italic;margin:0">Offres actives</h2>' +
+        '<button onclick="this.closest(\'.sp-offers-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:4px">✕</button>' +
+      '</div>' +
+      '<div id="sp-offers-body" style="padding:8px 24px;overflow-y:auto;flex:1"><p style="color:var(--muted);font-size:13px">Chargement…</p></div>' +
+      '<div style="padding:14px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px">' +
+        '<button onclick="this.closest(\'.sp-offers-ov\').remove()" class="btn btn--outline">Annuler</button>' +
+        '<button id="sp-offers-save" class="btn btn--primary" disabled>Enregistrer</button>' +
+      '</div>' +
+    '</div>';
+    ov.className = 'sp-offers-ov';
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+
+    // Charger projets + meta
+    var [projsRes, metaRes] = await Promise.all([
+      apiFetch('/api/projects'),
+      apiFetch('/api/token-meta/' + token)
+    ]);
+    var allProjs = projsRes.ok ? await projsRes.json() : [];
+    var clientProjs = allProjs.filter(function(p) { return (p.clientEmail||'').toLowerCase() === clientEmail.toLowerCase() && p.status !== 'archived'; });
+    var meta = metaRes.ok ? await metaRes.json() : {};
+    var disabled = Array.isArray(meta.disabledProjects) ? meta.disabledProjects : [];
+
+    var body = document.getElementById('sp-offers-body');
+    if (!clientProjs.length) {
+      body.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0">Aucun projet trouvé pour ce client.</p>';
+      return;
+    }
+    body.innerHTML = clientProjs.map(function(p) {
+      var enabled = !disabled.includes(p.id);
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8">' +
+        '<div><div style="font-weight:500;color:var(--navy);font-size:14px">' + esc(p.projectTitle) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:1px">' + esc(TYPE_LABELS[p.type]||p.type||'') + '</div></div>' +
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">' +
+          '<input type="checkbox" data-proj-id="' + esc(p.id) + '" ' + (enabled ? 'checked' : '') + ' style="width:15px;height:15px;cursor:pointer;accent-color:var(--navy)">' +
+          '<span style="font-size:12px;color:' + (enabled ? 'var(--sage)' : 'var(--muted)') + '">' + (enabled ? 'Visible' : 'Masqué') + '</span>' +
+        '</label>' +
+      '</div>';
+    }).join('');
+
+    // Mettre à jour le label Visible/Masqué dynamiquement
+    body.querySelectorAll('input[data-proj-id]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var lbl = cb.parentElement.querySelector('span');
+        if (lbl) { lbl.textContent = cb.checked ? 'Visible' : 'Masqué'; lbl.style.color = cb.checked ? 'var(--sage)' : 'var(--muted)'; }
+      });
+    });
+
+    var saveBtn = document.getElementById('sp-offers-save');
+    saveBtn.disabled = false;
+    saveBtn.onclick = async function() {
+      saveBtn.disabled = true;
+      var newDisabled = clientProjs.filter(function(p) {
+        var cb = body.querySelector('input[data-proj-id="' + p.id + '"]');
+        return cb && !cb.checked;
+      }).map(function(p) { return p.id; });
+      var r = await apiFetch('/api/token-meta/' + token, { method: 'PATCH', body: JSON.stringify({ disabledProjects: newDisabled }) });
+      if (r.ok) { ov.remove(); toast('Offres mises à jour ✓'); } else { toast('Erreur lors de la sauvegarde', true); saveBtn.disabled = false; }
+    };
   };
 
   // ── Sélection multiple page Espaces clients ───────────────────────────────
@@ -11585,7 +11653,24 @@ export default {
       }
 
       // Client API (public, no admin auth needed)
+      // Intercept main portal data fetch to filter disabled projects from token meta
       if (pathname.startsWith('/api/client/')) {
+        const clientDataMatch = pathname.match(/^\/api\/client\/([a-f0-9]{64})$/);
+        if (clientDataMatch && request.method === 'GET') {
+          const tokenStr = clientDataMatch[1];
+          const [backResp, metaRaw] = await Promise.all([
+            forwardToBack(request, env),
+            env.BLOOM_KV.get('tokenmeta:' + tokenStr)
+          ]);
+          if (!metaRaw) return backResp;
+          const meta = JSON.parse(metaRaw);
+          const disabled = Array.isArray(meta.disabledProjects) ? meta.disabledProjects : [];
+          if (!disabled.length) return backResp;
+          const data = await backResp.json().catch(() => null);
+          if (!data || !Array.isArray(data.projects)) return new Response(JSON.stringify(data || {}), { status: backResp.status, headers: { 'Content-Type': 'application/json' } });
+          data.projects = data.projects.filter(function(pd) { return !disabled.includes(pd.project.id); });
+          return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+        }
         return forwardToBack(request, env);
       }
 
@@ -11594,6 +11679,24 @@ export default {
         const authed = await checkAuth(request, env);
         if (!authed) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+        }
+        // Token meta — offres activées/désactivées par espace (géré dans wFront, pas wBack)
+        const tokenMetaMatch = pathname.match(/^\/api\/token-meta\/([a-f0-9]{64})$/);
+        if (tokenMetaMatch) {
+          const tokenStr = tokenMetaMatch[1];
+          if (request.method === 'GET') {
+            const raw = await env.BLOOM_KV.get('tokenmeta:' + tokenStr);
+            return new Response(raw || '{}', { headers: { 'Content-Type': 'application/json' } });
+          }
+          if (request.method === 'PATCH') {
+            const prev = await env.BLOOM_KV.get('tokenmeta:' + tokenStr);
+            const prevObj = prev ? JSON.parse(prev) : {};
+            const body = await request.json().catch(() => ({}));
+            const merged = Object.assign({}, prevObj, body);
+            await env.BLOOM_KV.put('tokenmeta:' + tokenStr, JSON.stringify(merged));
+            return new Response(JSON.stringify(merged), { headers: { 'Content-Type': 'application/json' } });
+          }
+          return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
         }
         return forwardToBack(request, env);
       }
