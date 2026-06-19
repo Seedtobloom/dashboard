@@ -6211,16 +6211,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   async function openClientSpace(edit) {
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
-    const pid = window._currentProject && window._currentProject.id;
-    // Réutilise le token "Aperçu admin" existant s'il y en a un, pour éviter les doublons
+    // Réutilise le token "Aperçu admin" existant pour éviter les doublons.
+    // Il est créé comme token PAR EMAIL (POST /api/tokens/client), donc on le
+    // recherche dans le même index (par email) — pas dans les tokens projet.
     let token = null;
-    if (pid) {
-      const existing = await apiFetch('/api/projects/' + pid + '/tokens');
-      if (existing.ok) {
-        const toks = await existing.json();
-        const preview = toks.find(function(t) { return t.label === 'Aperçu admin' && !t.revoked; });
-        if (preview) token = preview.token;
-      }
+    const existing = await apiFetch('/api/tokens/client/' + encodeURIComponent(email));
+    if (existing.ok) {
+      const toks = await existing.json();
+      const preview = toks.find(function(t) { return t.label === 'Aperçu admin' && !t.revoked; });
+      if (preview) token = preview.token;
     }
     if (!token) {
       const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ clientEmail: email, label: 'Aperçu admin' }) });
