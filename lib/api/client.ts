@@ -36,10 +36,16 @@ function sanitizePortalHome(body: any): PortalHome {
   if (body?.hidden && typeof body.hidden === 'object') {
     for (const k of Object.keys(body.hidden)) if (body.hidden[k]) hidden[k] = true;
   }
+  const str = (v: any) => (typeof v === 'string' && v ? v : undefined);
+  const b = body?.banner;
+  const banner = b && typeof b === 'object'
+    ? { imageUrl: str(b.imageUrl), color: str(b.color), textColor: str(b.textColor), subtitle: str(b.subtitle) }
+    : undefined;
   return {
     intro: typeof body?.intro === 'string' ? body.intro : undefined,
     blocks,
     hidden,
+    banner,
   };
 }
 
