@@ -14,7 +14,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
   --lavender: #E4D1FE;
   --blue-light: #EFE1B0;
   --cream: #EFE1B0;
-  --bg: #FAF8F4;
+  --bg: #ffffff;
   --white: #FFFFFF;
   --text: #2b1a0e;
   --muted: #8a6f54;
@@ -29,7 +29,7 @@ const STYLE_CSS = `/* Seed to Bloom — DA officielle */
   --terre-600: #8a6f54;
   --terre-200: #c8b29a;
   --paille: #EFE1B0;
-  --bone: #FAF8F4;
+  --bone: #ffffff;
   --bone-d: #e2d9ce;
   --nuit: #2b3d5f;
   --brume: #BAD1FD;
@@ -358,7 +358,7 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --brume-50:#ecf2ff; --brume-200:#d5e3ff; --brume:#BAD1FD;
   --brume-700:#7c9bdc; --brume-900:#4a6ba8;
   --paille-200:#fbf3d8; --paille:#F2E5C2; --paille-700:#c9b585;
-  --bone:#FAF8F4; --bone-d:#eae5dc; --card:#fffefb;
+  --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb;
   /* legacy aliases for compat */
   --brown: #412F21;
   --navy: #051833;
@@ -366,7 +366,7 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --lavender: #E4D1FE;
   --blue-light: #BAD1FD;
   --cream: #F2E5C2;
-  --bg: #FAF8F4;
+  --bg: #ffffff;
   --white: #FFFFFF;
   --text: #412F21;
   --muted: #8a6f54;
@@ -770,7 +770,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '--lavender':   '#E4D1FE',
     '--blue-light': '#BAD1FD',
     '--cream':      '#EFE1B0',
-    '--bg':         '#FAF8F4',
+    '--bg':         '#ffffff',
     '--surface':    '#F5F2EC',
     '--st-discovery':  '#d4e4f0',
     '--st-in-progress':'#7c9bdc',
@@ -3027,14 +3027,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div id="tab-couleurs" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:720px;' + (_adminProjTab==='couleurs' ? '' : 'display:none') + '">' +
             (function(){
               var btn = (project.btn) || { primaryBg:'#5c4633', primaryFg:'#EFE1B0', secondaryBg:'transparent', secondaryFg:'#5c4633' };
-              var SWATCHES = ['#E4D1FE','#BAD1FD','#EFE1B0','#412F21','#051833','#8a6f54','#c9952f','#FAF8F4','#ffffff'];
+              var SWATCHES = ['#E4D1FE','#BAD1FD','#EFE1B0','#412F21','#051833','#8a6f54','#c9952f','#ffffff','#ffffff'];
               function swatchPicker(label, key, value, ghost) {
                 return '<div>' +
                   '<div style="font-size:11px;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">' + label + '</div>' +
                   '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">' +
                   SWATCHES.map(function(c){
                     var sel = value.toLowerCase() === c.toLowerCase();
-                    return '<button type="button" onclick="setBtnColor(\''+key+'\',\''+c+'\')" title="'+c+'" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:'+(c==='transparent'?'#fff':c)+';border:'+(sel?'2px solid #5c4633':'1px solid #e2d9ce')+';box-shadow:'+(sel?'0 0 0 2px #FAF8F4':'none')+'"></button>';
+                    return '<button type="button" onclick="setBtnColor(\''+key+'\',\''+c+'\')" title="'+c+'" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:'+(c==='transparent'?'#fff':c)+';border:'+(sel?'2px solid #5c4633':'1px solid #e2d9ce')+';box-shadow:'+(sel?'0 0 0 2px #ffffff':'none')+'"></button>';
                   }).join('') +
                   '<label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer">' +
                     '<span style="width:30px;height:30px;border-radius:8px;border:1px dashed #c8b29a;display:grid;place-items:center;background:'+value+';position:relative;overflow:hidden">' +
@@ -3302,7 +3302,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ── Tab navigation ─────────────────────────────────────────────────────────
   var BANNER_COLORS = [
     ['#5c4633','Terre'],['#2b3d5f','Nuit'],['#a98bd6','Glycine'],['#9b3a2e','Rouge brique'],
-    ['#E4D1FE','Lavande'],['#BAD1FD','Bleu clair'],['#EFE1B0','Creme'],['#FAF8F4','Fond']
+    ['#E4D1FE','Lavande'],['#BAD1FD','Bleu clair'],['#EFE1B0','Creme'],['#ffffff','Fond']
   ];
 
   window.openBannerEditor = function() {
@@ -6465,7 +6465,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
-  var STATUS_TEXT = { discovery:'#051833', in_progress:'#051833', waiting_client:'#5c4633', review:'#6c4ea4', delivered:'#FAF8F4', archived:'#8a6f54' };
+  var STATUS_TEXT = { discovery:'#051833', in_progress:'#051833', waiting_client:'#5c4633', review:'#6c4ea4', delivered:'#ffffff', archived:'#8a6f54' };
   function statusBadge(status) {
     var bg = STATUS_COLORS[status] || '#aaa';
     var fg = STATUS_TEXT[status] || '#1a1a1a';
@@ -8840,7 +8840,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#5c4633);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
         '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#5c4633);padding:4px 6px;line-height:1">→</button>' +
       '</div>' +
-      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#FAF8F4);color:var(--terre,#5c4633);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
+      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#ffffff);color:var(--terre,#5c4633);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
     '</div>';
 
@@ -8865,7 +8865,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       });
       var isToday = ds===todayStr;
       var numHtml = isToday
-        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#FAF8F4;font-size:12px;font-weight:700">'+dd+'</div>'
+        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
         : '<div style="font-size:13px;font-weight:600;color:#8a6f54">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
@@ -8955,7 +8955,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var commentsHtml = comments.map(function(c){
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
-        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'var(--surface,#FAF8F4)')+';border:1px solid '+(isStudio?'#c9952f':'var(--bone-d,#e8e0d4)')+';">' +
+        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'var(--surface,#ffffff)')+';border:1px solid '+(isStudio?'#c9952f':'var(--bone-d,#e8e0d4)')+';">' +
           '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#412F21':'var(--muted,#8090a8)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
           '<div style="font-size:13px;color:'+(isStudio?'#412F21':'var(--navy,#051833)')+'">'+esc(c.text)+'</div>' +
         '</div>' +
@@ -11067,7 +11067,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#8a6f54;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
               '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#412F21;line-height:1.2">' + esc(s.title) + '</div>' +
             '</div>' +
-            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#FAF8F4;border-radius:8px;cursor:pointer;color:#8a6f54;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
+            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#ffffff;border-radius:8px;cursor:pointer;color:#8a6f54;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
           '</div>' +
           '<div style="padding:18px 20px 20px">' +
             '<p style="font-family:Georgia,serif;font-size:15px;color:#5c4633;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
@@ -11076,7 +11076,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
                 steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#412F21':'#eae5dc')+';transition:width 200ms"></span>'; }).join('') +
               '</div>' +
               '<div style="display:flex;gap:8px">' +
-                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #eae5dc;background:#FAF8F4;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#5c4633;cursor:pointer">Precedent</button>' : '') +
+                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #eae5dc;background:#ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#5c4633;cursor:pointer">Precedent</button>' : '') +
                 '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#E4D1FE;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
               '</div>' +
             '</div>' +
@@ -11301,7 +11301,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '--cream':       '#EFE1B0',
     '--lavender':    '#E4D1FE',
     '--blue-light':  '#BAD1FD',
-    '--bg':          '#FAF8F4',
+    '--bg':          '#ffffff',
     '--surface':     '#F5F2EC',
   };
 
@@ -11515,7 +11515,7 @@ const ERROR_HTML = `<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter Tight',sans-serif;background:#FAF8F4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  body{font-family:'Inter Tight',sans-serif;background:#ffffff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(92,70,51,.08)}
   h1{font-family:'Cormorant Garamond',serif;color:#5c4633;font-size:24px;margin:16px 0;font-weight:400;font-style:italic}
   p{color:#8a6f54;line-height:1.7;font-size:15px}
