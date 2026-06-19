@@ -128,10 +128,18 @@ export interface PortalHomeBlock {
 // Personnalisation de la page d'accueil du portail, partagée par espace client
 // (clé = email du client si disponible, sinon id du projet). Stockée côté serveur
 // pour être visible par la cliente, et cohérente entre 1 et plusieurs offres.
+export interface PortalHomeBanner {
+  imageUrl?: string;
+  color?: string;
+  textColor?: string;
+  subtitle?: string;
+}
+
 export interface PortalHome {
   intro?: string;
   blocks?: PortalHomeBlock[];
   hidden?: Record<string, boolean>;
+  banner?: PortalHomeBanner;
 }
 
 export interface ClientToken {

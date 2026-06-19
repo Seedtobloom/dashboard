@@ -7088,28 +7088,40 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '';
 
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
-    var homeBannerHtml = '';
-    if (firstProj && firstProj.homeBanner) {
-      var hb = firstProj.homeBanner;
-      var hbBg = hb.imageUrl
-        ? 'background:url(' + esc(hb.imageUrl) + ') center/cover no-repeat;'
-        : 'background:' + esc(hb.color || 'var(--navy)') + ';';
-      var hbHex = hb.color && hb.color.charAt(0) === '#' ? hb.color : null;
-      var hbLight = hbHex && cpHexLum(hbHex) > 160;
-      var hbTx = hbLight ? '#051833' : '#fff';
-      var hbSub = hbLight ? 'rgba(5,24,51,0.6)' : 'rgba(255,255,255,0.7)';
-      homeBannerHtml = '<div style="' + hbBg + 'border-radius:16px;padding:32px 36px;margin-bottom:32px;position:relative;overflow:hidden">' +
-        '<h1 style="font-family:var(--font-display);font-size:28px;color:' + hbTx + ';font-style:italic;margin-bottom:6px">Bonjour ' + esc(appData.clientName) + '</h1>' +
-        (hb.subtitle ? '<div style="font-size:14px;color:' + hbSub + ';line-height:1.6">' + esc(hb.subtitle) + '</div>' : '') +
+    // Bannière d'accueil multi-offres : stockée côté serveur (appData.home.banner),
+    // éditable dans l'aperçu admin, visible par la cliente.
+    var hb = (appData.home && appData.home.banner) || {};
+    var hbBg = hb.imageUrl
+      ? 'background:url(' + esc(hb.imageUrl) + ') center/cover no-repeat;'
+      : 'background:' + esc(hb.color || 'var(--navy)') + ';';
+    var hbHex = hb.color && hb.color.charAt(0) === '#' ? hb.color : null;
+    var hbAutoLight = !hb.imageUrl && hbHex && cpHexLum(hbHex) > 160;
+    var hbTx = hb.textColor || (hbAutoLight ? '#051833' : '#fff');
+    var hbEditCtrls = '';
+    if (_isAdminEdit) {
+      hbEditCtrls = '<div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;flex-wrap:wrap;justify-content:flex-end">' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;backdrop-filter:blur(4px)">Photo<input type="file" accept="image/*" style="display:none" onchange="cpHomeBannerPhoto(this)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#051833')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Texte<input type="color" value="'+(hb.textColor||'#ffffff')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerTextColor(this.value)"></label>' +
+        (hb.imageUrl ? '<button onclick="cpHomeBannerRemovePhoto()" style="padding:5px 11px;border:0;border-radius:999px;background:rgba(0,0,0,0.5);color:#fff;font-family:var(--font-micro);font-size:10px;cursor:pointer">Retirer</button>' : '') +
       '</div>';
     }
+    var hbSubHtml = _isAdminEdit
+      ? '<div contenteditable="true" onblur="cpHomeBannerSubtitle(this.innerText)" title="Cliquer pour modifier" style="font-size:14px;color:'+hbTx+';opacity:0.85;line-height:1.6;outline:none;cursor:text;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.25);padding:2px 6px;display:inline-block;min-width:160px">'+esc(hb.subtitle||'Ajouter un sous-titre…')+'</div>'
+      : (hb.subtitle ? '<div style="font-size:14px;color:'+hbTx+';opacity:0.85;line-height:1.6">'+esc(hb.subtitle)+'</div>' : '');
+    var homeBannerHtml = '<div style="'+hbBg+'border-radius:16px;padding:32px 36px;margin-bottom:32px;position:relative;overflow:hidden">' +
+      hbEditCtrls +
+      '<h1 style="font-family:var(--font-display);font-size:28px;color:'+hbTx+';font-style:italic;margin-bottom:6px">Bonjour ' + esc(appData.clientName) + '</h1>' +
+      hbSubHtml +
+    '</div>';
+    var hbHasContent = hb.imageUrl || hb.color || hb.subtitle || hb.textColor;
 
     var multiPid = TOKEN || (firstProj ? firstProj.id : 'multi');
     var multiIntro = cpSecWrap(multiPid, 'intro', cpBuildEditableIntro(multiPid, false));
     var multiBlocks = cpBuildHomeBlocks(multiPid);
 
     return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
-      (homeBannerHtml ||
+      ((_isAdminEdit || hbHasContent) ? homeBannerHtml :
         '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
       ) +
       multiIntro + multiBlocks +
@@ -10652,7 +10664,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     } else { appData = data; }
     // Personnalisation d'accueil (serveur) — partagée par espace client, visible par la cliente.
     var h = data.home || {};
-    appData.home = { intro: (typeof h.intro === 'string' ? h.intro : null), blocks: Array.isArray(h.blocks) ? h.blocks : [], hidden: (h.hidden && typeof h.hidden === 'object') ? h.hidden : {} };
+    appData.home = { intro: (typeof h.intro === 'string' ? h.intro : null), blocks: Array.isArray(h.blocks) ? h.blocks : [], hidden: (h.hidden && typeof h.hidden === 'object') ? h.hidden : {}, banner: (h.banner && typeof h.banner === 'object') ? h.banner : {} };
     convData = Array.isArray(data.conversation) ? data.conversation : [];
     cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : [];
     // Apply studio accent mode to portal CSS variables
@@ -10704,13 +10716,40 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   // Personnalisation d'accueil stockée côté serveur (appData.home), partagée par
   // espace client et donc visible par la cliente + cohérente entre 1 et N offres.
-  function cpHome() { if (!appData.home) appData.home = { intro:null, blocks:[], hidden:{} }; return appData.home; }
+  function cpHome() { if (!appData.home) appData.home = { intro:null, blocks:[], hidden:{}, banner:{} }; if (!appData.home.banner) appData.home.banner = {}; return appData.home; }
   function cpSaveHome() {
     if (!API_BASE || !appData || !appData.home) return;
     fetch(API_BASE + '/home', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(appData.home) })
       .then(function(r){ if(!r.ok) throw new Error(); })
       .catch(function(){ toast('Sauvegarde impossible, réessayez.'); });
   }
+
+  // Bannière d'accueil multi-offres (appData.home.banner)
+  window.cpHomeBannerPhoto = function(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { toast('Image trop lourde (max 8 Mo)'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var b = cpHome().banner; b.imageUrl = e.target.result;
+      cpSaveHome(); renderShell();
+    };
+    reader.readAsDataURL(file);
+  };
+  window.cpHomeBannerRemovePhoto = function() {
+    var b = cpHome().banner; delete b.imageUrl; cpSaveHome(); renderShell();
+  };
+  window.cpHomeBannerColor = function(color) {
+    var b = cpHome().banner; b.color = color; delete b.imageUrl; cpSaveHome(); renderShell();
+  };
+  window.cpHomeBannerTextColor = function(color) {
+    cpHome().banner.textColor = color || '#ffffff'; cpSaveHome(); renderShell();
+  };
+  window.cpHomeBannerSubtitle = function(text) {
+    var t = (text||'').trim();
+    cpHome().banner.subtitle = (t === 'Ajouter un sous-titre…' ? '' : t);
+    cpSaveHome();
+  };
 
   window.cpToggleSection = function(pid, id) {
     var h = cpHome(); if (!h.hidden) h.hidden = {};
