@@ -861,8 +861,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       ['identite',   colors['--cp-identite-dk'],   colors['--cp-identite-lt']],
       ['support',    colors['--cp-support-dk'],     colors['--cp-support-lt']],
     ];
+    // Le fond de la sidebar reste identique sur tous les espaces clients (Humus #1C1205).
+    // On n'applique plus de couleur de fond par type ; seul l'accent (lt) reste reglable.
     overrides.forEach(function(o) {
-      if (o[1]) CP_TYPE_THEMES[o[0]].dk = o[1];
       if (o[2]) { CP_TYPE_THEMES[o[0]].lt = o[2]; }
     });
   }
@@ -1706,14 +1707,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                     { key:'--banner-custom',      label:'Autre',      def:'#DCC999' },
                   ]
                 },
-                { title: 'Portail client — thèmes par type',
+                { title: 'Portail client — accent par type',
                   items: [
-                    { key:'--cp-partenaire-dk', label:'Partenaire – fond sidebar', def:'#1C1205' },
-                    { key:'--cp-partenaire-lt', label:'Partenaire – accent clair', def:'#E4D1FE' },
-                    { key:'--cp-identite-dk',   label:'Identité – fond sidebar',  def:'#4a2c5e' },
-                    { key:'--cp-identite-lt',   label:'Identité – accent clair',  def:'#E4D1FE' },
-                    { key:'--cp-support-dk',    label:'Support – fond sidebar',   def:'#412F21' },
-                    { key:'--cp-support-lt',    label:'Support – accent clair',   def:'#F2E5C2' },
+                    { key:'--cp-partenaire-lt', label:'Partenaire – accent', def:'#F2E5C2' },
+                    { key:'--cp-identite-lt',   label:'Identité – accent',  def:'#F2E5C2' },
+                    { key:'--cp-support-lt',    label:'Support – accent',   def:'#F2E5C2' },
                   ]
                 },
                 { title: 'Interface admin — sidebar',
@@ -10650,8 +10648,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var CP_TYPE_THEMES = {
     partenaire:  { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
     maintenance: { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    identite:    { dk:'#4a2c5e', lt:'#F2E5C2', rgb:'242,229,194' },
-    support:     { dk:'#412F21', lt:'#F2E5C2', rgb:'239,225,176' },
+    identite:    { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
+    support:     { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
   };
   function applyTypeTheme(type) {
     var t = CP_TYPE_THEMES[type] || CP_TYPE_THEMES.partenaire;
