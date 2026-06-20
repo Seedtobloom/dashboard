@@ -2774,6 +2774,41 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             var ctlFg = onLight ? '#3a2e22' : '#fff';
             var ctlBg = onLight ? 'rgba(28,18,5,0.06)' : 'rgba(0,0,0,0.28)';
             var ctlBd = onLight ? 'rgba(28,18,5,0.18)' : 'rgba(255,255,255,0.32)';
+
+            // ── Cas IMAGE : on n'écrit rien sur l'image (elle contient déjà le texte),
+            // tous les contrôles sont dans des barres nettes au-dessus / en dessous.
+            if (project.bannerUrl) {
+              var obtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;border:1px solid rgba(65,47,33,0.2);background:#fff;color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer';
+              var pbtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer';
+              var statusChip = '<span style="display:inline-flex;align-items:center;gap:6px">' +
+                '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+'"></span>' +
+                '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">'+stLabel+'</span>' +
+              '</span>';
+              return '<div style="padding:22px 28px 0">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px;flex-wrap:wrap">' +
+                  '<button onclick="adminNav(\'/admin\')" style="'+obtn+';letter-spacing:0.08em;text-transform:uppercase;font-size:10.5px">← Tous les espaces</button>' +
+                  '<div style="display:flex;gap:8px;align-items:center">' +
+                    '<label title="Changer la photo" style="'+obtn+'">' + icon('image',13,'color:#412F21') + ' Photo<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
+                    '<button onclick="applyBannerColor(null)" title="Retirer la photo" style="'+obtn+'">Retirer la photo</button>' +
+                  '</div>' +
+                '</div>' +
+                '<div style="position:relative;height:210px;border-radius:16px;overflow:hidden;background:' + bannerBg + ';background-size:cover;background-position:center;box-shadow:0 2px 4px rgba(65,47,33,0.05),0 18px 44px -26px rgba(65,47,33,0.42)" id="proj-banner-el" data-img></div>' +
+                '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:16px 2px 0">' +
+                  '<div style="min-width:0">' +
+                    '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' + adminTypeBadge(project.type) + statusChip + '</div>' +
+                    '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:38px;color:#1C1205;font-weight:400;line-height:1.05;margin:0 0 3px">' + esc(project.clientName) + '</h1>' +
+                    '<p style="color:#8a6f54;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
+                  '</div>' +
+                  '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+                    '<button onclick="addProjectForClient()" style="'+obtn+'">+ Nouveau projet</button>' +
+                    (project.clientEmail ? '<button onclick="editClientSpace()" style="'+obtn+'">Voir le portail</button>' : '') +
+                    '<button onclick="openBannerEditor()" style="'+pbtn+'">Personnaliser →</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
+            }
+
+            // ── Cas COULEUR UNIE : texte par-dessus (recolorable, lisible sur la couleur).
             return '<div style="padding:22px 28px 0">' +
               '<div style="position:relative;height:208px;border-radius:14px;overflow:hidden;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
               (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
