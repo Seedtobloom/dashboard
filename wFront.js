@@ -358,7 +358,7 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --nuit-500:#5c4633; --nuit-300:#8a6f54;
   --glycine-50:#f7efff; --glycine-200:#efddff; --glycine:#E4D1FE;
   --glycine-700:#a98bd6; --glycine-900:#6c4ea4;
-  --brume-50:#f7efff; --brume-200:#efddff; --brume:#E4D1FE;
+  --brume-50:#f7efff; --brume-200:#efddff; --brume:#F0E8FF;
   --brume-700:#a98bd6; --brume-900:#6c4ea4;
   --paille-200:#fbf3d8; --paille:#F2E5C2; --paille-700:#c9b585;
   --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb;
@@ -424,38 +424,38 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   display: flex; flex-direction: column; position: sticky;
   top: 0; height: 100vh; overflow-y: auto; z-index: 10;
 }
-.cp-sidebar__brand { padding: 24px 22px 20px; border-bottom: 1px solid rgba(228,209,254,0.14); }
+.cp-sidebar__brand { padding: 24px 22px 20px; border-bottom: 1px solid rgba(242,229,194,0.14); }
 .cp-sidebar__brand-row { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
-.cp-sidebar__brand-icon { color: var(--brume); flex-shrink: 0; }
+.cp-sidebar__brand-icon { color: var(--paille); flex-shrink: 0; }
 .cp-sidebar__brand-text { line-height: 1.12; }
-.cp-sidebar__logo { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(228,209,254,0.6); }
-.cp-sidebar__name { font-family: var(--font-display); font-style: italic; font-size: 21px; color: var(--brume); line-height: 1.1; }
-.cp-sidebar__greeting { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(228,209,254,0.6); }
-.cp-cindy { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-bottom: 1px solid rgba(228,209,254,0.1); }
+.cp-sidebar__logo { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.6); }
+.cp-sidebar__name { font-family: var(--font-display); font-style: italic; font-size: 21px; color: var(--paille); line-height: 1.1; }
+.cp-sidebar__greeting { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.6); }
+.cp-cindy { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-bottom: 1px solid rgba(242,229,194,0.1); }
 .cp-cindy__av { width: 34px; height: 34px; border-radius: 50%; background: var(--terre); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-style: italic; font-size: 15px; color: var(--paille); font-weight: 400; flex-shrink: 0; }
-.cp-cindy__name { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--brume); line-height: 1.2; }
-.cp-cindy__role { font-family: var(--font-micro); font-size: 9px; color: rgba(228,209,254,0.6); margin-top: 1px; letter-spacing: 0.1em; text-transform: uppercase; }
+.cp-cindy__name { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--paille); line-height: 1.2; }
+.cp-cindy__role { font-family: var(--font-micro); font-size: 9px; color: rgba(242,229,194,0.6); margin-top: 1px; letter-spacing: 0.1em; text-transform: uppercase; }
 .cp-nav { flex: 1; padding: 18px 14px; display: flex; flex-direction: column; gap: 4px; }
-.cp-nav__label { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(228,209,254,0.45); padding: 4px 9px 6px; }
-.cp-nav__sublabel { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(228,209,254,0.35); padding: 12px 9px 4px; }
+.cp-nav__label { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.45); padding: 4px 9px 6px; }
+.cp-nav__sublabel { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(242,229,194,0.35); padding: 12px 9px 4px; }
 .cp-nav__item {
   display: flex; align-items: center; gap: 12px; width: 100%;
   padding: 10px 13px; background: transparent; border: none; cursor: pointer;
-  text-align: left; color: rgba(228,209,254,0.7); border-radius: var(--radius-2);
+  text-align: left; color: rgba(242,229,194,0.7); border-radius: var(--radius-2);
   font-family: var(--font-micro); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
   transition: background 160ms, color 160ms;
 }
-.cp-nav__item:hover { background: rgba(228,209,254,0.08); color: var(--brume); }
-.cp-nav__item.active { background: rgba(228,209,254,0.1); color: var(--brume); font-weight: 600; }
-.cp-nav__item.active > svg { color: var(--brume); }
-.cp-nav__item > svg { color: rgba(228,209,254,0.55); flex-shrink: 0; transition: color 160ms; }
-.cp-nav__item:hover > svg { color: var(--brume); }
+.cp-nav__item:hover { background: rgba(242,229,194,0.08); color: var(--paille); }
+.cp-nav__item.active { background: rgba(242,229,194,0.1); color: var(--paille); font-weight: 600; }
+.cp-nav__item.active > svg { color: var(--paille); }
+.cp-nav__item > svg { color: rgba(242,229,194,0.55); flex-shrink: 0; transition: color 160ms; }
+.cp-nav__item:hover > svg { color: var(--paille); }
 .cp-nav__dot { width: 7px; height: 7px; border-radius: 2px; transform: rotate(45deg); flex-shrink: 0; }
 .cp-nav__text { flex: 1; min-width: 0; }
 .cp-nav__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cp-nav__status { font-size: 9px; opacity: 0.6; margin-top: 1px; letter-spacing: 0.04em; }
 .cp-nav__badge { background: var(--glycine); color: var(--terre); font-family: var(--font-micro); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 999px; flex-shrink: 0; min-width: 18px; text-align: center; }
-.cp-sidebar__footer { padding: 14px 18px; border-top: 1px solid rgba(228,209,254,0.1); margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
+.cp-sidebar__footer { padding: 14px 18px; border-top: 1px solid rgba(242,229,194,0.1); margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
 
 /* Portal topbar — sticky breadcrumb (desktop) */
 .cp-ptopbar { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bone-d); padding: 18px 48px; display: flex; align-items: center; gap: 14px; }
@@ -638,7 +638,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-sidebar { display: none; }
   .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--nuit); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .cp-topbar__logo { font-family: var(--font-display); font-size: 15px; color: var(--brume); font-style: italic; }
-  .cp-topbar__name { font-family: var(--font-micro); font-size: var(--fs-micro); color: rgba(228,209,254,0.65); letter-spacing: 0.06em; text-transform: uppercase; }
+  .cp-topbar__name { font-family: var(--font-micro); font-size: var(--fs-micro); color: rgba(242,229,194,0.65); letter-spacing: 0.06em; text-transform: uppercase; }
   .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(28,18,5,0.04); border-bottom: 1px solid var(--bone-d); }
   .cp-pills::-webkit-scrollbar { display: none; }
   .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); background: var(--card); border: 1px solid var(--bone-d); cursor: pointer; font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); white-space: nowrap; transition: all 0.15s; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -7237,7 +7237,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           cpAvatar('Cindy','cindy',34) +
           '<div style="line-height:1.2;min-width:0">' +
             '<div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--brume)">Cindy</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:rgba(228,209,254,0.5);letter-spacing:0.1em;text-transform:uppercase">Votre interlocutrice</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:rgba(242,229,194,0.5);letter-spacing:0.1em;text-transform:uppercase">Votre interlocutrice</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -10646,9 +10646,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   var CP_TYPE_THEMES = {
-    partenaire:  { dk:'#1C1205', lt:'#E4D1FE', rgb:'228,209,254' },
-    maintenance: { dk:'#1C1205', lt:'#E4D1FE', rgb:'228,209,254' },
-    identite:    { dk:'#4a2c5e', lt:'#E4D1FE', rgb:'228,209,254' },
+    partenaire:  { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
+    maintenance: { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
+    identite:    { dk:'#4a2c5e', lt:'#F2E5C2', rgb:'242,229,194' },
     support:     { dk:'#412F21', lt:'#F2E5C2', rgb:'239,225,176' },
   };
   function applyTypeTheme(type) {
@@ -11447,13 +11447,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     document.getElementById('app').innerHTML =
       '<div style="min-height:100vh;background:var(--nuit);color:var(--brume);display:grid;place-items:center;padding:24px">' +
         '<div style="width:100%;max-width:440px;text-align:center;animation:fadeUp 240ms cubic-bezier(0.16,1,0.3,1) both">' +
-          '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:36px;color:rgba(228,209,254,0.6)">' +
+          '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:36px;color:rgba(242,229,194,0.6)">' +
             cpIcon('flower', 18, 'color:var(--brume)') +
             '<span style="font-family:var(--font-micro);font-size:9px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase">Seed to Bloom</span>' +
           '</div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:rgba(228,209,254,0.6);margin-bottom:6px">Bonjour, ici</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:rgba(242,229,194,0.6);margin-bottom:6px">Bonjour, ici</div>' +
           '<h1 style="font-family:var(--font-display);font-size:clamp(40px,7vw,60px);font-weight:400;line-height:1.04;color:var(--brume);margin:0 0 22px">l\'atelier de <span style="font-style:italic;color:var(--glycine)">Cindy</span></h1>' +
-          '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(228,209,254,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que nous avancons ensemble, en confiance. Entrez le code que je vous ai transmis.</p>' +
+          '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(242,229,194,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que nous avancons ensemble, en confiance. Entrez le code que je vous ai transmis.</p>' +
           '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">' +
             '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(228,209,254,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(228,209,254,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
             '<button onclick="cpSubmitCode()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--glycine);color:var(--terre);border:0;border-radius:var(--radius-2);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Entrer ' + cpIcon('arrow', 14) + '</button>' +
