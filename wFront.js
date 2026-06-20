@@ -215,8 +215,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (max-width: 1000px) { .proj-grid, .dash-grid { grid-template-columns: 1fr; } }
 
-.card { background: var(--lin); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; transition: border-color 0.15s; }
-.card:hover { border-color: var(--card-hover, var(--border)); }
+.card { background: var(--lin); border: 1px solid rgba(65,47,33,0.07); border-radius: 14px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(65,47,33,0.04), 0 10px 30px -22px rgba(65,47,33,0.28); transition: border-color 0.2s, box-shadow 0.2s; }
+.card:hover { border-color: rgba(65,47,33,0.12); box-shadow: 0 2px 4px rgba(65,47,33,0.05), 0 18px 44px -24px rgba(65,47,33,0.32); }
 .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .card-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--navy); font-weight: 400; font-style: italic; }
 .card-body { padding: 20px; }
@@ -225,7 +225,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 /* Steps — admin cards */
 .step-cards { display: grid; gap: 12px; }
-.step-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 18px; background: var(--lin); transition: box-shadow 0.15s; position: relative; }
+.step-card { border: 1px solid rgba(65,47,33,0.07); border-radius: 14px; padding: 16px 18px; background: var(--lin); box-shadow: 0 1px 2px rgba(65,47,33,0.04), 0 8px 24px -20px rgba(65,47,33,0.26); transition: box-shadow 0.2s, transform 0.2s; position: relative; }
 .step-card:hover { box-shadow: 0 3px 14px rgba(28,18,5,0.07); }
 .step-card--done { border-color: var(--terre-200); background: #f7efff; }
 .step-card--waiting { border-color: var(--lavender); background: #f9f7ff; }
@@ -258,7 +258,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .file-name-col { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--lin); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+.stat-card { background: var(--lin); border: 1px solid rgba(65,47,33,0.07); border-radius: 14px; padding: 22px 26px; box-shadow: 0 1px 2px rgba(65,47,33,0.04), 0 10px 30px -22px rgba(65,47,33,0.28); transition: box-shadow 0.2s, transform 0.2s; }
+.stat-card:hover { box-shadow: 0 2px 4px rgba(65,47,33,0.05), 0 18px 44px -24px rgba(65,47,33,0.32); transform: translateY(-2px); }
 .stat-card__num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 400; color: var(--navy); line-height: 1; margin-bottom: 6px; }
 .stat-card__label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
 .projects-table { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -1921,7 +1922,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var _dashBannerColors = ['#412F21','#1C1205','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
     var _dashTxt = (_dashBannerData && _dashBannerData.textColor) || '#fff';
     var heroBanner = '<div style="padding:24px 40px 0">' +
-      '<div id="dash-hero-banner" style="position:relative;height:150px;border-radius:10px;overflow:hidden;' + _dashBannerStyle + '">' +
+      '<div id="dash-hero-banner" style="position:relative;height:158px;border-radius:16px;overflow:hidden;box-shadow:0 2px 4px rgba(65,47,33,0.05),0 20px 48px -26px rgba(65,47,33,0.45);' + _dashBannerStyle + '">' +
         '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.1) 100%)"></div>' +
         '<div style="position:relative;padding:22px 28px">' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:' + _dashTxt + ';opacity:0.85;margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
@@ -2177,9 +2178,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var isArchCard = p.status === 'archived';
       var isSel = !!admSelected[p.id];
       var clickAttr = admSelectMode ? 'onclick="admToggleSelect(\''+p.id+'\')"' : 'onclick="adminNav(\'/admin/projects/'+p.id+'\')"';
-      var hoverAttr = admSelectMode ? '' : ' onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 32px rgba(92,70,51,0.14)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'"';
+      var _restShadow = '0 1px 2px rgba(65,47,33,0.04),0 12px 32px -22px rgba(65,47,33,0.30)';
+      var hoverAttr = admSelectMode ? '' : ' onmouseenter="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 4px 10px rgba(65,47,33,0.06),0 24px 52px -24px rgba(65,47,33,0.42)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\''+_restShadow+'\'"';
       var selBorder = (admSelectMode && isSel) ? 'var(--brown)' : 'var(--border)';
-      return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--surface);border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
+      return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--surface);border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+(admSelectMode&&isSel?selBorder:'rgba(65,47,33,0.07)')+';border-radius:16px;width:100%;box-shadow:'+_restShadow+';transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
         '<div data-pid="'+p.id+'" style="position:relative;height:118px;background:'+bannerBg+'">' +
           (!p.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
           (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#412F21':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#412F21':'#EDE9E1')+';display:flex;align-items:center;justify-content:center;color:#F2E5C2;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
