@@ -7,37 +7,40 @@ const SESSION_TTL = 7 * 24 * 3600;
 const STYLE_CSS = `/* Seed to Bloom — DA officielle */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600&display=swap');
 :root {
-  /* Ecrin — legacy tokens remappes vers la palette terre/glycine/brume/paille (aucun vert) */
-  --brown: #5c4633;
-  --navy: #5c4633;
-  --sidebar-bg: #5c4633;
-  --lavender: #E4D1FE;
-  --blue-light: #EFE1B0;
-  --cream: #EFE1B0;
-  --bg: #ffffff;
+  /* Seed to Bloom — palette officielle 2026 (sans bleu) */
+  --humus: #1C1205;   /* texte sur fond clair · boutons primaires */
+  --terre: #412F21;   /* accents · boutons secondaires · fonds fonces */
+  --paille: #F2E5C2;  /* texte/boutons sur fond fonce */
+  --brume: #F0E8FF;   /* mise en avant · etat actif sidebar */
+  --lin: #F8F6F2;     /* sidebar · cartes · en-tete */
+  /* legacy tokens remappes vers la palette ci-dessus */
+  --brown: #412F21;
+  --navy: #1C1205;
+  --sidebar-bg: #F8F6F2;
+  --lavender: #F0E8FF;
+  --blue-light: #F2E5C2;
+  --cream: #412F21;
+  --bg: #FFFFFF;
   --white: #FFFFFF;
-  --text: #2b1a0e;
+  --text: #1C1205;
   --muted: #8a6f54;
-  --border: #e2d9ce;
-  --surface: #f3ede4;
-  --sage: #5c4633;
-  --sky: #BAD1FD;
-  --sidebar-text: #EFE1B0;
+  --border: #EDE9E1;
+  --surface: #F8F6F2;
+  --sage: #412F21;
+  --sky: #E4D1FE;
+  --sidebar-text: #1C1205;
   --red: #9b3a2e;
   --radius: 10px;
-  --terre: #5c4633;
-  --terre-600: #8a6f54;
+  --terre-600: #5c4633;
   --terre-200: #c8b29a;
-  --paille: #EFE1B0;
-  --bone: #ffffff;
-  --bone-d: #e2d9ce;
-  --nuit: #2b3d5f;
-  --brume: #BAD1FD;
+  --bone: #FFFFFF;
+  --bone-d: #EDE9E1;
+  --nuit: #5c4633;
   --glycine: #E4D1FE;
   --st-todo: #d4c4b0;
-  --st-progress: #7c9bdc;
+  --st-progress: #a98bd6;
   --st-review: #c9952f;
-  --st-done: #5c4633;
+  --st-done: #412F21;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,15 +58,15 @@ h1, h2, h3, h4, .serif { font-family: 'Cormorant Garamond', Georgia, serif; font
 em, .italic { font-style: italic; }
 
 .loading-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
-.spinner { width: 32px; height: 32px; border: 2px solid rgba(5,24,51,0.12); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.spinner { width: 32px; height: 32px; border: 2px solid rgba(28,18,5,0.12); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: var(--blue-light); padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 1000; opacity: 0; transform: translateY(10px); transition: all 0.25s ease; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateY(0); }
 
-.modal-backdrop { position: fixed; inset: 0; background: rgba(5,24,51,0.35); z-index: 200; display: none; align-items: center; justify-content: center; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(28,18,5,0.35); z-index: 200; display: none; align-items: center; justify-content: center; }
 .modal-backdrop.open { display: flex; }
-.modal { background: #fff; border-radius: 14px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 48px rgba(5,24,51,0.15); }
+.modal { background: #fff; border-radius: 14px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 48px rgba(28,18,5,0.15); }
 .modal h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--navy); margin-bottom: 18px; font-weight: 400; font-style: italic; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
@@ -83,9 +86,9 @@ textarea { resize: vertical; min-height: 72px; }
 .btn:hover { opacity: 0.82; }
 .btn:active { opacity: 0.75; transform: scale(0.98); }
 .btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
-.btn--primary { background: var(--lavender); color: var(--brown); }
-.btn--sage { background: var(--lavender); color: var(--navy); }
-.btn--outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn--primary { background: var(--navy); color: var(--blue-light); }
+.btn--sage { background: var(--terre); color: var(--paille); }
+.btn--outline { background: transparent; border: 1.5px solid var(--terre); color: var(--terre); }
 .btn--danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 .btn--sm { padding: 5px 12px; font-size: 12px; }
 .btn:hover { opacity: 0.82; }
@@ -121,7 +124,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   mix-blend-mode: screen;
 }
 .sidebar > * { position: relative; z-index: 1; }
-.sidebar-header { padding: 26px 24px 22px; background: var(--brown); border-bottom: 1px solid rgba(239,225,176,0.12); position: relative; overflow: hidden; }
+.sidebar-header { padding: 26px 24px 22px; background: var(--sidebar-bg); border-bottom: 1px solid rgba(28,18,5,0.08); position: relative; overflow: hidden; }
 .sidebar-header::after {
   content: '';
   position: absolute;
@@ -135,10 +138,10 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 }
 .sidebar-logo { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: var(--cream); font-style: italic; letter-spacing: 0.3px; display: flex; align-items: center; gap: 10px; }
 .sidebar-logo img { max-height: 36px; width: auto; }
-.sidebar-sub { font-size: 9px; color: rgba(239,225,176,0.6); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.2em; }
+.sidebar-sub { font-size: 9px; color: rgba(28,18,5,0.5); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.2em; }
 .sidebar-new {
   margin: 10px 12px 4px; display: block; text-align: center; padding: 9px 12px;
-  background: var(--lavender); color: var(--brown); border-radius: 8px; text-decoration: none;
+  background: var(--navy); color: var(--blue-light); border-radius: 8px; text-decoration: none;
   font-size: 13px; font-weight: 600; transition: opacity 0.2s; cursor: pointer;
   border: none; font-family: inherit; width: calc(100% - 24px);
 }
@@ -149,15 +152,15 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none;
   cursor: pointer; font-family: 'Inter Tight', sans-serif; font-size: 12px; font-weight: 500;
   letter-spacing: 0.08em; text-transform: uppercase;
-  background: transparent; color: rgba(239,225,176,0.6); transition: background 0.15s, color 0.15s;
+  background: transparent; color: rgba(28,18,5,0.6); transition: background 0.15s, color 0.15s;
 }
-.side-tab:hover { background: rgba(242,229,194,0.05); color: var(--sidebar-text); }
-.side-tab.active { background: rgba(242,229,194,0.10); color: var(--sidebar-text); }
+.side-tab:hover { background: rgba(28,18,5,0.05); color: var(--humus); }
+.side-tab.active { background: var(--brume); color: var(--humus); }
 .side-tab__badge { margin-left: auto; background: var(--lavender); color: var(--brown); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
 .side-cta {
   margin: 12px 12px 6px; display: flex; align-items: center; justify-content: center; gap: 6px;
   width: calc(100% - 24px); padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer;
-  font-family: 'Inter Tight', sans-serif; font-size: 13px; font-weight: 600; background: var(--lavender); color: var(--brown);
+  font-family: 'Inter Tight', sans-serif; font-size: 13px; font-weight: 600; background: var(--navy); color: var(--blue-light);
   transition: opacity 0.15s;
 }
 .side-cta:hover { opacity: 0.88; }
@@ -166,19 +169,19 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
   padding: 10px 16px; cursor: pointer; border-left: 2px solid transparent;
   transition: background 0.12s; text-decoration: none; display: block; color: inherit;
 }
-.project-item:hover { background: rgba(0,0,0,0.15); }
+.project-item:hover { background: rgba(28,18,5,0.05); }
 .project-item-wrap { position: relative; }
-.project-item-del { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(0,0,0,0.25); border: none; color: rgba(239,225,176,0.55); cursor: pointer; width: 26px; height: 26px; border-radius: 7px; display: none; align-items: center; justify-content: center; padding: 0; }
+.project-item-del { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(28,18,5,0.07); border: none; color: rgba(28,18,5,0.5); cursor: pointer; width: 26px; height: 26px; border-radius: 7px; display: none; align-items: center; justify-content: center; padding: 0; }
 .project-item-wrap:hover .project-item-del { display: flex; }
 .project-item-del:hover { background: var(--red); color: #fff; }
 .project-item:focus-visible { outline: 2px solid var(--blue-light); outline-offset: -2px; }
-.project-item.active { background: rgba(0,0,0,0.2); border-left-color: var(--lavender); }
+.project-item.active { background: var(--brume); border-left-color: var(--terre); }
 .project-item__name { font-size: 13px; font-weight: 500; color: var(--sidebar-text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.project-item__title { font-size: 12px; color: rgba(239,225,176,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-item__title { font-size: 12px; color: rgba(28,18,5,0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .project-item__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .unread-badge { background: var(--lavender); color: var(--brown); font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 600; }
-.deadline-badge { font-size: 10px; color: rgba(239,225,176,0.75); }
+.deadline-badge { font-size: 10px; color: rgba(28,18,5,0.55); }
 
 .main { flex: 1; overflow-y: auto; background: var(--bg); }
 .main-inner { max-width: 1280px; margin: 0 auto; padding: 28px 32px 80px; }
@@ -192,10 +195,10 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .proj-banner__inner { position: relative; z-index: 1; }
 .proj-banner__inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .proj-banner__title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-style: italic; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.55); margin: 0; line-height: 1.25; }
-.proj-banner[data-light] .proj-banner__title { color: #051833; text-shadow: none; }
+.proj-banner[data-light] .proj-banner__title { color: #1C1205; text-shadow: none; }
 .proj-banner__sub { color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-.proj-banner[data-light] .proj-banner__sub { color: rgba(5,24,51,0.7); text-shadow: none; }
-.proj-banner[data-light] .btn--ghost { background: rgba(5,24,51,0.08); color: #051833; border-color: rgba(5,24,51,0.3); }
+.proj-banner[data-light] .proj-banner__sub { color: rgba(28,18,5,0.7); text-shadow: none; }
+.proj-banner[data-light] .btn--ghost { background: rgba(28,18,5,0.08); color: #1C1205; border-color: rgba(28,18,5,0.3); }
 /* Tab nav */
 .proj-tabnav { display: flex; gap: 2px; padding: 0 32px; background: var(--white); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; }
 .proj-tabnav__btn { padding: 12px 20px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); transition: all 0.15s; white-space: nowrap; }
@@ -212,7 +215,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (max-width: 1000px) { .proj-grid, .dash-grid { grid-template-columns: 1fr; } }
 
-.card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; transition: border-color 0.15s; }
+.card { background: var(--lin); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; transition: border-color 0.15s; }
 .card:hover { border-color: var(--card-hover, var(--border)); }
 .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .card-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--navy); font-weight: 400; font-style: italic; }
@@ -222,8 +225,8 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 
 /* Steps — admin cards */
 .step-cards { display: grid; gap: 12px; }
-.step-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 18px; background: var(--white); transition: box-shadow 0.15s; position: relative; }
-.step-card:hover { box-shadow: 0 3px 14px rgba(5,24,51,0.07); }
+.step-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 18px; background: var(--lin); transition: box-shadow 0.15s; position: relative; }
+.step-card:hover { box-shadow: 0 3px 14px rgba(28,18,5,0.07); }
 .step-card--done { border-color: var(--terre-200); background: #f7efff; }
 .step-card--waiting { border-color: var(--lavender); background: #f9f7ff; }
 .step-card--active { border-color: var(--sky); background: #f5f8ff; }
@@ -255,7 +258,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .file-name-col { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+.stat-card { background: var(--lin); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
 .stat-card__num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 400; color: var(--navy); line-height: 1; margin-bottom: 6px; }
 .stat-card__label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
 .projects-table { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -336,7 +339,7 @@ const ADMIN_CSS = `/* Admin — DA Seed to Bloom */
 .apb-add { width:100%;padding:8px;border:1.5px dashed var(--border);background:none;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit; }
 .apb-add:hover { border-color:var(--lavender);color:var(--navy); }
 .apb-placeholder { font-size:12px;color:var(--muted);font-style:italic;padding:4px 0; }
-.apb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
+.apb-modal { position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
 .apb-modal__box { background:#fff;border-radius:14px;padding:24px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto; }
 .apb-modal__title { font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .apb-modal label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin:0 0 5px; }
@@ -350,21 +353,21 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
 :root {
   /* Ecrin palette */
   --terre-900:#1a120a; --terre-800:#291f15; --terre:#412F21;
-  --terre-600:#5c4633; --terre-400:#8a6f54; --terre-200:#c8b29a;
-  --nuit-900:#020a1a; --nuit:#051833; --nuit-700:#122444;
-  --nuit-500:#2b3d5f; --nuit-300:#586c8e;
+  --terre-600:#412F21; --terre-400:#8a6f54; --terre-200:#c8b29a;
+  --nuit-900:#0d0803; --nuit:#1C1205; --nuit-700:#2a1d10;
+  --nuit-500:#5c4633; --nuit-300:#8a6f54;
   --glycine-50:#f7efff; --glycine-200:#efddff; --glycine:#E4D1FE;
   --glycine-700:#a98bd6; --glycine-900:#6c4ea4;
-  --brume-50:#ecf2ff; --brume-200:#d5e3ff; --brume:#BAD1FD;
-  --brume-700:#7c9bdc; --brume-900:#4a6ba8;
+  --brume-50:#f7efff; --brume-200:#efddff; --brume:#E4D1FE;
+  --brume-700:#a98bd6; --brume-900:#6c4ea4;
   --paille-200:#fbf3d8; --paille:#F2E5C2; --paille-700:#c9b585;
   --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb;
   /* legacy aliases for compat */
   --brown: #412F21;
-  --navy: #051833;
-  --sidebar-bg: #051833;
+  --navy: #1C1205;
+  --sidebar-bg: #1C1205;
   --lavender: #E4D1FE;
-  --blue-light: #BAD1FD;
+  --blue-light: #E4D1FE;
   --cream: #F2E5C2;
   --bg: #ffffff;
   --white: #FFFFFF;
@@ -372,15 +375,15 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --muted: #8a6f54;
   --border: #eae5dc;
   --surface: #f3ede3;
-  --sage: #7c9bdc;
-  --sky: #BAD1FD;
-  --sidebar-text: #BAD1FD;
+  --sage: #a98bd6;
+  --sky: #E4D1FE;
+  --sidebar-text: #E4D1FE;
   --orange: #c9952f;
   --radius: 10px;
-  --shadow: 0 1px 0 0 rgba(5,24,51,0.06);
+  --shadow: 0 1px 0 0 rgba(28,18,5,0.06);
   --sw: 256px;
   /* status */
-  --st-todo:#a98bd6; --st-progress:#7c9bdc; --st-review:#c9952f; --st-done:#5c4633;
+  --st-todo:#a98bd6; --st-progress:#a98bd6; --st-review:#c9952f; --st-done:#412F21;
   /* fonts */
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
   --font-body:'Alegreya',Georgia,'Times New Roman',serif;
@@ -390,9 +393,9 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
   /* shape */
   --radius-1:2px; --radius-2:6px; --radius-3:10px; --radius-pill:999px;
-  --shadow-1:0 1px 0 0 rgba(5,24,51,0.06);
-  --shadow-2:0 10px 28px -14px rgba(5,24,51,0.20);
-  --shadow-3:0 28px 64px -28px rgba(5,24,51,0.30);
+  --shadow-1:0 1px 0 0 rgba(28,18,5,0.06);
+  --shadow-2:0 10px 28px -14px rgba(28,18,5,0.20);
+  --shadow-3:0 28px 64px -28px rgba(28,18,5,0.30);
   --ease:cubic-bezier(0.16,1,0.3,1); --dur:240ms;
   /* button tokens */
   --btn-primary-bg:var(--glycine); --btn-primary-fg:var(--terre);
@@ -455,7 +458,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-sidebar__footer { padding: 14px 18px; border-top: 1px solid rgba(186,209,253,0.1); margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
 
 /* Portal topbar — sticky breadcrumb (desktop) */
-.cp-ptopbar { position: sticky; top: 0; z-index: 20; background: rgba(250,248,244,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bone-d); padding: 18px 48px; display: flex; align-items: center; gap: 14px; }
+.cp-ptopbar { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bone-d); padding: 18px 48px; display: flex; align-items: center; gap: 14px; }
 .cp-ptopbar__name { font-family: var(--font-micro); font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--terre-400); }
 .cp-ptopbar__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-weight: 400; }
 .cp-ptopbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
@@ -636,7 +639,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-topbar { display: flex; align-items: center; justify-content: space-between; background: var(--nuit); border-bottom: none; padding: 14px 20px; position: sticky; top: 0; z-index: 10; }
   .cp-topbar__logo { font-family: var(--font-display); font-size: 15px; color: var(--brume); font-style: italic; }
   .cp-topbar__name { font-family: var(--font-micro); font-size: var(--fs-micro); color: rgba(186,209,253,0.65); letter-spacing: 0.06em; text-transform: uppercase; }
-  .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(5,24,51,0.04); border-bottom: 1px solid var(--bone-d); }
+  .cp-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(28,18,5,0.04); border-bottom: 1px solid var(--bone-d); }
   .cp-pills::-webkit-scrollbar { display: none; }
   .cp-pill { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); background: var(--card); border: 1px solid var(--bone-d); cursor: pointer; font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); white-space: nowrap; transition: all 0.15s; letter-spacing: 0.06em; text-transform: uppercase; }
   .cp-pill.active { background: var(--terre); color: var(--paille); border-color: var(--terre); }
@@ -695,8 +698,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpb-blk-body { padding:6px 10px; }
 .cpb-add-blk { width:100%;margin-top:6px;padding:6px;border:1.5px dashed var(--border);background:none;border-radius:7px;cursor:pointer;font-size:12px;color:var(--muted);font-family:inherit;transition:all 0.12s; }
 .cpb-add-blk:hover { border-color:var(--lavender);color:var(--navy); }
-.cpb-modal { position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
-.cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(5,24,51,0.18); }
+.cpb-modal { position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
+.cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(28,18,5,0.18); }
 .cpb-modal__title { font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .cpb-modal__row { margin-bottom:12px; }
 .cpb-modal__label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin-bottom:5px; }
@@ -763,31 +766,31 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Couleurs personnalisees ─────────────────────────────────────────────────
   var COLOR_DEFAULTS = {
-    '--navy':       '#051833',
-    '--sidebar-bg': '#051833',
+    '--navy':       '#1C1205',
+    '--sidebar-bg': '#F8F6F2',
     '--brown':      '#412F21',
-    '--sidebar-text':'#BAD1FD',
-    '--lavender':   '#E4D1FE',
-    '--blue-light': '#BAD1FD',
-    '--cream':      '#EFE1B0',
-    '--bg':         '#ffffff',
-    '--surface':    '#F5F2EC',
-    '--st-discovery':  '#d4e4f0',
-    '--st-in-progress':'#7c9bdc',
+    '--sidebar-text':'#1C1205',
+    '--lavender':   '#F0E8FF',
+    '--blue-light': '#F2E5C2',
+    '--cream':      '#412F21',
+    '--bg':         '#FFFFFF',
+    '--surface':    '#F8F6F2',
+    '--st-discovery':  '#e3d6c2',
+    '--st-in-progress':'#a98bd6',
     '--st-waiting':   '#e8a87c',
     '--st-review':    '#b0a0d4',
-    '--st-delivered':  '#1a2744',
+    '--st-delivered':  '#412F21',
     '--st-archived':  '#aaaaaa',
-    '--card-hover':    '#BAD1FD',
+    '--card-hover':    '#E3DBCE',
   };
 
   var COLOR_LABELS = [
     { key: '--sidebar-bg', label: 'Fond sidebar',       section: 'Sidebar' },
-    { key: '--brown',      label: 'En-tete sidebar',    section: 'Sidebar' },
+    { key: '--brown',      label: 'Accent (terre)',     section: 'Sidebar' },
     { key: '--sidebar-text',label:'Texte projets',        section: 'Sidebar' },
-    { key: '--cream',      label: 'Texte en-tete',      section: 'Sidebar' },
+    { key: '--cream',      label: 'Texte logo',         section: 'Sidebar' },
     { key: '--navy',       label: 'Fond bouton principal', section: 'Interface' },
-    { key: '--lavender',   label: 'Fond bouton secondaire', section: 'Interface' },
+    { key: '--lavender',   label: 'Surlignage / actif', section: 'Interface' },
     { key: '--blue-light', label: 'Texte sur bouton principal', section: 'Interface' },
     { key: '--bg',         label: 'Fond de page',     section: 'Interface' },
     { key: '--surface',    label: 'Fond des cartes',  section: 'Interface' },
@@ -822,6 +825,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   function loadTheme() {
     var saved = localStorage.getItem('bloom_colors');
+    // Palette v2 (Seed to Bloom 2026, sans bleu) : on reinitialise les anciens themes sauvegardes
+    if (localStorage.getItem('bloom_palette_v') !== '2') {
+      localStorage.removeItem('bloom_colors');
+      localStorage.setItem('bloom_palette_v', '2');
+      saved = null;
+    }
     var colors = saved ? JSON.parse(saved) : Object.assign({}, COLOR_DEFAULTS);
     // Migration : --navy controlait avant le fond sidebar ET les boutons.
     // On deplace l'ancienne valeur vers --sidebar-bg et on rend --navy aux boutons,
@@ -875,7 +884,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
     var title = document.createElement('strong');
-    title.style.cssText = 'font-size:14px;color:#051833';
+    title.style.cssText = 'font-size:14px;color:#1C1205';
     title.textContent = 'Couleurs';
     var resetBtn = document.createElement('button');
     resetBtn.textContent = 'Reinitialiser';
@@ -958,7 +967,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // RGAA 3.2 — texte lisible sur le fond du badge
   var STATUS_TEXT_VARS = {
-    discovery: 'var(--st-discovery-t,#2b3d5f)', in_progress: 'var(--st-in-progress-t,#2b3d5f)',
+    discovery: 'var(--st-discovery-t,#5c4633)', in_progress: 'var(--st-in-progress-t,#5c4633)',
     waiting_client: 'var(--st-waiting-t,#5a2c0e)', review: 'var(--st-review-t,#2a1d4a)',
     delivered: 'var(--st-delivered-t,#FFFFFF)', archived: 'var(--st-archived-t,#2a2a2a)',
   };
@@ -972,7 +981,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var ADMIN_TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Supports', custom:'Personnalise' };
   var ADMIN_TYPE_ACCENT = {
     glycine: { soft:'rgba(228,209,254,0.22)', color:'rgba(30,16,54,0.7)', fg:'#E4D1FE' },
-    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(5,24,51,0.7)',  fg:'#BAD1FD' },
+    brume:   { soft:'rgba(186,209,253,0.22)', color:'rgba(28,18,5,0.7)',  fg:'#E4D1FE' },
     terre:   { soft:'rgba(239,225,176,0.22)', color:'rgba(38,27,18,0.7)', fg:'#DCC999' },
   };
   function adminTypeBadge(type) {
@@ -1083,13 +1092,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   function showConfirm(msg, onOk, opts) {
     opts = opts || {};
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:10px">' + (opts.title || 'Confirmation') + '</div>' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:10px">' + (opts.title || 'Confirmation') + '</div>' +
       '<div style="font-size:14px;color:#5a6a7e;line-height:1.5;margin-bottom:22px">' + msg + '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_conf-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
-        '<button id="_conf-ok" style="padding:9px 20px;background:'+(opts.danger?'#9b3a2e':'#5c4633')+';color:'+(opts.danger?'#fff':'#EFE1B0')+';border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Confirmer') + '</button>' +
+        '<button id="_conf-ok" style="padding:9px 20px;background:'+(opts.danger?'#9b3a2e':'#412F21')+';color:'+(opts.danger?'#fff':'#F2E5C2')+';border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Confirmer') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -1102,16 +1111,16 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   function showPrompt(title, label, defaultVal, onOk, opts) {
     opts = opts || {};
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:6px">' + title + '</div>' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:6px">' + title + '</div>' +
       (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
       (opts.hint ? '<div style="font-size:12px;color:#aaa;margin-bottom:12px">' + opts.hint + '</div>' : '') +
-      '<input id="_prompt-input" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#5c4633" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<input id="_prompt-input" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#412F21" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_prompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
-        '<button id="_prompt-ok" style="padding:9px 20px;background:#5c4633;color:#EFE1B0;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+        '<button id="_prompt-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -1306,7 +1315,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               '<p style="color:var(--muted);font-size:14px">Tous les liens d\'acces generes, par projet.</p>' +
             '</div>' +
             (tokens.length ? '<div style="display:flex;align-items:center;gap:10px">' +
-              '<button id="sp-sel-btn" onclick="spToggleSelect()" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1.5px solid #5c4633;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#5c4633">☑ Selection multiple</button>' +
+              '<button id="sp-sel-btn" onclick="spToggleSelect()" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1.5px solid #412F21;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#412F21">☑ Selection multiple</button>' +
               '<button id="sp-del-btn" onclick="spDeleteSelected()" style="display:none;padding:7px 15px;border:none;border-radius:999px;background:#9b3a2e;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#fff">Supprimer (<span id="sp-sel-count">0</span>)</button>' +
             '</div>' : '') +
           '</div>' +
@@ -1414,7 +1423,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     window._spSelected = {};
     var btn = document.getElementById('sp-sel-btn');
     var delBtn = document.getElementById('sp-del-btn');
-    if (btn) { btn.style.background = window._spSelMode ? '#5c4633' : '#fff'; btn.style.color = window._spSelMode ? '#EFE1B0' : '#5c4633'; }
+    if (btn) { btn.style.background = window._spSelMode ? '#412F21' : '#fff'; btn.style.color = window._spSelMode ? '#F2E5C2' : '#412F21'; }
     document.querySelectorAll('.sp-chk-cell').forEach(function(td){ td.style.display = window._spSelMode ? '' : 'none'; });
     var th = document.getElementById('sp-chk-all-th'); if (th) th.style.display = window._spSelMode ? '' : 'none';
     document.querySelectorAll('input[data-token]').forEach(function(cb){ cb.checked = false; });
@@ -1567,8 +1576,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   }
 
   function settingsCard(title, sub, inner) {
-    return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:26px 28px;margin-bottom:20px">' +
-      '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:23px;color:#5c4633;font-weight:400;margin:0 0 4px">' + title + '</h2>' +
+    return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:26px 28px;margin-bottom:20px">' +
+      '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:23px;color:#412F21;font-weight:400;margin:0 0 4px">' + title + '</h2>' +
       (sub ? '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12.5px;color:#8a6f54;margin:0 0 18px;line-height:1.5">' + sub + '</p>' : '<div style="height:14px"></div>') +
       inner +
     '</div>';
@@ -1577,7 +1586,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   function renderSettings(allProjs) {
     var s = studioSettings;
     var lbl = 'font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:#8a6f54;display:block;margin-bottom:6px';
-    var inp = 'width:100%;padding:9px 12px;border:1px solid #e2d9ce;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:13.5px;color:#5c4633;background:#fff;box-sizing:border-box;outline:none';
+    var inp = 'width:100%;padding:9px 12px;border:1px solid #EDE9E1;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:13.5px;color:#412F21;background:#fff;box-sizing:border-box;outline:none';
 
     // 1. Identite du studio
     var identite =
@@ -1590,25 +1599,25 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     // 2. Couleur des espaces
     var TONES = [
       ['glycine','Glycine','#E4D1FE','#412F21'],
-      ['brume','Brume','#BAD1FD','#051833'],
-      ['paille','Paille','#EFE1B0','#412F21'],
+      ['brume','Brume','#E4D1FE','#1C1205'],
+      ['paille','Paille','#F2E5C2','#412F21'],
       ['terre','Terre','#c8b29a','#412F21'],
-      ['nuit','Nuit','#2b3d5f','#BAD1FD']
+      ['nuit','Nuit','#5c4633','#E4D1FE']
     ];
     var accent =
       '<div style="display:flex;gap:8px;margin-bottom:20px">' +
         [['type','Par type d\'offre'],['forced','Couleur unique']].map(function(m){
           var act = (s.accentMode||'type')===m[0];
-          return '<button onclick="setAccentMode(\''+m[0]+'\')" style="padding:9px 18px;border-radius:999px;border:1px solid '+(act?'#5c4633':'#e2d9ce')+';background:'+(act?'#5c4633':'#fff')+';color:'+(act?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.06em;cursor:pointer">'+m[1]+'</button>';
+          return '<button onclick="setAccentMode(\''+m[0]+'\')" style="padding:9px 18px;border-radius:999px;border:1px solid '+(act?'#412F21':'#EDE9E1')+';background:'+(act?'#412F21':'#fff')+';color:'+(act?'#F2E5C2':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.06em;cursor:pointer">'+m[1]+'</button>';
         }).join('') +
       '</div>' +
       '<div id="set-forced-row" style="display:' + ((s.accentMode==='forced')?'grid':'none') + ';grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">' +
         TONES.map(function(t){
           var act = (s.accentForced||'glycine')===t[0];
-          return '<button onclick="setAccentForced(\''+t[0]+'\')" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:12px;border:'+(act?'2px solid #5c4633':'1px solid #e2d9ce')+';background:'+(act?'#faf4ee':'#fff')+';cursor:pointer;text-align:left">' +
+          return '<button onclick="setAccentForced(\''+t[0]+'\')" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:12px;border:'+(act?'2px solid #412F21':'1px solid #EDE9E1')+';background:'+(act?'#faf4ee':'#fff')+';cursor:pointer;text-align:left">' +
             '<span style="display:block;width:100%;height:36px;border-radius:8px;background:'+t[2]+'"></span>' +
             '<div>' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:#5c4633;margin-bottom:6px">'+t[1]+'</div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:#412F21;margin-bottom:6px">'+t[1]+'</div>' +
               '<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:'+t[2]+';color:'+t[3]+';font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em">Apercu bouton</span>' +
             '</div>' +
           '</button>';
@@ -1626,11 +1635,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var cfg = (s.notifications && s.notifications[n[0]]) || { enabled:false, recipients:'', message:'' };
       return '<div style="padding:16px 0;border-bottom:1px solid #efe9e0">' +
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">' +
-          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:500;color:#5c4633">'+n[1]+'</div>' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:500;color:#412F21">'+n[1]+'</div>' +
             '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#8a6f54;margin-top:2px">'+n[2]+'</div></div>' +
           '<label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;cursor:pointer">' +
             '<input type="checkbox" id="set-notif-'+n[0]+'-enabled" '+(cfg.enabled?'checked':'')+' onchange="toggleNotifRow(\''+n[0]+'\')" style="opacity:0;width:0;height:0">' +
-            '<span id="set-notif-'+n[0]+'-track" style="position:absolute;inset:0;border-radius:999px;background:'+(cfg.enabled?'#5c4633':'#d4c4b0')+';transition:background 160ms"></span>' +
+            '<span id="set-notif-'+n[0]+'-track" style="position:absolute;inset:0;border-radius:999px;background:'+(cfg.enabled?'#412F21':'#d4c4b0')+';transition:background 160ms"></span>' +
             '<span id="set-notif-'+n[0]+'-knob" style="position:absolute;top:3px;left:'+(cfg.enabled?'21px':'3px')+';width:18px;height:18px;border-radius:50%;background:#fff;transition:left 160ms"></span>' +
           '</label>' +
         '</div>' +
@@ -1677,7 +1686,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="padding:34px 40px 60px;max-width:860px">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;flex-wrap:wrap;gap:12px">' +
               '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:#8a6f54;margin-bottom:6px">Atelier</div>' +
-                '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:38px;color:#5c4633;font-weight:400;line-height:1;margin:0">Reglages</h1></div>' +
+                '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:38px;color:#412F21;font-weight:400;line-height:1;margin:0">Reglages</h1></div>' +
               '<button class="btn btn--primary" onclick="saveSettings()">Enregistrer</button>' +
             '</div>' +
             settingsCard('Identite du studio', 'Nom et signature utilises dans les e-mails et le portail.', identite) +
@@ -1690,7 +1699,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   items: [
                     { key:'--banner-partenaire', label:'Partenaire', def:'#412F21' },
                     { key:'--banner-identite',   label:'Identité',   def:'#a98bd6' },
-                    { key:'--banner-site',        label:'Site web',   def:'#7c9bdc' },
+                    { key:'--banner-site',        label:'Site web',   def:'#a98bd6' },
                     { key:'--banner-maintenance', label:'Maintenance',def:'#8a6f54' },
                     { key:'--banner-support',     label:'Support',    def:'#6c4ea4' },
                     { key:'--banner-custom',      label:'Autre',      def:'#DCC999' },
@@ -1698,12 +1707,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 },
                 { title: 'Portail client — thèmes par type',
                   items: [
-                    { key:'--cp-partenaire-dk', label:'Partenaire – fond sidebar', def:'#051833' },
-                    { key:'--cp-partenaire-lt', label:'Partenaire – accent clair', def:'#BAD1FD' },
+                    { key:'--cp-partenaire-dk', label:'Partenaire – fond sidebar', def:'#1C1205' },
+                    { key:'--cp-partenaire-lt', label:'Partenaire – accent clair', def:'#E4D1FE' },
                     { key:'--cp-identite-dk',   label:'Identité – fond sidebar',  def:'#4a2c5e' },
                     { key:'--cp-identite-lt',   label:'Identité – accent clair',  def:'#E4D1FE' },
-                    { key:'--cp-support-dk',    label:'Support – fond sidebar',   def:'#5c4633' },
-                    { key:'--cp-support-lt',    label:'Support – accent clair',   def:'#EFE1B0' },
+                    { key:'--cp-support-dk',    label:'Support – fond sidebar',   def:'#412F21' },
+                    { key:'--cp-support-lt',    label:'Support – accent clair',   def:'#F2E5C2' },
                   ]
                 },
                 { title: 'Interface admin — sidebar',
@@ -1739,8 +1748,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 ['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],
                 ['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],
                 ['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],
-                ['#ecf2ff','#d4e4ff','#BAD1FD','#7c9bdc','#4a6ba8'],
-                ['#dde5f4','#8fa8cc','#3a5a8a','#0e2d56','#051833'],
+                ['#f7efff','#d4e4ff','#E4D1FE','#a98bd6','#6c4ea4'],
+                ['#f0e8ff','#c9b6ee','#8b6db8','#4a2f6e','#1C1205'],
               ];
               var daSwatchHtml = function(onClickFn) {
                 return '<div style="margin-bottom:14px;padding:10px 12px;background:#fdfaf6;border:1px solid #ede8e0;border-radius:10px">' +
@@ -1769,8 +1778,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                         ['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],
                         ['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],
                         ['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],
-                        ['#ecf2ff','#d4e4ff','#BAD1FD','#7c9bdc','#4a6ba8'],
-                        ['#dde5f4','#8fa8cc','#3a5a8a','#0e2d56','#051833'],
+                        ['#f7efff','#d4e4ff','#E4D1FE','#a98bd6','#6c4ea4'],
+                        ['#f0e8ff','#c9b6ee','#8b6db8','#4a2f6e','#1C1205'],
                       ];
                       var swatches = '<div style="display:flex;gap:2px">' +
                         DA_SW.map(function(col){
@@ -1782,7 +1791,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                         }).join('') +
                       '</div>';
                       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #ede8e0;border-radius:10px;background:#fdfaf6">' +
-                        '<span style="font-size:12px;color:#5c4633;flex:1;min-width:0">'+item.label+'</span>' +
+                        '<span style="font-size:12px;color:#412F21;flex:1;min-width:0">'+item.label+'</span>' +
                         '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
                           swatches +
                           '<label style="position:relative;display:inline-block;cursor:pointer;margin-left:4px;flex-shrink:0">' +
@@ -1796,7 +1805,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '</div>';
               }).join('') +
               '<div style="display:flex;gap:8px;margin-top:8px">' +
-                '<button onclick="resetColors()" style="padding:8px 16px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;font-size:12px;cursor:pointer">Réinitialiser par défaut</button>' +
+                '<button onclick="resetColors()" style="padding:8px 16px;border-radius:8px;border:1px solid #EDE9E1;background:#fff;color:#8a6f54;font-size:12px;cursor:pointer">Réinitialiser par défaut</button>' +
               '</div>';
             })()) +
             settingsCard('Notifications e-mail', 'Quatre declencheurs, chacun avec ses destinataires et un message optionnel.', notifs) +
@@ -1846,7 +1855,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var track = document.getElementById('set-notif-'+k+'-track');
     var knob = document.getElementById('set-notif-'+k+'-knob');
     if (en && fields) fields.style.display = en.checked ? 'grid' : 'none';
-    if (track) track.style.background = en.checked ? '#5c4633' : '#d4c4b0';
+    if (track) track.style.background = en.checked ? '#412F21' : '#d4c4b0';
     if (knob) knob.style.left = en.checked ? '21px' : '3px';
   };
   window.addHoliday = function(){ collectSettings(); studioSettings.holidays.push({ from:'', to:'', message:'' }); apiFetch('/api/projects').then(function(r){return r.ok?r.json():[];}).then(renderSettings); };
@@ -1908,8 +1917,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var _dashBannerData = (function(){ try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || 'null'); } catch(e){ return null; } })();
     var _dashBannerStyle = _dashBannerData && _dashBannerData.url
       ? 'background-image:url(' + _dashBannerData.url + ');background-size:cover;background-position:center'
-      : 'background:' + (_dashBannerData && _dashBannerData.color ? _dashBannerData.color : '#5c4633');
-    var _dashBannerColors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
+      : 'background:' + (_dashBannerData && _dashBannerData.color ? _dashBannerData.color : '#412F21');
+    var _dashBannerColors = ['#412F21','#1C1205','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
     var _dashTxt = (_dashBannerData && _dashBannerData.textColor) || '#fff';
     var heroBanner = '<div style="padding:24px 40px 0">' +
       '<div id="dash-hero-banner" style="position:relative;height:150px;border-radius:10px;overflow:hidden;' + _dashBannerStyle + '">' +
@@ -1918,7 +1927,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:' + _dashTxt + ';opacity:0.85;margin-bottom:6px">Atelier · ' + activeProjects.length + ' espaces actifs</div>' +
           '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:' + _dashTxt + ';font-weight:400">Espaces clients</h1>' +
         '</div>' +
-        '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#5c4633;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
+        '<button onclick="openNewProject()" style="position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:999px;background:#fff;color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;cursor:pointer">+ Nouvel espace</button>' +
         '<button onclick="admEditDashBanner()" title="Personnaliser la bannière" style="position:absolute;bottom:12px;right:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid rgba(255,255,255,0.4);border-radius:999px;background:rgba(0,0,0,0.25);color:rgba(255,255,255,0.85);font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">🖼 Personnaliser</button>' +
       '</div>' +
     '</div>';
@@ -1926,33 +1935,33 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     // Type tabs
     var TYPE_LABELS_SHORT = { identite:'Identite', site:'Site', maintenance:'Maintenance', partenaire:'Partenaire' };
     var typeTabsArr = [['all','Tous']].concat(Object.keys(TYPE_LABELS_SHORT).map(function(t){ return [t, TYPE_LABELS_SHORT[t]]; }));
-    var typeTabsHtml = '<div style="padding:18px 40px 0;display:flex;gap:2px;border-bottom:1px solid #e2d9ce;flex-wrap:wrap">' +
+    var typeTabsHtml = '<div style="padding:18px 40px 0;display:flex;gap:2px;border-bottom:1px solid #EDE9E1;flex-wrap:wrap">' +
       typeTabsArr.map(function(pair) {
         var id=pair[0], lab=pair[1];
         var cnt = id==='all' ? projs.filter(function(p){ return p.status!=='archived'; }).length : projs.filter(function(p){ return p.type===id && p.status!=='archived'; }).length;
-        return '<button onclick="admSetTypeFilter(\''+id+'\')" id="adm-type-'+id+'" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(id==='all'?'#5c4633':'transparent')+';color:'+(id==='all'?'#5c4633':'#8a6f54')+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
+        return '<button onclick="admSetTypeFilter(\''+id+'\')" id="adm-type-'+id+'" style="display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:none;border:0;border-bottom:2px solid '+(id==='all'?'#412F21':'transparent')+';color:'+(id==='all'?'#412F21':'#8a6f54')+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
       }).join('') +
     '</div>';
 
     // Filter bar (sticky) — une seule ligne compacte
-    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(250,248,244,0.95);backdrop-filter:blur(8px);padding:10px 40px;border-bottom:1px solid #e2d9ce;display:flex;align-items:center;gap:10px">' +
-      '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher un espace…" style="flex:1;max-width:260px;padding:7px 14px;border:1px solid #e2d9ce;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:12px;background:#fff;color:#5c4633;outline:none">' +
-      '<div style="display:inline-flex;background:#fff;border:1px solid #e2d9ce;border-radius:999px;padding:2px;flex-shrink:0">' +
+    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);padding:10px 40px;border-bottom:1px solid #EDE9E1;display:flex;align-items:center;gap:10px">' +
+      '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher un espace…" style="flex:1;max-width:260px;padding:7px 14px;border:1px solid #EDE9E1;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:12px;background:#fff;color:#412F21;outline:none">' +
+      '<div style="display:inline-flex;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:2px;flex-shrink:0">' +
         [['active','Actifs'],['archived','Archives'],['all','Tous']].map(function(pair) {
           var active = pair[0]==='active';
-          return '<button id="adm-arch-'+pair[0]+'" onclick="admSetArchFilter(\''+pair[0]+'\')" style="padding:5px 12px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'#5c4633':'transparent')+';color:'+(active?'#EFE1B0':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap">'+pair[1]+'</button>';
+          return '<button id="adm-arch-'+pair[0]+'" onclick="admSetArchFilter(\''+pair[0]+'\')" style="padding:5px 12px;border-radius:999px;border:0;cursor:pointer;background:'+(active?'#412F21':'transparent')+';color:'+(active?'#F2E5C2':'#8a6f54')+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap">'+pair[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<select id="dash-sort" onchange="applyProjectFilters()" style="padding:6px 12px;border:1px solid #e2d9ce;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#5c4633;outline:none;cursor:pointer;flex-shrink:0">' +
+      '<select id="dash-sort" onchange="applyProjectFilters()" style="padding:6px 12px;border:1px solid #EDE9E1;border-radius:999px;background:#fff;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#412F21;outline:none;cursor:pointer;flex-shrink:0">' +
         '<option value="deadline">Échéance</option>' +
         '<option value="updated">Récents</option>' +
         '<option value="client">Nom A-Z</option>' +
       '</select>' +
-      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:1.5px solid #e2d9ce;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8a6f54;white-space:nowrap;flex-shrink:0">Sélection multiple</button>' +
+      '<button id="adm-select-toggle" onclick="admToggleSelectMode()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:1.5px solid #EDE9E1;border-radius:999px;background:#fff;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8a6f54;white-space:nowrap;flex-shrink:0">Sélection multiple</button>' +
     '</div>' +
-    '<div id="adm-bulk-bar" style="display:none;position:sticky;top:54px;z-index:19;background:#5c4633;color:#EFE1B0;padding:11px 40px;align-items:center;gap:16px;font-family:\'Inter Tight\',sans-serif">' +
+    '<div id="adm-bulk-bar" style="display:none;position:sticky;top:54px;z-index:19;background:#412F21;color:#F2E5C2;padding:11px 40px;align-items:center;gap:16px;font-family:\'Inter Tight\',sans-serif">' +
       '<span id="adm-bulk-count" style="font-size:13px">0 espace selectionne</span>' +
-      '<button onclick="admSelectAll()" style="background:none;border:1px solid rgba(239,225,176,0.4);border-radius:999px;color:#EFE1B0;padding:5px 12px;cursor:pointer;font-family:inherit;font-size:11px">Tout selectionner</button>' +
+      '<button onclick="admSelectAll()" style="background:none;border:1px solid rgba(239,225,176,0.4);border-radius:999px;color:#F2E5C2;padding:5px 12px;cursor:pointer;font-family:inherit;font-size:11px">Tout selectionner</button>' +
       '<button onclick="admDeleteSelected()" style="margin-left:auto;background:#9b3a2e;border:0;border-radius:999px;color:#fff;padding:7px 16px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:500">Supprimer la selection</button>' +
       '<button onclick="admToggleSelectMode()" style="background:none;border:0;color:rgba(239,225,176,0.7);cursor:pointer;font-family:inherit;font-size:12px">Annuler</button>' +
     '</div>';
@@ -1983,8 +1992,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var toggle = document.getElementById('adm-select-toggle');
     if (bar) bar.style.display = admSelectMode ? 'flex' : 'none';
     if (toggle) {
-      toggle.style.background = admSelectMode ? '#5c4633' : '#fff';
-      toggle.style.color = admSelectMode ? '#EFE1B0' : '#5c4633';
+      toggle.style.background = admSelectMode ? '#412F21' : '#fff';
+      toggle.style.color = admSelectMode ? '#F2E5C2' : '#412F21';
     }
     var n = Object.keys(admSelected).length;
     var cnt = document.getElementById('adm-bulk-count');
@@ -2045,31 +2054,31 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // Personnalisation bannière page Espaces clients
   window.admEditDashBanner = function() {
-    var colors = ['#5c4633','#051833','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
+    var colors = ['#412F21','#1C1205','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
     var cur = (function(){ try { return JSON.parse(localStorage.getItem('bloom_dash_banner') || 'null'); } catch(e){ return null; } })();
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:15px;font-weight:600;color:#051833;margin-bottom:16px">Personnaliser la bannière</div>' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:15px;font-weight:600;color:#1C1205;margin-bottom:16px">Personnaliser la bannière</div>' +
       '<div style="font-size:12px;color:#8a6f54;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Couleur</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">' +
-        colors.map(function(c){ return '<button onclick="admSetDashBannerColor(\''+c+'\')" style="width:32px;height:32px;border-radius:50%;background:'+c+';border:'+(cur&&cur.color===c?'3px solid #5c4633':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)" title="'+c+'"></button>'; }).join('') +
+        colors.map(function(c){ return '<button onclick="admSetDashBannerColor(\''+c+'\')" style="width:32px;height:32px;border-radius:50%;background:'+c+';border:'+(cur&&cur.color===c?'3px solid #412F21':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)" title="'+c+'"></button>'; }).join('') +
       '</div>' +
       '<div style="font-size:12px;color:#8a6f54;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Photo</div>' +
-      '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px dashed #e2d9ce;border-radius:10px;cursor:pointer;font-size:13px;color:#5c4633">' +
+      '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px dashed #EDE9E1;border-radius:10px;cursor:pointer;font-size:13px;color:#412F21">' +
         '📷 Choisir une photo…' +
         '<input type="file" accept="image/*" style="display:none" onchange="admSetDashBannerPhoto(this)">' +
       '</label>' +
-      (cur && cur.url ? '<button onclick="admRemoveDashBanner()" style="margin-top:10px;width:100%;padding:8px;border:1px solid #e2d9ce;border-radius:8px;background:none;color:#9b3a2e;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Retirer la photo</button>' : '') +
+      (cur && cur.url ? '<button onclick="admRemoveDashBanner()" style="margin-top:10px;width:100%;padding:8px;border:1px solid #EDE9E1;border-radius:8px;background:none;color:#9b3a2e;font-family:\'Inter Tight\',sans-serif;font-size:12px;cursor:pointer">Retirer la photo</button>' : '') +
       '<div style="font-size:12px;color:#8a6f54;margin:18px 0 10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:500">Couleur du texte</div>' +
       '<div style="display:flex;align-items:center;gap:8px">' +
-        '<button onclick="admSetDashBannerTextColor(\'#ffffff\')" title="Blanc" style="width:32px;height:32px;border-radius:50%;background:#fff;border:'+(!cur||!cur.textColor||cur.textColor==='#ffffff'?'3px solid #5c4633':'2px solid #e2d9ce')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.15)"></button>' +
-        '<button onclick="admSetDashBannerTextColor(\'#051833\')" title="Foncé" style="width:32px;height:32px;border-radius:50%;background:#051833;border:'+(cur&&cur.textColor==='#051833'?'3px solid #5c4633':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)"></button>' +
-        '<label title="Couleur personnalisée" style="width:32px;height:32px;border-radius:50%;border:2px solid #e2d9ce;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;position:relative">&#9998;<input type="color" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="admSetDashBannerTextColor(this.value)"></label>' +
+        '<button onclick="admSetDashBannerTextColor(\'#ffffff\')" title="Blanc" style="width:32px;height:32px;border-radius:50%;background:#fff;border:'+(!cur||!cur.textColor||cur.textColor==='#ffffff'?'3px solid #412F21':'2px solid #EDE9E1')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.15)"></button>' +
+        '<button onclick="admSetDashBannerTextColor(\'#1C1205\')" title="Foncé" style="width:32px;height:32px;border-radius:50%;background:#1C1205;border:'+(cur&&cur.textColor==='#1C1205'?'3px solid #412F21':'2px solid transparent')+';cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)"></button>' +
+        '<label title="Couleur personnalisée" style="width:32px;height:32px;border-radius:50%;border:2px solid #EDE9E1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;position:relative">&#9998;<input type="color" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="admSetDashBannerTextColor(this.value)"></label>' +
         '<span style="font-size:11px;color:#a89a88">Utile sur une photo claire</span>' +
       '</div>' +
       '<div style="display:flex;justify-content:flex-end;margin-top:18px">' +
-        '<button id="_db-close" style="padding:8px 18px;background:none;border:1.5px solid #e2d9ce;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:13px">Fermer</button>' +
+        '<button id="_db-close" style="padding:8px 18px;background:none;border:1.5px solid #EDE9E1;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:13px">Fermer</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -2132,8 +2141,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var TYPE_SHORT = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', autre:'Autre' };
     var ACCENT_COLORS = {
       glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-      brume:  { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
-      terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
+      brume:  { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
+      terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21' },
     };
     return list.map(function(p) {
       var u = unreadMap[p.id] || 0;
@@ -2150,7 +2159,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         var today = new Date(); today.setHours(0,0,0,0);
         var d = new Date(p.deadline); d.setHours(0,0,0,0);
         var days = Math.round((d-today)/86400000);
-        if (pct===100) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#5c4633;display:inline-flex;align-items:center;gap:4px">\u2713 Termine</span>';
+        if (pct===100) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#412F21;display:inline-flex;align-items:center;gap:4px">\u2713 Termine</span>';
         else if (days<0) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#9b3a2e">Retard '+Math.abs(days)+' j</span>';
         else if (days<=7) deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c9952f">dans '+days+' j</span>';
         else deadlineHtml = '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54">'+formatDate(p.deadline)+'</span>';
@@ -2173,7 +2182,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       return '<button '+clickAttr+' style="padding:0;overflow:hidden;text-align:left;cursor:pointer;background:var(--surface);border:'+(admSelectMode&&isSel?'2px':'1px')+' solid '+selBorder+';border-radius:14px;width:100%;transition:transform 200ms,box-shadow 200ms;opacity:'+(isArchCard?0.82:1)+'"'+hoverAttr+'>' +
         '<div data-pid="'+p.id+'" style="position:relative;height:118px;background:'+bannerBg+'">' +
           (!p.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
-          (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#5c4633':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#5c4633':'#e2d9ce')+';display:flex;align-items:center;justify-content:center;color:#EFE1B0;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
+          (admSelectMode ? '<div style="position:absolute;top:11px;left:12px;z-index:2;width:24px;height:24px;border-radius:6px;background:'+(isSel?'#412F21':'rgba(255,255,255,0.9)')+';border:1.5px solid '+(isSel?'#412F21':'#EDE9E1')+';display:flex;align-items:center;justify-content:center;color:#F2E5C2;font-size:14px">'+(isSel?'✓':'')+'</div>' : '') +
           '<div style="position:absolute;top:11px;'+(admSelectMode?'left:44px':'left:12px')+';display:flex;gap:7px">' +
             adminTypeBadge(p.type) +
           '</div>' +
@@ -2182,14 +2191,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           '<div id="bp-'+p.id+'" style="display:none;position:absolute;bottom:36px;right:8px;z-index:10;background:#fff;border-radius:10px;padding:8px;box-shadow:0 4px 20px rgba(0,0,0,0.18);display:none;flex-direction:column;gap:6px" onclick="event.stopPropagation()">' +
             '<div style="display:flex;gap:5px;align-items:center">' +
-              [['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],['#ecf2ff','#d4e4ff','#BAD1FD','#7c9bdc','#4a6ba8'],['#dde5f4','#8fa8cc','#3a5a8a','#0e2d56','#051833']].map(function(col){
+              [['#f3ede6','#c8b29a','#8a6f54','#412F21','#261b12'],['#fdf8ef','#f0e4c8','#DCC999','#b09668','#7a6440'],['#f7f0ff','#ede1ff','#E4D1FE','#a98bd6','#6c4ea4'],['#f7efff','#d4e4ff','#E4D1FE','#a98bd6','#6c4ea4'],['#f0e8ff','#c9b6ee','#8b6db8','#4a2f6e','#1C1205']].map(function(col){
                 return '<div style="display:flex;flex-direction:column;gap:2px">' +
                   col.map(function(c){ return '<span onclick="admSetBannerColor(\''+p.id+'\',\''+c+'\');admToggleBannerPicker(\''+p.id+'\')" title="'+c+'" style="display:block;width:16px;height:16px;border-radius:3px;background:'+c+';cursor:pointer;border:1px solid rgba(0,0,0,0.08)"></span>'; }).join('') +
                 '</div>';
               }).join('') +
               '<label style="position:relative;cursor:pointer;width:22px;height:22px;border-radius:5px;border:1.5px dashed #c8b29a;display:grid;place-items:center" title="Couleur personnalisée">' +
                 icon('edit',10,'#8a6f54') +
-                '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:'#5c4633')+'" onchange="admSetBannerColor(\''+p.id+'\',this.value);admToggleBannerPicker(\''+p.id+'\')" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
+                '<input type="color" value="'+(p.bannerColor&&p.bannerColor.indexOf('#')===0?p.bannerColor:'#412F21')+'" onchange="admSetBannerColor(\''+p.id+'\',this.value);admToggleBannerPicker(\''+p.id+'\')" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none">' +
               '</label>' +
             '</div>' +
           '</div>' : '') +
@@ -2200,11 +2209,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         '<div style="padding:18px 22px 22px">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#5c4633;margin-bottom:3px">'+esc(p.clientName)+'</div>' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#412F21;margin-bottom:3px">'+esc(p.clientName)+'</div>' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#8a6f54;margin-bottom:16px;letter-spacing:0.03em">'+esc(p.clientEmail)+' \xB7 '+esc(p.projectTitle)+'</div>' +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">' +
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
-            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+pct+'%</span>' +
+            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#412F21">'+pct+'%</span>' +
           '</div>' +
           '<div style="width:100%;height:7px;background:#e8e0d4;border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(p.bannerColor||(typeBannerDef)||a.ink)+';border-radius:6px;transition:width 0.4s"></div></div>' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">' +
@@ -2276,8 +2285,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     admTypeFilter = t;
     document.querySelectorAll('[id^="adm-type-"]').forEach(function(btn) {
       var active = btn.id === 'adm-type-'+t;
-      btn.style.borderBottomColor = active ? '#5c4633' : 'transparent';
-      btn.style.color = active ? '#5c4633' : '#8a6f54';
+      btn.style.borderBottomColor = active ? '#412F21' : 'transparent';
+      btn.style.color = active ? '#412F21' : '#8a6f54';
     });
     applyProjectFilters();
   };
@@ -2285,8 +2294,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     admArchFilter = f;
     document.querySelectorAll('[id^="adm-arch-"]').forEach(function(btn) {
       var active = btn.id === 'adm-arch-'+f;
-      btn.style.background = active ? '#5c4633' : 'transparent';
-      btn.style.color = active ? '#EFE1B0' : '#8a6f54';
+      btn.style.background = active ? '#412F21' : 'transparent';
+      btn.style.color = active ? '#F2E5C2' : '#8a6f54';
     });
     applyProjectFilters();
   };
@@ -2314,13 +2323,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             (grp.items.length > 1
               ? '<div class="project-item__title" style="padding-left:8px">' + esc(p.projectTitle) + '</div>'
               : '<div><div class="project-item__name">' + esc(p.clientName) + '</div><div class="project-item__title">' + esc(p.projectTitle) + '</div></div>') +
-            '<div class="project-item__meta">' + adminStatusBadge(p.status) + '<span style="font-size:9px;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:rgba(239,225,176,0.45);white-space:nowrap">' + esc(ADMIN_TYPE_SHORT[p.type]||p.type||'') + '</span>' + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
+            '<div class="project-item__meta">' + adminStatusBadge(p.status) + '<span style="font-size:9px;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:rgba(28,18,5,0.45);white-space:nowrap">' + esc(ADMIN_TYPE_SHORT[p.type]||p.type||'') + '</span>' + (u > 0 ? '<span class="unread-badge">' + u + '</span>' : '') + '</div>' +
           '</a>' +
           '<button class="project-item-del" title="Supprimer cet espace" onclick="event.stopPropagation();adminDeleteProject(\'' + p.id + '\',\'' + esc((delName||'').replace(/'/g,"\\'")) + '\')">' + icon('trash',14) + '</button>' +
         '</div>';
       }).join('');
       if (grp.items.length > 1) {
-        return '<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--blue-light);opacity:.55;padding:8px 16px 3px">' + esc(grp.name) + '</div>' + rows + '</div>';
+        return '<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--terre);opacity:.7;padding:8px 16px 3px">' + esc(grp.name) + '</div>' + rows + '</div>';
       }
       return rows;
     }).join('');
@@ -2328,10 +2337,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return '<nav class="sidebar">' +
       '<div class="sidebar-header">' +
         '<div style="display:flex;align-items:center;gap:11px">' +
-          '<span style="color:var(--lavender);flex-shrink:0">' + icon('flower',22,'color:var(--lavender)') + '</span>' +
+          '<span style="color:var(--terre);flex-shrink:0">' + icon('flower',22,'color:var(--terre)') + '</span>' +
           '<div style="line-height:1.15">' +
             '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:19px;color:var(--cream);white-space:nowrap">Seed to Bloom</div>' +
-            '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.2em;text-transform:uppercase;margin-top:2px">Panel atelier</div>' +
+            '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(28,18,5,0.5);letter-spacing:0.2em;text-transform:uppercase;margin-top:2px">Panel atelier</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -2344,13 +2353,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<button class="side-tab' + (activeSection === 'settings' ? ' active' : '') + '" onclick="window.location.hash=\'settings\'">'+icon('settings',15)+' Reglages</button>' +
       '<button class="side-cta" onclick="openModal(\'modal-new-project\')">+ Nouveau projet</button>' +
       '<div class="project-list">' + items + '</div>' +
-      '<div style="padding:16px 20px;border-top:1px solid rgba(239,225,176,0.12);display:flex;align-items:center;gap:11px">' +
-        '<span style="width:36px;height:36px;border-radius:50%;background:rgba(239,225,176,0.15);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:15px;color:var(--cream);flex-shrink:0">C</span>' +
+      '<div style="padding:16px 20px;border-top:1px solid rgba(28,18,5,0.08);display:flex;align-items:center;gap:11px">' +
+        '<span style="width:36px;height:36px;border-radius:50%;background:rgba(65,47,33,0.12);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:15px;color:var(--cream);flex-shrink:0">C</span>' +
         '<div style="line-height:1.2;flex:1;min-width:0">' +
           '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:17px;color:var(--cream)">' + ((studioSettings&&studioSettings.studioName)||'Studio') + '</div>' +
-          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(239,225,176,0.55);letter-spacing:0.1em;text-transform:uppercase">' + ((studioSettings&&studioSettings.studioSignature)||'Admin') + '</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:rgba(28,18,5,0.5);letter-spacing:0.1em;text-transform:uppercase">' + ((studioSettings&&studioSettings.studioSignature)||'Admin') + '</div>' +
         '</div>' +
-        '<button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;color:rgba(239,225,176,0.4);cursor:pointer;padding:4px;display:grid;place-items:center">' + icon('logout',16) + '</button>' +
+        '<button onclick="doLogout()" title="Deconnexion" style="background:none;border:none;color:rgba(28,18,5,0.4);cursor:pointer;padding:4px;display:grid;place-items:center">' + icon('logout',16) + '</button>' +
       '</div>' +
     '</nav>';
   }
@@ -2593,17 +2602,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var numBg = isDone ? aGlyc.soft : '#f2ede6';
       var numBdr = isDone ? aGlyc.mid : '#d4c4b0';
       var statusCol = ADM_STEP_STATUS_COLORS[step.status] || 'var(--terre-200)';
-      var statusSelect = '<select onchange="updateStepStatus(\'' + step.id + '\',this.value)" style="font-size:10.5px;padding:5px 8px;border:1px solid var(--bone-d,#d4c4b0);border-radius:8px;background:#fff;color:#5c4633;font-family:inherit">' +
+      var statusSelect = '<select onchange="updateStepStatus(\'' + step.id + '\',this.value)" style="font-size:10.5px;padding:5px 8px;border:1px solid var(--bone-d,#d4c4b0);border-radius:8px;background:#fff;color:#412F21;font-family:inherit">' +
         ['upcoming','in_progress','waiting_client','done'].map(function(s) {
           return '<option value="' + s + '"' + (s === step.status ? ' selected' : '') + '>' + (ADM_STEP_STATUS_LABELS[s] || s) + '</option>';
         }).join('') + '</select>';
-      return '<div style="border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px;background:#fff;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:start" data-step-id="' + step.id + '">' +
-        '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#5c4633">'+(idx+1)+'</span>' +
+      return '<div style="border:1px solid #EDE9E1;border-radius:14px;padding:18px 20px;background:#fff;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:start" data-step-id="' + step.id + '">' +
+        '<span style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:'+numBg+';border:1px solid '+numBdr+';font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#412F21">'+(idx+1)+'</span>' +
         '<div style="min-width:0">' +
           '<div style="font-weight:600;font-size:14px;color:#2b1a0e;margin-bottom:4px">' + esc(step.title) + '</div>' +
           (step.description ? '<div style="font-size:13px;color:#8a6f54;line-height:1.55;margin-top:3px">' + esc(step.description) + '</div>' : '') +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
-            '<span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.04em;color:#5c4633">' +
+            '<span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.04em;color:#412F21">' +
               '<span style="width:7px;height:7px;border-radius:2px;background:'+statusCol+';transform:rotate(45deg);display:inline-block"></span>' +
               (ADM_STEP_STATUS_LABELS[step.status]||step.status) +
             '</span>' +
@@ -2618,7 +2627,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
           statusSelect +
           '<div style="display:flex;gap:6px">' +
-            '<button style="padding:4px 10px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#5c4633" onclick="openEditStep(' + JSON.stringify(step) + ')">Modifier</button>' +
+            '<button style="padding:4px 10px;border:1px solid #d4c4b0;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#412F21" onclick="openEditStep(' + JSON.stringify(step) + ')">Modifier</button>' +
             '<button style="padding:4px 10px;border:1px solid #e7c6bd;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;color:#9b3a2e" onclick="deleteStep(\'' + step.id + '\')">Suppr.</button>' +
           '</div>' +
         '</div>' +
@@ -2628,10 +2637,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     const messagesHtml = messages.map(function(m) {
       var isCindy = m.author === 'cindy';
       var initials = isCindy ? 'C' : (project.clientName||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
-      var avBg = isCindy ? '#5c4633' : '#E4D1FE';
-      var avFg = isCindy ? '#EFE1B0' : '#6c4ea4';
+      var avBg = isCindy ? '#412F21' : '#E4D1FE';
+      var avFg = isCindy ? '#F2E5C2' : '#6c4ea4';
       var bubbleBg = isCindy ? '#fff' : '#E4D1FE';
-      var bubbleBdr = isCindy ? '1px solid #e2d9ce' : 'none';
+      var bubbleBdr = isCindy ? '1px solid #EDE9E1' : 'none';
       var brL = isCindy ? '4px' : '14px';
       var brR = isCindy ? '14px' : '4px';
       var isUnread = !m.readByAdmin && m.author === 'client';
@@ -2687,8 +2696,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     invoices.forEach(function(i){ window._adminInvReg[i.id] = i; });
     const ADM_INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente', draft:'Brouillon' };
-    const ADM_INV_COLOR  = { sent:'#BAD1FD', signed:'#E4D1FE', paid:'#5c4633', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c', draft:'#ddd' };
-    const ADM_INV_TXT    = { sent:'#2b3d5f', signed:'#6c4ea4', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e', draft:'#555' };
+    const ADM_INV_COLOR  = { sent:'#E4D1FE', signed:'#E4D1FE', paid:'#412F21', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c', draft:'#ddd' };
+    const ADM_INV_TXT    = { sent:'#5c4633', signed:'#6c4ea4', paid:'#F2E5C2', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e', draft:'#555' };
     const invoicesHtml = invoices.map(function(inv) {
       var bg = ADM_INV_COLOR[inv.status] || '#aaa';
       var fg = ADM_INV_TXT[inv.status] || '#222';
@@ -2761,10 +2770,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             var stLabel = isArch ? 'Archivé' : isRevoked ? 'Accès révoqué' : 'Espace actif';
             // Style "bannière portail client" : carte arrondie, texte adaptatif clair/foncé.
             var onLight = bannerIsLight; // fond couleur clair (hors photo)
-            var hdrTitleCol = project.bannerTextColor || (onLight ? '#051833' : '#fff');
+            var hdrTitleCol = project.bannerTextColor || (onLight ? '#1C1205' : '#fff');
             var ctlFg = onLight ? '#3a2e22' : '#fff';
-            var ctlBg = onLight ? 'rgba(5,24,51,0.06)' : 'rgba(0,0,0,0.28)';
-            var ctlBd = onLight ? 'rgba(5,24,51,0.18)' : 'rgba(255,255,255,0.32)';
+            var ctlBg = onLight ? 'rgba(28,18,5,0.06)' : 'rgba(0,0,0,0.28)';
+            var ctlBd = onLight ? 'rgba(28,18,5,0.18)' : 'rgba(255,255,255,0.32)';
             return '<div style="padding:22px 28px 0">' +
               '<div style="position:relative;height:208px;border-radius:14px;overflow:hidden;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
               (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
@@ -2784,7 +2793,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">' +
                     adminTypeBadge(project.type) +
                     '<span style="display:inline-flex;align-items:center;gap:6px">' +
-                      '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+';box-shadow:0 0 0 2px '+(onLight?'rgba(5,24,51,0.12)':'rgba(255,255,255,0.25)')+'"></span>' +
+                      '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+';box-shadow:0 0 0 2px '+(onLight?'rgba(28,18,5,0.12)':'rgba(255,255,255,0.25)')+'"></span>' +
                       '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:'+hdrTitleCol+';opacity:0.75">'+stLabel+'</span>' +
                     '</span>' +
                   '</div>' +
@@ -2796,7 +2805,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
                       '<button onclick="addProjectForClient()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">+ Nouveau projet</button>' +
                       (project.clientEmail ? '<button onclick="editClientSpace()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">Voir le portail</button>' : '') +
-                      '<button onclick="openBannerEditor()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#5c4633;color:#EFE1B0;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Personnaliser →</button>' +
+                      '<button onclick="openBannerEditor()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Personnaliser →</button>' +
                     '</div>' +
                   '</div>' +
                 '</div>' +
@@ -2809,7 +2818,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           /* ===== TAB: APERCU ===== */
           '<div id="tab-apercu" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:1240px;' + (_adminProjTab==='apercu' ? '' : 'display:none') + '">' +
             (function(){
-              var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD',ink:'#4a6ba8'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#5c4633'} };
+              var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#412F21'} };
               var sht = SH_ACCENT[TYPE_TONES_SHEET[project.type]] || SH_ACCENT.glycine;
               var allSteps = project.steps || [];
               var dn = allSteps.filter(function(s){ return s.status==='done'; }).length;
@@ -2827,26 +2836,26 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               // Stat tiles
               var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">' +
                 tiles.map(function(t){
-                  return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+                  return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:18px 20px">' +
                     '<div style="width:34px;height:34px;border-radius:9px;background:'+sht.soft+';border:1px solid '+sht.mid+';margin-bottom:12px;display:grid;place-items:center;color:'+sht.ink+'">' + icon(t.icon,17) + '</div>' +
-                    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:30px;color:#5c4633;line-height:1;margin-bottom:4px">'+t.v+'</div>' +
+                    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:30px;color:#412F21;line-height:1;margin-bottom:4px">'+t.v+'</div>' +
                     '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+t.k+'</div>' +
                   '</div>';
                 }).join('') +
               '</div>';
 
               // Items list (steps/tasks/tickets)
-              var ST_COLORS = { upcoming:'#d4c4b0', in_progress:'#7c9bdc', waiting_client:'#c9952f', done:'#5c4633', todo:'#d4c4b0', review:'#b0a0d4', open:'#7c9bdc', closed:'#8a6f54' };
+              var ST_COLORS = { upcoming:'#d4c4b0', in_progress:'#a98bd6', waiting_client:'#c9952f', done:'#412F21', todo:'#d4c4b0', review:'#b0a0d4', open:'#a98bd6', closed:'#8a6f54' };
               var ST_LABELS = { upcoming:'A venir', in_progress:'En cours', waiting_client:'Action client', done:'Termine', todo:'A faire', review:'Revue', open:'Ouvert', closed:'Ferme' };
-              var itemsHtml = '<h4 style="font-family:\'Cormorant Garamond\',serif;font-size:24px;color:#5c4633;margin:0 0 14px;text-transform:capitalize">Les ' + trackLabel + '</h4>' +
+              var itemsHtml = '<h4 style="font-family:\'Cormorant Garamond\',serif;font-size:24px;color:#412F21;margin:0 0 14px;text-transform:capitalize">Les ' + trackLabel + '</h4>' +
                 '<div style="display:grid;gap:10px;margin-bottom:30px">' +
                 allSteps.map(function(t){
                   var sc = ST_COLORS[t.status] || '#d4c4b0';
                   var sl = ST_LABELS[t.status] || t.status;
-                  return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px">' +
+                  return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px">' +
                     '<div style="width:9px;height:9px;border-radius:50%;background:'+sc+';flex-shrink:0"></div>' +
                     '<div style="flex:1;min-width:0">' +
-                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;color:#5c4633">' + esc(t.title) + '</div>' +
+                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;color:#412F21">' + esc(t.title) + '</div>' +
                       '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9.5px;color:#8a6f54;margin-top:2px">' +
                         (t.dueDate ? 'Echeance ' + formatDate(t.dueDate) : 'Sans echeance') +
                         (t.completedAt ? ' · fait le ' + formatDate(t.completedAt) : '') +
@@ -2943,7 +2952,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               // Personalize CTA
               var ctaHtml = '<div style="background:#f7efff;border:1px solid #E4D1FE;border-radius:14px;padding:22px 26px;display:flex;align-items:center;gap:20px;margin-bottom:24px">' +
                 '<div style="flex:1">' +
-                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633">Mettre en page ce portail</div>' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#412F21">Mettre en page ce portail</div>' +
                   '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#8a6f54;margin-top:3px">Composez les sections que verra ' + esc(project.clientName.split(' ')[0]) + '.</p>' +
                 '</div>' +
                 '<button class="btn btn--primary" onclick="openBannerEditor()">Personnaliser →</button>' +
@@ -2980,13 +2989,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 var days = Math.round(ms / 86400000);
                 if (days > 0) dur = days + ' j';
               }
-              var SH_ACCENT2 = { glycine:{soft:'#f7efff',mid:'#E4D1FE'}, brume:{soft:'#ecf2ff',mid:'#BAD1FD'}, terre:{soft:'#ece2d0',mid:'#c8b29a'} };
+              var SH_ACCENT2 = { glycine:{soft:'#f7efff',mid:'#E4D1FE'}, brume:{soft:'#f7efff',mid:'#E4D1FE'}, terre:{soft:'#ece2d0',mid:'#c8b29a'} };
               var sht2 = SH_ACCENT2[TYPE_TONES_SHEET[project.type]] || SH_ACCENT2.glycine;
               var tiles3Html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">' +
                 [{ v:startDisp, k:'Demarrage', i:'calendar' }, { v:dueDisp+(project.deadlineExtended?' (prolongee)':''), k:'Echeance', i:'calendar' }, { v:dur, k:'Duree', i:'clock' }].map(function(t){
-                  return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+                  return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:18px 20px">' +
                     '<div style="width:34px;height:34px;border-radius:9px;background:'+sht2.soft+';border:1px solid '+sht2.mid+';margin-bottom:12px;display:grid;place-items:center;color:#8a6f54">' + icon(t.i,17) + '</div>' +
-                    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#5c4633;line-height:1.1;margin-bottom:4px">'+esc(t.v)+'</div>' +
+                    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#412F21;line-height:1.1;margin-bottom:4px">'+esc(t.v)+'</div>' +
                     '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+t.k+'</div>' +
                   '</div>';
                 }).join('') +
@@ -2997,7 +3006,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<p style="font-size:13px;color:#8a6f54;margin-bottom:14px;line-height:1.5">Repoussez la date de fin. Une fois prolonge, le portail client affiche un repere <em>prolonge</em> avec la date initiale.</p>' +
                 (project.deadlineExtended ? '<p style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#6c4ea4;margin-bottom:12px">↩ Deja prolongee — date initiale : ' + (project.dueOriginal ? formatDate(project.dueOriginal) : '—') + '</p>' : '') +
                 '<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">' +
-                  '<div><div style="font-size:11px;color:#8a6f54;margin-bottom:4px">Nouvelle echeance</div><input type="date" id="plan-deadline" value="' + esc(project.deadline || '') + '" style="padding:8px 12px;border:1.5px solid #e2d9ce;border-radius:8px;font-size:13px;color:#5c4633"></div>' +
+                  '<div><div style="font-size:11px;color:#8a6f54;margin-bottom:4px">Nouvelle echeance</div><input type="date" id="plan-deadline" value="' + esc(project.deadline || '') + '" style="padding:8px 12px;border:1.5px solid #EDE9E1;border-radius:8px;font-size:13px;color:#412F21"></div>' +
                   '<button class="btn btn--primary" onclick="extendDeadlinePlanning()">↩ Prolonger</button>' +
                 '</div>' +
               '</div>';
@@ -3006,7 +3015,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:4px">Lien de visio</div>' +
                 '<p style="font-size:13px;color:#8a6f54;margin-bottom:14px;line-height:1.5">Un lien fixe pour tous vos points avec ce client. Il apparait dans son portail, bouton <em>Rejoindre la visio</em>.</p>' +
                 '<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">' +
-                  '<div style="flex:1;min-width:240px"><div style="font-size:11px;color:#8a6f54;margin-bottom:4px">URL de la salle</div><input type="url" id="plan-visioLink" value="' + esc(project.meetingLink || '') + '" placeholder="meet.seedtobloom.fr/nom-client" style="width:100%;padding:8px 12px;border:1.5px solid #e2d9ce;border-radius:8px;font-size:13px;color:#5c4633"></div>' +
+                  '<div style="flex:1;min-width:240px"><div style="font-size:11px;color:#8a6f54;margin-bottom:4px">URL de la salle</div><input type="url" id="plan-visioLink" value="' + esc(project.meetingLink || '') + '" placeholder="meet.seedtobloom.fr/nom-client" style="width:100%;padding:8px 12px;border:1.5px solid #EDE9E1;border-radius:8px;font-size:13px;color:#412F21"></div>' +
                   '<button class="btn btn--primary" onclick="saveVisioLink()">Enregistrer</button>' +
                 '</div>' +
               '</div>';
@@ -3026,15 +3035,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           /* ===== TAB: COULEURS DES BOUTONS ===== */
           '<div id="tab-couleurs" class="main-inner proj-main" style="padding:36px 48px 80px;max-width:720px;' + (_adminProjTab==='couleurs' ? '' : 'display:none') + '">' +
             (function(){
-              var btn = (project.btn) || { primaryBg:'#5c4633', primaryFg:'#EFE1B0', secondaryBg:'transparent', secondaryFg:'#5c4633' };
-              var SWATCHES = ['#E4D1FE','#BAD1FD','#EFE1B0','#412F21','#051833','#8a6f54','#c9952f','#ffffff','#ffffff'];
+              var btn = (project.btn) || { primaryBg:'#412F21', primaryFg:'#F2E5C2', secondaryBg:'transparent', secondaryFg:'#412F21' };
+              var SWATCHES = ['#E4D1FE','#E4D1FE','#F2E5C2','#412F21','#1C1205','#8a6f54','#c9952f','#ffffff','#ffffff'];
               function swatchPicker(label, key, value, ghost) {
                 return '<div>' +
                   '<div style="font-size:11px;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">' + label + '</div>' +
                   '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">' +
                   SWATCHES.map(function(c){
                     var sel = value.toLowerCase() === c.toLowerCase();
-                    return '<button type="button" onclick="setBtnColor(\''+key+'\',\''+c+'\')" title="'+c+'" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:'+(c==='transparent'?'#fff':c)+';border:'+(sel?'2px solid #5c4633':'1px solid #e2d9ce')+';box-shadow:'+(sel?'0 0 0 2px #ffffff':'none')+'"></button>';
+                    return '<button type="button" onclick="setBtnColor(\''+key+'\',\''+c+'\')" title="'+c+'" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:'+(c==='transparent'?'#fff':c)+';border:'+(sel?'2px solid #412F21':'1px solid #EDE9E1')+';box-shadow:'+(sel?'0 0 0 2px #ffffff':'none')+'"></button>';
                   }).join('') +
                   '<label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer">' +
                     '<span style="width:30px;height:30px;border-radius:8px;border:1px dashed #c8b29a;display:grid;place-items:center;background:'+value+';position:relative;overflow:hidden">' +
@@ -3053,7 +3062,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div style="display:grid;gap:16px">' +
                   '<div class="card" style="padding:22px 24px">' +
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
-                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633">Bouton principal</div>' +
+                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#412F21">Bouton principal</div>' +
                       '<div id="prev-primary">' + previewBtn(btn.primaryBg, btn.primaryFg, false) + '</div>' +
                     '</div>' +
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">' +
@@ -3063,7 +3072,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '</div>' +
                   '<div class="card" style="padding:22px 24px">' +
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
-                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#5c4633">Bouton secondaire</div>' +
+                      '<div style="font-family:\'Cormorant Garamond\',serif;font-size:21px;color:#412F21">Bouton secondaire</div>' +
                       '<div id="prev-secondary">' + previewBtn(btn.secondaryBg, btn.secondaryFg, true) + '</div>' +
                     '</div>' +
                     swatchPicker('Texte','secondaryFg',btn.secondaryFg,true) +
@@ -3085,7 +3094,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var codeCardHtml = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
                 '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:4px">Code d\'acces du portail</div>' +
                 '<div style="display:flex;align-items:center;gap:14px;margin:10px 0 4px">' +
-                  '<input type="text" id="acc-spaceCode" value="' + esc(code) + '" placeholder="Ex: BLOOM2025 (vide = acces libre)" style="font-family:\'Inter Tight\',monospace;font-size:20px;letter-spacing:0.3em;color:#5c4633;border:none;background:transparent;flex:1;outline:none;text-transform:uppercase" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
+                  '<input type="text" id="acc-spaceCode" value="' + esc(code) + '" placeholder="Ex: BLOOM2025 (vide = acces libre)" style="font-family:\'Inter Tight\',monospace;font-size:20px;letter-spacing:0.3em;color:#412F21;border:none;background:transparent;flex:1;outline:none;text-transform:uppercase" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
                   '<button class="btn btn--outline btn--sm" onclick="document.getElementById(\'acc-spaceCode\').value=Math.random().toString(36).slice(2,8).toUpperCase()">Generer</button>' +
                   '<button class="btn btn--primary btn--sm" onclick="saveSpaceCode()">Enregistrer</button>' +
                 '</div>' +
@@ -3143,7 +3152,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var archiveCard = '<div class="card" style="padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
                 icon('archive',20,'color:#8a6f54;flex-shrink:0') +
                 '<div style="flex:1">' +
-                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#5c4633">' + (isArchived ? 'Sortir des archives' : 'Archiver l\'espace') + '</div>' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#412F21">' + (isArchived ? 'Sortir des archives' : 'Archiver l\'espace') + '</div>' +
                   '<p style="font-size:13px;color:#8a6f54;margin-top:2px">' + (isArchived ? 'Le projet reapparait parmi les espaces actifs.' : 'Range les projets termines. Reversible — rien n\'est supprime.') + '</p>' +
                 '</div>' +
                 '<button class="btn btn--outline" onclick="toggleArchiveProject()">' + (isArchived ? 'Desarchiver' : 'Archiver') + '</button>' +
@@ -3152,7 +3161,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
               var revokeCard = '<div class="card" style="padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:18px">' +
                 icon('lock',20,'color:#8a6f54;flex-shrink:0') +
                 '<div style="flex:1">' +
-                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#5c4633">' + (isRevoked ? 'Retablir l\'acces' : 'Revoquer l\'acces') + '</div>' +
+                  '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:#412F21">' + (isRevoked ? 'Retablir l\'acces' : 'Revoquer l\'acces') + '</div>' +
                   '<p style="font-size:13px;color:#8a6f54;margin-top:2px">' + (isRevoked ? 'Le client pourra de nouveau entrer avec son code.' : 'Coupe l\'entree au portail sans rien supprimer. Reversible.') + '</p>' +
                 '</div>' +
                 '<button class="btn btn--outline" onclick="toggleRevokeProject()">' + (isRevoked ? 'Retablir' : 'Revoquer') + '</button>' +
@@ -3301,8 +3310,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Tab navigation ─────────────────────────────────────────────────────────
   var BANNER_COLORS = [
-    ['#5c4633','Terre'],['#2b3d5f','Nuit'],['#a98bd6','Glycine'],['#9b3a2e','Rouge brique'],
-    ['#E4D1FE','Lavande'],['#BAD1FD','Bleu clair'],['#EFE1B0','Creme'],['#ffffff','Fond']
+    ['#412F21','Terre'],['#5c4633','Nuit'],['#a98bd6','Glycine'],['#9b3a2e','Rouge brique'],
+    ['#E4D1FE','Lavande'],['#E4D1FE','Bleu clair'],['#F2E5C2','Creme'],['#ffffff','Fond']
   ];
 
   window.openBannerEditor = function() {
@@ -3310,10 +3319,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (existing) { existing.remove(); return; }
     var ov = document.createElement('div');
     ov.id = '_banner-editor';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.2)">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
-        '<strong style="font-size:15px;color:#051833">Personnaliser la banniere</strong>' +
+        '<strong style="font-size:15px;color:#1C1205">Personnaliser la banniere</strong>' +
         '<button onclick="document.getElementById(\'_banner-editor\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#aaa;line-height:1">&#215;</button>' +
       '</div>' +
       '<div style="margin-bottom:14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:8px">Couleur</div>' +
@@ -3325,13 +3334,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</div>' +
       '</div>' +
       '<div style="margin-bottom:18px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:8px">Image</div>' +
-        '<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;font-size:13px;color:#051833">Choisir une image<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
+        '<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;font-size:13px;color:#1C1205">Choisir une image<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
         '<button onclick="applyBannerColor(null)" style="margin-left:8px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;background:none;cursor:pointer;font-size:13px;color:#636363">Retirer l\'image</button>' +
       '</div>' +
       '<div style="margin-bottom:6px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#636363;margin-bottom:8px">Couleur du texte</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           '<button onclick="applyBannerTextColor(\'#ffffff\')" title="Blanc" style="width:36px;height:36px;border-radius:8px;background:#fff;border:2px solid #e0e0e0;cursor:pointer"></button>' +
-          '<button onclick="applyBannerTextColor(\'#051833\')" title="Foncé" style="width:36px;height:36px;border-radius:8px;background:#051833;border:2px solid #e0e0e0;cursor:pointer"></button>' +
+          '<button onclick="applyBannerTextColor(\'#1C1205\')" title="Foncé" style="width:36px;height:36px;border-radius:8px;background:#1C1205;border:2px solid #e0e0e0;cursor:pointer"></button>' +
           '<label title="Couleur personnalisee" style="width:36px;height:36px;border-radius:8px;border:2px solid #e0e0e0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative">&#9998;<input type="color" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="applyBannerTextColor(this.value)"></label>' +
           '<span style="font-size:11px;color:#8a8a8a">Utile sur une photo claire</span>' +
         '</div>' +
@@ -3689,7 +3698,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (hidden) hidden.value = '';
     _bannerColor = null;
     var prev = document.getElementById('banner-preview');
-    if (prev) prev.style.background = '#5c4633';
+    if (prev) prev.style.background = '#412F21';
     toast('Image supprimée');
   };
 
@@ -3725,7 +3734,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       bannerColor: _bannerColor || undefined,
       monthlyHours: parseFloat((document.getElementById('edit-monthlyHours')||{}).value) || undefined,
       homeBanner: {
-        color: (document.getElementById('edit-homeBannerColor')||{}).value || '#051833',
+        color: (document.getElementById('edit-homeBannerColor')||{}).value || '#1C1205',
         imageUrl: (document.getElementById('edit-homeBannerImg')||{}).value || '',
         subtitle: (document.getElementById('edit-homeBannerSub')||{}).value || '',
       },
@@ -3868,9 +3877,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!file) return;
     var cats = ['document','deliverable','reference'];
     var catOv = document.createElement('div');
-    catOv.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    catOv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:360px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif"><div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Catégorie du fichier</div>' +
-      cats.map(function(c){ var ico = c==='deliverable'?'📦':c==='reference'?'🎨':'📄'; var lbl = c==='deliverable'?'Livrable':c==='reference'?'Référence':'Document'; return '<button data-cat="'+c+'" style="display:block;width:100%;text-align:left;padding:12px 16px;border:1.5px solid #e2dbd0;border-radius:10px;margin-bottom:8px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:14px;background:#fff;color:#051833">'+ico+' '+lbl+'</button>'; }).join('') +
+    catOv.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    catOv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:360px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif"><div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:16px">Catégorie du fichier</div>' +
+      cats.map(function(c){ var ico = c==='deliverable'?'📦':c==='reference'?'🎨':'📄'; var lbl = c==='deliverable'?'Livrable':c==='reference'?'Référence':'Document'; return '<button data-cat="'+c+'" style="display:block;width:100%;text-align:left;padding:12px 16px;border:1.5px solid #e2dbd0;border-radius:10px;margin-bottom:8px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:14px;background:#fff;color:#1C1205">'+ico+' '+lbl+'</button>'; }).join('') +
       '<button id="_cat-cancel" style="width:100%;padding:9px;background:none;border:none;cursor:pointer;color:#aaa;font-size:13px;margin-top:4px">Annuler</button></div>';
     document.body.appendChild(catOv);
     var category = await new Promise(function(resolve) {
@@ -3996,11 +4005,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     // Update preview
     if (key === 'primaryBg' || key === 'primaryFg') {
       var prev = document.getElementById('prev-primary');
-      if (prev) prev.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:' + (_btnColors.primaryBg||'#5c4633') + ';color:' + (_btnColors.primaryFg||'#EFE1B0') + ';border:none;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
+      if (prev) prev.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:' + (_btnColors.primaryBg||'#412F21') + ';color:' + (_btnColors.primaryFg||'#F2E5C2') + ';border:none;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
     }
     if (key === 'secondaryFg') {
       var prev2 = document.getElementById('prev-secondary');
-      if (prev2) prev2.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:transparent;color:' + (_btnColors.secondaryFg||'#5c4633') + ';border:1px solid ' + (_btnColors.secondaryFg||'#5c4633') + ';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
+      if (prev2) prev2.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;background:transparent;color:' + (_btnColors.secondaryFg||'#412F21') + ';border:1px solid ' + (_btnColors.secondaryFg||'#412F21') + ';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase">Exemple →</span>';
     }
   };
   window.resetBtnColors = function() { _btnColors = null; loadProject(currentProjectId); };
@@ -4039,7 +4048,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
 
   // ── Espace partenaire (tâches mensuelles) ───────────────────────────────────
-  var URGENCY_COLORS = { basse: '#BAD1FD', moyenne: '#E4D1FE', haute: '#e8a87c' };
+  var URGENCY_COLORS = { basse: '#E4D1FE', moyenne: '#E4D1FE', haute: '#e8a87c' };
   var URGENCY_TEXT = { basse: '#0a2a5e', moyenne: '#2a1d4a', haute: '#5a2c0e' };
   var URGENCY_LABELS = { basse: 'Basse', moyenne: 'Moyenne', haute: 'Haute' };
   var TASK_STATUS_LABELS = { todo: 'A faire', in_progress: 'En cours', waiting_client: 'Action client', done: 'Termine' };
@@ -4074,7 +4083,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       var dt = fltTasks.filter(function(t){ return (t.dueDate||'').slice(0,10)===ds; });
       var isToday = ds===todayStr, isSel = ds===_calSel;
-      var cellStyle = 'min-height:76px;border:1.5px solid '+(isSel?'var(--navy)':isToday?'#BAD1FD':'#e8e4dc')+';border-radius:8px;padding:4px 5px;cursor:pointer;background:'+(isSel?'rgba(5,24,51,0.05)':isToday?'rgba(186,209,253,0.12)':'#fff');
+      var cellStyle = 'min-height:76px;border:1.5px solid '+(isSel?'var(--navy)':isToday?'#E4D1FE':'#e8e4dc')+';border-radius:8px;padding:4px 5px;cursor:pointer;background:'+(isSel?'rgba(28,18,5,0.05)':isToday?'rgba(186,209,253,0.12)':'#fff');
       var pills = dt.slice(0,3).map(function(t){
         var uc = URGENCY_COLORS[t.urgency]||'#e0e0e0';
         return '<div style="font-size:10px;padding:2px 5px;border-left:3px solid '+uc+';background:rgba(0,0,0,0.03);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+(t.status==='done'?'#aaa':'var(--navy)')+';'+(t.status==='done'?'text-decoration:line-through':'')+'" title="'+esc(t.title)+'">'+esc(t.title)+'</div>';
@@ -4124,7 +4133,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var filterBar = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' +
       [['','Toutes'],['todo','À faire'],['in_progress','En cours'],['done','Terminées']].map(function(f){
         var act = _calFilter===f[0];
-        return '<button onclick="adminCalFilter(\''+f[0]+'\')" style="font-size:12px;padding:4px 12px;border-radius:999px;border:1.5px solid '+(act?'var(--navy)':'#e8e4dc')+';background:'+(act?'var(--navy)':'#fff')+';color:'+(act?'#BAD1FD':'var(--muted)')+';cursor:pointer">'+f[1]+'</button>';
+        return '<button onclick="adminCalFilter(\''+f[0]+'\')" style="font-size:12px;padding:4px 12px;border-radius:999px;border:1.5px solid '+(act?'var(--navy)':'#e8e4dc')+';background:'+(act?'var(--navy)':'#fff')+';color:'+(act?'#E4D1FE':'var(--muted)')+';cursor:pointer">'+f[1]+'</button>';
       }).join('') +
     '</div>';
     return '<div class="card">' +
@@ -4352,7 +4361,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var cv = steps.filter(function(s) { return s.clientValidation; }).length;
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
-          '<div style="width:28px;height:28px;border-radius:6px;flex-shrink:0;background:' + esc(card.bannerColor || '#051833') + '"></div>' +
+          '<div style="width:28px;height:28px;border-radius:6px;flex-shrink:0;background:' + esc(card.bannerColor || '#1C1205') + '"></div>' +
           '<div>' +
             '<div style="font-size:13px;font-weight:600;color:var(--navy)">' + esc(card.title) + '</div>' +
             '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
@@ -4377,14 +4386,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var existingCard = cardId ? (project.clientCards || []).find(function(c) { return c.id === cardId; }) : null;
     var card = existingCard
       ? Object.assign({}, existingCard)
-      : { id: 'cc' + Date.now(), title: '', statusLabel: 'Decouverte', bannerColor: '#051833', startDate: '', duration: '', steps: [] };
+      : { id: 'cc' + Date.now(), title: '', statusLabel: 'Decouverte', bannerColor: '#1C1205', startDate: '', duration: '', steps: [] };
     var steps = (card.steps || []).map(function(s) { return Object.assign({}, s); });
 
     var existing = document.getElementById('_cce-overlay');
     if (existing) existing.remove();
     var ov = document.createElement('div');
     ov.id = '_cce-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
 
     function collectSteps() {
       var labels = ov.querySelectorAll('[data-step-label]');
@@ -4412,8 +4421,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<button onclick="window._cceRemoveStep(' + i + ')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;color:var(--muted);font-size:12px">✕</button>' +
         '</div>';
       }).join('');
-      var curColor = card.bannerColor || '#051833';
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:560px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18);max-height:88vh;overflow-y:auto">' +
+      var curColor = card.bannerColor || '#1C1205';
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:560px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:88vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
           '<strong style="font-size:16px;color:var(--navy)">' + (isNew ? 'Nouvelle card' : 'Modifier la card') + '</strong>' +
           '<button onclick="document.getElementById(\'_cce-overlay\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted)">✕</button>' +
@@ -4467,7 +4476,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var updated = Object.assign({}, card, {
         title: title.trim(),
         statusLabel: (ov.querySelector('#_cce-status') || {}).value || '',
-        bannerColor: (ov.querySelector('#_cce-color-hex') || {}).value || '#051833',
+        bannerColor: (ov.querySelector('#_cce-color-hex') || {}).value || '#1C1205',
         startDate:   (ov.querySelector('#_cce-start') || {}).value || '',
         duration:    (ov.querySelector('#_cce-duration') || {}).value || '',
         steps: collectSteps(),
@@ -4515,7 +4524,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     var ov = document.createElement('div');
     ov.id = 'questionnaire-editor-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
 
     function renderPanel() {
       var qList = questions.map(function(q, i) {
@@ -4525,7 +4534,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</div>';
       }).join('');
 
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
           '<strong style="font-size:16px;color:var(--navy)">Questionnaire client</strong>' +
           '<button onclick="document.getElementById(\'questionnaire-editor-overlay\').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">✕</button>' +
@@ -4577,7 +4586,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ─────────────────────────────────────────────────────────────────────────
   // ESPACE PARTENAIRE — cote studio/admin (refonte Ecrin, ocre, lun→ven)
   // ─────────────────────────────────────────────────────────────────────────
-  var ADMIN_PART_URGENCY    = { tranquille:'#BAD1FD', normal:'#EFE1B0', urgent:'#e7cd97', critique:'#e8a87c' };
+  var ADMIN_PART_URGENCY    = { tranquille:'#E4D1FE', normal:'#F2E5C2', urgent:'#e7cd97', critique:'#e8a87c' };
   var ADMIN_PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
   var ADMIN_PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var ADMIN_PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
@@ -4590,7 +4599,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var ADMIN_PART_STATUS     = { todo:'A faire', in_progress:'En cours', review:'En relecture', done:'Fait' };
   var ADMIN_PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
   // Ocre / Ecrin
-  var APT_OCRE_SOFT = '#f3ede6', APT_OCRE_MID = '#c8b29a', APT_OCRE_DEEP = '#5c4633', APT_OCRE_INK = '#412F21';
+  var APT_OCRE_SOFT = '#f3ede6', APT_OCRE_MID = '#c8b29a', APT_OCRE_DEEP = '#412F21', APT_OCRE_INK = '#412F21';
 
   var aptCalMonth = null;     // Date du 1er du mois affiche
   var aptUrgFilter = '';      // filtre urgence
@@ -4622,15 +4631,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var rows = groups[k].map(function(t){
         return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
           '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
-          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:#5c4633;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
+          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:#412F21;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
           (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
           (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+aptFmtH(t.timeSpentMinutes)+'</span>':'') +
-          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #e2d9ce;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
         '</div>';
       }).join('');
       return '<div style="margin-bottom:10px"><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
     }).join('');
-    return '<details style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px;margin-top:16px">' +
+    return '<details style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:14px 18px;margin-top:16px">' +
       '<summary style="cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">📁 Historique — '+hist.length+' tâche'+(hist.length>1?'s':'')+' terminée'+(hist.length>1?'s':'')+'</summary>' +
       '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
   }
@@ -4656,9 +4665,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var tabBar = '<div style="display:flex;gap:8px;margin-bottom:18px">' +
       [['cal','Calendrier'],['stats','Statistiques']].map(function(tb){
         var act = aptTab===tb[0];
-        return '<button onclick="aptSetTab(\''+tb[0]+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;padding:8px 18px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#e2d9ce')+';background:'+(act?APT_OCRE_DEEP:'#fff')+';color:'+(act?'#fff':'#8a6f54')+'">'+tb[1]+'</button>';
+        return '<button onclick="aptSetTab(\''+tb[0]+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:500;padding:8px 18px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#EDE9E1')+';background:'+(act?APT_OCRE_DEEP:'#fff')+';color:'+(act?'#fff':'#8a6f54')+'">'+tb[1]+'</button>';
       }).join('') +
-      '<button onclick="archiveProject()" style="margin-left:auto;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #e2d9ce;background:#fff;color:#8a6f54;display:inline-flex;align-items:center;gap:6px">'+icon('archive',14)+' Archiver</button>' +
+      '<button onclick="archiveProject()" style="margin-left:auto;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #EDE9E1;background:#fff;color:#8a6f54;display:inline-flex;align-items:center;gap:6px">'+icon('archive',14)+' Archiver</button>' +
     '</div>';
 
     var body = aptTab==='stats' ? aptBuildStats(project, tasks) : aptBuildCalendar(project, tasks);
@@ -4697,14 +4706,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
     // ── Forfait bar ──
     var forfaitBar = alertBanner +
-      '<div style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
+      '<div style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
       icon('clock',16,APT_OCRE_INK) +
       '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">Forfait ' + monthName + '</span>' +
-      '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:#5c4633">' + aptFmtH(consumedMin) + '</span>' +
+      '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:#412F21">' + aptFmtH(consumedMin) + '</span>' +
       '<span style="font-size:13px;color:#8a6f54">/ ' + (forfaitH ? forfaitH+' h' : 'non défini') + '</span>' +
       '<div style="flex:1;min-width:120px;height:8px;background:'+barBg+';border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+barColor+';width:'+pctF+'%;transition:width 0.4s"></div></div>' +
       '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;white-space:nowrap;color:'+barColor+'">' + pctF + '%' + (forfaitH ? ' · ' + (leftMin>=0 ? aptFmtH(leftMin)+' restantes' : aptFmtH(-leftMin)+' dépassées') : '') + '</span>' +
-      '<button onclick="aptEditForfait()" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;cursor:pointer">Modifier</button>' +
+      '<button onclick="aptEditForfait()" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #EDE9E1;background:#fff;color:#8a6f54;cursor:pointer">Modifier</button>' +
     '</div>';
 
     // ── Tâches en retard ──
@@ -4718,7 +4727,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           overdue.map(function(t){
             var daysLate = Math.round((now - new Date(t.dueDate.slice(0,10)+'T12:00:00'))/86400000);
             return '<div onclick="aptSelTask=\''+t.id+'\';aptRender()" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;background:#fff;border-radius:9px;cursor:pointer" onmouseover="this.style.background=\'#fdf2f1\'" onmouseout="this.style.background=\'#fff\'">' +
-              '<span style="font-size:13px;color:#5c4633;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+              '<span style="font-size:13px;color:#412F21;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
               '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#9b3a2e;font-weight:600;flex-shrink:0">J+'+daysLate+'</span>' +
             '</div>';
           }).join('') +
@@ -4739,7 +4748,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var backlog  = tasks.filter(function(t){ return !t.dueDate && t.status!=='done'; });
     var weekHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">' +
       // Récap semaine
-      '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px">' +
+      '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:14px 18px">' +
         '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:8px">Cette semaine</div>' +
         '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:'+APT_OCRE_INK+'">'+weekDone.length+'</span>' +
@@ -4747,19 +4756,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           (weekMin ? ' · <span style="font-size:12px;color:#8a6f54">'+aptFmtH(weekMin)+' passées</span>' : '') +
         '</div>' +
         (weekDone.length ? '<div style="display:flex;flex-direction:column;gap:3px;max-height:80px;overflow:hidden">' +
-          weekDone.slice(0,3).map(function(t){ return '<div style="font-size:12px;color:#5c4633;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✓ '+esc(t.title)+'</div>'; }).join('') +
+          weekDone.slice(0,3).map(function(t){ return '<div style="font-size:12px;color:#412F21;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✓ '+esc(t.title)+'</div>'; }).join('') +
           (weekDone.length>3 ? '<div style="font-size:11px;color:#b09b80">+'+(weekDone.length-3)+' autres</div>' : '') +
         '</div>' : '<div style="font-size:12px;color:#c4b49e;font-style:italic">Aucune tâche terminée.</div>') +
       '</div>' +
       // Backlog
-      '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px">' +
+      '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:14px 18px">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80">Sans date</div>' +
-          '<button onclick="aptOpenAddTask(\'\')" style="font-size:11px;padding:3px 9px;border:1px solid #e2d9ce;border-radius:7px;background:#fdfaf6;color:#8a6f54;cursor:pointer">+ Ajouter</button>' +
+          '<button onclick="aptOpenAddTask(\'\')" style="font-size:11px;padding:3px 9px;border:1px solid #EDE9E1;border-radius:7px;background:#fdfaf6;color:#8a6f54;cursor:pointer">+ Ajouter</button>' +
         '</div>' +
         (backlog.length ? '<div style="display:flex;flex-direction:column;gap:3px;max-height:88px;overflow-y:auto">' +
           backlog.slice(0,5).map(function(t){
-            return '<div onclick="aptSelTask=\''+t.id+'\';aptRender()" style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:#5c4633" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
+            return '<div onclick="aptSelTask=\''+t.id+'\';aptRender()" style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:#412F21" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
               aptUrgIcon(t.urgency,10) + ' <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
             '</div>';
           }).join('') +
@@ -4774,7 +4783,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         var act = aptUrgFilter===u;
         var dot = u ? '<span style="display:inline-flex;align-items:center;margin-right:5px;vertical-align:middle">'+aptUrgIcon(u,11)+'</span>' : '';
         var lbl = u ? ADMIN_PART_URG_LABEL[u] : 'Toutes';
-        return '<button onclick="aptSetUrgFilter(\''+u+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#e2d9ce')+';background:'+(act?APT_OCRE_SOFT:'#fff')+';color:'+(act?APT_OCRE_INK:'#8a6f54')+'">'+dot+lbl+'</button>';
+        return '<button onclick="aptSetUrgFilter(\''+u+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#EDE9E1')+';background:'+(act?APT_OCRE_SOFT:'#fff')+';color:'+(act?APT_OCRE_INK:'#8a6f54')+'">'+dot+lbl+'</button>';
       }).join('') +
     '</div>';
 
@@ -4801,13 +4810,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var pills = dt.slice(0,4).map(function(t){ return aptPillHtml(t); }).join('') +
         (dt.length>4 ? '<div style="font-size:10px;color:#8a6f54;text-align:center;margin-top:3px">+'+(dt.length-4)+' autres</div>' : '');
       var numHtml = isToday
-        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:700">'+dd+'</span>'
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#1C1205;color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:700">'+dd+'</span>'
         : '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:600;color:#8a6f54">'+dd+'</span>';
       dayCells.push('<div ondragover="aptDragOver(event,this)" ondragleave="aptDragLeave(this)" ondrop="aptDrop(event,\''+ds+'\')" '+
         'style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff" class="apt-day" data-ds="'+ds+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
           numHtml +
-          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
+          '<button onclick="aptOpenAddTask(\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:'+APT_OCRE_INK+';cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
         '</div>' + pills + '</div>');
     }
     var allCells = [];
@@ -4815,14 +4824,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     allCells = allCells.concat(dayCells);
     while (allCells.length % 5 !== 0) allCells.push(emptyCell);
 
-    var calCard = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px">' +
+    var calCard = '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:22px 24px">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">' +
-        '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:#5c4633;text-transform:capitalize;margin:0">'+esc(monthName)+'</h2>' +
+        '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:#412F21;text-transform:capitalize;margin:0">'+esc(monthName)+'</h2>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
-          '<button onclick="aptCalToday()" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:6px 12px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Aujourd\'hui</button>' +
-          '<button onclick="aptCalNav(-1)" aria-label="Mois precedent" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:15px">←</button>' +
-          '<button onclick="aptCalNav(1)" aria-label="Mois suivant" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#5c4633;cursor:pointer;font-size:15px">→</button>' +
-          '<button onclick="aptManageProps()" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:7px 14px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">⚙ Propriétés</button>' +
+          '<button onclick="aptCalToday()" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:6px 12px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Aujourd\'hui</button>' +
+          '<button onclick="aptCalNav(-1)" aria-label="Mois precedent" style="width:34px;height:34px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#412F21;cursor:pointer;font-size:15px">←</button>' +
+          '<button onclick="aptCalNav(1)" aria-label="Mois suivant" style="width:34px;height:34px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#412F21;cursor:pointer;font-size:15px">→</button>' +
+          '<button onclick="aptManageProps()" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:7px 14px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">⚙ Propriétés</button>' +
           '<button onclick="aptOpenAddTask(\''+todayStr+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">+ Ajouter une tâche</button>' +
         '</div>' +
       '</div>' +
@@ -4864,7 +4873,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="display:flex;align-items:center;gap:5px">' +
         aptUrgIcon(t.urgency, 11) +
         (t.pinned ? icon('pin',11,APT_OCRE_INK) : '') +
-        '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'#5c4633')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+        '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'#412F21')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
       '</div>' +
       (info.length ? '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#a89a86;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+info.join(' · ')+'</div>' : '') +
       (propChips ? '<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px">'+propChips+'</div>' : '') +
@@ -4889,11 +4898,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       countdown = diff===0 ? "Aujourd'hui" : diff>0 ? 'J-'+diff : '<span style="color:#9b3a2e">J+'+(-diff)+' (en retard)</span>';
     }
 
-    var urgSel = '<select onchange="aptPatch(\''+t.id+'\',{urgency:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%">' +
+    var urgSel = '<select onchange="aptPatch(\''+t.id+'\',{urgency:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;width:100%">' +
       ADMIN_PART_URG_ORDER.map(function(u){ return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>'; }).join('') + '</select>';
-    var statusSel = '<select onchange="aptPatch(\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%">' +
+    var statusSel = '<select onchange="aptPatch(\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;width:100%">' +
       Object.keys(ADMIN_PART_STATUS).map(function(s){ return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+ADMIN_PART_STATUS[s]+'</option>'; }).join('') + '</select>';
-    var poleSel = '<select onchange="aptPatch(\''+t.id+'\',{pole:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;width:100%">' +
+    var poleSel = '<select onchange="aptPatch(\''+t.id+'\',{pole:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;width:100%">' +
       '<option value="">—</option>' + ADMIN_PART_POLES.map(function(p){ return '<option value="'+esc(p)+'"'+(t.pole===p?' selected':'')+'>'+esc(p)+'</option>'; }).join('') + '</select>';
 
     function lbl(s){ return '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;margin:14px 0 6px">'+s+'</div>'; }
@@ -4903,15 +4912,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var val = props[p.id]!=null ? props[p.id] : '';
       var field;
       if (p.type==='Liste') {
-        field = '<select onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;flex:1">' +
+        field = '<select onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;flex:1">' +
           '<option value="">—</option>' + (p.options||[]).map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') + '</select>';
       } else {
         var inputType = p.type==='Nombre' ? 'number' : p.type==='Date' ? 'date' : 'text';
-        field = '<input type="'+inputType+'" value="'+esc(val)+'" onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #e2d9ce;border-radius:8px;flex:1">';
+        field = '<input type="'+inputType+'" value="'+esc(val)+'" onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;flex:1">';
       }
       return '<div style="margin-bottom:8px">' +
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
-          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#5c4633;flex:1">'+esc(p.name)+' <span style="color:#b09b80;font-weight:400">('+p.type+')</span></span>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#412F21;flex:1">'+esc(p.name)+' <span style="color:#b09b80;font-weight:400">('+p.type+')</span></span>' +
           '<button onclick="aptEditPropDef(\''+p.id+'\')" title="Modifier" style="background:none;border:none;cursor:pointer;color:#8a6f54;padding:2px">'+icon('pencil',12)+'</button>' +
           '<button onclick="aptDeletePropDef(\''+p.id+'\')" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#9b3a2e;padding:2px">'+icon('trash',12)+'</button>' +
         '</div>' +
@@ -4923,7 +4932,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var commentsHtml = comments.map(function(c){
       return '<div style="background:#faf7f1;border-radius:8px;padding:7px 10px;margin-bottom:6px">' +
         '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:'+APT_OCRE_INK+'">'+(c.author==='cindy'?'Studio':esc(project.clientName))+' <span style="color:#b09b80;font-weight:400">· '+formatDate(c.createdAt)+'</span></div>' +
-        '<div style="font-size:12px;color:#5c4633;margin-top:2px;white-space:pre-wrap">'+esc(c.text)+'</div>' +
+        '<div style="font-size:12px;color:#412F21;margin-top:2px;white-space:pre-wrap">'+esc(c.text)+'</div>' +
       '</div>';
     }).join('');
 
@@ -4936,13 +4945,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       countdownPill = '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:'+cpBg+';color:'+cpCol+';font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:500">'+icon('calendar',11)+' '+countdown+'</span>';
     }
 
-    return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden">' +
+    return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden">' +
 
       // ── En-tête sticky ──
       '<div style="padding:20px 22px 16px;border-bottom:1px solid #f0e8de;flex-shrink:0">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px">' +
           '<input value="'+esc(t.title)+'" onchange="aptPatch(\''+t.id+'\',{title:this.value})" style="font-family:\'Cormorant Garamond\',serif;font-size:22px;color:#412F21;border:none;border-bottom:1.5px solid transparent;background:none;flex:1;padding:2px 0;line-height:1.25" onfocus="this.style.borderBottomColor=\''+APT_OCRE_MID+'\'" onblur="this.style.borderBottomColor=\'transparent\'" placeholder="Titre de la tâche">' +
-          '<button onclick="aptCloseDrawer()" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:#8a6f54;cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1">×</button>' +
+          '<button onclick="aptCloseDrawer()" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#8a6f54;cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1">×</button>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
           (countdownPill || '') +
@@ -4955,7 +4964,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
         // Description
         '<div>' +
-          '<textarea onchange="aptPatch(\''+t.id+'\',{content:this.value})" rows="3" placeholder="Détail, format, références, contraintes…" style="font-family:inherit;font-size:13px;color:#5c4633;width:100%;border:1.5px solid #e2d9ce;border-radius:10px;padding:10px 12px;resize:vertical;background:#fdfaf6">'+esc(t.content||'')+'</textarea>' +
+          '<textarea onchange="aptPatch(\''+t.id+'\',{content:this.value})" rows="3" placeholder="Détail, format, références, contraintes…" style="font-family:inherit;font-size:13px;color:#412F21;width:100%;border:1.5px solid #EDE9E1;border-radius:10px;padding:10px 12px;resize:vertical;background:#fdfaf6">'+esc(t.content||'')+'</textarea>' +
         '</div>' +
 
         // Statut + Urgence
@@ -4966,8 +4975,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
         // Dates + Pôle
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">' +
-          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Début</div><input type="date" value="'+esc((t.startDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{startDate:this.value||null})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
-          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Fin / Échéance</div><input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Début</div><input type="date" value="'+esc((t.startDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{startDate:this.value||null})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #EDE9E1;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
+          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Fin / Échéance</div><input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="aptPatch(\''+t.id+'\',{dueDate:this.value})" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #EDE9E1;border-radius:10px;width:100%;background:#fdfaf6"></div>' +
           '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Catégorie / Pôle</div>'+poleSel+'</div>' +
         '</div>' +
 
@@ -4975,9 +4984,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div>' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Temps passé</div>' +
           '<div style="display:flex;align-items:center;gap:10px">' +
-            '<button onclick="aptAddTime(\''+t.id+'\',-30)" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
+            '<button onclick="aptAddTime(\''+t.id+'\',-30)" style="width:34px;height:34px;border:1.5px solid #EDE9E1;border-radius:10px;background:#fdfaf6;color:#412F21;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
             '<input id="apt-time-'+t.id+'" value="'+aptFmtH(timeMin)+'" onblur="aptSetTimeFromInput(\''+t.id+'\')" onkeydown="if(event.key===\'Enter\'){this.blur()}" style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:'+APT_OCRE_INK+';width:72px;text-align:center;border:none;border-bottom:1.5px solid transparent;background:transparent;padding:2px 4px;flex-shrink:0;outline:none" onfocus="this.style.borderBottomColor=\''+APT_OCRE_MID+'\'" onblur="aptSetTimeFromInput(\''+t.id+'\');this.style.borderBottomColor=\'transparent\'" title="Ex: 1h30 ou 90">' +
-            '<button onclick="aptAddTime(\''+t.id+'\',30)" style="width:34px;height:34px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
+            '<button onclick="aptAddTime(\''+t.id+'\',30)" style="width:34px;height:34px;border:1.5px solid #EDE9E1;border-radius:10px;background:#fdfaf6;color:#412F21;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#c4b49e;line-height:1.4">Taper ex : 1h30<br>ou utiliser +/− (30 min)</span>' +
           '</div>' +
         '</div>' +
@@ -4996,9 +5005,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Livrable</div>' +
           (deliverable ? '<div style="font-size:12px;color:'+APT_OCRE_INK+';margin-bottom:8px;display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f6f0e8;border-radius:8px">'+icon('file',13)+' '+esc(deliverable.name||'fichier')+'</div>' : '') +
           '<div style="display:flex;gap:8px;align-items:center">' +
-            '<button onclick="attachDeliverable(\''+t.id+'\')" style="font-size:12px;padding:7px 14px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6;color:#5c4633;cursor:pointer;display:flex;align-items:center;gap:6px">'+icon('upload',13)+' Déposer un fichier</button>' +
+            '<button onclick="attachDeliverable(\''+t.id+'\')" style="font-size:12px;padding:7px 14px;border:1.5px solid #EDE9E1;border-radius:10px;background:#fdfaf6;color:#412F21;cursor:pointer;display:flex;align-items:center;gap:6px">'+icon('upload',13)+' Déposer un fichier</button>' +
           '</div>' +
-          '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="aptPatch(\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid #e2d9ce;border-radius:10px;width:100%;margin-top:8px;background:#fdfaf6">' +
+          '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="aptPatch(\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid #EDE9E1;border-radius:10px;width:100%;margin-top:8px;background:#fdfaf6">' +
         '</div>' +
 
         // Échange
@@ -5006,7 +5015,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:10px">Échange sur la tâche</div>' +
           (commentsHtml || '<div style="font-size:12px;color:#c4b49e;font-style:italic;margin-bottom:8px">Aucun message.</div>') +
           '<div style="display:flex;gap:8px;margin-top:8px">' +
-            '<input id="apt-comment-'+t.id+'" placeholder="Écrire un message…" style="font-family:inherit;font-size:13px;flex:1;padding:8px 12px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fdfaf6">' +
+            '<input id="apt-comment-'+t.id+'" placeholder="Écrire un message…" style="font-family:inherit;font-size:13px;flex:1;padding:8px 12px;border:1.5px solid #EDE9E1;border-radius:10px;background:#fdfaf6">' +
             '<button onclick="aptAddComment(\''+t.id+'\')" style="font-size:12px;padding:8px 16px;border:none;border-radius:10px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer;font-weight:500;flex-shrink:0">Envoyer</button>' +
           '</div>' +
         '</div>' +
@@ -5015,9 +5024,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
       // ── Pied de page sticky ──
       '<div style="padding:14px 22px;border-top:1px solid #f0e8de;background:#fdfaf6;border-radius:0 0 16px 16px;flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center">' +
-        '<button onclick="aptDoneNotify(\''+t.id+'\')" style="font-size:12px;padding:8px 16px;border:none;border-radius:10px;background:'+APT_OCRE_INK+';color:#EFE1B0;cursor:pointer;font-weight:500">✓ Terminer &amp; notifier</button>' +
-        '<button onclick="aptPatch(\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="font-size:12px;padding:8px 14px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fff;color:#5c4633;cursor:pointer">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
-        '<button onclick="aptArchiveTask(\''+t.id+'\')" style="font-size:12px;padding:8px 14px;border:1.5px solid #e2d9ce;border-radius:10px;background:#fff;color:#5c4633;cursor:pointer">Archiver</button>' +
+        '<button onclick="aptDoneNotify(\''+t.id+'\')" style="font-size:12px;padding:8px 16px;border:none;border-radius:10px;background:'+APT_OCRE_INK+';color:#F2E5C2;cursor:pointer;font-weight:500">✓ Terminer &amp; notifier</button>' +
+        '<button onclick="aptPatch(\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="font-size:12px;padding:8px 14px;border:1.5px solid #EDE9E1;border-radius:10px;background:#fff;color:#412F21;cursor:pointer">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
+        '<button onclick="aptArchiveTask(\''+t.id+'\')" style="font-size:12px;padding:8px 14px;border:1.5px solid #EDE9E1;border-radius:10px;background:#fff;color:#412F21;cursor:pointer">Archiver</button>' +
         '<button onclick="aptDeleteTask(\''+t.id+'\')" style="font-size:12px;padding:8px 14px;border:1.5px solid #f0d0cc;border-radius:10px;background:#fff;color:#9b3a2e;cursor:pointer;margin-left:auto">Supprimer</button>' +
       '</div>' +
 
@@ -5044,7 +5053,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ];
     var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">' +
       kpis.map(function(k){
-        return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+        return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:18px 20px">' +
           '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:28px;color:'+APT_OCRE_INK+';line-height:1.1;margin-bottom:4px">'+k.v+'</div>' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">'+k.k+'</div>' +
         '</div>';
@@ -5057,8 +5066,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     months.forEach(function(m){ byMonth[m]=0; });
     all.forEach(function(t){ var ref=(t.completedAt||t.dueDate||'').slice(0,7); if (byMonth[ref]!=null) byMonth[ref]+=(t.timeSpentMinutes||0); });
     var maxM = Math.max.apply(null, months.map(function(m){return byMonth[m];}).concat([1]));
-    var chart = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px;margin-bottom:22px">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#5c4633;margin:0 0 16px">Pour scaler · heures par mois</h3>' +
+    var chart = '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:22px 24px;margin-bottom:22px">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#412F21;margin:0 0 16px">Pour scaler · heures par mois</h3>' +
       '<div style="display:flex;align-items:flex-end;gap:14px;height:120px">' +
         months.map(function(m){
           var v = byMonth[m]; var h = Math.round(v/maxM*100);
@@ -5072,18 +5081,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>' +
     '</div>';
 
-    var forfaitReminder = '<div style="background:'+APT_OCRE_SOFT+';border:1px solid '+APT_OCRE_MID+';border-radius:14px;padding:16px 20px;margin-bottom:22px;font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#5c4633">' +
+    var forfaitReminder = '<div style="background:'+APT_OCRE_SOFT+';border:1px solid '+APT_OCRE_MID+';border-radius:14px;padding:16px 20px;margin-bottom:22px;font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#412F21">' +
       'Forfait : <strong>'+(forfaitH?forfaitH+' h':'non defini')+'</strong> / mois' +
       (forfaitH ? ' · ' + (leftMin>=0 ? '<span style="color:'+APT_OCRE_INK+'">'+aptFmtH(leftMin)+' restantes ce mois</span>' : '<span style="color:#9b3a2e">'+aptFmtH(-leftMin)+' depassees</span>') : '') +
     '</div>';
 
-    var archHtml = archived.length ? '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#5c4633;margin:0 0 14px">Taches archivees</h3>' +
+    var archHtml = archived.length ? '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:22px 24px">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#412F21;margin:0 0 14px">Taches archivees</h3>' +
       archived.map(function(t){
         return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #f0e9dc">' +
-          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#5c4633">'+esc(t.title)+'</span>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:13px;color:#412F21">'+esc(t.title)+'</span>' +
           '<span style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#8a6f54">'+aptFmtH(t.timeSpentMinutes||0)+'</span>' +
-          '<button onclick="aptPatch(\''+t.id+'\',{archived:false})" style="font-size:11px;padding:4px 9px;border:1px solid #e2d9ce;border-radius:7px;background:#fff;color:#8a6f54;cursor:pointer">Restaurer</button>' +
+          '<button onclick="aptPatch(\''+t.id+'\',{archived:false})" style="font-size:11px;padding:4px 9px;border:1px solid #EDE9E1;border-radius:7px;background:#fff;color:#8a6f54;cursor:pointer">Restaurer</button>' +
         '</div>';
       }).join('') +
     '</div>' : '';
@@ -5192,15 +5201,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     ov = document.createElement('div'); ov.id='_apt-add';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+APT_OCRE_DEEP+';border-radius:16px;padding:26px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:#5c4633;margin:0">Nouvelle demande</h3><button onclick="document.getElementById(\'_apt-add\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre *</label><input id="_apt-title" placeholder="Ex: Visuel Instagram — collection été" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Détail / Contenu</label><textarea id="_apt-content" rows="3" placeholder="Format, ton, références, contraintes..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;resize:vertical"></textarea></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:#412F21;margin:0">Nouvelle demande</h3><button onclick="document.getElementById(\'_apt-add\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Titre *</label><input id="_apt-title" placeholder="Ex: Visuel Instagram — collection été" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Détail / Contenu</label><textarea id="_apt-content" rows="3" placeholder="Format, ton, références, contraintes..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px;resize:vertical"></textarea></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">' +
-        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de début</label><input type="date" id="_apt-startdate" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
-        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de fin</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
-        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de début</label><input type="date" id="_apt-startdate" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de fin</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
+        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Catégorie</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Catégorie</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
       (function(){
         var proj = window._currentProject;
         var schema = Array.isArray(proj && proj.propertySchema) ? proj.propertySchema : [];
@@ -5210,15 +5219,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           schema.map(function(def){
             var fid = '_apt-prop-'+def.id;
             var field;
-            if (def.type==='Liste') field = '<select id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
-            else if (def.type==='Nombre') field = '<input type="number" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">';
-            else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">';
-            else field = '<input type="text" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px">';
+            if (def.type==='Liste') field = '<select id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
+            else if (def.type==='Nombre') field = '<input type="number" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
+            else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
+            else field = '<input type="text" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
             return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
           }).join('') +
         '</div>';
       })() +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Ajouter</button></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptCreateTask()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Ajouter</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -5270,17 +5279,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.createElement('div'); ov.id='_apt-prop-modal';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:24px;max-width:400px;width:100%;box-shadow:0 12px 40px rgba(40,28,12,0.18)">' +
-      '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#5c4633;margin-bottom:16px">Nouvelle propriété</div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Nom</label><input id="_apd-name" placeholder="Ex: Format, Client final, Budget..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#412F21;margin-bottom:16px">Nouvelle propriété</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Nom</label><input id="_apd-name" placeholder="Ex: Format, Client final, Budget..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Type</label>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap" id="_apd-types">' +
           ['Texte','Nombre','Liste','Date'].map(function(tp){
-            return '<button onclick="aptPropTypeSelect(\''+tp+'\')" data-t="'+tp+'" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e2d9ce;background:'+(tp==='Texte'?APT_OCRE_DEEP:'#fff')+';color:'+(tp==='Texte'?'#fff':'#8a6f54')+';font-family:inherit;font-size:12px;cursor:pointer">'+tp+'</button>';
+            return '<button onclick="aptPropTypeSelect(\''+tp+'\')" data-t="'+tp+'" style="padding:6px 14px;border-radius:999px;border:1.5px solid #EDE9E1;background:'+(tp==='Texte'?APT_OCRE_DEEP:'#fff')+';color:'+(tp==='Texte'?'#fff':'#8a6f54')+';font-family:inherit;font-size:12px;cursor:pointer">'+tp+'</button>';
           }).join('') +
         '</div>' +
       '</div>' +
-      '<div id="_apd-options-row" style="display:none;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Options <span style="font-weight:400;color:#b09b80">(séparées par des virgules)</span></label><input id="_apd-options" placeholder="Ex: Story, Reel, Post, Carrousel" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px"></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-prop-modal\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptConfirmAddProp()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Créer</button></div>' +
+      '<div id="_apd-options-row" style="display:none;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Options <span style="font-weight:400;color:#b09b80">(séparées par des virgules)</span></label><input id="_apd-options" placeholder="Ex: Story, Reel, Post, Carrousel" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-prop-modal\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptConfirmAddProp()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Créer</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -5323,10 +5332,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #ede8e0;border-radius:10px;margin-bottom:8px;background:#fdfaf6">' +
             '<span style="width:28px;height:28px;border-radius:7px;background:'+APT_OCRE_SOFT+';color:'+APT_OCRE_INK+';display:grid;place-items:center;font-size:12px;font-weight:700;flex-shrink:0">'+esc(TYPE_ICONS[def.type]||'?')+'</span>' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:600;color:#5c4633">'+esc(def.name)+'</div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:13px;font-weight:600;color:#412F21">'+esc(def.name)+'</div>' +
               '<div style="font-size:11px;color:#a89a86">'+(def.type)+((def.type==='Liste'&&def.options&&def.options.length)?' · '+def.options.slice(0,3).map(esc).join(', ')+(def.options.length>3?' …':''):'')+'</div>' +
             '</div>' +
-            '<button onclick="aptEditPropDef(\''+def.id+'\')" style="background:none;border:1.5px solid #e2d9ce;border-radius:7px;padding:4px 10px;font-size:11px;color:#8a6f54;cursor:pointer">Modifier</button>' +
+            '<button onclick="aptEditPropDef(\''+def.id+'\')" style="background:none;border:1.5px solid #EDE9E1;border-radius:7px;padding:4px 10px;font-size:11px;color:#8a6f54;cursor:pointer">Modifier</button>' +
             '<button onclick="aptDeletePropDef(\''+def.id+'\')" style="background:none;border:none;padding:4px;color:#c07070;cursor:pointer;font-size:16px;line-height:1" title="Supprimer">×</button>' +
           '</div>';
         }).join('')
@@ -5341,11 +5350,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     function render() {
       ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:26px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 16px 48px rgba(40,28,12,0.2)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-          '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:#5c4633;margin:0">Propriétés des tâches</h3>' +
+          '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:#412F21;margin:0">Propriétés des tâches</h3>' +
           '<button onclick="document.getElementById(\'_apt-props-manager\').remove()" style="background:none;border:none;font-size:22px;color:#8a6f54;cursor:pointer">×</button>' +
         '</div>' +
         '<div id="_apt-props-list">'+aptPropManagerHtml()+'</div>' +
-        '<button onclick="aptAddPropDef()" style="margin-top:12px;width:100%;padding:10px;border:1.5px dashed #e2d9ce;border-radius:10px;background:none;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-size:13px;cursor:pointer;text-align:center">+ Nouvelle propriété</button>' +
+        '<button onclick="aptAddPropDef()" style="margin-top:12px;width:100%;padding:10px;border:1.5px dashed #EDE9E1;border-radius:10px;background:none;color:#8a6f54;font-family:\'Inter Tight\',sans-serif;font-size:13px;cursor:pointer;text-align:center">+ Nouvelle propriété</button>' +
       '</div>';
     }
     render();
@@ -5393,15 +5402,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   // ─────────────────────────────────────────────────────────────────────────
   // ESPACE MAINTENANCE (terre) — cote studio/admin — tickets sur quota minutes
   // ─────────────────────────────────────────────────────────────────────────
-  var AMT_TERRE_DEEP = '#5c4633', AMT_TERRE_MID = '#8a6f54', AMT_TERRE_SOFT = '#c8b29a', AMT_PAILLE = '#EFE1B0';
+  var AMT_TERRE_DEEP = '#412F21', AMT_TERRE_MID = '#8a6f54', AMT_TERRE_SOFT = '#c8b29a', AMT_PAILLE = '#F2E5C2';
   var AMT_SOFT_BG = '#f3ece0';
   var AMT_STATUS  = { open:'Ouvert', in_progress:'En cours', done:'Resolu', closed:'Ferme' };
-  var AMT_STATUS_COL = { open:'#8a6f54', in_progress:'#7c9bdc', done:'#5c4633', closed:'#b09b80' };
+  var AMT_STATUS_COL = { open:'#8a6f54', in_progress:'#a98bd6', done:'#412F21', closed:'#b09b80' };
   var AMT_CATS = [
     ['question','Question/conseil','#cfddf6','#3f5a86'],
     ['bug','Bug','#e8a87c','#7a3417'],
     ['ajustement','Ajustement','#dccaf0','#5a3f86'],
-    ['contenu','Mise a jour de contenu','#efe1b0','#6b5310']
+    ['contenu','Mise a jour de contenu','#F2E5C2','#6b5310']
   ];
   function amtCatMeta(c){ for (var i=0;i<AMT_CATS.length;i++){ if (AMT_CATS[i][0]===c) return AMT_CATS[i]; } return null; }
 
@@ -5432,7 +5441,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       ['conseils','Conseils & ameliorations', counsels.length||null, 'plus'],
       ['retours','Retours clients', feedbacks.length||null, 'messages']
     ];
-    var tabBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid #e2d9ce">' +
+    var tabBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid #EDE9E1">' +
       TABS.map(function(tb){
         var act = tab===tb[0];
         return '<button onclick="amtSetTab(\''+pid+'\',\''+tb[0]+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 15px;background:none;border:0;border-bottom:2px solid '+(act?AMT_TERRE_DEEP:'transparent')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
@@ -5461,13 +5470,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var over = remaining < 0;
     var pct = quotaMin ? Math.min(100, Math.round(usedMin/quotaMin*100)) : 0;
 
-    var quotaBar = '<div style="display:flex;align-items:center;gap:14px;background:'+(over?'#fbf1ee':'#fff')+';border:1px solid '+(over?'#e7c6bd':'#e2d9ce')+';border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
+    var quotaBar = '<div style="display:flex;align-items:center;gap:14px;background:'+(over?'#fbf1ee':'#fff')+';border:1px solid '+(over?'#e7c6bd':'#EDE9E1')+';border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
       icon('clock',16,(over?'#9b3a2e':AMT_TERRE_DEEP)) +
       '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:'+AMT_TERRE_MID+'">Temps restant ce mois</span>' +
       '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+'">'+amtFmtMin(remaining)+'</span>' +
       '<span style="font-size:13px;color:'+AMT_TERRE_MID+'">'+usedMin+' / '+(quotaMin||'—')+' min</span>' +
       '<div style="flex:1;min-width:120px;height:7px;background:'+AMT_SOFT_BG+';border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+';width:'+pct+'%"></div></div>' +
-      '<button onclick="amtEditForfait(\''+pid+'\')" style="font-size:11px;padding:5px 11px;border-radius:8px;border:1px solid #e2d9ce;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Modifier le forfait</button>' +
+      '<button onclick="amtEditForfait(\''+pid+'\')" style="font-size:11px;padding:5px 11px;border-radius:8px;border:1px solid #EDE9E1;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Modifier le forfait</button>' +
       '<button onclick="amtOpenAddTicket(\''+pid+'\')" style="font-size:12px;font-weight:600;padding:7px 14px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">+ Ouvrir un ticket</button>' +
     '</div>';
 
@@ -5480,7 +5489,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         var cnt = sk==='all' ? tickets.filter(function(t){ return t.status!=='done'&&t.status!=='closed'; }).length : tickets.filter(function(t){return t.status===sk;}).length;
         var lab = sk==='all' ? 'Tout' : AMT_STATUS[sk];
         var dot = sk!=='all' ? '<span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:'+AMT_STATUS_COL[sk]+';transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span>' : '';
-        return '<button onclick="amtSetStFilter(\''+pid+'\',\''+sk+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?AMT_TERRE_DEEP:'#e2d9ce')+';background:'+(act?AMT_SOFT_BG:'#fff')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+'">'+dot+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
+        return '<button onclick="amtSetStFilter(\''+pid+'\',\''+sk+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?AMT_TERRE_DEEP:'#EDE9E1')+';background:'+(act?AMT_SOFT_BG:'#fff')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+'">'+dot+lab+' <span style="opacity:0.55">'+cnt+'</span></button>';
       }).join('') +
     '</div>';
 
@@ -5519,12 +5528,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:'+AMT_TERRE_DEEP+';cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
           (cm?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+cm[1]+'</span>':'') +
           (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+amtFmtMin(t.timeSpentMinutes)+'</span>':'') +
-          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #e2d9ce;border-radius:6px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer;flex-shrink:0">Rouvrir</button>' +
         '</div>';
       }).join('');
       return '<div style="margin-bottom:10px"><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
     }).join('');
-    return '<details style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:14px 18px;margin-top:16px">' +
+    return '<details style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:14px 18px;margin-top:16px">' +
       '<summary style="cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+AMT_TERRE_MID+';list-style:none">📁 Historique — '+hist.length+' demande'+(hist.length>1?'s':'')+' résolue'+(hist.length>1?'s':'')+'</summary>' +
       '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
   }
@@ -5536,17 +5545,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var catBadge = cm ? '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:'+amtCatBg(cm)+';color:'+cm[3]+';font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500">'+cm[1]+'</span>' : '';
     var stCol = AMT_STATUS_COL[t.status]||AMT_TERRE_MID;
 
-    var catSel = '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{category:this.value})" style="font-family:inherit;font-size:11px;padding:4px 7px;border:1.5px solid #e2d9ce;border-radius:7px;color:'+AMT_TERRE_DEEP+'">' +
+    var catSel = '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{category:this.value})" style="font-family:inherit;font-size:11px;padding:4px 7px;border:1.5px solid #EDE9E1;border-radius:7px;color:'+AMT_TERRE_DEEP+'">' +
       '<option value="">Type…</option>' + AMT_CATS.map(function(c){ return '<option value="'+c[0]+'"'+(t.category===c[0]?' selected':'')+'>'+c[1]+'</option>'; }).join('') + '</select>';
-    var stSel = '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:11px;padding:4px 7px;border:1.5px solid #e2d9ce;border-radius:7px;color:'+AMT_TERRE_DEEP+'">' +
+    var stSel = '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:11px;padding:4px 7px;border:1.5px solid #EDE9E1;border-radius:7px;color:'+AMT_TERRE_DEEP+'">' +
       Object.keys(AMT_STATUS).map(function(s){ return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+AMT_STATUS[s]+'</option>'; }).join('') + '</select>';
     var minInput = '<span style="display:inline-flex;align-items:center;gap:4px;font-family:\'Inter Tight\',sans-serif;font-size:11px;color:'+AMT_TERRE_MID+'">'+
-      '<input type="number" min="0" step="5" value="'+(t.timeSpentMinutes||0)+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{timeSpentMinutes:Math.max(0,parseInt(this.value,10)||0)})" style="width:62px;font-family:inherit;font-size:11px;padding:4px 6px;border:1.5px solid #e2d9ce;border-radius:7px;color:'+AMT_TERRE_DEEP+'"> min</span>';
+      '<input type="number" min="0" step="5" value="'+(t.timeSpentMinutes||0)+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{timeSpentMinutes:Math.max(0,parseInt(this.value,10)||0)})" style="width:62px;font-family:inherit;font-size:11px;padding:4px 6px;border:1.5px solid #EDE9E1;border-radius:7px;color:'+AMT_TERRE_DEEP+'"> min</span>';
 
     var isOpen = amtOpenTicket[pid]===t.id;
     var detail = isOpen ? amtTicketDetail(pid, t) : '';
 
-    return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:14px 18px">' +
+    return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:12px;padding:14px 18px">' +
       '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:200px">' +
           '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px">' +
@@ -5583,19 +5592,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     return '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #efe7da">' +
       '<div style="display:grid;gap:10px">' +
         '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Objet</label>'+
-          '<input value="'+esc(t.title||'')+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{title:this.value})" style="width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"></div>' +
+          '<input value="'+esc(t.title||'')+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{title:this.value})" style="width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #EDE9E1;border-radius:8px;color:'+AMT_TERRE_DEEP+'"></div>' +
         '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Detail</label>'+
-          '<textarea rows="3" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{description:this.value})" style="width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+';resize:vertical">'+esc(t.description||'')+'</textarea></div>' +
+          '<textarea rows="3" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{description:this.value})" style="width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1.5px solid #EDE9E1;border-radius:8px;color:'+AMT_TERRE_DEEP+';resize:vertical">'+esc(t.description||'')+'</textarea></div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
           '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Echeance</label>'+
-            '<input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{dueDate:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"></div>' +
+            '<input type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{dueDate:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #EDE9E1;border-radius:8px;color:'+AMT_TERRE_DEEP+'"></div>' +
           '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px">Urgent</label>'+
-            '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{priority:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+'"><option value="moyenne"'+(t.priority!=='haute'?' selected':'')+'>Non</option><option value="haute"'+(t.priority==='haute'?' selected':'')+'>Oui — blocage du site</option></select></div>' +
+            '<select onchange="amtPatch(\''+pid+'\',\''+t.id+'\',{priority:this.value})" style="width:100%;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #EDE9E1;border-radius:8px;color:'+AMT_TERRE_DEEP+'"><option value="moyenne"'+(t.priority!=='haute'?' selected':'')+'>Non</option><option value="haute"'+(t.priority==='haute'?' selected':'')+'>Oui — blocage du site</option></select></div>' +
         '</div>' +
-        (Array.isArray(t.attachments)&&t.attachments.length ? '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:6px">Pièces jointes</label><div style="display:flex;flex-wrap:wrap;gap:7px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="/api/projects/'+pid+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:'+AMT_SOFT_BG+';border:1px solid #e2d9ce;border-radius:8px;font-size:11.5px;color:'+AMT_TERRE_DEEP+';text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div></div>' : '') +
+        (Array.isArray(t.attachments)&&t.attachments.length ? '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:6px">Pièces jointes</label><div style="display:flex;flex-wrap:wrap;gap:7px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="/api/projects/'+pid+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:'+AMT_SOFT_BG+';border:1px solid #EDE9E1;border-radius:8px;font-size:11.5px;color:'+AMT_TERRE_DEEP+';text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div></div>' : '') +
         '<div><label style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:'+AMT_TERRE_MID+';display:block;margin-bottom:6px">Echange</label>'+
           (commentsHtml || '<div style="font-size:11px;color:'+AMT_TERRE_SOFT+';font-style:italic;margin-bottom:6px">Aucun message.</div>') +
-          '<div style="display:flex;gap:6px;margin-top:6px"><input id="amt-comment-'+t.id+'" placeholder="Repondre…" style="flex:1;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #e2d9ce;border-radius:8px"><button onclick="amtAddComment(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Envoyer</button></div></div>' +
+          '<div style="display:flex;gap:6px;margin-top:6px"><input id="amt-comment-'+t.id+'" placeholder="Repondre…" style="flex:1;font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #EDE9E1;border-radius:8px"><button onclick="amtAddComment(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Envoyer</button></div></div>' +
       '</div>' +
     '</div>';
   }
@@ -5631,7 +5640,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       { v: amtFmtMin(avg), k:'Moyenne mensuelle' }
     ];
     var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">' +
-      kpis.map(function(k){ return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px">' +
+      kpis.map(function(k){ return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:18px 20px">' +
         '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:'+AMT_TERRE_DEEP+';line-height:1.1;margin-bottom:4px">'+k.v+'</div>' +
         '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:'+AMT_TERRE_MID+'">'+k.k+'</div>' +
       '</div>'; }).join('') + '</div>';
@@ -5639,7 +5648,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     // chart (last >=5 months)
     var chartMonths = months.slice(-Math.max(5, months.length>12?12:months.length));
     var maxM = Math.max.apply(null, chartMonths.map(function(m){return byMonth[m]||0;}).concat([1]));
-    var chart = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:22px 24px;margin-bottom:22px">' +
+    var chart = '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:22px 24px;margin-bottom:22px">' +
       '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin:0 0 16px">Consommation par mois</h3>' +
       '<div style="display:flex;align-items:flex-end;gap:12px;height:120px">' +
         chartMonths.map(function(m){ var v=byMonth[m]||0; var h=Math.round(v/maxM*100); var lab=new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'}); var over=quotaMin&&v>quotaMin;
@@ -5664,13 +5673,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:'+AMT_TERRE_MID+'">'+(quotaMin||'—')+(quotaMin?' min':'')+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:'+AMT_TERRE_DEEP+'">'+c+' min</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#9b3a2e':AMT_TERRE_DEEP)+'">'+amtFmtMin(rest)+'</td>' +
-        '<td style="padding:9px 12px;text-align:center"><input type="number" value="'+esc(regVal)+'" placeholder="0" onchange="amtSetRegul(\''+pid+'\',\''+m+'\',this.value)" style="width:70px;font-family:inherit;font-size:12px;padding:4px 6px;border:1.5px solid #e2d9ce;border-radius:7px;text-align:center;color:'+AMT_TERRE_DEEP+'"></td>' +
+        '<td style="padding:9px 12px;text-align:center"><input type="number" value="'+esc(regVal)+'" placeholder="0" onchange="amtSetRegul(\''+pid+'\',\''+m+'\',this.value)" style="width:70px;font-family:inherit;font-size:12px;padding:4px 6px;border:1.5px solid #EDE9E1;border-radius:7px;text-align:center;color:'+AMT_TERRE_DEEP+'"></td>' +
       '</tr>';
     }).join('');
-    var table = '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:16px;padding:18px 20px;margin-bottom:22px;overflow-x:auto">' +
+    var table = '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:18px 20px;margin-bottom:22px;overflow-x:auto">' +
       '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin:0 0 14px">Historique mensuel</h3>' +
       '<table style="width:100%;border-collapse:collapse;font-family:\'Inter Tight\',sans-serif">' +
-        '<thead><tr style="border-bottom:2px solid #e2d9ce">'+
+        '<thead><tr style="border-bottom:2px solid #EDE9E1">'+
           ['Mois','Quota','Consommé','Restant','Régularisation'].map(function(h,i){ return '<th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:'+AMT_TERRE_MID+';text-align:'+(i===0?'left':'center')+'">'+h+'</th>'; }).join('') +
         '</tr></thead><tbody>'+(rows||'<tr><td colspan="5" style="padding:14px;text-align:center;color:'+AMT_TERRE_SOFT+'">Aucune donnee.</td></tr>')+'</tbody>' +
       '</table>' +
@@ -5680,12 +5689,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var cards = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
       '<div style="background:'+AMT_SOFT_BG+';border:1px solid '+AMT_TERRE_SOFT+';border-radius:14px;padding:18px 20px">' +
         '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:'+AMT_TERRE_MID+';margin-bottom:10px">A retenir</div>' +
-        '<textarea rows="3" onchange="amtSaveField(\''+pid+'\',\'maintNote\',this.value)" placeholder="Note libre pour ce client…" style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+';resize:vertical;background:#fff">'+esc(note)+'</textarea>' +
+        '<textarea rows="3" onchange="amtSaveField(\''+pid+'\',\'maintNote\',this.value)" placeholder="Note libre pour ce client…" style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid #EDE9E1;border-radius:8px;color:'+AMT_TERRE_DEEP+';resize:vertical;background:#fff">'+esc(note)+'</textarea>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center">' +
+      '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center">' +
         '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:'+AMT_TERRE_DEEP+';margin-bottom:6px">Reserve ton call</div>' +
         '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:'+AMT_TERRE_MID+';margin:0 0 12px">Un point sur le mois ou les priorites.</p>' +
-        '<input type="url" value="'+esc(project.maintCallUrl||'')+'" onchange="amtSaveField(\''+pid+'\',\'maintCallUrl\',this.value)" placeholder="Lien de reservation (URL)" style="width:100%;font-family:inherit;font-size:12px;padding:7px 10px;border:1.5px solid #e2d9ce;border-radius:8px;color:'+AMT_TERRE_DEEP+';margin-bottom:10px">' +
+        '<input type="url" value="'+esc(project.maintCallUrl||'')+'" onchange="amtSaveField(\''+pid+'\',\'maintCallUrl\',this.value)" placeholder="Lien de reservation (URL)" style="width:100%;font-family:inherit;font-size:12px;padding:7px 10px;border:1.5px solid #EDE9E1;border-radius:8px;color:'+AMT_TERRE_DEEP+';margin-bottom:10px">' +
         (project.maintCallUrl ? '<a href="'+esc(project.maintCallUrl)+'" target="_blank" rel="noopener" style="align-self:flex-start;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';text-decoration:none">Ouvrir le lien</a>' : '') +
       '</div>' +
     '</div>';
@@ -5698,10 +5707,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var pid = project.id;
     var counsels = Array.isArray(project.counsels)?project.counsels:[];
     var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button onclick="amtAddCounsel(\''+pid+'\')" style="font-size:12px;font-weight:600;padding:8px 15px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">+ Ajouter un conseil</button></div>';
-    var BADGES = { integrer:['A integrer','#efe1b0','#6b5310'], etudier:['A etudier','#dccaf0','#5a3f86'] };
+    var BADGES = { integrer:['A integrer','#F2E5C2','#6b5310'], etudier:['A etudier','#dccaf0','#5a3f86'] };
     var list = counsels.length ? '<div style="display:grid;gap:12px">' + counsels.map(function(c){
       var b = BADGES[c.badge] || BADGES.integrer;
-      return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:16px 18px">' +
+      return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:12px;padding:16px 18px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-size:18px;color:'+AMT_TERRE_DEEP+';flex:1">'+esc(c.title||'')+'</span>' +
           '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;padding:3px 10px;border-radius:999px;background:'+b[1]+';color:'+b[2]+'">'+b[0]+'</span>' +
@@ -5720,7 +5729,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var feedbacks = Array.isArray(project.feedbacks)?project.feedbacks:[];
     var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button onclick="amtAddFeedback(\''+pid+'\')" style="font-size:12px;font-weight:600;padding:8px 15px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">+ Ajouter un retour</button></div>';
     var list = feedbacks.length ? '<div style="display:grid;gap:12px">' + feedbacks.map(function(f){
-      return '<div style="background:#fff;border:1px solid #e2d9ce;border-radius:12px;padding:16px 18px">' +
+      return '<div style="background:#fff;border:1px solid #EDE9E1;border-radius:12px;padding:16px 18px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-size:17px;color:'+AMT_TERRE_DEEP+';flex:1">'+esc(f.author||'Retour')+'</span>' +
           '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_SOFT+'">'+(f.createdAt?formatDate(f.createdAt):'')+'</span>' +
@@ -5803,7 +5812,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.getElementById('_amt-add'); if (ov) ov.remove();
     ov = document.createElement('div'); ov.id='_amt-add';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
+    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
     var L='font-size:11px;font-weight:600;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px';
     ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+AMT_TERRE_DEEP+';border-radius:16px;padding:26px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:'+AMT_TERRE_DEEP+';margin:0">Ouvrir un ticket</h3><button onclick="document.getElementById(\'_amt-add\').remove()" style="background:none;border:none;font-size:22px;color:'+AMT_TERRE_MID+';cursor:pointer">×</button></div>' +
@@ -5814,7 +5823,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div><label style="'+L+'">Echeance souhaitee</label><input type="date" id="_amt-due" style="'+S+'"></div>' +
       '</div>' +
       '<label style="display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:13px;color:'+AMT_TERRE_DEEP+';cursor:pointer"><input type="checkbox" id="_amt-urgent"> Urgent — blocage du site</label>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtCreateTicket(\''+pid+'\')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Creer le ticket</button></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-add\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtCreateTicket(\''+pid+'\')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Creer le ticket</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -5846,7 +5855,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.getElementById('_amt-counsel'); if (ov) ov.remove();
     ov = document.createElement('div'); ov.id='_amt-counsel';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
+    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
     var L='font-size:11px;font-weight:600;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px';
     var e = existing || {};
     ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+AMT_TERRE_DEEP+';border-radius:16px;padding:26px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto">' +
@@ -5854,7 +5863,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="margin-bottom:12px"><label style="'+L+'">Titre</label><input id="_amt-c-title" value="'+esc(e.title||'')+'" style="'+S+'"></div>' +
       '<div style="margin-bottom:12px"><label style="'+L+'">Corps</label><textarea id="_amt-c-body" rows="4" style="'+S+';resize:vertical">'+esc(e.body||'')+'</textarea></div>' +
       '<div style="margin-bottom:18px"><label style="'+L+'">Badge</label><select id="_amt-c-badge" style="'+S+'"><option value="integrer"'+(e.badge!=='etudier'?' selected':'')+'>A integrer</option><option value="etudier"'+(e.badge==='etudier'?' selected':'')+'>A etudier</option></select></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-counsel\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtSaveCounsel(\''+pid+'\','+(existing?'\''+existing.id+'\'':'null')+')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Enregistrer</button></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-counsel\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtSaveCounsel(\''+pid+'\','+(existing?'\''+existing.id+'\'':'null')+')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Enregistrer</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(ev){ if(ev.target===ov) ov.remove(); });
@@ -5890,13 +5899,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var ov = document.getElementById('_amt-fb'); if (ov) ov.remove();
     ov = document.createElement('div'); ov.id='_amt-fb';
     ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #e2d9ce;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
+    var S='width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px;box-sizing:border-box;color:'+AMT_TERRE_DEEP;
     var L='font-size:11px;font-weight:600;color:'+AMT_TERRE_MID+';display:block;margin-bottom:4px';
     ov.innerHTML = '<div style="background:#fff;border-top:3px solid '+AMT_TERRE_DEEP+';border-radius:16px;padding:26px;max-width:460px;width:100%">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:'+AMT_TERRE_DEEP+';margin:0">Nouveau retour</h3><button onclick="document.getElementById(\'_amt-fb\').remove()" style="background:none;border:none;font-size:22px;color:'+AMT_TERRE_MID+';cursor:pointer">×</button></div>' +
       '<div style="margin-bottom:12px"><label style="'+L+'">Auteur</label><input id="_amt-fb-author" style="'+S+'"></div>' +
       '<div style="margin-bottom:18px"><label style="'+L+'">Contenu</label><textarea id="_amt-fb-content" rows="4" style="'+S+';resize:vertical"></textarea></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-fb\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #e2d9ce;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtSaveFeedback(\''+pid+'\')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Enregistrer</button></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button onclick="document.getElementById(\'_amt-fb\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:'+AMT_TERRE_MID+';cursor:pointer">Annuler</button><button onclick="amtSaveFeedback(\''+pid+'\')" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+AMT_TERRE_DEEP+';color:'+AMT_PAILLE+';cursor:pointer">Enregistrer</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(ev){ if(ev.target===ov) ov.remove(); });
@@ -6296,13 +6305,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (existing) existing.remove();
     var ov = document.createElement('div');
     ov.id = 'token-modal-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#1C1205;font-size:20px;margin-bottom:8px">Lien espace client généré</h3>' +
       '<p style="font-size:13px;color:#8090a8;margin-bottom:16px">Envoyez ce lien à votre cliente pour qu\'elle accède à son espace.</p>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">' +
-        '<input id="token-modal-url" type="text" readonly value="' + url + '" style="flex:1;padding:10px 14px;border:1.5px solid #e2dbd0;border-radius:10px;font-size:13px;background:#f9f7f4;color:#051833;font-family:monospace">' +
-        '<button onclick="navigator.clipboard.writeText(document.getElementById(\'token-modal-url\').value).then(function(){var b=this;b.textContent=\'Copié ✓\';setTimeout(function(){b.textContent=\'Copier\';},2000);}.bind(this))" style="padding:10px 18px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;white-space:nowrap">Copier</button>' +
+        '<input id="token-modal-url" type="text" readonly value="' + url + '" style="flex:1;padding:10px 14px;border:1.5px solid #e2dbd0;border-radius:10px;font-size:13px;background:#f9f7f4;color:#1C1205;font-family:monospace">' +
+        '<button onclick="navigator.clipboard.writeText(document.getElementById(\'token-modal-url\').value).then(function(){var b=this;b.textContent=\'Copié ✓\';setTimeout(function(){b.textContent=\'Copier\';},2000);}.bind(this))" style="padding:10px 18px;background:#1C1205;color:#E4D1FE;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;white-space:nowrap">Copier</button>' +
       '</div>' +
       '<div style="text-align:right"><button onclick="document.getElementById(\'token-modal-overlay\').remove()" style="padding:8px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8">Fermer</button></div>' +
     '</div>';
@@ -6328,14 +6337,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var TOKEN = getToken();
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
-  var STATUS_COLORS = { discovery:'#ecf2ff', in_progress:'#d5e3ff', waiting_client:'rgba(201,149,47,0.16)', review:'#efddff', delivered:'#2b3d5f', archived:'rgba(92,70,51,0.1)' };
+  var STATUS_COLORS = { discovery:'#f7efff', in_progress:'#efddff', waiting_client:'rgba(201,149,47,0.16)', review:'#efddff', delivered:'#5c4633', archived:'rgba(92,70,51,0.1)' };
 
   var ACCENTS = {
     glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-    brume:  { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8' },
+    brume:  { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
     ocre:   { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12' },
-    terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633' },
-    nuit:   { soft:'#dde6f5', mid:'#b3c4e0', deep:'#586c8e', ink:'#2b3d5f' },
+    terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21' },
+    nuit:   { soft:'#dde6f5', mid:'#b3c4e0', deep:'#8a6f54', ink:'#5c4633' },
   };
   function acc(name) { return ACCENTS[name] || ACCENTS.glycine; }
 
@@ -6465,7 +6474,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
-  var STATUS_TEXT = { discovery:'#051833', in_progress:'#051833', waiting_client:'#5c4633', review:'#6c4ea4', delivered:'#ffffff', archived:'#8a6f54' };
+  var STATUS_TEXT = { discovery:'#1C1205', in_progress:'#1C1205', waiting_client:'#412F21', review:'#6c4ea4', delivered:'#ffffff', archived:'#8a6f54' };
   function statusBadge(status) {
     var bg = STATUS_COLORS[status] || '#aaa';
     var fg = STATUS_TEXT[status] || '#1a1a1a';
@@ -6524,15 +6533,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cpShowPrompt(title, label, defaultVal, onOk, opts) {
     opts = opts || {};
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:6px">' + title + '</div>' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:6px">' + title + '</div>' +
       (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
-      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#5c4633" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#412F21" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
-        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#5c4633;color:#EFE1B0;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -6548,13 +6557,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function showConfirm(msg, onOk, opts) {
     opts = opts || {};
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
-      '<div style="font-size:13.5px;color:#5c4633;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
+      '<div style="font-size:13.5px;color:#412F21;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#8a6f54;font-size:14px;font-family:inherit">Annuler</button>' +
-        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#5c4633')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
+        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#412F21')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     function close(){ ov.remove(); }
@@ -6805,7 +6814,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</div>' +
           '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none;flex-shrink:0" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir &amp; valider ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
         '</div>'
-        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#EFE1B0);background:var(--paille-50,#FBF3DC)">' +
+        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#F2E5C2);background:var(--paille-50,#FBF3DC)">' +
           partDiamond(nextTask.urgency) +
           '<div style="flex:1">' +
             '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine demande</div>' +
@@ -7105,12 +7114,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : 'background:' + esc(hb.color || 'var(--navy)') + ';';
     var hbHex = hb.color && hb.color.charAt(0) === '#' ? hb.color : null;
     var hbAutoLight = !hb.imageUrl && hbHex && cpHexLum(hbHex) > 160;
-    var hbTx = hb.textColor || (hbAutoLight ? '#051833' : '#fff');
+    var hbTx = hb.textColor || (hbAutoLight ? '#1C1205' : '#fff');
     var hbEditCtrls = '';
     if (_isAdminEdit) {
       hbEditCtrls = '<div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;flex-wrap:wrap;justify-content:flex-end">' +
         '<label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;backdrop-filter:blur(4px)">Photo<input type="file" accept="image/*" style="display:none" onchange="cpHomeBannerPhoto(this)"></label>' +
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#051833')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#1C1205')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
         '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Texte<input type="color" value="'+(hb.textColor||'#ffffff')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerTextColor(this.value)"></label>' +
         (hb.imageUrl ? '<button onclick="cpHomeBannerRemovePhoto()" style="padding:5px 11px;border:0;border-radius:999px;background:rgba(0,0,0,0.5);color:#fff;font-family:var(--font-micro);font-size:10px;cursor:pointer">Retirer</button>' : '') +
       '</div>';
@@ -7314,9 +7323,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var bannerColor = card.bannerColor || 'var(--navy)';
       var bannerHex = card.bannerColor && card.bannerColor.charAt(0) === '#' ? card.bannerColor : null;
       var light = bannerHex && cpHexLum(bannerHex) > 160;
-      var badgeTx = light ? '#051833' : '#fff';
-      var badgeBg = light ? 'rgba(5,24,51,0.12)' : 'rgba(255,255,255,0.22)';
-      return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);display:block;width:100%">' +
+      var badgeTx = light ? '#1C1205' : '#fff';
+      var badgeBg = light ? 'rgba(28,18,5,0.12)' : 'rgba(255,255,255,0.22)';
+      return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);display:block;width:100%">' +
         '<div class="cp-proj-banner" style="background:' + bannerColor + '">' +
           (card.statusLabel ? '<span class="cp-proj-banner__badge" style="background:' + badgeBg + ';color:' + badgeTx + ';backdrop-filter:none">' + esc(card.statusLabel) + '</span>' : '') +
         '</div>' +
@@ -7346,7 +7355,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (existing) existing.remove();
     var ov = document.createElement('div');
     ov.id = '_cp-card-detail-ov';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:flex-end;justify-content:center';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:flex-end;justify-content:center';
 
     function render() {
       var validations = project.clientCardValidations || {};
@@ -7354,7 +7363,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var isAdminDone = s.done;
         var isClientValidated = s.clientValidation && validations[card.id + ':' + s.id];
         var isDone = isAdminDone || isClientValidated;
-        var dotBg = isDone ? 'var(--sage)' : (s.clientValidation ? 'rgba(5,24,51,0.08)' : 'var(--border)');
+        var dotBg = isDone ? 'var(--sage)' : (s.clientValidation ? 'rgba(28,18,5,0.08)' : 'var(--border)');
         var dotTx = isDone ? '#fff' : (s.clientValidation ? 'var(--navy)' : 'var(--muted)');
         return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">' +
           '<div style="width:22px;height:22px;border-radius:50%;background:' + dotBg + ';color:' + dotTx + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">' + (isDone ? '✓' : '') + '</div>' +
@@ -7370,7 +7379,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">Aucune etape pour le moment.</div>';
 
       var bannerColor = card.bannerColor || 'var(--navy)';
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(5,24,51,0.18);max-height:85vh;overflow-y:auto">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(28,18,5,0.18);max-height:85vh;overflow-y:auto">' +
         '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
           (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
           '<div style="font-size:19px;font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
@@ -7549,7 +7558,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var portal = appData.type === 'client';
     var extended = project.deadlineExtended
-      ? ' <span style="font-size:11px;background:#EFE1B0;color:#5c4633;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
+      ? ' <span style="font-size:11px;background:#F2E5C2;color:#412F21;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
       : '';
     var hdrBg = project.bannerUrl
       ? 'background:url(' + esc(project.bannerUrl) + ') center/cover no-repeat'
@@ -7559,11 +7568,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Contraste du texte selon la luminosite de la banniere (comme la card)
     var bannerHex = (!project.bannerUrl && project.bannerColor) ? project.bannerColor.split('|')[0] : null;
     var bannerLight = bannerHex && bannerHex.charAt(0) === '#' && cpHexLum(bannerHex) > 160;
-    var titleCol = bannerLight ? '#051833' : '#EFE1B0';
-    var metaCol  = bannerLight ? 'rgba(5,24,51,0.72)' : 'rgba(239,225,176,0.82)';
+    var titleCol = bannerLight ? '#1C1205' : '#F2E5C2';
+    var metaCol  = bannerLight ? 'rgba(28,18,5,0.72)' : 'rgba(239,225,176,0.82)';
     var backBtnStyle = bannerLight
-      ? 'background:rgba(5,24,51,0.07);border:1.5px solid rgba(5,24,51,0.22);color:#051833'
-      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#EFE1B0';
+      ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#1C1205'
+      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F2E5C2';
     var header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
       (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="' + backBtnStyle + ';font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
       '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
@@ -7754,7 +7763,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var answered = qQuestions.filter(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); }).length;
       var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
       questionnaireCard =
-        '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(5,24,51,0.10);margin-bottom:14px;display:block">' +
+        '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);margin-bottom:14px;display:block">' +
           '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
             '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
             '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
@@ -7762,7 +7771,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
               : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
           '</div>' +
-          '<div style="background:#fff;padding:14px 20px;border:1.5px solid rgba(5,24,51,0.08);border-top:none;border-radius:0 0 14px 14px">' +
+          '<div style="background:#fff;padding:14px 20px;border:1.5px solid rgba(28,18,5,0.08);border-top:none;border-radius:0 0 14px 14px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center">' +
               '<span style="font-size:13px;color:var(--muted)">' + answered + ' / ' + qQuestions.length + ' réponse' + (qQuestions.length > 1 ? 's' : '') + '</span>' +
               '<span style="font-size:13px;color:var(--navy);font-weight:600">' + (allAnswered ? 'Voir mes réponses' : 'Compléter') + ' →</span>' +
@@ -8207,11 +8216,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   // ── Espace partenaire côté client ────────────────────────────────────────────
-  var CLI_URGENCY    = { basse:'#BAD1FD', moyenne:'#E4D1FE', haute:'#e8a87c' };
+  var CLI_URGENCY    = { basse:'#E4D1FE', moyenne:'#E4D1FE', haute:'#e8a87c' };
   var CLI_URGENCY_TX = { basse:'#0a2a5e', moyenne:'#2a1d4a', haute:'#5a2c0e' };
   var CLI_URG_LABEL  = { basse:'Basse', moyenne:'Normale', haute:'Haute' };
   // Urgences partenaire : tranquille / normal / urgent / critique
-  var PART_URGENCY    = { tranquille:'#BAD1FD', normal:'#EFE1B0', urgent:'#e7cd97', critique:'#e8a87c' };
+  var PART_URGENCY    = { tranquille:'#E4D1FE', normal:'#F2E5C2', urgent:'#e7cd97', critique:'#e8a87c' };
   var PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
   var PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
@@ -8234,10 +8243,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var rows = groups[k].map(function(t){
         return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
           '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
-          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#5c4633);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
+          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#412F21);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
           (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
           (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
-          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #e2d9ce;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
+          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
         '</div>';
       }).join('');
       return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
@@ -8326,8 +8335,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (existing) existing.remove();
     var ov = document.createElement('div');
     ov.id = '_cp-ticket-ov';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
         '<strong style="font-size:16px;color:var(--navy)">Nouvelle demande</strong>' +
         '<button onclick="document.getElementById(\'_cp-ticket-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted)">✕</button>' +
@@ -8573,7 +8582,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             var rows = groups[k].map(function(t){
               return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px">' +
                 '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
-                '<span style="flex:1;font-size:12px;color:var(--terre,#5c4633);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
+                '<span style="flex:1;font-size:12px;color:var(--terre,#412F21);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
                 (t.category?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.category)+'</span>':'') +
                 '<button onclick="cliMaintReopenTicket(\''+pid+'\',\''+t.id+'\')" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid var(--bone-d);border-radius:6px;background:#fff;color:var(--terre-600);cursor:pointer;flex-shrink:0">Rouvrir</button>' +
               '</div>';
@@ -8819,9 +8828,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? '<div style="display:flex;align-items:center;gap:14px;padding:14px 22px;background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap">' +
           cpIcon('timer',16,'color:#8a6f54') +
           '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54;white-space:nowrap">Forfait du mois</span>' +
-          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#5c4633)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#8a6f54">/'+forfaitH+' h</span></span>' +
+          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#412F21)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#8a6f54">/'+forfaitH+' h</span></span>' +
           '<div style="flex:1;min-width:120px;height:8px;background:#ece4d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#7da2e0;width:'+forfaitPct+'%;border-radius:999px;transition:width .3s"></div></div>' +
-          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#5c4633)')+';white-space:nowrap">'+(forfaitLeft>=0?forfaitLeft.toFixed(1)+' H RESTANTES':(-forfaitLeft).toFixed(1)+' H DEPASSEES')+'</span>' +
+          '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#412F21)')+';white-space:nowrap">'+(forfaitLeft>=0?forfaitLeft.toFixed(1)+' H RESTANTES':(-forfaitLeft).toFixed(1)+' H DEPASSEES')+'</span>' +
         '</div>'
       : '';
 
@@ -8829,18 +8838,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var urgFilters = ['','tranquille','normal','urgent','critique'].map(function(u){
       var active = flt.urgency===u;
       if (!u) {
-        return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#051833':'#e3ddd0')+';background:'+(active?'#051833':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">TOUTES</button>';
+        return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#1C1205':'#e3ddd0')+';background:'+(active?'#1C1205':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">TOUTES</button>';
       }
       return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?PART_URGENCY[u]:'#e3ddd0')+';background:'+(active?PART_URGENCY[u]:'transparent')+';color:'+(active?PART_URGENCY_TX[u]:'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+PART_URGENCY[u]+';transform:rotate(45deg);border:1px solid rgba(0,0,0,0.12)"></span>'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
     }).join('');
 
     var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
       '<div style="display:flex;align-items:center;gap:6px">' +
-        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#5c4633);padding:4px 6px;line-height:1">←</button>' +
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#5c4633);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
-        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#5c4633);padding:4px 6px;line-height:1">→</button>' +
+        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#412F21);padding:4px 6px;line-height:1">←</button>' +
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#412F21);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
+        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#412F21);padding:4px 6px;line-height:1">→</button>' +
       '</div>' +
-      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#ffffff);color:var(--terre,#5c4633);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
+      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#ffffff);color:var(--terre,#412F21);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
     '</div>';
 
@@ -8865,7 +8874,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       });
       var isToday = ds===todayStr;
       var numHtml = isToday
-        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#051833;color:#ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
+        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#1C1205;color:#ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
         : '<div style="font-size:13px;font-weight:600;color:#8a6f54">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
@@ -8877,14 +8886,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var propSchema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         var propVals = t.properties || {};
         var propChipsHtml = propSchema.filter(function(def){ return propVals[def.id] != null && propVals[def.id] !== ''; }).map(function(def){
-          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#5c4633);white-space:nowrap">'+esc(def.name)+': '+esc(String(propVals[def.id]))+'</span>';
+          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#412F21);white-space:nowrap">'+esc(def.name)+': '+esc(String(propVals[def.id]))+'</span>';
         }).join(' ');
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
-            '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#5c4633)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
@@ -8892,7 +8901,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml +
-          '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #e2d9ce;background:#fff;color:#5c4633;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
+          '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
         '</div>' + pills +
       '</div>');
     }
@@ -8936,7 +8945,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var timeSpent = t.timeSpentMinutes || 0;
     var timeH = (timeSpent/60).toFixed(1);
 
-    var urgBg = PART_URGENCY[t.urgency] || '#EFE1B0';
+    var urgBg = PART_URGENCY[t.urgency] || '#F2E5C2';
     var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
@@ -8957,7 +8966,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'var(--surface,#ffffff)')+';border:1px solid '+(isStudio?'#c9952f':'var(--bone-d,#e8e0d4)')+';">' +
           '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#412F21':'var(--muted,#8090a8)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
-          '<div style="font-size:13px;color:'+(isStudio?'#412F21':'var(--navy,#051833)')+'">'+esc(c.text)+'</div>' +
+          '<div style="font-size:13px;color:'+(isStudio?'#412F21':'var(--navy,#1C1205)')+'">'+esc(c.text)+'</div>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -8974,7 +8983,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input value="'+esc(t.title)+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{title:this.value})" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#051833);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      '<input value="'+esc(t.title)+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{title:this.value})" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
       // Statut + Urgence
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
@@ -8997,7 +9006,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var schema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         if (!schema.length) return '';
         var props = t.properties || {};
-        var inpStyle = 'width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:7px;font-family:inherit;color:var(--navy,#051833);background:#fff;box-sizing:border-box';
+        var inpStyle = 'width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:7px;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box';
         var rows = schema.map(function(def){
           var val = props[def.id] != null ? props[def.id] : '';
           var field;
@@ -9025,14 +9034,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       })() +
       // Contenu
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
-      '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#051833);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
+      '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
       sep +
       // Temps passé (texte libre 1h30 + boutons)
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Temps passe</span></div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">' +
-        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#051833);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
-        '<input id="cli-time-'+t.id+'" value="'+partFmtH(timeSpent)+'" onkeydown="if(event.key===\'Enter\'){this.blur()}" onblur="cliSetTimeFromInput(\''+pid+'\',\''+t.id+'\')" style="width:80px;font-size:15px;font-weight:700;color:var(--navy,#051833);text-align:center;padding:7px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;background:#fff;box-sizing:border-box" title="Ex: 1h30 ou 90">' +
-        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#051833);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
+        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
+        '<input id="cli-time-'+t.id+'" value="'+partFmtH(timeSpent)+'" onkeydown="if(event.key===\'Enter\'){this.blur()}" onblur="cliSetTimeFromInput(\''+pid+'\',\''+t.id+'\')" style="width:80px;font-size:15px;font-weight:700;color:var(--navy,#1C1205);text-align:center;padding:7px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;background:#fff;box-sizing:border-box" title="Ex: 1h30 ou 90">' +
+        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
         '<span style="font-size:11px;color:var(--muted,#8090a8);line-height:1.3">Taper 1h30<br>ou +/− (30 min)</span>' +
       '</div>' +
       sep +
@@ -9041,7 +9050,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (deliverable
         ? '<a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a>'
         : (t.livrableUrl
-          ? '<a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy,#051833);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a>'
+          ? '<a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy,#1C1205);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a>'
           : '<div id="_pdrop-'+t.id+'" onclick="document.getElementById(\'_pfile-'+t.id+'\').click()" ondragover="event.preventDefault();this.style.borderColor=\'#c9952f\';this.style.background=\'rgba(201,149,47,0.06)\'" ondragleave="this.style.borderColor=\'\';this.style.background=\'\'" ondrop="cliDropDeliverable(event,\''+pid+'\',\''+t.id+'\')" style="border:1.5px dashed var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:var(--muted,#8090a8);font-size:12px;cursor:pointer">Glisser un fichier ou cliquer<input type="file" id="_pfile-'+t.id+'" style="display:none" onchange="cliUploadDeliverable(\''+pid+'\',\''+t.id+'\',this)"></div>')) +
       '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;margin-top:8px;font-family:inherit;box-sizing:border-box;background:#fff">' +
       sep +
@@ -9052,13 +9061,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="display:flex;gap:6px">' +
         '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-family:inherit">' +
-        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#051833);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
+        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#1C1205);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
       '</div>' +
       sep +
       // Actions
       '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
       '<div style="display:flex;gap:8px">' +
-        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#051833)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
+        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
         '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
         '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>' +
       '</div>' +
@@ -9305,8 +9314,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Aucune facture ou devis pour le moment.</div></div>';
     }
     var INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente' };
-    var INV_COLOR  = { sent:'#BAD1FD', signed:'#E4D1FE', paid:'#5c4633', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c' };
-    var INV_TXT    = { sent:'#2b3d5f', signed:'#6c4ea4', paid:'#EFE1B0', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e' };
+    var INV_COLOR  = { sent:'#E4D1FE', signed:'#E4D1FE', paid:'#412F21', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c' };
+    var INV_TXT    = { sent:'#5c4633', signed:'#6c4ea4', paid:'#F2E5C2', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e' };
     var devisItems = inv.filter(function(i){ return i.type === 'devis'; });
     var factItems  = inv.filter(function(i){ return i.type !== 'devis'; });
     function invRow(i) {
@@ -9441,7 +9450,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button title="Saisir un report manuel" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;border-radius:4px" ' +
           'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">'+cpIcon('pencil',13)+'</button>' +
       '</div>';
-      return '<tr style="'+(isNow?'background:rgba(5,24,51,0.03);font-weight:600':'')+'\">' +
+      return '<tr style="'+(isNow?'background:rgba(28,18,5,0.03);font-weight:600':'')+'\">' +
         '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
         '<td style="padding:10px 14px;font-size:14px;text-align:center">'+r.forfait+'h</td>' +
         '<td style="padding:10px 14px;font-size:14px;text-align:center">'+regulCell+'</td>' +
@@ -9570,28 +9579,28 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var ov = document.createElement('div');
     ov.id = '_maint-ticket-modal';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var cats = ['Bug','Modification','Ajout de contenu','Performance','Sécurité','Autre'];
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:17px;font-weight:700;color:#051833;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:17px;font-weight:700;color:#1C1205;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
-        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833">' +
+        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
       '</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
-        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
+        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
-          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
+          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
             ['basse','moyenne','haute'].map(function(p){ return '<option value="'+p+'"'+(((edit&&edit.priority)||'moyenne')===p?' selected':'')+'>'+(p.charAt(0).toUpperCase()+p.slice(1))+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
-          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#051833;background:#fff">' +
+          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
             '<option value="">— Catégorie —</option>' +
             cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
           '</select>' +
@@ -9604,7 +9613,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
-        '<button id="_maint-t-ok" style="padding:9px 22px;background:#5c4633;color:#EFE1B0;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
+        '<button id="_maint-t-ok" style="padding:9px 22px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -9619,7 +9628,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var box = ov.querySelector('#_maint-t-files');
       box.innerHTML = pending.length ? pending.map(function(f, i){
         var isImg = (f.type||'').indexOf('image')===0;
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7f3ed;border-radius:8px;font-size:13px;color:#051833">' +
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7f3ed;border-radius:8px;font-size:13px;color:#1C1205">' +
           '<span>'+(isImg?'🖼️':'📎')+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name||'fichier')+'</span>' +
           '<button data-rm="'+i+'" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1">×</button>' +
         '</div>';
@@ -9728,10 +9737,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var briefSel = BRIEF_OPTS.map(function(v){ return '<option value="'+v+'"'+(opts.briefStatus===v?' selected':'')+'>'+(CLI_BRIEF[v]||{label:v}).label+'</option>'; }).join('');
     var ov = document.createElement('div');
     ov.id = 'cli-add-task-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18)">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#051833;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#1C1205;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la tâche':'Nouvelle tâche')+'</h3>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
@@ -9749,7 +9758,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
         '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8">Annuler</button>' +
-        '<button id="clt-submit" style="padding:9px 20px;background:#051833;color:#BAD1FD;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
+        '<button id="clt-submit" style="padding:9px 20px;background:#1C1205;color:#E4D1FE;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -9781,15 +9790,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (existing) existing.remove();
       var ov = document.createElement('div');
       ov.id = '_cp-partenaire-task-ov';
-      ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-      var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#051833)';
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+      var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
       var urgPills = ['tranquille','normal','urgent','critique'].map(function(u){
         var bg = PART_URGENCY[u]; var tx = PART_URGENCY_TX[u];
         return '<button type="button" id="_ptask-urg-'+u+'" onclick="window._ptaskSelUrg(\''+u+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+bg+';background:transparent;color:'+tx+';font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.05em">'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
       }).join('');
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(5,24,51,0.18);max-height:90vh;overflow-y:auto">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#051833)">Ajouter une tâche</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Ajouter une tâche</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
         '</div>' +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre *</label>' +
@@ -9824,7 +9833,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         })() +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#051833);color:#fff;cursor:pointer;font-size:13px;font-weight:600">AJOUTER</button>' +
+          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">AJOUTER</button>' +
         '</div>' +
       '</div>';
       document.body.appendChild(ov);
@@ -10129,15 +10138,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cliAddResource = function(pid) {
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#051833;margin-bottom:12px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#051833;margin-bottom:16px">Ajouter une ressource</div>' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;margin-bottom:12px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:16px">Ajouter une ressource</div>' +
       '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
       '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">' +
         '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
-        '<button id="_res-ok" style="padding:9px 20px;background:#5c4633;color:#EFE1B0;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
+        '<button id="_res-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     setTimeout(function(){ ov.querySelector('#_res-url').focus(); }, 60);
@@ -10591,7 +10600,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     // Rebuild complet (premier chargement, ou opts.full)
     var adminBar = _isAdminEdit
-      ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(5,24,51,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">' +
+      ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(28,18,5,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">' +
           '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5)">Vue client</span>' +
           '<div style="width:1px;height:14px;background:rgba(255,255,255,0.15)"></div>' +
           '<button onclick="window.location.href=\'/admin/projects/' + (appData.projects[0] && appData.projects[0].project ? appData.projects[0].project.id : '') + '\'" style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:background 150ms" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.12)\'">' +
@@ -10617,7 +10626,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (color) {
       var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
       var lum = 0.299*_r+0.587*_g+0.114*_b;
-      var accent = lum > 160 ? '#051833' : color;
+      var accent = lum > 160 ? '#1C1205' : color;
       vars += '--navy:'+accent+';--brown:'+color+';';
     }
     if (btn) {
@@ -10637,10 +10646,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   var CP_TYPE_THEMES = {
-    partenaire:  { dk:'#051833', lt:'#BAD1FD', rgb:'186,209,253' },
-    maintenance: { dk:'#051833', lt:'#BAD1FD', rgb:'186,209,253' },
+    partenaire:  { dk:'#1C1205', lt:'#E4D1FE', rgb:'186,209,253' },
+    maintenance: { dk:'#1C1205', lt:'#E4D1FE', rgb:'186,209,253' },
     identite:    { dk:'#4a2c5e', lt:'#E4D1FE', rgb:'228,209,254' },
-    support:     { dk:'#5c4633', lt:'#EFE1B0', rgb:'239,225,176' },
+    support:     { dk:'#412F21', lt:'#F2E5C2', rgb:'239,225,176' },
   };
   function applyTypeTheme(type) {
     var t = CP_TYPE_THEMES[type] || CP_TYPE_THEMES.partenaire;
@@ -10680,11 +10689,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (data.studioAccentMode === 'forced' && data.studioAccentForced) {
       var TONE_VARS = {
         glycine: { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#412F21' },
-        brume:   { soft:'#ecf2ff', mid:'#BAD1FD', deep:'#7c9bdc', ink:'#4a6ba8', btnBg:'#BAD1FD', btnFg:'#051833' },
-        paille:  { soft:'#fdf8ec', mid:'#EFE1B0', deep:'#c9b585', ink:'#7a6030', btnBg:'#EFE1B0', btnFg:'#412F21' },
+        brume:   { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#1C1205' },
+        paille:  { soft:'#fdf8ec', mid:'#F2E5C2', deep:'#c9b585', ink:'#7a6030', btnBg:'#F2E5C2', btnFg:'#412F21' },
         ocre:    { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12', btnBg:'#e7cd97', btnFg:'#412F21' },
-        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#5c4633', btnBg:'#c8b29a', btnFg:'#412F21' },
-        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#586c8e', ink:'#2b3d5f', btnBg:'#2b3d5f', btnFg:'#BAD1FD' },
+        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21', btnBg:'#c8b29a', btnFg:'#412F21' },
+        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#8a6f54', ink:'#5c4633', btnBg:'#5c4633', btnFg:'#E4D1FE' },
       };
       var tv = TONE_VARS[data.studioAccentForced] || TONE_VARS.glycine;
       var el = document.getElementById('cp-accent-style');
@@ -10916,8 +10925,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cpValidateStep = function(pid, stepId, stepTitle) {
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(5,24,51,0.2);font-family:\'Inter Tight\',sans-serif">' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:8px">Confirmer votre action</div>' +
       '<p style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-bottom:16px">Vous confirmez avoir complété : <strong>' + esc(stepTitle) + '</strong> ?<br><span style="font-size:12px;opacity:0.8">Cindy sera notifiée et validera l\'étape de son côté.</span></p>' +
       '<textarea id="_cpval-comment" placeholder="Laisser un message à Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
@@ -10966,8 +10975,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
         ];
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(5,24,51,0.25)">' +
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(28,18,5,0.25)">' +
       '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:8px">Bienvenue dans votre espace ✨</div>' +
       '<p style="font-size:14px;color:var(--terre-600);line-height:1.6;margin-bottom:22px">Voici les points essentiels pour bien démarrer :</p>' +
       '<div style="display:grid;gap:14px;margin-bottom:26px">' +
@@ -11047,8 +11056,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var targetEl = s.nav ? document.querySelector('[data-nav="' + s.nav + '"]') : null;
       var rect = targetEl ? targetEl.getBoundingClientRect() : null;
       var spotlightHtml = rect
-        ? '<div style="position:fixed;left:'+(rect.left-5)+'px;top:'+(rect.top-5)+'px;width:'+(rect.width+10)+'px;height:'+(rect.height+10)+'px;border-radius:10px;box-shadow:0 0 0 9999px rgba(5,24,51,0.50);border:2px solid rgba(255,255,255,0.6);pointer-events:none;z-index:179;transition:all 240ms cubic-bezier(0.16,1,0.3,1)"></div>'
-        : '<div style="position:fixed;inset:0;background:rgba(5,24,51,0.45);z-index:179" onclick="document.getElementById(\'cp-guide-overlay\').remove()"></div>';
+        ? '<div style="position:fixed;left:'+(rect.left-5)+'px;top:'+(rect.top-5)+'px;width:'+(rect.width+10)+'px;height:'+(rect.height+10)+'px;border-radius:10px;box-shadow:0 0 0 9999px rgba(28,18,5,0.50);border:2px solid rgba(255,255,255,0.6);pointer-events:none;z-index:179;transition:all 240ms cubic-bezier(0.16,1,0.3,1)"></div>'
+        : '<div style="position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:179" onclick="document.getElementById(\'cp-guide-overlay\').remove()"></div>';
       var cardLeft, cardTop, cardTransform;
       if (rect) {
         var ww = window.innerWidth; var wh = window.innerHeight;
@@ -11060,9 +11069,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       } else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       el.innerHTML = spotlightHtml +
-        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#fffefb;border:1px solid #eae5dc;border-radius:14px;overflow:hidden;box-shadow:0 28px 64px -28px rgba(5,24,51,0.30)">' +
+        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#fffefb;border:1px solid #eae5dc;border-radius:14px;overflow:hidden;box-shadow:0 28px 64px -28px rgba(28,18,5,0.30)">' +
           '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #eae5dc">' +
-            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#051833;color:#BAD1FD">' + cpIcon(s.icon,18) + '</span>' +
+            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#1C1205;color:#E4D1FE">' + cpIcon(s.icon,18) + '</span>' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#8a6f54;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
               '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#412F21;line-height:1.2">' + esc(s.title) + '</div>' +
@@ -11070,13 +11079,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#ffffff;border-radius:8px;cursor:pointer;color:#8a6f54;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
           '</div>' +
           '<div style="padding:18px 20px 20px">' +
-            '<p style="font-family:Georgia,serif;font-size:15px;color:#5c4633;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
+            '<p style="font-family:Georgia,serif;font-size:15px;color:#412F21;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
               '<div style="display:flex;gap:5px;align-items:center">' +
                 steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#412F21':'#eae5dc')+';transition:width 200ms"></span>'; }).join('') +
               '</div>' +
               '<div style="display:flex;gap:8px">' +
-                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #eae5dc;background:#ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#5c4633;cursor:pointer">Precedent</button>' : '') +
+                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #eae5dc;background:#ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">Precedent</button>' : '') +
                 '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#E4D1FE;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
               '</div>' +
             '</div>' +
@@ -11123,7 +11132,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (existing) existing.remove();
     var ov = document.createElement('div');
     ov.id = 'cp-q-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,24,51,0.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
 
     var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
     var fields = questions.map(function(q) {
@@ -11135,7 +11144,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).join('');
 
     ov.innerHTML =
-      '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(5,24,51,0.2)">' +
+      '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(28,18,5,0.2)">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
           '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
@@ -11285,7 +11294,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#051833;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
         '<p style="color:#8090a8;line-height:1.7;font-size:15px">Le lien a expiré ou a été révoqué.<br><br>' +
           'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a> pour obtenir un nouveau lien.</p>' +
       '</div></div>';
@@ -11294,13 +11303,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   // ── Couleurs espace client ─────────────────────────────────────────────────
   var CP_COLOR_DEFAULTS = {
-    '--navy':        '#051833',
-    '--sidebar-bg':  '#051833',
+    '--navy':        '#1C1205',
+    '--sidebar-bg':  '#1C1205',
     '--brown':       '#412F21',
-    '--sidebar-text':'#BAD1FD',
-    '--cream':       '#EFE1B0',
+    '--sidebar-text':'#E4D1FE',
+    '--cream':       '#F2E5C2',
     '--lavender':    '#E4D1FE',
-    '--blue-light':  '#BAD1FD',
+    '--blue-light':  '#E4D1FE',
     '--bg':          '#ffffff',
     '--surface':     '#F5F2EC',
   };
@@ -11372,7 +11381,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
     var title = document.createElement('strong');
-    title.style.cssText = 'font-size:14px;color:#051833';
+    title.style.cssText = 'font-size:14px;color:#1C1205';
     title.textContent = 'Couleurs';
     var resetBtn = document.createElement('button');
     resetBtn.textContent = 'Reinitialiser';
@@ -11517,7 +11526,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter Tight',sans-serif;background:#ffffff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(92,70,51,.08)}
-  h1{font-family:'Cormorant Garamond',serif;color:#5c4633;font-size:24px;margin:16px 0;font-weight:400;font-style:italic}
+  h1{font-family:'Cormorant Garamond',serif;color:#412F21;font-size:24px;margin:16px 0;font-weight:400;font-style:italic}
   p{color:#8a6f54;line-height:1.7;font-size:15px}
   a{color:#6c4ea4}
 </style>
@@ -11616,12 +11625,12 @@ const CLIENT_HTML = `<!DOCTYPE html>
 <body>
 <div id="app">
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:var(--cream)">
-    <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#1a2744;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#2a1d10;border-radius:50%;animation:spin 0.8s linear infinite"></div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-    <div style="color:#1a2744;font-size:14px;opacity:0.6">Chargement de votre espace...</div>
+    <div style="color:#2a1d10;font-size:14px;opacity:0.6">Chargement de votre espace...</div>
   </div>
 </div>
-<div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a2744;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
+<div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#2a1d10;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
 <script>${CLIENT_JS}</script>
 </body>
 </html>`;
