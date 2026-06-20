@@ -1921,7 +1921,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       : 'background:' + (_dashBannerData && _dashBannerData.color ? _dashBannerData.color : '#412F21');
     var _dashBannerColors = ['#412F21','#1C1205','#4a2c5e','#2d4a3e','#7a3a0a','#1a1a2e','#3d2b1f','#2c3e50'];
     var _dashTxt = (_dashBannerData && _dashBannerData.textColor) || '#fff';
-    var heroBanner = '<div style="padding:24px 40px 0">' +
+    var heroBanner = '<div style="padding:38px 56px 12px">' +
       '<div id="dash-hero-banner" style="position:relative;height:158px;border-radius:16px;overflow:hidden;box-shadow:0 2px 4px rgba(65,47,33,0.05),0 20px 48px -26px rgba(65,47,33,0.45);' + _dashBannerStyle + '">' +
         '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.1) 100%)"></div>' +
         '<div style="position:relative;padding:22px 28px">' +
@@ -1936,7 +1936,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     // Type tabs
     var TYPE_LABELS_SHORT = { identite:'Identite', site:'Site', maintenance:'Maintenance', partenaire:'Partenaire' };
     var typeTabsArr = [['all','Tous']].concat(Object.keys(TYPE_LABELS_SHORT).map(function(t){ return [t, TYPE_LABELS_SHORT[t]]; }));
-    var typeTabsHtml = '<div style="padding:18px 40px 0;display:flex;gap:2px;border-bottom:1px solid #EDE9E1;flex-wrap:wrap">' +
+    var typeTabsHtml = '<div style="padding:28px 56px 0;display:flex;gap:4px;border-bottom:1px solid #EDE9E1;flex-wrap:wrap">' +
       typeTabsArr.map(function(pair) {
         var id=pair[0], lab=pair[1];
         var cnt = id==='all' ? projs.filter(function(p){ return p.status!=='archived'; }).length : projs.filter(function(p){ return p.type===id && p.status!=='archived'; }).length;
@@ -1945,7 +1945,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '</div>';
 
     // Filter bar (sticky) — une seule ligne compacte
-    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);padding:10px 40px;border-bottom:1px solid #EDE9E1;display:flex;align-items:center;gap:10px">' +
+    var filterBar = '<div style="position:sticky;top:0;z-index:20;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);padding:16px 56px;border-bottom:1px solid #EDE9E1;display:flex;align-items:center;gap:12px">' +
       '<input id="dash-search" type="search" oninput="applyProjectFilters()" placeholder="Rechercher un espace…" style="flex:1;max-width:260px;padding:7px 14px;border:1px solid #EDE9E1;border-radius:999px;font-family:\'Inter Tight\',sans-serif;font-size:12px;background:#fff;color:#412F21;outline:none">' +
       '<div style="display:inline-flex;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:2px;flex-shrink:0">' +
         [['active','Actifs'],['archived','Archives'],['all','Tous']].map(function(pair) {
@@ -1968,7 +1968,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '</div>';
 
     // Cards grid
-    var cardsHtml = '<div id="dash-cards" style="padding:26px 40px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px">' +
+    var cardsHtml = '<div id="dash-cards" style="padding:36px 56px 90px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px">' +
       renderProjectCards(projs.filter(function(p){ return p.status!=='archived'; }), unreadMap) +
     '</div>';
 
@@ -2210,8 +2210,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             (isRevCard && !isArchCard ? '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:rgba(20,12,6,0.6);color:#fff;font-family:\'Inter Tight\',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase">' + icon('lock',11) + ' Revoque</span>' : '') +
           '</div>' +
         '</div>' +
-        '<div style="padding:18px 22px 22px">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#412F21;margin-bottom:3px">'+esc(p.clientName)+'</div>' +
+        '<div style="padding:24px 26px 26px">' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#412F21;margin-bottom:4px;line-height:1.15">'+esc(p.clientName)+'</div>' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#8a6f54;margin-bottom:16px;letter-spacing:0.03em">'+esc(p.clientEmail)+' \xB7 '+esc(p.projectTitle)+'</div>' +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">' +
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
