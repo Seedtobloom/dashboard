@@ -7608,14 +7608,31 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var backBtnStyle = bannerLight
       ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#1C1205'
       : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F2E5C2';
-    var header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
-      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="' + backBtnStyle + ';font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
-      '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
-      '<h1 class="cp-header__title" style="color:' + titleCol + '">' + esc(project.projectTitle) + '</h1>' +
-      '<div class="cp-header__meta" style="color:' + metaCol + ';opacity:1">Bonjour ' + esc(project.clientName) +
-        (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
-      '</div>' +
-    '</div>';
+    var header;
+    if (project.bannerUrl) {
+      // Image nette : on n'écrit rien par-dessus (l'image contient déjà le texte),
+      // le retour / badge / titre / salutation passent en dessous.
+      header = '<div style="padding:28px clamp(20px,4vw,52px) 0">' +
+        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
+        '<div style="' + hdrBg + ';background-size:cover;background-position:center;height:210px;border-radius:16px;box-shadow:0 2px 4px rgba(65,47,33,0.05),0 18px 44px -26px rgba(65,47,33,0.42)" data-img></div>' +
+        '<div style="padding:16px 2px 0">' +
+          statusBadge(project.status) +
+          '<h1 class="cp-header__title" style="color:var(--terre);margin-top:10px">' + esc(project.projectTitle) + '</h1>' +
+          '<div class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
+            (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    } else {
+      header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
+        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="' + backBtnStyle + ';font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
+        '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
+        '<h1 class="cp-header__title" style="color:' + titleCol + '">' + esc(project.projectTitle) + '</h1>' +
+        '<div class="cp-header__meta" style="color:' + metaCol + ';opacity:1">Bonjour ' + esc(project.clientName) +
+          (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
+        '</div>' +
+      '</div>';
+    }
 
     var banner = '';
     if (actionStep) {
