@@ -14,7 +14,7 @@ async function getAdminNotifyEmail(env: Env): Promise<string> {
       return settings.notificationEmail.trim();
     }
   } catch { /* ignore */ }
-  return env.ADMIN_EMAIL ?? 'hello@seedtobloom.fr';
+  return env.ADMIN_EMAIL ?? 'dash@seedtobloom.fr';
 }
 
 async function canSendEmail(env: Env, projectId: string, template: string): Promise<boolean> {
