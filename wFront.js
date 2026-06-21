@@ -7059,6 +7059,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
+            (isPart ? '<button onclick="cliOpenAddTask(\''+p.id+'\',\'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Demander quelque chose</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
             cpSecWrap(p.id, 'suivi', miniTrack) +
@@ -8480,7 +8481,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Nouvelle tâche</button>' +
+      '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Nouvelle demande</button>' +
     '</div>';
 
     if (tab === 'cal')     return summaryBar + tabs + buildPartCal(pid, tasks, files, project);
@@ -9852,24 +9853,21 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Ajouter une tâche</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Faire une demande</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
         '</div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre *</label>' +
-          '<input id="_ptask-title" type="text" placeholder="Ex: Visuel Instagram – collection ete" style="'+S+'"></div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Categorie</label>' +
-          '<input id="_ptask-pole" type="text" placeholder="Ex: Reseaux sociaux, Print, Web..." style="'+S+'"></div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Votre demande *</label>' +
+          '<input id="_ptask-title" type="text" placeholder="Ex : Visuel Instagram – collection été" style="'+S+'"></div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Type de besoin</label>' +
+          '<input id="_ptask-pole" type="text" placeholder="Ex : Réseaux sociaux, Print, Web…" style="'+S+'"></div>' +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Urgence</label>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">'+urgPills+'</div>' +
           '<input type="hidden" id="_ptask-urgency" value="normal"></div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-          '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Date de debut</label>' +
-            '<input id="_ptask-startDate" type="date" style="'+S+'"></div>' +
-          '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Date de fin</label>' +
-            '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
-        '</div>' +
-        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Detail / Contenu</label>' +
-          '<textarea id="_ptask-content" rows="3" style="'+S+';resize:vertical" placeholder="Format, ton, references, contraintes..."></textarea></div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée)</label>' +
+          '<input id="_ptask-startDate" type="hidden">' +
+          '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
+        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Détails & contexte</label>' +
+          '<textarea id="_ptask-content" rows="3" style="'+S+';resize:vertical" placeholder="Format, ton, références, liens, contraintes…"></textarea></div>' +
         (function(){
           var schema = Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : [];
           if (!schema.length) return '';
@@ -9887,7 +9885,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         })() +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">AJOUTER</button>' +
+          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
         '</div>' +
       '</div>';
       document.body.appendChild(ov);
