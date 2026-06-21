@@ -7076,6 +7076,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var _band = acc(_tone);
       // Bandeau de couleur DA discret : pas d'image rognée, pas de doré hors-charte.
       var bannerStyle = 'background:' + _band.deep + ';height:96px';
+      var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
+      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#8a4a0e') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -7098,11 +7100,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span>Mensuel · en cours</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
             '</div>' +
+            (openTasks.length ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine demande : <span style="color:var(--terre);font-style:italic">' + esc(openTasks[0].title||'Sans titre') + '</span></div>' : '') +
+            _unreadBadge +
             '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:100%;background:var(--terre)"></div></div>' +
             '<div class="cp-proj-card__pct"><span style="color:var(--terre-600)">Accompagnement actif</span></div>' +
           '</div>' +
         '</button>';
       }
+      var nextStep = steps.find(function(s){ return s.status !== 'done'; });
+      var nextLine = nextStep
+        ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine étape : <span style="color:var(--terre);font-style:italic">' + esc(nextStep.title) + '</span></div>'
+        : (steps.length ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">Toutes les étapes sont faites ✓</div>' : '');
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
           '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
@@ -7116,6 +7124,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
             (duration ? '<span>' + duration + '</span>' : '') +
           '</div>' +
+          nextLine +
+          _unreadBadge +
           '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
           '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
         '</div>' +
