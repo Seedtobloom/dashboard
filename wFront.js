@@ -489,7 +489,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
 .cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
-.cp-proj-banner { height: 140px; background: var(--terre); background-size: cover; background-position: center; position: relative; }
+.cp-proj-banner { height: 140px; background: var(--terre); background-size: cover; background-position: center; position: relative; border-radius: var(--radius-3) var(--radius-3) 0 0; }
 .cp-proj-banner::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; opacity: 0.12; mix-blend-mode: screen; }
 .cp-proj-banner[data-img]::after { display: none; }
 .cp-ph__banner[data-img]::after { display: none; }
@@ -7127,7 +7127,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var nextStep = steps.find(function(s){ return s.status !== 'done'; });
       var nextLine = nextStep
         ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine étape : <span style="color:var(--terre);font-style:italic">' + esc(nextStep.title) + '</span></div>'
-        : (steps.length ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">Toutes les étapes sont faites ✓</div>' : '');
+        : '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">' + (steps.length ? 'Toutes les étapes sont faites ✓' : 'Projet en préparation') + '</div>';
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
           '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
@@ -7632,11 +7632,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
         statusBadge(project.status) +
       '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">' +
-        '<h1 class="cp-header__title" style="color:var(--terre);margin:0">' + esc(project.projectTitle) + '</h1>' +
-        '<span class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
-          (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
-        '</span>' +
+      '<h1 class="cp-header__title" style="color:var(--terre);margin:0 0 6px">' + esc(project.projectTitle) + '</h1>' +
+      '<div class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
+        (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
       '</div>' +
     '</div>';
 
