@@ -46,6 +46,14 @@ async function sendEmail(
     status: 'sent',
   };
 
+  // Garde-fou : sans clé API ou adresse d'expéditeur, Resend ne peut rien envoyer.
+  if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) {
+    log.status = 'failed';
+    log.error = 'Configuration Resend manquante (RESEND_API_KEY / RESEND_FROM_EMAIL).';
+    await addEmailLog(env, log);
+    return;
+  }
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -63,9 +71,11 @@ async function sendEmail(
 
     if (!res.ok) {
       log.status = 'failed';
+      log.error = (await res.text().catch(() => '')).slice(0, 300) || `HTTP ${res.status}`;
     }
-  } catch {
+  } catch (e) {
     log.status = 'failed';
+    log.error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
   }
 
   await addEmailLog(env, log);

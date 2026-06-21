@@ -161,6 +161,7 @@ export interface EmailLog {
   template: string;
   sentAt: string;
   status: 'sent' | 'failed';
+  error?: string;
 }
 
 export interface Env {

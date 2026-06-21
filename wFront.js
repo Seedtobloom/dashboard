@@ -2782,9 +2782,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     }).join('');
 
     const emailLogsHtml = [...(emailLogs||[])].reverse().slice(0,10).map(function(l) {
-      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:10px;align-items:center">' +
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:10px;align-items:center"' + (l.status !== 'sent' && l.error ? ' title="' + esc(l.error) + '"' : '') + '>' +
         '<span style="color:' + (l.status === 'sent' ? 'var(--sage)' : 'var(--red)') + '">' + (l.status === 'sent' ? '✓' : '✗') + '</span>' +
-        '<span style="flex:1">' + esc(l.subject) + '</span>' +
+        '<span style="flex:1">' + esc(l.subject) + (l.status !== 'sent' && l.error ? '<br><span style="color:var(--red);font-size:11.5px">' + esc(l.error) + '</span>' : '') + '</span>' +
         '<span style="color:var(--muted);font-size:12px">' + formatDate(l.sentAt) + '</span>' +
       '</div>';
     }).join('');
