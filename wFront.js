@@ -2827,8 +2827,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             var obtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;border:1px solid rgba(65,47,33,0.2);background:#fff;color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer';
             var pbtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer';
             var statusChip = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:'+stDot+'"></span><span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">'+stLabel+'</span></span>';
-            return '<div style="padding:26px 48px 0">' +
-              '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">' +
+            return '<div style="padding:40px 48px 30px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:26px">' +
                 '<button onclick="adminNav(\'/admin\')" style="'+obtn+';letter-spacing:0.08em;text-transform:uppercase;font-size:10.5px">← Tous les espaces</button>' +
                 '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
                   '<label title="Changer la photo de bannière" style="'+obtn+'">' + icon('image',13,'color:#412F21') + ' Photo<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
@@ -2837,9 +2837,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<button onclick="openBannerEditor()" style="'+pbtn+'">Personnaliser →</button>' +
                 '</div>' +
               '</div>' +
-              '<div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">' + adminTypeBadge(project.type) + statusChip + '</div>' +
-              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:34px;color:#1C1205;font-weight:400;line-height:1.1;margin:2px 0 2px">' + esc(project.clientName) + '</h1>' +
-              '<p style="color:#8a6f54;font-size:14px;margin:0 0 2px;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
+              '<div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">' + adminTypeBadge(project.type) + statusChip + '</div>' +
+              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:36px;color:#1C1205;font-weight:400;line-height:1.12;margin:0 0 6px">' + esc(project.clientName) + '</h1>' +
+              '<p style="color:#8a6f54;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
             '</div>';
           })() +
 
@@ -6479,7 +6479,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Échéance '+fmtShort(due)+'</span>';
   }
   var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Support de com', autre:'Autre' };
-  var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'ocre', support:'brume', autre:'terre' };
+  var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'terre', support:'glycine', autre:'terre' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
@@ -7603,13 +7603,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var backBtnStyle = bannerLight
       ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#1C1205'
       : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F2E5C2';
-    // En-tête projet compact et discret (plus de grande bannière dans la vue projet).
-    var header = '<div style="padding:30px clamp(20px,4vw,52px) 0">' +
-      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:16px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
-      '<div style="margin-bottom:8px">' + statusBadge(project.status) + '</div>' +
-      '<h1 class="cp-header__title" style="color:var(--terre)">' + esc(project.projectTitle) + '</h1>' +
-      '<div class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
-        (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
+    // En-tête projet condensé (2 lignes) et aéré.
+    var header = '<div style="padding:32px clamp(20px,4vw,52px) 0">' +
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">' +
+        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
+        statusBadge(project.status) +
+      '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">' +
+        '<h1 class="cp-header__title" style="color:var(--terre);margin:0">' + esc(project.projectTitle) + '</h1>' +
+        '<span class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
+          (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
+        '</span>' +
       '</div>' +
     '</div>';
 
