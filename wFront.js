@@ -2013,7 +2013,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     '</div>';
 
     // Cards grid
-    var cardsHtml = '<div id="dash-cards" style="padding:36px 56px 90px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px">' +
+    var cardsHtml = '<div id="dash-cards" style="padding:36px 56px 90px">' +
       renderProjectCards(projs.filter(function(p){ return p.status!=='archived'; }), unreadMap) +
     '</div>';
 
@@ -2190,7 +2190,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       brume:  { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
       terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21' },
     };
-    return list.map(function(p) {
+    function cardFor(p) {
       var u = unreadMap[p.id] || 0;
       var tone = TYPE_TONES[p.type] || 'glycine';
       var a = ACCENT_COLORS[tone] || ACCENT_COLORS.glycine;
@@ -2274,6 +2274,23 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' : '') +
         '</div>' +
       '</button>';
+    }
+    // Catégorisation par cliente : une section par cliente avec ses offres.
+    var _groups = {}, _order = [];
+    list.forEach(function(p){
+      var k = (p.clientEmail || p.clientName || '?').toLowerCase();
+      if (!_groups[k]) { _groups[k] = { name: p.clientName || p.clientEmail || 'Sans nom', items: [] }; _order.push(k); }
+      _groups[k].items.push(p);
+    });
+    return _order.map(function(k){
+      var g = _groups[k];
+      return '<div style="margin-bottom:18px">' +
+        '<div style="display:flex;align-items:baseline;gap:11px;margin:0 0 16px">' +
+          '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:25px;color:#412F21;font-weight:400;margin:0">' + esc(g.name) + '</h2>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54">' + g.items.length + ' offre' + (g.items.length>1?'s':'') + '</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px">' + g.items.map(cardFor).join('') + '</div>' +
+      '</div>';
     }).join('');
   }
 
