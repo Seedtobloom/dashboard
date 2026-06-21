@@ -7072,9 +7072,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var label = STATUS_LABELS[p.status] || p.status;
       var days = daysUntil(p.deadline);
       var urgent = !isPart && days !== null && days <= 7 && days >= 0;
-      var bannerStyle = p.bannerUrl
-        ? 'background-image:url(' + esc(p.bannerUrl) + ');background-size:cover;background-position:center'
-        : (p.bannerColor ? 'background:' + esc(p.bannerColor.split('|')[0]) : (isPart ? 'background:linear-gradient(135deg,#c9952f,#e8c47a)' : ''));
+      var _tone = CP_TYPE_TONES[p.type] || 'terre';
+      var _band = acc(_tone);
+      // Bandeau de couleur DA discret : pas d'image rognée, pas de doré hors-charte.
+      var bannerStyle = 'background:' + _band.deep + ';height:96px';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -7086,8 +7087,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var openTasks = partTasks.filter(function(t){ return t.status !== 'done'; });
         var waitingPartStep = steps.find(function(s){ return s.status === 'waiting_client'; });
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-          '<div class="cp-proj-banner" style="' + bannerStyle + '"'+(p.bannerUrl?' data-img':'')+'>'+
-            '<span class="cp-proj-banner__badge" style="background:#c9952f;color:#fff;backdrop-filter:none">Accompagnement</span>' +
+          '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
+            '<span class="cp-proj-banner__badge">Accompagnement</span>' +
             (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#8a4a0e">Action requise</span>' : '') +
           '</div>' +
           '<div class="cp-proj-card__body">' +
@@ -7097,13 +7098,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span>Mensuel · en cours</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
             '</div>' +
-            '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:100%;background:linear-gradient(90deg,#c9952f,#e8c47a)"></div></div>' +
-            '<div class="cp-proj-card__pct"><span style="color:#8a6020">Accompagnement actif</span></div>' +
+            '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:100%;background:var(--terre)"></div></div>' +
+            '<div class="cp-proj-card__pct"><span style="color:var(--terre-600)">Accompagnement actif</span></div>' +
           '</div>' +
         '</button>';
       }
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-        '<div class="cp-proj-banner" style="' + bannerStyle + '"'+(p.bannerUrl?' data-img':'')+'>'+
+        '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
           '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
           (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
         '</div>' +
@@ -7121,14 +7122,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</button>';
     }
 
-    var groups = groupByType(active);
+    // Toutes les offres dans une seule grille (2 colonnes), sans sections empilées par type.
     var activeHtml = active.length
-      ? (groups.length > 1
-          ? groups.map(function(g) {
-              return '<div class="cp-type-section"><h2 class="cp-type-title">' + esc(g.label) + '</h2>' +
-                '<div class="cp-proj-grid">' + g.items.map(cardHtml).join('') + '</div></div>';
-            }).join('')
-          : '<div class="cp-proj-grid">' + groups[0].items.map(cardHtml).join('') + '</div>')
+      ? '<div class="cp-proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">' + active.map(cardHtml).join('') + '</div>'
       : '<div class="cp-empty">Aucun projet en cours.</div>';
 
     var archivedHtml = archived.length
