@@ -1,4 +1,4 @@
-import type { Env, Project, Message, Step, EmailLog } from '../types';
+import type { Env, Project, Message, Step, EmailLog, MaintenanceTicket } from '../types';
 import { addEmailLog, getEmailLogs } from '../kv';
 import { generateId } from '../utils';
 import { jsonResponse, errorResponse } from '../utils';
@@ -158,6 +158,44 @@ export async function sendAdminMessageNotification(env: Env, project: Project, _
     adminEmail,
     `Nouveau message de ${project.clientName} — ${project.projectTitle}`,
     emailWrapper('Nouveau message client', body, portalUrl),
+    template
+  );
+}
+
+// Notifie Cindy (admin) qu'un client a soumis une nouvelle demande (ticket).
+export async function sendAdminTicketNotification(env: Env, project: Project, ticket: MaintenanceTicket): Promise<void> {
+  const adminEmail = await getAdminNotifyEmail(env);
+  if (!adminEmail) return;
+
+  // Template unique par ticket : chaque demande déclenche son propre e-mail.
+  const template = `admin_new_ticket_${ticket.id}`;
+  if (!(await canSendEmail(env, project.id, template))) return;
+
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/admin#project-${project.id}`;
+
+  const prioLabel = ticket.priority === 'haute' ? 'Haute' : ticket.priority === 'basse' ? 'Basse' : 'Moyenne';
+  const meta = [ticket.category ? `Catégorie : ${ticket.category}` : '', `Priorité : ${prioLabel}`]
+    .filter(Boolean)
+    .join(' · ');
+
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${project.clientName}</strong> vient de soumettre une nouvelle demande sur <em>${project.projectTitle}</em> :</p>
+    <p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px">
+      <strong>${ticket.title}</strong><br>
+      <span style="color:#7fa688;font-size:13px">${meta}</span>
+      ${ticket.description ? `<br><span style="color:#555">${ticket.description}</span>` : ''}
+    </p>
+    <p>Connectez-vous à votre tableau de bord pour la traiter.</p>
+  `;
+
+  await sendEmail(
+    env,
+    project.id,
+    adminEmail,
+    `Nouvelle demande de ${project.clientName} — ${ticket.title}`,
+    emailWrapper('Nouvelle demande client', body, portalUrl),
     template
   );
 }

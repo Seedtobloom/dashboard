@@ -5446,6 +5446,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var counsels = Array.isArray(project.counsels)?project.counsels:[];
     var feedbacks = Array.isArray(project.feedbacks)?project.feedbacks:[];
     var tickets = amtTicketsOf(project);
+    var openCount = tickets.filter(function(t){ return t.status==='open'; }).length;
 
     var TABS = [
       ['demandes','Demandes', tickets.length, 'settings'],
@@ -5456,8 +5457,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var tabBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid #EDE9E1">' +
       TABS.map(function(tb){
         var act = tab===tb[0];
+        // Pastille accent sur l'onglet Demandes quand des demandes sont à traiter.
+        var badge = (tb[0]==='demandes' && openCount>0)
+          ? ' <span title="'+openCount+' demande'+(openCount>1?'s':'')+' à traiter" style="background:#9b3a2e;color:#fff;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:700">'+openCount+'</span>'
+          : (tb[2]!=null?' <span style="opacity:0.55">'+tb[2]+'</span>':'');
         return '<button onclick="amtSetTab(\''+pid+'\',\''+tb[0]+'\')" style="display:inline-flex;align-items:center;gap:7px;padding:10px 15px;background:none;border:0;border-bottom:2px solid '+(act?AMT_TERRE_DEEP:'transparent')+';color:'+(act?AMT_TERRE_DEEP:AMT_TERRE_MID)+';cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-size:11.5px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:-1px">'+
-          icon(tb[3],13)+' '+tb[1]+(tb[2]!=null?' <span style="opacity:0.55">'+tb[2]+'</span>':'')+
+          icon(tb[3],13)+' '+tb[1]+badge+
         '</button>';
       }).join('') +
     '</div>';
@@ -5481,6 +5486,28 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var remaining = quotaMin - usedMin;
     var over = remaining < 0;
     var pct = quotaMin ? Math.min(100, Math.round(usedMin/quotaMin*100)) : 0;
+
+    // Bandeau d'alerte : demandes client encore à traiter (statut « ouvert »).
+    var openTickets = tickets.filter(function(t){ return t.status==='open'; });
+    var newBanner = '';
+    if (openTickets.length) {
+      newBanner = '<div style="background:#fbf1ee;border:1.5px solid #e7c6bd;border-radius:14px;padding:14px 18px;margin-bottom:16px">' +
+        '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#9b3a2e;margin-bottom:8px">'+icon('alert',11,'#9b3a2e')+' '+openTickets.length+' demande'+(openTickets.length>1?'s':'')+' à traiter</div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px">' +
+          openTickets.map(function(t){
+            var cm = amtCatMeta(t.category);
+            var prioTxt = t.priority==='haute' ? 'Haute' : (t.priority==='basse' ? 'Basse' : 'Moyenne');
+            return '<div onclick="amtToggleTicket(\''+pid+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:#fff;border-radius:9px;cursor:pointer" onmouseover="this.style.background=\'#fdf6f3\'" onmouseout="this.style.background=\'#fff\'">' +
+              (t.priority==='haute' ? '<span title="Urgent" style="width:8px;height:8px;border-radius:1px;background:#9b3a2e;transform:rotate(45deg);flex-shrink:0"></span>' : '') +
+              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:\'Cormorant Garamond\',serif;font-size:17px;color:'+AMT_TERRE_DEEP+'">'+esc(t.title||'Sans titre')+'</span>' +
+              (cm ? '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+cm[3]+';background:'+amtCatBg(cm)+';border-radius:999px;padding:2px 9px;white-space:nowrap;flex-shrink:0">'+cm[1]+'</span>' : '') +
+              '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_MID+';white-space:nowrap;flex-shrink:0">'+prioTxt+'</span>' +
+              (t.dueDate ? '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_MID+';white-space:nowrap;flex-shrink:0">'+formatDate(t.dueDate)+'</span>' : '') +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }
 
     var quotaBar = '<div style="display:flex;align-items:center;gap:14px;background:'+(over?'#fbf1ee':'#fff')+';border:1px solid '+(over?'#e7c6bd':'#EDE9E1')+';border-radius:14px;padding:14px 20px;margin-bottom:18px;flex-wrap:wrap">' +
       icon('clock',16,(over?'#9b3a2e':AMT_TERRE_DEEP)) +
@@ -5516,7 +5543,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       function(id){ return 'amtToggleTicket(\''+pid+'\',\''+id+'\')'; },
       function(id){ return 'amtPatch(\''+pid+'\',\''+id+'\',{status:\'open\'})'; }) : '';
 
-    return quotaBar + stBar + listHtml + historyHtml;
+    return newBanner + quotaBar + stBar + listHtml + historyHtml;
   }
 
   // Historique tickets maintenance — résolus/fermés groupés par mois.
@@ -5573,6 +5600,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px">' +
             urgHtml +
             '<button onclick="amtToggleTicket(\''+pid+'\',\''+t.id+'\')" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font-family:\'Cormorant Garamond\',serif;font-size:18px;color:'+AMT_TERRE_DEEP+'">'+esc(t.title||'Sans titre')+'</button>' +
+            (t.status==='open' ? '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:#9b3a2e;color:#fff">À traiter</span>' : '') +
             catBadge +
           '</div>' +
           '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:'+AMT_TERRE_MID+'">'+

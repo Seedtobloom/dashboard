@@ -2,7 +2,7 @@ import type { Env, Project, MaintenanceTicket, Task, ProjectFile, PortalHome, Po
 import { verifyClientToken } from '../auth';
 import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage, addProjectFile, getPortalHome, savePortalHome } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
-import { sendAdminMessageNotification, sendClientThreadAdminNotification } from './notifications';
+import { sendAdminMessageNotification, sendClientThreadAdminNotification, sendAdminTicketNotification } from './notifications';
 
 // Liste des projets autorisés pour un token (cloisonnement strict).
 async function allowedProjects(env: Env, clientToken: { clientEmail?: string; projectId?: string }): Promise<Project[]> {
@@ -160,6 +160,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       };
       project.tickets.unshift(ticket);
       await saveProject(env, project);
+      sendAdminTicketNotification(env, project, ticket).catch(() => {});
       return jsonResponse(ticket, 201);
     }
 
