@@ -6619,6 +6619,26 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return d;
   }
 
+  // État du forfait mensuel partenaire : report plafonné (2 h/mois par défaut)
+  // + dépassement facturé (60 €/h par défaut). Surchargeable via p.rolloverCapHours / p.overageRate.
+  function cpForfaitState(p) {
+    var base = parseFloat(p.monthlyHours) || 0;
+    var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
+    var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
+    function usedIn(ym){ return (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===ym ? s+(t.timeSpentMinutes||0)/60 : s; }, 0); }
+    var now = new Date();
+    var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    var pdt = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    var prev = pdt.getFullYear()+'-'+String(pdt.getMonth()+1).padStart(2,'0');
+    var used = usedIn(cur);
+    var usedPrev = usedIn(prev);
+    var carryIn = base ? Math.max(0, Math.min(cap, base - usedPrev)) : 0;
+    var available = base + carryIn;
+    var remaining = available - used;
+    return { base:base, cap:cap, rate:rate, carryIn:carryIn, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
+  }
+  function cpFmtH(h){ var v = Math.round(h*10)/10; return (v % 1 === 0 ? String(v) : v.toFixed(1)) + ' h'; }
+
   // Regroupement par type d'offre (ordre et libellés des sections).
   var TYPE_GROUPS = [
     { key:'identite', label:'Identité visuelle' },
@@ -6926,21 +6946,30 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
       var forfaitCard = '';
       if (isPart) {
-        var forfaitH = p.monthlyHours || 0;
-        var curKey = _todayStr().slice(0,7);
-        var usedH = (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===curKey ? s+(t.timeSpentMinutes||0)/60 : s; }, 0);
-        var fpct = forfaitH ? Math.min(100, Math.round(usedH/forfaitH*100)) : 0;
-        forfaitCard = '<div class="card" style="padding:22px 24px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
-          (forfaitH
-            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">' +
-                '<span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--terre)">'+usedH.toFixed(1).replace('.0','')+'</span>' +
-                '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600)">/ '+forfaitH+' h utilisées</span>' +
-              '</div>' +
-              '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+fpct+'%;background:#c9952f;border-radius:999px"></div></div>'
-            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non configuré — contactez le studio.</div>'
-          ) +
-        '</div>';
+        var f = cpForfaitState(p);
+        if (!f.configured) {
+          forfaitCard = '<div class="card" style="padding:22px 24px">' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Forfait du mois</div>' +
+            '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non encore défini — on en parle ensemble.</div>' +
+          '</div>';
+        } else {
+          var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
+          var fOver = f.over > 0;
+          var fBarCol = fOver ? '#9b3a2e' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
+          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#e7c6bd;background:#fbf1ee':'')+'">' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
+            '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">' +
+              '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#9b3a2e':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
+              '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600)">'+(fOver?'de dépassement':'restantes')+'</span>' +
+            '</div>' +
+            '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+fPctUsed+'%;background:'+fBarCol+';border-radius:999px"></div></div>' +
+            '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.04em;color:var(--terre-400)">' +
+              '<span>'+cpFmtH(f.used)+' utilisées</span>' +
+              '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':'')+'</span>' +
+            '</div>' +
+            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8a3a2c;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, on réajustera le forfait ensemble.</div>' : '') +
+          '</div>';
+        }
       }
 
       var progressCard = '<div class="card" style="padding:22px 24px">' +
@@ -6980,9 +7009,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var mLabel = (function(){ var d=new Date(); return MONTHS_FR[d.getMonth()+1]+' '+d.getFullYear(); })();
         var livreCeMois = partTasks.filter(function(t){ return t.status==='done' && (t.completedAt||'').slice(0,7)===curMonKey; }).length;
         var enCours = partTasks.filter(function(t){ return t.status!=='done' && !t.archived; }).length;
-        var mForfH = p.monthlyHours || 0;
-        var mUsedH2 = mForfH ? (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===curMonKey?s+(t.timeSpentMinutes||0)/60:s; },0) : 0;
-        var mFpct2 = mForfH ? Math.min(100, Math.round(mUsedH2/mForfH*100)) : 0;
+        var _mf = cpForfaitState(p);
+        var mForfH = _mf.base;
+        var mFpct2 = _mf.available ? Math.min(100, Math.round(_mf.used/_mf.available*100)) : 0;
+        var mOver = _mf.over > 0;
         monthStripHtml = '<div style="display:flex;align-items:center;border:1px solid var(--bone-d);border-radius:var(--radius-3);background:var(--card);margin-bottom:22px;overflow:hidden">' +
           '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
             '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Ce mois-ci</div>' +
@@ -6990,18 +7020,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</div>' +
           '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
             '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1">' + livreCeMois + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">Livré ce mois</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">Demandes livrées</div>' +
           '</div>' +
           '<div style="padding:16px 22px;border-right:1px solid var(--bone-d);flex-shrink:0">' +
             '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1">' + enCours + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">En cours</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.07em;text-transform:uppercase;margin-top:3px">Demandes en cours</div>' +
           '</div>' +
           (mForfH ? '<div style="padding:16px 22px;flex:1;min-width:0">' +
             '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
               '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase">Forfait du mois</div>' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);font-weight:500">' + mUsedH2.toFixed(1).replace('.0','') + ' / ' + mForfH + ' h</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:'+(mOver?'#9b3a2e':'var(--terre-600)')+';font-weight:600">' + (mOver?'−'+cpFmtH(_mf.over)+' dépassé':cpFmtH(_mf.remaining)+' restantes') + '</div>' +
             '</div>' +
-            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mFpct2>75?'var(--glycine-700)':'var(--terre)')+';border-radius:999px"></div></div>' +
+            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mOver?'#9b3a2e':(mFpct2>75?'var(--glycine-700)':'var(--terre)'))+';border-radius:999px"></div></div>' +
           '</div>' : '<div style="flex:1"></div>') +
         '</div>';
       }
@@ -7034,9 +7064,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             cpSecWrap(p.id, 'suivi', miniTrack) +
           '</div>' +
           '<div class="cp-ph__right">' +
-            cpSecWrap(p.id, 'avancement', progressCard) +
+            (isPart ? forfaitCard : cpSecWrap(p.id, 'avancement', progressCard)) +
             datesCard +
-            forfaitCard +
+            (isPart ? '' : forfaitCard) +
             msgCard +
           '</div>' +
         '</div>' +
@@ -8417,7 +8447,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
     }, 0);
     var forfaitH = project.monthlyHours || 0;
-    var forfaitLeft = forfaitH - monthReel;
+    var _pf = cpForfaitState(project);
+    var forfaitLeft = forfaitH ? _pf.remaining : 0;
     var pctDone = tasks.length ? Math.round(doneTasks.length/tasks.length*100) : 0;
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
@@ -8427,7 +8458,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
           (forfaitH ? fmtHours(forfaitLeft) : '—') +
         '</div>' +
-        (forfaitH ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">sur '+forfaitH+'h ce mois</div>' : '<div style="font-size:11px;color:var(--muted)">Forfait non défini</div>') +
+        (forfaitH ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-size:11px;color:var(--muted)">Forfait non défini</div>') +
       '</div>' +
       '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tâches aujourd\'hui</div>' +
@@ -8782,16 +8813,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Heures travaillees par mois — pour ajuster le forfait quand l\'activite grandit.</p>' +
     '</div>';
 
-    var forfaitLeft = forfaitH - monthReel;
-    var forfaitPct2 = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
+    var _pf = cpForfaitState(project);
+    var forfaitLeft = _pf.remaining;
+    var forfaitPct2 = _pf.available ? Math.min(100, Math.round(_pf.used/_pf.available*100)) : 0;
     var forfaitCard = forfaitH ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
       '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
       '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px">' +
-        '<span style="font-family:var(--font-display);font-size:28px;font-style:italic;color:var(--terre)">' + fmtH(monthReel) + '</span>' +
-        '<span style="font-size:14px;color:var(--terre-600)">/ ' + forfaitH + ' h</span>' +
+        '<span style="font-family:var(--font-display);font-size:28px;font-style:italic;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre)')+'">' + (forfaitLeft>=0?cpFmtH(forfaitLeft):'−'+cpFmtH(-forfaitLeft)) + '</span>' +
+        '<span style="font-size:14px;color:var(--terre-600)">' + (forfaitLeft>=0?'restantes':'de dépassement') + '</span>' +
       '</div>' +
-      '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:var(--brume-700);border-radius:999px;width:'+forfaitPct2+'%"></div></div>' +
-      '<div style="font-family:var(--font-micro);font-size:11px;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre-600)')+';margin-top:4px">' + (forfaitLeft>=0?fmtH(forfaitLeft)+' restantes ce mois-ci.':fmtH(-forfaitLeft)+' depassees ce mois.') + '</div>' +
+      '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:'+(forfaitLeft<0?'#9b3a2e':'var(--brume-700)')+';border-radius:999px;width:'+forfaitPct2+'%"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + fmtH(_pf.used) + ' utilisées</span><span>sur ' + cpFmtH(_pf.available) + (_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'') + '</span></div>' +
+      (forfaitLeft<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a3a2c;margin-top:10px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, on réajustera le forfait ensemble.</div>' : '') +
     '</div>' : '';
 
     var archivedHtml = '<div style="margin-top:28px">' +
