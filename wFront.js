@@ -3166,15 +3166,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div id="files-container">' + (filesHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucun fichier.</p>') + '</div>' +
               '</div>';
 
-              // Invoices
-              var invoicesSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-                  '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54">Factures & Devis</div>' +
-                  '<button class="btn btn--sage btn--sm" onclick="openAddInvoice()">+ Ajouter</button>' +
-                '</div>' +
-                '<div id="invoices-container">' + (invoicesHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucune facture.</p>') + '</div>' +
-              '</div>';
-
               // Questionnaire
               var questSection = '<div class="card" style="padding:24px 26px;margin-bottom:20px">' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
@@ -3232,7 +3223,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 (emailLogsHtml || '<p style="color:#8a6f54;text-align:center;padding:12px 0;font-size:13px">Aucun email.</p>') +
               '</div>';
 
-              return codeCardHtml + tokensSection + filesSection + invoicesSection + questSection + clientCardsSection + emailSection +
+              return codeCardHtml + tokensSection + filesSection + questSection + clientCardsSection + emailSection +
                 '<div style="margin-top:8px">' +
                   '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#8a6f54;margin-bottom:12px">Zone sensible</div>' +
                   archiveCard + revokeCard + deleteCard +
@@ -3280,32 +3271,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '</div>' +
       '</div>' +
 
-      '<div class="modal-backdrop" id="modal-invoice">' +
-        '<div class="modal" style="max-width:540px">' +
-          '<h3 id="modal-invoice-title">Ajouter une facture / devis</h3>' +
-          '<input type="hidden" id="inv-id">' +
-          '<div class="form-row">' +
-            '<div class="form-field"><label>Type</label><select id="inv-type"><option value="facture">Facture</option><option value="devis">Devis</option></select></div>' +
-            '<div class="form-field"><label>Numéro</label><input type="text" id="inv-number" placeholder="FAC-2024-001"></div>' +
-          '</div>' +
-          '<div class="form-field"><label>Titre / Objet</label><input type="text" id="inv-title" placeholder="Ex: Site vitrine – acompte 50%"></div>' +
-          '<div class="form-row">' +
-            '<div class="form-field"><label>Montant HT (centimes)</label><input type="number" id="inv-amount" min="0" placeholder="150000"></div>' +
-            '<div class="form-field"><label>Montant TTC (centimes)</label><input type="number" id="inv-amountTTC" min="0" placeholder="180000"></div>' +
-          '</div>' +
-          '<div class="form-row">' +
-            '<div class="form-field"><label>Statut</label><select id="inv-status"><option value="draft">Brouillon</option><option value="sent">Envoyé</option><option value="signed">Signé</option><option value="paid">Payé</option><option value="overdue">En retard</option><option value="cancelled">Annulé</option></select></div>' +
-            '<div class="form-field"><label>TVA (%)</label><input type="number" id="inv-tva" min="0" max="100" placeholder="20"></div>' +
-          '</div>' +
-          '<div class="form-row">' +
-            '<div class="form-field"><label>Date d\'émission</label><input type="date" id="inv-issueDate"></div>' +
-            '<div class="form-field"><label>Échéance</label><input type="date" id="inv-dueDate"></div>' +
-          '</div>' +
-          '<div class="form-field"><label>Lien PDF</label><input type="url" id="inv-pdfUrl" placeholder="https://…"></div>' +
-          '<div class="form-field"><label>Notes internes</label><textarea id="inv-notes" rows="2"></textarea></div>' +
-          '<div class="modal-footer"><button class="btn btn--outline" onclick="closeModal(\'modal-invoice\')">Annuler</button><button class="btn btn--primary" onclick="saveInvoice()">Sauvegarder</button></div>' +
-        '</div>' +
-      '</div>' +
 
       '<div class="modal-backdrop" id="modal-section">' +
         '<div class="modal">' +
@@ -6928,7 +6893,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (partTasks.length ? '<div style="display:grid;gap:0">' +
             partTasks.slice(0,6).map(function(t) {
               var isDone = t.status === 'done';
-              return '<div onclick="cliOpenTaskDrawer(\''+p.id+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);cursor:pointer;border-radius:6px;transition:background 120ms" onmouseenter="this.style.background=\'var(--bone)\'" onmouseleave="this.style.background=\'transparent\'">' +
+              return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);cursor:pointer;border-radius:6px;transition:background 120ms" onmouseenter="this.style.background=\'var(--bone)\'" onmouseleave="this.style.background=\'transparent\'">' +
                 partDiamond(t.urgency) +
                 '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(isDone?';opacity:0.5;text-decoration:line-through':'')+'">' + esc(t.title) + '</span>' +
                 (isDone
@@ -8480,7 +8445,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
       '<div style="display:flex;gap:0">' +
-        [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes'],['invoices','Factures']].map(function(t){
+        [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes']].map(function(t){
           return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
         }).join('') +
       '</div>' +
@@ -8491,7 +8456,6 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (tab === 'board')   return summaryBar + tabs + buildPartBoard(pid, tasks, files);
     if (tab === 'forfait') return summaryBar + tabs + buildPartForfait(pid, tasks, project);
     if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);
-    if (tab === 'invoices') return summaryBar + tabs + buildPartInvoices(pid);
     return summaryBar + tabs;
   }
 
@@ -9131,6 +9095,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   window.cliOpenTaskDrawer = function(pid, taskId) { cliSelTask[pid] = taskId; renderShell(); };
+  window.cliOpenTaskFromHome = function(pid, taskId) { cliSelTask[pid] = taskId; cliPartTab[pid] = 'cal'; cpSel(pid); };
   window.cliCloseTaskDrawer = function(pid) { delete cliSelTask[pid]; renderShell(); };
   window.cliCalGoToday = function(pid) { var d=new Date(); d.setDate(1); d.setHours(0,0,0,0); cliCalMonth[pid]=d; renderShell(); };
   window._ptaskSelUrg = function(u) {
