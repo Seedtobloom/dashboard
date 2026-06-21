@@ -2256,8 +2256,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         '<div style="padding:24px 26px 26px">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#412F21;margin-bottom:4px;line-height:1.15">'+esc(p.clientName)+'</div>' +
-          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#8a6f54;margin-bottom:16px;letter-spacing:0.03em">'+esc(p.clientEmail)+' \xB7 '+esc(p.projectTitle)+'</div>' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:26px;color:#412F21;margin-bottom:4px;line-height:1.15">'+esc(p.projectTitle || p.clientName)+'</div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#8a6f54;margin-bottom:16px;letter-spacing:0.03em">'+esc(p.clientEmail)+'</div>' +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">' +
             '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;color:#8a6f54;letter-spacing:0.06em;text-transform:uppercase">Avancement</span>' +
             '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:#412F21">'+pct+'%</span>' +
