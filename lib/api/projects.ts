@@ -44,6 +44,8 @@ export async function handleProjects(request: Request, env: Env, url: URL): Prom
         { id: 'p_brief', name: 'État du brief', type: 'Liste', options: ['Pas commencé', 'Brief en cours', 'Brief prêt', 'En projet', 'À retravailler'] },
         { id: 'p_typemission', name: 'Type de mission', type: 'Liste', options: ['Devis/prospection', 'Site internet', 'Communication', 'Identité', 'Autre'] },
         { id: 'p_elements', name: 'Élément du brief', type: 'Texte', options: [] },
+        { id: 'p_brieflink', name: 'Lien du brief', type: 'Lien', options: [] },
+        { id: 'p_brieffile', name: 'Fichier du brief', type: 'Fichier', options: [] },
         { id: 'p_mois', name: 'Mois', type: 'Liste', options: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] },
         { id: 'p_realisation', name: 'Date de réalisation', type: 'Date', options: [] },
       ];

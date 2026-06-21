@@ -4660,6 +4660,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     { id:'p_brief', name:'État du brief', type:'Liste', options:['Pas commencé','Brief en cours','Brief prêt','En projet','À retravailler'] },
     { id:'p_typemission', name:'Type de mission', type:'Liste', options:['Devis/prospection','Site internet','Communication','Identité','Autre'] },
     { id:'p_elements', name:'Élément du brief', type:'Texte', options:[] },
+    { id:'p_brieflink', name:'Lien du brief', type:'Lien', options:[] },
+    { id:'p_brieffile', name:'Fichier du brief', type:'Fichier', options:[] },
     { id:'p_mois', name:'Mois', type:'Liste', options:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] },
     { id:'p_realisation', name:'Date de réalisation', type:'Date', options:[] },
   ];
@@ -4864,6 +4866,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
   }
 
+  // Decode une valeur de propriete de type "Fichier" (JSON {key,name}) -> objet ou null
+  function propFileInfo(val){
+    if (!val) return null;
+    try { var o = typeof val==='string' ? JSON.parse(val) : val; return (o && o.key) ? o : null; } catch(e){ return null; }
+  }
+  // Texte court affiche dans les pastilles pour chaque type de propriete
+  function propChipText(def, val){
+    if (def && def.type==='Fichier'){ var fi = propFileInfo(val); return fi ? ('📎 '+fi.name) : ''; }
+    if (def && def.type==='Lien'){ var s = String(val); return '🔗 '+s.replace(/^https?:\/\//,'').split('/')[0]; }
+    return String(val);
+  }
+
   function aptPillHtml(t) {
     var APT_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
     var urg = ADMIN_PART_URGENCY[t.urgency] || '#ddd';
@@ -4875,9 +4889,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var proj = window._currentProject;
     var schema = Array.isArray(proj && proj.propertySchema) ? proj.propertySchema : [];
     var props = t.properties || {};
-    var propChips = schema.filter(function(def){ return props[def.id] != null && props[def.id] !== ''; }).map(function(def){
-      return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(String(props[def.id]))+'</span>';
-    }).join(' ');
+    var propChips = schema.map(function(def){
+      var v = props[def.id]; if (v==null || v==='') return '';
+      var txt = propChipText(def, v); if (!txt) return '';
+      return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(txt)+'</span>';
+    }).filter(Boolean).join(' ');
     var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
     var spanBar = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
@@ -4926,6 +4942,17 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       if (p.type==='Liste') {
         field = '<select onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;flex:1">' +
           '<option value="">—</option>' + (p.options||[]).map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') + '</select>';
+      } else if (p.type==='Lien') {
+        field = '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' +
+          '<input type="url" value="'+esc(val)+'" onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" placeholder="https://…" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px">' +
+          (val ? '<a href="'+esc(val)+'" target="_blank" rel="noopener" style="font-size:11px;color:'+APT_OCRE_INK+';text-decoration:none">↗ Ouvrir le lien</a>' : '') +
+        '</div>';
+      } else if (p.type==='Fichier') {
+        var fi = propFileInfo(val);
+        field = '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+          (fi ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;background:#f6f0e8;border-radius:8px;font-size:12px;color:'+APT_OCRE_INK+'">'+icon('file',13)+'<a href="/api/projects/'+currentProjectId+'/files/'+encodeURIComponent(fi.key)+'/download" target="_blank" style="color:'+APT_OCRE_INK+';text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fi.name)+'</a><button onclick="aptClearProp(\''+t.id+'\',\''+p.id+'\')" title="Retirer" style="background:none;border:none;color:#9b3a2e;cursor:pointer;font-size:14px;line-height:1">×</button></div>' : '') +
+          '<button onclick="aptSetPropFile(\''+t.id+'\',\''+p.id+'\')" style="font-size:12px;padding:6px 12px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fdfaf6;color:#412F21;cursor:pointer;display:inline-flex;align-items:center;gap:6px;align-self:flex-start">'+icon('upload',13)+' '+(fi?'Remplacer le fichier':'Déposer un fichier')+'</button>' +
+        '</div>';
       } else {
         var inputType = p.type==='Nombre' ? 'number' : p.type==='Date' ? 'date' : 'text';
         field = '<input type="'+inputType+'" value="'+esc(val)+'" onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;flex:1">';
@@ -5179,6 +5206,23 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     props[propId] = value;
     window.aptPatch(id, { properties: props });
   };
+  window.aptClearProp = function(id, propId){ window.aptSetProp(id, propId, ''); };
+  window.aptSetPropFile = function(id, propId){
+    var input = document.createElement('input'); input.type = 'file';
+    input.onchange = async function(){
+      var file = input.files[0]; if (!file) return;
+      var fd = new FormData(); fd.append('file', file); fd.append('category', 'reference');
+      toast('Upload en cours…');
+      var res = await fetch('/api/projects/'+currentProjectId+'/files', { method:'POST', credentials:'same-origin', body:fd });
+      if (!res.ok){ toast('Erreur upload', true); return; }
+      var fileData = await res.json();
+      var p = window._currentProject;
+      if (p){ if(!Array.isArray(p.files)) p.files=[]; p.files.push(fileData); }
+      window.aptSetProp(id, propId, JSON.stringify({ key:fileData.key, name:fileData.name||file.name }));
+      toast('Fichier ajouté ✓');
+    };
+    input.click();
+  };
   window.aptAddComment = async function(id){
     var input = document.getElementById('apt-comment-'+id);
     if (!input) return; var text = input.value.trim(); if (!text) return;
@@ -5234,6 +5278,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             if (def.type==='Liste') field = '<select id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
             else if (def.type==='Nombre') field = '<input type="number" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
             else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
+            else if (def.type==='Lien') field = '<input type="url" id="'+fid+'" placeholder="https://…" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
+            else if (def.type==='Fichier') field = '<div style="font-size:12px;color:#b09b80;font-style:italic;padding:6px 0">Le fichier pourra être déposé après la création.</div>';
             else field = '<input type="text" id="'+fid+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">';
             return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
           }).join('') +
@@ -5295,7 +5341,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Nom</label><input id="_apd-name" placeholder="Ex: Format, Client final, Budget..." style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Type</label>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap" id="_apd-types">' +
-          ['Texte','Nombre','Liste','Date'].map(function(tp){
+          ['Texte','Nombre','Liste','Date','Lien','Fichier'].map(function(tp){
             return '<button onclick="aptPropTypeSelect(\''+tp+'\')" data-t="'+tp+'" style="padding:6px 14px;border-radius:999px;border:1.5px solid #EDE9E1;background:'+(tp==='Texte'?APT_OCRE_DEEP:'#fff')+';color:'+(tp==='Texte'?'#fff':'#8a6f54')+';font-family:inherit;font-size:12px;cursor:pointer">'+tp+'</button>';
           }).join('') +
         '</div>' +
@@ -5338,7 +5384,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   function aptPropManagerHtml() {
     var p = window._currentProject;
     var schema = Array.isArray(p && p.propertySchema) ? p.propertySchema : [];
-    var TYPE_ICONS = { Texte:'T', Nombre:'#', Liste:'≡', Date:'📅' };
+    var TYPE_ICONS = { Texte:'T', Nombre:'#', Liste:'≡', Date:'📅', Lien:'🔗', Fichier:'📎' };
     var rows = schema.length
       ? schema.map(function(def){
           return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #ede8e0;border-radius:10px;margin-bottom:8px;background:#fdfaf6">' +
@@ -5378,11 +5424,44 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var p = window._currentProject;
     var schema = Array.isArray(p.propertySchema) ? p.propertySchema.slice() : [];
     var def = schema.find(function(x){return x.id===propId;}); if (!def) return;
-    showPrompt('Renommer la propriete', 'Nom', def.name, async function(name){
-      name=(name||'').trim(); if(!name) return;
-      schema = schema.map(function(x){ return x.id===propId ? Object.assign({},x,{name:name}) : x; });
-      await aptSaveSchema(schema);
-    }, { okLabel:'Enregistrer' });
+    window._aptEditPropId = propId;
+    window._aptPropType = def.type || 'Texte';
+    var ov = document.getElementById('_apt-prop-modal'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id='_apt-prop-modal';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(40,28,12,0.4);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:24px;max-width:400px;width:100%;box-shadow:0 12px 40px rgba(40,28,12,0.18)">' +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:#412F21;margin-bottom:16px">Modifier la propriété</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Nom</label><input id="_apd-name" value="'+esc(def.name)+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Type</label>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap" id="_apd-types">' +
+          ['Texte','Nombre','Liste','Date','Lien','Fichier'].map(function(tp){
+            var active = def.type===tp;
+            return '<button onclick="aptPropTypeSelect(\''+tp+'\')" data-t="'+tp+'" style="padding:6px 14px;border-radius:999px;border:1.5px solid #EDE9E1;background:'+(active?APT_OCRE_DEEP:'#fff')+';color:'+(active?'#fff':'#8a6f54')+';font-family:inherit;font-size:12px;cursor:pointer">'+tp+'</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div id="_apd-options-row" style="display:'+(def.type==='Liste'?'block':'none')+';margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Options <span style="font-weight:400;color:#b09b80">(séparées par des virgules)</span></label><input id="_apd-options" value="'+esc((def.options||[]).join(', '))+'" placeholder="Ex: Story, Reel, Post, Carrousel" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'_apt-prop-modal\').remove()" style="font-size:13px;padding:8px 16px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#8a6f54;cursor:pointer">Annuler</button><button onclick="aptConfirmEditProp()" style="font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:8px;background:'+APT_OCRE_DEEP+';color:#fff;cursor:pointer">Enregistrer</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    setTimeout(function(){ var el=document.getElementById('_apd-name'); if(el) el.focus(); }, 50);
+  };
+  window.aptConfirmEditProp = async function(){
+    var propId = window._aptEditPropId;
+    var name = ((document.getElementById('_apd-name')||{}).value||'').trim();
+    if (!name){ toast('Nom requis', true); return; }
+    var type = window._aptPropType || 'Texte';
+    var options = [];
+    if (type==='Liste'){
+      var optsEl = document.getElementById('_apd-options');
+      options = (optsEl && optsEl.value) ? optsEl.value.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+    }
+    var p = window._currentProject;
+    var schema = (Array.isArray(p.propertySchema)?p.propertySchema:[]).map(function(x){ return x.id===propId ? Object.assign({},x,{name:name,type:type,options:options}) : x; });
+    var m = document.getElementById('_apt-prop-modal'); if (m) m.remove();
+    await aptSaveSchema(schema);
+    if (document.getElementById('_apt-props-manager')) aptManageProps();
   };
   window.aptDeletePropDef = function(propId){
     showConfirm('Cette propriete sera retiree de toutes les taches.', async function(){
@@ -8978,9 +9057,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
         var propSchema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         var propVals = t.properties || {};
-        var propChipsHtml = propSchema.filter(function(def){ return propVals[def.id] != null && propVals[def.id] !== ''; }).map(function(def){
-          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#412F21);white-space:nowrap">'+esc(def.name)+': '+esc(String(propVals[def.id]))+'</span>';
-        }).join(' ');
+        var propChipsHtml = propSchema.map(function(def){
+          var v = propVals[def.id]; if (v==null || v==='') return '';
+          var txt = propChipText(def, v); if (!txt) return '';
+          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#412F21);white-space:nowrap">'+esc(def.name)+': '+esc(txt)+'</span>';
+        }).filter(Boolean).join(' ');
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
@@ -9024,6 +9105,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       drawer +
     '</div>';
+  }
+
+  // Decode une valeur de propriete de type "Fichier" (JSON {key,name}) -> objet ou null
+  function propFileInfo(val){
+    if (!val) return null;
+    try { var o = typeof val==='string' ? JSON.parse(val) : val; return (o && o.key) ? o : null; } catch(e){ return null; }
+  }
+  // Texte court affiche dans les pastilles pour chaque type de propriete
+  function propChipText(def, val){
+    if (def && def.type==='Fichier'){ var fi = propFileInfo(val); return fi ? ('📎 '+fi.name) : ''; }
+    if (def && def.type==='Lien'){ var s = String(val); return '🔗 '+s.replace(/^https?:\/\//,'').split('/')[0]; }
+    return String(val);
   }
 
   // ── Drawer tâche partenaire ───────────────────────────────────────────────
@@ -9112,6 +9205,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             field = '<input type="number" value="'+esc(String(val))+'" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
           } else if (def.type === 'Date') {
             field = '<input type="date" value="'+esc(String(val).slice(0,10))+'" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
+          } else if (def.type === 'Lien') {
+            field = '<input type="url" value="'+esc(String(val))+'" placeholder="https://…" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value);renderShell()" style="'+inpStyle+'">' +
+              (val ? '<a href="'+esc(String(val))+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--terre,#412F21);text-decoration:none;display:inline-block;margin-top:4px">↗ Ouvrir le lien</a>' : '');
+          } else if (def.type === 'Fichier') {
+            var cfi = propFileInfo(val);
+            field = '<div style="display:flex;flex-direction:column;gap:6px">' +
+              (cfi ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(cfi.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(cfi.name)+'</a><button onclick="cliClearTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>' : '') +
+              '<button onclick="cliSetTaskPropFile(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;align-self:flex-start">⬆ '+(cfi?'Remplacer le fichier':'Déposer un fichier')+'</button>' +
+            '</div>';
           } else {
             field = '<input type="text" value="'+esc(String(val))+'" placeholder="—" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
           }
@@ -9278,6 +9380,28 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var patch = { projectId: pid, properties: {} };
     patch.properties[propId] = val;
     fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
+  };
+  window.cliClearTaskProp = function(pid, taskId, propId){ window.cliSaveTaskProp(pid, taskId, propId, ''); renderShell(); };
+  window.cliSetTaskPropFile = function(pid, taskId, propId){
+    var input = document.createElement('input'); input.type = 'file';
+    input.onchange = function(){
+      var file = input.files[0]; if (!file) return;
+      var fd = new FormData(); fd.append('file', file);
+      var storedCode = sessionStorage.getItem('_sc') || '';
+      var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
+      toast('Envoi en cours…');
+      fetch(API_BASE+'/files', { method:'POST', headers:headers, body:fd })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+        .then(function(fileData){
+          if (!fileData || !fileData.key) throw new Error();
+          var pd = getPD(pid);
+          if (pd){ if(!Array.isArray(pd.project.files)) pd.project.files=[]; pd.project.files.push(fileData); }
+          window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify({ key:fileData.key, name:fileData.name||file.name }));
+          toast('Fichier ajouté ✓'); renderShell();
+        })
+        .catch(function(){ toast('Erreur lors du depot', true); });
+    };
+    input.click();
   };
 
   window.cliSetTimeFromInput = function(pid, taskId) {
