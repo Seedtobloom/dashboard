@@ -2827,8 +2827,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             var obtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;border:1px solid rgba(65,47,33,0.2);background:#fff;color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer';
             var pbtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer';
             var statusChip = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:'+stDot+'"></span><span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">'+stLabel+'</span></span>';
-            return '<div style="padding:40px 48px 30px">' +
-              '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:26px">' +
+            return '<div style="padding:48px 48px 42px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:34px">' +
                 '<button onclick="adminNav(\'/admin\')" style="'+obtn+';letter-spacing:0.08em;text-transform:uppercase;font-size:10.5px">← Tous les espaces</button>' +
                 '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
                   '<label title="Changer la photo de bannière" style="'+obtn+'">' + icon('image',13,'color:#412F21') + ' Photo<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
@@ -2837,8 +2837,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                   '<button onclick="openBannerEditor()" style="'+pbtn+'">Personnaliser →</button>' +
                 '</div>' +
               '</div>' +
-              '<div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">' + adminTypeBadge(project.type) + statusChip + '</div>' +
-              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:36px;color:#1C1205;font-weight:400;line-height:1.12;margin:0 0 6px">' + esc(project.clientName) + '</h1>' +
+              '<div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">' + adminTypeBadge(project.type) + statusChip + '</div>' +
+              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:38px;color:#1C1205;font-weight:400;line-height:1.12;margin:0 0 10px">' + esc(project.clientName) + '</h1>' +
               '<p style="color:#8a6f54;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
             '</div>';
           })() +
