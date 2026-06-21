@@ -6916,9 +6916,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+t.id+'\')" style="display:flex;align-items:center;gap:14px;padding:11px 6px;border-bottom:1px solid var(--bone-d);cursor:pointer;border-radius:6px;transition:background 120ms" onmouseenter="this.style.background=\'var(--bone)\'" onmouseleave="this.style.background=\'transparent\'">' +
                 partDiamond(t.urgency) +
                 '<span style="flex:1;font-family:var(--font-display);font-size:17px;color:var(--terre)'+(isDone?';opacity:0.5;text-decoration:line-through':'')+'">' + esc(t.title) + '</span>' +
-                (isDone
-                  ? '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);display:inline-flex;align-items:center;gap:4px;white-space:nowrap">' + cpIcon('check',12) + ' Terminé</span>'
-                  : cpDeadlinePill(t.dueDate, false, true)) +
+                cliStatusChip(t.status) +
+                (isDone ? '' : cpDeadlinePill(t.dueDate, false, true)) +
                 '<span style="color:var(--terre-400);flex-shrink:0">' + cpIcon('arrow',12) + '</span>' +
               '</div>';
             }).join('') +
@@ -7059,10 +7058,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
-            (isPart ? '<button onclick="cliOpenAddTask(\''+p.id+'\',\'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Demander quelque chose</button>' : '') +
+            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#c46a1a')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#c46a1a;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#c46a1a')+'</div>'; })() : '') +
+            (isPart ? '<button onclick="cliOpenAddTask(\''+p.id+'\',\'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Ajouter une tâche</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
             cpSecWrap(p.id, 'suivi', miniTrack) +
+            (isPart ? (function(){ var dl=partTasks.filter(function(t){return t.status==='done'&&(t.deliverableFileKey||t.livrableUrl);}).sort(function(a,b){return (b.completedAt||b.dueDate||'').localeCompare(a.completedAt||a.dueDate||'');}); if(!dl.length) return ''; return '<div class="card" style="padding:22px 24px;margin-top:20px">'+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'+cpIcon('image',17,'color:var(--terre-400)')+'<h3 style="font-family:var(--font-display);font-size:23px;color:var(--terre);margin:0;font-weight:400">Vos livrables</h3></div>'+'<div style="display:grid;gap:0">'+dl.slice(0,6).map(function(t){ var href=t.deliverableFileKey?(API_BASE+'/files/'+encodeURIComponent(t.deliverableFileKey)+'/download'):t.livrableUrl; var inner='<div style="display:flex;align-items:center;gap:12px;padding:11px 6px;border-bottom:1px solid var(--bone-d)"><span style="color:var(--terre-400);flex-shrink:0;font-size:15px">↓</span><span style="flex:1;font-family:var(--font-display);font-size:16px;color:var(--terre)">'+esc(t.title)+'</span>'+(t.completedAt?'<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);white-space:nowrap">'+fmtShort(t.completedAt)+'</span>':'')+'</div>'; return '<a href="'+esc(href)+'" target="_blank" rel="noopener" style="text-decoration:none">'+inner+'</a>'; }).join('')+'</div></div>'; })() : '') +
           '</div>' +
           '<div class="cp-ph__right">' +
             (isPart ? forfaitCard : cpSecWrap(p.id, 'avancement', progressCard)) +
@@ -8314,7 +8315,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     size = size || 11;
     return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="'+d+'"/></svg>';
   }
-  var CLI_TSTATUS    = { todo:'À faire', in_progress:'En cours', done:'Terminé' };
+  var CLI_TSTATUS    = { todo:'Reçue', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
+  function cliTaskStatusMeta(s){
+    var M = {
+      todo:        { label:'Reçue',               color:'#8a6f54', bg:'#f0e8db' },
+      in_progress: { label:'En cours',            color:'#6c4ea4', bg:'#efe6ff' },
+      review:      { label:'À valider chez vous', color:'#8a4a0e', bg:'#fdf3e8' },
+      done:        { label:'Livrée',              color:'#3a6b4a', bg:'#e7f0e9' }
+    };
+    return M[s] || M.todo;
+  }
+  function cliStatusChip(s){ var m=cliTaskStatusMeta(s); return '<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;color:'+m.color+';background:'+m.bg+'">'+m.label+'</span>'; }
   var CLI_BRIEF = {
     pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
     brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
@@ -8481,7 +8492,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Nouvelle demande</button>' +
+      '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Nouvelle tâche</button>' +
     '</div>';
 
     if (tab === 'cal')     return summaryBar + tabs + buildPartCal(pid, tasks, files, project);
@@ -9003,7 +9014,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
-    var statusMap = {todo:'À faire',in_progress:'En cours',review:'En relecture',done:'Fait'};
+    var statusMap = {todo:'Reçue',in_progress:'En cours',review:'À valider chez vous',done:'Livrée'};
     var statusOpts = ['todo','in_progress','review','done'].map(function(s){
       return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+statusMap[s]+'</option>';
     }).join('');
@@ -9853,10 +9864,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Faire une demande</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Ajouter une tâche</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
         '</div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Votre demande *</label>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la tâche *</label>' +
           '<input id="_ptask-title" type="text" placeholder="Ex : Visuel Instagram – collection été" style="'+S+'"></div>' +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Type de besoin</label>' +
           '<input id="_ptask-pole" type="text" placeholder="Ex : Réseaux sociaux, Print, Web…" style="'+S+'"></div>' +
@@ -9885,7 +9896,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         })() +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
+          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Ajouter la tâche</button>' +
         '</div>' +
       '</div>';
       document.body.appendChild(ov);
