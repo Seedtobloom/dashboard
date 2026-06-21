@@ -1384,7 +1384,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       body.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0">Aucun projet trouvé pour ce client.</p>';
       return;
     }
-    body.innerHTML = clientProjs.map(function(p) {
+    var clientName = (clientProjs[0] && clientProjs[0].clientName) || '';
+    var OFFER_TYPES = ['identite','site','partenaire','maintenance','support'];
+    var existingTypes = clientProjs.map(function(p){ return p.type; });
+    var missingTypes = OFFER_TYPES.filter(function(t){ return existingTypes.indexOf(t) === -1; });
+
+    var existingHtml = clientProjs.map(function(p) {
       var enabled = !disabled.includes(p.id);
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8">' +
         '<div><div style="font-weight:500;color:var(--navy);font-size:14px">' + esc(p.projectTitle) + '</div>' +
@@ -1396,6 +1401,22 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>';
     }).join('');
 
+    var addHtml = missingTypes.length ? (
+      '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin:18px 0 2px">Ajouter une offre</div>' +
+      missingTypes.map(function(t) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8">' +
+          '<div><div style="font-weight:500;color:var(--navy);font-size:14px">' + esc(TYPE_LABELS[t]||t) + '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:1px">Nouvelle offre</div></div>' +
+          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">' +
+            '<input type="checkbox" data-new-type="' + esc(t) + '" style="width:15px;height:15px;cursor:pointer;accent-color:var(--navy)">' +
+            '<span style="font-size:12px;color:var(--muted)">Ajouter</span>' +
+          '</label>' +
+        '</div>';
+      }).join('')
+    ) : '';
+
+    body.innerHTML = existingHtml + addHtml;
+
     // Mettre à jour le label Visible/Masqué dynamiquement
     body.querySelectorAll('input[data-proj-id]').forEach(function(cb) {
       cb.addEventListener('change', function() {
@@ -1403,17 +1424,43 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         if (lbl) { lbl.textContent = cb.checked ? 'Visible' : 'Masqué'; lbl.style.color = cb.checked ? 'var(--sage)' : 'var(--muted)'; }
       });
     });
+    // Label "Ajouter" / "À créer" pour les nouvelles offres
+    body.querySelectorAll('input[data-new-type]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var lbl = cb.parentElement.querySelector('span');
+        if (lbl) { lbl.textContent = cb.checked ? 'À créer' : 'Ajouter'; lbl.style.color = cb.checked ? 'var(--sage)' : 'var(--muted)'; }
+      });
+    });
 
     var saveBtn = document.getElementById('sp-offers-save');
     saveBtn.disabled = false;
     saveBtn.onclick = async function() {
       saveBtn.disabled = true;
-      var newDisabled = clientProjs.filter(function(p) {
-        var cb = body.querySelector('input[data-proj-id="' + p.id + '"]');
-        return cb && !cb.checked;
-      }).map(function(p) { return p.id; });
-      var r = await apiFetch('/api/token-meta/' + token, { method: 'PATCH', body: JSON.stringify({ disabledProjects: newDisabled }) });
-      if (r.ok) { ov.remove(); toast('Offres mises à jour ✓'); } else { toast('Erreur lors de la sauvegarde', true); saveBtn.disabled = false; }
+      // 1. Créer les nouvelles offres cochées
+      var toCreate = [];
+      body.querySelectorAll('input[data-new-type]').forEach(function(cb) { if (cb.checked) toCreate.push(cb.getAttribute('data-new-type')); });
+      try {
+        for (var i = 0; i < toCreate.length; i++) {
+          var t = toCreate[i];
+          var cr = await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify({
+            clientName: clientName, clientEmail: clientEmail, projectTitle: TYPE_LABELS[t] || t,
+            description: '', type: t, startDate: new Date().toISOString().split('T')[0], steps: []
+          }) });
+          if (!cr.ok) throw new Error();
+        }
+        // 2. Visibilité des offres existantes
+        var newDisabled = clientProjs.filter(function(p) {
+          var cb = body.querySelector('input[data-proj-id="' + p.id + '"]');
+          return cb && !cb.checked;
+        }).map(function(p) { return p.id; });
+        var r = await apiFetch('/api/token-meta/' + token, { method: 'PATCH', body: JSON.stringify({ disabledProjects: newDisabled }) });
+        if (!r.ok) throw new Error();
+        ov.remove();
+        toast(toCreate.length ? (toCreate.length + ' offre(s) ajoutée(s) ✓') : 'Offres mises à jour ✓');
+        if (typeof showSpaces === 'function') showSpaces();
+      } catch (e) {
+        toast('Erreur lors de la sauvegarde', true); saveBtn.disabled = false;
+      }
     };
   };
 
