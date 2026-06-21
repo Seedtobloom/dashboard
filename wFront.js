@@ -2822,77 +2822,25 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             var ctlBg = onLight ? 'rgba(28,18,5,0.06)' : 'rgba(0,0,0,0.28)';
             var ctlBd = onLight ? 'rgba(28,18,5,0.18)' : 'rgba(255,255,255,0.32)';
 
-            // ── Cas IMAGE : on n'écrit rien sur l'image (elle contient déjà le texte),
-            // tous les contrôles sont dans des barres nettes au-dessus / en dessous.
-            if (project.bannerUrl) {
-              var obtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;border:1px solid rgba(65,47,33,0.2);background:#fff;color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer';
-              var pbtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer';
-              var statusChip = '<span style="display:inline-flex;align-items:center;gap:6px">' +
-                '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+'"></span>' +
-                '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">'+stLabel+'</span>' +
-              '</span>';
-              return '<div style="padding:22px 28px 0">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px;flex-wrap:wrap">' +
-                  '<button onclick="adminNav(\'/admin\')" style="'+obtn+';letter-spacing:0.08em;text-transform:uppercase;font-size:10.5px">← Tous les espaces</button>' +
-                  '<div style="display:flex;gap:8px;align-items:center">' +
-                    '<label title="Changer la photo" style="'+obtn+'">' + icon('image',13,'color:#412F21') + ' Photo<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
-                    '<button onclick="applyBannerColor(null)" title="Retirer la photo" style="'+obtn+'">Retirer la photo</button>' +
-                  '</div>' +
-                '</div>' +
-                '<div style="position:relative;height:210px;border-radius:16px;overflow:hidden;background:' + bannerBg + ';background-size:cover;background-position:center;box-shadow:0 2px 4px rgba(65,47,33,0.05),0 18px 44px -26px rgba(65,47,33,0.42)" id="proj-banner-el" data-img></div>' +
-                '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:16px 2px 0">' +
-                  '<div style="min-width:0">' +
-                    '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' + adminTypeBadge(project.type) + statusChip + '</div>' +
-                    '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:38px;color:#1C1205;font-weight:400;line-height:1.05;margin:0 0 3px">' + esc(project.clientName) + '</h1>' +
-                    '<p style="color:#8a6f54;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
-                  '</div>' +
-                  '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-                    '<button onclick="addProjectForClient()" style="'+obtn+'">+ Nouveau projet</button>' +
-                    (project.clientEmail ? '<button onclick="editClientSpace()" style="'+obtn+'">Voir le portail</button>' : '') +
-                    '<button onclick="openBannerEditor()" style="'+pbtn+'">Personnaliser →</button>' +
-                  '</div>' +
-                '</div>' +
-              '</div>';
-            }
-
-            // ── Cas COULEUR UNIE : texte par-dessus (recolorable, lisible sur la couleur).
-            return '<div style="padding:22px 28px 0">' +
-              '<div style="position:relative;height:208px;border-radius:14px;overflow:hidden;background:' + bannerBg + ';background-size:cover;background-position:center" id="proj-banner-el"' + (project.bannerUrl ? ' data-img' : '') + '>' +
-              (!project.bannerUrl ? '<div class="grain-overlay"></div>' : '') +
-              (project.bannerUrl ? '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.10) 0%,rgba(0,0,0,0.45) 100%)"></div>' : '') +
-              '<div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:18px 28px 22px">' +
-                '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-                  '<button onclick="adminNav(\'/admin\')" style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(4px)">← Tous les espaces</button>' +
-                  '<div style="display:flex;gap:8px;align-items:center">' +
-                    '<label title="Changer la photo" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:0.06em;backdrop-filter:blur(4px)">' +
-                      icon('image',12,'color:'+ctlFg+'') + ' Photo' +
-                      '<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)">' +
-                    '</label>' +
-                    (project.bannerUrl ? '<button onclick="applyBannerColor(null)" title="Retirer" style="padding:6px 12px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:10.5px;cursor:pointer;backdrop-filter:blur(4px)">Retirer</button>' : '') +
-                  '</div>' +
-                '</div>' +
-                '<div>' +
-                  '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">' +
-                    adminTypeBadge(project.type) +
-                    '<span style="display:inline-flex;align-items:center;gap:6px">' +
-                      '<span style="width:7px;height:7px;border-radius:50%;background:'+stDot+';box-shadow:0 0 0 2px '+(onLight?'rgba(28,18,5,0.12)':'rgba(255,255,255,0.25)')+'"></span>' +
-                      '<span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:'+hdrTitleCol+';opacity:0.75">'+stLabel+'</span>' +
-                    '</span>' +
-                  '</div>' +
-                  '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap">' +
-                    '<div>' +
-                      '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:40px;color:'+hdrTitleCol+';font-weight:400;line-height:1.05;margin:0 0 4px'+(onLight?'':';text-shadow:0 1px 8px rgba(0,0,0,0.25)')+'">' + esc(project.clientName) + '</h1>' +
-                      '<p style="color:'+hdrTitleCol+';opacity:0.78;font-size:14px;margin:0;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
-                    '</div>' +
-                    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-                      '<button onclick="addProjectForClient()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">+ Nouveau projet</button>' +
-                      (project.clientEmail ? '<button onclick="editClientSpace()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid '+ctlBd+';background:'+ctlBg+';color:'+ctlFg+';font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(4px)">Voir le portail</button>' : '') +
-                      '<button onclick="openBannerEditor()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Personnaliser →</button>' +
-                    '</div>' +
-                  '</div>' +
+            // En-tête compact et discret : plus de grande bannière dans la fiche projet
+            // (le visuel reste sur les cartes d'aperçu). On simplifie pour gagner de la place.
+            var obtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;border:1px solid rgba(65,47,33,0.2);background:#fff;color:#412F21;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:500;cursor:pointer';
+            var pbtn = 'display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:none;background:#412F21;color:#F2E5C2;font-family:\'Inter Tight\',sans-serif;font-size:12px;font-weight:600;cursor:pointer';
+            var statusChip = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:'+stDot+'"></span><span style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54">'+stLabel+'</span></span>';
+            return '<div style="padding:26px 48px 0">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">' +
+                '<button onclick="adminNav(\'/admin\')" style="'+obtn+';letter-spacing:0.08em;text-transform:uppercase;font-size:10.5px">← Tous les espaces</button>' +
+                '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+                  '<label title="Changer la photo de bannière" style="'+obtn+'">' + icon('image',13,'color:#412F21') + ' Photo<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
+                  '<button onclick="addProjectForClient()" style="'+obtn+'">+ Nouveau projet</button>' +
+                  (project.clientEmail ? '<button onclick="editClientSpace()" style="'+obtn+'">Voir le portail</button>' : '') +
+                  '<button onclick="openBannerEditor()" style="'+pbtn+'">Personnaliser →</button>' +
                 '</div>' +
               '</div>' +
-            '</div></div>';
+              '<div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">' + adminTypeBadge(project.type) + statusChip + '</div>' +
+              '<h1 style="font-family:\'Cormorant Garamond\',serif;font-size:34px;color:#1C1205;font-weight:400;line-height:1.1;margin:2px 0 2px">' + esc(project.clientName) + '</h1>' +
+              '<p style="color:#8a6f54;font-size:14px;margin:0 0 2px;font-family:\'Inter Tight\',sans-serif;letter-spacing:0.02em">' + esc(project.clientEmail) + (project.projectTitle ? ' · ' + esc(project.projectTitle) : '') + '</p>' +
+            '</div>';
           })() +
 
           tabNav +
@@ -7655,31 +7603,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var backBtnStyle = bannerLight
       ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#1C1205'
       : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F2E5C2';
-    var header;
-    if (project.bannerUrl) {
-      // Image nette : on n'écrit rien par-dessus (l'image contient déjà le texte),
-      // le retour / badge / titre / salutation passent en dessous.
-      header = '<div style="padding:28px clamp(20px,4vw,52px) 0">' +
-        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
-        '<div style="' + hdrBg + ';background-size:cover;background-position:center;height:210px;border-radius:16px;box-shadow:0 2px 4px rgba(65,47,33,0.05),0 18px 44px -26px rgba(65,47,33,0.42)" data-img></div>' +
-        '<div style="padding:16px 2px 0">' +
-          statusBadge(project.status) +
-          '<h1 class="cp-header__title" style="color:var(--terre);margin-top:10px">' + esc(project.projectTitle) + '</h1>' +
-          '<div class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
-            (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    } else {
-      header = '<div class="cp-header" ' + (hdrBg ? 'style="' + hdrBg + '"' : '') + '>' +
-        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="' + backBtnStyle + ';font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
-        '<div style="margin-bottom:12px">' + statusBadge(project.status) + '</div>' +
-        '<h1 class="cp-header__title" style="color:' + titleCol + '">' + esc(project.projectTitle) + '</h1>' +
-        '<div class="cp-header__meta" style="color:' + metaCol + ';opacity:1">Bonjour ' + esc(project.clientName) +
-          (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
-        '</div>' +
-      '</div>';
-    }
+    // En-tête projet compact et discret (plus de grande bannière dans la vue projet).
+    var header = '<div style="padding:30px clamp(20px,4vw,52px) 0">' +
+      (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;margin-bottom:16px;font-family:inherit;font-weight:600">← Mes projets</button><br>' : '') +
+      '<div style="margin-bottom:8px">' + statusBadge(project.status) + '</div>' +
+      '<h1 class="cp-header__title" style="color:var(--terre)">' + esc(project.projectTitle) + '</h1>' +
+      '<div class="cp-header__meta" style="color:var(--terre-400)">Bonjour ' + esc(project.clientName) +
+        (project.deadline ? ' · Livraison prevue le ' + fmtDate(project.deadline) + extended : '') +
+      '</div>' +
+    '</div>';
 
     var banner = '';
     if (actionStep) {
