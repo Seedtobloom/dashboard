@@ -2782,7 +2782,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button>' : '') +
-        (!t.revoked ? '<button class="btn btn--sage btn--sm" onclick="window.open(\'' + esc(tUrl) + '?edit=1' + (project.spaceCode ? '&code=' + encodeURIComponent(project.spaceCode) : '') + '\',\'_blank\')" title="Ouvrir l\'espace en mode édition pour modifier les textes">✎ Éditer</button>' : '') +
+        (!t.revoked ? '<button class="btn btn--sage btn--sm" onclick="window.open(\'' + esc(tUrl) + '?edit=1\',\'_blank\')" title="Ouvrir l\'espace en mode édition pour modifier les textes">✎ Éditer</button>' : '') +
         (!t.revoked && !t.lastUsedAt ? '<button class="btn btn--sage btn--sm" onclick="navigator.clipboard.writeText(\'' + esc(tUrl) + '\').then(function(){toast(\'Lien copié — à renvoyer à la cliente ✓\')})" title="Copier le lien pour le renvoyer">↩ Renvoyer</button>' : '') +
         (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
       '</div>';
@@ -6538,12 +6538,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       const data = await res.json();
       token = data.token;
     }
+    // On n'injecte plus le code dans l'URL : l'aperçu passe par le même écran
+    // de code que la cliente (saisie du code → portail). Comportement unifié.
     const sameOriginUrl = window.location.origin + '/p/' + token;
-    var qs = [];
-    if (edit) qs.push('edit=1');
-    var spaceCode = (window._currentProject && window._currentProject.spaceCode) || '';
-    if (spaceCode) qs.push('code=' + encodeURIComponent(spaceCode));
-    window.open(sameOriginUrl + (qs.length ? '?' + qs.join('&') : ''), '_blank');
+    window.open(sameOriginUrl + (edit ? '?edit=1' : ''), '_blank');
   }
   window.previewClientSpace = function() { return openClientSpace(false); };
   window.editClientSpace = function() { return openClientSpace(true); };
