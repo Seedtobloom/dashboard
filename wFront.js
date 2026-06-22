@@ -1771,6 +1771,30 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<button onclick="removeHoliday('+i+')" class="btn btn--danger btn--sm" style="margin-bottom:1px">Suppr.</button>' +
       '</div>';
     }).join('') : '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12.5px;color:#a89a86;margin:0 0 12px">Aucune periode d\'absence.</p>');
+    // Aperçu du bandeau tel que la cliente le verra (même logique que le portail)
+    var _holPrev = (function(){
+      var today = new Date(); today.setHours(0,0,0,0);
+      var active=null, upcoming=null;
+      (s.holidays||[]).forEach(function(h){
+        if(!h||!h.from) return;
+        var from=new Date(h.from); from.setHours(0,0,0,0);
+        var to=h.to?new Date(h.to):from; to.setHours(0,0,0,0);
+        if(today>=from&&today<=to){ if(!active) active=h; }
+        else if(from>today){ var diff=Math.round((from-today)/86400000); if(diff<=30&&(!upcoming||from<new Date(upcoming.from))) upcoming=h; }
+      });
+      var h=active||upcoming;
+      if(!h) return '<div style="font-size:12px;color:#a89a86;font-style:italic;margin:4px 0 14px">Aucune période en cours ou à venir (≤30 j) : le bandeau n\'apparaît pas pour le moment sur les espaces clients.</div>';
+      var range=formatDate(h.from)+(h.to&&h.to!==h.from?' au '+formatDate(h.to):'');
+      var msg=h.message||(active?'Le studio est actuellement en congés.':'Le studio sera en congés prochainement.');
+      return '<div style="margin:6px 0 14px">' +
+        '<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#a89a86;margin-bottom:5px">Aperçu sur l\'espace client</div>' +
+        '<div style="background:#f7efff;border:1px solid #E4D1FE;border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:11px;font-family:\'Inter Tight\',sans-serif;font-size:13.5px;color:#412F21">' +
+          '<span style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;opacity:0.7;white-space:nowrap">'+(active?'Congés':'À venir')+'</span>' +
+          '<span style="flex:1">'+esc(msg)+'</span>' +
+          '<span style="font-size:11px;opacity:0.75;white-space:nowrap">'+esc(range)+'</span>' +
+        '</div></div>';
+    })();
+    holidays += _holPrev;
     holidays += '<button onclick="addHoliday()" class="btn btn--outline btn--sm">+ Ajouter une periode</button>';
 
     // 5. Message d'accueil par defaut
