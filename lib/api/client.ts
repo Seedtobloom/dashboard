@@ -295,7 +295,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     return errorResponse('Method not allowed', 405);
   }
 
-  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
+  const match = url.pathname.match(/^\/api\/client\/([a-f0-9]{64})(\/conversation|\/message|\/forfait|\/tasks(?:\/([a-f0-9]{32})(\/comments)?)?)?$/);
   if (!match) return errorResponse('Not found', 404);
 
   const [, tokenStr, subPathRaw, taskIdFromPath, commentsSuffix] = match;
@@ -385,6 +385,18 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
     await addMessage(env, message);
     sendAdminMessageNotification(env, project, message).catch(() => {});
     return jsonResponse({ success: true, message }, 201);
+  }
+
+  // PATCH /api/client/:token/forfait — définition du forfait / reports depuis l'espace partenaire
+  if (method === 'PATCH' && subPath === '/forfait') {
+    const body = (await request.json().catch(() => ({}))) as Record<string, any>;
+    const projectId = body.projectId || url.searchParams.get('projectId') || projects[0]?.id;
+    const project = projects.find((p) => p.id === projectId) || projects[0];
+    if (!project) return errorResponse('Project not found', 404);
+    if (typeof body.monthlyHours === 'number') project.monthlyHours = body.monthlyHours;
+    if (body.forfaitOverrides && typeof body.forfaitOverrides === 'object') project.forfaitOverrides = body.forfaitOverrides;
+    await saveProject(env, project);
+    return jsonResponse(project);
   }
 
   // PATCH /api/client/:token/tasks/:taskId — mise à jour partielle par le client (propriétés, contenu, statut, temps)
