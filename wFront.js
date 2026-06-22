@@ -4817,7 +4817,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       function(id){ return 'aptOpenDrawer(\''+id+'\')'; },
       function(id){ return 'aptPatch(\''+id+'\',{status:\'todo\',archived:false})'; });
     return forfaitBar + overdueHtml + weekHtml +
-      '<div style="display:grid;grid-template-columns:1fr'+(aptSelTask?' 360px':'')+';gap:18px;align-items:start">' +
+      '<div style="display:grid;grid-template-columns:'+(aptSelTask?'minmax(0,1fr) 360px':'minmax(0,1fr)')+';gap:18px;align-items:start">' +
         '<div>' + calCard + historyCard + '</div>' + drawer +
       '</div>';
   }
@@ -9109,7 +9109,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
       function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; });
 
-    return '<div style="display:grid;grid-template-columns:1fr'+(cliSelTask[pid]?' minmax(0,360px)':'')+';gap:20px;align-items:start">' +
+    return '<div style="display:grid;grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start">' +
       '<div>' +
         calHeader +
         forfaitBar +
