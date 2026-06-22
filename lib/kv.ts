@@ -15,9 +15,37 @@ export async function savePortalHome(env: Env, key: string, home: PortalHome): P
 
 // --- Projects ---
 
+// Migration : remplace l'ancienne liste « Type de mission » par la nouvelle.
+const OLD_MISSION_TYPES = ['Devis/prospection', 'Site internet', 'Communication', 'Identité', 'Autre'];
+const MISSION_TYPES = [
+  'Mise à jour / optimisation de supports existants',
+  'Visuels réseaux sociaux & communication digitale',
+  'Ajustements & évolutions graphiques',
+  'Déclinaison multi-formats / multi-canaux',
+  'Mise en page de documents',
+  'Modèles réutilisables (templates)',
+  'Conseil graphique & cohérence visuelle',
+  'Autre',
+];
+function migrateProjectSchema(project: Project): boolean {
+  if (!Array.isArray(project.propertySchema)) return false;
+  const tm = project.propertySchema.find((d) => d.id === 'p_typemission');
+  if (tm && Array.isArray(tm.options) && tm.options.join('|') === OLD_MISSION_TYPES.join('|')) {
+    tm.options = MISSION_TYPES.slice();
+    return true;
+  }
+  return false;
+}
+
 export async function getProject(env: Env, id: string): Promise<Project | null> {
   const data = await env.BLOOM_KV.get(`project:${id}`);
-  return data ? JSON.parse(data) : null;
+  if (!data) return null;
+  const project = JSON.parse(data) as Project;
+  // Migration unique (écriture seulement si la liste change réellement).
+  if (migrateProjectSchema(project)) {
+    await env.BLOOM_KV.put(`project:${project.id}`, JSON.stringify(project));
+  }
+  return project;
 }
 
 export async function saveProject(env: Env, project: Project): Promise<void> {

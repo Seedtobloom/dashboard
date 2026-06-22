@@ -1840,8 +1840,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.sendTestEmail = function(){
     var to = (document.getElementById('set-notificationEmail')||{}).value || '';
     var res = document.getElementById('test-email-result');
-    if (res) { res.style.color = '#a89a86'; res.textContent = 'Envoi en cours…'; }
-    apiFetch('/api/test-email', { method:'POST', body: JSON.stringify({ to: to }) })
+    if (res) { res.style.color = '#a89a86'; res.textContent = 'Enregistrement + envoi en cours…'; }
+    // On enregistre d'abord les réglages : ainsi l'adresse testée = l'adresse
+    // réellement utilisée par les alertes automatiques (évite le piège test/alertes).
+    collectSettings();
+    var payload = JSON.parse(JSON.stringify(studioSettings));
+    apiFetch('/api/settings', { method:'PUT', body: JSON.stringify(payload) })
+      .then(function(){ return apiFetch('/api/test-email', { method:'POST', body: JSON.stringify({ to: to }) }); })
       .then(function(r){ return r.json().catch(function(){ return { ok:false, error:'Réponse invalide' }; }); })
       .then(function(d){
         if (d && d.ok) {
@@ -4855,8 +4860,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var setDefs = schema.filter(function(def){ var v=props[def.id]; return v!=null && v!=='' && propChipText(def,v); });
     var propChips = setDefs.slice(0,3).map(function(def){
       var txt = propChipText(def, props[def.id]);
-      if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL[props[def.id]]||'#ece6da')+';border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
-      return '<span style="display:inline-flex;gap:4px;align-items:baseline;background:#f3ede2;border-radius:6px;padding:2px 8px;font-family:\'Inter Tight\',sans-serif;font-size:10px;white-space:nowrap"><span style="color:#a8987f;font-size:8.5px;text-transform:uppercase;letter-spacing:0.03em">'+esc(def.name)+'</span><span style="color:#5c4530;font-weight:500">'+esc(txt)+'</span></span>';
+      if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL[props[def.id]]||'#ece6da')+';border-radius:999px;padding:3px 10px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
+      return '<span style="display:inline-flex;gap:5px;align-items:center;background:#f3ede2;border-radius:6px;padding:3px 9px;font-family:\'Inter Tight\',sans-serif;white-space:nowrap"><span style="color:#a8987f;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">'+esc(def.name)+'</span><span style="color:#5c4530;font-size:10.5px;font-weight:500">'+esc(txt)+'</span></span>';
     }).join('');
     if (setDefs.length>3) propChips += '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#a89a86;align-self:center">+'+(setDefs.length-3)+'</span>';
     var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
@@ -9066,10 +9071,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var setDefsC = propSchema.filter(function(def){ if (cliHiddenProp(def.id)) return false; var v=propVals[def.id]; return v!=null && v!=='' && propChipText(def,v); });
         var propChipsHtml = setDefsC.slice(0,3).map(function(def){
           var txt = propChipText(def, propVals[def.id]);
-          if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL_C[propVals[def.id]]||'#ece6da')+';border-radius:999px;padding:2px 9px;font-size:10px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
-          return '<span style="display:inline-flex;gap:4px;align-items:baseline;background:rgba(0,0,0,0.05);border-radius:6px;padding:2px 8px;font-size:10px;white-space:nowrap"><span style="color:var(--muted,#a8987f);font-size:8.5px;text-transform:uppercase;letter-spacing:0.03em">'+esc(def.name)+'</span><span style="color:var(--terre,#412F21);font-weight:500">'+esc(txt)+'</span></span>';
+          if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL_C[propVals[def.id]]||'#ece6da')+';border-radius:999px;padding:3px 10px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
+          return '<span style="display:inline-flex;gap:5px;align-items:center;background:rgba(0,0,0,0.05);border-radius:6px;padding:3px 9px;font-family:\'Inter Tight\',sans-serif;white-space:nowrap"><span style="color:var(--muted,#a8987f);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">'+esc(def.name)+'</span><span style="color:var(--terre,#412F21);font-size:10.5px;font-weight:500">'+esc(txt)+'</span></span>';
         }).join('');
-        if (setDefsC.length>3) propChipsHtml += '<span style="font-size:9px;color:#a89a86;align-self:center">+'+(setDefsC.length-3)+'</span>';
+        if (setDefsC.length>3) propChipsHtml += '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#a89a86;align-self:center">+'+(setDefsC.length-3)+'</span>';
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
