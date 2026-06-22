@@ -9273,29 +9273,21 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
 
     return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
-      // Top row: urgence badge (+ épingle) + close
+      // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +
-          '<span style="display:inline-flex;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.08em;background:'+urgBg+';color:'+urgTx+'">'+urgLabel+'</span>' +
           (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#fdf8ef;color:#b09668;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
         '</div>' +
         '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
-      // Statut + Urgence
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
-          '<select id="_pt-status-'+t.id+'" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+statusOpts+'</select></div>' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Urgence</div>' +
-          '<select id="_pt-urg-'+t.id+'" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
-      '</div>' +
-      // Dates
+      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      // Statut + Échéance
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Début</div>' +
-          '<input id="_pt-start-'+t.id+'" type="date" value="'+esc((t.startDate||'').slice(0,10))+'" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
+          '<select id="_pt-status-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+statusOpts+'</select></div>' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
-          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
+          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
       '</div>' +
       sep +
       // Informations : état du brief + type de mission + pièces jointes
@@ -9309,7 +9301,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var d = defOf(id); if (!d || !Array.isArray(d.options) || !d.options.length) return '';
           var val = props[id]!=null ? props[id] : '';
           return '<div style="margin-bottom:12px"><div style="'+lblS+'">'+esc(d.name)+'</div>' +
-            '<select id="_pt-'+slot+'-'+t.id+'" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
+            '<select id="_pt-'+slot+'-'+t.id+'" onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+id+'\',this.value)" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
             d.options.map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') +
             '</select></div>';
         }
@@ -9318,7 +9310,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
         }).join('');
         var attach = '<div><div style="'+lblS+'">Lien &amp; fichiers</div>' +
-          '<input id="_pt-link-'+t.id+'" type="url" value="'+esc(bvc.link)+'" placeholder="Lien (https://…)" style="'+inpStyle+';margin-bottom:6px">' +
+          '<input id="_pt-link-'+t.id+'" type="url" value="'+esc(bvc.link)+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="'+inpStyle+';margin-bottom:6px">' +
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
           '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>' +
         '</div>';
@@ -9326,11 +9318,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           selectFor('p_brief','brief') + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
       })() +
-      // Brief / détails (champ unique)
-      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Brief / détails</span></div>' +
-      '<textarea id="_pt-desc-'+t.id+'" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Détails, références, contraintes…">'+esc(t.content||'')+'</textarea>' +
-      // Bouton Enregistrer
-      '<button onclick="cliSaveTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="width:100%;margin-top:14px;padding:11px;border:none;border-radius:10px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Enregistrer les modifications</button>' +
+      // Détails & contexte (champ unique)
+      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Détails &amp; contexte</span></div>' +
+      '<textarea id="_pt-desc-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'content\',this.value)" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Format, ton, références, liens, contraintes…">'+esc(t.content||'')+'</textarea>' +
       sep +
       // Livrable
       '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Livrable</span></div>' +
@@ -9473,40 +9463,35 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     patch.properties[propId] = val;
     fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
   };
-  // Enregistre toutes les modifs du tiroir en une fois (bouton « Enregistrer »).
-  window.cliSaveTaskDrawer = function(pid, taskId){
+  // Sauvegarde immédiate d'un champ simple du tiroir (avec confirmation).
+  window.cliEditTaskField = function(pid, taskId, field, value){
     var pd = getPD(pid);
     var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
     if (!t) return;
-    function gv(id){ var e = document.getElementById(id); return e ? e.value : undefined; }
-    var patch = { projectId: pid };
-    var v;
-    if ((v = gv('_pt-title-'+taskId)) !== undefined) patch.title = v;
-    if ((v = gv('_pt-status-'+taskId)) !== undefined) patch.status = v;
-    if ((v = gv('_pt-urg-'+taskId)) !== undefined) patch.urgency = v;
-    if ((v = gv('_pt-start-'+taskId)) !== undefined) patch.startDate = v || null;
-    if ((v = gv('_pt-due-'+taskId)) !== undefined) patch.dueDate = v;
-    if ((v = gv('_pt-desc-'+taskId)) !== undefined) patch.content = v;
-    var props = {};
-    if ((v = gv('_pt-brief-'+taskId)) !== undefined) props.p_brief = v;
-    if ((v = gv('_pt-type-'+taskId)) !== undefined) props.p_typemission = v;
-    if ((v = gv('_pt-link-'+taskId)) !== undefined) {
-      var cur = briefVal((t.properties||{}).p_elements); cur.link = v;
-      props.p_elements = JSON.stringify(cur);
-    }
-    if (Object.keys(props).length) patch.properties = props;
-    // Mise à jour optimiste locale
-    Object.keys(patch).forEach(function(k){ if (k!=='projectId' && k!=='properties') t[k] = patch[k]; });
-    if (patch.properties) t.properties = Object.assign({}, t.properties||{}, patch.properties);
-    fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) })
-      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
-      .then(function(updated){
-        var i = (pd.project.tasks||[]).findIndex(function(x){return x.id===taskId;});
-        if (i>=0) pd.project.tasks[i] = updated;
-        toast('Modifications enregistrées ✓');
-        renderShell();
-      })
+    if (field === 'startDate' && !value) value = null;
+    t[field] = value;
+    var body = { projectId: pid }; body[field] = value;
+    fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); if (field === 'status') renderShell(); })
       .catch(function(){ toast('Erreur — réessayez'); });
+  };
+  // Sauvegarde immédiate d'une propriété (état du brief, type de mission…).
+  window.cliEditTaskProp = function(pid, taskId, propId, value){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    t.properties = Object.assign({}, t.properties||{}); t.properties[propId] = value;
+    var patch = { projectId: pid, properties: {} }; patch.properties[propId] = value;
+    fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) })
+      .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); })
+      .catch(function(){ toast('Erreur — réessayez'); });
+  };
+  // Sauvegarde immédiate du lien du brief (propriété composite p_elements).
+  window.cliEditBriefLink = function(pid, taskId, value){
+    var t = cliTaskById(pid, taskId);
+    if (!t) return;
+    var cur = briefVal((t.properties||{}).p_elements); cur.link = value;
+    window.cliEditTaskProp(pid, taskId, 'p_elements', JSON.stringify(cur));
   };
   window.cliClearTaskProp = function(pid, taskId, propId){ window.cliSaveTaskProp(pid, taskId, propId, ''); renderShell(); };
   function cliTaskById(pid, taskId){ var pd=getPD(pid); return pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;}); }
