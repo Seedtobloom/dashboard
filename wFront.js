@@ -4639,7 +4639,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   var APT_OCRE_SOFT = '#f3ede6', APT_OCRE_MID = '#c8b29a', APT_OCRE_DEEP = '#412F21', APT_OCRE_INK = '#412F21';
 
   var aptCalMonth = null;     // Date du 1er du mois affiche
-  var aptUrgFilter = '';      // filtre urgence
+  var aptStatusFilter = '';   // filtre statut
   var aptSelTask = null;      // taskId ouvert dans le drawer
   var aptTab = 'cal';         // 'cal' | 'stats'
   var aptDragId = null;
@@ -4835,17 +4835,21 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '</div>' +
     '</div>';
 
-    // ── Filtre urgence ──
+    // ── Filtre statut ──
+    var APT_STATUS_ORDER = ['todo','in_progress','review','done'];
+    var APT_STATUS_DOT   = { todo:'#b08968', in_progress:'#7da2e0', review:'#c9952f', done:'#7faa6e' };
     var filterBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
-      [''].concat(ADMIN_PART_URG_ORDER).map(function(u){
-        var act = aptUrgFilter===u;
-        var dot = u ? '<span style="display:inline-flex;align-items:center;margin-right:5px;vertical-align:middle">'+aptUrgIcon(u,11)+'</span>' : '';
-        var lbl = u ? ADMIN_PART_URG_LABEL[u] : 'Toutes';
-        return '<button onclick="aptSetUrgFilter(\''+u+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#EDE9E1')+';background:'+(act?APT_OCRE_SOFT:'#fff')+';color:'+(act?APT_OCRE_INK:'#8a6f54')+'">'+dot+lbl+'</button>';
+      [''].concat(APT_STATUS_ORDER).map(function(s){
+        var act = aptStatusFilter===s;
+        var dot = s ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(APT_STATUS_DOT[s]||'#999')+';margin-right:5px;vertical-align:middle"></span>' : '';
+        var lbl = s ? ADMIN_PART_STATUS[s] : 'Tous';
+        return '<button onclick="aptSetStatusFilter(\''+s+'\')" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;padding:5px 13px;border-radius:999px;cursor:pointer;border:1.5px solid '+(act?APT_OCRE_DEEP:'#EDE9E1')+';background:'+(act?APT_OCRE_SOFT:'#fff')+';color:'+(act?APT_OCRE_INK:'#8a6f54')+'">'+dot+lbl+'</button>';
       }).join('') +
     '</div>';
 
-    var filtered = (aptUrgFilter ? tasks.filter(function(t){ return t.urgency===aptUrgFilter; }) : tasks).filter(function(t){ return t.status!=='done'; });
+    // Sans filtre : on masque les tâches faites. Avec un filtre statut : on
+    // affiche exactement ce statut (y compris « Fait » s'il est sélectionné).
+    var filtered = aptStatusFilter ? tasks.filter(function(t){ return t.status===aptStatusFilter; }) : tasks.filter(function(t){ return t.status!=='done'; });
 
     // ── Grille lun→ven (table unifiée bordurée) ──
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
@@ -5224,7 +5228,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
 
   // ── Window functions admin partenaire ─────────────────────────────────────
   window.aptSetTab = function(tab){ aptTab = tab; aptRender(); };
-  window.aptSetUrgFilter = function(u){ aptUrgFilter = (aptUrgFilter===u?'':u); aptRender(); };
+  window.aptSetStatusFilter = function(s){ aptStatusFilter = (aptStatusFilter===s?'':s); aptRender(); };
   window.aptCalNav = function(delta){ if(!aptCalMonth){aptCalMonth=new Date();aptCalMonth.setDate(1);} aptCalMonth.setMonth(aptCalMonth.getMonth()+delta); aptRender(); };
   window.aptCalToday = function(){ var n=new Date(); aptCalMonth=new Date(n.getFullYear(),n.getMonth(),1); aptRender(); };
   window.aptOpenDrawer = function(id){ aptSelTask = id; aptRender(); };
@@ -9089,7 +9093,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var filtered = tasks.filter(function(t){
       if (t.archived || t.status==='done') return false;
-      if (flt.urgency && t.urgency !== flt.urgency) return false;
+      if (flt.status && t.status !== flt.status) return false;
       return true;
     });
 
@@ -9112,13 +9116,19 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>'
       : '';
 
-    // Header: ← Mois → | AUJOURD'HUI | filtres | + AJOUTER
-    var urgFilters = ['','tranquille','normal','urgent','critique'].map(function(u){
-      var active = flt.urgency===u;
-      if (!u) {
-        return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#1C1205':'#e3ddd0')+';background:'+(active?'#1C1205':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">TOUTES</button>';
+    // Header: ← Mois → | AUJOURD'HUI | filtres statut | + AJOUTER
+    var CAL_STATUS_F = [
+      { k:'',            label:'TOUTES',    col:'#1C1205' },
+      { k:'todo',        label:'REÇUE',     col:'#b08968' },
+      { k:'in_progress', label:'EN COURS',  col:'#7da2e0' },
+      { k:'review',      label:'À VALIDER', col:'#c9952f' }
+    ];
+    var urgFilters = CAL_STATUS_F.map(function(s){
+      var active = (flt.status||'')===s.k;
+      if (!s.k) {
+        return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#1C1205':'#e3ddd0')+';background:'+(active?'#1C1205':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+s.label+'</button>';
       }
-      return '<button onclick="cliSetFilter(\''+pid+'\',\'urgency\',\''+u+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?PART_URGENCY[u]:'#e3ddd0')+';background:'+(active?PART_URGENCY[u]:'transparent')+';color:'+(active?PART_URGENCY_TX[u]:'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:'+PART_URGENCY[u]+';transform:rotate(45deg);border:1px solid rgba(0,0,0,0.12)"></span>'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
+      return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s.k+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?s.col:'#e3ddd0')+';background:'+(active?s.col:'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(active?'#fff':s.col)+'"></span>'+s.label+'</button>';
     }).join('');
 
     var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
