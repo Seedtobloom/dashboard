@@ -4988,8 +4988,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       countdown = diff===0 ? "Aujourd'hui" : diff>0 ? 'J-'+diff : '<span style="color:#9b3a2e">J+'+(-diff)+' (en retard)</span>';
     }
 
-    var urgSel = '<select onchange="aptPatch(\''+t.id+'\',{urgency:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;width:100%">' +
-      ADMIN_PART_URG_ORDER.map(function(u){ return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>'; }).join('') + '</select>';
     var statusSel = '<select onchange="aptPatch(\''+t.id+'\',{status:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;width:100%">' +
       Object.keys(ADMIN_PART_STATUS).map(function(s){ return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+ADMIN_PART_STATUS[s]+'</option>'; }).join('') + '</select>';
     var poleSel = '<select onchange="aptPatch(\''+t.id+'\',{pole:this.value})" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;width:100%">' +
@@ -5080,10 +5078,9 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '<textarea onchange="aptPatch(\''+t.id+'\',{content:this.value})" rows="3" placeholder="Détail, format, références, contraintes…" style="font-family:inherit;font-size:13px;color:#412F21;width:100%;border:1.5px solid #EDE9E1;border-radius:10px;padding:10px 12px;resize:vertical;background:#fdfaf6">'+esc(t.content||'')+'</textarea>' +
         '</div>' +
 
-        // Statut + Urgence
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Statut</div>'+statusSel+'</div>' +
-          '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Urgence</div>'+urgSel+'</div>' +
+        // Statut
+        '<div>' +
+          '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:#b09b80;margin-bottom:6px">Statut</div>'+statusSel +
         '</div>' +
 
         // Dates + Pôle
@@ -5365,7 +5362,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">' +
         '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de début</label><input type="date" id="_apt-startdate" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
         '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Date de fin</label><input type="date" id="_apt-date" value="'+esc(dateStr||aptTodayStr())+'" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"></div>' +
-        '<div><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Urgence</label><select id="_apt-urgency" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px">'+ADMIN_PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(u==='normal'?' selected':'')+'>'+ADMIN_PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#8a6f54;display:block;margin-bottom:4px">Catégorie</label><select id="_apt-pole" style="width:100%;font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid #EDE9E1;border-radius:8px"><option value="">—</option>'+ADMIN_PART_POLES.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('')+'</select></div>' +
       (function(){
@@ -5399,7 +5395,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var dueDate = document.getElementById('_apt-date').value;
     var startDate = (document.getElementById('_apt-startdate')||{}).value || '';
     var content = document.getElementById('_apt-content').value;
-    var urgency = document.getElementById('_apt-urgency').value;
     var pole = document.getElementById('_apt-pole').value;
     var p = window._currentProject;
     var schema = Array.isArray(p && p.propertySchema) ? p.propertySchema : [];
@@ -5408,7 +5403,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       var el = document.getElementById('_apt-prop-'+def.id);
       if (el && el.value !== '') properties[def.id] = el.value;
     });
-    var body = { title:title, content:content, urgency:urgency, dueDate:dueDate, status:'todo', pole:pole, properties:properties };
+    var body = { title:title, content:content, dueDate:dueDate, status:'todo', pole:pole, properties:properties };
     if (startDate) body.startDate = startDate;
     var res = await apiFetch('/api/projects/'+currentProjectId+'/tasks', { method:'POST', body: JSON.stringify(body) });
     if (!res.ok){ toast('Erreur', true); return; }
@@ -6900,15 +6895,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function cpBuildEditableIntro(pid, isPart) {
-    var defaultText = isPart
-      ? 'Bienvenue ' + (appData.clientName||'').split(' ')[0] + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.'
-      : 'Bienvenue ' + (appData.clientName||'').split(' ')[0] + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.';
+    var _firstName = (appData.clientName||'').split(' ')[0];
+    var defaultText = 'Bienvenue ' + _firstName + ' ✨\n\n'
+      + 'Considère cet espace comme notre bureau virtuel.\n\n'
+      + 'C\'est ici que tu peux déposer tes demandes, suivre leur traitement et retrouver tout ce dont tu as besoin pour notre collaboration.\n\n'
+      + 'Un seul endroit pour garder une vision claire de ce qui est en cours et avancer ensemble, sereinement. 💛';
     var stored = (appData && appData.home && appData.home.intro != null) ? appData.home.intro : null;
     var text = (stored != null) ? stored : defaultText;
     if (_isAdminEdit) {
-      return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;outline:none;border-radius:6px;cursor:text;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
+      return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;outline:none;border-radius:6px;cursor:text;white-space:pre-line;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
     }
-    return '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px">' + esc(text) + '</p>';
+    return '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;white-space:pre-line">' + esc(text) + '</p>';
   }
 
   function cpBuildHomeBlocks(pid) {
@@ -9630,14 +9627,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!cliCalFilter[pid]) cliCalFilter[pid] = { urgency:'', status:'' };
     var flt = cliCalFilter[pid];
     var filtered = tasks.filter(function(t){
-      if (flt.urgency && t.urgency !== flt.urgency) return false;
       if (flt.status && t.status !== flt.status) return false;
       return true;
     }).slice().sort(function(a,b){
       if (a.status==='done'&&b.status!=='done') return 1;
       if (b.status==='done'&&a.status!=='done') return -1;
-      var ua = {critique:0,urgent:1,normal:2,tranquille:3}[a.urgency]||2, ub = {critique:0,urgent:1,normal:2,tranquille:3}[b.urgency]||2;
-      if (ua!==ub) return ua-ub;
       return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
     });
 
@@ -9651,14 +9645,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var rows = filtered.map(function(t){
       var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
-      var urg = CLI_URGENCY[t.urgency]||'#eee', urgTx = CLI_URGENCY_TX[t.urgency]||'#333';
       var dl = t.dueDate ? fmtDate(t.dueDate) : '—';
       var overdue = t.dueDate && new Date(t.dueDate+'T23:59:59') < new Date() && t.status!=='done';
       return '<tr style="cursor:default;border-bottom:1px solid var(--border);'+(t.status==='done'?'opacity:0.55':'')+'\">' +
         '<td style="padding:13px 12px"><span style="display:inline-block;padding:4px 11px;border-radius:6px;font-size:12px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span></td>' +
         '<td style="padding:13px 12px;color:'+(overdue?'var(--red)':'var(--text)')+';font-size:13px;white-space:nowrap">'+dl+'</td>' +
         '<td style="padding:13px 12px;font-weight:500;color:var(--navy);font-size:14px;max-width:280px">'+esc(t.title)+(t.missionType?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(t.missionType)+'</div>':'')+'</td>' +
-        '<td style="padding:13px 12px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+urg+';margin-right:5px;vertical-align:middle"></span><span style="font-size:12px;color:var(--muted)">'+(CLI_URG_LABEL[t.urgency]||'—')+'</span></td>' +
         '<td style="padding:13px 12px"><span style="font-size:12px;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span></td>' +
         '<td style="padding:13px 12px">'+(t.livrableUrl?'<a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:12px;color:var(--sage);text-decoration:none">↗ Voir</a>':'<span style="color:var(--border)">—</span>')+'</td>' +
         '<td style="padding:13px 12px"><button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--muted)">'+(t.status==='done'?'↩':'✓')+'</button></td>' +
@@ -9679,13 +9671,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">État du brief</th>' +
           '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">Deadline</th>' +
           '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Mission</th>' +
-          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Priorité</th>' +
           '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Statut</th>' +
           '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Livrable</th>' +
           '<th></th>' +
         '</tr></thead>' +
         '<tbody>'+rows+'</tbody>' +
-      '</table></div>' : '<div class="cp-empty">Aucune mission'+((flt.urgency||flt.status)?' correspondant aux filtres':'')+'.</div>') +
+      '</table></div>' : '<div class="cp-empty">Aucune mission'+(flt.status?' correspondant aux filtres':'')+'.</div>') +
     '</div>';
   }
 
