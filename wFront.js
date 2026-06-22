@@ -1605,10 +1605,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     welcomeMessage: '',
     holidays: [],              // [{ from, to, message }]
     notifications: {
-      waiting:   { enabled: true,  recipients: '', message: '' },
-      message:   { enabled: true,  recipients: '', message: '' },
-      progress:  { enabled: false, recipients: '', message: '' },
-      delivered: { enabled: true,  recipients: '', message: '' },
+      // Alertes pour le studio (toi)
+      admin_new_task: { enabled: true, recipients: '' },
+      admin_comment:  { enabled: true, recipients: '' },
+      admin_message:  { enabled: true, recipients: '' },
+      // Alertes pour la cliente
+      client_action:  { enabled: true, recipients: '' },
+      client_done:    { enabled: true, recipients: '' },
+      client_reply:   { enabled: true, recipients: '' },
     },
   };
 
@@ -1673,16 +1677,23 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         }).join('') +
       '</div>';
 
-    // 3. Notifications e-mail
+    // 3. Notifications e-mail — chaque ligne = un type d'alerte réellement branché.
+    // [clé, titre, description, recevezVous(true=email pour toi / false=email pour la cliente)]
     var NOTIF = [
-      ['waiting','En attente d\'action','Quand une etape requiert une action du client'],
-      ['message','Nouveau message','Quand le client envoie un message'],
-      ['progress','Point d\'avancement','Recapitulatif periodique de l\'avancement'],
-      ['delivered','Projet termine','Quand un projet passe en livre'],
+      ['admin_new_task','Nouvelle tâche d\'une cliente','Une cliente crée une tâche → vous recevez un email', true],
+      ['admin_comment','Commentaire d\'une cliente','Une cliente commente une tâche → vous recevez un email', true],
+      ['admin_message','Message d\'une cliente','Une cliente vous écrit → vous recevez un email', true],
+      ['client_action','Tâche « À valider »','Vous passez une tâche en « À valider » → la cliente est prévenue', false],
+      ['client_done','Tâche terminée','Vous marquez une tâche terminée → la cliente est prévenue', false],
+      ['client_reply','Réponse à un message','Vous répondez à une cliente → elle est prévenue', false],
     ];
-    var notifs = NOTIF.map(function(n){
-      var cfg = (s.notifications && s.notifications[n[0]]) || { enabled:false, recipients:'', message:'' };
-      return '<div style="padding:16px 0;border-bottom:1px solid #efe9e0">' +
+    var notifs = '';
+    NOTIF.forEach(function(n, i){
+      if (i===0) notifs += '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin:4px 0 2px">Pour vous (studio)</div>';
+      if (i===3) notifs += '<div style="font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin:16px 0 2px">Pour vos clientes</div>';
+      var cfg = (s.notifications && s.notifications[n[0]]) || { enabled:true, recipients:'' };
+      var forAdmin = n[3];
+      notifs += '<div style="padding:14px 0;border-bottom:1px solid #efe9e0">' +
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">' +
           '<div><div style="font-family:\'Inter Tight\',sans-serif;font-size:14px;font-weight:500;color:#412F21">'+n[1]+'</div>' +
             '<div style="font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#8a6f54;margin-top:2px">'+n[2]+'</div></div>' +
@@ -1692,13 +1703,15 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '<span id="set-notif-'+n[0]+'-knob" style="position:absolute;top:3px;left:'+(cfg.enabled?'21px':'3px')+';width:18px;height:18px;border-radius:50%;background:#fff;transition:left 160ms"></span>' +
           '</label>' +
         '</div>' +
-        '<div id="set-notif-'+n[0]+'-fields" style="display:'+(cfg.enabled?'grid':'none')+';grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">' +
-          '<div><label style="'+lbl+'">Destinataires</label><input id="set-notif-'+n[0]+'-recipients" type="text" value="'+esc(cfg.recipients||'')+'" placeholder="email1, email2" style="'+inp+'"></div>' +
-          '<div><label style="'+lbl+'">Message personnalise</label><input id="set-notif-'+n[0]+'-message" type="text" value="'+esc(cfg.message||'')+'" placeholder="(facultatif)" style="'+inp+'"></div>' +
-        '</div>' +
+        (forAdmin
+          ? '<div id="set-notif-'+n[0]+'-fields" style="display:'+(cfg.enabled?'block':'none')+';margin-top:10px">' +
+              '<label style="'+lbl+'">M\'envoyer à (laisser vide = adresse studio par défaut)</label>' +
+              '<input id="set-notif-'+n[0]+'-recipients" type="text" value="'+esc(cfg.recipients||'')+'" placeholder="ex: '+esc(s.notificationEmail||'vous@exemple.fr')+'" style="'+inp+'">' +
+            '</div>'
+          : '') +
       '</div>';
-    }).join('');
-    notifs += '<p style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#a89a86;margin-top:14px">L\'envoi reel des e-mails depend de la configuration Resend cote serveur.</p>';
+    });
+    notifs += '<p style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#a89a86;margin-top:14px">Les e-mails « Pour vos clientes » partent vers l\'adresse de la cliente du projet concerné. L\'envoi réel dépend de la configuration Resend.</p>';
 
     // 4. Conges / absences
     var holidays = (s.holidays.length ? s.holidays.map(function(h, i){
@@ -1870,11 +1883,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     s.studioSignature = (document.getElementById('set-studioSignature')||{}).value || '';
     s.notificationEmail = (document.getElementById('set-notificationEmail')||{}).value || '';
     s.welcomeMessage = (document.getElementById('set-welcomeMessage')||{}).value || '';
-    ['waiting','message','progress','delivered'].forEach(function(k){
+    s.notifications = {};
+    ['admin_new_task','admin_comment','admin_message','client_action','client_done','client_reply'].forEach(function(k){
       var en = document.getElementById('set-notif-'+k+'-enabled');
       var rc = document.getElementById('set-notif-'+k+'-recipients');
-      var ms = document.getElementById('set-notif-'+k+'-message');
-      s.notifications[k] = { enabled: en ? en.checked : false, recipients: rc ? rc.value : '', message: ms ? ms.value : '' };
+      s.notifications[k] = { enabled: en ? en.checked : true, recipients: rc ? rc.value : '' };
     });
     s.holidays = s.holidays.map(function(h, i){
       var f = document.getElementById('set-hol-from-'+i), t = document.getElementById('set-hol-to-'+i), m = document.getElementById('set-hol-msg-'+i);
@@ -1900,7 +1913,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var fields = document.getElementById('set-notif-'+k+'-fields');
     var track = document.getElementById('set-notif-'+k+'-track');
     var knob = document.getElementById('set-notif-'+k+'-knob');
-    if (en && fields) fields.style.display = en.checked ? 'grid' : 'none';
+    if (en && fields) fields.style.display = en.checked ? 'block' : 'none';
     if (track) track.style.background = en.checked ? '#412F21' : '#d4c4b0';
     if (knob) knob.style.left = en.checked ? '21px' : '3px';
   };

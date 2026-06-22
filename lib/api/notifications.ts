@@ -17,6 +17,21 @@ async function getAdminNotifyEmail(env: Env): Promise<string> {
   return env.ADMIN_EMAIL ?? 'dash@seedtobloom.fr';
 }
 
+// Réglages de notifications (panneau studio). Chaque clé = un type d'alerte.
+async function getNotifSettings(env: Env): Promise<any> {
+  try { return (await env.BLOOM_KV.get('studio_settings', 'json')) || {}; } catch { return {}; }
+}
+function notifCfg(settings: any, key: string): { enabled: boolean; recipients: string } {
+  const n = settings && settings.notifications && settings.notifications[key];
+  return {
+    enabled: n && typeof n.enabled === 'boolean' ? n.enabled : true, // activé par défaut
+    recipients: (n && typeof n.recipients === 'string') ? n.recipients : '',
+  };
+}
+function splitRecipients(s: string): string[] {
+  return (s || '').split(',').map((x) => x.trim()).filter(Boolean);
+}
+
 async function canSendEmail(env: Env, projectId: string, template: string): Promise<boolean> {
   const logs = await getEmailLogs(env, projectId);
   const recent = logs.filter(
@@ -31,15 +46,28 @@ async function canSendEmail(env: Env, projectId: string, template: string): Prom
 async function sendEmail(
   env: Env,
   projectId: string,
-  to: string,
+  to: string | string[],
   subject: string,
   html: string,
-  template: string
+  template: string,
+  notifKey?: string
 ): Promise<void> {
+  // Si un type d'alerte est fourni : on respecte l'interrupteur du panneau réglages
+  // et on ajoute les destinataires supplémentaires éventuels.
+  let toArr = Array.isArray(to) ? to.slice() : [to];
+  if (notifKey) {
+    const settings = await getNotifSettings(env);
+    const cfg = notifCfg(settings, notifKey);
+    if (!cfg.enabled) return; // désactivé dans les réglages → on n'envoie rien
+    splitRecipients(cfg.recipients).forEach((r) => { if (!toArr.includes(r)) toArr.push(r); });
+  }
+  toArr = toArr.filter(Boolean);
+  if (!toArr.length) return;
+
   const log: EmailLog = {
     id: generateId(),
     projectId,
-    to,
+    to: toArr.join(', '),
     subject,
     template,
     sentAt: new Date().toISOString(),
@@ -63,7 +91,7 @@ async function sendEmail(
       },
       body: JSON.stringify({
         from: env.RESEND_FROM_EMAIL,
-        to,
+        to: toArr,
         subject,
         html,
       }),
@@ -141,7 +169,8 @@ export async function sendMessageNotification(env: Env, project: Project, _messa
     project.clientEmail,
     `Nouveau message de Cindy — ${project.projectTitle}`,
     emailWrapper('Cindy vous a répondu', body, portalUrl),
-    template
+    template,
+    'client_reply'
   );
 }
 
@@ -168,7 +197,8 @@ export async function sendAdminMessageNotification(env: Env, project: Project, _
     adminEmail,
     `Nouveau message de ${project.clientName} — ${project.projectTitle}`,
     emailWrapper('Nouveau message client', body, portalUrl),
-    template
+    template,
+    'admin_message'
   );
 }
 
@@ -206,7 +236,8 @@ export async function sendAdminTicketNotification(env: Env, project: Project, ti
     adminEmail,
     `Nouvelle demande de ${project.clientName} — ${ticket.title}`,
     emailWrapper('Nouvelle demande client', body, portalUrl),
-    template
+    template,
+    'admin_new_task'
   );
 }
 
@@ -235,7 +266,8 @@ export async function sendClientThreadAdminNotification(
     adminEmail,
     `Nouveau message de ${clientName || clientEmail}`,
     emailWrapper('Nouveau message client', body, portalUrl),
-    template
+    template,
+    'admin_message'
   );
 }
 
@@ -262,7 +294,8 @@ export async function sendClientThreadClientNotification(
     clientEmail,
     `Nouveau message de Cindy`,
     emailWrapper('Cindy vous a répondu', body, portalUrl),
-    template
+    template,
+    'client_reply'
   );
 }
 
@@ -295,7 +328,8 @@ export async function sendStepNotification(
       project.clientEmail,
       `Action requise — ${project.projectTitle}`,
       emailWrapper('Votre action est requise', body, portalUrl),
-      template
+      template,
+      'client_action'
     );
   }
 
@@ -316,7 +350,8 @@ export async function sendStepNotification(
       project.clientEmail,
       `Étape validée — ${project.projectTitle}`,
       emailWrapper('Une étape vient d\'être validée ✓', body, portalUrl),
-      template
+      template,
+      'client_done'
     );
   }
 }
@@ -339,7 +374,79 @@ export async function sendTaskDoneNotification(env: Env, project: Project, taskT
     project.clientEmail,
     `Tâche terminée : ${taskTitle}`,
     emailWrapper('Une tâche vient d\'être terminée ✓', body, portalUrl),
-    template
+    template,
+    'client_done'
+  );
+}
+
+// Notifie la CLIENTE qu'une tâche attend une action/validation de sa part.
+export async function sendTaskReviewNotification(env: Env, project: Project, taskTitle: string): Promise<void> {
+  if (!project.clientEmail) return;
+  const template = `task_review_${Date.now()}`;
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/p/`;
+  const body = `
+    <p>Bonjour ${project.clientName},</p>
+    <p>La tâche <strong>${taskTitle}</strong> de votre espace <em>${project.projectTitle}</em> attend une action de votre part (validation / retour).</p>
+    <p>Connectez-vous à votre espace pour la regarder.</p>
+    <p>Cindy</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    project.clientEmail,
+    `À valider : ${taskTitle}`,
+    emailWrapper('Une tâche attend votre validation', body, portalUrl),
+    template,
+    'client_action'
+  );
+}
+
+// Notifie le STUDIO (toi) qu'une cliente a créé une nouvelle tâche.
+export async function sendAdminTaskCreatedNotification(env: Env, project: Project, taskTitle: string): Promise<void> {
+  const adminEmail = await getAdminNotifyEmail(env);
+  if (!adminEmail) return;
+  const template = `admin_task_created_${Date.now()}`;
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/admin#project-${project.id}`;
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${project.clientName}</strong> vient de créer une nouvelle tâche sur <em>${project.projectTitle}</em> :</p>
+    <p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px"><strong>${taskTitle}</strong></p>
+    <p>Connectez-vous à votre tableau de bord pour la regarder.</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    adminEmail,
+    `Nouvelle tâche de ${project.clientName} — ${taskTitle}`,
+    emailWrapper('Une tâche est à regarder', body, portalUrl),
+    template,
+    'admin_new_task'
+  );
+}
+
+// Notifie le STUDIO (toi) qu'une cliente a commenté une tâche.
+export async function sendAdminTaskCommentNotification(env: Env, project: Project, taskTitle: string, text: string): Promise<void> {
+  const adminEmail = await getAdminNotifyEmail(env);
+  if (!adminEmail) return;
+  const template = `admin_task_comment_${Date.now()}`;
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const portalUrl = `${baseUrl}/admin#project-${project.id}`;
+  const body = `
+    <p>Bonjour Cindy,</p>
+    <p><strong>${project.clientName}</strong> vient de commenter la tâche <strong>${taskTitle}</strong> sur <em>${project.projectTitle}</em> :</p>
+    <p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px;color:#555">${text}</p>
+    <p>Connectez-vous à votre tableau de bord pour répondre.</p>
+  `;
+  await sendEmail(
+    env,
+    project.id,
+    adminEmail,
+    `Commentaire de ${project.clientName} — ${taskTitle}`,
+    emailWrapper('Un commentaire est à regarder', body, portalUrl),
+    template,
+    'admin_comment'
   );
 }
 
