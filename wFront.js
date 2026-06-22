@@ -4660,8 +4660,6 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     { id:'p_brief', name:'État du brief', type:'Liste', options:['Pas commencé','Brief en cours','Brief prêt','En projet','À retravailler'] },
     { id:'p_typemission', name:'Type de mission', type:'Liste', options:['Devis/prospection','Site internet','Communication','Identité','Autre'] },
     { id:'p_elements', name:'Élément du brief', type:'Texte', options:[] },
-    { id:'p_brieflink', name:'Lien du brief', type:'Lien', options:[] },
-    { id:'p_brieffile', name:'Fichier du brief', type:'Fichier', options:[] },
     { id:'p_mois', name:'Mois', type:'Liste', options:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] },
     { id:'p_realisation', name:'Date de réalisation', type:'Date', options:[] },
   ];
@@ -4871,11 +4869,22 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!val) return null;
     try { var o = typeof val==='string' ? JSON.parse(val) : val; return (o && o.key) ? o : null; } catch(e){ return null; }
   }
+  // Decode la valeur composite de "Élément du brief" -> {text, link, files:[]}
+  function briefVal(v){
+    var o = { text:'', link:'', files:[] };
+    if (!v) return o;
+    if (typeof v === 'object'){ o.text=v.text||''; o.link=v.link||''; o.files=Array.isArray(v.files)?v.files:[]; return o; }
+    try { var p=JSON.parse(v); if (p && typeof p==='object' && (('text' in p)||('link' in p)||('files' in p))){ o.text=p.text||''; o.link=p.link||''; o.files=Array.isArray(p.files)?p.files:[]; return o; } } catch(e){}
+    o.text = String(v); return o;
+  }
   // Texte court affiche dans les pastilles pour chaque type de propriete
   function propChipText(def, val){
+    if (def && def.id==='p_elements'){ var b=briefVal(val); var parts=[]; if(b.text)parts.push(b.text.length>22?b.text.slice(0,22)+'…':b.text); if(b.link)parts.push('🔗'); if(b.files&&b.files.length)parts.push('📎'+b.files.length); return parts.join(' '); }
     if (def && def.type==='Fichier'){ var fi = propFileInfo(val); return fi ? ('📎 '+fi.name) : ''; }
     if (def && def.type==='Lien'){ var s = String(val); return '🔗 '+s.replace(/^https?:\/\//,'').split('/')[0]; }
-    return String(val);
+    var str = String(val);
+    if (def && def.type==='Date'){ var m=str.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[3]+'/'+m[2]+'/'+m[1]; }
+    return str;
   }
 
   function aptPillHtml(t) {
@@ -4889,11 +4898,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var proj = window._currentProject;
     var schema = Array.isArray(proj && proj.propertySchema) ? proj.propertySchema : [];
     var props = t.properties || {};
-    var propChips = schema.map(function(def){
-      var v = props[def.id]; if (v==null || v==='') return '';
-      var txt = propChipText(def, v); if (!txt) return '';
-      return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(txt)+'</span>';
-    }).filter(Boolean).join(' ');
+    var setDefs = schema.filter(function(def){ var v=props[def.id]; return v!=null && v!=='' && propChipText(def,v); });
+    var propChips = setDefs.slice(0,3).map(function(def){
+      return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(propChipText(def,props[def.id]))+'</span>';
+    }).join(' ');
+    if (setDefs.length>3) propChips += ' <span style="font-size:9px;color:#a89a86">+'+(setDefs.length-3)+'</span>';
     var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
     var spanBar = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
@@ -4939,7 +4948,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var propsHtml = schema.map(function(p){
       var val = props[p.id]!=null ? props[p.id] : '';
       var field;
-      if (p.type==='Liste') {
+      if (p.id==='p_elements') {
+        var bv = briefVal(val);
+        var bvFiles = bv.files.map(function(f){
+          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:#f6f0e8;border-radius:8px;font-size:12px;color:'+APT_OCRE_INK+'">'+icon('file',13)+'<a href="/api/projects/'+currentProjectId+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:'+APT_OCRE_INK+';text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="aptRemoveBriefFile(\''+t.id+'\',\''+p.id+'\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#9b3a2e;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+        }).join('');
+        field = '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+          '<textarea onchange="aptSetBriefField(\''+t.id+'\',\''+p.id+'\',\'text\',this.value)" rows="2" placeholder="Note, détail du brief…" style="font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #EDE9E1;border-radius:8px;resize:vertical">'+esc(bv.text)+'</textarea>' +
+          '<input type="url" value="'+esc(bv.link)+'" onchange="aptSetBriefField(\''+t.id+'\',\''+p.id+'\',\'link\',this.value)" placeholder="Lien (https://…)" style="font-family:inherit;font-size:12px;padding:6px 9px;border:1.5px solid #EDE9E1;border-radius:8px">' +
+          (bv.link ? '<a href="'+esc(bv.link)+'" target="_blank" rel="noopener" style="font-size:11px;color:'+APT_OCRE_INK+';text-decoration:none">↗ Ouvrir le lien</a>' : '') +
+          bvFiles +
+          '<button onclick="aptAddBriefFile(\''+t.id+'\',\''+p.id+'\')" style="font-size:12px;padding:6px 12px;border:1.5px solid #EDE9E1;border-radius:8px;background:#fdfaf6;color:#412F21;cursor:pointer;display:inline-flex;align-items:center;gap:6px;align-self:flex-start">'+icon('upload',13)+' Ajouter un fichier</button>' +
+        '</div>';
+      } else if (p.type==='Liste') {
         field = '<select onchange="aptSetProp(\''+t.id+'\',\''+p.id+'\',this.value)" style="font-family:inherit;font-size:12px;padding:5px 8px;border:1.5px solid #EDE9E1;border-radius:8px;flex:1">' +
           '<option value="">—</option>' + (p.options||[]).map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') + '</select>';
       } else if (p.type==='Lien') {
@@ -4959,7 +4980,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }
       return '<div style="margin-bottom:8px">' +
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
-          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#412F21;flex:1">'+esc(p.name)+' <span style="color:#b09b80;font-weight:400">('+p.type+')</span></span>' +
+          '<span style="font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:600;color:#412F21;flex:1">'+esc(p.name)+(p.id==='p_elements'?'':' <span style="color:#b09b80;font-weight:400">('+p.type+')</span>')+'</span>' +
           '<button onclick="aptEditPropDef(\''+p.id+'\')" title="Modifier" style="background:none;border:none;cursor:pointer;color:#8a6f54;padding:2px">'+icon('pencil',12)+'</button>' +
           '<button onclick="aptDeletePropDef(\''+p.id+'\')" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#9b3a2e;padding:2px">'+icon('trash',12)+'</button>' +
         '</div>' +
@@ -5207,6 +5228,33 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     window.aptPatch(id, { properties: props });
   };
   window.aptClearProp = function(id, propId){ window.aptSetProp(id, propId, ''); };
+  function aptTaskById(id){ var p=window._currentProject; return p && p.tasks && p.tasks.find(function(x){return x.id===id;}); }
+  window.aptSetBriefField = function(id, propId, fieldName, value){
+    var t = aptTaskById(id); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+    cur[fieldName] = value; window.aptSetProp(id, propId, JSON.stringify(cur));
+  };
+  window.aptRemoveBriefFile = function(id, propId, key){
+    var t = aptTaskById(id); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+    cur.files = (cur.files||[]).filter(function(f){ return f.key!==key; });
+    window.aptSetProp(id, propId, JSON.stringify(cur));
+  };
+  window.aptAddBriefFile = function(id, propId){
+    var input = document.createElement('input'); input.type = 'file';
+    input.onchange = async function(){
+      var file = input.files[0]; if (!file) return;
+      var fd = new FormData(); fd.append('file', file); fd.append('category', 'reference');
+      toast('Upload en cours…');
+      var res = await fetch('/api/projects/'+currentProjectId+'/files', { method:'POST', credentials:'same-origin', body:fd });
+      if (!res.ok){ toast('Erreur upload', true); return; }
+      var fileData = await res.json();
+      var p = window._currentProject; if (p){ if(!Array.isArray(p.files)) p.files=[]; p.files.push(fileData); }
+      var t = aptTaskById(id); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+      cur.files = (cur.files||[]).concat([{ key:fileData.key, name:fileData.name||file.name }]);
+      window.aptSetProp(id, propId, JSON.stringify(cur));
+      toast('Fichier ajouté ✓');
+    };
+    input.click();
+  };
   window.aptSetPropFile = function(id, propId){
     var input = document.createElement('input'); input.type = 'file';
     input.onchange = async function(){
@@ -7854,7 +7902,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('') +
     '</div>' : '';
 
-    var helpCard = '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
+    var helpCard = '<div class="cp-card" style="margin-top:22px"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
       '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Votre conversation avec Cindy couvre tout votre espace.</div>' +
       '<button class="cp-btn" onclick="cpOpenMessages()" type="button">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +
     '</div>';
@@ -9057,17 +9105,17 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
         var propSchema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         var propVals = t.properties || {};
-        var propChipsHtml = propSchema.map(function(def){
-          var v = propVals[def.id]; if (v==null || v==='') return '';
-          var txt = propChipText(def, v); if (!txt) return '';
-          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#412F21);white-space:nowrap">'+esc(def.name)+': '+esc(txt)+'</span>';
-        }).filter(Boolean).join(' ');
+        var setDefsC = propSchema.filter(function(def){ if (cliHiddenProp(def.id)) return false; var v=propVals[def.id]; return v!=null && v!=='' && propChipText(def,v); });
+        var propChipsHtml = setDefsC.slice(0,3).map(function(def){
+          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#412F21);white-space:nowrap">'+esc(def.name)+': '+esc(propChipText(def,propVals[def.id]))+'</span>';
+        }).join(' ');
+        if (setDefsC.length>3) propChipsHtml += ' <span style="font-size:9px;color:#a89a86">+'+(setDefsC.length-3)+'</span>';
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
-            '<span style="font-size:12px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
@@ -9112,12 +9160,25 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!val) return null;
     try { var o = typeof val==='string' ? JSON.parse(val) : val; return (o && o.key) ? o : null; } catch(e){ return null; }
   }
+  // Decode la valeur composite de "Élément du brief" -> {text, link, files:[]}
+  function briefVal(v){
+    var o = { text:'', link:'', files:[] };
+    if (!v) return o;
+    if (typeof v === 'object'){ o.text=v.text||''; o.link=v.link||''; o.files=Array.isArray(v.files)?v.files:[]; return o; }
+    try { var p=JSON.parse(v); if (p && typeof p==='object' && (('text' in p)||('link' in p)||('files' in p))){ o.text=p.text||''; o.link=p.link||''; o.files=Array.isArray(p.files)?p.files:[]; return o; } } catch(e){}
+    o.text = String(v); return o;
+  }
   // Texte court affiche dans les pastilles pour chaque type de propriete
   function propChipText(def, val){
+    if (def && def.id==='p_elements'){ var b=briefVal(val); var parts=[]; if(b.text)parts.push(b.text.length>22?b.text.slice(0,22)+'…':b.text); if(b.link)parts.push('🔗'); if(b.files&&b.files.length)parts.push('📎'+b.files.length); return parts.join(' '); }
     if (def && def.type==='Fichier'){ var fi = propFileInfo(val); return fi ? ('📎 '+fi.name) : ''; }
     if (def && def.type==='Lien'){ var s = String(val); return '🔗 '+s.replace(/^https?:\/\//,'').split('/')[0]; }
-    return String(val);
+    var str = String(val);
+    if (def && def.type==='Date'){ var m=str.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[3]+'/'+m[2]+'/'+m[1]; }
+    return str;
   }
+  // Propriétés masquées côté cliente (gérées uniquement par le studio)
+  function cliHiddenProp(id){ return id==='p_realisation'; }
 
   // ── Drawer tâche partenaire ───────────────────────────────────────────────
   function buildPartTaskDrawer(pid, tasks, files, project) {
@@ -9189,14 +9250,26 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       sep +
       // Proprietes personnalisees — editables par le client
       (function(){
-        var schema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
+        var schema = (Array.isArray(project && project.propertySchema) ? project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
         if (!schema.length) return '';
         var props = t.properties || {};
         var inpStyle = 'width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:7px;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box';
         var rows = schema.map(function(def){
           var val = props[def.id] != null ? props[def.id] : '';
           var field;
-          if (def.type === 'Liste' && Array.isArray(def.options) && def.options.length) {
+          if (def.id === 'p_elements') {
+            var bvc = briefVal(val);
+            var bvcFiles = bvc.files.map(function(f){
+              return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+            }).join('');
+            field = '<div style="display:flex;flex-direction:column;gap:6px">' +
+              '<textarea rows="2" placeholder="Note, détail du brief…" onchange="cliSetBriefField(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',\'text\',this.value)" style="'+inpStyle+';resize:vertical">'+esc(bvc.text)+'</textarea>' +
+              '<input type="url" value="'+esc(bvc.link)+'" placeholder="Lien (https://…)" onchange="cliSetBriefField(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',\'link\',this.value)" style="'+inpStyle+'">' +
+              (bvc.link ? '<a href="'+esc(bvc.link)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--terre,#412F21);text-decoration:none">↗ Ouvrir le lien</a>' : '') +
+              bvcFiles +
+              '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;align-self:flex-start">⬆ Ajouter un fichier</button>' +
+            '</div>';
+          } else if (def.type === 'Liste' && Array.isArray(def.options) && def.options.length) {
             field = '<select onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+';cursor:pointer">' +
               '<option value="">—</option>' +
               def.options.map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') +
@@ -9382,6 +9455,39 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
   };
   window.cliClearTaskProp = function(pid, taskId, propId){ window.cliSaveTaskProp(pid, taskId, propId, ''); renderShell(); };
+  function cliTaskById(pid, taskId){ var pd=getPD(pid); return pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;}); }
+  window.cliSetBriefField = function(pid, taskId, propId, fieldName, value){
+    var t = cliTaskById(pid, taskId); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+    cur[fieldName] = value; window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur)); renderShell();
+  };
+  window.cliRemoveBriefFile = function(pid, taskId, propId, key){
+    var t = cliTaskById(pid, taskId); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+    cur.files = (cur.files||[]).filter(function(f){ return f.key!==key; });
+    window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur)); renderShell();
+  };
+  window.cliAddBriefFile = function(pid, taskId, propId){
+    var input = document.createElement('input'); input.type = 'file';
+    input.onchange = function(){
+      var file = input.files[0]; if (!file) return;
+      var fd = new FormData(); fd.append('file', file);
+      var storedCode = sessionStorage.getItem('_sc') || '';
+      var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
+      toast('Envoi en cours…');
+      fetch(API_BASE+'/files', { method:'POST', headers:headers, body:fd })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+        .then(function(fileData){
+          if (!fileData || !fileData.key) throw new Error();
+          var pd = getPD(pid);
+          if (pd){ if(!Array.isArray(pd.project.files)) pd.project.files=[]; pd.project.files.push(fileData); }
+          var t = cliTaskById(pid, taskId); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+          cur.files = (cur.files||[]).concat([{ key:fileData.key, name:fileData.name||file.name }]);
+          window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur));
+          toast('Fichier ajouté ✓'); renderShell();
+        })
+        .catch(function(){ toast('Erreur lors du depot', true); });
+    };
+    input.click();
+  };
   window.cliSetTaskPropFile = function(pid, taskId, propId){
     var input = document.createElement('input'); input.type = 'file';
     input.onchange = function(){
@@ -10021,18 +10127,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la tâche *</label>' +
           '<input id="_ptask-title" type="text" placeholder="Ex : Visuel Instagram – collection été" style="'+S+'"></div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Type de besoin</label>' +
-          '<input id="_ptask-pole" type="text" placeholder="Ex : Réseaux sociaux, Print, Web…" style="'+S+'"></div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Urgence</label>' +
-          '<div style="display:flex;gap:6px;flex-wrap:wrap">'+urgPills+'</div>' +
-          '<input type="hidden" id="_ptask-urgency" value="normal"></div>' +
+        '<input type="hidden" id="_ptask-urgency" value="normal">' +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée)</label>' +
           '<input id="_ptask-startDate" type="hidden">' +
           '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
         '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Détails & contexte</label>' +
           '<textarea id="_ptask-content" rows="3" style="'+S+';resize:vertical" placeholder="Format, ton, références, liens, contraintes…"></textarea></div>' +
         (function(){
-          var schema = Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : [];
+          var schema = (Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
           if (!schema.length) return '';
           return '<div style="padding-top:12px;border-top:1px solid #f0ebe3;margin-bottom:14px">' +
             '<div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#8090a8);margin-bottom:10px">Proprietes</div>' +
@@ -10042,6 +10144,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
               if (def.type==='Liste') field = '<select id="'+fid+'" style="'+S+'"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
               else if (def.type==='Nombre') field = '<input type="number" id="'+fid+'" style="'+S+'">';
               else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="'+S+'">';
+              else if (def.id==='p_elements') field = '<textarea id="'+fid+'" rows="2" style="'+S+';resize:vertical" placeholder="Note du brief (vous pourrez ajouter lien et fichiers ensuite)"></textarea>';
               else field = '<input type="text" id="'+fid+'" style="'+S+'">';
               return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
             }).join('') + '</div>';
