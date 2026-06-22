@@ -1614,7 +1614,50 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       client_done:    { enabled: true, recipients: '' },
       client_reply:   { enabled: true, recipients: '' },
     },
+    emailTemplates: {}, // surcharges de texte par e-mail (voir EMAIL_TPL_DEFS)
   };
+
+  // Modèles d'e-mails éditables. Les textes par défaut DOIVENT rester
+  // synchronisés avec DEFAULT_EMAIL_TEMPLATES (lib/api/notifications.ts).
+  // who: 'Vous' = email reçu par le studio / 'Cliente' = email reçu par la cliente.
+  var EMAIL_TPL_DEFS = [
+    { key:'admin_task_created', who:'Vous', label:'Nouvelle tâche créée par une cliente',
+      vars:['{signature}','{clientName}','{projectTitle}','{taskTitle}','{details}'],
+      subject:'Nouvelle tâche de {clientName} — {taskTitle}', title:'Une tâche est à regarder',
+      body:'Bonjour {signature},\n{clientName} vient de créer une nouvelle tâche sur {projectTitle} :\n{details}\nConnectez-vous à votre tableau de bord pour la regarder.' },
+    { key:'admin_task_comment', who:'Vous', label:'Commentaire d\'une cliente sur une tâche',
+      vars:['{signature}','{clientName}','{projectTitle}','{taskTitle}','{commentText}','{details}'],
+      subject:'Commentaire de {clientName} — {taskTitle}', title:'Un commentaire est à regarder',
+      body:'Bonjour {signature},\n{clientName} vient de commenter la tâche {taskTitle} sur {projectTitle} :\n{details}\nConnectez-vous à votre tableau de bord pour répondre.' },
+    { key:'admin_message', who:'Vous', label:'Nouveau message d\'une cliente',
+      vars:['{signature}','{clientName}'],
+      subject:'Nouveau message de {clientName}', title:'Nouveau message client',
+      body:'Bonjour {signature},\n{clientName} vient de vous envoyer un nouveau message.\nConnectez-vous à votre tableau de bord pour y répondre.' },
+    { key:'admin_ticket', who:'Vous', label:'Nouvelle demande / ticket d\'une cliente',
+      vars:['{signature}','{clientName}','{projectTitle}','{taskTitle}','{details}'],
+      subject:'Nouvelle demande de {clientName} — {taskTitle}', title:'Nouvelle demande client',
+      body:'Bonjour {signature},\n{clientName} vient de soumettre une nouvelle demande sur {projectTitle} :\n{details}\nConnectez-vous à votre tableau de bord pour la traiter.' },
+    { key:'client_reply', who:'Cliente', label:'Vous répondez à un message',
+      vars:['{clientName}','{signature}'],
+      subject:'Nouveau message de {signature}', title:'{signature} vous a répondu',
+      body:'Bonjour {clientName},\nJ\'ai répondu à votre message. Rendez-vous sur votre espace pour lire ma réponse.\nÀ très vite,\n{signature}' },
+    { key:'client_task_done', who:'Cliente', label:'Une tâche est marquée terminée',
+      vars:['{clientName}','{projectTitle}','{taskTitle}','{signature}'],
+      subject:'Tâche terminée : {taskTitle}', title:'Une tâche vient d\'être terminée ✓',
+      body:'Bonjour {clientName},\nLa tâche {taskTitle} de votre espace {projectTitle} vient d\'être terminée. ✓\nConsultez votre espace pour voir le détail et les éventuels livrables.\n{signature}' },
+    { key:'client_task_review', who:'Cliente', label:'Une tâche passe en « À valider »',
+      vars:['{clientName}','{projectTitle}','{taskTitle}','{signature}'],
+      subject:'À valider : {taskTitle}', title:'Une tâche attend votre validation',
+      body:'Bonjour {clientName},\nLa tâche {taskTitle} de votre espace {projectTitle} attend une action de votre part (validation / retour).\nConnectez-vous à votre espace pour la regarder.\n{signature}' },
+    { key:'client_step_waiting', who:'Cliente', label:'Une étape requiert l\'action de la cliente',
+      vars:['{clientName}','{projectTitle}','{stepTitle}','{details}','{signature}'],
+      subject:'Action requise — {projectTitle}', title:'Votre action est requise',
+      body:'Bonjour {clientName},\nL\'étape {stepTitle} de votre projet {projectTitle} requiert votre action.\n{details}\nConnectez-vous à votre espace pour plus de détails.\n{signature}' },
+    { key:'client_step_done', who:'Cliente', label:'Une étape est validée',
+      vars:['{clientName}','{projectTitle}','{stepTitle}','{signature}'],
+      subject:'Étape validée — {projectTitle}', title:'Une étape vient d\'être validée ✓',
+      body:'Bonjour {clientName},\nL\'étape {stepTitle} de votre projet {projectTitle} vient d\'être validée. ✓\nLe projet avance bien ! Consultez votre espace pour voir l\'état général.\n{signature}' },
+  ];
 
   async function showSettings() {
     const res = await apiFetch('/api/settings');
@@ -1622,6 +1665,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var loaded = await res.json().catch(function(){ return {}; });
     studioSettings = Object.assign({}, SETTINGS_DEFAULTS, loaded);
     studioSettings.notifications = Object.assign({}, SETTINGS_DEFAULTS.notifications, loaded.notifications || {});
+    studioSettings.emailTemplates = (loaded.emailTemplates && typeof loaded.emailTemplates === 'object') ? loaded.emailTemplates : {};
     if (!Array.isArray(studioSettings.holidays)) studioSettings.holidays = [];
     _taskPropSchema = Array.isArray(studioSettings.taskPropertySchema) ? studioSettings.taskPropertySchema : [];
     const allProjs = await apiFetch('/api/projects').then(function(r){ return r.ok ? r.json() : []; });
@@ -1746,6 +1790,34 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var taskPropsCard = (schemaRows || '<p style="font-family:\'Inter Tight\',sans-serif;font-size:12.5px;color:#a89a86;margin:0 0 12px">Aucune propriete personnalisee.</p>') +
       '<button onclick="addTaskProp()" class="btn btn--outline btn--sm">+ Ajouter une propriete</button>';
 
+    // 7. Textes des e-mails (objet + titre + message par alerte)
+    var chip = 'background:#f4efe7;border-radius:5px;padding:1px 6px;font-family:monospace;font-size:10.5px;color:#7a6248;white-space:nowrap';
+    var emailTpls = EMAIL_TPL_DEFS.map(function(d){
+      var ov = (s.emailTemplates && s.emailTemplates[d.key]) || {};
+      var subjV  = (typeof ov.subject === 'string' && ov.subject) ? ov.subject : d.subject;
+      var titleV = (typeof ov.title === 'string' && ov.title) ? ov.title : d.title;
+      var bodyV  = (typeof ov.body === 'string' && ov.body) ? ov.body : d.body;
+      var isAdmin = d.who === 'Vous';
+      var badge = '<span style="flex-shrink:0;font-family:\'Inter Tight\',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' +
+        (isAdmin ? '#412F21;color:#F2E5C2' : '#E4D1FE;color:#412F21') + '">' + (isAdmin ? 'Pour vous' : 'Pour la cliente') + '</span>';
+      var chips = d.vars.map(function(v){ return '<code style="' + chip + '">' + esc(v) + '</code>'; }).join(' ');
+      return '<details style="border:1px solid #EDE9E1;border-radius:11px;margin-bottom:10px;overflow:hidden">' +
+        '<summary style="cursor:pointer;padding:13px 16px;display:flex;align-items:center;gap:10px;font-family:\'Inter Tight\',sans-serif;font-size:13.5px;color:#412F21">' +
+          badge + '<span style="font-weight:500">' + esc(d.label) + '</span>' +
+        '</summary>' +
+        '<div style="padding:6px 16px 18px;border-top:1px solid #f0ebe3">' +
+          '<label style="' + lbl + '">Objet de l\'e-mail</label>' +
+          '<input id="set-tpl-' + d.key + '-subject" type="text" value="' + esc(subjV) + '" style="' + inp + '">' +
+          '<label style="' + lbl + ';margin-top:12px">Titre (gros texte en haut de l\'e-mail)</label>' +
+          '<input id="set-tpl-' + d.key + '-title" type="text" value="' + esc(titleV) + '" style="' + inp + '">' +
+          '<label style="' + lbl + ';margin-top:12px">Message</label>' +
+          '<textarea id="set-tpl-' + d.key + '-body" rows="5" style="' + inp + ';resize:vertical;line-height:1.6">' + esc(bodyV) + '</textarea>' +
+          '<div style="margin-top:8px;font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#a89a86;line-height:1.9">Variables : ' + chips + '</div>' +
+        '</div>' +
+      '</details>';
+    }).join('');
+    emailTpls += '<p style="font-family:\'Inter Tight\',sans-serif;font-size:11px;color:#a89a86;margin-top:8px;line-height:1.6">Une ligne = un paragraphe. <code style="' + chip + '">{details}</code> insère l\'encart automatique (titre de tâche, commentaire, etc.). Laissez un champ vide pour revenir au texte par défaut.</p>';
+
     document.getElementById('app').innerHTML =
       '<div class="app">' +
         buildSidebarHtml('settings', allProjs, {}, _globalMsgUnread) +
@@ -1758,6 +1830,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             '</div>' +
             settingsCard('Identite du studio', 'Nom et signature utilises dans les e-mails et le portail.', identite) +
             settingsCard('Notifications e-mail', 'Quatre declencheurs, chacun avec ses destinataires et un message optionnel.', notifs) +
+            settingsCard('Textes des e-mails', 'Personnalisez l\'objet, le titre et le message de chaque alerte automatique.', emailTpls) +
             settingsCard('Conges et absences', 'Affiche un bandeau d\'information en haut du portail client pendant ces periodes.', holidays) +
             settingsCard('Message d\'accueil par defaut', 'Pre-rempli sur la page d\'accueil des nouveaux espaces.', welcome) +
             settingsCard('Proprietes des taches', 'Ajoutez des champs personnalises (Notion-style) affichables sur chaque tache du calendrier.', taskPropsCard) +
@@ -1782,6 +1855,19 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     s.holidays = s.holidays.map(function(h, i){
       var f = document.getElementById('set-hol-from-'+i), t = document.getElementById('set-hol-to-'+i), m = document.getElementById('set-hol-msg-'+i);
       return { from: f?f.value:'', to: t?t.value:'', message: m?m.value:'' };
+    });
+    s.emailTemplates = {};
+    EMAIL_TPL_DEFS.forEach(function(d){
+      var su = document.getElementById('set-tpl-'+d.key+'-subject');
+      var ti = document.getElementById('set-tpl-'+d.key+'-title');
+      var bo = document.getElementById('set-tpl-'+d.key+'-body');
+      if (su || ti || bo) {
+        s.emailTemplates[d.key] = {
+          subject: su ? su.value : '',
+          title: ti ? ti.value : '',
+          body: bo ? bo.value : '',
+        };
+      }
     });
     s.taskPropertySchema = (s.taskPropertySchema||[]).map(function(prop, i){
       var nm = document.getElementById('set-tprop-name-'+i);
@@ -1830,6 +1916,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         var data = (saved && saved.notifications) ? saved : payload;
         studioSettings = Object.assign({}, SETTINGS_DEFAULTS, data);
         studioSettings.notifications = Object.assign({}, SETTINGS_DEFAULTS.notifications, data.notifications || {});
+        studioSettings.emailTemplates = (data.emailTemplates && typeof data.emailTemplates === 'object') ? data.emailTemplates : {};
         if (!Array.isArray(studioSettings.holidays)) studioSettings.holidays = [];
         _taskPropSchema = Array.isArray(data.taskPropertySchema) ? data.taskPropertySchema : [];
         toast('Reglages enregistres ✓');
