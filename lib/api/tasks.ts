@@ -76,9 +76,9 @@ export async function handleTasks(request: Request, env: Env, url: URL): Promise
     project.tasks[idx] = updated;
     await saveProject(env, project);
     if (justDone) {
-      sendTaskDoneNotification(env, project, updated.title).catch(() => {});
+      await sendTaskDoneNotification(env, project, updated.title).catch(() => {});
     } else if (justReview) {
-      sendTaskReviewNotification(env, project, updated.title).catch(() => {});
+      await sendTaskReviewNotification(env, project, updated.title).catch(() => {});
     }
     return jsonResponse(updated);
   }

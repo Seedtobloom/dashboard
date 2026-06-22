@@ -56,7 +56,7 @@ export async function handleSteps(request: Request, env: Env, url: URL): Promise
 
     // Trigger email notifications on status change
     if (body.status && body.status !== oldStatus) {
-      sendStepNotification(env, project, updated, oldStatus).catch(() => {});
+      await sendStepNotification(env, project, updated, oldStatus).catch(() => {});
     }
 
     return jsonResponse(updated);

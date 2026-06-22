@@ -93,7 +93,7 @@ async function clientTaskOp(
     if (!Array.isArray(project.tasks[idx].comments)) project.tasks[idx].comments = [];
     project.tasks[idx].comments.push(comment);
     await saveProject(env, project);
-    sendAdminTaskCommentNotification(env, project, project.tasks[idx].title, comment.text).catch(() => {});
+    await sendAdminTaskCommentNotification(env, project, project.tasks[idx].title, comment.text).catch(() => {});
     return jsonResponse(comment, 201);
   }
   if (!body.title?.trim()) return errorResponse('title is required');
@@ -115,7 +115,7 @@ async function clientTaskOp(
   if (body.properties && typeof body.properties === 'object') task.properties = body.properties;
   project.tasks.push(task);
   await saveProject(env, project);
-  sendAdminTaskCreatedNotification(env, project, task.title).catch(() => {});
+  await sendAdminTaskCreatedNotification(env, project, task.title).catch(() => {});
   return jsonResponse(task, 201);
 }
 
@@ -162,7 +162,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       };
       project.tickets.unshift(ticket);
       await saveProject(env, project);
-      sendAdminTicketNotification(env, project, ticket).catch(() => {});
+      await sendAdminTicketNotification(env, project, ticket).catch(() => {});
       return jsonResponse(ticket, 201);
     }
 
@@ -359,7 +359,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
         readByAdmin: false,
       };
       await addClientMessage(env, message);
-      if (refProjectId) sendClientThreadAdminNotification(env, threadEmail, clientName, refProjectId).catch(() => {});
+      if (refProjectId) await sendClientThreadAdminNotification(env, threadEmail, clientName, refProjectId).catch(() => {});
       return jsonResponse({ success: true, message }, 201);
     }
     return errorResponse('Method not allowed', 405);
@@ -383,7 +383,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       readByAdmin: false,
     };
     await addMessage(env, message);
-    sendAdminMessageNotification(env, project, message).catch(() => {});
+    await sendAdminMessageNotification(env, project, message).catch(() => {});
     return jsonResponse({ success: true, message }, 201);
   }
 
