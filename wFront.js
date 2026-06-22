@@ -7469,9 +7469,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var mainNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label">Votre espace</div>' +
       (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
-      (portal && appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Interventions','cpOpenInterventions()','') : '') +
-      (portal && appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('project','tasks','Mon espace','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
-      (portal && appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
+      (appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Interventions','cpOpenInterventions()','') : '') +
+      (appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('project','tasks','Mon espace','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
+      (appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
 
     // Echanges group
