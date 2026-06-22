@@ -2758,6 +2758,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button>' : '') +
+        (!t.revoked ? '<button class="btn btn--sage btn--sm" onclick="window.open(\'' + esc(tUrl) + '?edit=1\',\'_blank\')" title="Ouvrir l\'espace en mode édition pour modifier les textes">✎ Éditer</button>' : '') +
         (!t.revoked && !t.lastUsedAt ? '<button class="btn btn--sage btn--sm" onclick="navigator.clipboard.writeText(\'' + esc(tUrl) + '\').then(function(){toast(\'Lien copié — à renvoyer à la cliente ✓\')})" title="Copier le lien pour le renvoyer">↩ Renvoyer</button>' : '') +
         (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
       '</div>';
@@ -6723,6 +6724,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   // ── Page builder ─────────────────────────────────────────────────────────────
   var _isAdminEdit = window.location.search.includes('edit=1');
+  // Entrée admin via ?edit=1 → on garde la trace pour afficher le bouton flottant
+  // « Mode édition » (jamais visible pour un client, qui arrive sans ?edit=1).
+  var _adminCtx = _isAdminEdit;
   var _canEdit = false;
   var _pageDraft = null;
   var _dndSrcSec = null;
@@ -6825,18 +6829,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   // État du forfait mensuel partenaire : report plafonné (2 h/mois par défaut)
   // + dépassement facturé (60 €/h par défaut). Surchargeable via p.rolloverCapHours / p.overageRate.
+  // Le report ne s'applique QUE si la prestation tournait le mois précédent
+  // (au moins une activité enregistrée). Au tout début de la prestation — ou un
+  // mois sans aucune consommation — il n'y a pas de report.
   function cpForfaitState(p) {
     var base = parseFloat(p.monthlyHours) || 0;
     var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
     var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
     function usedIn(ym){ return (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===ym ? s+(t.timeSpentMinutes||0)/60 : s; }, 0); }
+    function activeIn(ym){ return (p.tasks||[]).some(function(t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===ym; }); }
     var now = new Date();
     var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
     var pdt = new Date(now.getFullYear(), now.getMonth()-1, 1);
     var prev = pdt.getFullYear()+'-'+String(pdt.getMonth()+1).padStart(2,'0');
     var used = usedIn(cur);
     var usedPrev = usedIn(prev);
-    var carryIn = base ? Math.max(0, Math.min(cap, base - usedPrev)) : 0;
+    // Report seulement si le mois précédent était un vrai mois de prestation.
+    var carryIn = (base && activeIn(prev)) ? Math.max(0, Math.min(cap, base - usedPrev)) : 0;
     var available = base + carryIn;
     var remaining = available - used;
     return { base:base, cap:cap, rate:rate, carryIn:carryIn, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
@@ -11107,6 +11116,31 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .catch(function(){ toast('Sauvegarde impossible, réessayez.'); });
   }
 
+  // Bouton flottant « Mode édition » — visible uniquement en contexte admin
+  // (ouverture via ?edit=1). Permet d'activer/quitter l'édition des textes
+  // (accueil, titres, blocs…) sans toucher à l'URL.
+  window.cpToggleEditMode = function() {
+    _isAdminEdit = !_isAdminEdit;
+    _canEdit = _isAdminEdit;
+    renderShell();
+    cpRefreshEditToggle();
+  };
+  function cpRefreshEditToggle() {
+    if (!_adminCtx) return;
+    var btn = document.getElementById('_cp-edit-toggle');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = '_cp-edit-toggle';
+      btn.onclick = window.cpToggleEditMode;
+      document.body.appendChild(btn);
+    }
+    var on = _isAdminEdit;
+    btn.textContent = on ? "✓ Quitter l'édition" : '✎ Mode édition';
+    btn.style.cssText = 'position:fixed;bottom:22px;right:22px;z-index:99999;padding:11px 18px;border-radius:999px;border:1px solid ' +
+      (on ? '#412F21' : '#E4D1FE') + ';background:' + (on ? '#412F21' : '#fff') + ';color:' + (on ? '#F2E5C2' : '#412F21') +
+      ";font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.02em;cursor:pointer;box-shadow:0 4px 18px rgba(92,70,51,.18)";
+  }
+
   // Bannière d'accueil multi-offres (appData.home.banner)
   window.cpHomeBannerPhoto = function(input) {
     var file = input && input.files && input.files[0];
@@ -11867,6 +11901,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         } else {
           renderApp(data);
         }
+        cpRefreshEditToggle();
       })
       .catch(showError);
   }
