@@ -9152,16 +9152,23 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var isActive = cliSelTask[pid]===t.id;
         var timeMin = t.timeSpentMinutes||0;
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
-        var propSchema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         var propVals = t.properties || {};
-        var BRIEF_COL_C = { 'Pas commencé':'#ece6da', 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'En projet':'#dbe7f5', 'À retravailler':'#f7ddcc' };
-        var setDefsC = propSchema.filter(function(def){ if (cliHiddenProp(def.id)) return false; var v=propVals[def.id]; return v!=null && v!=='' && propChipText(def,v); });
-        var propChipsHtml = setDefsC.slice(0,3).map(function(def){
-          var txt = propChipText(def, propVals[def.id]);
-          if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL_C[propVals[def.id]]||'#ece6da')+';border-radius:999px;padding:3px 10px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
-          return '<span style="display:inline-flex;gap:5px;align-items:center;background:rgba(0,0,0,0.05);border-radius:6px;padding:3px 9px;font-family:\'Inter Tight\',sans-serif;white-space:nowrap"><span style="color:var(--muted,#a8987f);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">'+esc(def.name)+'</span><span style="color:var(--terre,#412F21);font-size:10.5px;font-weight:500">'+esc(txt)+'</span></span>';
-        }).join('');
-        if (setDefsC.length>3) propChipsHtml += '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#a89a86;align-self:center">+'+(setDefsC.length-3)+'</span>';
+        // Sélections éditables en un clic, directement sur la carte (façon Notion).
+        var STATUT_OPTS = ['Brief en cours', 'Brief terminé'];
+        var PROG_OPTS = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
+        var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };
+        var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };
+        function inlineSel(propId, val, opts, colorMap, ph){
+          var bg = (val && colorMap[val]) || '#efe8db';
+          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:none;border-radius:999px;padding:3px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
+          s += '<option value=""'+(!val?' selected':'')+'>'+ph+'…</option>';
+          opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
+          s += '</select>';
+          return s;
+        }
+        var propChipsHtml =
+          inlineSel('p_clientbrief', propVals.p_clientbrief||'', STATUT_OPTS, STATUT_COL, 'Statut') +
+          inlineSel('p_brief', propVals.p_brief||'', PROG_OPTS, PROG_COL, 'Avancement');
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
