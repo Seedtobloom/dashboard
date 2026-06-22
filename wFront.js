@@ -2774,12 +2774,13 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
             (function(){
               var SH_ACCENT = { glycine:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, brume:{soft:'#f7efff',mid:'#E4D1FE',ink:'#6c4ea4'}, terre:{soft:'#ece2d0',mid:'#c8b29a',ink:'#412F21'} };
               var sht = SH_ACCENT[TYPE_TONES_SHEET[project.type]] || SH_ACCENT.glycine;
-              var allSteps = project.steps || [];
-              var dn = allSteps.filter(function(s){ return s.status==='done'; }).length;
-              var pct = allSteps.length ? Math.round(dn/allSteps.length*100) : 0;
-              var unread = messages.filter(function(m){ return !m.readByAdmin && m.author==='client'; }).length;
               var isMaint = project.type === 'maintenance';
               var isPartenaire = project.type === 'partenaire';
+              // L'espace partenaire stocke son travail dans tasks, la maintenance dans tickets, sinon steps.
+              var allSteps = isPartenaire ? (project.tasks || []) : isMaint ? (project.tickets || []) : (project.steps || []);
+              var dn = allSteps.filter(function(s){ return s.status==='done' || s.status==='closed'; }).length;
+              var pct = allSteps.length ? Math.round(dn/allSteps.length*100) : 0;
+              var unread = messages.filter(function(m){ return !m.readByAdmin && m.author==='client'; }).length;
               var trackLabel = isPartenaire ? 'taches' : isMaint ? 'interventions' : 'etapes';
               var tiles = [
                 { v: pct+'%', k:'Avancement', icon:'tasks' },
@@ -4805,11 +4806,14 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var proj = window._currentProject;
     var schema = Array.isArray(proj && proj.propertySchema) ? proj.propertySchema : [];
     var props = t.properties || {};
+    var BRIEF_COL = { 'Pas commencé':'#ece6da', 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'En projet':'#dbe7f5', 'À retravailler':'#f7ddcc' };
     var setDefs = schema.filter(function(def){ var v=props[def.id]; return v!=null && v!=='' && propChipText(def,v); });
     var propChips = setDefs.slice(0,3).map(function(def){
-      return '<span style="display:inline-block;background:#ede8e0;border-radius:4px;padding:1px 5px;font-size:9px;color:#8a6f54;white-space:nowrap">'+esc(def.name)+': '+esc(propChipText(def,props[def.id]))+'</span>';
-    }).join(' ');
-    if (setDefs.length>3) propChips += ' <span style="font-size:9px;color:#a89a86">+'+(setDefs.length-3)+'</span>';
+      var txt = propChipText(def, props[def.id]);
+      if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL[props[def.id]]||'#ece6da')+';border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
+      return '<span style="display:inline-flex;gap:4px;align-items:baseline;background:#f3ede2;border-radius:6px;padding:2px 8px;font-family:\'Inter Tight\',sans-serif;font-size:10px;white-space:nowrap"><span style="color:#a8987f;font-size:8.5px;text-transform:uppercase;letter-spacing:0.03em">'+esc(def.name)+'</span><span style="color:#5c4530;font-weight:500">'+esc(txt)+'</span></span>';
+    }).join('');
+    if (setDefs.length>3) propChips += '<span style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#a89a86;align-self:center">+'+(setDefs.length-3)+'</span>';
     var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
     var spanBar = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
     return '<div draggable="true" ondragstart="aptDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();aptOpenDrawer(\''+t.id+'\')" '+
@@ -9013,11 +9017,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
         var propSchema = Array.isArray(project && project.propertySchema) ? project.propertySchema : [];
         var propVals = t.properties || {};
+        var BRIEF_COL_C = { 'Pas commencé':'#ece6da', 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'En projet':'#dbe7f5', 'À retravailler':'#f7ddcc' };
         var setDefsC = propSchema.filter(function(def){ if (cliHiddenProp(def.id)) return false; var v=propVals[def.id]; return v!=null && v!=='' && propChipText(def,v); });
         var propChipsHtml = setDefsC.slice(0,3).map(function(def){
-          return '<span style="display:inline-block;background:rgba(0,0,0,0.07);border-radius:3px;padding:1px 4px;font-size:9px;color:var(--terre,#412F21);white-space:nowrap">'+esc(def.name)+': '+esc(propChipText(def,propVals[def.id]))+'</span>';
-        }).join(' ');
-        if (setDefsC.length>3) propChipsHtml += ' <span style="font-size:9px;color:#a89a86">+'+(setDefsC.length-3)+'</span>';
+          var txt = propChipText(def, propVals[def.id]);
+          if (def.id==='p_brief') return '<span style="display:inline-block;background:'+(BRIEF_COL_C[propVals[def.id]]||'#ece6da')+';border-radius:999px;padding:2px 9px;font-size:10px;font-weight:600;color:#5c4530;white-space:nowrap">'+esc(txt)+'</span>';
+          return '<span style="display:inline-flex;gap:4px;align-items:baseline;background:rgba(0,0,0,0.05);border-radius:6px;padding:2px 8px;font-size:10px;white-space:nowrap"><span style="color:var(--muted,#a8987f);font-size:8.5px;text-transform:uppercase;letter-spacing:0.03em">'+esc(def.name)+'</span><span style="color:var(--terre,#412F21);font-weight:500">'+esc(txt)+'</span></span>';
+        }).join('');
+        if (setDefsC.length>3) propChipsHtml += '<span style="font-size:9px;color:#a89a86;align-self:center">+'+(setDefsC.length-3)+'</span>';
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
@@ -9495,14 +9502,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var urg = CLI_URGENCY[t.urgency]||'#eee', urgTx = CLI_URGENCY_TX[t.urgency]||'#333';
       var dl = t.dueDate ? fmtDate(t.dueDate) : '—';
       var overdue = t.dueDate && new Date(t.dueDate+'T23:59:59') < new Date() && t.status!=='done';
-      return '<tr style="cursor:default;'+(t.status==='done'?'opacity:0.55':'')+'\">' +
-        '<td><span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span></td>' +
-        '<td style="color:'+(overdue?'var(--red)':'var(--text)')+';font-size:13px">'+dl+'</td>' +
-        '<td style="font-weight:500;color:var(--navy);font-size:14px;max-width:280px">'+esc(t.title)+(t.missionType?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(t.missionType)+'</div>':'')+'</td>' +
-        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+urg+';margin-right:5px;vertical-align:middle"></span><span style="font-size:12px;color:var(--muted)">'+(CLI_URG_LABEL[t.urgency]||'—')+'</span></td>' +
-        '<td><span style="font-size:12px;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span></td>' +
-        '<td>'+(t.livrableUrl?'<a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:12px;color:var(--sage);text-decoration:none">↗ Voir</a>':'<span style="color:var(--border)">—</span>')+'</td>' +
-        '<td><button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--muted)">'+(t.status==='done'?'↩':'✓')+'</button></td>' +
+      return '<tr style="cursor:default;border-bottom:1px solid var(--border);'+(t.status==='done'?'opacity:0.55':'')+'\">' +
+        '<td style="padding:13px 12px"><span style="display:inline-block;padding:4px 11px;border-radius:6px;font-size:12px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span></td>' +
+        '<td style="padding:13px 12px;color:'+(overdue?'var(--red)':'var(--text)')+';font-size:13px;white-space:nowrap">'+dl+'</td>' +
+        '<td style="padding:13px 12px;font-weight:500;color:var(--navy);font-size:14px;max-width:280px">'+esc(t.title)+(t.missionType?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(t.missionType)+'</div>':'')+'</td>' +
+        '<td style="padding:13px 12px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+urg+';margin-right:5px;vertical-align:middle"></span><span style="font-size:12px;color:var(--muted)">'+(CLI_URG_LABEL[t.urgency]||'—')+'</span></td>' +
+        '<td style="padding:13px 12px"><span style="font-size:12px;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span></td>' +
+        '<td style="padding:13px 12px">'+(t.livrableUrl?'<a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:12px;color:var(--sage);text-decoration:none">↗ Voir</a>':'<span style="color:var(--border)">—</span>')+'</td>' +
+        '<td style="padding:13px 12px"><button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--muted)">'+(t.status==='done'?'↩':'✓')+'</button></td>' +
       '</tr>';
     }).join('');
 
@@ -9517,12 +9524,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       filtersHtml +
       (rows ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:\'Inter Tight\',sans-serif">' +
         '<thead><tr style="border-bottom:2px solid var(--border)">' +
-          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">État du brief</th>' +
-          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">Deadline</th>' +
-          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Mission</th>' +
-          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Priorité</th>' +
-          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Statut</th>' +
-          '<th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Livrable</th>' +
+          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">État du brief</th>' +
+          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap">Deadline</th>' +
+          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Mission</th>' +
+          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Priorité</th>' +
+          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Statut</th>' +
+          '<th style="text-align:left;padding:12px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Livrable</th>' +
           '<th></th>' +
         '</tr></thead>' +
         '<tbody>'+rows+'</tbody>' +
@@ -9595,7 +9602,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="margin-bottom:16px">' +
         '<label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Notes libres</label>' +
-        '<textarea id="cli-notes-'+pid+'" style="width:100%;min-height:140px;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;resize:vertical;color:var(--navy);background:var(--surface);line-height:1.6" placeholder="Vos notes, idées, points de suivi…">'+esc(notes)+'</textarea>' +
+        '<textarea id="cli-notes-'+pid+'" style="width:100%;min-height:140px;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;resize:vertical;color:var(--navy);background:#fff;line-height:1.6" placeholder="Vos notes, idées, points de suivi…">'+esc(notes)+'</textarea>' +
         '<div style="margin-top:8px;display:flex;justify-content:flex-end">' +
           '<button class="cp-btn cp-btn--sage" onclick="cliSaveNotes(\''+pid+'\')">Enregistrer les notes</button>' +
         '</div>' +
@@ -9623,11 +9630,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var forfait = project.monthlyHours || 0;
     var overrides = project.forfaitOverrides || {};
 
-    var defBtn = '<button class="cp-btn cp-btn--dark" onclick="cliForfaitDefine(\''+pid+'\')" style="margin-bottom:16px">' +
-      (forfait ? '✏ Modifier le forfait ('+forfait+'h/mois)' : '⚙ Définir le forfait mensuel') + '</button>';
+    // Le forfait est défini par le studio (admin), pas depuis le portail.
+    var defBtn = '';
 
     if (!forfait) return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2></div>' +
-      defBtn + '</div>';
+      '<p style="color:var(--muted);font-size:14px;padding:8px 0">Le forfait sera défini par le studio.</p></div>';
 
     // Grouper les tâches par mois (basé sur dueDate ou completedAt)
     var byMonth = {};
@@ -9677,10 +9684,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var soldeCol = r.solde > 0 ? 'var(--sage)' : r.solde < 0 ? 'var(--red)' : 'var(--muted)';
       var regulCell = '<div style="display:flex;align-items:center;gap:6px;justify-content:center">' +
         '<span style="color:'+(r.regulM1>0?'var(--sage)':r.regulM1<0?'var(--red)':'var(--muted)')+'">' +
-          fmt(r.regulM1) + (r.hasOverride ? ' ✎' : '') +
+          fmt(r.regulM1) +
         '</span>' +
-        '<button title="Saisir un report manuel" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;border-radius:4px" ' +
-          'onclick="cliRegulOverride(\''+pid+'\',\''+r.mk+'\','+r.regulM1+')">'+cpIcon('pencil',13)+'</button>' +
       '</div>';
       return '<tr style="'+(isNow?'background:rgba(28,18,5,0.03);font-weight:600':'')+'\">' +
         '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
