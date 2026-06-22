@@ -2874,7 +2874,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
                 '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
                   '<label title="Changer la photo de bannière" style="'+obtn+'">' + icon('image',13,'color:#412F21') + ' Photo<input type="file" accept="image/*" style="display:none" onchange="applyBannerFile(this)"></label>' +
                   '<button onclick="addProjectForClient()" style="'+obtn+'">+ Nouveau projet</button>' +
-                  (project.clientEmail ? '<button onclick="editClientSpace()" style="'+obtn+'">Voir le portail</button>' : '') +
+                  (project.clientEmail ? '<button onclick="editClientSpace()" style="'+obtn+'" title="Ouvrir l\'espace client en mode édition (modifier les textes, l\'accueil…)">✎ Modifier le portail</button>' : '') +
                   '<button onclick="openBannerEditor()" style="'+pbtn+'">Personnaliser →</button>' +
                 '</div>' +
               '</div>' +
