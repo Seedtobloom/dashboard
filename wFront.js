@@ -3989,8 +3989,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     if (!res.ok) { toast('Erreur lors de la création du lien', true); return; }
     const data = await res.json();
     if (res.ok) {
-      _lastTokenUrl = data.url;
-      document.getElementById('token-url').textContent = data.url;
+      _lastTokenUrl = window.location.origin + '/p/' + data.token;
+      document.getElementById('token-url').textContent = _lastTokenUrl;
       document.getElementById('token-result').style.display = '';
       document.getElementById('btn-gen-token').style.display = 'none';
     } else toast('Erreur', true);
@@ -6488,9 +6488,10 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email, clientEmail: email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
-      await navigator.clipboard.writeText(data.url).catch(function() {});
+      var spaceUrl = window.location.origin + '/p/' + data.token;
+      await navigator.clipboard.writeText(spaceUrl).catch(function() {});
       toast('Lien espace client copié ✓');
-      showTokenModal(data.url);
+      showTokenModal(spaceUrl);
       loadProject(currentProjectId);
     }, { okLabel: 'Créer le lien' }); return;
   };
