@@ -5294,7 +5294,8 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
     var p = window._currentProject;
     showPrompt('Forfait mensuel', 'Nombre d\'heures incluses par mois (ex: 20)', String((p&&p.monthlyHours)||''), async function(v){
       var h = parseFloat(v); if (isNaN(h)||h<0){ toast('Valeur invalide', true); return; }
-      var res = await apiFetch('/api/projects/'+currentProjectId+'/forfait', { method:'PATCH', body: JSON.stringify({ monthlyHours: h, projectId: currentProjectId }) });
+      var body = Object.assign({}, p, { monthlyHours: h });
+      var res = await apiFetch('/api/projects/'+currentProjectId, { method:'PUT', body: JSON.stringify(body) });
       if (res.ok){ p.monthlyHours = h; aptRender(); } else toast('Erreur', true);
     }, { type:'number', okLabel:'Enregistrer', placeholder:'ex: 20' });
   };
