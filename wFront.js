@@ -9282,88 +9282,55 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input value="'+esc(t.title)+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{title:this.value})" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
       // Statut + Urgence
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
-          '<select onchange="cliToggleTask(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+statusOpts+'</select></div>' +
+          '<select id="_pt-status-'+t.id+'" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+statusOpts+'</select></div>' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Urgence</div>' +
-          '<select onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{urgency:this.value})" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
+          '<select id="_pt-urg-'+t.id+'" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+PART_URG_ORDER.map(function(u){return '<option value="'+u+'"'+(t.urgency===u?' selected':'')+'>'+PART_URG_LABEL[u]+'</option>';}).join('')+'</select></div>' +
       '</div>' +
-      // Dates + Pole
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">' +
+      // Dates
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Début</div>' +
-          '<input type="date" value="'+esc((t.startDate||'').slice(0,10))+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{startDate:this.value||null})" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Fin'+daysLabel+'</div>' +
-          '<input type="date" value="'+esc(dueDateStr)+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{dueDate:this.value})" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Pôle</div>' +
-          '<select onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pole:this.value})" style="width:100%;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>'+PART_POLES.map(function(pp){return '<option value="'+esc(pp)+'"'+(t.pole===pp?' selected':'')+'>'+esc(pp)+'</option>';}).join('')+'</select></div>' +
+          '<input id="_pt-start-'+t.id+'" type="date" value="'+esc((t.startDate||'').slice(0,10))+'" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
+          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
       '</div>' +
       sep +
-      // Proprietes personnalisees — editables par le client
+      // Informations : état du brief + type de mission + pièces jointes
       (function(){
-        var schema = (Array.isArray(project && project.propertySchema) ? project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
-        if (!schema.length) return '';
+        var schema = (Array.isArray(project && project.propertySchema) ? project.propertySchema : []);
+        function defOf(id){ return schema.find(function(d){ return d.id===id; }); }
         var props = t.properties || {};
-        var inpStyle = 'width:100%;font-size:13px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:7px;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box';
-        var rows = schema.map(function(def){
-          var val = props[def.id] != null ? props[def.id] : '';
-          var field;
-          if (def.id === 'p_elements') {
-            var bvc = briefVal(val);
-            var bvcFiles = bvc.files.map(function(f){
-              return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
-            }).join('');
-            field = '<div style="display:flex;flex-direction:column;gap:6px">' +
-              '<textarea rows="2" placeholder="Note, détail du brief…" onchange="cliSetBriefField(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',\'text\',this.value)" style="'+inpStyle+';resize:vertical">'+esc(bvc.text)+'</textarea>' +
-              '<input type="url" value="'+esc(bvc.link)+'" placeholder="Lien (https://…)" onchange="cliSetBriefField(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',\'link\',this.value)" style="'+inpStyle+'">' +
-              (bvc.link ? '<a href="'+esc(bvc.link)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--terre,#412F21);text-decoration:none">↗ Ouvrir le lien</a>' : '') +
-              bvcFiles +
-              '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;align-self:flex-start">⬆ Ajouter un fichier</button>' +
-            '</div>';
-          } else if (def.type === 'Liste' && Array.isArray(def.options) && def.options.length) {
-            field = '<select onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+';cursor:pointer">' +
-              '<option value="">—</option>' +
-              def.options.map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') +
-            '</select>';
-          } else if (def.type === 'Nombre') {
-            field = '<input type="number" value="'+esc(String(val))+'" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
-          } else if (def.type === 'Date') {
-            field = '<input type="date" value="'+esc(String(val).slice(0,10))+'" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
-          } else if (def.type === 'Lien') {
-            field = '<input type="url" value="'+esc(String(val))+'" placeholder="https://…" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value);renderShell()" style="'+inpStyle+'">' +
-              (val ? '<a href="'+esc(String(val))+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--terre,#412F21);text-decoration:none;display:inline-block;margin-top:4px">↗ Ouvrir le lien</a>' : '');
-          } else if (def.type === 'Fichier') {
-            var cfi = propFileInfo(val);
-            field = '<div style="display:flex;flex-direction:column;gap:6px">' +
-              (cfi ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(cfi.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(cfi.name)+'</a><button onclick="cliClearTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>' : '') +
-              '<button onclick="cliSetTaskPropFile(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;align-self:flex-start">⬆ '+(cfi?'Remplacer le fichier':'Déposer un fichier')+'</button>' +
-            '</div>';
-          } else {
-            field = '<input type="text" value="'+esc(String(val))+'" placeholder="—" onchange="cliSaveTaskProp(\''+pid+'\',\''+t.id+'\',\''+esc(def.id)+'\',this.value)" style="'+inpStyle+'">';
-          }
-          return '<div style="margin-bottom:10px">' +
-            '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">'+esc(def.name)+'</div>' +
-            field +
-          '</div>';
+        var inpStyle = 'width:100%;font-size:13px;padding:6px 9px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box';
+        var lblS = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px';
+        function selectFor(id, slot){
+          var d = defOf(id); if (!d || !Array.isArray(d.options) || !d.options.length) return '';
+          var val = props[id]!=null ? props[id] : '';
+          return '<div style="margin-bottom:12px"><div style="'+lblS+'">'+esc(d.name)+'</div>' +
+            '<select id="_pt-'+slot+'-'+t.id+'" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
+            d.options.map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') +
+            '</select></div>';
+        }
+        var bvc = briefVal(props.p_elements);
+        var filesHtml = bvc.files.map(function(f){
+          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
         }).join('');
-        return '<div style="margin-bottom:14px">' +
-          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
-          rows +
+        var attach = '<div><div style="'+lblS+'">Lien &amp; fichiers</div>' +
+          '<input id="_pt-link-'+t.id+'" type="url" value="'+esc(bvc.link)+'" placeholder="Lien (https://…)" style="'+inpStyle+';margin-bottom:6px">' +
+          (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
+          '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>' +
+        '</div>';
+        return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
+          selectFor('p_brief','brief') + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
       })() +
-      // Contenu
-      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>' +
-      '<textarea onchange="cliSaveTaskContent(\''+pid+'\',\''+t.id+'\',this.value)" style="width:100%;min-height:80px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Details, references, contraintes...">'+esc(t.content||'')+'</textarea>' +
-      sep +
-      // Temps passé (texte libre 1h30 + boutons)
-      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Temps passe</span></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">' +
-        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',-30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">−</button>' +
-        '<input id="cli-time-'+t.id+'" value="'+partFmtH(timeSpent)+'" onkeydown="if(event.key===\'Enter\'){this.blur()}" onblur="cliSetTimeFromInput(\''+pid+'\',\''+t.id+'\')" style="width:80px;font-size:15px;font-weight:700;color:var(--navy,#1C1205);text-align:center;padding:7px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;background:#fff;box-sizing:border-box" title="Ex: 1h30 ou 90">' +
-        '<button onclick="cliAdjustTime(\''+pid+'\',\''+t.id+'\',30)" style="width:32px;height:32px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0">+</button>' +
-        '<span style="font-size:11px;color:var(--muted,#8090a8);line-height:1.3">Taper 1h30<br>ou +/− (30 min)</span>' +
-      '</div>' +
+      // Brief / détails (champ unique)
+      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Brief / détails</span></div>' +
+      '<textarea id="_pt-desc-'+t.id+'" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Détails, références, contraintes…">'+esc(t.content||'')+'</textarea>' +
+      // Bouton Enregistrer
+      '<button onclick="cliSaveTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="width:100%;margin-top:14px;padding:11px;border:none;border-radius:10px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Enregistrer les modifications</button>' +
       sep +
       // Livrable
       '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Livrable</span></div>' +
@@ -9505,6 +9472,41 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var patch = { projectId: pid, properties: {} };
     patch.properties[propId] = val;
     fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
+  };
+  // Enregistre toutes les modifs du tiroir en une fois (bouton « Enregistrer »).
+  window.cliSaveTaskDrawer = function(pid, taskId){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
+    if (!t) return;
+    function gv(id){ var e = document.getElementById(id); return e ? e.value : undefined; }
+    var patch = { projectId: pid };
+    var v;
+    if ((v = gv('_pt-title-'+taskId)) !== undefined) patch.title = v;
+    if ((v = gv('_pt-status-'+taskId)) !== undefined) patch.status = v;
+    if ((v = gv('_pt-urg-'+taskId)) !== undefined) patch.urgency = v;
+    if ((v = gv('_pt-start-'+taskId)) !== undefined) patch.startDate = v || null;
+    if ((v = gv('_pt-due-'+taskId)) !== undefined) patch.dueDate = v;
+    if ((v = gv('_pt-desc-'+taskId)) !== undefined) patch.content = v;
+    var props = {};
+    if ((v = gv('_pt-brief-'+taskId)) !== undefined) props.p_brief = v;
+    if ((v = gv('_pt-type-'+taskId)) !== undefined) props.p_typemission = v;
+    if ((v = gv('_pt-link-'+taskId)) !== undefined) {
+      var cur = briefVal((t.properties||{}).p_elements); cur.link = v;
+      props.p_elements = JSON.stringify(cur);
+    }
+    if (Object.keys(props).length) patch.properties = props;
+    // Mise à jour optimiste locale
+    Object.keys(patch).forEach(function(k){ if (k!=='projectId' && k!=='properties') t[k] = patch[k]; });
+    if (patch.properties) t.properties = Object.assign({}, t.properties||{}, patch.properties);
+    fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) })
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(updated){
+        var i = (pd.project.tasks||[]).findIndex(function(x){return x.id===taskId;});
+        if (i>=0) pd.project.tasks[i] = updated;
+        toast('Modifications enregistrées ✓');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur — réessayez'); });
   };
   window.cliClearTaskProp = function(pid, taskId, propId){ window.cliSaveTaskProp(pid, taskId, propId, ''); renderShell(); };
   function cliTaskById(pid, taskId){ var pd=getPD(pid); return pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;}); }
