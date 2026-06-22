@@ -109,7 +109,26 @@ async function sendEmail(
   await addEmailLog(env, log);
 }
 
-function emailWrapper(title: string, body: string, portalUrl: string): string {
+function escHtml(s: unknown): string {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string
+  ));
+}
+
+// Remplace les variables {clef} par leur valeur. Les variables inconnues
+// (ex: {details}) sont laissées telles quelles pour traitement ultérieur.
+function fillVars(text: string, vars: Record<string, string>): string {
+  return (text || '').replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+}
+
+function emailWrapper(
+  title: string,
+  body: string,
+  portalUrl: string,
+  meta?: { studioName?: string; signature?: string }
+): string {
+  const studioName = escHtml((meta && meta.studioName) || 'Seed to Bloom');
+  const footer = escHtml((meta && meta.signature) || (meta && meta.studioName) || 'Cindy');
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -132,7 +151,7 @@ function emailWrapper(title: string, body: string, portalUrl: string): string {
 <body>
 <div class="container">
   <div class="header">
-    <h1>✦ Seed to Bloom</h1>
+    <h1>✦ ${studioName}</h1>
     <div class="subtitle">Votre espace projet</div>
   </div>
   <div class="body">
@@ -141,11 +160,129 @@ function emailWrapper(title: string, body: string, portalUrl: string): string {
     <a class="cta" href="${portalUrl}">Accéder à votre espace →</a>
   </div>
   <div class="footer">
-    <p>Cindy · <a href="https://seedtobloom.fr">seedtobloom.fr</a></p>
+    <p>${footer} · <a href="https://seedtobloom.fr">seedtobloom.fr</a></p>
   </div>
 </div>
 </body>
 </html>`;
+}
+
+// ── Modèles d'e-mails personnalisables ──────────────────────────────────────
+// Chaque alerte automatique a un objet (subject), un titre (heading) et un
+// message (body) modifiables depuis Réglages. Si un champ est vide côté
+// réglages, on retombe sur le texte par défaut ci-dessous.
+// Variables disponibles : {clientName} {projectTitle} {taskTitle} {stepTitle}
+// {commentText} {signature} {studioName} et {details} (encart contextuel).
+interface EmailTemplate { subject: string; title: string; body: string; }
+
+const DEFAULT_EMAIL_TEMPLATES: Record<string, EmailTemplate> = {
+  admin_task_created: {
+    subject: 'Nouvelle tâche de {clientName} — {taskTitle}',
+    title: 'Une tâche est à regarder',
+    body: 'Bonjour {signature},\n{clientName} vient de créer une nouvelle tâche sur {projectTitle} :\n{details}\nConnectez-vous à votre tableau de bord pour la regarder.',
+  },
+  admin_task_comment: {
+    subject: 'Commentaire de {clientName} — {taskTitle}',
+    title: 'Un commentaire est à regarder',
+    body: 'Bonjour {signature},\n{clientName} vient de commenter la tâche {taskTitle} sur {projectTitle} :\n{details}\nConnectez-vous à votre tableau de bord pour répondre.',
+  },
+  admin_message: {
+    subject: 'Nouveau message de {clientName}',
+    title: 'Nouveau message client',
+    body: 'Bonjour {signature},\n{clientName} vient de vous envoyer un nouveau message.\nConnectez-vous à votre tableau de bord pour y répondre.',
+  },
+  admin_ticket: {
+    subject: 'Nouvelle demande de {clientName} — {taskTitle}',
+    title: 'Nouvelle demande client',
+    body: 'Bonjour {signature},\n{clientName} vient de soumettre une nouvelle demande sur {projectTitle} :\n{details}\nConnectez-vous à votre tableau de bord pour la traiter.',
+  },
+  client_reply: {
+    subject: 'Nouveau message de {signature}',
+    title: '{signature} vous a répondu',
+    body: "Bonjour {clientName},\nJ'ai répondu à votre message. Rendez-vous sur votre espace pour lire ma réponse.\nÀ très vite,\n{signature}",
+  },
+  client_task_done: {
+    subject: 'Tâche terminée : {taskTitle}',
+    title: "Une tâche vient d'être terminée ✓",
+    body: "Bonjour {clientName},\nLa tâche {taskTitle} de votre espace {projectTitle} vient d'être terminée. ✓\nConsultez votre espace pour voir le détail et les éventuels livrables.\n{signature}",
+  },
+  client_task_review: {
+    subject: 'À valider : {taskTitle}',
+    title: 'Une tâche attend votre validation',
+    body: 'Bonjour {clientName},\nLa tâche {taskTitle} de votre espace {projectTitle} attend une action de votre part (validation / retour).\nConnectez-vous à votre espace pour la regarder.\n{signature}',
+  },
+  client_step_waiting: {
+    subject: 'Action requise — {projectTitle}',
+    title: 'Votre action est requise',
+    body: "Bonjour {clientName},\nL'étape {stepTitle} de votre projet {projectTitle} requiert votre action.\n{details}\nConnectez-vous à votre espace pour plus de détails.\n{signature}",
+  },
+  client_step_done: {
+    subject: 'Étape validée — {projectTitle}',
+    title: "Une étape vient d'être validée ✓",
+    body: "Bonjour {clientName},\nL'étape {stepTitle} de votre projet {projectTitle} vient d'être validée. ✓\nLe projet avance bien ! Consultez votre espace pour voir l'état général.\n{signature}",
+  },
+};
+
+// Métadonnées studio (nom + signature) pour l'habillage des e-mails.
+async function getStudioMeta(env: Env): Promise<{ studioName: string; signature: string }> {
+  const s = await getNotifSettings(env);
+  return {
+    studioName: (s && typeof s.studioName === 'string' && s.studioName.trim()) ? s.studioName.trim() : 'Seed to Bloom',
+    signature: (s && typeof s.studioSignature === 'string' && s.studioSignature.trim()) ? s.studioSignature.trim() : 'Cindy',
+  };
+}
+
+// Modèle effectif d'un e-mail : surcharge studio si renseignée, sinon défaut.
+async function getEmailTemplate(env: Env, key: string): Promise<EmailTemplate> {
+  const def = DEFAULT_EMAIL_TEMPLATES[key];
+  const s = await getNotifSettings(env);
+  const ov = (s && s.emailTemplates && s.emailTemplates[key]) || {};
+  const pick = (v: unknown, d: string) => (typeof v === 'string' && v.trim() ? v : d);
+  return {
+    subject: pick(ov.subject, def.subject),
+    title: pick(ov.title, def.title),
+    body: pick(ov.body, def.body),
+  };
+}
+
+// Transforme le corps (texte avec sauts de ligne) en paragraphes HTML.
+// {details} (sur sa propre ligne ou inline) est remplacé par l'encart contextuel.
+function renderBody(bodyTpl: string, escVars: Record<string, string>, detailsHtml: string): string {
+  const s = fillVars(escHtml(bodyTpl), escVars);
+  const parts = s.split(/\n+/).map((x) => x.trim()).filter(Boolean);
+  let out = '';
+  let used = false;
+  for (const p of parts) {
+    if (p === '{details}') { if (detailsHtml) { out += detailsHtml; used = true; } continue; }
+    if (p.indexOf('{details}') >= 0) {
+      const t = p.split('{details}').join('');
+      if (t) out += '<p>' + t + '</p>';
+      if (detailsHtml) { out += detailsHtml; used = true; }
+      continue;
+    }
+    out += '<p>' + p + '</p>';
+  }
+  if (detailsHtml && !used) out += detailsHtml;
+  return out;
+}
+
+// Construit objet + HTML final d'une alerte à partir de son modèle.
+async function renderEmail(
+  env: Env,
+  key: string,
+  rawVars: Record<string, string>,
+  portalUrl: string,
+  detailsHtml = ''
+): Promise<{ subject: string; html: string }> {
+  const tpl = await getEmailTemplate(env, key);
+  const meta = await getStudioMeta(env);
+  const vars: Record<string, string> = { signature: meta.signature, studioName: meta.studioName, ...rawVars };
+  const escVars: Record<string, string> = {};
+  for (const k of Object.keys(vars)) escVars[k] = escHtml(vars[k]);
+  const subject = fillVars(tpl.subject, vars);
+  const title = fillVars(escHtml(tpl.title), escVars);
+  const bodyHtml = renderBody(tpl.body, escVars, detailsHtml);
+  return { subject, html: emailWrapper(title, bodyHtml, portalUrl, meta) };
 }
 
 export async function sendMessageNotification(env: Env, project: Project, _message: Message): Promise<void> {
@@ -157,21 +294,12 @@ export async function sendMessageNotification(env: Env, project: Project, _messa
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
-  const body = `
-    <p>Bonjour ${project.clientName},</p>
-    <p>J'ai répondu à votre message concernant <em>${project.projectTitle}</em>. Rendez-vous sur votre espace pour lire ma réponse.</p>
-    <p>À très vite,<br>Cindy</p>
-  `;
+  const { subject, html } = await renderEmail(env, 'client_reply', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+  }, portalUrl);
 
-  await sendEmail(
-    env,
-    project.id,
-    project.clientEmail,
-    `Nouveau message de Cindy — ${project.projectTitle}`,
-    emailWrapper('Cindy vous a répondu', body, portalUrl),
-    template,
-    'client_reply'
-  );
+  await sendEmail(env, project.id, project.clientEmail, subject, html, template, 'client_reply');
 }
 
 // Notifie Cindy (admin) qu'un client a envoyé un nouveau message.
@@ -185,21 +313,12 @@ export async function sendAdminMessageNotification(env: Env, project: Project, _
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
 
-  const body = `
-    <p>Bonjour Cindy,</p>
-    <p><strong>${project.clientName}</strong> vient de vous envoyer un message concernant <em>${project.projectTitle}</em>.</p>
-    <p>Connectez-vous à votre tableau de bord pour y répondre.</p>
-  `;
+  const { subject, html } = await renderEmail(env, 'admin_message', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+  }, portalUrl);
 
-  await sendEmail(
-    env,
-    project.id,
-    adminEmail,
-    `Nouveau message de ${project.clientName} — ${project.projectTitle}`,
-    emailWrapper('Nouveau message client', body, portalUrl),
-    template,
-    'admin_message'
-  );
+  await sendEmail(env, project.id, adminEmail, subject, html, template, 'admin_message');
 }
 
 // Notifie Cindy (admin) qu'un client a soumis une nouvelle demande (ticket).
@@ -219,26 +338,19 @@ export async function sendAdminTicketNotification(env: Env, project: Project, ti
     .filter(Boolean)
     .join(' · ');
 
-  const body = `
-    <p>Bonjour Cindy,</p>
-    <p><strong>${project.clientName}</strong> vient de soumettre une nouvelle demande sur <em>${project.projectTitle}</em> :</p>
-    <p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px">
-      <strong>${ticket.title}</strong><br>
-      <span style="color:#7fa688;font-size:13px">${meta}</span>
-      ${ticket.description ? `<br><span style="color:#555">${ticket.description}</span>` : ''}
-    </p>
-    <p>Connectez-vous à votre tableau de bord pour la traiter.</p>
-  `;
+  const detailsHtml = `<p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px">` +
+    `<strong>${escHtml(ticket.title)}</strong><br>` +
+    `<span style="color:#7fa688;font-size:13px">${escHtml(meta)}</span>` +
+    (ticket.description ? `<br><span style="color:#555">${escHtml(ticket.description)}</span>` : '') +
+    `</p>`;
 
-  await sendEmail(
-    env,
-    project.id,
-    adminEmail,
-    `Nouvelle demande de ${project.clientName} — ${ticket.title}`,
-    emailWrapper('Nouvelle demande client', body, portalUrl),
-    template,
-    'admin_new_task'
-  );
+  const { subject, html } = await renderEmail(env, 'admin_ticket', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+    taskTitle: ticket.title,
+  }, portalUrl, detailsHtml);
+
+  await sendEmail(env, project.id, adminEmail, subject, html, template, 'admin_new_task');
 }
 
 // --- Conversation au niveau espace client ---
@@ -255,20 +367,11 @@ export async function sendClientThreadAdminNotification(
   if (!(await canSendEmail(env, refProjectId, template))) return;
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#messages`;
-  const body = `
-    <p>Bonjour Cindy,</p>
-    <p><strong>${clientName || clientEmail}</strong> vient de vous envoyer un message dans son espace.</p>
-    <p>Connectez-vous à votre tableau de bord pour y répondre.</p>
-  `;
-  await sendEmail(
-    env,
-    refProjectId,
-    adminEmail,
-    `Nouveau message de ${clientName || clientEmail}`,
-    emailWrapper('Nouveau message client', body, portalUrl),
-    template,
-    'admin_message'
-  );
+  const { subject, html } = await renderEmail(env, 'admin_message', {
+    clientName: clientName || clientEmail,
+    projectTitle: '',
+  }, portalUrl);
+  await sendEmail(env, refProjectId, adminEmail, subject, html, template, 'admin_message');
 }
 
 // Notifie le client (par email) que Cindy a répondu dans le fil unifié.
@@ -283,20 +386,11 @@ export async function sendClientThreadClientNotification(
   if (!(await canSendEmail(env, refProjectId, template))) return;
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
-  const body = `
-    <p>Bonjour ${clientName || ''},</p>
-    <p>J'ai répondu à votre message. Rendez-vous sur votre espace pour lire ma réponse.</p>
-    <p>À très vite,<br>Cindy</p>
-  `;
-  await sendEmail(
-    env,
-    refProjectId,
-    clientEmail,
-    `Nouveau message de Cindy`,
-    emailWrapper('Cindy vous a répondu', body, portalUrl),
-    template,
-    'client_reply'
-  );
+  const { subject, html } = await renderEmail(env, 'client_reply', {
+    clientName: clientName || '',
+    projectTitle: '',
+  }, portalUrl);
+  await sendEmail(env, refProjectId, clientEmail, subject, html, template, 'client_reply');
 }
 
 export async function sendStepNotification(
@@ -314,45 +408,30 @@ export async function sendStepNotification(
     const template = `step_waiting_${step.id}`;
     if (!(await canSendEmail(env, project.id, template))) return;
 
-    const body = `
-      <p>Bonjour ${project.clientName},</p>
-      <p>L'étape <strong>${step.title}</strong> de votre projet <em>${project.projectTitle}</em> requiert votre action.</p>
-      ${step.clientAction ? `<p>Ce que vous devez faire : <em>${step.clientAction}</em></p>` : ''}
-      <p>Connectez-vous à votre espace pour plus de détails.</p>
-      <p>Cindy</p>
-    `;
+    const detailsHtml = step.clientAction
+      ? `<p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px">Ce que vous devez faire : <em>${escHtml(step.clientAction)}</em></p>`
+      : '';
 
-    await sendEmail(
-      env,
-      project.id,
-      project.clientEmail,
-      `Action requise — ${project.projectTitle}`,
-      emailWrapper('Votre action est requise', body, portalUrl),
-      template,
-      'client_action'
-    );
+    const { subject, html } = await renderEmail(env, 'client_step_waiting', {
+      clientName: project.clientName,
+      projectTitle: project.projectTitle,
+      stepTitle: step.title,
+    }, portalUrl, detailsHtml);
+
+    await sendEmail(env, project.id, project.clientEmail, subject, html, template, 'client_action');
   }
 
   if (step.status === 'done') {
     const template = `step_done_${step.id}`;
     if (!(await canSendEmail(env, project.id, template))) return;
 
-    const body = `
-      <p>Bonjour ${project.clientName},</p>
-      <p>L'étape <strong>${step.title}</strong> de votre projet <em>${project.projectTitle}</em> vient d'être validée. ✓</p>
-      <p>Le projet avance bien ! Consultez votre espace pour voir l'état général.</p>
-      <p>Cindy</p>
-    `;
+    const { subject, html } = await renderEmail(env, 'client_step_done', {
+      clientName: project.clientName,
+      projectTitle: project.projectTitle,
+      stepTitle: step.title,
+    }, portalUrl);
 
-    await sendEmail(
-      env,
-      project.id,
-      project.clientEmail,
-      `Étape validée — ${project.projectTitle}`,
-      emailWrapper('Une étape vient d\'être validée ✓', body, portalUrl),
-      template,
-      'client_done'
-    );
+    await sendEmail(env, project.id, project.clientEmail, subject, html, template, 'client_done');
   }
 }
 
@@ -362,21 +441,12 @@ export async function sendTaskDoneNotification(env: Env, project: Project, taskT
   const template = `task_done_${Date.now()}`;
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
-  const body = `
-    <p>Bonjour ${project.clientName},</p>
-    <p>La tâche <strong>${taskTitle}</strong> de votre espace <em>${project.projectTitle}</em> vient d'être terminée. ✓</p>
-    <p>Consultez votre espace pour voir le détail et les éventuels livrables.</p>
-    <p>Cindy</p>
-  `;
-  await sendEmail(
-    env,
-    project.id,
-    project.clientEmail,
-    `Tâche terminée : ${taskTitle}`,
-    emailWrapper('Une tâche vient d\'être terminée ✓', body, portalUrl),
-    template,
-    'client_done'
-  );
+  const { subject, html } = await renderEmail(env, 'client_task_done', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+    taskTitle,
+  }, portalUrl);
+  await sendEmail(env, project.id, project.clientEmail, subject, html, template, 'client_done');
 }
 
 // Notifie la CLIENTE qu'une tâche attend une action/validation de sa part.
@@ -385,21 +455,12 @@ export async function sendTaskReviewNotification(env: Env, project: Project, tas
   const template = `task_review_${Date.now()}`;
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
-  const body = `
-    <p>Bonjour ${project.clientName},</p>
-    <p>La tâche <strong>${taskTitle}</strong> de votre espace <em>${project.projectTitle}</em> attend une action de votre part (validation / retour).</p>
-    <p>Connectez-vous à votre espace pour la regarder.</p>
-    <p>Cindy</p>
-  `;
-  await sendEmail(
-    env,
-    project.id,
-    project.clientEmail,
-    `À valider : ${taskTitle}`,
-    emailWrapper('Une tâche attend votre validation', body, portalUrl),
-    template,
-    'client_action'
-  );
+  const { subject, html } = await renderEmail(env, 'client_task_review', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+    taskTitle,
+  }, portalUrl);
+  await sendEmail(env, project.id, project.clientEmail, subject, html, template, 'client_action');
 }
 
 // Notifie le STUDIO (toi) qu'une cliente a créé une nouvelle tâche.
@@ -409,21 +470,13 @@ export async function sendAdminTaskCreatedNotification(env: Env, project: Projec
   const template = `admin_task_created_${Date.now()}`;
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
-  const body = `
-    <p>Bonjour Cindy,</p>
-    <p><strong>${project.clientName}</strong> vient de créer une nouvelle tâche sur <em>${project.projectTitle}</em> :</p>
-    <p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px"><strong>${taskTitle}</strong></p>
-    <p>Connectez-vous à votre tableau de bord pour la regarder.</p>
-  `;
-  await sendEmail(
-    env,
-    project.id,
-    adminEmail,
-    `Nouvelle tâche de ${project.clientName} — ${taskTitle}`,
-    emailWrapper('Une tâche est à regarder', body, portalUrl),
-    template,
-    'admin_new_task'
-  );
+  const detailsHtml = `<p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px"><strong>${escHtml(taskTitle)}</strong></p>`;
+  const { subject, html } = await renderEmail(env, 'admin_task_created', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+    taskTitle,
+  }, portalUrl, detailsHtml);
+  await sendEmail(env, project.id, adminEmail, subject, html, template, 'admin_new_task');
 }
 
 // Notifie le STUDIO (toi) qu'une cliente a commenté une tâche.
@@ -433,21 +486,14 @@ export async function sendAdminTaskCommentNotification(env: Env, project: Projec
   const template = `admin_task_comment_${Date.now()}`;
   const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
-  const body = `
-    <p>Bonjour Cindy,</p>
-    <p><strong>${project.clientName}</strong> vient de commenter la tâche <strong>${taskTitle}</strong> sur <em>${project.projectTitle}</em> :</p>
-    <p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px;color:#555">${text}</p>
-    <p>Connectez-vous à votre tableau de bord pour répondre.</p>
-  `;
-  await sendEmail(
-    env,
-    project.id,
-    adminEmail,
-    `Commentaire de ${project.clientName} — ${taskTitle}`,
-    emailWrapper('Un commentaire est à regarder', body, portalUrl),
-    template,
-    'admin_comment'
-  );
+  const detailsHtml = `<p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px;color:#555">${escHtml(text)}</p>`;
+  const { subject, html } = await renderEmail(env, 'admin_task_comment', {
+    clientName: project.clientName,
+    projectTitle: project.projectTitle,
+    taskTitle,
+    commentText: text,
+  }, portalUrl, detailsHtml);
+  await sendEmail(env, project.id, adminEmail, subject, html, template, 'admin_comment');
 }
 
 // Envoi d'un e-mail de test depuis les Réglages (vérifie la config Resend).
