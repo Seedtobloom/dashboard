@@ -9282,10 +9282,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       // Titre (editable)
       '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
-      // Statut + Échéance
+      // Statut (la cliente a-t-elle terminé son brief ?) + Échéance
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
-          '<select id="_pt-status-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box">'+statusOpts+'</select></div>' +
+          (function(){
+            var v = (t.properties||{}).p_clientbrief || '';
+            var o = ['Brief en cours', 'Brief terminé'];
+            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>' +
+              o.map(function(x){ return '<option'+(v===x?' selected':'')+'>'+x+'</option>'; }).join('') + '</select>';
+          })() + '</div>' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
           '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
       '</div>' +
@@ -9314,22 +9319,19 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
           '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>' +
         '</div>';
+        var progVal = props.p_brief!=null ? props.p_brief : '';
+        var progOpts = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
+        var prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement</div>' +
+          '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
+          progOpts.map(function(x){ return '<option'+(progVal===x?' selected':'')+'>'+x+'</option>'; }).join('') +
+          '</select></div>';
         return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
-          selectFor('p_brief','brief') + selectFor('p_typemission','type') + attach +
+          prog + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
       })() +
       // Détails & contexte (champ unique)
       '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Détails &amp; contexte</span></div>' +
       '<textarea id="_pt-desc-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'content\',this.value)" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Format, ton, références, liens, contraintes…">'+esc(t.content||'')+'</textarea>' +
-      sep +
-      // Livrable
-      '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Livrable</span></div>' +
-      (deliverable
-        ? '<a class="cp-file" href="'+API_BASE+'/files/'+encodeURIComponent(deliverable.key)+'/download" target="_blank"><span class="cp-file__icon">'+fileIcon(deliverable.type)+'</span><span class="cp-file__name">'+esc(deliverable.name)+'</span><span class="cp-file__dl">↓</span></a>'
-        : (t.livrableUrl
-          ? '<a href="'+esc(t.livrableUrl)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--navy,#1C1205);display:inline-flex;align-items:center;gap:5px;text-decoration:none">↗ Voir le livrable</a>'
-          : '<div id="_pdrop-'+t.id+'" onclick="document.getElementById(\'_pfile-'+t.id+'\').click()" ondragover="event.preventDefault();this.style.borderColor=\'#c9952f\';this.style.background=\'rgba(201,149,47,0.06)\'" ondragleave="this.style.borderColor=\'\';this.style.background=\'\'" ondrop="cliDropDeliverable(event,\''+pid+'\',\''+t.id+'\')" style="border:1.5px dashed var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:var(--muted,#8090a8);font-size:12px;cursor:pointer">Glisser un fichier ou cliquer<input type="file" id="_pfile-'+t.id+'" style="display:none" onchange="cliUploadDeliverable(\''+pid+'\',\''+t.id+'\',this)"></div>')) +
-      '<input type="url" value="'+esc(t.livrableUrl||'')+'" onchange="cliPatchTask(\''+pid+'\',\''+t.id+'\',{livrableUrl:this.value})" placeholder="ou coller un lien (URL)" style="width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;margin-top:8px;font-family:inherit;box-sizing:border-box;background:#fff">' +
       sep +
       // Echanges
       '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
