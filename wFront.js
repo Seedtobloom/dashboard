@@ -1919,9 +1919,18 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   };
   window.saveSettings = function(){
     collectSettings();
-    apiFetch('/api/settings', { method:'PUT', body: JSON.stringify(studioSettings) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-      .then(function(saved){ studioSettings = Object.assign({}, SETTINGS_DEFAULTS, saved); _taskPropSchema = Array.isArray(saved.taskPropertySchema) ? saved.taskPropertySchema : []; toast('Reglages enregistres ✓'); })
+    var payload = JSON.parse(JSON.stringify(studioSettings)); // snapshot des valeurs saisies
+    apiFetch('/api/settings', { method:'PUT', body: JSON.stringify(payload) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json().catch(function(){ return {}; }); })
+      .then(function(saved){
+        // Le serveur peut répondre {ok:true} : dans ce cas on garde les valeurs saisies.
+        var data = (saved && saved.notifications) ? saved : payload;
+        studioSettings = Object.assign({}, SETTINGS_DEFAULTS, data);
+        studioSettings.notifications = Object.assign({}, SETTINGS_DEFAULTS.notifications, data.notifications || {});
+        if (!Array.isArray(studioSettings.holidays)) studioSettings.holidays = [];
+        _taskPropSchema = Array.isArray(data.taskPropertySchema) ? data.taskPropertySchema : [];
+        toast('Reglages enregistres ✓');
+      })
       .catch(function(){ toast('Erreur, reessayez.', true); });
   };
 
