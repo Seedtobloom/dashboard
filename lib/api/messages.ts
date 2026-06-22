@@ -69,7 +69,7 @@ export async function handleConversations(request: Request, env: Env, url: URL):
     // rattache un projet pour le débounce email
     const projects = await getAllProjects(env);
     const proj = projects.find((p) => (p.clientEmail || '').toLowerCase() === email);
-    if (proj) sendClientThreadClientNotification(env, email, proj.clientName, proj.id).catch(() => {});
+    if (proj) await sendClientThreadClientNotification(env, email, proj.clientName, proj.id).catch(() => {});
     return jsonResponse({ success: true, message }, 201);
   }
 
@@ -113,7 +113,7 @@ export async function handleMessages(request: Request, env: Env, url: URL): Prom
 
     // Notify client when Cindy replies
     if (body.author === 'cindy') {
-      sendMessageNotification(env, project, message).catch(() => {});
+      await sendMessageNotification(env, project, message).catch(() => {});
     }
 
     return jsonResponse(message, 201);
