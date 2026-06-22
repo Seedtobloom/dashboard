@@ -2782,7 +2782,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
           '</div>' +
         '</div>' +
         (!t.revoked ? '<button class="btn btn--outline btn--sm" onclick="copyToken(\'' + t.token + '\')">Copier</button>' : '') +
-        (!t.revoked ? '<button class="btn btn--sage btn--sm" onclick="window.open(\'' + esc(tUrl) + '?edit=1\',\'_blank\')" title="Ouvrir l\'espace en mode édition pour modifier les textes">✎ Éditer</button>' : '') +
+        (!t.revoked ? '<button class="btn btn--sage btn--sm" onclick="window.open(\'' + esc(tUrl) + '?edit=1' + (project.spaceCode ? '&code=' + encodeURIComponent(project.spaceCode) : '') + '\',\'_blank\')" title="Ouvrir l\'espace en mode édition pour modifier les textes">✎ Éditer</button>' : '') +
         (!t.revoked && !t.lastUsedAt ? '<button class="btn btn--sage btn--sm" onclick="navigator.clipboard.writeText(\'' + esc(tUrl) + '\').then(function(){toast(\'Lien copié — à renvoyer à la cliente ✓\')})" title="Copier le lien pour le renvoyer">↩ Renvoyer</button>' : '') +
         (!t.revoked ? '<button class="btn btn--danger btn--sm" onclick="revokeToken(\'' + t.token + '\')">Révoquer</button>' : '') +
       '</div>';
@@ -6535,7 +6535,11 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       token = data.token;
     }
     const sameOriginUrl = window.location.origin + '/p/' + token;
-    window.open(sameOriginUrl + (edit ? '?edit=1' : ''), '_blank');
+    var qs = [];
+    if (edit) qs.push('edit=1');
+    var spaceCode = (window._currentProject && window._currentProject.spaceCode) || '';
+    if (spaceCode) qs.push('code=' + encodeURIComponent(spaceCode));
+    window.open(sameOriginUrl + (qs.length ? '?' + qs.join('&') : ''), '_blank');
   }
   window.previewClientSpace = function() { return openClientSpace(false); };
   window.editClientSpace = function() { return openClientSpace(true); };
@@ -11903,6 +11907,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   function loadClientApp() {
+    // Code d'accès transmis dans l'URL (?code=…) → on l'utilise et on le
+    // mémorise, pour qu'un lien admin « ?edit=1&code=… » ouvre directement
+    // l'espace sans buter sur l'écran de saisie du code.
+    var urlCode = (new URLSearchParams(window.location.search).get('code') || '').trim().toUpperCase();
+    if (urlCode) { try { sessionStorage.setItem('_sc', urlCode); } catch(e){} }
     var storedCode = sessionStorage.getItem('_sc') || '';
     var headers = {};
     if (storedCode) headers['x-space-code'] = storedCode;
