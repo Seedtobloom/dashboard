@@ -291,7 +291,7 @@ export async function sendMessageNotification(env: Env, project: Project, _messa
   const template = 'new_message';
   if (!(await canSendEmail(env, project.id, template))) return;
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
   const { subject, html } = await renderEmail(env, 'client_reply', {
@@ -310,7 +310,7 @@ export async function sendAdminMessageNotification(env: Env, project: Project, _
   const template = `admin_new_message_${project.id}`;
   if (!(await canSendEmail(env, project.id, template))) return;
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
 
   const { subject, html } = await renderEmail(env, 'admin_message', {
@@ -330,7 +330,7 @@ export async function sendAdminTicketNotification(env: Env, project: Project, ti
   const template = `admin_new_ticket_${ticket.id}`;
   if (!(await canSendEmail(env, project.id, template))) return;
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
 
   const prioLabel = ticket.priority === 'haute' ? 'Haute' : ticket.priority === 'basse' ? 'Basse' : 'Moyenne';
@@ -365,7 +365,7 @@ export async function sendClientThreadAdminNotification(
   if (!adminEmail) return;
   const template = `admin_client_msg_${clientEmail.toLowerCase()}`;
   if (!(await canSendEmail(env, refProjectId, template))) return;
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#messages`;
   const { subject, html } = await renderEmail(env, 'admin_message', {
     clientName: clientName || clientEmail,
@@ -384,7 +384,7 @@ export async function sendClientThreadClientNotification(
   if (!clientEmail) return;
   const template = `client_thread_reply_${clientEmail.toLowerCase()}`;
   if (!(await canSendEmail(env, refProjectId, template))) return;
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
   const { subject, html } = await renderEmail(env, 'client_reply', {
     clientName: clientName || '',
@@ -401,7 +401,7 @@ export async function sendStepNotification(
 ): Promise<void> {
   if (!project.clientEmail) return;
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
   if (step.status === 'waiting_client') {
@@ -439,7 +439,7 @@ export async function sendStepNotification(
 export async function sendTaskDoneNotification(env: Env, project: Project, taskTitle: string): Promise<void> {
   if (!project.clientEmail) return;
   const template = `task_done_${Date.now()}`;
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
   const { subject, html } = await renderEmail(env, 'client_task_done', {
     clientName: project.clientName,
@@ -453,7 +453,7 @@ export async function sendTaskDoneNotification(env: Env, project: Project, taskT
 export async function sendTaskReviewNotification(env: Env, project: Project, taskTitle: string): Promise<void> {
   if (!project.clientEmail) return;
   const template = `task_review_${Date.now()}`;
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
   const { subject, html } = await renderEmail(env, 'client_task_review', {
     clientName: project.clientName,
@@ -468,7 +468,7 @@ export async function sendAdminTaskCreatedNotification(env: Env, project: Projec
   const adminEmail = await getAdminNotifyEmail(env);
   if (!adminEmail) return;
   const template = `admin_task_created_${Date.now()}`;
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
   const detailsHtml = `<p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px"><strong>${escHtml(taskTitle)}</strong></p>`;
   const { subject, html } = await renderEmail(env, 'admin_task_created', {
@@ -484,7 +484,7 @@ export async function sendAdminTaskCommentNotification(env: Env, project: Projec
   const adminEmail = await getAdminNotifyEmail(env);
   if (!adminEmail) return;
   const template = `admin_task_comment_${Date.now()}`;
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/admin#project-${project.id}`;
   const detailsHtml = `<p style="background:#f5f0e8;border-radius:8px;padding:14px 16px;margin:0 0 16px;color:#555">${escHtml(text)}</p>`;
   const { subject, html } = await renderEmail(env, 'admin_task_comment', {
@@ -507,7 +507,7 @@ export async function handleTestEmail(request: Request, env: Env): Promise<Respo
     return jsonResponse({ ok: false, to, error: 'Configuration Resend manquante (RESEND_API_KEY / RESEND_FROM_EMAIL).' });
   }
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const html = emailWrapper(
     'Test de configuration ✓',
     "<p>Cet e-mail confirme que l'envoi fonctionne 🎉</p><p>Si vous lisez ce message, Resend est correctement configuré pour Seed to Bloom.</p>",
@@ -547,7 +547,7 @@ export async function handleNotifications(request: Request, env: Env, url: URL):
     stepId?: string;
   };
 
-  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://bloom-portal.seedtobloom.workers.dev';
   const portalUrl = `${baseUrl}/p/`;
 
   let subject = '';

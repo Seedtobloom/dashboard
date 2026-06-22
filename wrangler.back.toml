@@ -13,7 +13,8 @@ bucket_name = "dashboard"
 
 [vars]
 ENVIRONMENT = "production"
+PORTAL_BASE_URL = "https://bloom-portal.seedtobloom.workers.dev"
 
 # Secrets to configure in Cloudflare dashboard:
-# RESEND_API_KEY, RESEND_FROM_EMAIL, PORTAL_BASE_URL
+# RESEND_API_KEY, RESEND_FROM_EMAIL
 # ADMIN_USERNAME, ADMIN_PASSWORD (not used by back, but required by Env type)
