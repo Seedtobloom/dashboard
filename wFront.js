@@ -6901,6 +6901,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       + 'C\'est ici que tu peux déposer tes demandes, suivre leur traitement et retrouver tout ce dont tu as besoin pour notre collaboration.\n\n'
       + 'Un seul endroit pour garder une vision claire de ce qui est en cours et avancer ensemble, sereinement. 💛';
     var stored = (appData && appData.home && appData.home.intro != null) ? appData.home.intro : null;
+    // Migration : les anciens textes par défaut (enregistrés tels quels) sont
+    // remplacés par le nouveau message, sans écraser un texte personnalisé.
+    var _legacy = [
+      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.',
+      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.'
+    ];
+    if (stored != null && _legacy.indexOf(stored.trim()) !== -1) stored = null;
     var text = (stored != null) ? stored : defaultText;
     if (_isAdminEdit) {
       return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;outline:none;border-radius:6px;cursor:text;white-space:pre-line;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
