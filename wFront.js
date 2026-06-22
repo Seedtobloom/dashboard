@@ -9124,15 +9124,15 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // Grid cells — table unifiée bordurée
     var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
-    var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
+    var dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     var BORD = '#e3ddd0';
     var emptyCell = '<div style="min-height:120px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#faf7f1"></div>';
     var dayCells = [];
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
-    var offset = firstDow < 5 ? firstDow : 0;
+    var offset = firstDow;
     for (var dd=1;dd<=dim;dd++) {
       var dow = (new Date(year,month,dd).getDay()+6)%7;
-      if (dow >= 5) continue;
+      var isWeekend = dow >= 5;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
       var dt = filtered.filter(function(t){
         var due = (t.dueDate||'').slice(0,10);
@@ -9180,7 +9180,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
-      dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#fff">' +
+      dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+(isWeekend?'#faf7f1':'#fff')+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml +
           '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
         '</div>' + pills +
@@ -9189,13 +9189,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var allCells = [];
     for (var i=0;i<offset;i++) allCells.push(emptyCell);
     allCells = allCells.concat(dayCells);
-    while (allCells.length % 5 !== 0) allCells.push(emptyCell);
+    while (allCells.length % 7 !== 0) allCells.push(emptyCell);
 
     var calGrid = '<div style="border:1px solid '+BORD+';border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow-1)">' +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr);background:#faf6ee;border-bottom:1px solid '+BORD+'">' +
-        dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#8a6f54;letter-spacing:0.08em;text-transform:uppercase;'+(idx<4?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);background:#faf6ee;border-bottom:1px solid '+BORD+'">' +
+        dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#8a6f54;letter-spacing:0.08em;text-transform:uppercase;'+(idx<6?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr)">'+allCells.join('')+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr)">'+allCells.join('')+'</div>' +
     '</div>';
 
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
