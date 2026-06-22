@@ -1647,7 +1647,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         '<div><label style="' + lbl + '">Nom du studio</label><input id="set-studioName" type="text" value="' + esc(s.studioName||'') + '" style="' + inp + '"></div>' +
         '<div><label style="' + lbl + '">Signature (prenom)</label><input id="set-studioSignature" type="text" value="' + esc(s.studioSignature||'') + '" style="' + inp + '"></div>' +
       '</div>' +
-      '<div style="margin-top:16px"><label style="' + lbl + '">Email de notification</label><input id="set-notificationEmail" type="email" value="' + esc(s.notificationEmail||'') + '" placeholder="ex: dash@seedtobloom.fr" style="' + inp + '"><div style="font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#a89a86;margin-top:5px">Adresse qui reçoit les alertes quand un client vous écrit ou agit sur la plateforme.</div></div>';
+      '<div style="margin-top:16px"><label style="' + lbl + '">Email de notification</label><input id="set-notificationEmail" type="email" value="' + esc(s.notificationEmail||'') + '" placeholder="ex: dash@seedtobloom.fr" style="' + inp + '"><div style="font-family:\'Inter Tight\',sans-serif;font-size:11.5px;color:#a89a86;margin-top:5px">Adresse qui reçoit les alertes quand un client vous écrit ou agit sur la plateforme.</div>' +
+        '<div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<button type="button" class="btn btn--outline btn--sm" onclick="sendTestEmail()">Envoyer un email de test</button>' +
+          '<span id="test-email-result" style="font-family:\'Inter Tight\',sans-serif;font-size:12px;color:#a89a86"></span>' +
+        '</div>' +
+      '</div>';
 
     // 2. Couleur des espaces
     var TONES = [
@@ -1830,6 +1835,25 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
         toast('Reglages enregistres ✓');
       })
       .catch(function(){ toast('Erreur, reessayez.', true); });
+  };
+
+  window.sendTestEmail = function(){
+    var to = (document.getElementById('set-notificationEmail')||{}).value || '';
+    var res = document.getElementById('test-email-result');
+    if (res) { res.style.color = '#a89a86'; res.textContent = 'Envoi en cours…'; }
+    apiFetch('/api/test-email', { method:'POST', body: JSON.stringify({ to: to }) })
+      .then(function(r){ return r.json().catch(function(){ return { ok:false, error:'Réponse invalide' }; }); })
+      .then(function(d){
+        if (d && d.ok) {
+          if (res) { res.style.color = '#5c7a3a'; res.textContent = '✓ Email envoyé à ' + (d.to||to) + ' — vérifiez votre boîte (et les spams).'; }
+          toast('Email de test envoyé ✓');
+        } else {
+          var msg = (d && d.error) ? d.error : 'Échec inconnu';
+          if (res) { res.style.color = '#9b3a2e'; res.textContent = '✗ ' + msg; }
+          toast('Échec de l\'envoi', true);
+        }
+      })
+      .catch(function(){ if (res) { res.style.color = '#9b3a2e'; res.textContent = '✗ Erreur réseau'; } toast('Erreur', true); });
   };
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -4564,19 +4588,40 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
   }
 
+  var MISSION_TYPES = [
+    'Mise à jour / optimisation de supports existants',
+    'Visuels réseaux sociaux & communication digitale',
+    'Ajustements & évolutions graphiques',
+    'Déclinaison multi-formats / multi-canaux',
+    'Mise en page de documents',
+    'Modèles réutilisables (templates)',
+    'Conseil graphique & cohérence visuelle',
+    'Autre',
+  ];
+  var OLD_MISSION_TYPES = ['Devis/prospection','Site internet','Communication','Identité','Autre'];
   var DEFAULT_PARTENAIRE_SCHEMA = [
     { id:'p_brief', name:'État du brief', type:'Liste', options:['Pas commencé','Brief en cours','Brief prêt','En projet','À retravailler'] },
-    { id:'p_typemission', name:'Type de mission', type:'Liste', options:['Devis/prospection','Site internet','Communication','Identité','Autre'] },
+    { id:'p_typemission', name:'Type de mission', type:'Liste', options: MISSION_TYPES.slice() },
     { id:'p_elements', name:'Élément du brief', type:'Texte', options:[] },
     { id:'p_mois', name:'Mois', type:'Liste', options:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] },
     { id:'p_realisation', name:'Date de réalisation', type:'Date', options:[] },
   ];
   var _seededSchemas = {};
+  var _missionTypesMigrated = {};
   function buildPartenaireSection(project) {
     // Initialise les propriétés par défaut sur les espaces partenaire existants (une fois).
     if ((!Array.isArray(project.propertySchema) || !project.propertySchema.length) && !_seededSchemas[project.id]) {
       _seededSchemas[project.id] = 1;
       aptSaveSchema(DEFAULT_PARTENAIRE_SCHEMA.slice());
+    }
+    // Migration une fois : remplace les anciens types de mission par la nouvelle liste.
+    if (Array.isArray(project.propertySchema) && !_missionTypesMigrated[project.id]) {
+      var tmDef = project.propertySchema.find(function(d){ return d.id==='p_typemission'; });
+      if (tmDef && Array.isArray(tmDef.options) && tmDef.options.join('|') === OLD_MISSION_TYPES.join('|')) {
+        _missionTypesMigrated[project.id] = 1;
+        tmDef.options = MISSION_TYPES.slice();
+        aptSaveSchema(project.propertySchema);
+      }
     }
     var tasks = tasksOf(project).filter(function(t){ return !t.archived; });
     if (window._adminTaskReg) tasksOf(project).forEach(function(t){ window._adminTaskReg[t.id]=t; });
@@ -9093,7 +9138,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return str;
   }
   // Propriétés masquées côté cliente (gérées uniquement par le studio)
-  function cliHiddenProp(id){ return id==='p_realisation'; }
+  function cliHiddenProp(id){ return id==='p_realisation' || id==='p_mois'; }
 
   // ── Drawer tâche partenaire ───────────────────────────────────────────────
   function buildPartTaskDrawer(pid, tasks, files, project) {
@@ -10041,7 +10086,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la tâche *</label>' +
           '<input id="_ptask-title" type="text" placeholder="Ex : Visuel Instagram – collection été" style="'+S+'"></div>' +
         '<input type="hidden" id="_ptask-urgency" value="normal">' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée)</label>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) *</label>' +
           '<input id="_ptask-startDate" type="hidden">' +
           '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
         '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Détails & contexte</label>' +
@@ -10081,6 +10126,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!title.trim()) { var el = document.getElementById('_ptask-title'); if(el){el.style.borderColor='red';el.focus();} return; }
     var content   = (document.getElementById('_ptask-content')||{}).value || '';
     var dueDate   = (document.getElementById('_ptask-dueDate')||{}).value || undefined;
+    if (!dueDate) { var eld = document.getElementById('_ptask-dueDate'); if(eld){eld.style.borderColor='red';eld.focus();} toast('Indiquez une échéance souhaitée'); return; }
     var startDate = (document.getElementById('_ptask-startDate')||{}).value || undefined;
     var urgency   = (document.getElementById('_ptask-urgency')||{}).value || 'normal';
     var poleEl    = document.getElementById('_ptask-pole');
