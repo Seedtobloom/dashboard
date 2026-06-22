@@ -1,7 +1,7 @@
 import type { Env, Task, TaskComment } from '../types';
 import { getProject, saveProject } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
-import { sendTaskDoneNotification } from './notifications';
+import { sendTaskDoneNotification, sendTaskReviewNotification } from './notifications';
 
 // Admin task management: /api/projects/:id/tasks(/:taskId)(/comments)
 export async function handleTasks(request: Request, env: Env, url: URL): Promise<Response> {
@@ -70,12 +70,15 @@ export async function handleTasks(request: Request, env: Env, url: URL): Promise
     const prev = project.tasks[idx];
     const updated: Task = { ...prev, ...body, id: taskId, comments: prev.comments };
     const justDone = body.status === 'done' && prev.status !== 'done';
+    const justReview = body.status === 'review' && prev.status !== 'review';
     if (justDone) updated.completedAt = new Date().toISOString();
     if (body.status && body.status !== 'done') updated.completedAt = null;
     project.tasks[idx] = updated;
     await saveProject(env, project);
     if (justDone) {
       sendTaskDoneNotification(env, project, updated.title).catch(() => {});
+    } else if (justReview) {
+      sendTaskReviewNotification(env, project, updated.title).catch(() => {});
     }
     return jsonResponse(updated);
   }

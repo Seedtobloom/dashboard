@@ -103,7 +103,7 @@ export default {
         if (request.method === 'PUT') {
           const body = await request.json() as Record<string, unknown>;
           await env.BLOOM_KV.put('studio_settings', JSON.stringify(body));
-          return new Response(JSON.stringify({ ok: true }), { headers: json });
+          return new Response(JSON.stringify(body), { headers: json });
         }
         return errorResponse('Method not allowed', 405);
       }

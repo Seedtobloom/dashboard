@@ -2,7 +2,7 @@ import type { Env, Project, MaintenanceTicket, Task, ProjectFile, PortalHome, Po
 import { verifyClientToken } from '../auth';
 import { getProject, getMessages, getProjectFiles, getProjectsByEmail, addMessage, saveProject, getClientMessages, saveClientMessages, addClientMessage, addProjectFile, getPortalHome, savePortalHome } from '../kv';
 import { generateId, jsonResponse, errorResponse } from '../utils';
-import { sendAdminMessageNotification, sendClientThreadAdminNotification } from './notifications';
+import { sendAdminMessageNotification, sendClientThreadAdminNotification, sendAdminTicketNotification, sendAdminTaskCreatedNotification, sendAdminTaskCommentNotification } from './notifications';
 
 // Liste des projets autorisés pour un token (cloisonnement strict).
 async function allowedProjects(env: Env, clientToken: { clientEmail?: string; projectId?: string }): Promise<Project[]> {
@@ -93,6 +93,7 @@ async function clientTaskOp(
     if (!Array.isArray(project.tasks[idx].comments)) project.tasks[idx].comments = [];
     project.tasks[idx].comments.push(comment);
     await saveProject(env, project);
+    sendAdminTaskCommentNotification(env, project, project.tasks[idx].title, comment.text).catch(() => {});
     return jsonResponse(comment, 201);
   }
   if (!body.title?.trim()) return errorResponse('title is required');
@@ -114,6 +115,7 @@ async function clientTaskOp(
   if (body.properties && typeof body.properties === 'object') task.properties = body.properties;
   project.tasks.push(task);
   await saveProject(env, project);
+  sendAdminTaskCreatedNotification(env, project, task.title).catch(() => {});
   return jsonResponse(task, 201);
 }
 
@@ -160,6 +162,7 @@ export async function handleClientApi(request: Request, env: Env, url: URL): Pro
       };
       project.tickets.unshift(ticket);
       await saveProject(env, project);
+      sendAdminTicketNotification(env, project, ticket).catch(() => {});
       return jsonResponse(ticket, 201);
     }
 
