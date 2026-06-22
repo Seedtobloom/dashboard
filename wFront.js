@@ -6910,9 +6910,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (stored != null && _legacy.indexOf(stored.trim()) !== -1) stored = null;
     var text = (stored != null) ? stored : defaultText;
     if (_isAdminEdit) {
-      return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;outline:none;border-radius:6px;cursor:text;white-space:pre-line;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
+      return '<p id="cp-intro-' + pid + '" contenteditable="true" onblur="cpSaveIntroText(\'' + pid + '\',this.innerText)" title="Cliquer pour modifier ce texte" style="font-family:var(--font-body);font-size:15px;line-height:1.5;color:var(--terre-600);max-width:540px;margin:0 0 14px;outline:none;border-radius:6px;cursor:text;white-space:pre-line;box-shadow:inset 0 0 0 1px var(--bone-d);padding:4px 8px;margin-left:-8px">' + esc(text) + '</p>';
     }
-    return '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 20px;white-space:pre-line">' + esc(text) + '</p>';
+    return '<p style="font-family:var(--font-body);font-size:15px;line-height:1.5;color:var(--terre-600);max-width:540px;margin:0 0 14px;white-space:pre-line">' + esc(text) + '</p>';
   }
 
   function cpBuildHomeBlocks(pid) {
