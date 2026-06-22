@@ -14,7 +14,7 @@ export async function handleTokens(request: Request, env: Env, url: URL): Promis
   // GET /api/tokens/all — tous les tokens enrichis (1 seul appel pour la page "Espaces clients")
   if (method === 'GET' && url.pathname === '/api/tokens/all') {
     const projects = await getAllProjects(env);
-    const baseUrl = env.PORTAL_BASE_URL || 'https://dashboard.seedtobloom.workers.dev';
+    const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.seedtobloom.workers.dev';
 
     // Tokens rattachés à un projet
     const projectTokenLists = await Promise.all(projects.map(async (p) => {
@@ -90,7 +90,7 @@ export async function handleTokens(request: Request, env: Env, url: URL): Promis
     await saveToken(env, clientToken);
     await addTokenToProject(env, projectId, token);
 
-    const baseUrl = env.PORTAL_BASE_URL || 'https://dashboard.seedtobloom.workers.dev';
+    const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.seedtobloom.workers.dev';
     return jsonResponse({ ...clientToken, url: `${baseUrl}/p/${token}` }, 201);
   }
 
@@ -112,7 +112,7 @@ export async function handleTokens(request: Request, env: Env, url: URL): Promis
     await saveToken(env, clientToken);
     await addClientEmailToken(env, body.clientEmail.toLowerCase(), token);
 
-    const baseUrl = env.PORTAL_BASE_URL || 'https://dashboard.seedtobloom.workers.dev';
+    const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.seedtobloom.workers.dev';
     return jsonResponse({ ...clientToken, url: `${baseUrl}/p/${token}` }, 201);
   }
 
@@ -121,7 +121,7 @@ export async function handleTokens(request: Request, env: Env, url: URL): Promis
   if (method === 'GET' && clientEmailMatch) {
     const email = decodeURIComponent(clientEmailMatch[1]);
     const tokens = await getClientEmailTokens(env, email);
-    const baseUrl = env.PORTAL_BASE_URL || 'https://dashboard.seedtobloom.workers.dev';
+    const baseUrl = env.PORTAL_BASE_URL || 'https://bloom-portal.seedtobloom.workers.dev';
     return jsonResponse(tokens.map(t => ({ ...t, url: `${baseUrl}/p/${t.token}` })));
   }
 

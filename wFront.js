@@ -6470,9 +6470,12 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
   window.genClientSpaceToken = async function() {
     const email = (window._currentProject && window._currentProject.clientEmail) || '';
     if (!email) { toast('Email client manquant', true); return; }
-    // Anti-doublon : s'il existe déjà un lien d'accès actif pour ce projet, on le
-    // réutilise (on copie l'existant) au lieu d'en créer un nouveau.
-    const ex = await apiFetch('/api/projects/' + currentProjectId + '/tokens');
+    // L'« Espace client » est un lien PAR EMAIL (POST /api/tokens/client) : c'est
+    // ce qui donne le portail complet (type:"client", onglet « Accueil », tous les
+    // projets de la cliente). Un token projet n'a pas de clientEmail et ouvrirait
+    // une vue mono-projet sans Accueil.
+    // Anti-doublon : on réutilise le lien d'espace existant (hors « Aperçu admin »).
+    const ex = await apiFetch('/api/tokens/client/' + encodeURIComponent(email));
     if (ex.ok) {
       const toks = await ex.json();
       const existing = toks.find(function(t) { return !t.revoked && t.label !== 'Aperçu admin'; });
@@ -6485,7 +6488,7 @@ const APP_JS = String.raw`// Admin SPA — cookie-based auth (bloom_sid session 
       }
     }
     showPrompt('Créer un espace client', 'Nom du lien (ex: Emilie — Accès principal)', '', async function(label) {
-      const res = await apiFetch('/api/projects/' + currentProjectId + '/tokens', { method: 'POST', body: JSON.stringify({ label: label || email, clientEmail: email }) });
+      const res = await apiFetch('/api/tokens/client', { method: 'POST', body: JSON.stringify({ label: label || email, clientEmail: email }) });
     if (!res.ok) { toast('Erreur génération', true); return; }
     const data = await res.json();
       var spaceUrl = window.location.origin + '/p/' + data.token;
