@@ -450,6 +450,40 @@ export async function sendAdminTaskCommentNotification(env: Env, project: Projec
   );
 }
 
+// Envoi d'un e-mail de test depuis les Réglages (vérifie la config Resend).
+export async function handleTestEmail(request: Request, env: Env): Promise<Response> {
+  if (request.method !== 'POST') return errorResponse('Method not allowed', 405);
+  const body = (await request.json().catch(() => ({}))) as { to?: string };
+  const to = (body.to && body.to.trim()) ? body.to.trim() : await getAdminNotifyEmail(env);
+  if (!to) return jsonResponse({ ok: false, error: 'Aucune adresse de destination.' });
+
+  if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) {
+    return jsonResponse({ ok: false, to, error: 'Configuration Resend manquante (RESEND_API_KEY / RESEND_FROM_EMAIL).' });
+  }
+
+  const baseUrl = env.PORTAL_BASE_URL ?? 'https://dashboard.seedtobloom.workers.dev';
+  const html = emailWrapper(
+    'Test de configuration ✓',
+    "<p>Cet e-mail confirme que l'envoi fonctionne 🎉</p><p>Si vous lisez ce message, Resend est correctement configuré pour Seed to Bloom.</p>",
+    baseUrl + '/admin'
+  );
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.RESEND_FROM_EMAIL, to, subject: 'Test — Seed to Bloom ✓', html }),
+    });
+    if (!res.ok) {
+      const txt = (await res.text().catch(() => '')).slice(0, 400);
+      return jsonResponse({ ok: false, to, error: txt || `HTTP ${res.status}` });
+    }
+    return jsonResponse({ ok: true, to });
+  } catch (e) {
+    return jsonResponse({ ok: false, to, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
 export async function handleNotifications(request: Request, env: Env, url: URL): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405);
 

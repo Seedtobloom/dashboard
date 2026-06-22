@@ -5,7 +5,7 @@ import { handleTasks } from './lib/api/tasks';
 import { handleMessages, handleConversations } from './lib/api/messages';
 import { handleTokens } from './lib/api/tokens';
 import { handleFiles } from './lib/api/files';
-import { handleNotifications, getEmailHistory } from './lib/api/notifications';
+import { handleNotifications, getEmailHistory, handleTestEmail } from './lib/api/notifications';
 import { handleClientApi } from './lib/api/client';
 import { errorResponse } from './lib/utils';
 
@@ -66,6 +66,11 @@ export default {
       // Files
       if (pathname.match(/^\/api\/projects\/[a-f0-9]{32}\/files/)) {
         return handleFiles(request, env, url);
+      }
+
+      // Email de test (depuis les Réglages)
+      if (pathname === '/api/test-email') {
+        return handleTestEmail(request, env);
       }
 
       // Notifications
