@@ -149,7 +149,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-home__inner { max-width: 1160px; margin: 0 auto; }
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
-.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
+.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; align-items: start; }
 .cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-banner { height: 140px; background: var(--terre); background-size: cover; background-position: center; position: relative; border-radius: var(--radius-3) var(--radius-3) 0 0; }
@@ -1858,8 +1858,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>' : '';
 
     var helpCard = '<div class="cp-card" style="margin-top:22px"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Vos echanges se font dans l onglet Messages de chaque projet.</div>' +
-      '' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Retrouvez tous vos echanges, classes par projet, dans votre messagerie.</div>' +
+      '<button class="cp-btn" onclick="cpOpenMessages()" type="button">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +
     '</div>';
 
     function filesGroup(label, items) {
@@ -1904,7 +1904,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var fileExchangeCard = buildClientFileExchange(project.id, files);
     var msgPanel = (project.type !== 'partenaire') ? '<div id="cp-panel-msg" class="cp-panel' + panelHidden('msg') + '">' + stbChat(project.id) + '</div>' : '';
     var livPanel = (project.type !== 'partenaire' && (project.deliverables||[]).length) ? '<div id="cp-panel-liv" class="cp-panel' + panelHidden('liv') + '">' + stbDeliverables(project.id) + '</div>' : '';
-    var sideCol = (sideTabs.length ? tabs : '') + msgPanel + livPanel + filesPanel + pracPanel + meetPanel + fileExchangeCard + helpCard;
+    var sideCol = helpCard + (sideTabs.length ? tabs : '') + msgPanel + livPanel + filesPanel + pracPanel + meetPanel + fileExchangeCard;
 
     // Espace partenaire
     if (project.type === 'partenaire') {
