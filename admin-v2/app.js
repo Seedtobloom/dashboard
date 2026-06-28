@@ -228,17 +228,16 @@
     var dn = t.status === 'done';
     var running = MT_TIMER && MT_TIMER.id === t.id;
     var spent = t.timeSpentSeconds || 0;
-    var spentHtml = running
-      ? '<span id="mt-timer-' + t.id + '" style="font-family:var(--font-micro);font-weight:700;color:var(--green)">' + mtClock(spent) + '</span>'
-      : (spent ? '<span style="color:var(--terre)">passé ' + mtDur(spent) + '</span>' : '');
+    var tcColor = running ? 'var(--green)' : (spent ? 'var(--terre)' : '#c3b9a6');
+    var timecode = '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;letter-spacing:0.02em;color:' + tcColor + ';min-width:74px;text-align:right">' + mtClock(spent) + '</span>';
     var timerBtn = dn ? '' : (running
       ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸ Pause</button>'
       : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶ Démarrer</button>');
     return '<div class="prow">' +
       '<span class="pdot" style="background:' + pcol + ';align-self:center"></span>' +
       '<div class="prow__main"><div class="prow__el" style="' + (dn ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + esc(t.title) + '</div>' +
-        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (spentHtml ? ' · ' + spentHtml : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div></div>' +
-      '<div class="prow__act">' + timerBtn +
+        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div></div>' +
+      '<div class="prow__act">' + timecode + timerBtn +
         (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
             : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
         '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4">Suppr.</button>' +
@@ -655,9 +654,8 @@
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
       var pbase = ptBase(t);
-      var chrono = prun
-        ? '<span id="pt-timer-' + t.id + '" style="font-family:var(--font-micro);font-weight:700;color:var(--green)">' + mtClock(pbase) + '</span>'
-        : (pbase ? '<span class="micro" style="color:var(--terre)">passé ' + mtDur(pbase) + '</span>' : '<span class="micro muted">non démarré</span>');
+      var ptColor = prun ? 'var(--green)' : (pbase ? 'var(--terre)' : '#c3b9a6');
+      var chrono = '<span id="pt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;letter-spacing:0.02em;color:' + ptColor + ';min-width:74px;text-align:center">' + mtClock(pbase) + '</span>';
       var chBtn = prun
         ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.ptPause(\'' + t.id + '\')">⏸ Pause</button>'
         : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">▶ Démarrer</button>';
