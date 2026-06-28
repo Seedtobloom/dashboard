@@ -1,0 +1,13 @@
+name = "stb-admin-front"
+main = "front.js"
+compatibility_date = "2024-09-23"
+
+[[services]]
+binding = "SERVICE_BACK"
+service = "stb-admin-back"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secret :
+#   INTERNAL_SECRET   (identique au back admin)

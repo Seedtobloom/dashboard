@@ -1,0 +1,23 @@
+name = "stb-client-back"
+main = "back.ts"
+compatibility_date = "2024-09-23"
+
+# KV : 1 key = 1 espace client (la clé 32 chars) + les sessions (session:<id>)
+[[kv_namespaces]]
+binding = "KV_CLIENT"
+id = "0cb5765b6dc647fca612a760935d8111"
+preview_id = "0cb5765b6dc647fca612a760935d8111"
+
+# R2 : documents (source de vérité)
+[[r2_buckets]]
+binding = "R2_FILES"
+bucket_name = "stb-files"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets à configurer (wrangler secret put ... --config wrangler.client-back.toml) :
+#   RESEND_API_KEY       clé API Resend
+#   RESEND_FROM_EMAIL    expéditeur vérifié (ex: "Seed to Bloom <dash@seedtobloom.fr>")
+#   ADMIN_EMAIL          destinataire des notifications (ex: dash@seedtobloom.fr)
+#   INTERNAL_SECRET      secret partagé avec le front (identique des deux côtés)

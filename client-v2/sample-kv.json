@@ -1,0 +1,174 @@
+{
+  "client": [
+    {
+      "nom": "Dupont",
+      "prenom": "Jean",
+      "email": "jean.dupont@example.com",
+      "telephone": "+33612345678",
+      "entreprise": [
+        {
+          "nom": "TechSolutions",
+          "adresse": "123 Rue de l'Innovation, 75001 Paris",
+          "siret": "12345678900012",
+          "tva": "FR12123456789"
+        }
+      ]
+    }
+  ],
+  "espace": [
+    {
+      "isActive": true,
+      "lastSeen": 1782659178,
+      "conversation": [
+        {
+          "id": "m1",
+          "from": "cindy",
+          "message": "Bonjour Jean ! Bienvenue dans votre espace Seed to Bloom. Je suis votre interlocutrice, n'hésitez pas à m'écrire ici.",
+          "date": "2026-06-10T09:00:00Z",
+          "readByClient": true,
+          "readByAdmin": true
+        },
+        {
+          "id": "m2",
+          "from": "client",
+          "message": "Merci Cindy, ravi de démarrer !",
+          "date": "2026-06-10T10:12:00Z",
+          "readByClient": true,
+          "readByAdmin": false
+        }
+      ],
+      "partenaireCreative": [
+        {
+          "monthlyHours": 10,
+          "rolloverCapHours": 2,
+          "overageRate": 60,
+          "forfaitOverrides": {},
+          "notes": "Accompagnement créatif mensuel : visuels réseaux sociaux, déclinaisons et petits supports.",
+          "resources": [
+            { "title": "Charte graphique (Google Drive)", "url": "https://drive.google.com" },
+            { "title": "Banque de visuels", "url": "https://seedtobloom.fr" }
+          ],
+          "chat": [],
+          "forfait": [],
+          "taches": [
+            {
+              "id": "a1000000000000000000000000000001",
+              "title": "Visuels Instagram — collection été",
+              "content": "Série de 6 visuels carrés pour la campagne de juin.",
+              "urgency": "normal",
+              "status": "todo",
+              "dueDate": "2026-06-27",
+              "timeSpentMinutes": 0,
+              "properties": {
+                "p_clientbrief": "En cours",
+                "p_brief": "Brief en cours",
+                "p_typemission": "Visuels réseaux sociaux & communication digitale"
+              },
+              "comments": [],
+              "completedAt": null,
+              "createdAt": "2026-06-11T08:00:00Z"
+            },
+            {
+              "id": "a1000000000000000000000000000002",
+              "title": "Bannière LinkedIn",
+              "content": "Mise à jour avec le nouveau slogan.",
+              "urgency": "tranquille",
+              "status": "done",
+              "dueDate": "2026-06-15",
+              "timeSpentMinutes": 90,
+              "properties": {
+                "p_clientbrief": "Validée",
+                "p_brief": "Brief prêt",
+                "p_typemission": "Ajustements & évolutions graphiques"
+              },
+              "comments": [],
+              "completedAt": "2026-06-14T16:00:00Z",
+              "createdAt": "2026-06-09T08:05:00Z"
+            },
+            {
+              "id": "a1000000000000000000000000000003",
+              "title": "Story promo — soldes",
+              "content": "2 stories animées (format 9:16).",
+              "urgency": "urgent",
+              "status": "in_progress",
+              "dueDate": "2026-06-30",
+              "timeSpentMinutes": 45,
+              "properties": {
+                "p_clientbrief": "En cours",
+                "p_brief": "En projet",
+                "p_typemission": "Déclinaison multi-formats / multi-canaux"
+              },
+              "comments": [],
+              "completedAt": null,
+              "createdAt": "2026-06-20T09:00:00Z"
+            },
+            {
+              "id": "a1000000000000000000000000000004",
+              "title": "Carrousel conseils",
+              "content": "Carrousel 5 slides — conseils déco.",
+              "urgency": "normal",
+              "status": "todo",
+              "dueDate": "2026-06-20",
+              "timeSpentMinutes": 30,
+              "properties": {
+                "p_clientbrief": "Reçue",
+                "p_brief": "Brief en cours",
+                "p_typemission": "Visuels réseaux sociaux & communication digitale"
+              },
+              "comments": [],
+              "completedAt": null,
+              "createdAt": "2026-06-12T11:00:00Z"
+            }
+          ]
+        }
+      ],
+      "siteWeb": [
+        {
+          "chat": [],
+          "suivi": [
+            { "id": "s001", "title": "Cadrage & arborescence", "description": "Définition des pages et de la structure.", "status": "done", "date": "2026-06-13", "clientAction": "", "order": 0 },
+            { "id": "s002", "title": "Maquettes", "description": "Conception des maquettes des pages clés.", "status": "in_progress", "date": "2026-06-25", "clientAction": "", "order": 1 },
+            { "id": "s003", "title": "Validation des maquettes", "description": "", "status": "waiting_client", "date": "2026-06-28", "clientAction": "Merci de valider les maquettes ou de me faire vos retours.", "order": 2 },
+            { "id": "s004", "title": "Intégration & mise en ligne", "description": "", "status": "upcoming", "date": null, "clientAction": "", "order": 3 }
+          ]
+        }
+      ],
+      "identiteVisuelle": [
+        {
+          "chat": [],
+          "strategieDeMarque": [
+            { "id": "sm1", "title": "Plateforme de marque", "body": "Positionnement chaleureux et premium.", "status": "validé", "fileKey": null, "createdAt": "2026-06-09T11:05:00Z" }
+          ],
+          "identiteVisuelle": [
+            { "id": "iv1", "title": "Direction artistique", "body": "Palette Écrin, typographies Cormorant + Inter Tight.", "status": "en cours", "fileKey": null, "createdAt": "2026-06-16T10:00:00Z" }
+          ],
+          "declinaisons": [],
+          "livrables": [
+            { "id": "lv1", "name": "Logo principal.pdf", "fileKey": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6/identiteVisuelle/logo-principal.pdf", "status": "a_valider", "clientComment": "", "validatedAt": null, "createdAt": "2026-06-19T09:00:00Z" }
+          ]
+        }
+      ],
+      "supportsDeCom": [
+        {
+          "001": [
+            {
+              "chat": [],
+              "questionnaire": [
+                { "id": "q1", "label": "Objectif principal de ce support ?", "type": "textarea", "options": [], "required": true, "answer": null, "answeredAt": null },
+                { "id": "q2", "label": "Format souhaité", "type": "choice", "options": ["A4", "A5", "Carré", "Tri-volet"], "required": true, "answer": null, "answeredAt": null }
+              ],
+              "suivi": [
+                { "id": "sds1", "title": "Brief & questionnaire", "description": "Collecte des besoins.", "status": "in_progress", "date": "2026-06-22", "clientAction": "", "order": 0 },
+                { "id": "sds2", "title": "Création", "description": "", "status": "upcoming", "date": null, "clientAction": "", "order": 1 }
+              ],
+              "livrables": []
+            }
+          ]
+        }
+      ],
+      "documents": [
+        { "partenaireCreative": [], "siteWeb": [], "identiteVisuelle": [], "supportsDeCom": [] }
+      ]
+    }
+  ]
+}

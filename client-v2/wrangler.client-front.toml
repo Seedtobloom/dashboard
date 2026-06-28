@@ -1,0 +1,15 @@
+name = "stb-client-front"
+main = "front.js"
+compatibility_date = "2024-09-23"
+
+# Service binding vers le worker back : le front parle au back par ce canal,
+# le back n'est jamais exposé publiquement.
+[[services]]
+binding = "SERVICE_BACK"
+service = "stb-client-back"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secret à configurer (wrangler secret put INTERNAL_SECRET --config wrangler.client-front.toml) :
+#   INTERNAL_SECRET   secret partagé avec le back (identique des deux côtés)
