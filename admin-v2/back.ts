@@ -863,12 +863,12 @@ function sanitizeBlocks(raw: any): AnyObj[] {
   if (!Array.isArray(raw)) return [];
   return raw.slice(0, 200).map((b: AnyObj) => ({
     id: typeof b.id === 'string' && b.id ? b.id : genId(),
-    date: /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : '',
+    dow: Math.min(7, Math.max(1, parseInt(b.dow, 10) || 0)),
     start: Math.min(1439, Math.max(0, parseInt(b.start, 10) || 0)),
     duration: Math.min(720, Math.max(5, parseInt(b.duration, 10) || 30)),
     label: (b.label == null ? '' : String(b.label)).slice(0, 120),
     color: /^#[0-9a-fA-F]{6}$/.test(b.color) ? b.color : '#8B6F52',
-  })).filter((b: AnyObj) => b.date);
+  })).filter((b: AnyObj) => b.dow >= 1 && b.dow <= 7);
 }
 async function handlePlanningSave(request: Request, env: Env): Promise<Response> {
   const b = await readJson(request);
