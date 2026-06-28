@@ -335,9 +335,9 @@
   var DOW_LBL = { 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim' };
   function planWeek(tasks, cap) {
     var now = new Date(); now.setHours(0, 0, 0, 0);
-    var dow = (now.getDay() + 6) % 7; var monday = new Date(now); monday.setDate(now.getDate() - dow);
     var days = [];
-    for (var i = 0; i < 7; i++) { var dt = new Date(monday); dt.setDate(monday.getDate() + i); var k = ((dt.getDay() + 6) % 7) + 1; days.push({ date: dt, dow: k, cap: (cap[k] || 0), used: 0, tasks: [], past: dt < now }); }
+    // Fenêtre glissante de 7 jours À PARTIR d'aujourd'hui (toujours des jours exploitables)
+    for (var i = 0; i < 7; i++) { var dt = new Date(now); dt.setDate(now.getDate() + i); var k = ((dt.getDay() + 6) % 7) + 1; days.push({ date: dt, dow: k, cap: (cap[k] || 0), used: 0, tasks: [], past: false, today: i === 0 }); }
     var prank = { haute: 0, normale: 1, basse: 2 };
     var todo = tasks.filter(function (x) { return x.status !== 'done'; }).slice().sort(function (a, b) { var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority]; if (pa !== pb) return pa - pb; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
     var overflow = [];
@@ -386,22 +386,43 @@
     var startHour = PLAN_START || 9, PXMIN = 0.8;
     var maxCap = Math.max.apply(null, [480].concat(plan.days.map(function (d) { return d.cap; })));
     var hours = Math.ceil(maxCap / 60), colH = hours * 60 * PXMIN;
-    var capEditor = '<div class="card"><h3>Vos disponibilités</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
-      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Début<input class="inp" type="number" min="5" max="20" step="1" style="width:64px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
+    var todoCount = PLAN_TASKS.filter(function (x) { return x.status !== 'done'; }).length;
+    var placedCount = plan.days.reduce(function (s, d) { return s + d.tasks.length; }, 0);
+    var hasCap = [1, 2, 3, 4, 5, 6, 7].some(function (k) { return (PLAN_CAP[k] || 0) > 0; });
+    var noEst = PLAN_TASKS.filter(function (x) { return x.status !== 'done' && !x.estMinutes; }).length;
+    // Mode d'emploi en 3 étapes
+    var guide = '<div class="card"><h3>Comment ça marche</h3>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:14px">' +
+      planStep(1, 'Indiquez vos heures dispo', 'Pour chaque jour, le nombre d\'heures que vous pouvez consacrer à vos tâches (ci-dessous).') +
+      planStep(2, 'Donnez une durée à vos tâches', 'Dans « Mes tâches », ajoutez une durée estimée (en minutes). Sans durée, on compte 30 min.') +
+      planStep(3, 'Le planning se construit seul', 'Vos tâches se rangent ici sur 7 jours, par priorité puis par échéance. Cliquez un bloc pour le marquer fait.') +
+      '</div></div>';
+    var nudges = '';
+    if (!hasCap) nudges += '<div class="card" style="background:#fbf3e0"><strong>Commencez ici</strong><div class="micro mt">Renseignez vos heures disponibles par jour juste en dessous. Tant que tout est à 0, aucune tâche ne peut être placée.</div></div>';
+    if (todoCount === 0) nudges += '<div class="card"><strong>Aucune tâche à planifier</strong><div class="micro mt mb">Ajoutez des tâches avec une durée estimée pour les voir se placer ici.</div><button class="btn btn--dark btn--sm" onclick="ADM.nav(\'mytasks\')">Aller à Mes tâches</button></div>';
+    else if (hasCap && placedCount === 0 && plan.overflow.length) nudges += '<div class="card" style="background:#fbf3e0"><strong>Rien n\'a pu être casé</strong><div class="micro mt">Vos échéances sont peut-être déjà passées, ou vos heures dispo trop justes. Augmentez vos heures ou repoussez les échéances dans « Mes tâches ».</div></div>';
+    var capEditor = '<div class="card"><h3>Vos disponibilités par jour</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
+      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Heure de début<input class="inp" type="number" min="5" max="20" step="1" style="width:80px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
       '<span style="width:1px;height:34px;background:var(--bone-d)"></span>' +
       [1, 2, 3, 4, 5, 6, 7].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + ' (h)<input class="inp" type="number" min="0" max="14" step="0.5" style="width:58px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
-      '</div><div class="micro mt">Vos tâches (« Mes tâches ») sont placées automatiquement par priorité, durée estimée et échéance. La ligne pointillée = fin de votre disponibilité. Clic sur un bloc = marquer fait.</div></div>';
+      '</div><div class="micro mt">Mettez 0 pour un jour de repos. La ligne pointillée sur le planning marque la fin de votre disponibilité du jour.' + (noEst ? ' ' + noEst + ' tâche(s) sans durée estimée comptent 30 min.' : '') + '</div></div>';
     var axis = ''; for (var hh = 0; hh <= hours; hh++) { axis += '<div style="position:absolute;top:' + (hh * 60 * PXMIN) + 'px;right:6px;font-size:9px;color:var(--muted);transform:translateY(-50%);font-family:var(--font-micro)">' + (startHour + hh) + 'h</div>'; }
     var axisCol = '<div style="width:38px;flex-shrink:0;position:relative;height:' + colH + 'px">' + axis + '</div>';
     var headRow = '<div style="display:flex"><div style="width:38px;flex-shrink:0"></div>' + plan.days.map(function (dday) {
       var over = dday.used > dday.cap;
-      return '<div style="flex:1;min-width:118px;padding:0 4px 8px;text-align:center"><div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:' + (dday.past ? 'var(--muted)' : 'var(--terre)') + '">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
+      return '<div style="flex:1;min-width:118px;padding:0 4px 8px;text-align:center"><div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
+        (dday.today ? '<div class="micro" style="color:var(--terre);font-weight:700">Aujourd\'hui</div>' : '') +
         (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
     }).join('') + '</div>';
     var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startHour, hours, PXMIN) + '</div>'; }).join('') + '</div>';
     var cal = '<div class="card mt"><h3>Votre semaine</h3><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
     var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de disponibilités, ou échéance déjà passée. Augmentez vos heures ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
-    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + capEditor + cal + overflowHtml + '</div>');
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + guide + nudges + capEditor + cal + overflowHtml + '</div>');
+  }
+  function planStep(n, title, desc) {
+    return '<div style="flex:1;min-width:180px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:22px;height:22px;border-radius:50%;background:var(--terre);color:var(--paille);display:flex;align-items:center;justify-content:center;font-family:var(--font-micro);font-size:11px;font-weight:700;flex-shrink:0">' + n + '</span><span style="font-weight:600;color:var(--terre);font-size:13.5px">' + esc(title) + '</span></div>' +
+      '<div class="micro" style="color:var(--muted);line-height:1.5">' + esc(desc) + '</div></div>';
   }
   function renderPlanning() {
     setMain(topbar('Calendrier intelligent') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
