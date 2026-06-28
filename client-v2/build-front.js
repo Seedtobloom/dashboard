@@ -96,9 +96,14 @@ css = css.replace("--font-body:'Alegreya',Georgia,'Times New Roman',serif;", "--
 // ── Card d'accueil : la bannière marron était trop courte (96px) -> plus haute ──
 must(js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1, 'banner height');
 js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + _band.deep + ';height:150px'");
-// Les cards ne s'étirent plus à la hauteur de la plus haute (sinon vide sans couleur sous le contenu)
-must(css.indexOf(".cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }") !== -1, 'proj-grid align');
-css = css.replace(".cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }", ".cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; align-items: start; }");
+// Cards à hauteur égale (bas alignés) MAIS sans vide sans couleur : le corps remplit
+// la card et le bas (barre de progression + pied) est poussé en bas.
+must(css.indexOf(".cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer;") !== -1, 'proj-card flex');
+css = css.replace(".cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer;", ".cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; display: flex; flex-direction: column; cursor: pointer;");
+must(css.indexOf(".cp-proj-card__body { padding: 20px 22px 22px; }") !== -1, 'proj-card body flex');
+css = css.replace(".cp-proj-card__body { padding: 20px 22px 22px; }", ".cp-proj-card__body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }");
+must(css.indexOf(".cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }") !== -1, 'proj-bar margin');
+css = css.replace(".cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }", ".cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-top: auto; margin-bottom: 6px; }");
 
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
