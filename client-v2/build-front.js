@@ -84,6 +84,11 @@ js = js.replace("(idx<6?'border-right:1px solid '+BORD:'')", "(idx<4?'border-rig
 must(js.indexOf("grid-template-columns:repeat(7,1fr)") !== -1, 'cal grid');
 js = js.split("grid-template-columns:repeat(7,1fr)").join("grid-template-columns:repeat(5,1fr)");
 
+// ── Alegreya (police de corps) jamais en gras : seule la graisse 400 est chargée,
+//    on coupe la synthèse de gras du navigateur (faux-bold) partout ──
+must(css.indexOf("body { font-family: var(--font-body); background: var(--bone);") !== -1, 'body font-synthesis');
+css = css.replace("body { font-family: var(--font-body); background: var(--bone);", "body { font-family: var(--font-body); font-synthesis: none; background: var(--bone);");
+
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
 js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "'' +");

@@ -50,20 +50,20 @@
     // Lien & fichiers du brief (propriété composite p_elements)
     var bvc = briefVal(props.p_elements);
     var filesHtml = (bvc.files||[]).map(function(f){
-      return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:#f7f2ea;border-radius:8px;font-size:12px;margin-top:6px">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#f7f2ea;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#9a8a72')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
     }).join('');
     var linkFilesVal =
       '<input type="url" value="'+esc(bvc.link||'')+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="width:100%;border:none;background:#f7f2ea;border-radius:7px;padding:7px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);box-sizing:border-box">'+
       filesHtml+
-      '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="margin-top:7px;font-size:12px;padding:6px 12px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>';
+      '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
     var propertiesHtml =
-      dRow('◍', 'État', dStatusPill(pid, t)) +
-      dRow('📅', 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
-      dRow('📝', 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', props.p_clientbrief||'', ['Brief en cours','Brief terminé'], CLIENTBRIEF_COL, 'À définir')) +
-      dRow('📈', 'Avancement', dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'À définir')) +
-      (typeOpts.length ? dRow('🏷️', esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
-      dRow('🔗', 'Lien & fichiers', linkFilesVal);
+      dRow(cpIcon('check-circle', 15), 'État', dStatusPill(pid, t)) +
+      dRow(cpIcon('calendar', 15), 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', props.p_clientbrief||'', ['Brief en cours','Brief terminé'], CLIENTBRIEF_COL, 'À définir')) +
+      dRow(cpIcon('chart', 15), 'Avancement', dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'À définir')) +
+      (typeOpts.length ? dRow(cpIcon('tag', 15), esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
+      dRow(cpIcon('link', 15), 'Lien & fichiers', linkFilesVal);
 
     // Commentaires
     var comments = Array.isArray(t.comments) ? t.comments : [];

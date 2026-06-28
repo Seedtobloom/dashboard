@@ -29,7 +29,7 @@
       inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
-      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📎 '+esc(b.name||'fichier')+'</a>';
+      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cpIcon('paperclip',14,'color:#9a8a72')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
     } else if (b.type === 'list') {
       inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:6px"><span style="color:#b08968;font-size:16px;line-height:1.5;padding-top:5px">•</span>'+stbBlockTA(pid, taskId, b, 'Une ligne = une puce')+'</div>';
     } else {
