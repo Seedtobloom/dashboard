@@ -5310,8 +5310,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         { icon:'tasks', title:'Urgences et priorités', nav:'project', text:'Chaque demande a un niveau d\'urgence : Tranquille (feuille), Normal (horloge), Urgent (éclair) ou Critique (flamme). Ces niveaux aident le studio à prioriser votre travail dans le mois.' },
         { icon:'check', title:'Statuts des demandes', nav:'project', text:'Une demande passe par plusieurs statuts : À faire → En cours → En relecture → Fait. Vous suivez l\'avancement en temps réel directement depuis le calendrier.' },
         { icon:'clock', title:'Votre forfait mensuel', nav:'project', text:'En haut de la page, une barre indique les heures utilisées sur votre forfait du mois. Quand elle est pleine, les nouvelles demandes passent sur le mois suivant ou font l\'objet d\'un devis.' },
-        { icon:'chat', title:'Écrire au studio', nav:'messages', text:'La section Messagerie vous permet d\'échanger directement avec Cindy. Pas besoin d\'e-mail : tout reste au même endroit, lié à votre espace.' },
-        { icon:'folder', title:'Fichiers et livrables', nav:'fichiers', text:'Déposez vos éléments (textes, photos, inspirations) et récupérez les fichiers finaux dans la section Fichiers. Chaque livrable est accessible dès qu\'il est prêt.' },
+        { icon:'chat', title:'Écrire au studio', nav:'messages', text:'La Messagerie regroupe toutes vos conversations, classées par projet. Vous pouvez y rechercher un mot pour retrouver un ancien message. Tout reste au même endroit, sans e-mail.' },
+        { icon:'folder', title:'Fichiers et livrables', nav:'fichiers', text:'Chaque tâche peut recevoir un livrable que vous validez en un clic, ou pour lequel vous demandez une révision. Un lien de révision est parfois fourni pour laisser vos retours. Vos fichiers déposés et les livrables finaux restent accessibles ici.' },
         { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, n\'hésitez pas à écrire dans la Messagerie, on répond rapidement.' },
       ],
       maintenance: [
