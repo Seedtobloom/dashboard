@@ -75,6 +75,7 @@ export default {
       if (method === 'GET' && pathname === '/api/me') return json({ ok: true });
       if (method === 'POST' && pathname === '/api/test-email') return handleTestEmail(request, env);
       if (method === 'GET' && pathname === '/api/dashboard') return handleDashboard(env);
+      if (method === 'GET' && pathname === '/api/done') return handleDone(env);
 
       if (pathname === '/api/clients') {
         if (method === 'GET') return handleClientsList(env);
@@ -483,6 +484,8 @@ async function handleStepPatch(request: Request, env: Env, key: string, data: An
   if (!step) return json({ error: 'Étape introuvable' }, 404);
   const prev = step.status;
   ['title', 'description', 'status', 'date', 'clientAction', 'order'].forEach((k) => { if (k in body) step[k] = body[k]; });
+  if (body.status === 'done' && !step.completedAt) step.completedAt = nowIso();
+  if (body.status && body.status !== 'done') step.completedAt = null;
   await saveClient(env, key, data);
   if (body.status && body.status !== prev) {
     if (body.status === 'done') await notifyClient(env, data, `Étape validée — ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> de votre projet ${escHtml(label)} vient d'être validée ✓.</p>`);
@@ -667,6 +670,31 @@ async function handleDashboard(env: Env): Promise<Response> {
   deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
   pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   return json({ deadlines, forfaits, pendingValidation, clientCount: idx.length });
+}
+
+// Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
+async function handleDone(env: Env): Promise<Response> {
+  const idx = await getIndex(env);
+  const completed: AnyObj[] = [];
+  for (const ci of idx) {
+    const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
+    if (!data) continue;
+    const esp = getEspace(data);
+    const who = clientName(data);
+    const pc = getDomainObj(esp, 'partenaireCreative');
+    if (pc) (pc.taches || []).forEach((t: AnyObj) => {
+      if (t.status === 'done' && t.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', kind: 'tâche', title: t.title, completedAt: t.completedAt, timeSpentMinutes: t.timeSpentMinutes || 0 });
+    });
+    const sw = getDomainObj(esp, 'siteWeb');
+    if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status === 'done' && s.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Site web', kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
+    const sd = esp.supportsDeCom && esp.supportsDeCom[0];
+    if (sd) for (const pid of Object.keys(sd)) {
+      const o = getSupportObj(esp, pid);
+      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status === 'done' && s.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Support ' + pid, kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
+    }
+  }
+  completed.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
+  return json({ completed });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */

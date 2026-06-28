@@ -60,7 +60,7 @@
   /* ── shell ── */
   function nav(v) { VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0); }
   function renderShell() {
-    var items = [['priorities', 'Priorités'], ['clients', 'Clients'], ['chat', 'Messagerie']];
+    var items = [['priorities', 'Priorités'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
     var navHtml = items.map(function (it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + it[1] + badgeSpan + '</button>';
@@ -83,6 +83,7 @@
   }
   function renderMain() {
     if (VIEW === 'priorities') return renderPriorities();
+    if (VIEW === 'done') return renderDone();
     if (VIEW === 'clients') return renderClients();
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
@@ -178,6 +179,36 @@
           '</div>' +
         '</div>' +
         '</div>');
+    }).catch(showError);
+  }
+
+  /* ── Réalisé (historique daté) ── */
+  function renderDone() {
+    setMain(topbar('Réalisé') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/done').then(function (r) { return r.json(); }).then(function (d) {
+      var list = d.completed || [];
+      var groups = {}, order = [];
+      list.forEach(function (x) {
+        var dt = new Date(x.completedAt);
+        var k = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
+        if (!groups[k]) { groups[k] = []; order.push(k); }
+        groups[k].push(x);
+      });
+      function monthLabel(k) { var p = k.split('-'); var d = new Date(p[0], p[1] - 1, 1); var s = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); }
+      function fmtDT(iso) { var d = new Date(iso); if (isNaN(d)) return esc(iso); var dd = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); var hh = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); return dd + ' à ' + hh; }
+      var html = order.map(function (k) {
+        var items = groups[k];
+        var totalMin = items.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
+        var rows = items.map(function (x) {
+          var tm = x.timeSpentMinutes ? (' · ' + (x.timeSpentMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
+          return '<div class="prow"><div class="prow__date"><strong>' + fmtDT(x.completedAt) + '</strong></div>' +
+            '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
+              '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + tm + '</div></div>' +
+            '<div>' + pill('done', 'Terminé') + '</div></div>';
+        }).join('');
+        return '<div class="card"><h3>' + monthLabel(k) + ' <span class="micro" style="color:var(--muted)">· ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + (totalMin ? ' · ' + (totalMin / 60).toFixed(1).replace('.0', '') + ' h' : '') + '</span></h3>' + rows + '</div>';
+      }).join('');
+      setMain(topbar('Réalisé') + '<div class="wrap">' + (html || '<div class="empty">Rien de terminé pour le moment. Marquez des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
     }).catch(showError);
   }
 
