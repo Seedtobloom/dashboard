@@ -1333,8 +1333,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var exchangeNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
-      navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
-      navBtn('files','folder','Fichiers','cpOpenFiles()','') +
+      navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +
+      '' +
     '</div>';
 
     // Projects nav (multi-project or non-portal)
