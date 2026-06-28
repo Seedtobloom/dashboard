@@ -1,0 +1,74 @@
+name: Deploy v2 (client + admin)
+
+# Déploie les 4 workers v2 (client + admin) sur Cloudflare à chaque push.
+# Les backs sont déployés AVANT les fronts (cibles des service bindings).
+# N'interfère pas avec le déploiement V1 (deploy.yml).
+#
+# Prérequis (une seule fois) :
+#  - Secrets repo : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+#  - Renseigner les id KV dans client-v2/wrangler.client-back.toml
+#    et admin-v2/wrangler.admin-back.toml (KV_CLIENT, KV_ADMIN).
+#  - Les namespaces KV, le bucket R2 (stb-files) et les secrets de chaque
+#    worker (INTERNAL_SECRET, RESEND_*, admin:auth) doivent déjà exister.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'client-v2/**'
+      - 'admin-v2/**'
+      - '.github/workflows/deploy-v2.yml'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build fronts (SPA -> front.js)
+        run: |
+          node client-v2/build-front.js
+          node admin-v2/build-front.js
+
+      # ── Backs d'abord (cibles des service bindings) ──
+      - name: Deploy stb-client-back
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: client-v2
+          command: deploy --config wrangler.client-back.toml
+
+      - name: Deploy stb-admin-back
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: admin-v2
+          command: deploy --config wrangler.admin-back.toml
+
+      # ── Fronts ensuite ──
+      - name: Deploy stb-client-front
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: client-v2
+          command: deploy --config wrangler.client-front.toml
+
+      - name: Deploy stb-admin-front
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: admin-v2
+          command: deploy --config wrangler.admin-front.toml

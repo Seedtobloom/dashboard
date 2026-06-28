@@ -1,0 +1,28 @@
+name = "stb-admin-back"
+main = "back.ts"
+compatibility_date = "2024-09-23"
+
+# KV des espaces clients (le MÊME que la vue client)
+[[kv_namespaces]]
+binding = "KV_CLIENT"
+id = "0cb5765b6dc647fca612a760935d8111"
+preview_id = "0cb5765b6dc647fca612a760935d8111"
+
+# KV d'auth admin (stb admin) : admin:auth, sessions, index clients
+[[kv_namespaces]]
+binding = "KV_ADMIN"
+id = "b418bb506aa3469cb589e14f5cf26230"
+preview_id = "b418bb506aa3469cb589e14f5cf26230"
+
+# R2 documents (le même bucket que la vue client)
+[[r2_buckets]]
+binding = "R2_FILES"
+bucket_name = "stb-files"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets :
+#   INTERNAL_SECRET   (identique au front admin)
+#   RESEND_API_KEY    (notifications client)
+#   RESEND_FROM_EMAIL (expéditeur vérifié)
