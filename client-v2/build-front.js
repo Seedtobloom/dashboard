@@ -109,7 +109,7 @@ css = css.replace(".cp-proj-bar { height: 5px; background: var(--bone-d); border
 must(css.indexOf(".cp-action {\r\n  display: flex; gap: 14px; align-items: flex-start;\r\n  background: var(--glycine-50); border: 1px solid var(--glycine-200);\r\n  border-radius: var(--radius-3); padding: 16px 18px; margin-bottom: 22px;\r\n}") !== -1, 'cp-action box');
 css = css.replace(
   ".cp-action {\r\n  display: flex; gap: 14px; align-items: flex-start;\r\n  background: var(--glycine-50); border: 1px solid var(--glycine-200);\r\n  border-radius: var(--radius-3); padding: 16px 18px; margin-bottom: 22px;\r\n}",
-  ".cp-action { display: flex; gap: 15px; align-items: center; background: linear-gradient(90deg,#fdeccf,#fbf3e4); border: 1.5px solid #efbc7e; border-left: 5px solid #e08a2e; border-radius: var(--radius-3); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 10px 28px -12px rgba(199,118,32,0.5); }"
+  ".cp-action { display: flex; gap: 15px; align-items: center; background: #fcecd2; border: 1.5px solid #efbc7e; border-left: 5px solid #e08a2e; border-radius: var(--radius-3); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 10px 28px -12px rgba(199,118,32,0.5); }"
 );
 must(css.indexOf(".cp-action__icon { flex-shrink: 0; margin-top: 1px; color: var(--glycine-900); }") !== -1, 'cp-action icon');
 css = css.replace(".cp-action__icon { flex-shrink: 0; margin-top: 1px; color: var(--glycine-900); }", ".cp-action__icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: #e8902f; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px -3px rgba(199,118,32,0.6); }");
