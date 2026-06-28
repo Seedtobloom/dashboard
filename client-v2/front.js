@@ -3066,31 +3066,23 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var timeMin = t.timeSpentMinutes||0;
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
         var propVals = t.properties || {};
-        // Sélections éditables en un clic, directement sur la carte (façon Notion).
-        var STATUT_OPTS = ['Brief en cours', 'Brief terminé'];
-        var PROG_OPTS = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
+        // Affichage compact : on ne montre une pastille que si la propriété a une valeur.
+        // L'édition se fait dans la fiche de la tâche (clic sur la carte).
         var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };
         var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
-        function inlineSel(propId, val, opts, colorMap, ph){
-          var bg = (val && colorMap[val]) || '#ffffff';
-          var s = '<select title="'+ph+'" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:1px solid rgba(65,47,33,0.22);border-radius:999px;padding:4px 10px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;color:#412F21;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
-          s += '<option value=""'+(!val?' selected':'')+'>'+ph+'</option>';
-          opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
-          s += '</select>';
-          return s;
+        function propChip(val, colorMap){
+          if (!val) return '';
+          var bg = colorMap[val] || '#efe8db';
+          return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
         }
-        var propChipsHtml =
-          inlineSel('p_clientbrief', propVals.p_clientbrief||'', STATUT_OPTS, STATUT_COL, 'Statut') +
-          inlineSel('p_brief', propVals.p_brief||'', PROG_OPTS, PROG_COL, 'Avancement');
-        var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
-        var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:9px 11px;border-radius:12px;border:1px solid rgba(65,47,33,0.07);background:'+(isDone?'#EDE4CF':'#F6ECD6')+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
+        var propChipsHtml = propChip(propVals.p_clientbrief, STATUT_COL) + propChip(propVals.p_brief, PROG_COL);
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:9px 11px;border-radius:12px;border:1px solid rgba(65,47,33,0.07);background:'+(isDone?'#EDE4CF':'#F6ECD6')+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
-          (propChipsHtml ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:5px">'+propChipsHtml+'</div>' : '') +
+          (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+(isWeekend?'#faf7f1':'#fff')+'">' +

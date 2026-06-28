@@ -185,33 +185,17 @@ js = js.replace(
   "font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;",
   "font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;"
 );
-// pastilles Statut/Avancement : texte plus contrasté + contour
-must(js.indexOf("border:none;border-radius:999px;padding:3px 9px;font-family:\\'Inter Tight\\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:") !== -1, 'pill select style');
-js = js.replace(
-  "border:none;border-radius:999px;padding:3px 9px;font-family:\\'Inter Tight\\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:",
-  "border:1px solid rgba(65,47,33,0.22);border-radius:999px;padding:4px 10px;font-family:\\'Inter Tight\\',sans-serif;font-size:11px;font-weight:700;color:#412F21;background:"
-);
 // fonds plus saturés pour distinguer les deux familles de pastilles
 must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
 js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };");
 must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };") !== -1, 'pill prog col');
 js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };");
-// pastille vide : look "label" épuré (chip blanc outline) au lieu d'un ton plein
-must(js.indexOf("(val && colorMap[val]) || '#efe8db'") !== -1, 'pill default bg');
-js = js.replace("(val && colorMap[val]) || '#efe8db'", "(val && colorMap[val]) || '#ffffff'");
-// placeholder du chip = juste le libellé (pas de points de suspension)
-must(js.indexOf("ph+'…</option>'") !== -1, 'pill placeholder');
-js = js.replace("ph+'…</option>'", "ph+'</option>'");
 // fond des cartes de tâche : beige (DA) au lieu du dégradé d'urgence
 must(js.indexOf("background:'+(isDone?'#f3ede2':soft)+'") !== -1, 'card beige bg');
 js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?'#EDE4CF':'#F6ECD6')+'");
 // carte de tâche plus jolie : plus de padding, coins plus ronds, fine bordure
 must(js.indexOf("padding:6px 8px;border-radius:7px;") !== -1, 'card pretty');
 js = js.replace("padding:6px 8px;border-radius:7px;", "padding:9px 11px;border-radius:12px;border:1px solid rgba(65,47,33,0.07);");
-// pastilles empilées (chaque libellé sur sa propre ligne -> texte lisible en entier)
-must(js.indexOf("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +") !== -1, 'pill stack');
-js = js.replace("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +", "(propChipsHtml ? '<div style=\"display:flex;flex-direction:column;gap:4px;margin-top:5px\">'+propChipsHtml+'</div>' : '') +");
-
 // ── Filtres du calendrier : filtrer sur l'AVANCEMENT (p_brief) que la cliente règle via les pastilles ──
 must(js.indexOf("if (t.archived || t.status==='done') return false;") !== -1, 'cal filter archived');
 js = js.replace("if (t.archived || t.status==='done') return false;", "if (t.archived) return false; var _prog = (t.properties||{}).p_brief || '';");
@@ -225,9 +209,6 @@ js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },", "{ k:'
 must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#c9952f' }") !== -1, 'cal chip avalider');
 js = js.replace("{ k:'review',      label:'À VALIDER', col:'#c9952f' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#d98a5b' },\n      { k:'Terminé', label:'TERMINÉ', col:'#5fa873' }");
 
-// ── Pastilles éditables depuis la carte : éviter le conflit avec le drag (pointerdown) ──
-must(js.indexOf("onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(") !== -1, 'pill pointerdown');
-js = js.replace("onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(", "onpointerdown=\"event.stopPropagation()\" onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(");
 // la sauvegarde d'une propriété recolore la pastille (re-render) — fiable aussi depuis la carte
 must(js.indexOf("toast('Enregistré ✓'); })") !== -1, 'prop save rerender');
 js = js.replace("toast('Enregistré ✓'); })", "toast('Enregistré ✓'); renderShell(); })");

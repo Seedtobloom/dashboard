@@ -2635,25 +2635,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var timeMin = t.timeSpentMinutes||0;
         var timeLbl = timeMin ? ' '+(timeMin/60).toFixed(1).replace('.0','')+'h' : '';
         var propVals = t.properties || {};
-        // Sélections éditables en un clic, directement sur la carte (façon Notion).
-        var STATUT_OPTS = ['Brief en cours', 'Brief terminé'];
-        var PROG_OPTS = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
+        // Affichage compact : on ne montre une pastille que si la propriété a une valeur.
+        // L'édition se fait dans la fiche de la tâche (clic sur la carte).
         var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };
         var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };
-        function inlineSel(propId, val, opts, colorMap, ph){
-          var bg = (val && colorMap[val]) || '#efe8db';
-          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:none;border-radius:999px;padding:3px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
-          s += '<option value=""'+(!val?' selected':'')+'>'+ph+'…</option>';
-          opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
-          s += '</select>';
-          return s;
+        function propChip(val, colorMap){
+          if (!val) return '';
+          var bg = colorMap[val] || '#efe8db';
+          return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
         }
-        var propChipsHtml =
-          inlineSel('p_clientbrief', propVals.p_clientbrief||'', STATUT_OPTS, STATUT_COL, 'Statut') +
-          inlineSel('p_brief', propVals.p_brief||'', PROG_OPTS, PROG_COL, 'Avancement');
-        var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
-        var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
+        var propChipsHtml = propChip(propVals.p_clientbrief, STATUT_COL) + propChip(propVals.p_brief, PROG_COL);
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
