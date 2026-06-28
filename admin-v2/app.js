@@ -126,11 +126,15 @@
       var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard') + kpi('kpi--today', nToday, "Aujourd'hui") + kpi('', nWeek, 'Cette semaine') + kpi('', nWait, 'Attente client') + '</div>';
 
       function prow(x) {
+        var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow">' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div></div>' +
-          '<div>' + pill(x.status, SL[x.status] || x.status) + '</div>' +
+          (x.id ? '<div class="prow__act">' +
+            '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
+            '<button class="pbtn" title="Reporter à une autre date" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>' +
+          '</div>' : '<div>' + pill(x.status, SL[x.status] || x.status) + '</div>') +
         '</div>';
       }
       function group(title, dotCol, items) {
@@ -156,22 +160,44 @@
       var forf = (d.forfaits || []).map(function (f) {
         var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0;
         var over = f.remaining < 0;
-        return '<div class="card"><div class="between"><strong><a href="javascript:ADM.openClient(\'' + f.key + '\')">' + esc(f.client) + '</a></strong>' +
-          '<span class="micro">' + (f.configured ? (f.used + ' / ' + f.base + ' h') : 'non défini') + '</span></div>' +
-          (f.configured ? '<div class="bar' + (over ? ' over' : '') + '"><span style="width:' + pct + '%"></span></div>' +
-            '<div class="micro mt" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (over ? ('dépassement ' + Math.abs(f.remaining) + ' h') : ('reste ' + f.remaining + ' h ce mois')) + '</div>' : '') +
+        return '<div class="prow" style="display:block;padding:11px 4px"><div class="between"><strong style="font-size:14px"><a href="javascript:ADM.openClient(\'' + f.key + '\')">' + esc(f.client) + '</a></strong>' +
+          '<span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (f.configured ? (f.used + ' / ' + f.base + ' h') : 'non défini') + '</span></div>' +
+          (f.configured ? '<div class="bar' + (over ? ' over' : '') + '" style="margin-top:7px"><span style="width:' + pct + '%"></span></div>' : '') +
           '</div>';
       }).join('');
 
       setMain(topbar('Priorités', right) + '<div class="wrap">' + kpis +
-        '<div class="card"><h3>Ce que vous avez à faire</h3>' +
-        (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
-        '<div class="card mt"><h3>En attente du client</h3>' +
-        (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
-        '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:22px 0 12px">Forfaits du mois</h3>' +
-        (forf || '<div class="empty">Aucun forfait partenaire.</div>') +
+        '<div class="pcols">' +
+          '<div class="card"><h3>Ce que vous avez à faire</h3>' +
+            (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
+          '<div>' +
+            '<div class="card"><h3>En attente du client</h3>' +
+              (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
+            '<div class="card mt"><h3>Forfaits du mois</h3>' +
+              (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div>' +
+          '</div>' +
+        '</div>' +
         '</div>');
     }).catch(showError);
+  }
+
+  function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : '/steps/') + id; }
+  function prioDone(key, project, kind, id) {
+    jpost(prioUrl(key, kind, id), { projectId: project, status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { toast('Marqué fait ✓'); renderPriorities(); } else toast('Erreur'); });
+  }
+  function prioPostpone(key, project, kind, id, cur) {
+    var inp = document.createElement('input'); inp.type = 'date'; if (cur) inp.value = cur;
+    inp.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(inp);
+    var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
+    inp.onchange = function () {
+      var v = inp.value; cleanup(); if (!v) return;
+      var body = { projectId: project }; if (kind === 'tâche') body.dueDate = v; else body.date = v;
+      jpost(prioUrl(key, kind, id), body, 'PATCH').then(function (r) { if (r.ok) { toast('Reporté au ' + fmtDate(v)); renderPriorities(); } else toast('Erreur'); });
+    };
+    inp.onblur = function () { setTimeout(cleanup, 200); };
+    if (inp.showPicker) { try { inp.showPicker(); return; } catch (e) { } }
+    inp.focus(); inp.click();
   }
 
   /* ── Clients ── */
@@ -508,6 +534,7 @@
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer,
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
+    prioDone: prioDone, prioPostpone: prioPostpone,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend,
