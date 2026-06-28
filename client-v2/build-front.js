@@ -22,6 +22,7 @@ const patch = read('_login_patch.js');
 const chatPatch = read('_chat_patch.js');
 const livPatch = read('_deliverables_patch.js');
 const taskDlvPatch = read('_task_dlv_patch.js');
+const blocksPatch = read('_blocks_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -157,6 +158,10 @@ js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#
 must(js.indexOf("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +") !== -1, 'pill stack');
 js = js.replace("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +", "(propChipsHtml ? '<div style=\"display:flex;flex-direction:column;gap:4px;margin-top:5px\">'+propChipsHtml+'</div>' : '') +");
 
+// ── Drawer de tâche : éditeur de contenu par blocs (façon Notion) sous la description ──
+must(js.indexOf("+esc(t.content||'')+'</textarea>' +") !== -1, 'drawer content textarea');
+js = js.replace("+esc(t.content||'')+'</textarea>' +", "+esc(t.content||'')+'</textarea>' + stbBlocks(pid, t) +");
+
 // ── Drawer de tâche : section « Livrables & révision » rattachée à la tâche ──
 must(js.indexOf("'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +") !== -1, 'drawer echange anchor');
 js = js.replace(
@@ -167,7 +172,7 @@ js = js.replace(
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + anchor[0]);
 
 const handler = [
   'export default {',
