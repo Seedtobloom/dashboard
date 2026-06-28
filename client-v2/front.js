@@ -330,9 +330,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cal-pill { font-family:var(--font-micro);font-size:10px;padding:3px 6px;border-radius:var(--radius-1);cursor:pointer;margin-bottom:3px;overflow:hidden;border-left:3px solid transparent;letter-spacing:0.04em;text-transform:uppercase; }
 .cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }
 @keyframes cpDrawerIn{from{transform:translateX(48px);opacity:0}to{transform:translateX(0);opacity:1}}
-body:has(.cp-task-panel) .cp-fab{display:none}
-body:has(.cp-task-overlay)::before{content:'';position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both}
 @keyframes cpFadeIn{from{opacity:0}to{opacity:1}}
+body:has(.cp-task-panel) .cp-fab{display:none}
 body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-task-card { border:1.5px solid var(--bone-d);border-radius:var(--radius-3);padding:14px 16px;margin-bottom:10px;background:var(--card);transition:box-shadow 0.15s; }
 .cp-task-card:hover { box-shadow:var(--shadow-2); }
@@ -3073,11 +3072,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         // Sélections éditables en un clic, directement sur la carte (façon Notion).
         var STATUT_OPTS = ['Brief en cours', 'Brief terminé'];
         var PROG_OPTS = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
-        var STATUT_COL = { 'Brief en cours':'#F2E5C2', 'Brief terminé':'#E4D1FE' };
-        var PROG_COL = { 'En attente du brief':'#F0E8FF', 'En cours':'#E4D1FE', 'À retravailler':'#EAD7BD', 'Besoin d\'une info':'#F2E5C2', 'Terminé':'#D7EBDB' };
+        var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };
+        var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
         function inlineSel(propId, val, opts, colorMap, ph){
           var bg = (val && colorMap[val]) || '#F0E8FF';
-          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:1px solid rgba(65,47,33,0.22);border-radius:999px;padding:4px 10px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;color:#412F21;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
+          var s = '<select title="'+ph+'" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:1px solid rgba(65,47,33,0.22);border-radius:999px;padding:4px 10px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;color:#412F21;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
           s += '<option value=""'+(!val?' selected':'')+'>'+ph+'…</option>';
           opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
           s += '</select>';
@@ -3196,7 +3195,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
 
-    return '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
+    return '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>' + '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
       // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +
@@ -3254,8 +3253,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' + sep;
       })() +
       // Détails & contexte (champ unique)
-      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Détails &amp; contexte</span></div>' +
-      '<textarea id="_pt-desc-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'content\',this.value)" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Format, ton, références, liens, contraintes…">'+esc(t.content||'')+'</textarea>' + stbBlocks(pid, t) +
+      '' +
+      '' +
       sep +
       // Echanges
       stbTaskDeliverables(pid, project, t, sep) + '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
@@ -3268,7 +3267,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       sep +
       // Actions
-      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
+      stbBlocks(pid, t) + sep + '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
       '<div style="display:flex;gap:8px">' +
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
         '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
@@ -3409,7 +3408,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     t.properties = Object.assign({}, t.properties||{}); t.properties[propId] = value;
     var patch = { projectId: pid, properties: {} }; patch.properties[propId] = value;
     fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) })
-      .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); })
+      .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); renderShell(); })
       .catch(function(){ toast('Erreur — réessayez'); });
   };
   // Sauvegarde immédiate du lien du brief (propriété composite p_elements).
@@ -5991,7 +5990,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
   function stbBlocksSave(pid, taskId){
     var t = cliTaskById(pid, taskId); if (!t) return;
-    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, blocks: t.blocks || [] }) })
+    var body = { projectId: pid, blocks: t.blocks || [] };
+    // Migration douce : l'ancien champ « Détails & contexte » devient le 1er bloc texte.
+    if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
+    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); })
       .catch(function(){ toast('Erreur — réessayez', true); });
   }
@@ -6022,17 +6024,26 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<button onclick="window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')" style="font-size:12px;padding:6px 11px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ '+label+'</button>';
   }
   function stbBlocks(pid, t){
+    // Migration douce de l'ancien champ texte vers un premier bloc.
+    if (!t._blkInit){
+      if (!Array.isArray(t.blocks)) t.blocks = [];
+      if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
+      t._blkInit = true;
+    }
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     var rows = blocks.map(function(b, i){ return stbBlockRow(pid, t.id, b, i, blocks.length); }).join('');
-    var addBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+
+    var addBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+
       stbAddBtn(pid, t.id, 'text', 'Texte')+
       stbAddBtn(pid, t.id, 'list', 'Liste')+
       stbAddBtn(pid, t.id, 'sep', 'Séparateur')+
       '<button onclick="window.stbBlockAddFile(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 11px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Fichier</button>'+
     '</div>';
-    var empty = '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;padding:2px 0 6px">Ajoutez du contenu : texte, listes, séparateurs, fichiers…</div>';
-    return '<div style="margin:16px 0 6px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>'+
-      '<div>'+(rows || empty)+addBar+'</div>';
+    var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 14px">Votre espace de travail : ajoutez du texte, des listes, des séparateurs, des fichiers…</div>';
+    // Forte séparation visuelle entre les propriétés (en haut) et le contenu (en bas).
+    return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:26px;padding-top:22px">'+
+      '<div style="margin-bottom:14px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Contenu</span></div>'+
+      '<div style="min-height:140px">'+(rows || empty)+addBar+'</div>'+
+    '</div>';
   }
   window.stbBlockAdd = function(pid, taskId, type){
     var t = cliTaskById(pid, taskId); if (!t) return;

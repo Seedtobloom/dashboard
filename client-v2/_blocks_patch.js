@@ -7,7 +7,10 @@
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
   function stbBlocksSave(pid, taskId){
     var t = cliTaskById(pid, taskId); if (!t) return;
-    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, blocks: t.blocks || [] }) })
+    var body = { projectId: pid, blocks: t.blocks || [] };
+    // Migration douce : l'ancien champ « Détails & contexte » devient le 1er bloc texte.
+    if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
+    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); })
       .catch(function(){ toast('Erreur — réessayez', true); });
   }
@@ -38,17 +41,26 @@
     return '<button onclick="window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')" style="font-size:12px;padding:6px 11px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ '+label+'</button>';
   }
   function stbBlocks(pid, t){
+    // Migration douce de l'ancien champ texte vers un premier bloc.
+    if (!t._blkInit){
+      if (!Array.isArray(t.blocks)) t.blocks = [];
+      if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
+      t._blkInit = true;
+    }
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     var rows = blocks.map(function(b, i){ return stbBlockRow(pid, t.id, b, i, blocks.length); }).join('');
-    var addBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+
+    var addBar = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+
       stbAddBtn(pid, t.id, 'text', 'Texte')+
       stbAddBtn(pid, t.id, 'list', 'Liste')+
       stbAddBtn(pid, t.id, 'sep', 'Séparateur')+
       '<button onclick="window.stbBlockAddFile(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 11px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Fichier</button>'+
     '</div>';
-    var empty = '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;padding:2px 0 6px">Ajoutez du contenu : texte, listes, séparateurs, fichiers…</div>';
-    return '<div style="margin:16px 0 6px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Contenu</span></div>'+
-      '<div>'+(rows || empty)+addBar+'</div>';
+    var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 14px">Votre espace de travail : ajoutez du texte, des listes, des séparateurs, des fichiers…</div>';
+    // Forte séparation visuelle entre les propriétés (en haut) et le contenu (en bas).
+    return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:26px;padding-top:22px">'+
+      '<div style="margin-bottom:14px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Contenu</span></div>'+
+      '<div style="min-height:140px">'+(rows || empty)+addBar+'</div>'+
+    '</div>';
   }
   window.stbBlockAdd = function(pid, taskId, type){
     var t = cliTaskById(pid, taskId); if (!t) return;
