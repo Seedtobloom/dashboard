@@ -192,6 +192,33 @@
 
   /* ── Mes tâches (perso admin) + timer ── */
   var MT_TIMER = null, MT_INT = null, MT_TASKS = [];
+  var PT_TIMER = null, PT_INT = null;
+  function ptBase(t) { return t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60; }
+  function ptStart(id) {
+    if (PT_TIMER && PT_TIMER.id !== id) ptPause(PT_TIMER.id, true);
+    var t = ptFind(id); if (!t) return;
+    PT_TIMER = { id: id, startedAt: Date.now(), base: ptBase(t) };
+    if (PT_INT) clearInterval(PT_INT);
+    PT_INT = setInterval(function () {
+      if (!PT_TIMER) { clearInterval(PT_INT); PT_INT = null; return; }
+      var span = el('pt-timer-' + PT_TIMER.id);
+      if (span) span.textContent = mtClock(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000);
+    }, 1000);
+    loadClient();
+  }
+  function ptPause(id, silent) {
+    if (!PT_TIMER || PT_TIMER.id !== id) return;
+    var total = Math.round(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000);
+    if (PT_INT) { clearInterval(PT_INT); PT_INT = null; }
+    PT_TIMER = null;
+    var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) loadClient(); else toast('Erreur'); } });
+  }
+  function ptFind(id) {
+    var d = (CUR && CUR.domains || []).find(function (x) { return x.id === 'partner'; });
+    var ts = d && d.content && Array.isArray(d.content.taches) ? d.content.taches : [];
+    return ts.find(function (x) { return x.id === id; });
+  }
   function mtClock(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; function p(n) { return n < 10 ? '0' + n : n; } return (h > 0 ? h + ':' : '') + p(m) + ':' + p(s); }
   function mtDur(sec) { sec = Math.round(sec); if (sec < 60) return sec + ' s'; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return (h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' min' : (h > 0 ? '' : '0 min')); }
   function mtRow(t) {
@@ -625,11 +652,20 @@
     var tasks = Array.isArray(d.content.taches) ? d.content.taches : [];
     return tasks.length ? tasks.map(function (t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
+      var prun = PT_TIMER && PT_TIMER.id === t.id;
+      var pbase = ptBase(t);
+      var chrono = prun
+        ? '<span id="pt-timer-' + t.id + '" style="font-family:var(--font-micro);font-weight:700;color:var(--green)">' + mtClock(pbase) + '</span>'
+        : (pbase ? '<span class="micro" style="color:var(--terre)">passé ' + mtDur(pbase) + '</span>' : '<span class="micro muted">non démarré</span>');
+      var chBtn = prun
+        ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.ptPause(\'' + t.id + '\')">⏸ Pause</button>'
+        : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">▶ Démarrer</button>';
       return '<div class="card"><div class="between"><strong>' + esc(t.title) + '</strong><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span></div>' +
         (t.content ? '<div class="muted mb" style="font-size:14px">' + esc(t.content) + '</div>' : '') +
-        '<div class="row">' +
+        '<div class="row" style="align-items:center;gap:10px">' +
         '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
-        '<input class="inp" type="number" style="width:90px" value="' + (t.timeSpentMinutes || 0) + '" title="minutes passées" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span>' +
+        chBtn + chrono +
+        '<input class="inp" type="number" style="width:80px" value="' + (t.timeSpentMinutes || 0) + '" title="ajuster les minutes" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span>' +
         '</div>' +
         taskDlvBlock(d, t) +
         commentsBlock('partner', t) +
@@ -667,7 +703,7 @@
   }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
   function taskStatus(id, st) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut: ' + st); loadClient(); } }); }
-  function taskTime(id, mn) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: Number(mn) || 0 }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
+  function taskTime(id, mn) { var m = Number(mn) || 0; var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; } jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60 }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
   function taskComment(pid, id) { var i = el('cm-' + id); var v = (i.value || '').trim(); if (!v) return; jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/comments', { projectId: pid, text: v }).then(function (r) { if (r.ok) { toast('Commentaire envoyé'); loadClient(); } }); }
 
   /* suivi (étapes) */
@@ -804,7 +840,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner,
-    taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
+    taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
     planCap: planCap, planDone: planDone, planStart: planStart,
