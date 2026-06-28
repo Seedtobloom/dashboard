@@ -807,15 +807,18 @@ async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
 /* ─────────── Planning : capacité hebdo (minutes par jour de semaine 1=lundi) ─────────── */
 async function getPlanning(env: Env): Promise<AnyObj> {
   const p = (await env.KV_ADMIN.get('admin:planning', { type: 'json' })) as AnyObj | null;
-  if (p && p.days) return p;
-  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 } };
+  if (p && p.days) return { startHour: 9, ...p };
+  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9 };
 }
 async function handlePlanningSave(request: Request, env: Env): Promise<Response> {
   const b = await readJson(request);
+  const cur = await getPlanning(env);
   const days: AnyObj = {};
-  for (let i = 1; i <= 7; i++) { days[i] = Math.max(0, parseInt(b.days && b.days[i], 10) || 0); }
-  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days }));
-  return json({ days });
+  const src = b.days || cur.days;
+  for (let i = 1; i <= 7; i++) { days[i] = Math.max(0, parseInt(src && src[i], 10) || 0); }
+  const startHour = b.startHour != null ? Math.min(20, Math.max(5, parseInt(b.startHour, 10) || 9)) : cur.startHour;
+  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour }));
+  return json({ days, startHour });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */
