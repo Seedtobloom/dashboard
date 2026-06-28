@@ -94,7 +94,7 @@
       '</div>';
 
     var backdrop = '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>';
-    var cover = '<div style="height:104px;background:linear-gradient(135deg,var(--nuit,#1C1205),var(--terre,#412F21))"></div>';
+    var cover = '<div style="height:104px;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
     var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
     var icon = '<div style="margin:-32px 0 0 44px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
     var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
