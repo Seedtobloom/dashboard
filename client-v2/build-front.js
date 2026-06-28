@@ -123,7 +123,7 @@ css = css.replace(
 must(css.indexOf(".cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }") !== -1, 'css task-panel');
 css = css.replace(
   ".cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }",
-  ".cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }\n@keyframes cpDrawerIn{from{transform:translateX(48px);opacity:0}to{transform:translateX(0);opacity:1}}\nbody:has(.cp-task-panel) .cp-fab{display:none}\nbody:has(.cp-task-overlay)::before{content:'';position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both}\n@keyframes cpFadeIn{from{opacity:0}to{opacity:1}}\nbody:has(.cp-task-overlay) .cp-fab{display:none}"
+  ".cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }\n@keyframes cpDrawerIn{from{transform:translateX(48px);opacity:0}to{transform:translateX(0);opacity:1}}\n@keyframes cpFadeIn{from{opacity:0}to{opacity:1}}\nbody:has(.cp-task-panel) .cp-fab{display:none}\nbody:has(.cp-task-overlay) .cp-fab{display:none}"
 );
 
 // ── Retrait de la messagerie GLOBALE (on garde le chat par projet) ──
@@ -151,9 +151,9 @@ js = js.replace(
 );
 // fonds plus saturés pour distinguer les deux familles de pastilles
 must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
-js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F2E5C2', 'Brief terminé':'#E4D1FE' };");
+js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };");
 must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };") !== -1, 'pill prog col');
-js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#F0E8FF', 'En cours':'#E4D1FE', 'À retravailler':'#EAD7BD', 'Besoin d\\'une info':'#F2E5C2', 'Terminé':'#D7EBDB' };");
+js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };");
 // pastille vide : ton DA (brume) plutôt qu'un gris
 must(js.indexOf("(val && colorMap[val]) || '#efe8db'") !== -1, 'pill default bg');
 js = js.replace("(val && colorMap[val]) || '#efe8db'", "(val && colorMap[val]) || '#F0E8FF'");
@@ -164,20 +164,36 @@ js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?
 must(js.indexOf("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +") !== -1, 'pill stack');
 js = js.replace("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +", "(propChipsHtml ? '<div style=\"display:flex;flex-direction:column;gap:4px;margin-top:5px\">'+propChipsHtml+'</div>' : '') +");
 
+// ── Pastilles éditables depuis la carte : éviter le conflit avec le drag (pointerdown) ──
+must(js.indexOf("onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(") !== -1, 'pill pointerdown');
+js = js.replace("onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(", "onpointerdown=\"event.stopPropagation()\" onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(");
+// la sauvegarde d'une propriété recolore la pastille (re-render) — fiable aussi depuis la carte
+must(js.indexOf("toast('Enregistré ✓'); })") !== -1, 'prop save rerender');
+js = js.replace("toast('Enregistré ✓'); })", "toast('Enregistré ✓'); renderShell(); })");
+
 // ── Drawer de tâche : grand panneau overlay à droite (le calendrier garde toute sa largeur) ──
 // 1) la racine du drawer devient un grand panneau fixe à droite (façon Notion peek)
 must(js.indexOf("'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +") !== -1, 'drawer root');
 js = js.replace(
   "'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +",
-  "'<div class=\"cp-task-overlay\" style=\"background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both\">' +"
+  "'<div class=\"cp-task-backdrop\" onclick=\"cliCloseTaskDrawer(\\''+pid+'\\')\" style=\"position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both\"></div>' + '<div class=\"cp-task-overlay\" style=\"background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both\">' +"
 );
 // 2) on ne réserve plus la colonne de 360px : le calendrier reste pleine largeur sous l'overlay
 must(js.indexOf("grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start") !== -1, 'cal reserved col');
 js = js.replace("grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start", "grid-template-columns:minmax(0,1fr);gap:20px;align-items:start");
 
-// ── Drawer de tâche : éditeur de contenu par blocs (façon Notion) sous la description ──
-must(js.indexOf("+esc(t.content||'')+'</textarea>' +") !== -1, 'drawer content textarea');
-js = js.replace("+esc(t.content||'')+'</textarea>' +", "+esc(t.content||'')+'</textarea>' + stbBlocks(pid, t) +");
+// ── Drawer de tâche : on retire l'ancien champ « Détails & contexte » (remplacé par le bloc Contenu en bas) ──
+must(js.indexOf("'<div style=\"margin-bottom:2px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Détails &amp; contexte</span></div>' +") !== -1, 'drawer details label');
+js = js.replace("'<div style=\"margin-bottom:2px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Détails &amp; contexte</span></div>' +", "'' +");
+must(js.indexOf("'<textarea id=\"_pt-desc-'+t.id+'\" onchange=\"cliEditTaskField(\\''+pid+'\\',\\''+t.id+'\\',\\'content\\',this.value)\" style=\"width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px\" placeholder=\"Format, ton, références, liens, contraintes…\">'+esc(t.content||'')+'</textarea>' +") !== -1, 'drawer details textarea');
+js = js.replace("'<textarea id=\"_pt-desc-'+t.id+'\" onchange=\"cliEditTaskField(\\''+pid+'\\',\\''+t.id+'\\',\\'content\\',this.value)\" style=\"width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px\" placeholder=\"Format, ton, références, liens, contraintes…\">'+esc(t.content||'')+'</textarea>' +", "'' +");
+
+// ── Drawer de tâche : grand espace « Contenu » par blocs (façon Notion) tout en bas, avant les actions ──
+must(js.indexOf("'<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +") !== -1, 'drawer actions anchor');
+js = js.replace(
+  "'<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +",
+  "stbBlocks(pid, t) + sep + '<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +"
+);
 
 // ── Drawer de tâche : section « Livrables & révision » rattachée à la tâche ──
 must(js.indexOf("'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +") !== -1, 'drawer echange anchor');
