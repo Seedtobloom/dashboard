@@ -76,6 +76,7 @@ export default {
       if (method === 'POST' && pathname === '/api/test-email') return handleTestEmail(request, env);
       if (method === 'GET' && pathname === '/api/dashboard') return handleDashboard(env);
       if (method === 'GET' && pathname === '/api/done') return handleDone(env);
+      if (method === 'GET' && pathname === '/api/kpi') return handleKpi(env);
 
       // Tâches personnelles de l'admin (stockées dans KV_ADMIN)
       if (pathname === '/api/admin/tasks') {
@@ -716,6 +717,38 @@ async function handleDone(env: Env): Promise<Response> {
   }
   completed.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
   return json({ completed });
+}
+
+// KPI partenaire créative : agrégats tâches / temps / forfaits.
+async function handleKpi(env: Env): Promise<Response> {
+  const idx = await getIndex(env);
+  const tasksByMonth: AnyObj = {};
+  const minutesByMonth: AnyObj = {};
+  const byClient: AnyObj[] = [];
+  const forfaits: AnyObj[] = [];
+  let totalDone = 0, totalMinutes = 0, totalOpen = 0;
+  for (const ci of idx) {
+    const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
+    if (!data) continue;
+    const esp = getEspace(data);
+    const pc = getDomainObj(esp, 'partenaireCreative');
+    if (!pc) continue;
+    const who = clientName(data);
+    const tasks = pc.taches || [];
+    let cDone = 0, cMin = 0, cOpen = 0;
+    tasks.forEach((t: AnyObj) => {
+      if (t.status === 'done') {
+        totalDone++; cDone++;
+        const min = t.timeSpentMinutes || 0; totalMinutes += min; cMin += min;
+        const when = (t.completedAt || t.dueDate || '').slice(0, 7);
+        if (when) { tasksByMonth[when] = (tasksByMonth[when] || 0) + 1; minutesByMonth[when] = (minutesByMonth[when] || 0) + min; }
+      } else if (!t.archived) { cOpen++; totalOpen++; }
+    });
+    byClient.push({ key: ci.key, client: who, tasksDone: cDone, minutes: cMin, openTasks: cOpen });
+    forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
+  }
+  byClient.sort((a, b) => b.minutes - a.minutes);
+  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length } });
 }
 
 /* ─────────── Tâches personnelles de l'admin ─────────── */

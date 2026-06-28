@@ -64,7 +64,7 @@
   /* ── shell ── */
   function nav(v) { VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0); }
   function renderShell() {
-    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
+    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['kpi', 'KPI'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
     var navHtml = items.map(function (it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + it[1] + badgeSpan + '</button>';
@@ -89,6 +89,7 @@
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'mytasks') return renderMyTasks();
+    if (VIEW === 'kpi') return renderKpi();
     if (VIEW === 'clients') return renderClients();
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
@@ -267,6 +268,48 @@
   }
   function myTaskStatus(id, st) { jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
+
+  /* ── KPI partenaire créative ── */
+  function barsHtml(items, color, fmtVal) {
+    if (!items.length) return '<div class="empty">Pas encore de données.</div>';
+    var max = Math.max.apply(null, items.map(function (x) { return x.value; })) || 1;
+    return '<div style="display:flex;align-items:flex-end;gap:10px;height:170px;padding-top:8px">' + items.map(function (x) {
+      var h = Math.round((x.value / max) * 132);
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0">' +
+        '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;color:var(--terre)">' + (x.value ? (fmtVal ? fmtVal(x.value) : x.value) : '') + '</div>' +
+        '<div style="width:100%;max-width:48px;height:' + Math.max(2, h) + 'px;background:' + color + ';border-radius:6px 6px 0 0"></div>' +
+        '<div style="font-family:var(--font-micro);font-size:9px;color:var(--muted);white-space:nowrap;letter-spacing:0.03em">' + esc(x.label) + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+  function monthLbl(k) { var p = k.split('-'); var dd = new Date(p[0], p[1] - 1, 1); return dd.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') + ' ' + String(p[0]).slice(2); }
+  function renderKpi() {
+    setMain(topbar('KPI partenaire créative') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/kpi').then(function (r) { return r.json(); }).then(function (d) {
+      var t = d.totals || {};
+      function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var kpis = '<div class="kpis">' + kc(t.done || 0, 'Tâches réalisées') + kc(((t.minutes || 0) / 60).toFixed(0) + ' h', 'Temps passé') + kc(t.open || 0, 'Tâches en cours') + kc(t.clients || 0, 'Clients actifs') + '</div>';
+      var keys = Object.keys(d.tasksByMonth || {}).sort().slice(-8);
+      var tItems = keys.map(function (k) { return { label: monthLbl(k), value: d.tasksByMonth[k] || 0 }; });
+      var mItems = keys.map(function (k) { return { label: monthLbl(k), value: Math.round((d.minutesByMonth[k] || 0) / 60 * 10) / 10 }; });
+      var clientRows = (d.byClient || []).map(function (c) {
+        return '<tr><td><a href="javascript:ADM.openClient(\'' + c.key + '\')">' + esc(c.client) + '</a></td>' +
+          '<td>' + c.tasksDone + '</td><td>' + (c.minutes / 60).toFixed(1).replace('.0', '') + ' h</td><td>' + c.openTasks + '</td></tr>';
+      }).join('') || '<tr><td colspan="4" class="empty">Aucun client partenaire.</td></tr>';
+      var forf = (d.forfaits || []).filter(function (f) { return f.configured; }).map(function (f) {
+        var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
+        return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
+      }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
+      setMain(topbar('KPI partenaire créative') + '<div class="wrap">' + kpis +
+        '<div class="pcols">' +
+          '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
+          '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div>' +
+        '</div>' +
+        '<div class="card mt"><h3>Par client</h3><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>' +
+        '<div class="card mt"><h3>Forfaits du mois</h3>' + forf + '</div>' +
+        '</div>');
+    }).catch(showError);
+  }
 
   /* ── Réalisé (historique daté) ── */
   function renderDone() {
