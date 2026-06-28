@@ -77,6 +77,17 @@ export default {
       if (method === 'GET' && pathname === '/api/dashboard') return handleDashboard(env);
       if (method === 'GET' && pathname === '/api/done') return handleDone(env);
 
+      // Tâches personnelles de l'admin (stockées dans KV_ADMIN)
+      if (pathname === '/api/admin/tasks') {
+        if (method === 'GET') return handleMyTasksList(env);
+        if (method === 'POST') return handleMyTaskCreate(request, env);
+      }
+      const mt = pathname.match(/^\/api\/admin\/tasks\/([a-f0-9]+)$/);
+      if (mt) {
+        if (method === 'PATCH') return handleMyTaskUpdate(request, env, mt[1]);
+        if (method === 'DELETE') return handleMyTaskDelete(env, mt[1]);
+      }
+
       if (pathname === '/api/clients') {
         if (method === 'GET') return handleClientsList(env);
         if (method === 'POST') return handleClientCreate(request, env);
@@ -696,6 +707,54 @@ async function handleDone(env: Env): Promise<Response> {
   }
   completed.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
   return json({ completed });
+}
+
+/* ─────────── Tâches personnelles de l'admin ─────────── */
+async function getMyTasks(env: Env): Promise<AnyObj[]> {
+  const a = (await env.KV_ADMIN.get('admin:tasks', { type: 'json' })) as AnyObj[] | null;
+  return Array.isArray(a) ? a : [];
+}
+async function saveMyTasks(env: Env, tasks: AnyObj[]): Promise<void> {
+  await env.KV_ADMIN.put('admin:tasks', JSON.stringify(tasks));
+}
+async function handleMyTasksList(env: Env): Promise<Response> {
+  return json({ tasks: await getMyTasks(env) });
+}
+async function handleMyTaskCreate(request: Request, env: Env): Promise<Response> {
+  const b = await readJson(request);
+  if (!b.title || !b.title.toString().trim()) return json({ error: 'Titre requis' }, 400);
+  const tasks = await getMyTasks(env);
+  const t: AnyObj = {
+    id: genId(),
+    title: b.title.toString().trim(),
+    notes: (b.notes || '').toString(),
+    priority: ['haute', 'normale', 'basse'].indexOf(b.priority) !== -1 ? b.priority : 'normale',
+    estMinutes: Math.max(0, parseInt(b.estMinutes, 10) || 0),
+    dueDate: b.dueDate || null,
+    status: 'todo',
+    createdAt: nowIso(),
+    completedAt: null,
+  };
+  tasks.push(t);
+  await saveMyTasks(env, tasks);
+  return json(t, 201);
+}
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'status'];
+async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promise<Response> {
+  const b = await readJson(request);
+  const tasks = await getMyTasks(env);
+  const t = tasks.find((x) => x.id === id);
+  if (!t) return json({ error: 'Tâche introuvable' }, 404);
+  MYTASK_FIELDS.forEach((k) => { if (k in b) t[k] = b[k]; });
+  if (b.status === 'done' && !t.completedAt) t.completedAt = nowIso();
+  if (b.status && b.status !== 'done') t.completedAt = null;
+  await saveMyTasks(env, tasks);
+  return json(t);
+}
+async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
+  const tasks = await getMyTasks(env);
+  await saveMyTasks(env, tasks.filter((x) => x.id !== id));
+  return json({ ok: true });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */

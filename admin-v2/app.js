@@ -64,7 +64,7 @@
   /* ── shell ── */
   function nav(v) { VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0); }
   function renderShell() {
-    var items = [['priorities', 'Priorités'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
+    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
     var navHtml = items.map(function (it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + it[1] + badgeSpan + '</button>';
@@ -88,6 +88,7 @@
   function renderMain() {
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
+    if (VIEW === 'mytasks') return renderMyTasks();
     if (VIEW === 'clients') return renderClients();
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
@@ -185,6 +186,54 @@
         '</div>');
     }).catch(showError);
   }
+
+  /* ── Mes tâches (perso admin) ── */
+  function mtRow(t) {
+    var pcol = { haute: 'var(--red)', normale: 'var(--glycine-900)', basse: '#c3b9a6' }[t.priority] || 'var(--glycine-900)';
+    var plabel = { haute: 'Priorité haute', normale: 'Priorité normale', basse: 'Priorité basse' }[t.priority] || t.priority;
+    var est = t.estMinutes ? ((t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
+    var dn = t.status === 'done';
+    return '<div class="prow">' +
+      '<span class="pdot" style="background:' + pcol + ';align-self:center"></span>' +
+      '<div class="prow__main"><div class="prow__el" style="' + (dn ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + esc(t.title) + '</div>' +
+        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div></div>' +
+      '<div class="prow__act">' +
+        (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
+            : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
+        '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4">Suppr.</button>' +
+      '</div></div>';
+  }
+  function renderMyTasks() {
+    setMain(topbar('Mes tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/admin/tasks').then(function (r) { return r.json(); }).then(function (d) {
+      var all = d.tasks || [];
+      var todo = all.filter(function (x) { return x.status !== 'done'; });
+      var done = all.filter(function (x) { return x.status === 'done'; });
+      var prank = { haute: 0, normale: 1, basse: 2 };
+      todo.sort(function (a, b) { var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority]; if (pa !== pb) return pa - pb; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
+      var estTotal = todo.reduce(function (s, x) { return s + (x.estMinutes || 0); }, 0);
+      var weekAgo = new Date(Date.now() - 7 * 86400000);
+      var doneWeek = done.filter(function (x) { return x.completedAt && new Date(x.completedAt) >= weekAgo; }).length;
+      function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var kpis = '<div class="kpis">' + kc(todo.length, 'À faire') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé') + kc(doneWeek, 'Fait (7 j)') + kc(done.length, 'Total réalisé') + '</div>';
+      var form = '<div class="card"><h3>Ajouter une tâche</h3>' +
+        '<div class="row"><input class="inp" id="mt-title" placeholder="Que dois-tu faire ?" style="flex:2;min-width:160px">' +
+          '<select class="inp" id="mt-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select>' +
+          '<input class="inp" id="mt-est" type="number" min="0" step="15" placeholder="min" style="width:80px" title="Durée estimée en minutes">' +
+          '<input class="inp" id="mt-due" type="date" style="width:auto">' +
+          '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">+ Ajouter</button></div>' +
+        '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le futur calendrier intelligent et les KPI de temps.</div></div>';
+      var rows = todo.map(mtRow).join('') || '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>';
+      var doneRows = done.length ? '<div class="card mt"><h3>Terminées</h3>' + done.slice().reverse().slice(0, 25).map(mtRow).join('') + '</div>' : '';
+      setMain(topbar('Mes tâches') + '<div class="wrap">' + kpis + form + '<div class="card mt"><h3>À faire</h3>' + rows + '</div>' + doneRows + '</div>');
+    }).catch(showError);
+  }
+  function myTaskAdd() {
+    var title = (el('mt-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
+    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
+  }
+  function myTaskStatus(id, st) { jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
+  function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Réalisé (historique daté) ── */
   function renderDone() {
@@ -570,6 +619,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer,
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend,
