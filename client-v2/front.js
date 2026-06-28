@@ -188,14 +188,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 @media (max-width: 900px) { .cp-grid { grid-template-columns: 1fr; gap: 0; } }
 
 /* Action banner */
-.cp-action {
-  display: flex; gap: 14px; align-items: flex-start;
-  background: var(--glycine-50); border: 1px solid var(--glycine-200);
-  border-radius: var(--radius-3); padding: 16px 18px; margin-bottom: 22px;
-}
-.cp-action__icon { flex-shrink: 0; margin-top: 1px; color: var(--glycine-900); }
-.cp-action__title { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terre); margin-bottom: 3px; }
-.cp-action__text { font-size: var(--fs-small); color: var(--terre-600); line-height: 1.6; }
+.cp-action { display: flex; gap: 15px; align-items: center; background: linear-gradient(90deg,#fdeccf,#fbf3e4); border: 1.5px solid #efbc7e; border-left: 5px solid #e08a2e; border-radius: var(--radius-3); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 10px 28px -12px rgba(199,118,32,0.5); }
+.cp-action__icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: #e8902f; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px -3px rgba(199,118,32,0.6); }
+.cp-action__title { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #a4561b; margin-bottom: 4px; }
+.cp-action__text { font-size: 14.5px; color: #5c4530; line-height: 1.55; font-weight: 500; }
 
 /* Cards */
 .cp-card { background: var(--card); border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow-1); }
@@ -1746,7 +1742,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var banner = '';
     if (actionStep) {
       banner = '<div class="cp-action">' +
-        '<div class="cp-action__icon">'+cpIcon('arrow',18,'color:var(--terre)')+'</div>' +
+        '<div class="cp-action__icon">'+cpIcon('bell',20)+'</div>' +
         '<div>' +
           '<div class="cp-action__title">Votre action est requise</div>' +
           '<div class="cp-action__text">' +
