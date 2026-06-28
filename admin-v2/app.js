@@ -193,16 +193,23 @@
   /* ── Mes tâches (perso admin) + timer ── */
   var MT_TIMER = null, MT_INT = null, MT_TASKS = [];
   var PT_TIMER = null, PT_INT = null;
+  var DOC_BASE_TITLE = '';
+  function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; if (!DOC_BASE_TITLE) DOC_BASE_TITLE = document.title; document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
+  function tabTimerOff() { if (typeof document === 'undefined') return; if (DOC_BASE_TITLE) document.title = DOC_BASE_TITLE; }
   function ptBase(t) { return t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60; }
   function ptStart(id) {
     if (PT_TIMER && PT_TIMER.id !== id) ptPause(PT_TIMER.id, true);
+    if (MT_TIMER) mtPause(MT_TIMER.id, true);
     var t = ptFind(id); if (!t) return;
-    PT_TIMER = { id: id, startedAt: Date.now(), base: ptBase(t) };
+    PT_TIMER = { id: id, startedAt: Date.now(), base: ptBase(t), title: t.title };
     if (PT_INT) clearInterval(PT_INT);
+    tabTimerOn(mtClock(PT_TIMER.base), t.title);
     PT_INT = setInterval(function () {
       if (!PT_TIMER) { clearInterval(PT_INT); PT_INT = null; return; }
+      var sec = PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000;
       var span = el('pt-timer-' + PT_TIMER.id);
-      if (span) span.textContent = mtClock(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000);
+      if (span) span.textContent = mtClock(sec);
+      tabTimerOn(mtClock(sec), PT_TIMER.title);
     }, 1000);
     loadClient();
   }
@@ -211,6 +218,7 @@
     var total = Math.round(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000);
     if (PT_INT) { clearInterval(PT_INT); PT_INT = null; }
     PT_TIMER = null;
+    tabTimerOff();
     var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
     jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) loadClient(); else toast('Erreur'); } });
   }
@@ -245,13 +253,17 @@
   }
   function mtStart(id) {
     if (MT_TIMER && MT_TIMER.id !== id) mtPause(MT_TIMER.id, true);
+    if (PT_TIMER) ptPause(PT_TIMER.id, true);
     var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
-    MT_TIMER = { id: id, startedAt: Date.now(), base: t.timeSpentSeconds || 0 };
+    MT_TIMER = { id: id, startedAt: Date.now(), base: t.timeSpentSeconds || 0, title: t.title };
     if (MT_INT) clearInterval(MT_INT);
+    tabTimerOn(mtClock(MT_TIMER.base), t.title);
     MT_INT = setInterval(function () {
       if (!MT_TIMER) { clearInterval(MT_INT); MT_INT = null; return; }
+      var sec = MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000;
       var span = el('mt-timer-' + MT_TIMER.id);
-      if (span) span.textContent = mtClock(MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000);
+      if (span) span.textContent = mtClock(sec);
+      tabTimerOn(mtClock(sec), MT_TIMER.title);
     }, 1000);
     renderMyTasks();
   }
@@ -260,6 +272,7 @@
     var total = Math.round(MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000);
     if (MT_INT) { clearInterval(MT_INT); MT_INT = null; }
     MT_TIMER = null;
+    tabTimerOff();
     var local = MT_TASKS.find(function (x) { return x.id === id; }); if (local) local.timeSpentSeconds = total;
     jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) renderMyTasks(); else toast('Erreur'); } });
   }
@@ -294,7 +307,7 @@
     var title = (el('mt-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
     jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
   }
-  function myTaskStatus(id, st) { jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
+  function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
@@ -741,7 +754,7 @@
   function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indiquez un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
   function beneficeDel(id) { api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); }); }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
-  function taskStatus(id, st) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut: ' + st); loadClient(); } }); }
+  function taskStatus(id, st) { if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut: ' + st); loadClient(); } }); }
   function taskTime(id, mn) { var m = Number(mn) || 0; var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; } jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60 }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
   function taskComment(pid, id) { var i = el('cm-' + id); var v = (i.value || '').trim(); if (!v) return; jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/comments', { projectId: pid, text: v }).then(function (r) { if (r.ok) { toast('Commentaire envoyé'); loadClient(); } }); }
 
