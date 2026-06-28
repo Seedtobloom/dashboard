@@ -368,6 +368,13 @@ async function handleClientApi(
     return json({ ok: true, bannerColor: container.bannerColor });
   }
 
+  // Bilan de fin de collaboration : inviter le client à le remplir
+  if (method === 'POST' && sub === '/bilan/request') return handleBilanRequest(env, key, data);
+  // Bénéfices : suivi après la collaboration
+  if (method === 'POST' && sub === '/benefices') return handleBeneficeAdd(request, env, key, data);
+  const bdm = sub.match(/^\/benefices\/([a-f0-9]+)$/);
+  if (bdm && method === 'DELETE') return handleBeneficeDelete(env, key, data, bdm[1]);
+
   // Supports : créer un nouveau projet support (00X)
   if (method === 'POST' && sub === '/supports') return handleSupportCreate(request, env, key, data);
 
@@ -447,6 +454,47 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   await saveClient(env, key, data);
   await notifyClient(env, data, `Nouveau message — ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`);
   return json({ message: mapMsg(entry) }, 201);
+}
+
+/* ── bilan de collaboration + bénéfices ── */
+async function handleBilanRequest(env: Env, key: string, data: AnyObj): Promise<Response> {
+  const { container } = resolveProject(getEspace(data), 'partner');
+  if (!container) return json({ error: 'Projet introuvable' }, 404);
+  const b = container.bilan && typeof container.bilan === 'object' ? container.bilan : {};
+  b.requestedAt = nowIso();
+  if (!('submittedAt' in b)) b.submittedAt = null;
+  container.bilan = b;
+  await saveClient(env, key, data);
+  await notifyClient(env, data, 'Votre avis sur notre collaboration',
+    '<p>Nous arrivons au terme de notre collaboration. Votre retour compte beaucoup pour faire grandir le studio.</p>' +
+    '<p>Connectez-vous à votre espace, onglet <strong>Bilan</strong>, pour le partager en quelques minutes.</p>');
+  return json({ ok: true, bilan: b });
+}
+async function handleBeneficeAdd(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const { container } = resolveProject(getEspace(data), 'partner');
+  if (!container) return json({ error: 'Projet introuvable' }, 404);
+  const label = (body.label || '').toString().trim();
+  if (!label) return json({ error: 'label requis' }, 400);
+  if (!Array.isArray(container.benefices)) container.benefices = [];
+  const item = {
+    id: genId(),
+    label,
+    value: (body.value || '').toString().trim(),
+    note: (body.note || '').toString().trim(),
+    date: (body.date || '').toString().trim() || nowIso().slice(0, 10),
+    createdAt: nowIso(),
+  };
+  container.benefices.unshift(item);
+  await saveClient(env, key, data);
+  return json(item, 201);
+}
+async function handleBeneficeDelete(env: Env, key: string, data: AnyObj, id: string): Promise<Response> {
+  const { container } = resolveProject(getEspace(data), 'partner');
+  if (!container) return json({ error: 'Projet introuvable' }, 404);
+  container.benefices = (Array.isArray(container.benefices) ? container.benefices : []).filter((x: AnyObj) => x.id !== id);
+  await saveClient(env, key, data);
+  return json({ ok: true });
 }
 
 /* ── tâches ── */

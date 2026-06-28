@@ -178,6 +178,9 @@ async function handleClientApi(
   if (t && method === 'PATCH') return handleTicketUpdate(request, env, masterKey, data, t[1]);
   if (t && method === 'DELETE') return handleTicketDelete(request, env, masterKey, data, t[1], url);
 
+  // Bilan de fin de collaboration
+  if (sub === '/bilan' && method === 'POST') return handleBilanSubmit(request, env, masterKey, data);
+
   // Conseils / retours
   let cr = sub.match(/^\/(counsels|feedbacks)$/);
   if (cr && method === 'POST') return handleCRAdd(request, env, masterKey, data, cr[1]);
@@ -453,6 +456,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
 
   const conversation = mapChatToMessages(espace.conversation || []);
   const studioHolidays = espace.studioHolidays || [];
+  const bilan = pc && pc.bilan && typeof pc.bilan === 'object' ? pc.bilan : null;
 
   // Une seule offre active -> atterrissage direct sur sa page riche (forme V1
   // "single-project", sans type:'client') au lieu d'une grille à une carte.
@@ -465,6 +469,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
       files: only.files,
       conversation,
       studioHolidays,
+      bilan,
     };
   }
 
@@ -475,6 +480,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     conversation,
     home: espace.home || null,
     studioHolidays,
+    bilan,
   };
 }
 
@@ -849,6 +855,28 @@ async function handleTicketDelete(_request: Request, env: Env, masterKey: string
   container.tickets = ticketsOf(container).filter((t) => t.id !== ticketId);
   await save(env, masterKey, data);
   return json({ ok: true });
+}
+
+async function handleBilanSubmit(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const pc = getDomainObj(getEspace(data), 'partenaireCreative');
+  if (!pc) return json({ error: 'Project not found' }, 404);
+  const b = pc.bilan && typeof pc.bilan === 'object' ? pc.bilan : {};
+  b.rating = Math.max(0, Math.min(5, Math.round(Number(body.rating) || 0)));
+  b.recommend = body.recommend === true || body.recommend === 'true';
+  b.liked = (body.liked || '').toString().trim();
+  b.improve = (body.improve || '').toString().trim();
+  b.testimonial = (body.testimonial || '').toString().trim();
+  b.allowTestimonial = body.allowTestimonial === true || body.allowTestimonial === 'true';
+  b.submittedAt = nowIso();
+  pc.bilan = b;
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Bilan de collaboration — ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a partagé son bilan de fin de collaboration.</p>` +
+    `<p>Note de satisfaction : <strong>${b.rating}/5</strong></p>` +
+    (b.liked ? `<p>Ce qui a plu : ${escHtml(b.liked)}</p>` : '') +
+    (b.testimonial ? `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(b.testimonial)}</p>` + (b.allowTestimonial ? '<p style="color:#5d7a52">Le client autorise la publication de ce témoignage.</p>' : '') : ''));
+  return json(b);
 }
 
 async function handleCRAdd(request: Request, env: Env, masterKey: string, data: AnyObj, field: string): Promise<Response> {
