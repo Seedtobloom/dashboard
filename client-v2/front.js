@@ -1333,7 +1333,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var exchangeNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
-      navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +
+      navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +
       '' +
     '</div>';
 
@@ -6654,6 +6654,54 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>' +
         '<div id="cp-bilan-body" style="flex:1;overflow-y:auto;padding:24px">' +
           (submitted ? stbBilanDone(b) : ('<div style="font-size:13.5px;color:#9a8a72;margin-bottom:20px">Prenez un instant pour partager votre ressenti sur notre collaboration. Cela compte beaucoup pour faire grandir le studio.</div>' + stbBilanForm())) +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+  };
+
+  /* Avis sur l'espace (manques, incomprehensions) */
+  window.cpCloseAvis = function(){ var o = document.getElementById('cp-avis'); if (o && o.parentNode) o.parentNode.removeChild(o); };
+  function stbAvisCat(v){
+    var cats = ['Un manque', 'Une incomprehension', 'Une suggestion', 'Autre'];
+    return cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  }
+  window.stbAvisSubmit = function(){
+    var cat = (document.getElementById('cp-avis-cat')||{}).value || '';
+    var msg = ((document.getElementById('cp-avis-msg')||{}).value || '').trim();
+    if (!msg){ alert('Ecrivez quelques mots avant d envoyer.'); return; }
+    var btn = document.querySelector('#cp-avis button[onclick*="stbAvisSubmit"]');
+    if (btn){ btn.textContent = 'Envoi en cours'; btn.disabled = true; }
+    fetch('/api/client/' + TOKEN + '/space-feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ category: cat, content: msg }) })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+      .then(function(res){
+        if (!res.ok){ if (btn){ btn.textContent = 'Envoyer'; btn.disabled = false; } alert('Une erreur est survenue, reessayez.'); return; }
+        var body = document.getElementById('cp-avis-body');
+        if (body) body.innerHTML = '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5d7a52') + '</div>' +
+          '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#412F21);margin-bottom:6px">Merci</div>' +
+          '<div style="text-align:center;font-size:13px;color:#9a8a72">Votre retour a bien ete transmis. Il aidera a ameliorer votre espace.</div>';
+      })
+      .catch(function(){ if (btn){ btn.textContent = 'Envoyer'; btn.disabled = false; } alert('Une erreur est survenue, reessayez.'); });
+  };
+  window.cpOpenAvis = function(){
+    window.cpCloseAvis();
+    var ov = document.createElement('div');
+    ov.id = 'cp-avis';
+    ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
+    ov.onclick = function(e){ if (e.target === ov) window.cpCloseAvis(); };
+    var inS = 'width:100%;box-sizing:border-box;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px;color:var(--terre,#412F21);background:var(--card,#fff)';
+    ov.innerHTML =
+      '<div style="width:min(540px,100%);max-height:calc(100vh - 48px);background:var(--bone,#faf7f1);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#e8e0d4);background:var(--card,#fff);flex-shrink:0">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#412F21)">Votre avis sur l espace</span>' +
+          '<button onclick="window.cpCloseAvis()" style="background:none;border:none;cursor:pointer;color:#9a93a5;font-size:18px;line-height:1">✕</button>' +
+        '</div>' +
+        '<div id="cp-avis-body" style="flex:1;overflow-y:auto;padding:24px">' +
+          '<div style="font-size:13.5px;color:#9a8a72;margin-bottom:18px">Un manque, une chose peu claire, une idee pour rendre votre espace plus pratique. Tout retour nous aide a l ameliorer.</div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:6px">Type de retour</div>' +
+          '<select id="cp-avis-cat" style="' + inS + ';margin-bottom:16px">' + stbAvisCat() + '</select>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:6px">Votre message</div>' +
+          '<textarea id="cp-avis-msg" placeholder="Decrivez en quelques mots" style="' + inS + ';min-height:120px;resize:vertical;margin-bottom:18px"></textarea>' +
+          '<button onclick="window.stbAvisSubmit()" style="width:100%;background:var(--terre,#412F21);color:#fff;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Envoyer</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
