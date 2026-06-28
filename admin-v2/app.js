@@ -308,9 +308,35 @@
         '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
         '<input class="inp" type="number" style="width:90px" value="' + (t.timeSpentMinutes || 0) + '" title="minutes passées" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span>' +
         '</div>' +
+        taskDlvBlock(d, t) +
         commentsBlock('partner', t) +
         '</div>';
     }).join('') : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
+  }
+  function taskDlvBlock(d, t) {
+    var ls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; });
+    var rows = ls.map(function (l) {
+      return '<div class="file"><span class="nm">📦 ' + esc(l.name) + ' ' + pill(l.status, l.status) +
+        (l.clientComment ? '<div class="muted" style="font-size:13px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
+        (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') + '</div>';
+    }).join('');
+    return '<div class="mt" style="border-top:1px dashed var(--bone-d);padding-top:10px">' +
+      '<div class="micro mb"><strong>Livrables de la tâche</strong></div>' +
+      (rows || '<div class="micro muted">Aucun livrable rattaché.</div>') +
+      '<div class="row mt"><input class="inp" type="file" id="tdf-' + t.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">+ Livrable</button></div>' +
+      '<div class="field mt"><label>Lien de révision (pour récupérer les retours)</label><div class="row"><input id="trl-' + t.id + '" class="inp" placeholder="https://… (Figma, proofing…)" value="' + esc(t.reviewLink || '') + '"><button class="btn btn--sm" onclick="ADM.taskReview(\'' + t.id + '\')">OK</button></div></div>' +
+      '</div>';
+  }
+  function taskReview(id) {
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: (el('trl-' + id).value || '').trim() }, 'PATCH').then(function (r) { if (r.ok) { toast('Lien de révision enregistré'); loadClient(); } else toast('Erreur'); });
+  }
+  function uploadTaskDlv(id) {
+    var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisissez un fichier'); return; }
+    var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
+    toast('Envoi du livrable…');
+    api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) { if (res.ok) { toast('Livrable ajouté · tâche passée « à valider »'); loadClient(); } else toast(res.d.error || 'Erreur'); })
+      .catch(function () { toast('Erreur'); });
   }
   function commentsBlock(pid, t) {
     var cs = (t.comments || []).map(function (c) { return '<div class="micro" style="margin:2px 0"><strong>' + (c.author === 'cindy' ? 'Vous' : 'Client') + '</strong> · ' + esc(c.text) + '</div>'; }).join('');
@@ -442,7 +468,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer,
-    taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment,
+    taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend,

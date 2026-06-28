@@ -3070,11 +3070,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         // Sélections éditables en un clic, directement sur la carte (façon Notion).
         var STATUT_OPTS = ['Brief en cours', 'Brief terminé'];
         var PROG_OPTS = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
-        var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };
-        var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };
+        var STATUT_COL = { 'Brief en cours':'#f0d9a8', 'Brief terminé':'#bfe0b0' };
+        var PROG_COL = { 'En attente du brief':'#ddd3c2', 'En cours':'#bcd4f2', 'À retravailler':'#f3c5a6', 'Besoin d\'une info':'#f0d9a8', 'Terminé':'#bfe0b0' };
         function inlineSel(propId, val, opts, colorMap, ph){
           var bg = (val && colorMap[val]) || '#efe8db';
-          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:none;border-radius:999px;padding:3px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
+          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:1px solid rgba(51,36,15,0.22);border-radius:999px;padding:4px 10px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;color:#33240f;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
           s += '<option value=""'+(!val?' selected':'')+'>'+ph+'…</option>';
           opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
           s += '</select>';
@@ -3088,10 +3088,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
-            '<span style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span style="font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
-          (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
+          (propChipsHtml ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:5px">'+propChipsHtml+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+(isWeekend?'#faf7f1':'#fff')+'">' +
@@ -3255,7 +3255,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<textarea id="_pt-desc-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'content\',this.value)" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Format, ton, références, liens, contraintes…">'+esc(t.content||'')+'</textarea>' +
       sep +
       // Echanges
-      '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
+      stbTaskDeliverables(pid, project, t, sep) + '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
       '<div style="min-height:40px;margin-bottom:10px">' +
         (commentsHtml || '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
       '</div>' +
@@ -5947,6 +5947,37 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       })
       .catch(function(){ toast('Erreur, reessayez.'); });
   };
+
+/* ── Greffe v2 : livrables rattachés à une tâche (calendrier partenaire) ──
+ * Affiché dans le drawer d'édition d'une tâche : la cliente retrouve le(s)
+ * livrable(s) déposé(s) par l'admin pour CETTE tâche, peut les valider /
+ * demander une révision, et ouvrir le lien de révision. Données dans
+ * project.deliverables (chaque livrable porte un taskId). La tâche passe en
+ * "Livrée" une fois le livrable validé (géré côté back).
+ * Ni backtick ni séquence dollar-accolade dans ce bloc (template String.raw).
+ */
+  function stbTaskDeliverables(pid, project, t, sep){
+    var dlv = ((project && project.deliverables) || []).filter(function(d){ return d.taskId === t.id; });
+    var rl = t.reviewLink || '';
+    var lab = { a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' };
+    var col = { a_valider:'#c9952f', valide:'#3f8f5b', refuse:'#c0533b' };
+    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Livrables &amp; revision</span></div>';
+    var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1.5px dashed #c9952f;border-radius:10px;color:#7a5a14;text-decoration:none;font-size:12.5px;font-weight:600;margin-bottom:8px">Ouvrir le lien de revision (laisser vos retours)</a>' : '';
+    var rows = dlv.map(function(l){
+      var dl = l.fileKey ? (API_BASE + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
+      var done = l.status === 'valide' || l.status === 'refuse';
+      return '<div style="border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fffdf8">'+
+        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="font-size:13px;font-weight:600;color:var(--navy,#1C1205);overflow:hidden;text-overflow:ellipsis">'+esc(l.name)+'</span>'+
+        '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(col[l.status]||'#999')+';color:#fff;white-space:nowrap">'+(lab[l.status]||l.status)+'</span></div>'+
+        (dl ? '<a href="'+dl+'" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;color:var(--navy,#1C1205);text-decoration:none">Telecharger</a>' : '')+
+        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,#8090a8);font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
+        (!done ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:8px;border:1.5px solid #e2dbd0;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Demander une revision</button></div>' : '')+
+      '</div>';
+    }).join('');
+    var body = rlHtml + rows;
+    if (!dlv.length && !rl) { body = '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;padding:4px 0">Aucun livrable pour cette tache pour le moment.</div>'; }
+    return hd + '<div style="margin-bottom:4px">' + body + '</div>' + sep;
+  }
 
   loadCpColors();
   if (!TOKEN || !API_BASE) { showLogin(); return; }

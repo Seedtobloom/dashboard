@@ -314,6 +314,10 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
     status: l.status || 'a_valider',
     clientComment: l.clientComment || '',
     validatedAt: l.validatedAt || null,
+    taskId: l.taskId || null,
+    taskTitle: l.taskTitle || '',
+    reviewLink: l.reviewLink || '',
+    createdAt: l.createdAt || null,
   }));
 }
 
@@ -541,6 +545,14 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
   liv.status = decision;
   liv.clientComment = (body.comment || '').toString().substring(0, 1000);
   liv.validatedAt = nowIso();
+  // Livrable rattaché à une tâche : on reflète la validation sur la tâche.
+  if (liv.taskId && Array.isArray(container.taches)) {
+    const tk = container.taches.find((t: AnyObj) => t.id === liv.taskId);
+    if (tk) {
+      if (decision === 'valide') { tk.status = 'done'; tk.completedAt = nowIso(); }
+      else { tk.status = 'in_progress'; tk.completedAt = null; }
+    }
+  }
   await save(env, masterKey, data);
   const who = clientFullName(data);
   await notifyAdmin(env, `Livrable ${decision === 'valide' ? 'validé' : 'à revoir'} — ${who}`,
