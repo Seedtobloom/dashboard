@@ -353,6 +353,15 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true, isActive: container.isActive });
   }
+  if (method === 'PATCH' && sub === '/banner') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    const col = (body.color || '').toString().trim();
+    container.bannerColor = /^#[0-9a-fA-F]{6}$/.test(col) ? col : null;
+    await saveClient(env, key, data);
+    return json({ ok: true, bannerColor: container.bannerColor });
+  }
 
   // Supports : créer un nouveau projet support (00X)
   if (method === 'POST' && sub === '/supports') return handleSupportCreate(request, env, key, data);

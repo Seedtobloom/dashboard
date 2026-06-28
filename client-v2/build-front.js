@@ -95,7 +95,7 @@ css = css.replace("--font-body:'Alegreya',Georgia,'Times New Roman',serif;", "--
 
 // ── Card d'accueil : la bannière marron était trop courte (96px) -> plus haute ──
 must(js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1, 'banner height');
-js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + _band.deep + ';height:150px'");
+js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + (p.bannerColor || _band.deep) + ';height:150px'");
 // Cards à hauteur égale (bas alignés) MAIS sans vide sans couleur : le corps remplit
 // la card et le bas (barre de progression + pied) est poussé en bas.
 must(css.indexOf(".cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer;") !== -1, 'proj-card flex');
