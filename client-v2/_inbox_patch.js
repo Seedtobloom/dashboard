@@ -66,7 +66,7 @@
     ov.setAttribute('style', 'position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(28,18,5,0.42)');
     ov.onclick = function(e){ if (e.target === ov) window.cpCloseInbox(); };
     ov.innerHTML =
-      '<div style="width:min(980px,95vw);height:min(700px,90vh);background:var(--bone,#faf7f1);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">'+
+      '<div style="width:min(1240px,96vw);height:min(760px,92vh);background:var(--bone,#faf7f1);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#e8e0d4);background:var(--card,#fff);flex-shrink:0">'+
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#412F21)">Messagerie</span>'+
           '<button onclick="window.cpCloseInbox()" style="background:none;border:none;cursor:pointer;color:#9a93a5;font-size:18px;line-height:1">✕</button>'+
