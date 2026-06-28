@@ -412,6 +412,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     entreprise: getEntreprise(c),
     isActive: esp.isActive === true,
     conversation: esp.conversation || [],
+    spaceFeedback: esp.spaceFeedback || [],
     domains,
     supports,
   };

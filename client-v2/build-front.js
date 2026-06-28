@@ -274,9 +274,9 @@ const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
 js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + '\n' + feedbackPatch + anchor[0]);
 
-// ── Onglet « Bilan » (sidebar Échanges) quand Cindy sollicite un retour de fin de collaboration ──
+// ── Onglet « Bilan » (sidebar Échanges) quand Cindy sollicite un retour + « Votre avis » permanent ──
 must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +") !== -1, 'fichiers nav present pour bilan');
-js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
+js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
 
 // ── Bannir le tiret cadratin « — » du texte visible (séparateurs -> virgule, placeholders -> vide) ──
 js = js.split(' — ').join(', ');

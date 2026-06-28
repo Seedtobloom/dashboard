@@ -640,6 +640,7 @@
     CUR.domains.forEach(function (dn) { tabs.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.unread || 0, dn.isActive !== false]); });
     CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
     tabs.push(['documents', 'Documents', 0, true]);
+    tabs.push(['bilanavis', 'Bilan & avis', 0, true]);
     var tabsHtml = tabs.map(function (t) { return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + (t[3] ? '' : ' title="offre inactive" style="opacity:0.55"') + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>'; }).join('');
     setMain(topbar(nm, '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
       '<div class="wrap"><div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
@@ -653,6 +654,7 @@
     var body = el('tabbody'); if (!body) return;
     if (TAB === 'infos') return body.innerHTML = tabInfos();
     if (TAB === 'documents') return renderDocuments(body);
+    if (TAB === 'bilanavis') return body.innerHTML = bilanAvisTab();
     var d = findDomain(TAB);
     if (!d) { body.innerHTML = '<div class="empty">—</div>'; return; }
     var secs = sectionsFor(d);
@@ -674,7 +676,7 @@
   }
   function sectionsFor(d) {
     var s = [];
-    if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); s.push(['bilan', 'Bilan', 0]); }
+    if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
     if (d.content.suivi !== undefined) s.push(['suivi', 'Suivi', 0]);
     if (Array.isArray(d.content.livrables)) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['msg', 'Messages', d.unread || 0]);
@@ -795,6 +797,19 @@
   }
   /* bilan de fin de collaboration + suivi des bénéfices */
   function bilanStars(n) { var h = ''; for (var i = 1; i <= 5; i++) { h += '<span style="font-size:20px;color:' + ((n >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((n >= i) ? '★' : '☆') + '</span>'; } return h; }
+  function bilanAvisTab() {
+    var partner = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
+    var bil = partner ? bilanCard(partner) : '<div class="card" style="max-width:680px"><h3>Bilan de collaboration</h3><div class="micro">Le bilan concerne l\'accompagnement Partenaire créative, qui n\'est pas activé pour ce client.</div></div>';
+    return bil + spaceFeedbackCard();
+  }
+  function spaceFeedbackCard() {
+    var fb = (CUR.spaceFeedback || []).slice().sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); });
+    var rows = fb.length ? fb.map(function (f) {
+      return '<div class="file"><span class="nm">' + (f.category ? '<span class="pill">' + esc(f.category) + '</span> ' : '') + esc(f.content) + '<div class="micro muted">' + fmtDate(f.createdAt) + '</div></span></div>';
+    }).join('') : '<div class="empty">Aucun retour du client sur son espace pour le moment.</div>';
+    return '<div class="card" style="max-width:680px"><h3>Avis du client sur son espace</h3>' +
+      '<div class="micro mb">Ce que le client signale comme manquant ou peu clair dans son espace, pour vous aider à l\'améliorer.</div>' + rows + '</div>';
+  }
   function bilanCard(d) {
     var b = d.content.bilan || null;
     var bens = Array.isArray(d.content.benefices) ? d.content.benefices : [];

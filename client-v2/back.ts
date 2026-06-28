@@ -181,6 +181,9 @@ async function handleClientApi(
   // Bilan de fin de collaboration
   if (sub === '/bilan' && method === 'POST') return handleBilanSubmit(request, env, masterKey, data);
 
+  // Avis du client sur son espace (manques, incompréhensions)
+  if (sub === '/space-feedback' && method === 'POST') return handleSpaceFeedback(request, env, masterKey, data);
+
   // Conseils / retours
   let cr = sub.match(/^\/(counsels|feedbacks)$/);
   if (cr && method === 'POST') return handleCRAdd(request, env, masterKey, data, cr[1]);
@@ -855,6 +858,21 @@ async function handleTicketDelete(_request: Request, env: Env, masterKey: string
   container.tickets = ticketsOf(container).filter((t) => t.id !== ticketId);
   await save(env, masterKey, data);
   return json({ ok: true });
+}
+
+async function handleSpaceFeedback(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const content = (body.content || '').toString().trim();
+  if (!content) return json({ error: 'content is required' }, 400);
+  const esp = getEspace(data);
+  if (!Array.isArray(esp.spaceFeedback)) esp.spaceFeedback = [];
+  const item = { id: genId(), category: (body.category || '').toString().slice(0, 40), content: content.slice(0, 2000), createdAt: nowIso(), readByAdmin: false };
+  esp.spaceFeedback.unshift(item);
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Avis sur l'espace — ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a laissé un retour sur son espace` + (item.category ? ` (${escHtml(item.category)})` : '') + ` :</p>` +
+    `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(content)}</p>`);
+  return json(item, 201);
 }
 
 async function handleBilanSubmit(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
