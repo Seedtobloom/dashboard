@@ -271,7 +271,7 @@
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
-  var PLAN_TASKS = [], PLAN_CAP = {};
+  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9;
   var DOW_LBL = { 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim' };
   function planWeek(tasks, cap) {
     var now = new Date(); now.setHours(0, 0, 0, 0);
@@ -300,31 +300,58 @@
       '<div style="flex:1;min-width:0"><div style="font-size:12.5px;color:var(--terre);line-height:1.3">' + esc(t.title) + '</div>' + (est ? '<div class="micro" style="color:var(--muted)">' + est + '</div>' : '') + '</div>' +
       '<button class="pbtn pbtn--ok" style="padding:3px 7px;font-size:9px" onclick="ADM.planDone(\'' + t.id + '\')" title="Marquer fait">✓</button></div>';
   }
+  function planHM(min) { var h = Math.floor(min / 60), m = min % 60; return h + 'h' + (m ? ('0' + m).slice(-2) : ''); }
+  function planDayCol(dday, startHour, hours, PXMIN) {
+    var colH = hours * 60 * PXMIN;
+    var lines = '';
+    for (var h = 0; h < hours; h++) { lines += '<div style="position:absolute;left:0;right:0;top:' + (h * 60 * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
+    var capLine = dday.cap > 0 ? '<div style="position:absolute;left:0;right:0;top:' + (dday.cap * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
+    var offset = 0, blocks = '';
+    dday.tasks.forEach(function (t) {
+      var est = t.estMinutes || 30; var top = offset * PXMIN; var bh = Math.max(20, est * PXMIN); var startM = startHour * 60 + offset;
+      var pcol = { haute: '#c0533b', normale: 'var(--glycine-900)', basse: '#b0a48f' }[t.priority] || 'var(--glycine-900)';
+      var lbg = { haute: '#fbe3dc', normale: '#efe6fb', basse: '#efe9e0' }[t.priority] || '#efe6fb';
+      blocks += '<div onclick="ADM.planDone(\'' + t.id + '\')" title="' + esc(t.title) + ', clic pour marquer fait" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.10);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;cursor:pointer">' +
+        '<div style="display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:600;color:var(--terre);line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.title) + '</span></div>' +
+        (bh > 34 ? '<div style="font-size:9px;color:var(--muted);margin-top:1px">' + planHM(startM) + ' à ' + planHM(startM + est) + '</div>' : '') + '</div>';
+      offset += est;
+    });
+    var bg = dday.past ? '#f7f4ee' : (dday.cap <= 0 ? '#faf7f1' : 'var(--card)');
+    var inner = dday.past ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">passé</div>'
+      : (dday.cap <= 0 ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div>' : blocks);
+    return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + capLine + inner + '</div>';
+  }
   function renderPlanningView() {
     var plan = planWeek(PLAN_TASKS, PLAN_CAP);
-    var capEditor = '<div class="card"><h3>Vos disponibilités (heures par jour)</h3><div class="row" style="flex-wrap:wrap;gap:10px">' +
-      [1, 2, 3, 4, 5, 6, 7].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + '<input class="inp" type="number" min="0" max="14" step="0.5" style="width:60px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
-      '</div><div class="micro mt">Les tâches de « Mes tâches » sont réparties automatiquement sur la semaine selon leur priorité, leur durée estimée et leur échéance.</div></div>';
-    var cols = plan.days.map(function (dday) {
-      var capH = (dday.cap / 60); var usedH = (dday.used / 60); var pct = dday.cap > 0 ? Math.min(100, Math.round(dday.used / dday.cap * 100)) : 0;
+    var startHour = PLAN_START || 9, PXMIN = 0.8;
+    var maxCap = Math.max.apply(null, [480].concat(plan.days.map(function (d) { return d.cap; })));
+    var hours = Math.ceil(maxCap / 60), colH = hours * 60 * PXMIN;
+    var capEditor = '<div class="card"><h3>Vos disponibilités</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
+      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Début<input class="inp" type="number" min="5" max="20" step="1" style="width:64px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
+      '<span style="width:1px;height:34px;background:var(--bone-d)"></span>' +
+      [1, 2, 3, 4, 5, 6, 7].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + ' (h)<input class="inp" type="number" min="0" max="14" step="0.5" style="width:58px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
+      '</div><div class="micro mt">Vos tâches (« Mes tâches ») sont placées automatiquement par priorité, durée estimée et échéance. La ligne pointillée = fin de votre disponibilité. Clic sur un bloc = marquer fait.</div></div>';
+    var axis = ''; for (var hh = 0; hh <= hours; hh++) { axis += '<div style="position:absolute;top:' + (hh * 60 * PXMIN) + 'px;right:6px;font-size:9px;color:var(--muted);transform:translateY(-50%);font-family:var(--font-micro)">' + (startHour + hh) + 'h</div>'; }
+    var axisCol = '<div style="width:38px;flex-shrink:0;position:relative;height:' + colH + 'px">' + axis + '</div>';
+    var headRow = '<div style="display:flex"><div style="width:38px;flex-shrink:0"></div>' + plan.days.map(function (dday) {
       var over = dday.used > dday.cap;
-      var head = '<div style="margin-bottom:8px"><div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:' + (dday.past ? 'var(--muted)' : 'var(--terre)') + '">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
-        (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + usedH.toFixed(1).replace('.0', '') + ' / ' + capH.toFixed(1).replace('.0', '') + ' h</div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:4px"><span style="width:' + pct + '%"></span></div>' : '<div class="micro" style="color:var(--muted)">repos</div>') + '</div>';
-      var body = dday.past ? '<div class="micro" style="color:var(--bone-d)">passé</div>' : (dday.tasks.map(planTaskPill).join('') || '<div class="micro" style="color:var(--muted)">—</div>');
-      return '<div style="background:' + (dday.past ? '#f7f4ee' : 'var(--bone)') + ';border:1px solid var(--bone-d);border-radius:12px;padding:12px;min-width:150px">' + head + body + '</div>';
-    }).join('');
-    var grid = '<div style="display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px">' + cols + '</div>';
+      return '<div style="flex:1;min-width:118px;padding:0 4px 8px;text-align:center"><div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:' + (dday.past ? 'var(--muted)' : 'var(--terre)') + '">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
+        (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
+    }).join('') + '</div>';
+    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startHour, hours, PXMIN) + '</div>'; }).join('') + '</div>';
+    var cal = '<div class="card mt"><h3>Votre semaine</h3><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
     var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de disponibilités, ou échéance déjà passée. Augmentez vos heures ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
-    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + capEditor + '<div class="card mt"><h3>Votre semaine</h3>' + grid + '</div>' + overflowHtml + '</div>');
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + capEditor + cal + overflowHtml + '</div>');
   }
   function renderPlanning() {
     setMain(topbar('Calendrier intelligent') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([api('/api/admin/planning').then(function (r) { return r.json(); }), api('/api/admin/tasks').then(function (r) { return r.json(); })]).then(function (res) {
-      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_TASKS = (res[1] && res[1].tasks) || [];
+      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9; PLAN_TASKS = (res[1] && res[1].tasks) || [];
       renderPlanningView();
     }).catch(showError);
   }
-  function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); jpost('/api/admin/planning', { days: PLAN_CAP }, 'PATCH').catch(function () {}); }
+  function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START }, 'PATCH').catch(function () {}); }
+  function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseInt(h, 10) || 9)); renderPlanningView(); jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START }, 'PATCH').catch(function () {}); }
   function planDone(id) { jpost('/api/admin/tasks/' + id, { status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { var t = PLAN_TASKS.find(function (x) { return x.id === id; }); if (t) t.status = 'done'; renderPlanningView(); toast('Marqué fait ✓'); } else toast('Erreur'); }); }
 
   /* ── KPI partenaire créative ── */
@@ -774,7 +801,7 @@
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
-    planCap: planCap, planDone: planDone,
+    planCap: planCap, planDone: planDone, planStart: planStart,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
