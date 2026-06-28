@@ -645,7 +645,7 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   return json(task, 201);
 }
 
-const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps'];
+const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks'];
 
 async function handleTaskUpdate(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
