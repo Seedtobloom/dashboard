@@ -93,6 +93,10 @@ css = css.replace("body { font-family: var(--font-body); background: var(--bone)
 must(css.indexOf("--font-body:'Alegreya',Georgia,'Times New Roman',serif;") !== -1, 'font-body inter');
 css = css.replace("--font-body:'Alegreya',Georgia,'Times New Roman',serif;", "--font-body:'Inter Tight','Inter',ui-sans-serif,system-ui,sans-serif;");
 
+// ── Card d'accueil : la bannière marron était trop courte (96px) -> plus haute ──
+must(js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1, 'banner height');
+js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + _band.deep + ';height:150px'");
+
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
 js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "'' +");
