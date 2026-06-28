@@ -298,6 +298,7 @@ async function handleClientApi(
   if (method === 'POST' && sub === '/message') {
     return handleAdminMessage(request, env, key, data);
   }
+  if (method === 'POST' && sub === '/remind') return handleRemind(request, env, key, data);
   // Marque lus (côté admin) les messages client d'un projet
   if (method === 'POST' && sub === '/message/read') {
     const body = await readJson(request);
@@ -745,6 +746,27 @@ async function handleTestEmail(request: Request, env: Env): Promise<Response> {
   return json({ ok: r.ok, status: r.status, error: r.error, from: env.RESEND_FROM_EMAIL || null });
 }
 // Notifie le client (awaité par les handlers pour garantir l'envoi sous Workers).
+// Relance : email de rappel au client pour une action en attente.
+async function handleRemind(request: Request, env: Env, _key: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const title = (body.title || '').toString();
+  const projectLabel = (body.projectLabel || '').toString();
+  const kind = (body.kind || '').toString();
+  let subject: string;
+  let html: string;
+  if (kind === 'deliverable') {
+    subject = 'Rappel : un livrable attend votre validation';
+    html = `<p>Petit rappel, le livrable <strong>${escHtml(title)}</strong>${projectLabel ? ` (${escHtml(projectLabel)})` : ''} attend votre validation dans votre espace.</p>` +
+      `<p>Quand vous avez un moment, vous pouvez le valider ou demander une révision directement depuis votre espace.</p>`;
+  } else {
+    subject = 'Rappel : une action vous attend';
+    html = `<p>Petit rappel, l'étape <strong>${escHtml(title)}</strong>${projectLabel ? ` de votre projet ${escHtml(projectLabel)}` : ''} attend votre retour.</p>` +
+      `<p>Vous pouvez agir directement depuis votre espace dès que possible.</p>`;
+  }
+  await notifyClient(env, data, subject, html);
+  return json({ ok: true });
+}
+
 async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string): Promise<void> {
   const email = getClient(data).email;
   if (!email) return;

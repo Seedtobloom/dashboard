@@ -21,6 +21,10 @@
   function jpost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   function toast(m) { var t = el('toast'); if (!t) return; t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2600); }
   function pill(status, label) { return '<span class="pill pill--' + esc(status) + '">' + esc(label || status) + '</span>'; }
+  function jsq(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function remind(key, kind, title, projectLabel) {
+    jpost('/api/clients/' + key + '/remind', { kind: kind, title: title, projectLabel: projectLabel }).then(function (r) { if (r.ok) toast('Relance envoyée par mail ✓'); else toast('Erreur'); });
+  }
   function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
   /* ── boot / auth ── */
@@ -151,11 +155,11 @@
       var waitHtml = waiting.map(function (x) {
         return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
-          '<div>' + pill('waiting_client', 'Validation étape') + '</div></div>';
+          '<div class="prow__act">' + pill('waiting_client', 'Étape') + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'step\',\'' + jsq(x.title) + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
       }).join('') + pv.map(function (l) {
         return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(l.createdAt) + '</strong></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(l.name) + (l.taskTitle ? ' <span class="micro">(' + esc(l.taskTitle) + ')</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + l.key + '\')">' + esc(l.client) + '</a> · ' + esc(l.projectLabel) + '</div></div>' +
-          '<div>' + pill('a_valider', 'Livrable à valider') + '</div></div>';
+          '<div class="prow__act">' + pill('a_valider', 'Livrable') + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + l.key + '\',\'deliverable\',\'' + jsq(l.name) + '\',\'' + jsq(l.projectLabel) + '\')">Relancer</button></div></div>';
       }).join('');
 
       var forf = (d.forfaits || []).map(function (f) {
@@ -565,7 +569,7 @@
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer,
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
-    prioDone: prioDone, prioPostpone: prioPostpone,
+    prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend,
