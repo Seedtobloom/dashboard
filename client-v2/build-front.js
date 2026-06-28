@@ -24,6 +24,7 @@ const livPatch = read('_deliverables_patch.js');
 const taskDlvPatch = read('_task_dlv_patch.js');
 const blocksPatch = read('_blocks_patch.js');
 const drawerPatch = read('_drawer_patch.js');
+const inboxPatch = read('_inbox_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -135,9 +136,8 @@ css = css.replace(
   ".cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }\n@keyframes cpDrawerIn{from{transform:translateX(48px);opacity:0}to{transform:translateX(0);opacity:1}}\n@keyframes cpFadeIn{from{opacity:0}to{opacity:1}}\nbody:has(.cp-task-panel) .cp-fab{display:none}\nbody:has(.cp-task-overlay) .cp-fab{display:none}"
 );
 
-// ── Retrait de la messagerie GLOBALE (on garde le chat par projet) ──
-must(js.indexOf("navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +") !== -1, 'sidebar messagerie');
-js = js.replace("navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +", "'' +");
+// ── Messagerie : on garde l'onglet (sidebar) mais cpOpenMessages ouvre désormais
+//    la messagerie générale CATÉGORISÉE par projet (greffe _inbox_patch.js) ──
 must(js.indexOf("              mForfaitCard + mMsgCard +") !== -1, 'home mMsgCard');
 js = js.replace("              mForfaitCard + mMsgCard +", "              mForfaitCard +");
 must(js.indexOf("            msgCard +") !== -1, 'home msgCard');
@@ -227,7 +227,7 @@ js = js.replace(
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + anchor[0]);
 
 // ── Bannir le tiret cadratin « — » du texte visible (séparateurs -> virgule, placeholders -> vide) ──
 js = js.split(' — ').join(', ');
