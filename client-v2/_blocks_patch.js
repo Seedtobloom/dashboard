@@ -62,7 +62,7 @@
     } else if (b.type === 'numbered') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
     } else if (b.type === 'quote') {
-      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-left:3px solid #c9a76a;border-radius:0 8px 8px 0;padding-left:13px;font-style:italic;color:#6f5a40;background:#f7f2ea');
+      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#6f5a40;background:#f7f2ea');
     } else if (b.type === 'callout') {
       inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:10px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 6px">'+cpIcon('info',17,'color:#7a5ca8;flex-shrink:0;margin-top:11px')+stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
     } else if (b.type === 'table') {

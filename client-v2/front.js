@@ -6042,7 +6042,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     } else if (b.type === 'numbered') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
     } else if (b.type === 'quote') {
-      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-left:3px solid #c9a76a;border-radius:0 8px 8px 0;padding-left:13px;font-style:italic;color:#6f5a40;background:#f7f2ea');
+      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#6f5a40;background:#f7f2ea');
     } else if (b.type === 'callout') {
       inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:10px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 6px">'+cpIcon('info',17,'color:#7a5ca8;flex-shrink:0;margin-top:11px')+stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
     } else if (b.type === 'table') {
@@ -6371,7 +6371,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
 
     return backdrop +
-      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid #e8e0d4;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
+      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
         closeBtn + cover + icon +
         '<div style="padding:0 44px 44px">'+
           title +
