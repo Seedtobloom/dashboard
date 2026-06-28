@@ -13,7 +13,7 @@ export default {
   }
 };
 
-const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to Bloom */
+const CLIENT_CSS = String.raw`/* Client portal  Ecrin Design System  Seed to Bloom */
 :root {
   /* Ecrin palette */
   --terre-900:#1a120a; --terre-800:#291f15; --terre:#412F21;
@@ -50,7 +50,7 @@ const CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed 
   --st-todo:#a98bd6; --st-progress:#a98bd6; --st-review:#c9952f; --st-done:#412F21;
   /* fonts */
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
-  --font-body:'Alegreya',Georgia,'Times New Roman',serif;
+  --font-body:'Inter Tight','Inter',ui-sans-serif,system-ui,sans-serif;
   --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   /* type scale */
   --fs-micro:11px; --fs-small:14px; --fs-body:17px; --fs-lead:20px;
@@ -121,7 +121,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-nav__badge { background: var(--glycine); color: var(--terre); font-family: var(--font-micro); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 999px; flex-shrink: 0; min-width: 18px; text-align: center; }
 .cp-sidebar__footer { padding: 14px 18px; border-top: 1px solid rgba(242,229,194,0.1); margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
 
-/* Portal topbar — sticky breadcrumb (desktop) */
+/* Portal topbar  sticky breadcrumb (desktop) */
 .cp-ptopbar { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bone-d); padding: 18px 48px; display: flex; align-items: center; gap: 14px; }
 .cp-ptopbar__name { font-family: var(--font-micro); font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--terre-400); }
 .cp-ptopbar__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-weight: 400; }
@@ -392,12 +392,12 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-ph__banner-overlay { position:absolute;inset:0;background:transparent;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;z-index:1; }
 .cp-ph__banner-content { padding:26px 30px; }
 
-/* open-title — clickable step/phase name with trailing arrow */
+/* open-title  clickable step/phase name with trailing arrow */
 .open-title { display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--font-display);color:var(--terre);text-align:left;line-height:1.15; }
 .open-title:hover .open-arrow { transform:translateX(3px); }
 .open-arrow { transition:transform 160ms var(--ease);color:var(--terre-400); }
 
-/* status dot — rotated 8×8 square */
+/* status dot  rotated 8×8 square */
 .cp-sdot { width:8px;height:8px;border-radius:2px;transform:rotate(45deg);flex-shrink:0;display:inline-block; }
 
 /* status filter tabs */
@@ -426,7 +426,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 `;
 
 
-const CLIENT_JS = String.raw`// Client portal SPA — multi-project
+const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 (function() {
   'use strict';
 
@@ -576,7 +576,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var a = acc(tone);
     return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
-  // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
+  // RGAA 3.2, texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
   var STATUS_TEXT = { discovery:'#1C1205', in_progress:'#1C1205', waiting_client:'#412F21', review:'#6c4ea4', delivered:'#ffffff', archived:'#8a6f54' };
   function statusBadge(status) {
     var bg = STATUS_COLORS[status] || '#aaa';
@@ -716,8 +716,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // État du forfait mensuel partenaire : report plafonné (2 h/mois par défaut)
   // + dépassement facturé (60 €/h par défaut). Surchargeable via p.rolloverCapHours / p.overageRate.
   // Le report ne s'applique QUE si la prestation tournait le mois précédent
-  // (au moins une activité enregistrée). Au tout début de la prestation — ou un
-  // mois sans aucune consommation — il n'y a pas de report.
+  // (au moins une activité enregistrée). Au tout début de la prestation, ou un
+  // mois sans aucune consommation, il n'y a pas de report.
   function cpForfaitState(p) {
     var base = parseFloat(p.monthlyHours) || 0;
     var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
@@ -791,8 +791,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Migration : les anciens textes par défaut (enregistrés tels quels) sont
     // remplacés par le nouveau message, sans écraser un texte personnalisé.
     var _legacy = [
-      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.',
-      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.'
+      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours, et tout reste au clair, ensemble.',
+      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de votre projet pas à pas, je dépose les éléments à valider, vous me laissez vos retours.'
     ];
     if (stored != null && _legacy.indexOf(stored.trim()) !== -1) stored = null;
     var text = (stored != null) ? stored : defaultText;
@@ -877,9 +877,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var mOver     = mRemain < 0;
         var mBarPct   = mQuotaMin ? Math.min(100, Math.round(mUsedMin/mQuotaMin*100)) : 0;
         var mBarColor = mOver ? '#9b3a2e' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
-        var mRemH = mQuotaMin ? (Math.abs(mRemain)>=60 ? Math.floor(Math.abs(mRemain)/60)+'h'+(Math.abs(mRemain)%60?String(Math.abs(mRemain)%60).padStart(2,'0'):'') : Math.abs(mRemain)+' min') : '—';
-        var mTotH = mQuotaMin ? (mQuotaMin>=60 ? Math.floor(mQuotaMin/60)+'h'+(mQuotaMin%60?String(mQuotaMin%60).padStart(2,'0'):'') : mQuotaMin+' min') : '—';
-        var mUsedH= mQuotaMin ? (mUsedMin>=60 ? Math.floor(mUsedMin/60)+'h'+(mUsedMin%60?String(mUsedMin%60).padStart(2,'0'):'') : mUsedMin+' min') : '—';
+        var mRemH = mQuotaMin ? (Math.abs(mRemain)>=60 ? Math.floor(Math.abs(mRemain)/60)+'h'+(Math.abs(mRemain)%60?String(Math.abs(mRemain)%60).padStart(2,'0'):'') : Math.abs(mRemain)+' min') : '';
+        var mTotH = mQuotaMin ? (mQuotaMin>=60 ? Math.floor(mQuotaMin/60)+'h'+(mQuotaMin%60?String(mQuotaMin%60).padStart(2,'0'):'') : mQuotaMin+' min') : '';
+        var mUsedH= mQuotaMin ? (mUsedMin>=60 ? Math.floor(mUsedMin/60)+'h'+(mUsedMin%60?String(mUsedMin%60).padStart(2,'0'):'') : mUsedMin+' min') : '';
         var mHomeUnread = totalUnread();
 
         var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#e7c6bd;background:#fbf1ee':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
@@ -888,7 +888,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#9b3a2e':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
               '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' total</span></div>'
-            : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré — contactez le studio.</p>'
+            : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré, contactez le studio.</p>'
           ) +
         '</div>';
 
@@ -905,7 +905,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
                   cpDeadlinePill(t.dueDate||t.deadline, false, true) +
                 '</div>';
               }).join('') + '</div>'
-            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400)">Aucun ticket ouvert — tout est à jour !</div>'
+            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400)">Aucun ticket ouvert, tout est à jour !</div>'
           ) +
         '</div>';
 
@@ -1003,7 +1003,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="flex:1">' +
               '<div style="font-family:var(--font-micro);font-size:10px;color:var(--glycine-900);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">✨ Projet terminé</div>' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">Toutes les étapes sont complètes !</div>' +
-              '<div style="margin-top:6px;font-size:13px;color:var(--terre-600)">Merci pour votre confiance — à très bientôt pour de nouveaux projets.</div>' +
+              '<div style="margin-top:6px;font-size:13px;color:var(--terre-600)">Merci pour votre confiance, à très bientôt pour de nouveaux projets.</div>' +
             '</div>' +
           '</div>';
         } else {
@@ -1057,7 +1057,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         if (!f.configured) {
           forfaitCard = '<div class="card" style="padding:22px 24px">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Forfait du mois</div>' +
-            '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non encore défini — on en parle ensemble.</div>' +
+            '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non encore défini, on en parle ensemble.</div>' +
           '</div>';
         } else {
           var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
@@ -1756,7 +1756,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    // StepsView — design-accurate list/gallery with status tabs
+    // StepsView, design-accurate list/gallery with status tabs
     var svAccent = acc('glycine');
     var svMode = cpStepsViewMode;
     var svFilter = cpStepsStatusFilter;
@@ -1834,7 +1834,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var progress = '<div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px;flex-wrap:wrap">' +
-        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les etapes une a une — cliquez pour ouvrir sa page.</p>' +
+        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les etapes une a une, cliquez pour ouvrir sa page.</p>' +
         svToggle +
       '</div>' +
       svStatusTabsHtml +
@@ -1842,7 +1842,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
 
     // La messagerie est unifiée et accessible depuis le panneau « Messagerie ».
-    // On ne l'affiche plus dans le board du projet — uniquement fichiers / infos / réunion.
+    // On ne l'affiche plus dans le board du projet, uniquement fichiers / infos / réunion.
     var adminSharedFiles = files.filter(function(f){ return f.source !== 'client'; });
     var sideTabs = [];
     if (project.type !== 'partenaire') sideTabs.push({ id:'msg', label:'Messages' });
@@ -2417,7 +2417,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
     }).join('');
     return '<details style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-      '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">📁 Historique — '+hist.length+' tâche'+(hist.length>1?'s':'')+' terminée'+(hist.length>1?'s':'')+'</summary>' +
+      '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">📁 Historique, '+hist.length+' tâche'+(hist.length>1?'s':'')+' terminée'+(hist.length>1?'s':'')+'</summary>' +
       '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
   }
   var PART_URG_CP_ICONS = { tranquille:'M2 22 16 8M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14', normal:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', urgent:'M13 2 3 14h9l-1 8 10-12h-9z', critique:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z' };
@@ -2476,7 +2476,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }
       faitLeHtml = '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Fait le :</span> ' + faitLe + '</div>';
     }
-    // Statut inline — select
+    // Statut inline, select
     var statusOpts = Object.keys(CLI_BRIEF).map(function(k){
       return '<option value="'+k+'"'+(t.briefStatus===k?' selected':'')+'>'+CLI_BRIEF[k].label+'</option>';
     }).join('');
@@ -2580,7 +2580,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait restant</div>' +
         '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
-          (forfaitH ? fmtHours(forfaitLeft) : '—') +
+          (forfaitH ? fmtHours(forfaitLeft) : '') +
         '</div>' +
         (forfaitH ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-size:11px;color:var(--muted)">Forfait non défini</div>') +
       '</div>' +
@@ -2615,7 +2615,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return summaryBar + tabs;
   }
 
-  // ── Espace Maintenance — TicketsView design ──────────────────────────────
+  // ── Espace Maintenance, TicketsView design ──────────────────────────────
   function buildClientMaintenance(pd) {
     var project = pd.project;
     var pid = project.id;
@@ -2630,9 +2630,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // Quota strip
     var quotaBarPct = quotaMin ? Math.min(100, Math.round(usedMin / quotaMin * 100)) : 0;
-    var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '—';
-    var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '—';
-    var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '—';
+    var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '';
+    var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '';
+    var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '';
     var barColor = over ? '#9b3a2e' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
     var borderColor = over ? '#e7c6bd' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
     var quotaStrip = '<div style="margin-bottom:28px">' +
@@ -2766,7 +2766,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
           }).join('');
           histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-            '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique — '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
+            '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique, '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
             '<div style="margin-top:12px;max-height:340px;overflow-y:auto">'+body+'</div></details>';
         }
       }
@@ -2792,7 +2792,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return quotaStrip + catTabsHtml + mainContent;
   }
 
-  // ── Suivi mensuel maintenance — cote CLIENT (lecture seule) ─────────────────
+  // ── Suivi mensuel maintenance, cote CLIENT (lecture seule) ─────────────────
   function buildMaintSuiviClient(project){
     var tickets = Array.isArray(project.tickets)?project.tickets:[];
     var quotaMin = (parseFloat(project.monthlyHours)||0)*60;
@@ -2847,10 +2847,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var mLab = new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
       return '<tr style="'+(over?'background:#fbf1ee':'')+'">' +
         '<td style="padding:9px 12px;font-size:13px;text-transform:capitalize;white-space:nowrap;color:var(--terre)">'+esc(mLab)+'</td>' +
-        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(quotaMin||'—')+(quotaMin?' min':'')+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(quotaMin||'')+(quotaMin?' min':'')+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre)">'+c+' min</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#9b3a2e':'var(--terre)')+'">'+fmtMin(rest)+'</td>' +
-        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(regVal?fmtMin(regVal):'—')+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(regVal?fmtMin(regVal):'')+'</td>' +
       '</tr>';
     }).join('');
     var table = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:20px 22px;overflow-x:auto">' +
@@ -2921,7 +2921,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var pct = Math.round(m.h/maxH*100);
         var isCurrent = m.key===curMonthKey;
         return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">' + (m.h ? fmtH(m.h).toUpperCase() : '—') + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">' + (m.h ? fmtH(m.h).toUpperCase() : '') + '</div>' +
           '<div style="width:100%;height:'+(m.h?pct:4)+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(isCurrent?'var(--brume-700)':'rgba(228,209,254,0.5)')+'"></div>' +
           '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;color:var(--terre-400)">' + m.label + '</div>' +
         '</div>';
@@ -2935,7 +2935,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
       '</div>' +
       barsHtml +
-      '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Heures travaillees par mois — pour ajuster le forfait quand l\'activite grandit.</p>' +
+      '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Heures travaillees par mois, pour ajuster le forfait quand l\'activite grandit.</p>' +
     '</div>';
 
     var _pf = cpForfaitState(project);
@@ -3038,7 +3038,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
     '</div>';
 
-    // Grid cells — table unifiée bordurée
+    // Grid cells, table unifiée bordurée
     var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
     var BORD = '#e3ddd0';
@@ -3212,7 +3212,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (function(){
             var v = (t.properties||{}).p_clientbrief || '';
             var o = ['Brief en cours', 'Brief terminé'];
-            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>' +
+            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value=""></option>' +
               o.map(function(x){ return '<option'+(v===x?' selected':'')+'>'+x+'</option>'; }).join('') + '</select>';
           })() + '</div>' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
@@ -3230,7 +3230,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var d = defOf(id); if (!d || !Array.isArray(d.options) || !d.options.length) return '';
           var val = props[id]!=null ? props[id] : '';
           return '<div style="margin-bottom:12px"><div style="'+lblS+'">'+esc(d.name)+'</div>' +
-            '<select id="_pt-'+slot+'-'+t.id+'" onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+id+'\',this.value)" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
+            '<select id="_pt-'+slot+'-'+t.id+'" onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+id+'\',this.value)" style="'+inpStyle+';cursor:pointer"><option value=""></option>' +
             d.options.map(function(o){ return '<option value="'+esc(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>'; }).join('') +
             '</select></div>';
         }
@@ -3246,7 +3246,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var progVal = props.p_brief!=null ? props.p_brief : '';
         var progOpts = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
         var prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement</div>' +
-          '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
+          '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value=""></option>' +
           progOpts.map(function(x){ return '<option'+(progVal===x?' selected':'')+'>'+x+'</option>'; }).join('') +
           '</select></div>';
         return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
@@ -3399,7 +3399,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var body = { projectId: pid }; body[field] = value;
     fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); if (field === 'status') renderShell(); })
-      .catch(function(){ toast('Erreur — réessayez'); });
+      .catch(function(){ toast('Erreur, réessayez'); });
   };
   // Sauvegarde immédiate d'une propriété (état du brief, type de mission…).
   window.cliEditTaskProp = function(pid, taskId, propId, value){
@@ -3410,7 +3410,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var patch = { projectId: pid, properties: {} }; patch.properties[propId] = value;
     fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) })
       .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); renderShell(); })
-      .catch(function(){ toast('Erreur — réessayez'); });
+      .catch(function(){ toast('Erreur, réessayez'); });
   };
   // Sauvegarde immédiate du lien du brief (propriété composite p_elements).
   window.cliEditBriefLink = function(pid, taskId, value){
@@ -3546,14 +3546,14 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var rows = filtered.map(function(t){
       var brief = CLI_BRIEF[t.briefStatus] || CLI_BRIEF.pas_commence;
-      var dl = t.dueDate ? fmtDate(t.dueDate) : '—';
+      var dl = t.dueDate ? fmtDate(t.dueDate) : '';
       var overdue = t.dueDate && new Date(t.dueDate+'T23:59:59') < new Date() && t.status!=='done';
       return '<tr style="cursor:default;border-bottom:1px solid var(--border);'+(t.status==='done'?'opacity:0.55':'')+'\">' +
         '<td style="padding:13px 12px"><span style="display:inline-block;padding:4px 11px;border-radius:6px;font-size:12px;font-weight:600;background:'+brief.bg+';color:'+brief.tx+'">'+brief.label+'</span></td>' +
         '<td style="padding:13px 12px;color:'+(overdue?'var(--red)':'var(--text)')+';font-size:13px;white-space:nowrap">'+dl+'</td>' +
         '<td style="padding:13px 12px;font-weight:500;color:var(--navy);font-size:14px;max-width:280px">'+esc(t.title)+(t.missionType?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(t.missionType)+'</div>':'')+'</td>' +
         '<td style="padding:13px 12px"><span style="font-size:12px;color:var(--muted)">'+(CLI_TSTATUS[t.status]||t.status)+'</span></td>' +
-        '<td style="padding:13px 12px">'+(t.livrableUrl?'<a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:12px;color:var(--sage);text-decoration:none">↗ Voir</a>':'<span style="color:var(--border)">—</span>')+'</td>' +
+        '<td style="padding:13px 12px">'+(t.livrableUrl?'<a href="'+esc(t.livrableUrl)+'" target="_blank" style="font-size:12px;color:var(--sage);text-decoration:none">↗ Voir</a>':'<span style="color:var(--border)"></span>')+'</td>' +
         '<td style="padding:13px 12px"><button onclick="cliToggleTask(\''+pid+'\',\''+t.id+'\',\''+(t.status==='done'?'todo':'done')+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--muted)">'+(t.status==='done'?'↩':'✓')+'</button></td>' +
       '</tr>';
     }).join('');
@@ -3882,7 +3882,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
           '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
-            '<option value="">— Catégorie —</option>' +
+            '<option value="">Catégorie </option>' +
             cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
@@ -4029,7 +4029,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value="">—</option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
+        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value=""></option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
       '</div>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
@@ -4098,7 +4098,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
             schema.map(function(def){
               var fid = '_ptask-prop-'+def.id;
               var field;
-              if (def.type==='Liste') field = '<select id="'+fid+'" style="'+S+'"><option value="">—</option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
+              if (def.type==='Liste') field = '<select id="'+fid+'" style="'+S+'"><option value=""></option>'+(def.options||[]).map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
               else if (def.type==='Nombre') field = '<input type="number" id="'+fid+'" style="'+S+'">';
               else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="'+S+'">';
               else if (def.id==='p_elements') field = '<textarea id="'+fid+'" rows="2" style="'+S+';resize:vertical" placeholder="Note du brief (vous pourrez ajouter lien et fichiers ensuite)"></textarea>';
@@ -4336,7 +4336,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   window.cliRegulOverride = function(pid, monthKey, currentVal) {
     var cur = currentVal !== undefined ? String(currentVal) : '';
-    cpShowPrompt('Report manuel — ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
+    cpShowPrompt('Report manuel, ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
       if (val.trim() === '') {
         var pd = getPD(pid);
         var overrides = Object.assign({}, pd && pd.project.forfaitOverrides || {});
@@ -4376,7 +4376,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   window.cliOpenTask = function(pid, taskId) {
-    // Scroll to task in list — handled by selection highlight
+    // Scroll to task in list, handled by selection highlight
   };
 
   window.cliAddComment = function(pid, taskId) {
@@ -4480,7 +4480,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : '<div style="padding:60px 24px;text-align:center">' +
           '<div style="font-size:40px;margin-bottom:12px;opacity:0.3">💬</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de messages</div>' +
-          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:20px">Posez votre première question à Cindy — elle répond en général sous 24h</div>' +
+          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:20px">Posez votre première question à Cindy, elle répond en général sous 24h</div>' +
           '<button class="cp-btn" onclick="document.getElementById(\'cp-convo-draft\')&&document.getElementById(\'cp-convo-draft\').focus()">Écrire un message</button>' +
         '</div>';
 
@@ -4540,7 +4540,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!_hubCache) return '<div class="fade-up" style="text-align:center;padding:60px 0;color:var(--terre-600)">Chargement…</div>';
     var sections = (_hubCache && _hubCache.sections) || [];
 
-    // "Ressources communes" — shared hub sections
+    // "Ressources communes", shared hub sections
     var commonHtml = '';
     if (sections.length) {
       var docCards = sections.filter(function(s){ return s.type === 'links' || s.type === 'link'; }).map(function(sec) {
@@ -4571,7 +4571,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
     }
 
-    // "Ressources de votre projet" — from project.resources
+    // "Ressources de votre projet", from project.resources
     var firstProj = appData.projects.length ? appData.projects[0].project : null;
     var projectResources = firstProj && firstProj.resources ? firstProj.resources : [];
     var projResItems = projectResources.map(function(r) {
@@ -4790,7 +4790,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
 
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Déposez vos éléments, récupérez les livrables — tout reste au même endroit.</p>' +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Déposez vos éléments, récupérez les livrables, tout reste au même endroit.</p>' +
       section('Fichiers du projet', cindyFiles, false) +
       section('Mes documents', clientFiles, true) +
     '</div>';
@@ -4956,7 +4956,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       appData = { type:'project', clientName:data.project.clientName,
         projects:[{ project:data.project, messages:data.messages, files:data.files }] };
     } else { appData = data; }
-    // Personnalisation d'accueil (serveur) — partagée par espace client, visible par la cliente.
+    // Personnalisation d'accueil (serveur), partagée par espace client, visible par la cliente.
     var h = data.home || {};
     appData.home = { intro: (typeof h.intro === 'string' ? h.intro : null), blocks: Array.isArray(h.blocks) ? h.blocks : [], hidden: (h.hidden && typeof h.hidden === 'object') ? h.hidden : {}, banner: (h.banner && typeof h.banner === 'object') ? h.banner : {} };
     convData = Array.isArray(data.conversation) ? data.conversation : [];
@@ -5018,7 +5018,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       .catch(function(){ toast('Sauvegarde impossible, réessayez.'); });
   }
 
-  // Bouton flottant « Mode édition » — visible uniquement en contexte admin
+  // Bouton flottant « Mode édition », visible uniquement en contexte admin
   // (ouverture via ?edit=1). Permet d'activer/quitter l'édition des textes
   // (accueil, titres, blocs…) sans toucher à l'URL.
   window.cpToggleEditMode = function() {
@@ -5262,18 +5262,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       ? [
           { icon:'tasks', text: 'Ouvrez un ticket pour chaque besoin : bug, mise à jour de contenu, question technique…' },
           { icon:'clock', text: 'La barre de forfait indique les heures utilisées ce mois-ci sur votre contrat.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy, réponse sous 24h.' },
         ]
       : clientType === 'partenaire'
       ? [
           { icon:'tasks', text: 'Suivez vos demandes en cours et leur statut en temps réel depuis le tableau de bord.' },
-          { icon:'zap', text: 'Quand votre retour est attendu, une bannière orange apparaît — cliquez pour confirmer.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+          { icon:'zap', text: 'Quand votre retour est attendu, une bannière orange apparaît, cliquez pour confirmer.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy, réponse sous 24h.' },
         ]
       : [
           { icon:'tasks', text: 'Suivez les étapes de votre projet et leur statut en temps réel.' },
           { icon:'zap', text: 'Quand votre action est requise (valider un rendu, fournir des éléments), une bannière orange apparaît.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy, réponse sous 24h.' },
         ];
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -5316,7 +5316,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'clock', title:'Votre forfait mensuel', nav:'project', text:'En haut de la page, une barre indique les heures utilisées sur votre forfait du mois. Quand elle est pleine, les nouvelles demandes passent sur le mois suivant ou font l\'objet d\'un devis.' },
         { icon:'chat', title:'Écrire au studio', nav:'messages', text:'La section Messagerie vous permet d\'échanger directement avec Cindy. Pas besoin d\'e-mail : tout reste au même endroit, lié à votre espace.' },
         { icon:'folder', title:'Fichiers et livrables', nav:'fichiers', text:'Déposez vos éléments (textes, photos, inspirations) et récupérez les fichiers finaux dans la section Fichiers. Chaque livrable est accessible dès qu\'il est prêt.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, n\'hésitez pas à écrire dans la Messagerie — on répond rapidement.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, n\'hésitez pas à écrire dans la Messagerie, on répond rapidement.' },
       ],
       maintenance: [
         { icon:'flower', title:'Votre espace maintenance', text:'Bienvenue ! Cet espace est dédié au suivi de votre contrat de maintenance. Ouvrez des tickets, suivez leur avancement et consultez votre quota d\'heures.' },
@@ -5326,16 +5326,16 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'check', title:'Statuts des tickets', nav:'interventions', text:'Un ticket peut être : Ouvert (reçu), En cours (traitement en cours), Résolu (fini, en attente de validation) ou Fermé. Vous êtes notifié à chaque changement.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Pour toute question qui ne nécessite pas un ticket formel, la Messagerie est là. Échangez directement avec le studio en temps réel.' },
         { icon:'folder', title:'Fichiers et ressources', nav:'hub', text:'Retrouvez ici les accès, les guides techniques et les documents partagés par le studio pour la gestion de votre site.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie — on revient vers vous rapidement.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie, on revient vers vous rapidement.' },
       ],
       identite: [
         { icon:'flower', title:'Votre espace identité', text:'Bienvenue ! Cet espace réunit tout votre projet d\'identité visuelle avec le studio. Découvrez les étapes, partagez vos réponses et suivez l\'avancement en temps réel.' },
         { icon:'tasks', title:'Les étapes du projet', nav:'project', text:'Votre projet se découpe en phases (Découverte, Création, Validation, Livraison…). Chaque étape a un statut et une échéance. Cliquez dessus pour voir le détail et les actions attendues de votre part.' },
         { icon:'check', title:'Votre rôle dans le projet', nav:'project', text:'Certaines étapes nécessitent une action de votre part (retour, validation, contenu à fournir). Elles sont signalées clairement. Votre réactivité influence directement le calendrier du projet.' },
-        { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible — il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
+        { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible, il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Posez vos questions, partagez vos inspirations ou faites vos retours directement ici. Tout reste au même endroit, sans passer par e-mail.' },
         { icon:'folder', title:'Fichiers et livrables', nav:'fichiers', text:'Déposez vos éléments (photos, textes, logos existants) et retrouvez les fichiers livrés par le studio dès qu\'ils sont disponibles.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. N\'hésitez pas à écrire dans la Messagerie — on est là pour que le projet se passe au mieux.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. N\'hésitez pas à écrire dans la Messagerie, on est là pour que le projet se passe au mieux.' },
       ],
       site: [
         { icon:'flower', title:'Votre espace site web', text:'Bienvenue ! Cet espace vous permet de suivre la construction de votre site phase par phase, de valider chaque étape et d\'échanger avec le studio.' },
@@ -5407,7 +5407,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     render();
   };
 
-  // Bouton actualiser dans la messagerie — pas de polling automatique.
+  // Bouton actualiser dans la messagerie, pas de polling automatique.
   window.refreshConvo = function() {
     fetch(API_BASE + '/conversation')
       .then(function(r){ return r.ok ? r.json() : null; })
@@ -5560,7 +5560,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).catch(function() {});
   }
 
-  function startPoll() { /* Polling supprimé — requêtes uniquement à la demande. */ }
+  function startPoll() { /* Polling supprimé, requêtes uniquement à la demande. */ }
 
   function buildClientFileExchange(pid, files) {
     var adminFiles = (files||[]).filter(function(f){ return f.source !== 'client'; });
@@ -5984,9 +5984,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
 /* ── Greffe v2 : éditeur de contenu par blocs (façon Notion) ────────────────
  * Section "Contenu" au bas du drawer d'une tâche. Menu d'insertion (popover
- * avec icônes + libellés) et types de blocs riches : titre, sous-titre, texte,
- * à faire (case à cocher), listes, citation, encadré, séparateur, fichier.
- * Stocké dans task.blocks (PATCH /tasks/:id).
+ * avec icônes + libellés) et types de blocs riches. Les cases à cocher et les
+ * listes fonctionnent ligne par ligne (Entrée = élément suivant, Entrée sur un
+ * élément vide = on sort vers un bloc texte). Les modifications ne rechargent
+ * que le conteneur des blocs (pas tout l'écran).
  * Ni backtick ni séquence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
@@ -5995,24 +5996,36 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var body = { projectId: pid, blocks: t.blocks || [] };
     if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
     fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-      .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); })
-      .catch(function(){ toast('Erreur — réessayez', true); });
+      .then(function(r){ if (!r.ok) throw new Error(); })
+      .catch(function(){ toast('Erreur d enregistrement', true); });
+  }
+  // Re-render UNIQUEMENT le conteneur des blocs (pas de renderShell global).
+  function stbRenderBlocks(pid, taskId){
+    var t = cliTaskById(pid, taskId); if (!t) return;
+    var c = document.getElementById('stb-blocks-' + taskId);
+    if (c) c.innerHTML = stbBlocksInner(pid, t);
+  }
+  function stbFocus(blockId){
+    setTimeout(function(){
+      var el = document.getElementById('stb-f-' + blockId);
+      if (el){ el.focus(); try { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length); } catch(e){} }
+    }, 0);
   }
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
-    return '<textarea onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(b.text||'')+'</textarea>';
+    return '<textarea id="stb-f-'+b.id+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(b.text||'')+'</textarea>';
   }
-  function stbBlockInput(pid, taskId, b, ph, extra){
-    return '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;color:var(--navy,#1C1205);box-sizing:border-box;padding:3px 0;'+(extra||'')+'">';
+  // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
+  function stbLineInput(pid, taskId, b, ph, extra){
+    return '<input id="stb-f-'+b.id+'" value="'+esc(b.text||'')+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
-  function stbBlockRow(pid, taskId, b, i, n){
+  function stbBlockRow(pid, taskId, b, i, n, num){
     var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#e8e0d4);border-radius:5px;background:#fff;color:#8a6f54;cursor:pointer;font-size:11px;line-height:1;padding:0';
     var ctrl = '<div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
     '</div>';
     var del = '<button title="Supprimer" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:22px;height:22px;border:none;border-radius:6px;background:none;color:#c08;cursor:pointer;font-size:13px;line-height:1;opacity:0.55">✕</button>';
-    var mk = function(c){ return '<span style="color:#b08968;font-size:14px;line-height:1.6;padding-top:6px;min-width:18px;flex-shrink:0">'+c+'</span>'; };
     var inner;
     if (b.type === 'sep') {
       inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
@@ -6020,18 +6033,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
       inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
     } else if (b.type === 'heading') {
-      inner = stbBlockInput(pid, taskId, b, 'Titre', 'font-family:\'Cormorant Garamond\',serif;font-size:24px;font-weight:500');
+      inner = stbLineInput(pid, taskId, b, 'Titre', 'font-family:\'Inter Tight\',sans-serif;font-size:21px;font-weight:600');
     } else if (b.type === 'subheading') {
-      inner = stbBlockInput(pid, taskId, b, 'Sous-titre', 'font-family:\'Cormorant Garamond\',serif;font-size:18px;font-weight:500');
+      inner = stbLineInput(pid, taskId, b, 'Sous-titre', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:600');
     } else if (b.type === 'todo') {
-      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:9px">'+
-        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="margin-top:10px;width:16px;height:16px;cursor:pointer;accent-color:#5fa873;flex-shrink:0">'+
-        stbBlockTA(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#9a93a5':'')+
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px">'+
+        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#5fa873;flex-shrink:0">'+
+        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#9a93a5':'')+
       '</div>';
     } else if (b.type === 'list') {
-      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px">'+mk('•')+stbBlockTA(pid, taskId, b, 'Élément de liste (une ligne = une puce)')+'</div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
     } else if (b.type === 'numbered') {
-      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px">'+mk('1.')+stbBlockTA(pid, taskId, b, 'Élément (une ligne = un point)')+'</div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
     } else if (b.type === 'quote') {
       inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-left:3px solid #c9a76a;border-radius:0 8px 8px 0;padding-left:13px;font-style:italic;color:#6f5a40;background:#f7f2ea');
     } else if (b.type === 'callout') {
@@ -6051,15 +6064,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</button>';
   }
   function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#b3aa9a;padding:8px 10px 4px">'+txt+'</div>'; }
-  function stbBlocks(pid, t){
-    if (!t._blkInit){
-      if (!Array.isArray(t.blocks)) t.blocks = [];
-      if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
-      t._blkInit = true;
-    }
+  function stbBlocksInner(pid, t){
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
-    var rows = blocks.map(function(b, i){ return stbBlockRow(pid, t.id, b, i, blocks.length); }).join('');
-
+    var num = 0;
+    var rows = blocks.map(function(b, i){
+      if (b.type === 'numbered') num++; else num = 0;
+      return stbBlockRow(pid, t.id, b, i, blocks.length, num);
+    }).join('');
     var menu = '<div id="stb-menu-'+t.id+'" style="display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:6;background:#fff;border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:262px;max-height:340px;overflow-y:auto">'+
       stbMenuGroupTitle('Texte')+
       stbMI(pid, t.id, 'heading', 'heading', 'Titre', 'Grand titre de section')+
@@ -6069,7 +6080,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       stbMI(pid, t.id, 'callout', 'info', 'Encadré', 'Note mise en avant')+
       stbMenuGroupTitle('Listes')+
       stbMI(pid, t.id, 'todo', 'check-circle', 'À faire', 'Case à cocher')+
-      stbMI(pid, t.id, 'list', 'list', 'Liste à puces', 'Une ligne = une puce')+
+      stbMI(pid, t.id, 'list', 'list', 'Liste à puces', 'Entrée = puce suivante')+
       stbMI(pid, t.id, 'numbered', 'sort', 'Liste numérotée', 'Étapes ordonnées')+
       stbMenuGroupTitle('Autres')+
       stbMI(pid, t.id, 'sep', 'divider', 'Séparateur', 'Ligne de séparation')+
@@ -6079,11 +6090,18 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#e2dbd0);border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
       menu+
     '</div>';
-
     var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
+    return (rows || empty) + addBar;
+  }
+  function stbBlocks(pid, t){
+    if (!t._blkInit){
+      if (!Array.isArray(t.blocks)) t.blocks = [];
+      if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
+      t._blkInit = true;
+    }
     return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:26px;padding-top:22px">'+
       '<div style="margin-bottom:14px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Contenu</span></div>'+
-      '<div style="min-height:120px">'+(rows || empty)+addBar+'</div>'+
+      '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }
   window.stbBlockMenu = function(taskId){
@@ -6102,8 +6120,9 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!Array.isArray(t.blocks)) t.blocks = [];
     var b = { id: stbBid(), type: type };
     if (type === 'todo') { b.text = ''; b.done = false; }
-    else if (type !== 'sep') b.text = '';
-    t.blocks.push(b); stbBlocksSave(pid, taskId); renderShell();
+    else if (type !== 'sep' && type !== 'file') b.text = '';
+    t.blocks.push(b); stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+    if (type !== 'sep' && type !== 'file') stbFocus(b.id);
   };
   window.stbBlockSet = function(pid, taskId, blockId, value){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
@@ -6113,12 +6132,12 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.stbBlockToggle = function(pid, taskId, blockId){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
     var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
-    b.done = !b.done; stbBlocksSave(pid, taskId); renderShell();
+    b.done = !b.done; stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   window.stbBlockDel = function(pid, taskId, blockId){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
     t.blocks = t.blocks.filter(function(x){ return x.id !== blockId; });
-    stbBlocksSave(pid, taskId); renderShell();
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   window.stbBlockMove = function(pid, taskId, blockId, dir){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
@@ -6126,7 +6145,35 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     for (var k = 0; k < arr.length; k++){ if (arr[k].id === blockId) { i = k; break; } }
     var j = i + dir; if (i < 0 || j < 0 || j >= arr.length) return;
     var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-    stbBlocksSave(pid, taskId); renderShell();
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  // Entrée / Retour-arrière dans une ligne (titre, case à cocher, liste).
+  window.stbBlockKey = function(e, pid, taskId, blockId){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
+    var arr = t.blocks; var idx = -1;
+    for (var k = 0; k < arr.length; k++){ if (arr[k].id === blockId) { idx = k; break; } }
+    if (idx < 0) return; var b = arr[idx];
+    var isItem = (b.type === 'todo' || b.type === 'list' || b.type === 'numbered');
+    if (e.key === 'Enter'){
+      e.preventDefault();
+      b.text = e.target.value;
+      if (isItem && !b.text.trim()){
+        // élément vide -> on sort de la liste : devient un bloc texte
+        b.type = 'text'; if ('done' in b) delete b.done;
+        stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId); stbFocus(b.id);
+      } else {
+        var nb = { id: stbBid(), type: isItem ? b.type : 'text', text: '' };
+        if (nb.type === 'todo') nb.done = false;
+        arr.splice(idx + 1, 0, nb);
+        stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId); stbFocus(nb.id);
+      }
+    } else if (e.key === 'Backspace' && e.target.value === '' && idx > 0){
+      e.preventDefault();
+      var prev = arr[idx - 1];
+      arr.splice(idx, 1);
+      stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+      if (prev) stbFocus(prev.id);
+    }
   };
   window.stbBlockAddFile = function(pid, taskId){
     var input = document.createElement('input'); input.type = 'file';
@@ -6143,7 +6190,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           if (!Array.isArray(t.blocks)) t.blocks = [];
           var pd = getPD(pid); if (pd){ if (!Array.isArray(pd.project.files)) pd.project.files = []; pd.project.files.push(fileData); }
           t.blocks.push({ id: stbBid(), type:'file', fileKey: fileData.key, name: fileData.name || file.name });
-          stbBlocksSave(pid, taskId); toast('Fichier ajouté ✓'); renderShell();
+          stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId); toast('Fichier ajouté ✓');
         })
         .catch(function(){ toast('Erreur lors du depot', true); });
     };

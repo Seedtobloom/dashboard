@@ -88,6 +88,9 @@ js = js.split("grid-template-columns:repeat(7,1fr)").join("grid-template-columns
 //    on coupe la synthèse de gras du navigateur (faux-bold) partout ──
 must(css.indexOf("body { font-family: var(--font-body); background: var(--bone);") !== -1, 'body font-synthesis');
 css = css.replace("body { font-family: var(--font-body); background: var(--bone);", "body { font-family: var(--font-body); font-synthesis: none; background: var(--bone);");
+// Tout le texte de corps en Inter (les titres décoratifs restent en Cormorant via --font-display)
+must(css.indexOf("--font-body:'Alegreya',Georgia,'Times New Roman',serif;") !== -1, 'font-body inter');
+css = css.replace("--font-body:'Alegreya',Georgia,'Times New Roman',serif;", "--font-body:'Inter Tight','Inter',ui-sans-serif,system-ui,sans-serif;");
 
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
@@ -225,6 +228,15 @@ js = js.replace(
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
 js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + anchor[0]);
+
+// ── Bannir le tiret cadratin « — » du texte visible (séparateurs -> virgule, placeholders -> vide) ──
+js = js.split(' — ').join(', ');
+js = js.split('>—<').join('><');
+js = js.split('>— ').join('>');
+js = js.split("'—'").join("''");
+js = js.split('"—"').join('""');
+js = js.split('—').join('');
+css = css.split('—').join('');
 
 const handler = [
   'export default {',
