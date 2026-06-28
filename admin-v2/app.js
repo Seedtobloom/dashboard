@@ -74,11 +74,25 @@
       '<div class="shell"><aside class="side">' +
       '<div class="side__brand"><div class="n">Seed to Bloom</div><div class="s">Administration</div></div>' +
       '<nav class="side__nav">' + navHtml + '</nav>' +
+      '<div id="nav-timer-slot">' + navTimerHtml() + '</div>' +
       '<div class="side__foot"><button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.25)" onclick="ADM.logout()">Déconnexion</button></div>' +
       '</aside><div class="main" id="main"></div></div>';
     renderMain();
     refreshUnread();
   }
+  function navTimerHtml() {
+    var run = MT_TIMER || PT_TIMER;
+    if (!run) return '';
+    var sec = run.base + (Date.now() - run.startedAt) / 1000;
+    return '<div style="margin:14px 14px 4px;padding:13px 15px;background:rgba(242,229,194,0.12);border-radius:13px">' +
+      '<div style="font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille);opacity:0.65;margin-bottom:5px">Chrono en cours</div>' +
+      '<div id="nav-timer-clock" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:23px;color:var(--paille);letter-spacing:0.02em">' + mtClock(sec) + '</div>' +
+      '<div style="font-size:12px;color:var(--paille);opacity:0.85;margin:3px 0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(run.title || 'tâche') + '</div>' +
+      '<button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.3)" onclick="ADM.navTimerPause()">⏸ Mettre en pause</button>' +
+    '</div>';
+  }
+  function refreshNavTimer() { var s = el('nav-timer-slot'); if (s) s.innerHTML = navTimerHtml(); }
+  function navTimerPause() { if (MT_TIMER) mtPause(MT_TIMER.id, true); else if (PT_TIMER) ptPause(PT_TIMER.id, true); refreshNavTimer(); renderMain(); }
   var UNREAD = 0;
   function refreshUnread() {
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
@@ -204,11 +218,13 @@
     PT_TIMER = { id: id, startedAt: Date.now(), base: ptBase(t), title: t.title };
     if (PT_INT) clearInterval(PT_INT);
     tabTimerOn(mtClock(PT_TIMER.base), t.title);
+    refreshNavTimer();
     PT_INT = setInterval(function () {
       if (!PT_TIMER) { clearInterval(PT_INT); PT_INT = null; return; }
       var sec = PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000;
       var span = el('pt-timer-' + PT_TIMER.id);
       if (span) span.textContent = mtClock(sec);
+      var nc = el('nav-timer-clock'); if (nc) nc.textContent = mtClock(sec);
       tabTimerOn(mtClock(sec), PT_TIMER.title);
     }, 1000);
     loadClient();
@@ -219,6 +235,7 @@
     if (PT_INT) { clearInterval(PT_INT); PT_INT = null; }
     PT_TIMER = null;
     tabTimerOff();
+    refreshNavTimer();
     var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
     jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) loadClient(); else toast('Erreur'); } });
   }
@@ -258,11 +275,13 @@
     MT_TIMER = { id: id, startedAt: Date.now(), base: t.timeSpentSeconds || 0, title: t.title };
     if (MT_INT) clearInterval(MT_INT);
     tabTimerOn(mtClock(MT_TIMER.base), t.title);
+    refreshNavTimer();
     MT_INT = setInterval(function () {
       if (!MT_TIMER) { clearInterval(MT_INT); MT_INT = null; return; }
       var sec = MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000;
       var span = el('mt-timer-' + MT_TIMER.id);
       if (span) span.textContent = mtClock(sec);
+      var nc = el('nav-timer-clock'); if (nc) nc.textContent = mtClock(sec);
       tabTimerOn(mtClock(sec), MT_TIMER.title);
     }, 1000);
     renderMyTasks();
@@ -273,6 +292,7 @@
     if (MT_INT) { clearInterval(MT_INT); MT_INT = null; }
     MT_TIMER = null;
     tabTimerOff();
+    refreshNavTimer();
     var local = MT_TASKS.find(function (x) { return x.id === id; }); if (local) local.timeSpentSeconds = total;
     jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) renderMyTasks(); else toast('Erreur'); } });
   }
@@ -892,7 +912,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner,
-    taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause,
+    taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
