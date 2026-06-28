@@ -107,15 +107,52 @@
     setMain(topbar('Priorités', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
       var today = new Date(); today.setHours(0, 0, 0, 0);
-      var dl = (d.deadlines || []).map(function (x) {
-        var late = x.dueDate && new Date(x.dueDate) < today;
-        return '<tr>' +
-          '<td>' + (late ? pill('late', fmtDate(x.dueDate)) : '<strong>' + fmtDate(x.dueDate) + '</strong>') + '</td>' +
-          '<td><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a></td>' +
-          '<td>' + esc(x.projectLabel) + '</td>' +
-          '<td>' + esc(x.kind) + ' · ' + esc(x.title) + '</td>' +
-          '<td>' + pill(x.status, x.status) + '</td></tr>';
+      var SL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', waiting_client: 'Attente client', upcoming: 'À venir', done: 'Terminé' };
+      function ddiff(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); return Math.round((t - today) / 86400000); }
+      function whenLabel(n) { return n < 0 ? ((-n) + ' j de retard') : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : ('dans ' + n + ' j'); }
+      function whenCol(n) { return n < 0 ? 'var(--red)' : n === 0 ? 'var(--orange)' : 'var(--muted)'; }
+
+      var all = (d.deadlines || []).map(function (x) { x._d = ddiff(x.dueDate); return x; });
+      var mine = all.filter(function (x) { return x.status !== 'waiting_client'; });
+      var waiting = all.filter(function (x) { return x.status === 'waiting_client'; });
+      var pv = d.pendingValidation || [];
+
+      var nLate = mine.filter(function (x) { return x._d < 0; }).length;
+      var nToday = mine.filter(function (x) { return x._d === 0; }).length;
+      var nWeek = mine.filter(function (x) { return x._d > 0 && x._d <= 7; }).length;
+      var nWait = waiting.length + pv.length;
+
+      function kpi(cls, n, l) { return '<div class="kpi ' + cls + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard') + kpi('kpi--today', nToday, "Aujourd'hui") + kpi('', nWeek, 'Cette semaine') + kpi('', nWait, 'Attente client') + '</div>';
+
+      function prow(x) {
+        return '<div class="prow">' +
+          '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
+            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div></div>' +
+          '<div>' + pill(x.status, SL[x.status] || x.status) + '</div>' +
+        '</div>';
+      }
+      function group(title, dotCol, items) {
+        if (!items.length) return '';
+        return '<div class="pgroup"><div class="pgroup__h"><span class="pdot" style="background:' + dotCol + '"></span><span class="pgroup__t">' + title + '</span><span class="pgroup__c">' + items.length + '</span></div>' + items.map(prow).join('') + '</div>';
+      }
+      var late = mine.filter(function (x) { return x._d < 0; });
+      var tdy = mine.filter(function (x) { return x._d === 0; });
+      var week = mine.filter(function (x) { return x._d > 0 && x._d <= 7; });
+      var later = mine.filter(function (x) { return x._d > 7; });
+      var mineHtml = group('En retard', 'var(--red)', late) + group("Aujourd'hui", 'var(--orange)', tdy) + group('Cette semaine', 'var(--glycine-900)', week) + group('Plus tard', 'var(--bone-d)', later);
+
+      var waitHtml = waiting.map(function (x) {
+        return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
+          '<div>' + pill('waiting_client', 'Validation étape') + '</div></div>';
+      }).join('') + pv.map(function (l) {
+        return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(l.createdAt) + '</strong></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(l.name) + (l.taskTitle ? ' <span class="micro">(' + esc(l.taskTitle) + ')</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + l.key + '\')">' + esc(l.client) + '</a> · ' + esc(l.projectLabel) + '</div></div>' +
+          '<div>' + pill('a_valider', 'Livrable à valider') + '</div></div>';
       }).join('');
+
       var forf = (d.forfaits || []).map(function (f) {
         var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0;
         var over = f.remaining < 0;
@@ -125,10 +162,12 @@
             '<div class="micro mt" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (over ? ('dépassement ' + Math.abs(f.remaining) + ' h') : ('reste ' + f.remaining + ' h ce mois')) + '</div>' : '') +
           '</div>';
       }).join('');
-      setMain(topbar('Priorités', right) + '<div class="wrap">' +
-        '<div class="card"><h3>À faire — échéances</h3>' +
-        (dl ? '<table><thead><tr><th>Échéance</th><th>Client</th><th>Projet</th><th>Élément</th><th>Statut</th></tr></thead><tbody>' + dl + '</tbody></table>' : '<div class="empty">Aucune échéance en cours.</div>') +
-        '</div>' +
+
+      setMain(topbar('Priorités', right) + '<div class="wrap">' + kpis +
+        '<div class="card"><h3>Ce que vous avez à faire</h3>' +
+        (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
+        '<div class="card mt"><h3>En attente du client</h3>' +
+        (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
         '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:22px 0 12px">Forfaits du mois</h3>' +
         (forf || '<div class="empty">Aucun forfait partenaire.</div>') +
         '</div>');
