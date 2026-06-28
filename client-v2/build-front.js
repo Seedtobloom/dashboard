@@ -23,6 +23,7 @@ const chatPatch = read('_chat_patch.js');
 const livPatch = read('_deliverables_patch.js');
 const taskDlvPatch = read('_task_dlv_patch.js');
 const blocksPatch = read('_blocks_patch.js');
+const drawerPatch = read('_drawer_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -164,6 +165,19 @@ js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?
 must(js.indexOf("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +") !== -1, 'pill stack');
 js = js.replace("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +", "(propChipsHtml ? '<div style=\"display:flex;flex-direction:column;gap:4px;margin-top:5px\">'+propChipsHtml+'</div>' : '') +");
 
+// ── Filtres du calendrier : filtrer sur l'AVANCEMENT (p_brief) que la cliente règle via les pastilles ──
+must(js.indexOf("if (t.archived || t.status==='done') return false;") !== -1, 'cal filter archived');
+js = js.replace("if (t.archived || t.status==='done') return false;", "if (t.archived) return false; var _prog = (t.properties||{}).p_brief || '';");
+must(js.indexOf("if (flt.status && t.status !== flt.status) return false;") !== -1, 'cal filter status');
+js = js.replace("if (flt.status && t.status !== flt.status) return false;", "if (flt.status) { if (flt.status==='Terminé') { if (_prog!=='Terminé' && t.status!=='done') return false; } else if (_prog !== flt.status) return false; } else if (t.status==='done') return false;");
+// chips de filtre alignés sur les libellés d'avancement (+ TERMINÉ)
+must(js.indexOf("{ k:'todo',        label:'REÇUE',     col:'#b08968' },") !== -1, 'cal chip recue');
+js = js.replace("{ k:'todo',        label:'REÇUE',     col:'#b08968' },", "{ k:'En attente du brief', label:'EN ATTENTE', col:'#b08968' },");
+must(js.indexOf("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },") !== -1, 'cal chip encours');
+js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },", "{ k:'En cours', label:'EN COURS', col:'#7da2e0' },");
+must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#c9952f' }") !== -1, 'cal chip avalider');
+js = js.replace("{ k:'review',      label:'À VALIDER', col:'#c9952f' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#d98a5b' },\n      { k:'Terminé', label:'TERMINÉ', col:'#5fa873' }");
+
 // ── Pastilles éditables depuis la carte : éviter le conflit avec le drag (pointerdown) ──
 must(js.indexOf("onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(") !== -1, 'pill pointerdown');
 js = js.replace("onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(", "onpointerdown=\"event.stopPropagation()\" onclick=\"event.stopPropagation()\" onchange=\"event.stopPropagation();cliEditTaskProp(");
@@ -205,7 +219,7 @@ js = js.replace(
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + anchor[0]);
 
 const handler = [
   'export default {',
