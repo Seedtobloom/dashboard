@@ -93,16 +93,35 @@ js = js.replace("filesGroup('Livrables', adminBycat.deliverable) + filesGroup('D
 must(js.indexOf("      multiIntro + multiBlocks +") !== -1, 'home intro');
 js = js.replace("      multiIntro + multiBlocks +", "      multiBlocks +");
 
-// ── Bouton "Nouvelle tâche" mis en avant (CTA principal) ──
+// ── Bouton "Nouvelle tâche" : action flottante (FAB) bas-droite, détachée des onglets ──
 must(css.indexOf(".cp-btn--dark { background: var(--nuit); color: var(--brume); }") !== -1, 'css cp-btn--dark');
 css = css.replace(
   ".cp-btn--dark { background: var(--nuit); color: var(--brume); }",
-  ".cp-btn--dark { background: var(--nuit); color: var(--brume); }\n.cp-addtask{display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border:none;border-radius:999px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 20px -6px rgba(28,18,5,0.5);transition:transform .15s,box-shadow .15s}\n.cp-addtask:hover{transform:translateY(-2px);box-shadow:0 12px 26px -8px rgba(28,18,5,0.55)}\n.cp-addtask svg{stroke-width:2.4}"
+  ".cp-btn--dark { background: var(--nuit); color: var(--brume); }\n.cp-fab{position:fixed;right:32px;bottom:32px;z-index:60;display:inline-flex;align-items:center;gap:10px;padding:15px 24px;border:none;border-radius:999px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 14px 34px -10px rgba(28,18,5,0.55);transition:transform .18s var(--ease),box-shadow .18s var(--ease)}\n.cp-fab:hover{transform:translateY(-3px);box-shadow:0 20px 42px -12px rgba(28,18,5,0.6)}\n.cp-fab svg{stroke-width:2.4}\n@media(max-width:768px){.cp-fab{right:18px;bottom:18px;padding:0;width:58px;height:58px;justify-content:center}.cp-fab span{display:none}}"
 );
+// retire le bouton de la barre d'onglets…
 must(js.indexOf("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle tâche</button>' +") !== -1, 'btn nouvelle tache');
+js = js.replace("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle tâche</button>' +", "'' +");
+// …les onglets s'alignent à gauche (plus de space-between)
+must(js.indexOf("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">") !== -1, 'tabs justify');
+js = js.replace("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">", "<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px\">");
+// …et on ajoute le FAB (présent dans toute la vue partenaire via summaryBar)
+must(js.indexOf("var summaryBar = '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'") !== -1, 'summaryBar');
 js = js.replace(
-  "'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle tâche</button>' +",
-  "'<button class=\"cp-addtask\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">'+cpIcon('plus',17)+' Nouvelle tâche</button>' +"
+  "var summaryBar = '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'",
+  "var summaryBar = '<button class=\"cp-fab\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\" aria-label=\"Nouvelle tâche\">'+cpIcon('plus',20)+'<span>Nouvelle tâche</span></button>' + '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'"
+);
+
+// ── Édition d'une tâche : drawer en OVERLAY glissant (le calendrier garde toute sa largeur) ──
+must(css.indexOf(".cp-cal-layout { display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start; }") !== -1, 'css cal-layout');
+css = css.replace(
+  ".cp-cal-layout { display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start; }",
+  ".cp-cal-layout { display:block; }"
+);
+must(css.indexOf(".cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }") !== -1, 'css task-panel');
+css = css.replace(
+  ".cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }",
+  ".cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }\n@keyframes cpDrawerIn{from{transform:translateX(100%);opacity:0.5}to{transform:translateX(0);opacity:1}}\nbody:has(.cp-task-panel) .cp-fab{display:none}"
 );
 
 // ── Retrait de la messagerie GLOBALE (on garde le chat par projet) ──
