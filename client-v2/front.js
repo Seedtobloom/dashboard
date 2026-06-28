@@ -1197,7 +1197,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var _tone = CP_TYPE_TONES[p.type] || 'terre';
       var _band = acc(_tone);
       // Bandeau de couleur DA discret : pas d'image rognée, pas de doré hors-charte.
-      var bannerStyle = 'background:' + _band.deep + ';height:96px';
+      var bannerStyle = 'background:' + _band.deep + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
       var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#8a4a0e') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
