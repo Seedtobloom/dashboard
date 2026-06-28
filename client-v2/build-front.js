@@ -124,7 +124,10 @@ js = js.replace("'<div class=\"cp-action__icon\">'+cpIcon('arrow',18,'color:var(
 
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
-js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "navBtn('files','folder','Fichiers','cpOpenFiles()','') +");
+js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "'' +");
+// Le bouton « Fichiers » existant ouvre la vue regroupée par projet (overlay), pas de doublon
+must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +") !== -1, 'fichiers nav -> overlay');
+js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +");
 
 // ── Doublon Livrables : on retire le groupe "Livrables" du panneau Fichiers (gardé dans l'onglet Livrables) ──
 must(js.indexOf("filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference) +") !== -1, 'livrables dedup');

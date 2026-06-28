@@ -10,6 +10,7 @@
   var CHAT = { key: null, project: null }; // vue chat globale
 
   var DOMAIN_LABELS = { partner: 'Partenaire créative', website: 'Site web', branding: 'Identité visuelle' };
+  var DA_BANNER = [['#412F21', 'Terre'], ['#1C1205', 'Nuit'], ['#8B6F52', 'Argile'], ['#E4D1FE', 'Glycine'], ['#F2E5C2', 'Paille'], ['#F0E8FF', 'Brume']];
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
   var STEP_STATUS = [['upcoming', 'À venir'], ['in_progress', 'En cours'], ['waiting_client', 'Action client'], ['done', 'Terminé']];
 
@@ -579,10 +580,15 @@
     CUR.domains.forEach(function (dn) { offers.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.isActive !== false, (dn.content && dn.content.bannerColor) || '']); });
     CUR.supports.forEach(function (s) { offers.push([s.id, s.label, s.isActive !== false, (s.content && s.content.bannerColor) || '']); });
     var rows = offers.length ? offers.map(function (o) {
+      var cur = (o[3] || '').toLowerCase();
+      var swatches = DA_BANNER.map(function (c) {
+        var on = cur === c[0].toLowerCase();
+        return '<button onclick="ADM.setBanner(\'' + o[0] + '\',\'' + c[0] + '\')" title="' + c[1] + '" style="width:22px;height:22px;border-radius:6px;cursor:pointer;background:' + c[0] + ';border:' + (on ? '2px solid var(--terre,#412F21)' : '1px solid var(--bone-d)') + ';box-shadow:' + (on ? '0 0 0 2px #fff inset' : 'none') + '"></button>';
+      }).join('');
       return '<div class="file" style="flex-wrap:wrap;gap:10px"><span class="nm">' + esc(o[1]) + ' ' + (o[2] ? '<span class="pill pill--done">active</span>' : '<span class="pill">inactive</span>') + '</span>' +
         '<label class="checkbox"><input type="checkbox"' + (o[2] ? ' checked' : '') + ' onchange="ADM.toggleOffer(\'' + o[0] + '\',this.checked)"> visible</label>' +
-        '<span class="row" style="gap:6px;align-items:center"><span class="micro">Bannière</span>' +
-          '<input type="color" value="' + (o[3] || '#8a6f54') + '" onchange="ADM.setBanner(\'' + o[0] + '\',this.value)" style="width:36px;height:26px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer" title="Couleur de la bannière de la card">' +
+        '<span class="row" style="gap:5px;align-items:center;flex-wrap:wrap"><span class="micro">Bannière</span>' + swatches +
+          '<input type="color" value="' + (o[3] || '#8a6f54') + '" onchange="ADM.setBanner(\'' + o[0] + '\',this.value)" style="width:30px;height:22px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer" title="Couleur personnalisée">' +
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
