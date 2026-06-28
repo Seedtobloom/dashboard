@@ -188,8 +188,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 @media (max-width: 900px) { .cp-grid { grid-template-columns: 1fr; gap: 0; } }
 
 /* Action banner */
-.cp-action { display: flex; gap: 15px; align-items: center; background: #fcecd2; border: 1.5px solid #efbc7e; border-left: 5px solid #e08a2e; border-radius: var(--radius-3); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 10px 28px -12px rgba(199,118,32,0.5); }
-.cp-action__icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: #e8902f; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px -3px rgba(199,118,32,0.6); }
+.cp-action { display: flex; gap: 13px; align-items: center; background: #fbe7c8; border: none; border-radius: var(--radius-3); padding: 16px 20px; margin-bottom: 22px; }
+.cp-action__icon { flex-shrink: 0; display: flex; align-items: center; color: #c9772a; }
 .cp-action__title { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #a4561b; margin-bottom: 4px; }
 .cp-action__text { font-size: 14.5px; color: #5c4530; line-height: 1.55; font-weight: 500; }
 
