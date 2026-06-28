@@ -187,35 +187,68 @@
     }).catch(showError);
   }
 
-  /* ── Mes tâches (perso admin) ── */
+  /* ── Mes tâches (perso admin) + timer ── */
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [];
+  function mtClock(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; function p(n) { return n < 10 ? '0' + n : n; } return (h > 0 ? h + ':' : '') + p(m) + ':' + p(s); }
+  function mtDur(sec) { sec = Math.round(sec); if (sec < 60) return sec + ' s'; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return (h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' min' : (h > 0 ? '' : '0 min')); }
   function mtRow(t) {
     var pcol = { haute: 'var(--red)', normale: 'var(--glycine-900)', basse: '#c3b9a6' }[t.priority] || 'var(--glycine-900)';
     var plabel = { haute: 'Priorité haute', normale: 'Priorité normale', basse: 'Priorité basse' }[t.priority] || t.priority;
-    var est = t.estMinutes ? ((t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
+    var est = t.estMinutes ? ('estimé ' + (t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
     var dn = t.status === 'done';
+    var running = MT_TIMER && MT_TIMER.id === t.id;
+    var spent = t.timeSpentSeconds || 0;
+    var spentHtml = running
+      ? '<span id="mt-timer-' + t.id + '" style="font-family:var(--font-micro);font-weight:700;color:var(--green)">' + mtClock(spent) + '</span>'
+      : (spent ? '<span style="color:var(--terre)">passé ' + mtDur(spent) + '</span>' : '');
+    var timerBtn = dn ? '' : (running
+      ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸ Pause</button>'
+      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶ Démarrer</button>');
     return '<div class="prow">' +
       '<span class="pdot" style="background:' + pcol + ';align-self:center"></span>' +
       '<div class="prow__main"><div class="prow__el" style="' + (dn ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + esc(t.title) + '</div>' +
-        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div></div>' +
-      '<div class="prow__act">' +
+        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (spentHtml ? ' · ' + spentHtml : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div></div>' +
+      '<div class="prow__act">' + timerBtn +
         (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
             : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
         '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4">Suppr.</button>' +
       '</div></div>';
   }
+  function mtStart(id) {
+    if (MT_TIMER && MT_TIMER.id !== id) mtPause(MT_TIMER.id, true);
+    var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
+    MT_TIMER = { id: id, startedAt: Date.now(), base: t.timeSpentSeconds || 0 };
+    if (MT_INT) clearInterval(MT_INT);
+    MT_INT = setInterval(function () {
+      if (!MT_TIMER) { clearInterval(MT_INT); MT_INT = null; return; }
+      var span = el('mt-timer-' + MT_TIMER.id);
+      if (span) span.textContent = mtClock(MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000);
+    }, 1000);
+    renderMyTasks();
+  }
+  function mtPause(id, silent) {
+    if (!MT_TIMER || MT_TIMER.id !== id) return;
+    var total = Math.round(MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000);
+    if (MT_INT) { clearInterval(MT_INT); MT_INT = null; }
+    MT_TIMER = null;
+    var local = MT_TASKS.find(function (x) { return x.id === id; }); if (local) local.timeSpentSeconds = total;
+    jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) renderMyTasks(); else toast('Erreur'); } });
+  }
   function renderMyTasks() {
     setMain(topbar('Mes tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/admin/tasks').then(function (r) { return r.json(); }).then(function (d) {
       var all = d.tasks || [];
+      MT_TASKS = all;
       var todo = all.filter(function (x) { return x.status !== 'done'; });
       var done = all.filter(function (x) { return x.status === 'done'; });
+      var spentTotal = all.reduce(function (s, x) { return s + (x.timeSpentSeconds || 0); }, 0);
       var prank = { haute: 0, normale: 1, basse: 2 };
       todo.sort(function (a, b) { var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority]; if (pa !== pb) return pa - pb; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
       var estTotal = todo.reduce(function (s, x) { return s + (x.estMinutes || 0); }, 0);
       var weekAgo = new Date(Date.now() - 7 * 86400000);
       var doneWeek = done.filter(function (x) { return x.completedAt && new Date(x.completedAt) >= weekAgo; }).length;
       function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-      var kpis = '<div class="kpis">' + kc(todo.length, 'À faire') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé') + kc(doneWeek, 'Fait (7 j)') + kc(done.length, 'Total réalisé') + '</div>';
+      var kpis = '<div class="kpis">' + kc(todo.length, 'À faire') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé') + kc((spentTotal / 3600).toFixed(1).replace('.0', '') + ' h', 'Temps passé') + kc(doneWeek, 'Fait (7 j)') + '</div>';
       var form = '<div class="card"><h3>Ajouter une tâche</h3>' +
         '<div class="row"><input class="inp" id="mt-title" placeholder="Que dois-tu faire ?" style="flex:2;min-width:160px">' +
           '<select class="inp" id="mt-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select>' +
@@ -632,7 +665,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer,
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,

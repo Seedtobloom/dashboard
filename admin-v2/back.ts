@@ -730,6 +730,7 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
     notes: (b.notes || '').toString(),
     priority: ['haute', 'normale', 'basse'].indexOf(b.priority) !== -1 ? b.priority : 'normale',
     estMinutes: Math.max(0, parseInt(b.estMinutes, 10) || 0),
+    timeSpentSeconds: 0,
     dueDate: b.dueDate || null,
     status: 'todo',
     createdAt: nowIso(),
@@ -739,7 +740,7 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
   await saveMyTasks(env, tasks);
   return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'status'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status'];
 async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promise<Response> {
   const b = await readJson(request);
   const tasks = await getMyTasks(env);
