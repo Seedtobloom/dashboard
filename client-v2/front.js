@@ -329,8 +329,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cal-day.today .cp-cal-day__num { color:var(--terre); }
 .cp-cal-pill { font-family:var(--font-micro);font-size:10px;padding:3px 6px;border-radius:var(--radius-1);cursor:pointer;margin-bottom:3px;overflow:hidden;border-left:3px solid transparent;letter-spacing:0.04em;text-transform:uppercase; }
 .cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }
-@keyframes cpDrawerIn{from{transform:translateX(100%);opacity:0.5}to{transform:translateX(0);opacity:1}}
+@keyframes cpDrawerIn{from{transform:translateX(48px);opacity:0}to{transform:translateX(0);opacity:1}}
 body:has(.cp-task-panel) .cp-fab{display:none}
+body:has(.cp-task-overlay)::before{content:'';position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both}
+@keyframes cpFadeIn{from{opacity:0}to{opacity:1}}
+body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-task-card { border:1.5px solid var(--bone-d);border-radius:var(--radius-3);padding:14px 16px;margin-bottom:10px;background:var(--card);transition:box-shadow 0.15s; }
 .cp-task-card:hover { box-shadow:var(--shadow-2); }
 .cp-task-card__top { display:flex;align-items:flex-start;gap:10px;margin-bottom:8px; }
@@ -3070,11 +3073,11 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
         // Sélections éditables en un clic, directement sur la carte (façon Notion).
         var STATUT_OPTS = ['Brief en cours', 'Brief terminé'];
         var PROG_OPTS = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
-        var STATUT_COL = { 'Brief en cours':'#f0d9a8', 'Brief terminé':'#bfe0b0' };
-        var PROG_COL = { 'En attente du brief':'#ddd3c2', 'En cours':'#bcd4f2', 'À retravailler':'#f3c5a6', 'Besoin d\'une info':'#f0d9a8', 'Terminé':'#bfe0b0' };
+        var STATUT_COL = { 'Brief en cours':'#F2E5C2', 'Brief terminé':'#E4D1FE' };
+        var PROG_COL = { 'En attente du brief':'#F0E8FF', 'En cours':'#E4D1FE', 'À retravailler':'#EAD7BD', 'Besoin d\'une info':'#F2E5C2', 'Terminé':'#D7EBDB' };
         function inlineSel(propId, val, opts, colorMap, ph){
-          var bg = (val && colorMap[val]) || '#efe8db';
-          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:1px solid rgba(51,36,15,0.22);border-radius:999px;padding:4px 10px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;color:#33240f;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
+          var bg = (val && colorMap[val]) || '#F0E8FF';
+          var s = '<select title="'+ph+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="border:1px solid rgba(65,47,33,0.22);border-radius:999px;padding:4px 10px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;color:#412F21;background:'+bg+';cursor:pointer;max-width:100%;-webkit-appearance:none;appearance:none">';
           s += '<option value=""'+(!val?' selected':'')+'>'+ph+'…</option>';
           opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
           s += '</select>';
@@ -3085,7 +3088,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
           inlineSel('p_brief', propVals.p_brief||'', PROG_OPTS, PROG_COL, 'Avancement');
         var isSpan = t.startDate && t.startDate.slice(0,10) < (t.dueDate||'').slice(0,10);
         var spanStyle = isSpan ? 'border-left:3px solid '+urg+';border-radius:4px 7px 7px 4px;' : '';
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#EDE4CF':'#F6ECD6')+';cursor:pointer;margin-top:5px;'+spanStyle+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span style="font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
@@ -3117,7 +3120,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
       function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
       function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; });
 
-    return '<div style="display:grid;grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start">' +
+    return '<div style="display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start">' +
       '<div>' +
         calHeader +
         forfaitBar +
@@ -3193,7 +3196,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
 
-    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
+    return '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
       // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +

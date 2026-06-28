@@ -123,7 +123,7 @@ css = css.replace(
 must(css.indexOf(".cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }") !== -1, 'css task-panel');
 css = css.replace(
   ".cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }",
-  ".cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }\n@keyframes cpDrawerIn{from{transform:translateX(100%);opacity:0.5}to{transform:translateX(0);opacity:1}}\nbody:has(.cp-task-panel) .cp-fab{display:none}"
+  ".cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }\n@keyframes cpDrawerIn{from{transform:translateX(48px);opacity:0}to{transform:translateX(0);opacity:1}}\nbody:has(.cp-task-panel) .cp-fab{display:none}\nbody:has(.cp-task-overlay)::before{content:'';position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both}\n@keyframes cpFadeIn{from{opacity:0}to{opacity:1}}\nbody:has(.cp-task-overlay) .cp-fab{display:none}"
 );
 
 // ── Retrait de la messagerie GLOBALE (on garde le chat par projet) ──
@@ -147,16 +147,33 @@ js = js.replace(
 must(js.indexOf("border:none;border-radius:999px;padding:3px 9px;font-family:\\'Inter Tight\\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:") !== -1, 'pill select style');
 js = js.replace(
   "border:none;border-radius:999px;padding:3px 9px;font-family:\\'Inter Tight\\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:",
-  "border:1px solid rgba(51,36,15,0.22);border-radius:999px;padding:4px 10px;font-family:\\'Inter Tight\\',sans-serif;font-size:11px;font-weight:700;color:#33240f;background:"
+  "border:1px solid rgba(65,47,33,0.22);border-radius:999px;padding:4px 10px;font-family:\\'Inter Tight\\',sans-serif;font-size:11px;font-weight:700;color:#412F21;background:"
 );
 // fonds plus saturés pour distinguer les deux familles de pastilles
 must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
-js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#f0d9a8', 'Brief terminé':'#bfe0b0' };");
+js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F2E5C2', 'Brief terminé':'#E4D1FE' };");
 must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };") !== -1, 'pill prog col');
-js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#ddd3c2', 'En cours':'#bcd4f2', 'À retravailler':'#f3c5a6', 'Besoin d\\'une info':'#f0d9a8', 'Terminé':'#bfe0b0' };");
+js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#F0E8FF', 'En cours':'#E4D1FE', 'À retravailler':'#EAD7BD', 'Besoin d\\'une info':'#F2E5C2', 'Terminé':'#D7EBDB' };");
+// pastille vide : ton DA (brume) plutôt qu'un gris
+must(js.indexOf("(val && colorMap[val]) || '#efe8db'") !== -1, 'pill default bg');
+js = js.replace("(val && colorMap[val]) || '#efe8db'", "(val && colorMap[val]) || '#F0E8FF'");
+// fond des cartes de tâche : beige (DA) au lieu du dégradé d'urgence
+must(js.indexOf("background:'+(isDone?'#f3ede2':soft)+'") !== -1, 'card beige bg');
+js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?'#EDE4CF':'#F6ECD6')+'");
 // pastilles empilées (chaque libellé sur sa propre ligne -> texte lisible en entier)
 must(js.indexOf("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +") !== -1, 'pill stack');
 js = js.replace("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +", "(propChipsHtml ? '<div style=\"display:flex;flex-direction:column;gap:4px;margin-top:5px\">'+propChipsHtml+'</div>' : '') +");
+
+// ── Drawer de tâche : grand panneau overlay à droite (le calendrier garde toute sa largeur) ──
+// 1) la racine du drawer devient un grand panneau fixe à droite (façon Notion peek)
+must(js.indexOf("'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +") !== -1, 'drawer root');
+js = js.replace(
+  "'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +",
+  "'<div class=\"cp-task-overlay\" style=\"background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both\">' +"
+);
+// 2) on ne réserve plus la colonne de 360px : le calendrier reste pleine largeur sous l'overlay
+must(js.indexOf("grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start") !== -1, 'cal reserved col');
+js = js.replace("grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start", "grid-template-columns:minmax(0,1fr);gap:20px;align-items:start");
 
 // ── Drawer de tâche : éditeur de contenu par blocs (façon Notion) sous la description ──
 must(js.indexOf("+esc(t.content||'')+'</textarea>' +") !== -1, 'drawer content textarea');
