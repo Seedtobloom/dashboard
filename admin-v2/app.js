@@ -572,6 +572,7 @@
     var content = '';
     if (cur === 'forfait') content = partnerForfait(d);
     else if (cur === 'taches') content = partnerTasks(d);
+    else if (cur === 'bilan') content = bilanCard(d);
     else if (cur === 'suivi') content = suiviCard(d);
     else if (cur === 'liv') content = livrablesCard(d);
     else content = chatCard(d);
@@ -581,7 +582,7 @@
   }
   function sectionsFor(d) {
     var s = [];
-    if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
+    if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); s.push(['bilan', 'Bilan', 0]); }
     if (d.content.suivi !== undefined) s.push(['suivi', 'Suivi', 0]);
     if (Array.isArray(d.content.livrables)) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['msg', 'Messages', d.unread || 0]);
@@ -701,6 +702,46 @@
     var cs = (t.comments || []).map(function (c) { return '<div class="micro" style="margin:2px 0"><strong>' + (c.author === 'cindy' ? 'Vous' : 'Client') + '</strong> · ' + esc(c.text) + '</div>'; }).join('');
     return '<div class="mt">' + cs + '<div class="row mt"><input class="inp" id="cm-' + t.id + '" placeholder="Répondre / noter l\'avancement…"><button class="btn btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
+  /* bilan de fin de collaboration + suivi des bénéfices */
+  function bilanStars(n) { var h = ''; for (var i = 1; i <= 5; i++) { h += '<span style="font-size:20px;color:' + ((n >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((n >= i) ? '★' : '☆') + '</span>'; } return h; }
+  function bilanCard(d) {
+    var b = d.content.bilan || null;
+    var bens = Array.isArray(d.content.benefices) ? d.content.benefices : [];
+    var bilanHtml;
+    if (b && b.submittedAt) {
+      bilanHtml = '<div class="micro mb">Reçu le ' + fmtDate(b.submittedAt) + '</div>' +
+        '<div class="mb">' + bilanStars(b.rating || 0) + ' <span class="micro">' + (b.rating || 0) + '/5</span></div>' +
+        '<div class="micro mb">Recommanderait le studio ' + (b.recommend ? '<span class="pill pill--done">oui</span>' : '<span class="pill">pas encore</span>') + '</div>' +
+        (b.liked ? '<div class="field"><label>Ce qui a plu</label><div class="muted">' + esc(b.liked) + '</div></div>' : '') +
+        (b.improve ? '<div class="field"><label>Pistes d\'amélioration</label><div class="muted">' + esc(b.improve) + '</div></div>' : '') +
+        (b.testimonial ? '<div class="field"><label>Témoignage ' + (b.allowTestimonial ? '(publication autorisée)' : '(usage interne)') + '</label><div class="muted" style="font-style:italic">« ' + esc(b.testimonial) + ' »</div></div>' : '') +
+        '<button class="btn btn--outline btn--sm mt" onclick="ADM.bilanRequest()">Renvoyer une invitation</button>';
+    } else if (b && b.requestedAt) {
+      bilanHtml = '<div class="micro mb">Invitation envoyée le ' + fmtDate(b.requestedAt) + '. En attente de la réponse du client.</div>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.bilanRequest()">Relancer l\'invitation</button>';
+    } else {
+      bilanHtml = '<div class="micro mb">Sollicitez le client en fin de collaboration pour recueillir son bilan (satisfaction, témoignage).</div>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.bilanRequest()">Demander le bilan</button>';
+    }
+    var rows = bens.length ? bens.map(function (x) {
+      return '<div class="file"><span class="nm">' + esc(x.label) + (x.value ? ' <span class="pill pill--done">' + esc(x.value) + '</span>' : '') +
+        '<div class="micro muted">' + fmtDate(x.date) + (x.note ? ' · ' + esc(x.note) : '') + '</div></span>' +
+        '<button class="btn btn--danger btn--sm" onclick="ADM.beneficeDel(\'' + x.id + '\')">Suppr.</button></div>';
+    }).join('') : '<div class="empty">Aucun bénéfice enregistré pour l\'instant.</div>';
+    return '<div class="card" style="max-width:680px"><h3>Bilan de collaboration</h3>' + bilanHtml + '</div>' +
+      '<div class="card" style="max-width:680px"><h3>Suivi des bénéfices</h3>' +
+        '<div class="micro mb">Notez les retombées concrètes après la collaboration (nouveaux clients, visibilité, chiffre d\'affaires).</div>' + rows +
+        '<div class="row mt" style="flex-wrap:wrap;gap:8px">' +
+          '<input class="inp" id="ben-label" placeholder="Bénéfice (ex. plus de demandes)">' +
+          '<input class="inp" id="ben-value" style="width:120px" placeholder="Valeur">' +
+          '<input class="inp" type="date" style="width:auto" id="ben-date">' +
+          '<input class="inp" id="ben-note" placeholder="Note (optionnel)">' +
+          '<button class="btn btn--sm" onclick="ADM.beneficeAdd()">+ Ajouter</button>' +
+        '</div></div>';
+  }
+  function bilanRequest() { jpost('/api/clients/' + CURKEY + '/bilan/request', {}, 'POST').then(function (r) { if (r.ok) { toast('Invitation envoyée au client'); loadClient(); } else toast('Erreur'); }); }
+  function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indiquez un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
+  function beneficeDel(id) { api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); }); }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
   function taskStatus(id, st) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut: ' + st); loadClient(); } }); }
   function taskTime(id, mn) { var m = Number(mn) || 0; var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; } jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60 }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
@@ -841,6 +882,7 @@
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner,
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause,
+    bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
     planCap: planCap, planDone: planDone, planStart: planStart,

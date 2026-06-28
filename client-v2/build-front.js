@@ -26,6 +26,7 @@ const blocksPatch = read('_blocks_patch.js');
 const drawerPatch = read('_drawer_patch.js');
 const inboxPatch = read('_inbox_patch.js');
 const filesPatch = read('_files_patch.js');
+const feedbackPatch = read('_feedback_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -271,7 +272,11 @@ js = js.replace("text:'Déposez vos éléments (textes, photos, inspirations) et
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + '\n' + feedbackPatch + anchor[0]);
+
+// ── Onglet « Bilan » (sidebar Échanges) quand Cindy sollicite un retour de fin de collaboration ──
+must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +") !== -1, 'fichiers nav present pour bilan');
+js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
 
 // ── Bannir le tiret cadratin « — » du texte visible (séparateurs -> virgule, placeholders -> vide) ──
 js = js.split(' — ').join(', ');
