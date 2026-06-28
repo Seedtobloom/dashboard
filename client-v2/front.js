@@ -2988,8 +2988,8 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var flt = cliCalFilter[pid];
 
     var filtered = tasks.filter(function(t){
-      if (t.archived || t.status==='done') return false;
-      if (flt.status && t.status !== flt.status) return false;
+      if (t.archived) return false; var _prog = (t.properties||{}).p_brief || '';
+      if (flt.status) { if (flt.status==='Terminé') { if (_prog!=='Terminé' && t.status!=='done') return false; } else if (_prog !== flt.status) return false; } else if (t.status==='done') return false;
       return true;
     });
 
@@ -3015,9 +3015,10 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Header: ← Mois → | AUJOURD'HUI | filtres statut | + AJOUTER
     var CAL_STATUS_F = [
       { k:'',            label:'TOUTES',    col:'#1C1205' },
-      { k:'todo',        label:'REÇUE',     col:'#b08968' },
-      { k:'in_progress', label:'EN COURS',  col:'#7da2e0' },
-      { k:'review',      label:'À VALIDER', col:'#c9952f' }
+      { k:'En attente du brief', label:'EN ATTENTE', col:'#b08968' },
+      { k:'En cours', label:'EN COURS', col:'#7da2e0' },
+      { k:'À retravailler', label:'À RETRAVAILLER', col:'#d98a5b' },
+      { k:'Terminé', label:'TERMINÉ', col:'#5fa873' }
     ];
     var urgFilters = CAL_STATUS_F.map(function(s){
       var active = (flt.status||'')===s.k;
@@ -6091,6 +6092,123 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     };
     input.click();
   };
+
+/* ── Greffe v2 : panneau de tâche « façon Notion » (remplace buildPartTaskDrawer) ──
+ * Mise en page claire : bandeau + icône, grand titre, propriétés en lignes
+ * épurées (label discret à gauche, valeur/pastille à droite), puis livrables,
+ * commentaires et un grand espace « Contenu » par blocs en bas, puis actions.
+ * Cette déclaration arrive APRÈS l'originale : en JS, la dernière l'emporte.
+ * Ni backtick ni séquence dollar-accolade (template String.raw).
+ */
+  function dPillStyle(bg){ return 'border:none;-webkit-appearance:none;appearance:none;background:'+bg+';color:#412F21;font-family:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px;cursor:pointer;max-width:100%'; }
+  function dPropPill(pid, t, propId, current, opts, colorMap, ph){
+    var bg = (current && colorMap[current]) || '#EFEAF7';
+    var s = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="'+dPillStyle(bg)+'">';
+    s += '<option value=""'+(!current?' selected':'')+'>'+ph+'</option>';
+    opts.forEach(function(o){ s += '<option'+(current===o?' selected':'')+'>'+esc(o)+'</option>'; });
+    s += '</select>';
+    return s;
+  }
+  function dStatusPill(pid, t){
+    var map = { todo:'Reçue', in_progress:'En cours', review:'À valider', done:'Livrée' };
+    var col = { todo:'#E9E2D2', in_progress:'#CBD8F5', review:'#F6E59E', done:'#C9E6CB' };
+    var cur = t.status || 'todo';
+    var s = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[cur]||'#EFEAF7')+'">';
+    ['todo','in_progress','review','done'].forEach(function(k){ s += '<option value="'+k+'"'+(cur===k?' selected':'')+'>'+map[k]+'</option>'; });
+    s += '</select>';
+    return s;
+  }
+  function dRow(icon, label, valueHtml){
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:5px 0">'+
+      '<div style="display:flex;align-items:center;gap:7px;width:158px;flex-shrink:0;color:#9a93a5;font-size:12.5px;padding-top:7px"><span style="opacity:0.85">'+icon+'</span><span>'+label+'</span></div>'+
+      '<div style="flex:1;min-width:0;padding-top:1px">'+valueHtml+'</div>'+
+    '</div>';
+  }
+  function buildPartTaskDrawer(pid, tasks, files, project){
+    var taskId = cliSelTask[pid];
+    if (!taskId) return '';
+    var t = (tasks||[]).find(function(x){ return x.id===taskId; });
+    if (!t) return '';
+
+    var sep = '<hr style="border:none;border-top:1px solid #ece6da;margin:18px 0">';
+    var dueStr = (t.dueDate||'').slice(0,10);
+
+    var CLIENTBRIEF_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };
+    var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
+    var TYPE_COL = {};
+    var props = t.properties || {};
+
+    var schema = (project && Array.isArray(project.propertySchema)) ? project.propertySchema : [];
+    var typeDef = schema.find(function(d){ return d.id==='p_typemission'; });
+    var typeOpts = (typeDef && Array.isArray(typeDef.options)) ? typeDef.options : [];
+
+    // Lien & fichiers du brief (propriété composite p_elements)
+    var bvc = briefVal(props.p_elements);
+    var filesHtml = (bvc.files||[]).map(function(f){
+      return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:#f7f2ea;border-radius:8px;font-size:12px;margin-top:6px">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+    }).join('');
+    var linkFilesVal =
+      '<input type="url" value="'+esc(bvc.link||'')+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="width:100%;border:none;background:#f7f2ea;border-radius:7px;padding:7px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);box-sizing:border-box">'+
+      filesHtml+
+      '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="margin-top:7px;font-size:12px;padding:6px 12px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>';
+
+    var propertiesHtml =
+      dRow('◍', 'État', dStatusPill(pid, t)) +
+      dRow('📅', 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow('📝', 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', props.p_clientbrief||'', ['Brief en cours','Brief terminé'], CLIENTBRIEF_COL, 'À définir')) +
+      dRow('📈', 'Avancement', dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'À définir')) +
+      (typeOpts.length ? dRow('🏷️', esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
+      dRow('🔗', 'Lien & fichiers', linkFilesVal);
+
+    // Commentaires
+    var comments = Array.isArray(t.comments) ? t.comments : [];
+    var commentsHtml = comments.map(function(c){
+      var isStudio = c.author === 'studio';
+      return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
+        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'#f7f2ea')+'">'+
+          '<div style="font-size:10px;font-weight:700;color:#9a93a5;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
+          '<div style="font-size:13px;color:var(--navy,#1C1205)">'+esc(c.text)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    var commentsBlock =
+      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5">Commentaires</span></div>'+
+      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:#9a93a5;font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#f7f2ea;border-radius:999px;font-family:inherit">'+
+        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:9px 15px;background:var(--navy,#1C1205);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px">→</button>'+
+      '</div>';
+
+    // Actions
+    var actions =
+      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #e2dbd0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #e2dbd0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#9a93a5">Archiver</button>'+
+        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>'+
+      '</div>';
+
+    var backdrop = '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>';
+    var cover = '<div style="height:104px;background:linear-gradient(135deg,var(--nuit,#1C1205),var(--terre,#412F21))"></div>';
+    var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
+    var icon = '<div style="margin:-32px 0 0 44px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
+    var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
+
+    return backdrop +
+      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid #e8e0d4;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
+        closeBtn + cover + icon +
+        '<div style="padding:0 44px 44px">'+
+          title +
+          '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
+          sep +
+          stbTaskDeliverables(pid, project, t, sep) +
+          commentsBlock +
+          stbBlocks(pid, t) +
+          sep +
+          actions +
+        '</div>'+
+      '</div>';
+  }
 
   loadCpColors();
   if (!TOKEN || !API_BASE) { showLogin(); return; }
