@@ -11,6 +11,16 @@
 
   var DOMAIN_LABELS = { partner: 'Partenaire créative', website: 'Site web', branding: 'Identité visuelle' };
   var DA_BANNER = [['#412F21', 'Terre'], ['#1C1205', 'Nuit'], ['#8B6F52', 'Argile'], ['#E4D1FE', 'Glycine'], ['#F2E5C2', 'Paille'], ['#F0E8FF', 'Brume']];
+  var ADM_ICONS = {
+    priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
+    mytasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+    planning: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+    kpi: 'M3 3v18h18M18 17V9M13 17V5M8 17v-3',
+    done: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
+    clients: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  };
+  function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
   var STEP_STATUS = [['upcoming', 'À venir'], ['in_progress', 'En cours'], ['waiting_client', 'Action client'], ['done', 'Terminé']];
 
@@ -68,7 +78,7 @@
     var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['kpi', 'KPI'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
     var navHtml = items.map(function (it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
-      return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + it[1] + badgeSpan + '</button>';
+      return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }).join('');
     el('app').innerHTML =
       '<div class="shell"><aside class="side">' +
