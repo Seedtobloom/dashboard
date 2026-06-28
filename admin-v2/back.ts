@@ -863,6 +863,7 @@ function sanitizeBlocks(raw: any): AnyObj[] {
   if (!Array.isArray(raw)) return [];
   return raw.slice(0, 200).map((b: AnyObj) => ({
     id: typeof b.id === 'string' && b.id ? b.id : genId(),
+    groupId: typeof b.groupId === 'string' && b.groupId ? b.groupId.slice(0, 40) : (typeof b.id === 'string' && b.id ? b.id : genId()),
     dow: Math.min(7, Math.max(1, parseInt(b.dow, 10) || 0)),
     start: Math.min(1439, Math.max(0, parseInt(b.start, 10) || 0)),
     duration: Math.min(720, Math.max(5, parseInt(b.duration, 10) || 30)),
