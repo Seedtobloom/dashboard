@@ -88,6 +88,10 @@ export default {
         if (method === 'PATCH') return handleMyTaskUpdate(request, env, mt[1]);
         if (method === 'DELETE') return handleMyTaskDelete(env, mt[1]);
       }
+      if (pathname === '/api/admin/planning') {
+        if (method === 'GET') return json(await getPlanning(env));
+        if (method === 'PATCH') return handlePlanningSave(request, env);
+      }
 
       if (pathname === '/api/clients') {
         if (method === 'GET') return handleClientsList(env);
@@ -798,6 +802,20 @@ async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
   const tasks = await getMyTasks(env);
   await saveMyTasks(env, tasks.filter((x) => x.id !== id));
   return json({ ok: true });
+}
+
+/* ─────────── Planning : capacité hebdo (minutes par jour de semaine 1=lundi) ─────────── */
+async function getPlanning(env: Env): Promise<AnyObj> {
+  const p = (await env.KV_ADMIN.get('admin:planning', { type: 'json' })) as AnyObj | null;
+  if (p && p.days) return p;
+  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 } };
+}
+async function handlePlanningSave(request: Request, env: Env): Promise<Response> {
+  const b = await readJson(request);
+  const days: AnyObj = {};
+  for (let i = 1; i <= 7; i++) { days[i] = Math.max(0, parseInt(b.days && b.days[i], 10) || 0); }
+  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days }));
+  return json({ days });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */

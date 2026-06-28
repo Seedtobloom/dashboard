@@ -64,7 +64,7 @@
   /* ── shell ── */
   function nav(v) { VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0); }
   function renderShell() {
-    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['kpi', 'KPI'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
+    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['kpi', 'KPI'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
     var navHtml = items.map(function (it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + it[1] + badgeSpan + '</button>';
@@ -90,6 +90,7 @@
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'mytasks') return renderMyTasks();
     if (VIEW === 'kpi') return renderKpi();
+    if (VIEW === 'planning') return renderPlanning();
     if (VIEW === 'clients') return renderClients();
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
@@ -268,6 +269,63 @@
   }
   function myTaskStatus(id, st) { jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
+
+  /* ── Calendrier intelligent (planning hebdo) ── */
+  var PLAN_TASKS = [], PLAN_CAP = {};
+  var DOW_LBL = { 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim' };
+  function planWeek(tasks, cap) {
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    var dow = (now.getDay() + 6) % 7; var monday = new Date(now); monday.setDate(now.getDate() - dow);
+    var days = [];
+    for (var i = 0; i < 7; i++) { var dt = new Date(monday); dt.setDate(monday.getDate() + i); var k = ((dt.getDay() + 6) % 7) + 1; days.push({ date: dt, dow: k, cap: (cap[k] || 0), used: 0, tasks: [], past: dt < now }); }
+    var prank = { haute: 0, normale: 1, basse: 2 };
+    var todo = tasks.filter(function (x) { return x.status !== 'done'; }).slice().sort(function (a, b) { var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority]; if (pa !== pb) return pa - pb; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
+    var overflow = [];
+    todo.forEach(function (t) {
+      var est = t.estMinutes || 30; var placed = false;
+      for (var i = 0; i < days.length; i++) {
+        var dday = days[i]; if (dday.past || dday.cap <= 0) continue;
+        if (t.dueDate) { var dd = new Date(t.dueDate); dd.setHours(0, 0, 0, 0); if (dday.date > dd) break; }
+        if (dday.cap - dday.used >= est) { dday.used += est; dday.tasks.push(t); placed = true; break; }
+      }
+      if (!placed) overflow.push(t);
+    });
+    return { days: days, overflow: overflow };
+  }
+  function planTaskPill(t) {
+    var pcol = { haute: 'var(--red)', normale: 'var(--glycine-900)', basse: '#c3b9a6' }[t.priority] || 'var(--glycine-900)';
+    var est = t.estMinutes ? ((t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
+    return '<div style="display:flex;align-items:flex-start;gap:6px;background:var(--card);border:1px solid var(--bone-d);border-radius:8px;padding:7px 9px;margin-bottom:6px">' +
+      '<span class="pdot" style="background:' + pcol + ';margin-top:5px;flex-shrink:0"></span>' +
+      '<div style="flex:1;min-width:0"><div style="font-size:12.5px;color:var(--terre);line-height:1.3">' + esc(t.title) + '</div>' + (est ? '<div class="micro" style="color:var(--muted)">' + est + '</div>' : '') + '</div>' +
+      '<button class="pbtn pbtn--ok" style="padding:3px 7px;font-size:9px" onclick="ADM.planDone(\'' + t.id + '\')" title="Marquer fait">✓</button></div>';
+  }
+  function renderPlanningView() {
+    var plan = planWeek(PLAN_TASKS, PLAN_CAP);
+    var capEditor = '<div class="card"><h3>Vos disponibilités (heures par jour)</h3><div class="row" style="flex-wrap:wrap;gap:10px">' +
+      [1, 2, 3, 4, 5, 6, 7].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + '<input class="inp" type="number" min="0" max="14" step="0.5" style="width:60px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
+      '</div><div class="micro mt">Les tâches de « Mes tâches » sont réparties automatiquement sur la semaine selon leur priorité, leur durée estimée et leur échéance.</div></div>';
+    var cols = plan.days.map(function (dday) {
+      var capH = (dday.cap / 60); var usedH = (dday.used / 60); var pct = dday.cap > 0 ? Math.min(100, Math.round(dday.used / dday.cap * 100)) : 0;
+      var over = dday.used > dday.cap;
+      var head = '<div style="margin-bottom:8px"><div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:' + (dday.past ? 'var(--muted)' : 'var(--terre)') + '">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
+        (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + usedH.toFixed(1).replace('.0', '') + ' / ' + capH.toFixed(1).replace('.0', '') + ' h</div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:4px"><span style="width:' + pct + '%"></span></div>' : '<div class="micro" style="color:var(--muted)">repos</div>') + '</div>';
+      var body = dday.past ? '<div class="micro" style="color:var(--bone-d)">passé</div>' : (dday.tasks.map(planTaskPill).join('') || '<div class="micro" style="color:var(--muted)">—</div>');
+      return '<div style="background:' + (dday.past ? '#f7f4ee' : 'var(--bone)') + ';border:1px solid var(--bone-d);border-radius:12px;padding:12px;min-width:150px">' + head + body + '</div>';
+    }).join('');
+    var grid = '<div style="display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px">' + cols + '</div>';
+    var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de disponibilités, ou échéance déjà passée. Augmentez vos heures ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + capEditor + '<div class="card mt"><h3>Votre semaine</h3>' + grid + '</div>' + overflowHtml + '</div>');
+  }
+  function renderPlanning() {
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    Promise.all([api('/api/admin/planning').then(function (r) { return r.json(); }), api('/api/admin/tasks').then(function (r) { return r.json(); })]).then(function (res) {
+      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_TASKS = (res[1] && res[1].tasks) || [];
+      renderPlanningView();
+    }).catch(showError);
+  }
+  function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); jpost('/api/admin/planning', { days: PLAN_CAP }, 'PATCH').catch(function () {}); }
+  function planDone(id) { jpost('/api/admin/tasks/' + id, { status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { var t = PLAN_TASKS.find(function (x) { return x.id === id; }); if (t) t.status = 'done'; renderPlanningView(); toast('Marqué fait ✓'); } else toast('Erreur'); }); }
 
   /* ── KPI partenaire créative ── */
   function barsHtml(items, color, fmtVal) {
@@ -716,6 +774,7 @@
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
+    planCap: planCap, planDone: planDone,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
