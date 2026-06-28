@@ -65,7 +65,7 @@ js = js.replace(
 must(js.indexOf("    var sideCol = (adminSharedFiles.length ? tabs + filesPanel : '') + pracPanel + meetPanel + fileExchangeCard + helpCard;") !== -1, 'sideCol');
 js = js.replace(
   "    var sideCol = (adminSharedFiles.length ? tabs + filesPanel : '') + pracPanel + meetPanel + fileExchangeCard + helpCard;",
-  "    var msgPanel = (project.type !== 'partenaire') ? '<div id=\"cp-panel-msg\" class=\"cp-panel' + panelHidden('msg') + '\">' + stbChat(project.id) + '</div>' : '';\n    var livPanel = (project.type !== 'partenaire' && (project.deliverables||[]).length) ? '<div id=\"cp-panel-liv\" class=\"cp-panel' + panelHidden('liv') + '\">' + stbDeliverables(project.id) + '</div>' : '';\n    var sideCol = (sideTabs.length ? tabs : '') + msgPanel + livPanel + filesPanel + pracPanel + meetPanel + fileExchangeCard + helpCard;"
+  "    var msgPanel = (project.type !== 'partenaire') ? '<div id=\"cp-panel-msg\" class=\"cp-panel' + panelHidden('msg') + '\">' + stbChat(project.id) + '</div>' : '';\n    var livPanel = (project.type !== 'partenaire' && (project.deliverables||[]).length) ? '<div id=\"cp-panel-liv\" class=\"cp-panel' + panelHidden('liv') + '\">' + stbDeliverables(project.id) + '</div>' : '';\n    var sideCol = helpCard + (sideTabs.length ? tabs : '') + msgPanel + livPanel + filesPanel + pracPanel + meetPanel + fileExchangeCard;"
 );
 // 5) cpTab doit connaître le panneau 'msg'
 must(js.indexOf("    ['files','prac','meet'].forEach(function(id) {") !== -1, 'cpTab panels');
@@ -96,6 +96,9 @@ css = css.replace("--font-body:'Alegreya',Georgia,'Times New Roman',serif;", "--
 // ── Card d'accueil : la bannière marron était trop courte (96px) -> plus haute ──
 must(js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1, 'banner height');
 js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + _band.deep + ';height:150px'");
+// Les cards ne s'étirent plus à la hauteur de la plus haute (sinon vide sans couleur sous le contenu)
+must(css.indexOf(".cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }") !== -1, 'proj-grid align');
+css = css.replace(".cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }", ".cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; align-items: start; }");
 
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
@@ -146,9 +149,9 @@ must(js.indexOf("              mForfaitCard + mMsgCard +") !== -1, 'home mMsgCar
 js = js.replace("              mForfaitCard + mMsgCard +", "              mForfaitCard +");
 must(js.indexOf("            msgCard +") !== -1, 'home msgCard');
 js = js.replace("            msgCard +", "            '' +");
+// La carte « Une question ? » redevient un CTA actionnable vers la messagerie générale.
 must(js.indexOf("'<button class=\"cp-btn\" onclick=\"cpOpenMessages()\" type=\"button\">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +") !== -1, 'helpCard bouton');
-js = js.replace("'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Votre conversation avec Cindy couvre tout votre espace.</div>' +", "'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Vos echanges se font dans l onglet Messages de chaque projet.</div>' +");
-js = js.replace("'<button class=\"cp-btn\" onclick=\"cpOpenMessages()\" type=\"button\">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +", "'' +");
+js = js.replace("'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Votre conversation avec Cindy couvre tout votre espace.</div>' +", "'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Retrouvez tous vos echanges, classes par projet, dans votre messagerie.</div>' +");
 
 // ── Lisibilité des pastilles du calendrier (titre sur 2 lignes + meilleur contraste) ──
 must(js.indexOf("font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;") !== -1, 'pill title');
