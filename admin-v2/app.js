@@ -525,16 +525,31 @@
   }
 
   /* chat par projet */
-  function chatCard(d) {
-    var msgs = (d.content.chat || []).map(function (m) {
+  function hi(s, q) {
+    s = String(s == null ? '' : s); if (!q) return esc(s);
+    var ql = q.toLowerCase(), low = s.toLowerCase(), out = '', i = 0;
+    while (true) { var idx = low.indexOf(ql, i); if (idx === -1) { out += esc(s.slice(i)); break; } out += esc(s.slice(i, idx)) + '<mark style="background:#fbe39a;border-radius:3px;padding:0 1px">' + esc(s.slice(idx, idx + ql.length)) + '</mark>'; i = idx + ql.length; }
+    return out;
+  }
+  function chatBubbles(d, q) {
+    var all = d.content.chat || [];
+    var ql = (q || '').toLowerCase();
+    var msgs = ql ? all.filter(function (m) { return (m.message || '').toLowerCase().indexOf(ql) !== -1; }) : all;
+    if (!all.length) return '<div class="empty">Aucun message.</div>';
+    if (!msgs.length) return '<div class="empty">Aucun message ne contient ce mot.</div>';
+    return msgs.map(function (m) {
       var mine = m.from === 'cindy';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '"><div><div class="bubble">' + esc(m.message) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + '</div></div></div>';
-    }).join('') || '<div class="empty">Aucun message.</div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '"><div><div class="bubble">' + hi(m.message, q) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + '</div></div></div>';
+    }).join('');
+  }
+  function chatCard(d) {
     return '<div class="card"><h3>Messages — ' + esc(DOMAIN_LABELS[d.id] || d.label) + '</h3>' +
-      '<div class="msgs" id="chat-' + d.id + '">' + msgs + '</div>' +
+      '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
+      '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, '') + '</div>' +
       '<div class="row"><textarea class="inp" id="msg-' + d.id + '" placeholder="Répondre au client…"></textarea></div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
   }
+  function chatCardSearch(domainId, v) { var d = findDomain(domainId); var box = el('chat-' + domainId); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function sendMsg(pid) {
     var i = el('msg-' + pid); var v = (i.value || '').trim(); if (!v) return;
     jpost('/api/clients/' + CURKEY + '/message', { projectId: pid, content: v }).then(function (r) { if (r.ok) { toast('Message envoyé'); loadClient(); } else toast('Erreur'); });
@@ -602,12 +617,10 @@
     CHAT.project = pid;
     var d = findDomain(pid); if (!d) return;
     var box = el('chatthread'); if (!box) return;
-    var msgs = (d.content.chat || []).map(function (m) {
-      var mine = m.from === 'cindy';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '"><div><div class="bubble">' + esc(m.message) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + '</div></div></div>';
-    }).join('') || '<div class="empty">Aucun message.</div>';
-    box.innerHTML = '<div class="msgs">' + msgs + '</div><div class="row"><textarea class="inp" id="gmsg"></textarea></div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.gsend()">Envoyer</button></div>';
+    box.innerHTML = '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatSearch(this.value)"></div>' +
+      '<div class="msgs" id="chatmsgs">' + chatBubbles(d, '') + '</div><div class="row"><textarea class="inp" id="gmsg"></textarea></div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.gsend()">Envoyer</button></div>';
   }
+  function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function gsend() {
     var i = el('gmsg'); var v = (i.value || '').trim(); if (!v) return;
     jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v }).then(function (r) { if (r.ok) { toast('Envoyé'); chatClient(CHAT.key); setTimeout(function () { chatProject(CHAT.project); }, 200); } });
@@ -622,7 +635,7 @@
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
-    chatClient: chatClient, chatProject: chatProject, gsend: gsend,
+    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
   };
   boot();
 })();
