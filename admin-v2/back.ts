@@ -648,19 +648,19 @@ async function handleDashboard(env: Env): Promise<Response> {
     if (pc) {
       forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
       (pc.taches || []).forEach((t: AnyObj) => {
-        if (t.status !== 'done' && t.dueDate) deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', title: t.title, dueDate: t.dueDate, status: t.status });
+        if (t.status !== 'done' && t.dueDate) deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate, status: t.status });
       });
     }
     collectLiv(pc, 'Partenaire créative');
     // étapes de suivi non terminées (site + supports)
     const sw = getDomainObj(esp, 'siteWeb');
-    if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', title: s.title, dueDate: s.date, status: s.status }); });
+    if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
     collectLiv(sw, 'Site web');
     collectLiv(getDomainObj(esp, 'identiteVisuelle'), 'Identité visuelle');
     const sd = esp.supportsDeCom && esp.supportsDeCom[0];
     if (sd) for (const pid of Object.keys(sd)) {
       const o = getSupportObj(esp, pid);
-      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: 'Support ' + pid, kind: 'étape', title: s.title, dueDate: s.date, status: s.status }); });
+      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: 'Support ' + pid, kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
       collectLiv(o, 'Support ' + pid);
     }
   }
