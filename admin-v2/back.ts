@@ -429,7 +429,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   const task = container.taches.find((t: AnyObj) => t.id === taskId);
   return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'timeSpentMinutes', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'timeSpentMinutes', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink'];
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -552,7 +552,8 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
   const form = await request.formData();
   const file = form.get('file') as unknown as File | null;
   const projectId = (form.get('projectId') as string) || '';
-  const asDeliverable = (form.get('deliverable') as string) === '1' || (form.get('category') as string) === 'deliverable';
+  const taskId = (form.get('taskId') as string) || '';
+  const asDeliverable = (form.get('deliverable') as string) === '1' || (form.get('category') as string) === 'deliverable' || !!taskId;
   if (!file) return json({ error: 'file requis' }, 400);
   const folder = projectFolder(projectId);
   if (!folder) return json({ error: 'projectId invalide' }, 400);
@@ -567,10 +568,15 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
     const { container } = resolveProject(getEspace(data), projectId);
     if (container) {
       if (!Array.isArray(container.livrables)) container.livrables = [];
-      deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso() };
+      deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '' };
+      // Rattachement à une tâche : on mémorise son titre et on passe la tâche en « à valider ».
+      if (taskId && Array.isArray(container.taches)) {
+        const tk = container.taches.find((t: AnyObj) => t.id === taskId);
+        if (tk) { deliverable.taskTitle = tk.title || ''; tk.status = 'review'; deliverable.reviewLink = tk.reviewLink || ''; }
+      }
       container.livrables.push(deliverable);
       await saveClient(env, key, data);
-      await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(file.name)}</strong> est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+      await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(file.name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
     }
   }
   return json({ key: r2key, name: file.name, type: file.type || guessType(file.name), size: file.size, category: asDeliverable ? 'deliverable' : 'document', deliverable }, 201);

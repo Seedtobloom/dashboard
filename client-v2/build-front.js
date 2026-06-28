@@ -21,6 +21,7 @@ let html = read('src/client_html.js');   // var CLIENT_HTML = `...`;
 const patch = read('_login_patch.js');
 const chatPatch = read('_chat_patch.js');
 const livPatch = read('_deliverables_patch.js');
+const taskDlvPatch = read('_task_dlv_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -135,10 +136,38 @@ must(js.indexOf("'<button class=\"cp-btn\" onclick=\"cpOpenMessages()\" type=\"b
 js = js.replace("'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Votre conversation avec Cindy couvre tout votre espace.</div>' +", "'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Vos echanges se font dans l onglet Messages de chaque projet.</div>' +");
 js = js.replace("'<button class=\"cp-btn\" onclick=\"cpOpenMessages()\" type=\"button\">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +", "'' +");
 
+// ── Lisibilité des pastilles du calendrier (titre sur 2 lignes + meilleur contraste) ──
+must(js.indexOf("font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;") !== -1, 'pill title');
+js = js.replace(
+  "font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;",
+  "font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;"
+);
+// pastilles Statut/Avancement : texte plus contrasté + contour
+must(js.indexOf("border:none;border-radius:999px;padding:3px 9px;font-family:\\'Inter Tight\\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:") !== -1, 'pill select style');
+js = js.replace(
+  "border:none;border-radius:999px;padding:3px 9px;font-family:\\'Inter Tight\\',sans-serif;font-size:10.5px;font-weight:600;color:#5c4530;background:",
+  "border:1px solid rgba(51,36,15,0.22);border-radius:999px;padding:4px 10px;font-family:\\'Inter Tight\\',sans-serif;font-size:11px;font-weight:700;color:#33240f;background:"
+);
+// fonds plus saturés pour distinguer les deux familles de pastilles
+must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
+js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#f0d9a8', 'Brief terminé':'#bfe0b0' };");
+must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };") !== -1, 'pill prog col');
+js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#ddd3c2', 'En cours':'#bcd4f2', 'À retravailler':'#f3c5a6', 'Besoin d\\'une info':'#f0d9a8', 'Terminé':'#bfe0b0' };");
+// pastilles empilées (chaque libellé sur sa propre ligne -> texte lisible en entier)
+must(js.indexOf("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +") !== -1, 'pill stack');
+js = js.replace("(propChipsHtml ? '<div style=\"display:flex;flex-wrap:wrap;gap:3px;margin-top:3px\">'+propChipsHtml+'</div>' : '') +", "(propChipsHtml ? '<div style=\"display:flex;flex-direction:column;gap:4px;margin-top:5px\">'+propChipsHtml+'</div>' : '') +");
+
+// ── Drawer de tâche : section « Livrables & révision » rattachée à la tâche ──
+must(js.indexOf("'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +") !== -1, 'drawer echange anchor');
+js = js.replace(
+  "'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +",
+  "stbTaskDeliverables(pid, project, t, sep) + '<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +"
+);
+
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + anchor[0]);
 
 const handler = [
   'export default {',
