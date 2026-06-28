@@ -6045,6 +6045,36 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-left:3px solid #c9a76a;border-radius:0 8px 8px 0;padding-left:13px;font-style:italic;color:#6f5a40;background:#f7f2ea');
     } else if (b.type === 'callout') {
       inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:10px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 6px">'+cpIcon('info',17,'color:#7a5ca8;flex-shrink:0;margin-top:11px')+stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
+    } else if (b.type === 'table') {
+      if (!Array.isArray(b.rows) || !b.rows.length) b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']];
+      var ncol = b.rows[0].length;
+      var thead = '<tr>' + b.rows[0].map(function(c, ci){
+        return '<th style="border:1px solid var(--bone-d,#e8e0d4);background:#f4eee2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#1C1205);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
+      }).join('') + '<th style="border:none;width:20px"></th></tr>';
+      var tbody = b.rows.slice(1).map(function(row, ri){
+        var rr = ri + 1;
+        return '<tr>' + row.map(function(c, ci){
+          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><textarea oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+','+ci+',this.value)" placeholder="…" style="width:100%;border:none;background:none;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;resize:none;box-sizing:border-box;min-height:32px;overflow:hidden;outline:none">'+esc(c)+'</textarea></td>';
+        }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
+      }).join('');
+      inner = '<div style="flex:1;min-width:0;overflow-x:auto"><table style="border-collapse:collapse;width:100%;background:#fff;border-radius:8px"><tbody>'+thead+tbody+'</tbody></table>'+
+        '<div style="display:flex;gap:6px;margin-top:7px">'+
+          '<button onclick="window.stbTableAddRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Ligne</button>'+
+          '<button onclick="window.stbTableAddCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Colonne</button>'+
+        '</div></div>';
+    } else if (b.type === 'link') {
+      var lu = b.url || '';
+      inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:10px 12px">'+
+        '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#1C1205);outline:none">'+
+        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#9a8a72;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#6f5a40;outline:none;min-width:0">'+
+        (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#7a5a14;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
+      '</div>';
+    } else if (b.type === 'embed') {
+      var eu = b.url || ''; var emb = stbEmbedUrl(eu);
+      inner = '<div style="flex:1;min-width:0">'+
+        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#faf7f1;border:1px dashed var(--bone-d,#e8e0d4);border-radius:10px;color:#9a8a72;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
+        '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#e8e0d4);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
+      '</div>';
     } else {
       inner = stbBlockTA(pid, taskId, b, 'Écrire…');
     }
@@ -6078,6 +6108,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       stbMI(pid, t.id, 'todo', 'check-circle', 'À faire', 'Case à cocher')+
       stbMI(pid, t.id, 'list', 'list', 'Liste à puces', 'Entrée = puce suivante')+
       stbMI(pid, t.id, 'numbered', 'sort', 'Liste numérotée', 'Étapes ordonnées')+
+      stbMenuGroupTitle('Mise en forme')+
+      stbMI(pid, t.id, 'table', 'columns', 'Tableau', 'Lignes et colonnes')+
+      stbMI(pid, t.id, 'link', 'link', 'Lien', 'Lien cliquable')+
+      stbMI(pid, t.id, 'embed', 'image', 'Vidéo', 'YouTube ou Vimeo')+
       stbMenuGroupTitle('Autres')+
       stbMI(pid, t.id, 'sep', 'divider', 'Séparateur', 'Ligne de séparation')+
       stbMI(pid, t.id, 'file', 'paperclip', 'Fichier', 'Joindre un document')+
@@ -6116,14 +6150,56 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (!Array.isArray(t.blocks)) t.blocks = [];
     var b = { id: stbBid(), type: type };
     if (type === 'todo') { b.text = ''; b.done = false; }
+    else if (type === 'table') { b.rows = [['Colonne 1', 'Colonne 2', 'Colonne 3'], ['', '', '']]; }
+    else if (type === 'link') { b.text = ''; b.url = ''; }
+    else if (type === 'embed') { b.url = ''; }
     else if (type !== 'sep' && type !== 'file') b.text = '';
     t.blocks.push(b); stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
-    if (type !== 'sep' && type !== 'file') stbFocus(b.id);
+    if (type === 'text' || type === 'heading' || type === 'subheading' || type === 'todo' || type === 'list' || type === 'numbered' || type === 'quote' || type === 'callout') stbFocus(b.id);
   };
   window.stbBlockSet = function(pid, taskId, blockId, value){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
     var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
     b.text = value; stbBlocksSave(pid, taskId);
+  };
+  window.stbBlockSetField = function(pid, taskId, blockId, field, value){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
+    var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
+    b[field] = value; stbBlocksSave(pid, taskId);
+    if (field === 'url') stbRenderBlocks(pid, taskId);
+  };
+  function stbEmbedUrl(u){
+    if (!u) return ''; u = String(u);
+    var id = '';
+    if (u.indexOf('youtu.be/') !== -1) id = u.split('youtu.be/')[1];
+    else if (u.indexOf('watch?v=') !== -1) id = u.split('watch?v=')[1];
+    else if (u.indexOf('youtube.com/embed/') !== -1) id = u.split('youtube.com/embed/')[1];
+    if (id) { id = id.split('&')[0].split('?')[0].split('/')[0]; return 'https://www.youtube.com/embed/' + id; }
+    if (u.indexOf('vimeo.com/') !== -1) { var parts = u.split('vimeo.com/')[1].split('/'); var vid = parts[parts.length - 1].split('?')[0]; if (vid) return 'https://player.vimeo.com/video/' + vid; }
+    return '';
+  }
+  function stbTableBlock(pid, taskId, blockId){ var t = cliTaskById(pid, taskId); if (!t) return null; return (t.blocks || []).find(function(x){ return x.id === blockId; }); }
+  window.stbTableSet = function(pid, taskId, blockId, r, c, value){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || !b.rows[r]) return;
+    b.rows[r][c] = value; stbBlocksSave(pid, taskId);
+  };
+  window.stbTableAddRow = function(pid, taskId, blockId){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || !b.rows.length) return;
+    var row = []; for (var i = 0; i < b.rows[0].length; i++) row.push(''); b.rows.push(row);
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  window.stbTableAddCol = function(pid, taskId, blockId){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows) return;
+    b.rows.forEach(function(row, i){ row.push(i === 0 ? 'Colonne' : ''); });
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  window.stbTableDelRow = function(pid, taskId, blockId, r){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || r <= 0) return;
+    b.rows.splice(r, 1); stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  window.stbTableDelCol = function(pid, taskId, blockId, c){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || b.rows[0].length <= 1) return;
+    b.rows.forEach(function(row){ row.splice(c, 1); }); stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   window.stbBlockToggle = function(pid, taskId, blockId){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
