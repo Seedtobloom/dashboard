@@ -331,25 +331,39 @@
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
-  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9;
+  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9, PLAN_BLOCKS = [], PLAN_BLK_COLOR = '#8B6F52';
   var DOW_LBL = { 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim' };
-  function planWeek(tasks, cap) {
+  function planIso(dt) { var m = dt.getMonth() + 1, da = dt.getDate(); return dt.getFullYear() + '-' + ('0' + m).slice(-2) + '-' + ('0' + da).slice(-2); }
+  function planWeek(tasks, cap, blocks, startHour) {
+    startHour = startHour || 9;
     var now = new Date(); now.setHours(0, 0, 0, 0);
     var days = [];
     // Fenêtre glissante de 7 jours À PARTIR d'aujourd'hui (toujours des jours exploitables)
-    for (var i = 0; i < 7; i++) { var dt = new Date(now); dt.setDate(now.getDate() + i); var k = ((dt.getDay() + 6) % 7) + 1; days.push({ date: dt, dow: k, cap: (cap[k] || 0), used: 0, tasks: [], past: false, today: i === 0 }); }
+    for (var i = 0; i < 7; i++) {
+      var dt = new Date(now); dt.setDate(now.getDate() + i); var k = ((dt.getDay() + 6) % 7) + 1; var ds = planIso(dt);
+      var winStart = startHour * 60, winEnd = startHour * 60 + (cap[k] || 0);
+      var fixed = (blocks || []).filter(function (b) { return b.date === ds; }).map(function (b) { return { type: 'block', id: b.id, start: b.start, end: b.start + b.duration, duration: b.duration, label: b.label, color: b.color }; }).sort(function (a, b) { return a.start - b.start; });
+      days.push({ date: dt, dow: k, ds: ds, cap: (cap[k] || 0), winStart: winStart, winEnd: winEnd, fixed: fixed, items: [], used: 0, today: i === 0 });
+    }
+    // créneaux libres = fenêtre du jour moins les blocs fixes
+    days.forEach(function (d) {
+      d.free = []; var cursor = d.winStart;
+      d.fixed.forEach(function (b) { var bs = Math.max(d.winStart, Math.min(b.start, d.winEnd)), be = Math.max(d.winStart, Math.min(b.end, d.winEnd)); if (bs > cursor) d.free.push([cursor, bs]); cursor = Math.max(cursor, be); });
+      if (cursor < d.winEnd) d.free.push([cursor, d.winEnd]);
+    });
     var prank = { haute: 0, normale: 1, basse: 2 };
     var todo = tasks.filter(function (x) { return x.status !== 'done'; }).slice().sort(function (a, b) { var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority]; if (pa !== pb) return pa - pb; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
     var overflow = [];
     todo.forEach(function (t) {
       var est = t.estMinutes || 30; var placed = false;
-      for (var i = 0; i < days.length; i++) {
-        var dday = days[i]; if (dday.past || dday.cap <= 0) continue;
-        if (t.dueDate) { var dd = new Date(t.dueDate); dd.setHours(0, 0, 0, 0); if (dday.date > dd) break; }
-        if (dday.cap - dday.used >= est) { dday.used += est; dday.tasks.push(t); placed = true; break; }
+      for (var i = 0; i < days.length && !placed; i++) {
+        var d = days[i]; if (d.cap <= 0) continue;
+        if (t.dueDate) { var dd = new Date(t.dueDate); dd.setHours(0, 0, 0, 0); if (d.date > dd) break; }
+        for (var s = 0; s < d.free.length; s++) { var seg = d.free[s]; if (seg[1] - seg[0] >= est) { d.items.push({ type: 'task', task: t, start: seg[0], end: seg[0] + est, duration: est }); seg[0] += est; d.used += est; placed = true; break; } }
       }
       if (!placed) overflow.push(t);
     });
+    days.forEach(function (d) { d.all = d.fixed.concat(d.items).sort(function (a, b) { return a.start - b.start; }); });
     return { days: days, overflow: overflow };
   }
   function planTaskPill(t) {
@@ -361,33 +375,40 @@
       '<button class="pbtn pbtn--ok" style="padding:3px 7px;font-size:9px" onclick="ADM.planDone(\'' + t.id + '\')" title="Marquer fait">✓</button></div>';
   }
   function planHM(min) { var h = Math.floor(min / 60), m = min % 60; return h + 'h' + (m ? ('0' + m).slice(-2) : ''); }
-  function planDayCol(dday, startHour, hours, PXMIN) {
-    var colH = hours * 60 * PXMIN;
+  function planDayCol(d, startHour, hours, PXMIN) {
+    var colH = hours * 60 * PXMIN, base = startHour * 60;
     var lines = '';
-    for (var h = 0; h < hours; h++) { lines += '<div style="position:absolute;left:0;right:0;top:' + (h * 60 * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
-    var capLine = dday.cap > 0 ? '<div style="position:absolute;left:0;right:0;top:' + (dday.cap * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
-    var offset = 0, blocks = '';
-    dday.tasks.forEach(function (t) {
-      var est = t.estMinutes || 30; var top = offset * PXMIN; var bh = Math.max(20, est * PXMIN); var startM = startHour * 60 + offset;
-      var pcol = { haute: '#c0533b', normale: 'var(--glycine-900)', basse: '#b0a48f' }[t.priority] || 'var(--glycine-900)';
-      var lbg = { haute: '#fbe3dc', normale: '#efe6fb', basse: '#efe9e0' }[t.priority] || '#efe6fb';
-      blocks += '<div onclick="ADM.planDone(\'' + t.id + '\')" title="' + esc(t.title) + ', clic pour marquer fait" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.10);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;cursor:pointer">' +
-        '<div style="display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:600;color:var(--terre);line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.title) + '</span></div>' +
-        (bh > 34 ? '<div style="font-size:9px;color:var(--muted);margin-top:1px">' + planHM(startM) + ' à ' + planHM(startM + est) + '</div>' : '') + '</div>';
-      offset += est;
+    for (var h = 0; h <= hours; h++) { lines += '<div style="position:absolute;left:0;right:0;top:' + (h * 60 * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
+    var capLine = d.cap > 0 ? '<div style="position:absolute;left:0;right:0;top:' + (d.cap * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
+    var bg = d.cap <= 0 ? '#faf7f1' : 'var(--card)';
+    if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div></div>'; }
+    var items = '';
+    d.all.forEach(function (it) {
+      var top = (it.start - base) * PXMIN, bh = Math.max(22, it.duration * PXMIN), hrs = planHM(it.start) + ' à ' + planHM(it.end);
+      if (it.type === 'block') {
+        items += '<div title="' + esc(it.label || 'Bloc') + ', ' + hrs + '" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + it.color + ';border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;color:#fff">' +
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px"><span style="font-size:11px;font-weight:600;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(it.label || 'Bloc') + '</span><span onclick="ADM.planBlockDel(\'' + it.id + '\')" title="Supprimer ce bloc" style="cursor:pointer;color:rgba(255,255,255,0.85);font-size:11px;line-height:1;flex-shrink:0">✕</span></div>' +
+          (bh > 34 ? '<div style="font-size:9px;opacity:0.9;margin-top:1px">' + hrs + '</div>' : '') + '</div>';
+      } else {
+        var t = it.task;
+        var pcol = { haute: '#c0533b', normale: 'var(--glycine-900)', basse: '#b0a48f' }[t.priority] || 'var(--glycine-900)';
+        var lbg = { haute: '#fbe3dc', normale: '#efe6fb', basse: '#efe9e0' }[t.priority] || '#efe6fb';
+        items += '<div onclick="ADM.planDone(\'' + t.id + '\')" title="' + esc(t.title) + ', clic pour marquer fait" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.10);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;cursor:pointer">' +
+          '<div style="display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:600;color:var(--terre);line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.title) + '</span></div>' +
+          (bh > 34 ? '<div style="font-size:9px;color:var(--muted);margin-top:1px">' + hrs + '</div>' : '') + '</div>';
+      }
     });
-    var bg = dday.past ? '#f7f4ee' : (dday.cap <= 0 ? '#faf7f1' : 'var(--card)');
-    var inner = dday.past ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">passé</div>'
-      : (dday.cap <= 0 ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div>' : blocks);
-    return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + capLine + inner + '</div>';
+    return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + capLine + items + '</div>';
   }
   function renderPlanningView() {
-    var plan = planWeek(PLAN_TASKS, PLAN_CAP);
     var startHour = PLAN_START || 9, PXMIN = 0.8;
-    var maxCap = Math.max.apply(null, [480].concat(plan.days.map(function (d) { return d.cap; })));
-    var hours = Math.ceil(maxCap / 60), colH = hours * 60 * PXMIN;
+    var plan = planWeek(PLAN_TASKS, PLAN_CAP, PLAN_BLOCKS, startHour);
+    var base = startHour * 60;
+    var maxEnd = base + 480;
+    plan.days.forEach(function (d) { maxEnd = Math.max(maxEnd, d.winEnd); d.fixed.forEach(function (b) { maxEnd = Math.max(maxEnd, b.end); }); });
+    var hours = Math.max(1, Math.ceil((maxEnd - base) / 60)), colH = hours * 60 * PXMIN;
     var todoCount = PLAN_TASKS.filter(function (x) { return x.status !== 'done'; }).length;
-    var placedCount = plan.days.reduce(function (s, d) { return s + d.tasks.length; }, 0);
+    var placedCount = plan.days.reduce(function (s, d) { return s + d.items.length; }, 0);
     var hasCap = [1, 2, 3, 4, 5, 6, 7].some(function (k) { return (PLAN_CAP[k] || 0) > 0; });
     var noEst = PLAN_TASKS.filter(function (x) { return x.status !== 'done' && !x.estMinutes; }).length;
     // Mode d'emploi en 3 étapes
@@ -395,7 +416,8 @@
       '<div style="display:flex;flex-wrap:wrap;gap:14px">' +
       planStep(1, 'Indiquez vos heures dispo', 'Pour chaque jour, le nombre d\'heures que vous pouvez consacrer à vos tâches (ci-dessous).') +
       planStep(2, 'Donnez une durée à vos tâches', 'Dans « Mes tâches », ajoutez une durée estimée (en minutes). Sans durée, on compte 30 min.') +
-      planStep(3, 'Le planning se construit seul', 'Vos tâches se rangent ici sur 7 jours, par priorité puis par échéance. Cliquez un bloc pour le marquer fait.') +
+      planStep(3, 'Posez vos blocs fixes', 'Réservez des créneaux (rendez-vous, créa, pause). Vos tâches se placent automatiquement dans le temps libre restant.') +
+      planStep(4, 'Le planning se construit seul', 'Tout se range sur 7 jours, par priorité puis par échéance. Cliquez une tâche pour la marquer faite.') +
       '</div></div>';
     var nudges = '';
     if (!hasCap) nudges += '<div class="card" style="background:#fbf3e0"><strong>Commencez ici</strong><div class="micro mt">Renseignez vos heures disponibles par jour juste en dessous. Tant que tout est à 0, aucune tâche ne peut être placée.</div></div>';
@@ -415,9 +437,22 @@
         (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
     }).join('') + '</div>';
     var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startHour, hours, PXMIN) + '</div>'; }).join('') + '</div>';
+    var fld = 'display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px';
+    var dayOpts = plan.days.map(function (d) { return '<option value="' + d.ds + '">' + DOW_LBL[d.dow] + ' ' + d.date.getDate() + (d.today ? ' (auj.)' : '') + '</option>'; }).join('');
+    var swatches = DA_BANNER.map(function (c) { var on = PLAN_BLK_COLOR.toLowerCase() === c[0].toLowerCase(); return '<button id="blk-sw-' + c[0].replace('#', '') + '" data-c="' + c[0] + '" onclick="ADM.planBlkColor(\'' + c[0] + '\')" title="' + c[1] + '" style="width:20px;height:20px;border-radius:5px;cursor:pointer;background:' + c[0] + ';border:' + (on ? '2px solid var(--terre)' : '1px solid var(--bone-d)') + '"></button>'; }).join('');
+    var blockEditor = '<div class="card"><h3>Vos blocs de temps</h3>' +
+      '<div class="micro mb">Réservez des créneaux fixes (rendez-vous, créa, pause). Vos tâches se placent automatiquement autour.</div>' +
+      '<div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end">' +
+        '<label style="' + fld + '">Jour<select class="inp" id="blk-day" style="width:auto">' + dayOpts + '</select></label>' +
+        '<label style="' + fld + '">Heure<input class="inp" type="time" id="blk-time" value="09:00" style="width:auto"></label>' +
+        '<label style="' + fld + '">Durée (min)<input class="inp" type="number" id="blk-dur" min="5" max="720" step="5" value="60" style="width:78px"></label>' +
+        '<label style="' + fld + ';flex:1;min-width:150px">Intitulé<input class="inp" id="blk-label" placeholder="Rendez-vous, créa, pause"></label>' +
+        '<span class="row" style="gap:4px;align-items:center">' + swatches + '</span>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.planBlockAdd()">+ Ajouter</button>' +
+      '</div></div>';
     var cal = '<div class="card mt"><h3>Votre semaine</h3><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
-    var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de disponibilités, ou échéance déjà passée. Augmentez vos heures ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
-    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + guide + nudges + capEditor + cal + overflowHtml + '</div>');
+    var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmentez vos heures, retirez un bloc, ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + guide + nudges + capEditor + blockEditor + cal + overflowHtml + '</div>');
   }
   function planStep(n, title, desc) {
     return '<div style="flex:1;min-width:180px">' +
@@ -427,12 +462,16 @@
   function renderPlanning() {
     setMain(topbar('Calendrier intelligent') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([api('/api/admin/planning').then(function (r) { return r.json(); }), api('/api/admin/tasks').then(function (r) { return r.json(); })]).then(function (res) {
-      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9; PLAN_TASKS = (res[1] && res[1].tasks) || [];
+      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9; PLAN_BLOCKS = (res[0] && res[0].blocks) || []; PLAN_TASKS = (res[1] && res[1].tasks) || [];
       renderPlanningView();
     }).catch(showError);
   }
-  function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START }, 'PATCH').catch(function () {}); }
-  function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseInt(h, 10) || 9)); renderPlanningView(); jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START }, 'PATCH').catch(function () {}); }
+  function savePlanning() { jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START, blocks: PLAN_BLOCKS }, 'PATCH').catch(function () {}); }
+  function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); savePlanning(); }
+  function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseInt(h, 10) || 9)); renderPlanningView(); savePlanning(); }
+  function planBlkColor(c) { PLAN_BLK_COLOR = c; var sw = document.querySelectorAll('[id^="blk-sw-"]'); for (var i = 0; i < sw.length; i++) { var on = (sw[i].getAttribute('data-c') || '').toLowerCase() === c.toLowerCase(); sw[i].style.border = on ? '2px solid var(--terre)' : '1px solid var(--bone-d)'; } }
+  function planBlockAdd() { var day = el('blk-day').value, time = el('blk-time').value || '09:00', dur = parseInt(el('blk-dur').value, 10) || 60, label = (el('blk-label').value || '').trim(); if (!day) { toast('Choisissez un jour'); return; } var p = time.split(':'); var start = (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); PLAN_BLOCKS.push({ id: 'b' + Date.now().toString(36), date: day, start: start, duration: Math.min(720, Math.max(5, dur)), label: label, color: PLAN_BLK_COLOR }); savePlanning(); renderPlanningView(); toast('Bloc ajouté'); }
+  function planBlockDel(id) { PLAN_BLOCKS = PLAN_BLOCKS.filter(function (b) { return b.id !== id; }); savePlanning(); renderPlanningView(); toast('Bloc retiré'); }
   function planDone(id) { jpost('/api/admin/tasks/' + id, { status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { var t = PLAN_TASKS.find(function (x) { return x.id === id; }); if (t) t.status = 'done'; renderPlanningView(); toast('Marqué fait ✓'); } else toast('Erreur'); }); }
 
   /* ── KPI partenaire créative ── */
@@ -937,7 +976,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
-    planCap: planCap, planDone: planDone, planStart: planStart,
+    planCap: planCap, planDone: planDone, planStart: planStart, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planBlkColor: planBlkColor,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,

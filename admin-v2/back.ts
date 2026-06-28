@@ -855,8 +855,19 @@ async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
 /* ─────────── Planning : capacité hebdo (minutes par jour de semaine 1=lundi) ─────────── */
 async function getPlanning(env: Env): Promise<AnyObj> {
   const p = (await env.KV_ADMIN.get('admin:planning', { type: 'json' })) as AnyObj | null;
-  if (p && p.days) return { startHour: 9, ...p };
-  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9 };
+  if (p && p.days) return { startHour: 9, blocks: [], ...p };
+  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9, blocks: [] };
+}
+function sanitizeBlocks(raw: any): AnyObj[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 200).map((b: AnyObj) => ({
+    id: typeof b.id === 'string' && b.id ? b.id : genId(),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : '',
+    start: Math.min(1439, Math.max(0, parseInt(b.start, 10) || 0)),
+    duration: Math.min(720, Math.max(5, parseInt(b.duration, 10) || 30)),
+    label: (b.label == null ? '' : String(b.label)).slice(0, 120),
+    color: /^#[0-9a-fA-F]{6}$/.test(b.color) ? b.color : '#8B6F52',
+  })).filter((b: AnyObj) => b.date);
 }
 async function handlePlanningSave(request: Request, env: Env): Promise<Response> {
   const b = await readJson(request);
@@ -865,8 +876,9 @@ async function handlePlanningSave(request: Request, env: Env): Promise<Response>
   const src = b.days || cur.days;
   for (let i = 1; i <= 7; i++) { days[i] = Math.max(0, parseInt(src && src[i], 10) || 0); }
   const startHour = b.startHour != null ? Math.min(20, Math.max(5, parseInt(b.startHour, 10) || 9)) : cur.startHour;
-  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour }));
-  return json({ days, startHour });
+  const blocks = b.blocks !== undefined ? sanitizeBlocks(b.blocks) : (cur.blocks || []);
+  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour, blocks }));
+  return json({ days, startHour, blocks });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */
