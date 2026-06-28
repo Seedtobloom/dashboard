@@ -262,9 +262,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius-2); font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.10em; text-transform: uppercase; cursor: pointer; border: none; transition: transform var(--dur) var(--ease), filter var(--dur) var(--ease); background: var(--btn-primary-bg); color: var(--btn-primary-fg); text-decoration: none; }
 .cp-btn:hover { transform: translateY(-2px); filter: brightness(0.97); }
 .cp-btn--dark { background: var(--nuit); color: var(--brume); }
-.cp-addtask{display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border:none;border-radius:999px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 20px -6px rgba(28,18,5,0.5);transition:transform .15s,box-shadow .15s}
-.cp-addtask:hover{transform:translateY(-2px);box-shadow:0 12px 26px -8px rgba(28,18,5,0.55)}
-.cp-addtask svg{stroke-width:2.4}
+.cp-fab{position:fixed;right:32px;bottom:32px;z-index:60;display:inline-flex;align-items:center;gap:10px;padding:15px 24px;border:none;border-radius:999px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 14px 34px -10px rgba(28,18,5,0.55);transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
+.cp-fab:hover{transform:translateY(-3px);box-shadow:0 20px 42px -12px rgba(28,18,5,0.6)}
+.cp-fab svg{stroke-width:2.4}
+@media(max-width:768px){.cp-fab{right:18px;bottom:18px;padding:0;width:58px;height:58px;justify-content:center}.cp-fab span{display:none}}
 .cp-btn--sage { background: var(--glycine); color: var(--terre); text-decoration: none; }
 .cp-btn--outline { background: transparent; border: 1px solid color-mix(in oklab, var(--terre) 35%, transparent); color: var(--terre); }
 .cp-btn--secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-fg); border: 1px solid var(--btn-secondary-fg); }
@@ -317,7 +318,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
   .cp-msg__bubble { max-width: 85%; }
   .cp-meet { flex-direction: column; align-items: flex-start; gap: 14px; }
 }
-.cp-cal-layout { display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start; }
+.cp-cal-layout { display:block; }
 @media (max-width:1024px) { .cp-cal-layout { grid-template-columns:1fr; } .cp-task-panel { max-height:none; } }
 .cp-cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:6px; }
 .cp-cal-day { min-height:110px;border:1.5px solid var(--bone-d);border-radius:var(--radius-2);padding:5px 7px;cursor:pointer;transition:background 0.12s; }
@@ -327,7 +328,9 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-cal-day__num { font-family:var(--font-micro);font-size:11px;font-weight:600;color:var(--terre-600);margin-bottom:3px;letter-spacing:0.04em; }
 .cp-cal-day.today .cp-cal-day__num { color:var(--terre); }
 .cp-cal-pill { font-family:var(--font-micro);font-size:10px;padding:3px 6px;border-radius:var(--radius-1);cursor:pointer;margin-bottom:3px;overflow:hidden;border-left:3px solid transparent;letter-spacing:0.04em;text-transform:uppercase; }
-.cp-task-panel { background:var(--card);border:1.5px solid var(--brume-200);border-radius:var(--radius-3);padding:18px;overflow-y:auto;max-height:calc(100vh - 200px); }
+.cp-task-panel { position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);background:var(--card);border:none;border-left:1.5px solid var(--brume-200);border-radius:0;padding:24px;overflow-y:auto;z-index:80;box-shadow:-18px 0 48px -16px rgba(28,18,5,0.45);animation:cpDrawerIn .22s var(--ease) both; }
+@keyframes cpDrawerIn{from{transform:translateX(100%);opacity:0.5}to{transform:translateX(0);opacity:1}}
+body:has(.cp-task-panel) .cp-fab{display:none}
 .cp-task-card { border:1.5px solid var(--bone-d);border-radius:var(--radius-3);padding:14px 16px;margin-bottom:10px;background:var(--card);transition:box-shadow 0.15s; }
 .cp-task-card:hover { box-shadow:var(--shadow-2); }
 .cp-task-card__top { display:flex;align-items:flex-start;gap:10px;margin-bottom:8px; }
@@ -2571,7 +2574,7 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var pctDone = tasks.length ? Math.round(doneTasks.length/tasks.length*100) : 0;
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
-    var summaryBar = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+    var summaryBar = '<button class="cp-fab" onclick="cliOpenAddTask(\''+pid+'\',\'\')" aria-label="Nouvelle tâche">'+cpIcon('plus',20)+'<span>Nouvelle tâche</span></button>' + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
       '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait restant</div>' +
         '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
@@ -2593,13 +2596,13 @@ const CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
 
     // Navigation onglets
-    var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
+    var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px">' +
       '<div style="display:flex;gap:0">' +
         [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['msg','Messages'],['liv','Livrables']].map(function(t){
           return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
         }).join('') +
       '</div>' +
-      '<button class="cp-addtask" onclick="cliOpenAddTask(\''+pid+'\',\'\')">'+cpIcon('plus',17)+' Nouvelle tâche</button>' +
+      '' +
     '</div>';
 
     if (tab === 'cal')     return summaryBar + tabs + buildPartCal(pid, tasks, files, project);
