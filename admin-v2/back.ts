@@ -627,11 +627,22 @@ async function handleDashboard(env: Env): Promise<Response> {
   const idx = await getIndex(env);
   const deadlines: AnyObj[] = [];
   const forfaits: AnyObj[] = [];
+  const pendingValidation: AnyObj[] = [];
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
     const esp = getEspace(data);
     const who = clientName(data);
+    // livrables déposés en attente de validation client (avancement des rendus)
+    const collectLiv = (container: AnyObj | null, label: string) => {
+      if (container && Array.isArray(container.livrables)) {
+        container.livrables.forEach((l: AnyObj) => {
+          if ((l.status || 'a_valider') === 'a_valider') {
+            pendingValidation.push({ key: ci.key, client: who, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskTitle: l.taskTitle || '' });
+          }
+        });
+      }
+    };
     // partenaire : tâches non terminées avec échéance + forfait
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (pc) {
@@ -640,17 +651,22 @@ async function handleDashboard(env: Env): Promise<Response> {
         if (t.status !== 'done' && t.dueDate) deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', title: t.title, dueDate: t.dueDate, status: t.status });
       });
     }
+    collectLiv(pc, 'Partenaire créative');
     // étapes de suivi non terminées (site + supports)
     const sw = getDomainObj(esp, 'siteWeb');
     if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', title: s.title, dueDate: s.date, status: s.status }); });
+    collectLiv(sw, 'Site web');
+    collectLiv(getDomainObj(esp, 'identiteVisuelle'), 'Identité visuelle');
     const sd = esp.supportsDeCom && esp.supportsDeCom[0];
     if (sd) for (const pid of Object.keys(sd)) {
       const o = getSupportObj(esp, pid);
       if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: 'Support ' + pid, kind: 'étape', title: s.title, dueDate: s.date, status: s.status }); });
+      collectLiv(o, 'Support ' + pid);
     }
   }
   deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
-  return json({ deadlines, forfaits, clientCount: idx.length });
+  pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return json({ deadlines, forfaits, pendingValidation, clientCount: idx.length });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */
