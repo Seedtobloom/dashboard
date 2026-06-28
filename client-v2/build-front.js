@@ -25,6 +25,7 @@ const taskDlvPatch = read('_task_dlv_patch.js');
 const blocksPatch = read('_blocks_patch.js');
 const drawerPatch = read('_drawer_patch.js');
 const inboxPatch = read('_inbox_patch.js');
+const filesPatch = read('_files_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -123,7 +124,7 @@ js = js.replace("'<div class=\"cp-action__icon\">'+cpIcon('arrow',18,'color:var(
 
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
-js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "'' +");
+js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "navBtn('files','folder','Fichiers','cpOpenFiles()','') +");
 
 // ── Doublon Livrables : on retire le groupe "Livrables" du panneau Fichiers (gardé dans l'onglet Livrables) ──
 must(js.indexOf("filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference) +") !== -1, 'livrables dedup');
@@ -267,7 +268,7 @@ js = js.replace("text:'Déposez vos éléments (textes, photos, inspirations) et
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + anchor[0]);
 
 // ── Bannir le tiret cadratin « — » du texte visible (séparateurs -> virgule, placeholders -> vide) ──
 js = js.split(' — ').join(', ');
