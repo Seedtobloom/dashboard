@@ -100,7 +100,7 @@
     var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
 
     return backdrop +
-      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid #e8e0d4;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
+      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
         closeBtn + cover + icon +
         '<div style="padding:0 44px 44px">'+
           title +
