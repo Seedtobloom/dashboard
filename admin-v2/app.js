@@ -342,7 +342,7 @@
     for (var i = 0; i < 7; i++) {
       var dt = new Date(now); dt.setDate(now.getDate() + i); var k = ((dt.getDay() + 6) % 7) + 1; var ds = planIso(dt);
       var winStart = startHour * 60, winEnd = startHour * 60 + (cap[k] || 0);
-      var fixed = (blocks || []).filter(function (b) { return b.date === ds; }).map(function (b) { return { type: 'block', id: b.id, start: b.start, end: b.start + b.duration, duration: b.duration, label: b.label, color: b.color }; }).sort(function (a, b) { return a.start - b.start; });
+      var fixed = (blocks || []).filter(function (b) { return b.dow === k; }).map(function (b) { return { type: 'block', id: b.id, start: b.start, end: b.start + b.duration, duration: b.duration, label: b.label, color: b.color }; }).sort(function (a, b) { return a.start - b.start; });
       days.push({ date: dt, dow: k, ds: ds, cap: (cap[k] || 0), winStart: winStart, winEnd: winEnd, fixed: fixed, items: [], used: 0, today: i === 0 });
     }
     // créneaux libres = fenêtre du jour moins les blocs fixes
@@ -438,10 +438,10 @@
     }).join('') + '</div>';
     var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startHour, hours, PXMIN) + '</div>'; }).join('') + '</div>';
     var fld = 'display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px';
-    var dayOpts = plan.days.map(function (d) { return '<option value="' + d.ds + '">' + DOW_LBL[d.dow] + ' ' + d.date.getDate() + (d.today ? ' (auj.)' : '') + '</option>'; }).join('');
+    var dayOpts = [1, 2, 3, 4, 5, 6, 7].map(function (k) { return '<option value="' + k + '"' + (plan.days[0].dow === k ? ' selected' : '') + '>' + ({ 1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche' }[k]) + '</option>'; }).join('');
     var swatches = DA_BANNER.map(function (c) { var on = PLAN_BLK_COLOR.toLowerCase() === c[0].toLowerCase(); return '<button id="blk-sw-' + c[0].replace('#', '') + '" data-c="' + c[0] + '" onclick="ADM.planBlkColor(\'' + c[0] + '\')" title="' + c[1] + '" style="width:20px;height:20px;border-radius:5px;cursor:pointer;background:' + c[0] + ';border:' + (on ? '2px solid var(--terre)' : '1px solid var(--bone-d)') + '"></button>'; }).join('');
     var blockEditor = '<div class="card"><h3>Vos blocs de temps</h3>' +
-      '<div class="micro mb">Réservez des créneaux fixes (rendez-vous, créa, pause). Vos tâches se placent automatiquement autour.</div>' +
+      '<div class="micro mb">Réservez des créneaux récurrents (rendez-vous, créa, pause) qui reviennent chaque semaine le même jour. Vos tâches se placent automatiquement autour.</div>' +
       '<div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end">' +
         '<label style="' + fld + '">Jour<select class="inp" id="blk-day" style="width:auto">' + dayOpts + '</select></label>' +
         '<label style="' + fld + '">Heure<input class="inp" type="time" id="blk-time" value="09:00" style="width:auto"></label>' +
@@ -470,7 +470,7 @@
   function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); savePlanning(); }
   function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseInt(h, 10) || 9)); renderPlanningView(); savePlanning(); }
   function planBlkColor(c) { PLAN_BLK_COLOR = c; var sw = document.querySelectorAll('[id^="blk-sw-"]'); for (var i = 0; i < sw.length; i++) { var on = (sw[i].getAttribute('data-c') || '').toLowerCase() === c.toLowerCase(); sw[i].style.border = on ? '2px solid var(--terre)' : '1px solid var(--bone-d)'; } }
-  function planBlockAdd() { var day = el('blk-day').value, time = el('blk-time').value || '09:00', dur = parseInt(el('blk-dur').value, 10) || 60, label = (el('blk-label').value || '').trim(); if (!day) { toast('Choisissez un jour'); return; } var p = time.split(':'); var start = (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); PLAN_BLOCKS.push({ id: 'b' + Date.now().toString(36), date: day, start: start, duration: Math.min(720, Math.max(5, dur)), label: label, color: PLAN_BLK_COLOR }); savePlanning(); renderPlanningView(); toast('Bloc ajouté'); }
+  function planBlockAdd() { var dow = parseInt(el('blk-day').value, 10) || 0, time = el('blk-time').value || '09:00', dur = parseInt(el('blk-dur').value, 10) || 60, label = (el('blk-label').value || '').trim(); if (!dow) { toast('Choisissez un jour'); return; } var p = time.split(':'); var start = (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); PLAN_BLOCKS.push({ id: 'b' + Date.now().toString(36), dow: dow, start: start, duration: Math.min(720, Math.max(5, dur)), label: label, color: PLAN_BLK_COLOR }); savePlanning(); renderPlanningView(); toast('Bloc ajouté, chaque semaine'); }
   function planBlockDel(id) { PLAN_BLOCKS = PLAN_BLOCKS.filter(function (b) { return b.id !== id; }); savePlanning(); renderPlanningView(); toast('Bloc retiré'); }
   function planDone(id) { jpost('/api/admin/tasks/' + id, { status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { var t = PLAN_TASKS.find(function (x) { return x.id === id; }); if (t) t.status = 'done'; renderPlanningView(); toast('Marqué fait ✓'); } else toast('Erreur'); }); }
 
