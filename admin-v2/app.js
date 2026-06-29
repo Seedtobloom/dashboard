@@ -365,7 +365,7 @@
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
-  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9.5, PLAN_END = 18, PLAN_BLOCKS = [], PLAN_SEQ = 0;
+  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9.5, PLAN_END = 18, PLAN_LUNCH_START = 13, PLAN_LUNCH_END = 14, PLAN_BLOCKS = [], PLAN_SEQ = 0;
   var DOW_LBL = { 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim' };
   function planIso(dt) { var m = dt.getMonth() + 1, da = dt.getDate(); return dt.getFullYear() + '-' + ('0' + m).slice(-2) + '-' + ('0' + da).slice(-2); }
   function planWeek(tasks, cap, blocks, startHour) {
@@ -384,10 +384,14 @@
       }
       cur.setDate(cur.getDate() + 1);
     }
-    // créneaux libres = fenêtre du jour moins les blocs fixes
+    // créneaux libres = fenêtre du jour moins les blocs fixes ET la pause déjeuner
+    var lunchS = Math.round(PLAN_LUNCH_START * 60), lunchE = Math.round(PLAN_LUNCH_END * 60);
     days.forEach(function (d) {
+      var blocked = d.fixed.map(function (b) { return [Math.max(d.winStart, Math.min(b.start, d.winEnd)), Math.max(d.winStart, Math.min(b.end, d.winEnd))]; });
+      if (lunchE > lunchS && lunchS < d.winEnd && lunchE > d.winStart) blocked.push([Math.max(d.winStart, lunchS), Math.min(d.winEnd, lunchE)]);
+      blocked.sort(function (a, b) { return a[0] - b[0]; });
       d.free = []; var cursor = d.winStart;
-      d.fixed.forEach(function (b) { var bs = Math.max(d.winStart, Math.min(b.start, d.winEnd)), be = Math.max(d.winStart, Math.min(b.end, d.winEnd)); if (bs > cursor) d.free.push([cursor, bs]); cursor = Math.max(cursor, be); });
+      blocked.forEach(function (iv) { if (iv[1] <= iv[0]) return; if (iv[0] > cursor) d.free.push([cursor, iv[0]]); cursor = Math.max(cursor, iv[1]); });
       if (cursor < d.winEnd) d.free.push([cursor, d.winEnd]);
     });
     var prank = { haute: 0, normale: 1, basse: 2 };
@@ -420,8 +424,14 @@
     for (var hm = Math.ceil(startMin / 60) * 60; hm < endMin; hm += 60) { lines += '<div style="position:absolute;left:0;right:0;top:' + ((hm - startMin) * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
     var capEnd = startMin + d.cap;
     var capLine = (d.cap > 0 && capEnd < endMin) ? '<div style="position:absolute;left:0;right:0;top:' + ((capEnd - startMin) * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
+    var lunchBand = '';
+    var ls0 = Math.round(PLAN_LUNCH_START * 60), le0 = Math.round(PLAN_LUNCH_END * 60);
+    if (le0 > ls0 && le0 > startMin && ls0 < endMin) {
+      var ls = Math.max(startMin, ls0), le = Math.min(endMin, le0);
+      lunchBand = '<div title="Pause déjeuner" style="position:absolute;left:0;right:0;top:' + ((ls - startMin) * PXMIN) + 'px;height:' + ((le - ls) * PXMIN) + 'px;background:#ece6da;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#a89a86;letter-spacing:0.05em">Pause déjeuner</span></div>';
+    }
     var bg = d.cap <= 0 ? '#faf7f1' : 'var(--card)';
-    if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div></div>'; }
+    if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + lunchBand + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div></div>'; }
     var items = '';
     d.all.forEach(function (it) {
       var top = (it.start - startMin) * PXMIN, bh = Math.max(22, it.duration * PXMIN), hrs = planHM(it.start) + ' à ' + planHM(it.end);
@@ -439,7 +449,7 @@
           (bh > 34 ? '<div style="font-size:9px;color:var(--muted);margin-top:1px">' + hrs + '</div>' : '') + '</div>';
       }
     });
-    return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + capLine + items + '</div>';
+    return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + lunchBand + capLine + items + '</div>';
   }
   function renderPlanningView() {
     var startHour = PLAN_START || 9.5, endHour = PLAN_END || 18, PXMIN = 0.85;
@@ -468,17 +478,20 @@
       '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Début de journée<input class="inp" type="number" min="5" max="20" step="0.5" style="width:90px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
       '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Fin de journée<input class="inp" type="number" min="6" max="23" step="0.5" style="width:90px" value="' + endHour + '" onchange="ADM.planEnd(this.value)"></label>' +
       '<span style="width:1px;height:34px;background:var(--bone-d)"></span>' +
+      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Pause de<input class="inp" type="number" min="0" max="22" step="0.5" style="width:78px" value="' + PLAN_LUNCH_START + '" onchange="ADM.planLunch(\'start\',this.value)"></label>' +
+      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">à<input class="inp" type="number" min="0" max="23" step="0.5" style="width:78px" value="' + PLAN_LUNCH_END + '" onchange="ADM.planLunch(\'end\',this.value)"></label>' +
+      '<span style="width:1px;height:34px;background:var(--bone-d)"></span>' +
       [1, 2, 3, 4, 5].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + ' (h travail)<input class="inp" type="number" min="0" max="14" step="0.5" style="width:62px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
       '</div><div class="micro mt">Le calendrier affiche toute la journée (' + planHM(startMin) + ' à ' + planHM(endMin) + '). Les heures de travail par jour limitent ce que l\'on case (ligne pointillée). Mettez 0 pour un jour de repos.' + (noEst ? ' ' + noEst + ' tâche(s) sans durée estimée comptent 30 min.' : '') + '</div></div>';
     var axis = ''; for (var hm = Math.ceil(startMin / 60) * 60; hm <= endMin; hm += 60) { axis += '<div style="position:absolute;top:' + ((hm - startMin) * PXMIN) + 'px;right:6px;font-size:9px;color:var(--muted);transform:translateY(-50%);font-family:var(--font-micro)">' + (hm / 60) + 'h</div>'; }
-    var axisCol = '<div style="width:38px;flex-shrink:0;position:relative;height:' + colH + 'px">' + axis + '</div>';
+    var axisCol = '<div style="width:42px;flex-shrink:0;position:relative;height:' + colH + 'px">' + axis + '</div>';
     var headRow = '<div style="display:flex"><div style="width:38px;flex-shrink:0"></div>' + plan.days.map(function (dday) {
       var over = dday.used > dday.cap;
       return '<div style="flex:1;min-width:118px;padding:0 4px 8px;text-align:center"><div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
         (dday.today ? '<div class="micro" style="color:var(--terre);font-weight:700">Aujourd\'hui</div>' : '') +
         (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
     }).join('') + '</div>';
-    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startMin, endMin, PXMIN) + '</div>'; }).join('') + '</div>';
+    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;padding:14px 0 16px">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startMin, endMin, PXMIN) + '</div>'; }).join('') + '</div>';
     var fld = 'display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px';
     var DOW_FULL = { 1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi' };
     var dayOpts = [1, 2, 3, 4, 5].map(function (k) { return '<option value="' + k + '"' + (plan.days[0].dow === k ? ' selected' : '') + '>' + DOW_FULL[k] + '</option>'; }).join('');
@@ -517,11 +530,12 @@
   function renderPlanning() {
     setMain(topbar('Calendrier intelligent') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([api('/api/admin/planning').then(function (r) { return r.json(); }), api('/api/admin/tasks').then(function (r) { return r.json(); })]).then(function (res) {
-      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9.5; PLAN_END = (res[0] && res[0].endHour) || 18; PLAN_BLOCKS = (res[0] && res[0].blocks) || []; PLAN_TASKS = (res[1] && res[1].tasks) || [];
+      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9.5; PLAN_END = (res[0] && res[0].endHour) || 18; PLAN_LUNCH_START = (res[0] && res[0].lunchStart != null) ? res[0].lunchStart : 13; PLAN_LUNCH_END = (res[0] && res[0].lunchEnd != null) ? res[0].lunchEnd : 14; PLAN_BLOCKS = (res[0] && res[0].blocks) || []; PLAN_TASKS = (res[1] && res[1].tasks) || [];
       renderPlanningView();
     }).catch(showError);
   }
-  function savePlanning() { jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START, endHour: PLAN_END, blocks: PLAN_BLOCKS }, 'PATCH').catch(function () {}); }
+  function savePlanning() { jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START, endHour: PLAN_END, lunchStart: PLAN_LUNCH_START, lunchEnd: PLAN_LUNCH_END, blocks: PLAN_BLOCKS }, 'PATCH').catch(function () {}); }
+  function planLunch(which, val) { var v = Math.min(23, Math.max(0, parseFloat(val) || 0)); if (which === 'start') { PLAN_LUNCH_START = v; if (PLAN_LUNCH_END < v) PLAN_LUNCH_END = v; } else { PLAN_LUNCH_END = Math.max(PLAN_LUNCH_START, v); } renderPlanningView(); savePlanning(); }
   function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); savePlanning(); }
   function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseFloat(h) || 9.5)); if (PLAN_END <= PLAN_START) PLAN_END = PLAN_START + 1; renderPlanningView(); savePlanning(); }
   function planEnd(h) { PLAN_END = Math.min(23, Math.max(PLAN_START + 1, parseFloat(h) || 18)); renderPlanningView(); savePlanning(); }
@@ -1059,7 +1073,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
-    planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel,
+    planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
