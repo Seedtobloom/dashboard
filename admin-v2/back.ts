@@ -856,8 +856,8 @@ async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
 /* ─────────── Planning : capacité hebdo (minutes par jour de semaine 1=lundi) ─────────── */
 async function getPlanning(env: Env): Promise<AnyObj> {
   const p = (await env.KV_ADMIN.get('admin:planning', { type: 'json' })) as AnyObj | null;
-  if (p && p.days) return { startHour: 9, endHour: 18, blocks: [], ...p };
-  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9.5, endHour: 18, blocks: [] };
+  if (p && p.days) return { startHour: 9, endHour: 18, lunchStart: 13, lunchEnd: 14, blocks: [], ...p };
+  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9.5, endHour: 18, lunchStart: 13, lunchEnd: 14, blocks: [] };
 }
 function sanitizeBlocks(raw: any): AnyObj[] {
   if (!Array.isArray(raw)) return [];
@@ -880,9 +880,11 @@ async function handlePlanningSave(request: Request, env: Env): Promise<Response>
   for (let i = 1; i <= 7; i++) { days[i] = Math.max(0, parseInt(src && src[i], 10) || 0); }
   const startHour = b.startHour != null ? Math.round(Math.min(20, Math.max(5, parseFloat(b.startHour) || 9)) * 2) / 2 : (cur.startHour || 9);
   const endHour = b.endHour != null ? Math.round(Math.min(23, Math.max(startHour + 1, parseFloat(b.endHour) || 18)) * 2) / 2 : (cur.endHour || 18);
+  const lunchStart = b.lunchStart != null ? Math.round(Math.min(22, Math.max(0, parseFloat(b.lunchStart) || 0)) * 2) / 2 : (cur.lunchStart != null ? cur.lunchStart : 13);
+  const lunchEnd = b.lunchEnd != null ? Math.round(Math.min(23, Math.max(lunchStart, parseFloat(b.lunchEnd) || 0)) * 2) / 2 : (cur.lunchEnd != null ? cur.lunchEnd : 14);
   const blocks = b.blocks !== undefined ? sanitizeBlocks(b.blocks) : (cur.blocks || []);
-  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour, endHour, blocks }));
-  return json({ days, startHour, endHour, blocks });
+  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour, endHour, lunchStart, lunchEnd, blocks }));
+  return json({ days, startHour, endHour, lunchStart, lunchEnd, blocks });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */
