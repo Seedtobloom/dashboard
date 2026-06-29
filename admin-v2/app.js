@@ -421,7 +421,7 @@
   function planDayCol(d, startMin, endMin, PXMIN) {
     var colH = (endMin - startMin) * PXMIN;
     var lines = '';
-    for (var hm = Math.ceil(startMin / 60) * 60; hm < endMin; hm += 60) { lines += '<div style="position:absolute;left:0;right:0;top:' + ((hm - startMin) * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
+    for (var hm = Math.ceil(startMin / 60) * 60; hm < endMin; hm += 60) { lines += '<div style="position:absolute;left:0;right:0;top:' + ((hm - startMin) * PXMIN) + 'px;border-top:1px solid #e0d4bd"></div>'; }
     var capEnd = startMin + d.cap;
     var capLine = (d.cap > 0 && capEnd < endMin) ? '<div style="position:absolute;left:0;right:0;top:' + ((capEnd - startMin) * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
     var lunchBand = '';
@@ -430,7 +430,7 @@
       var ls = Math.max(startMin, ls0), le = Math.min(endMin, le0);
       lunchBand = '<div title="Pause déjeuner" style="position:absolute;left:0;right:0;top:' + ((ls - startMin) * PXMIN) + 'px;height:' + ((le - ls) * PXMIN) + 'px;background:#ece6da;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#a89a86;letter-spacing:0.05em">Pause déjeuner</span></div>';
     }
-    var bg = d.cap <= 0 ? '#faf7f1' : 'var(--card)';
+    var bg = d.cap <= 0 ? '#faf7f1' : (d.today ? '#fbf7ff' : 'var(--card)');
     if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + lunchBand + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div></div>'; }
     var items = '';
     d.all.forEach(function (it) {
@@ -442,11 +442,12 @@
           (bh > 34 ? '<div style="font-size:9px;opacity:0.9;margin-top:1px">' + hrs + '</div>' : '') + linkHtml + '</div>';
       } else {
         var t = it.task;
-        var pcol = { haute: '#c0533b', normale: 'var(--glycine-900)', basse: '#b0a48f' }[t.priority] || 'var(--glycine-900)';
-        var lbg = { haute: '#fbe3dc', normale: '#efe6fb', basse: '#efe9e0' }[t.priority] || '#efe6fb';
-        items += '<div onclick="ADM.planDone(\'' + t.id + '\')" title="' + esc(t.title) + ', clic pour marquer fait" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.10);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;cursor:pointer">' +
-          '<div style="display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:600;color:var(--terre);line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.title) + '</span></div>' +
-          (bh > 34 ? '<div style="font-size:9px;color:var(--muted);margin-top:1px">' + hrs + '</div>' : '') + '</div>';
+        var pcol = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority] || '#6c4ea4';
+        var lbg = { haute: '#f5c3b2', normale: '#d6c2f1', basse: '#e6dac2' }[t.priority] || '#d6c2f1';
+        var ptx = { haute: '#7a2615', normale: '#42316b', basse: '#5d4c36' }[t.priority] || '#42316b';
+        items += '<div onclick="ADM.planDone(\'' + t.id + '\')" title="' + esc(t.title) + ', clic pour marquer fait" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.18);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;cursor:pointer">' +
+          '<div style="display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:700;color:' + ptx + ';line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.title) + '</span></div>' +
+          (bh > 34 ? '<div style="font-size:9px;color:' + ptx + ';opacity:0.75;margin-top:1px">' + hrs + '</div>' : '') + '</div>';
       }
     });
     return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + lunchBand + capLine + items + '</div>';
@@ -487,11 +488,11 @@
     var axisCol = '<div style="width:42px;flex-shrink:0;position:relative;height:' + colH + 'px">' + axis + '</div>';
     var headRow = '<div style="display:flex"><div style="width:38px;flex-shrink:0"></div>' + plan.days.map(function (dday) {
       var over = dday.used > dday.cap;
-      return '<div style="flex:1;min-width:118px;padding:0 4px 8px;text-align:center"><div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
+      return '<div style="flex:1;min-width:140px;padding:0 4px 8px;text-align:center' + (dday.today ? ';background:#f3ecff;border-radius:8px 8px 0 0' : '') + '"><div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre)">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
         (dday.today ? '<div class="micro" style="color:var(--terre);font-weight:700">Aujourd\'hui</div>' : '') +
         (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
     }).join('') + '</div>';
-    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;padding:14px 0 16px">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startMin, endMin, PXMIN) + '</div>'; }).join('') + '</div>';
+    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;padding:14px 0 16px">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:140px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startMin, endMin, PXMIN) + '</div>'; }).join('') + '</div>';
     var fld = 'display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px';
     var DOW_FULL = { 1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi' };
     var dayOpts = [1, 2, 3, 4, 5].map(function (k) { return '<option value="' + k + '"' + (plan.days[0].dow === k ? ' selected' : '') + '>' + DOW_FULL[k] + '</option>'; }).join('');
@@ -520,7 +521,7 @@
     var cal = '<div class="card"><div class="between"><h3>Votre semaine</h3><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span></div><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
     var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmentez vos heures, retirez un bloc, ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
     var settings = '<details class="card mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre);list-style:none">Réglages, blocs et mode d\'emploi</summary><div class="mt">' + capEditor + blockEditor + guide + '</div></details>';
-    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + nudges + cal + overflowHtml + settings + '</div>');
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap" style="max-width:1440px">' + nudges + cal + overflowHtml + settings + '</div>');
   }
   function planStep(n, title, desc) {
     return '<div style="flex:1;min-width:180px">' +
