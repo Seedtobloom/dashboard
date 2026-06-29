@@ -856,8 +856,8 @@ async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
 /* ─────────── Planning : capacité hebdo (minutes par jour de semaine 1=lundi) ─────────── */
 async function getPlanning(env: Env): Promise<AnyObj> {
   const p = (await env.KV_ADMIN.get('admin:planning', { type: 'json' })) as AnyObj | null;
-  if (p && p.days) return { startHour: 9, blocks: [], ...p };
-  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9, blocks: [] };
+  if (p && p.days) return { startHour: 9, endHour: 18, blocks: [], ...p };
+  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9.5, endHour: 18, blocks: [] };
 }
 function sanitizeBlocks(raw: any): AnyObj[] {
   if (!Array.isArray(raw)) return [];
@@ -869,6 +869,7 @@ function sanitizeBlocks(raw: any): AnyObj[] {
     duration: Math.min(720, Math.max(5, parseInt(b.duration, 10) || 30)),
     label: (b.label == null ? '' : String(b.label)).slice(0, 120),
     color: /^#[0-9a-fA-F]{6}$/.test(b.color) ? b.color : '#8B6F52',
+    link: (b.link == null ? '' : String(b.link)).slice(0, 500),
   })).filter((b: AnyObj) => b.dow >= 1 && b.dow <= 7);
 }
 async function handlePlanningSave(request: Request, env: Env): Promise<Response> {
@@ -877,10 +878,11 @@ async function handlePlanningSave(request: Request, env: Env): Promise<Response>
   const days: AnyObj = {};
   const src = b.days || cur.days;
   for (let i = 1; i <= 7; i++) { days[i] = Math.max(0, parseInt(src && src[i], 10) || 0); }
-  const startHour = b.startHour != null ? Math.min(20, Math.max(5, parseInt(b.startHour, 10) || 9)) : cur.startHour;
+  const startHour = b.startHour != null ? Math.round(Math.min(20, Math.max(5, parseFloat(b.startHour) || 9)) * 2) / 2 : (cur.startHour || 9);
+  const endHour = b.endHour != null ? Math.round(Math.min(23, Math.max(startHour + 1, parseFloat(b.endHour) || 18)) * 2) / 2 : (cur.endHour || 18);
   const blocks = b.blocks !== undefined ? sanitizeBlocks(b.blocks) : (cur.blocks || []);
-  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour, blocks }));
-  return json({ days, startHour, blocks });
+  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour, endHour, blocks }));
+  return json({ days, startHour, endHour, blocks });
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */
