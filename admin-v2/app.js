@@ -490,7 +490,8 @@
       var over = dday.used > dday.cap;
       return '<div style="flex:1;min-width:140px;padding:0 4px 8px;text-align:center' + (dday.today ? ';background:#f3ecff;border-radius:8px 8px 0 0' : '') + '"><div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre)">' + DOW_LBL[dday.dow] + ' ' + dday.date.getDate() + '</div>' +
         (dday.today ? '<div class="micro" style="color:var(--terre);font-weight:700">Aujourd\'hui</div>' : '') +
-        (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
+        (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') +
+        '<button onclick="ADM.planTaskForm(\'' + dday.ds + '\')" title="Ajouter une tâche pour ce jour" style="margin-top:3px;background:none;border:1px solid var(--bone-d);border-radius:6px;color:var(--terre-400);cursor:pointer;font-size:11px;line-height:1;padding:3px 9px">+ tâche</button></div>';
     }).join('') + '</div>';
     var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;padding:14px 0 16px">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:140px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startMin, endMin, PXMIN) + '</div>'; }).join('') + '</div>';
     var fld = 'display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px';
@@ -518,7 +519,16 @@
         '<label style="' + fld + '" id="blk-color-wrap">Couleur<span class="row" style="gap:5px;align-items:center"><input type="color" id="blk-color" value="#8B6F52" style="width:34px;height:26px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer">' + swatches + '</span></label>' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.planBlockAdd()">+ Ajouter</button>' +
       '</div>' + modelsList + '</div>';
-    var cal = '<div class="card"><div class="between"><h3>Votre semaine</h3><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span></div><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
+    var ctaForm = '<div id="cta-form" style="display:none;background:var(--surface);border:1px solid var(--bone-d);border-radius:10px;padding:12px 14px;margin-bottom:12px">' +
+      '<div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end">' +
+        '<label style="' + fld + ';flex:1;min-width:170px">Tâche<input class="inp" id="cta-title" placeholder="Que dois-tu faire ?"></label>' +
+        '<label style="' + fld + '">Priorité<select class="inp" id="cta-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select></label>' +
+        '<label style="' + fld + '">Durée (min)<input class="inp" id="cta-est" type="number" min="0" step="15" value="30" style="width:80px"></label>' +
+        '<label style="' + fld + '">Échéance<input class="inp" id="cta-due" type="date" style="width:auto"></label>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.planTaskAdd()">Ajouter</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.planTaskForm()">Fermer</button>' +
+      '</div><div class="micro mt">La tâche se place automatiquement dans un créneau libre, selon sa priorité et son échéance.</div></div>';
+    var cal = '<div class="card"><div class="between"><h3>Votre semaine</h3><div class="row" style="gap:10px;align-items:center"><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span><button class="btn btn--dark btn--sm" onclick="ADM.planTaskForm()">+ Tâche</button></div></div>' + ctaForm + '<div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
     var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmentez vos heures, retirez un bloc, ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
     var settings = '<details class="card mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre);list-style:none">Réglages, blocs et mode d\'emploi</summary><div class="mt">' + capEditor + blockEditor + guide + '</div></details>';
     setMain(topbar('Calendrier intelligent') + '<div class="wrap" style="max-width:1440px">' + nudges + cal + overflowHtml + settings + '</div>');
@@ -555,6 +565,16 @@
   function planGroupColor(groupId, color) { PLAN_BLOCKS.forEach(function (b) { if ((b.groupId || b.id) === groupId) b.color = color; }); savePlanning(); renderPlanningView(); }
   function planGroupDel(groupId) { PLAN_BLOCKS = PLAN_BLOCKS.filter(function (b) { return (b.groupId || b.id) !== groupId; }); savePlanning(); renderPlanningView(); toast('Modèle retiré'); }
   function planBlockDel(id) { PLAN_BLOCKS = PLAN_BLOCKS.filter(function (b) { return b.id !== id; }); savePlanning(); renderPlanningView(); toast('Bloc retiré'); }
+  function planTaskForm(prefill) {
+    var f = el('cta-form'); if (!f) return;
+    if (prefill) { f.style.display = ''; var d = el('cta-due'); if (d) d.value = prefill; }
+    else { f.style.display = f.style.display === 'none' ? '' : 'none'; }
+    if (f.style.display !== 'none') { var ti = el('cta-title'); if (ti) ti.focus(); }
+  }
+  function planTaskAdd() {
+    var title = (el('cta-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
+    jpost('/api/admin/tasks', { title: title, priority: el('cta-prio').value, estMinutes: el('cta-est').value, dueDate: el('cta-due').value || null }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderPlanning(); } else toast('Erreur'); });
+  }
   function planDone(id) { jpost('/api/admin/tasks/' + id, { status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { var t = PLAN_TASKS.find(function (x) { return x.id === id; }); if (t) t.status = 'done'; renderPlanningView(); toast('Marqué fait ✓'); } else toast('Erreur'); }); }
 
   /* ── KPI partenaire créative ── */
@@ -1074,7 +1094,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
-    planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel,
+    planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
