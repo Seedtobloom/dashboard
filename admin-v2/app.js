@@ -341,7 +341,7 @@
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
-  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9, PLAN_BLOCKS = [], PLAN_SEQ = 0;
+  var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9.5, PLAN_END = 18, PLAN_BLOCKS = [], PLAN_SEQ = 0;
   var DOW_LBL = { 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim' };
   function planIso(dt) { var m = dt.getMonth() + 1, da = dt.getDate(); return dt.getFullYear() + '-' + ('0' + m).slice(-2) + '-' + ('0' + da).slice(-2); }
   function planWeek(tasks, cap, blocks, startHour) {
@@ -390,20 +390,22 @@
       '<button class="pbtn pbtn--ok" style="padding:3px 7px;font-size:9px" onclick="ADM.planDone(\'' + t.id + '\')" title="Marquer fait">✓</button></div>';
   }
   function planHM(min) { var h = Math.floor(min / 60), m = min % 60; return h + 'h' + (m ? ('0' + m).slice(-2) : ''); }
-  function planDayCol(d, startHour, hours, PXMIN) {
-    var colH = hours * 60 * PXMIN, base = startHour * 60;
+  function planDayCol(d, startMin, endMin, PXMIN) {
+    var colH = (endMin - startMin) * PXMIN;
     var lines = '';
-    for (var h = 0; h <= hours; h++) { lines += '<div style="position:absolute;left:0;right:0;top:' + (h * 60 * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
-    var capLine = d.cap > 0 ? '<div style="position:absolute;left:0;right:0;top:' + (d.cap * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
+    for (var hm = Math.ceil(startMin / 60) * 60; hm < endMin; hm += 60) { lines += '<div style="position:absolute;left:0;right:0;top:' + ((hm - startMin) * PXMIN) + 'px;border-top:1px solid #ece4d4"></div>'; }
+    var capEnd = startMin + d.cap;
+    var capLine = (d.cap > 0 && capEnd < endMin) ? '<div style="position:absolute;left:0;right:0;top:' + ((capEnd - startMin) * PXMIN) + 'px;border-top:2px dashed #d8b06a"></div>' : '';
     var bg = d.cap <= 0 ? '#faf7f1' : 'var(--card)';
     if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div></div>'; }
     var items = '';
     d.all.forEach(function (it) {
-      var top = (it.start - base) * PXMIN, bh = Math.max(22, it.duration * PXMIN), hrs = planHM(it.start) + ' à ' + planHM(it.end);
+      var top = (it.start - startMin) * PXMIN, bh = Math.max(22, it.duration * PXMIN), hrs = planHM(it.start) + ' à ' + planHM(it.end);
       if (it.type === 'block') {
-        items += '<div title="' + esc(it.label || 'Bloc') + ', ' + hrs + '" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + it.color + ';border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;color:#fff">' +
-          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px"><span style="font-size:11px;font-weight:600;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(it.label || 'Bloc') + '</span><span onclick="ADM.planBlockDel(\'' + it.id + '\')" title="Supprimer ce bloc" style="cursor:pointer;color:rgba(255,255,255,0.85);font-size:11px;line-height:1;flex-shrink:0">✕</span></div>' +
-          (bh > 34 ? '<div style="font-size:9px;opacity:0.9;margin-top:1px">' + hrs + '</div>' : '') + '</div>';
+        var linkHtml = (it.link && bh > 46) ? '<a href="' + esc(it.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#fff;font-size:9px;text-decoration:underline;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">↗ Rejoindre la visio</a>' : '';
+        items += '<div title="' + esc(it.label || 'Bloc') + ', ' + hrs + (it.link ? ', visio' : '') + '" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + it.color + ';border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;color:#fff">' +
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px"><span style="font-size:11px;font-weight:600;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (it.link ? '◉ ' : '') + esc(it.label || 'Bloc') + '</span><span onclick="ADM.planBlockDel(\'' + it.id + '\')" title="Supprimer ce bloc" style="cursor:pointer;color:rgba(255,255,255,0.85);font-size:11px;line-height:1;flex-shrink:0">✕</span></div>' +
+          (bh > 34 ? '<div style="font-size:9px;opacity:0.9;margin-top:1px">' + hrs + '</div>' : '') + linkHtml + '</div>';
       } else {
         var t = it.task;
         var pcol = { haute: '#c0533b', normale: 'var(--glycine-900)', basse: '#b0a48f' }[t.priority] || 'var(--glycine-900)';
@@ -416,12 +418,12 @@
     return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + capLine + items + '</div>';
   }
   function renderPlanningView() {
-    var startHour = PLAN_START || 9, PXMIN = 0.8;
+    var startHour = PLAN_START || 9.5, endHour = PLAN_END || 18, PXMIN = 0.85;
     var plan = planWeek(PLAN_TASKS, PLAN_CAP, PLAN_BLOCKS, startHour);
-    var base = startHour * 60;
-    var maxEnd = base + 480;
-    plan.days.forEach(function (d) { maxEnd = Math.max(maxEnd, d.winEnd); d.fixed.forEach(function (b) { maxEnd = Math.max(maxEnd, b.end); }); });
-    var hours = Math.max(1, Math.ceil((maxEnd - base) / 60)), colH = hours * 60 * PXMIN;
+    var startMin = Math.round(startHour * 60), endMin = Math.round(endHour * 60);
+    // élargit la fenêtre si un bloc déborde des horaires affichés
+    plan.days.forEach(function (d) { d.fixed.forEach(function (b) { if (b.start < startMin) startMin = Math.floor(b.start / 60) * 60; if (b.end > endMin) endMin = Math.ceil(b.end / 60) * 60; }); });
+    var colH = (endMin - startMin) * PXMIN;
     var todoCount = PLAN_TASKS.filter(function (x) { return x.status !== 'done'; }).length;
     var placedCount = plan.days.reduce(function (s, d) { return s + d.items.length; }, 0);
     var hasCap = [1, 2, 3, 4, 5, 6, 7].some(function (k) { return (PLAN_CAP[k] || 0) > 0; });
@@ -438,12 +440,13 @@
     if (!hasCap) nudges += '<div class="card" style="background:#fbf3e0"><strong>Commencez ici</strong><div class="micro mt">Renseignez vos heures disponibles par jour juste en dessous. Tant que tout est à 0, aucune tâche ne peut être placée.</div></div>';
     if (todoCount === 0) nudges += '<div class="card"><strong>Aucune tâche à planifier</strong><div class="micro mt mb">Ajoutez des tâches avec une durée estimée pour les voir se placer ici.</div><button class="btn btn--dark btn--sm" onclick="ADM.nav(\'mytasks\')">Aller à Mes tâches</button></div>';
     else if (hasCap && placedCount === 0 && plan.overflow.length) nudges += '<div class="card" style="background:#fbf3e0"><strong>Rien n\'a pu être casé</strong><div class="micro mt">Vos échéances sont peut-être déjà passées, ou vos heures dispo trop justes. Augmentez vos heures ou repoussez les échéances dans « Mes tâches ».</div></div>';
-    var capEditor = '<div class="card"><h3>Vos disponibilités par jour</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
-      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Heure de début<input class="inp" type="number" min="5" max="20" step="1" style="width:80px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
+    var capEditor = '<div class="card"><h3>Vos disponibilités</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
+      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Début de journée<input class="inp" type="number" min="5" max="20" step="0.5" style="width:90px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
+      '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Fin de journée<input class="inp" type="number" min="6" max="23" step="0.5" style="width:90px" value="' + endHour + '" onchange="ADM.planEnd(this.value)"></label>' +
       '<span style="width:1px;height:34px;background:var(--bone-d)"></span>' +
-      [1, 2, 3, 4, 5].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + ' (h)<input class="inp" type="number" min="0" max="14" step="0.5" style="width:58px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
-      '</div><div class="micro mt">Mettez 0 pour un jour de repos. La ligne pointillée sur le planning marque la fin de votre disponibilité du jour.' + (noEst ? ' ' + noEst + ' tâche(s) sans durée estimée comptent 30 min.' : '') + '</div></div>';
-    var axis = ''; for (var hh = 0; hh <= hours; hh++) { axis += '<div style="position:absolute;top:' + (hh * 60 * PXMIN) + 'px;right:6px;font-size:9px;color:var(--muted);transform:translateY(-50%);font-family:var(--font-micro)">' + (startHour + hh) + 'h</div>'; }
+      [1, 2, 3, 4, 5].map(function (k) { return '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">' + DOW_LBL[k] + ' (h travail)<input class="inp" type="number" min="0" max="14" step="0.5" style="width:62px" value="' + ((PLAN_CAP[k] || 0) / 60) + '" onchange="ADM.planCap(' + k + ',this.value)"></label>'; }).join('') +
+      '</div><div class="micro mt">Le calendrier affiche toute la journée (' + planHM(startMin) + ' à ' + planHM(endMin) + '). Les heures de travail par jour limitent ce que l\'on case (ligne pointillée). Mettez 0 pour un jour de repos.' + (noEst ? ' ' + noEst + ' tâche(s) sans durée estimée comptent 30 min.' : '') + '</div></div>';
+    var axis = ''; for (var hm = Math.ceil(startMin / 60) * 60; hm <= endMin; hm += 60) { axis += '<div style="position:absolute;top:' + ((hm - startMin) * PXMIN) + 'px;right:6px;font-size:9px;color:var(--muted);transform:translateY(-50%);font-family:var(--font-micro)">' + (hm / 60) + 'h</div>'; }
     var axisCol = '<div style="width:38px;flex-shrink:0;position:relative;height:' + colH + 'px">' + axis + '</div>';
     var headRow = '<div style="display:flex"><div style="width:38px;flex-shrink:0"></div>' + plan.days.map(function (dday) {
       var over = dday.used > dday.cap;
@@ -451,7 +454,7 @@
         (dday.today ? '<div class="micro" style="color:var(--terre);font-weight:700">Aujourd\'hui</div>' : '') +
         (dday.cap > 0 ? '<div class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (dday.used / 60).toFixed(1).replace('.0', '') + ' / ' + (dday.cap / 60).toFixed(1).replace('.0', '') + ' h</div>' : '') + '</div>';
     }).join('') + '</div>';
-    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startHour, hours, PXMIN) + '</div>'; }).join('') + '</div>';
+    var bodyRow = '<div style="display:flex;align-items:stretch;border:1px solid var(--bone-d);border-radius:12px;overflow:hidden">' + axisCol + plan.days.map(function (dday) { return '<div style="flex:1;min-width:118px;border-left:1px solid var(--bone-d)">' + planDayCol(dday, startMin, endMin, PXMIN) + '</div>'; }).join('') + '</div>';
     var fld = 'display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px';
     var DOW_FULL = { 1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi' };
     var dayOpts = [1, 2, 3, 4, 5].map(function (k) { return '<option value="' + k + '"' + (plan.days[0].dow === k ? ' selected' : '') + '>' + DOW_FULL[k] + '</option>'; }).join('');
@@ -472,13 +475,15 @@
         '<label style="' + fld + '">Jour<select class="inp" id="blk-day" style="width:auto">' + dayOpts + '</select></label>' +
         '<label style="' + fld + '">Heure<input class="inp" type="time" id="blk-time" value="09:00" style="width:auto"></label>' +
         '<label style="' + fld + '">Durée (min)<input class="inp" type="number" id="blk-dur" min="5" max="720" step="5" value="60" style="width:78px"></label>' +
-        '<label style="' + fld + ';flex:1;min-width:140px" id="blk-label-wrap">Intitulé<input class="inp" id="blk-label" placeholder="Rendez-vous, créa, pause"></label>' +
+        '<label style="' + fld + ';flex:1;min-width:140px" id="blk-label-wrap">Intitulé / motif<input class="inp" id="blk-label" placeholder="Rendez-vous, créa, pause"></label>' +
+        '<label style="' + fld + ';flex:1;min-width:160px">Lien visio (optionnel)<input class="inp" id="blk-link" placeholder="https://meet… ou zoom…"></label>' +
         '<label style="' + fld + '" id="blk-color-wrap">Couleur<span class="row" style="gap:5px;align-items:center"><input type="color" id="blk-color" value="#8B6F52" style="width:34px;height:26px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer">' + swatches + '</span></label>' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.planBlockAdd()">+ Ajouter</button>' +
       '</div>' + modelsList + '</div>';
-    var cal = '<div class="card mt"><h3>Votre semaine</h3><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
+    var cal = '<div class="card"><div class="between"><h3>Votre semaine</h3><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span></div><div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
     var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmentez vos heures, retirez un bloc, ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
-    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + guide + nudges + capEditor + blockEditor + cal + overflowHtml + '</div>');
+    var settings = '<details class="card mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre);list-style:none">Réglages, blocs et mode d\'emploi</summary><div class="mt">' + capEditor + blockEditor + guide + '</div></details>';
+    setMain(topbar('Calendrier intelligent') + '<div class="wrap">' + nudges + cal + overflowHtml + settings + '</div>');
   }
   function planStep(n, title, desc) {
     return '<div style="flex:1;min-width:180px">' +
@@ -488,24 +493,25 @@
   function renderPlanning() {
     setMain(topbar('Calendrier intelligent') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([api('/api/admin/planning').then(function (r) { return r.json(); }), api('/api/admin/tasks').then(function (r) { return r.json(); })]).then(function (res) {
-      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9; PLAN_BLOCKS = (res[0] && res[0].blocks) || []; PLAN_TASKS = (res[1] && res[1].tasks) || [];
+      PLAN_CAP = (res[0] && res[0].days) || {}; PLAN_START = (res[0] && res[0].startHour) || 9.5; PLAN_END = (res[0] && res[0].endHour) || 18; PLAN_BLOCKS = (res[0] && res[0].blocks) || []; PLAN_TASKS = (res[1] && res[1].tasks) || [];
       renderPlanningView();
     }).catch(showError);
   }
-  function savePlanning() { jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START, blocks: PLAN_BLOCKS }, 'PATCH').catch(function () {}); }
+  function savePlanning() { jpost('/api/admin/planning', { days: PLAN_CAP, startHour: PLAN_START, endHour: PLAN_END, blocks: PLAN_BLOCKS }, 'PATCH').catch(function () {}); }
   function planCap(dow, hours) { PLAN_CAP[dow] = Math.max(0, Math.round((parseFloat(hours) || 0) * 60)); renderPlanningView(); savePlanning(); }
-  function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseInt(h, 10) || 9)); renderPlanningView(); savePlanning(); }
+  function planStart(h) { PLAN_START = Math.min(20, Math.max(5, parseFloat(h) || 9.5)); if (PLAN_END <= PLAN_START) PLAN_END = PLAN_START + 1; renderPlanningView(); savePlanning(); }
+  function planEnd(h) { PLAN_END = Math.min(23, Math.max(PLAN_START + 1, parseFloat(h) || 18)); renderPlanningView(); savePlanning(); }
   function planGroups() { var seen = {}, out = []; PLAN_BLOCKS.forEach(function (b) { var g = b.groupId || b.id; if (!seen[g]) { seen[g] = { groupId: g, label: b.label, color: b.color, count: 0 }; out.push(seen[g]); } seen[g].count++; }); return out; }
   function planTypeChange() { var isNew = el('blk-type').value === '__new__'; var lw = el('blk-label-wrap'), cw = el('blk-color-wrap'); if (lw) lw.style.display = isNew ? '' : 'none'; if (cw) cw.style.display = isNew ? '' : 'none'; }
   function planBlockAdd() {
-    var type = el('blk-type').value, dow = parseInt(el('blk-day').value, 10) || 0, time = el('blk-time').value || '09:00', dur = parseInt(el('blk-dur').value, 10) || 60;
+    var type = el('blk-type').value, dow = parseInt(el('blk-day').value, 10) || 0, time = el('blk-time').value || '09:00', dur = parseInt(el('blk-dur').value, 10) || 60, link = (el('blk-link').value || '').trim();
     if (!dow) { toast('Choisissez un jour'); return; }
     var p = time.split(':'); var start = (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
     var groupId, label, color;
     if (type && type !== '__new__') { var g = planGroups().filter(function (x) { return x.groupId === type; })[0]; if (!g) { toast('Modèle introuvable'); return; } groupId = g.groupId; label = g.label; color = g.color; }
     else { label = (el('blk-label').value || '').trim(); color = el('blk-color').value || '#8B6F52'; groupId = 'g' + Date.now().toString(36) + (PLAN_SEQ++); }
-    PLAN_BLOCKS.push({ id: 'b' + Date.now().toString(36) + (PLAN_SEQ++), groupId: groupId, dow: dow, start: start, duration: Math.min(720, Math.max(5, dur)), label: label, color: color });
-    savePlanning(); renderPlanningView(); toast('Bloc ajouté');
+    PLAN_BLOCKS.push({ id: 'b' + Date.now().toString(36) + (PLAN_SEQ++), groupId: groupId, dow: dow, start: start, duration: Math.min(720, Math.max(5, dur)), label: label, color: color, link: link });
+    savePlanning(); renderPlanningView(); toast(link ? 'Rendez-vous visio ajouté' : 'Bloc ajouté');
   }
   function planGroupColor(groupId, color) { PLAN_BLOCKS.forEach(function (b) { if ((b.groupId || b.id) === groupId) b.color = color; }); savePlanning(); renderPlanningView(); }
   function planGroupDel(groupId) { PLAN_BLOCKS = PLAN_BLOCKS.filter(function (b) { return (b.groupId || b.id) !== groupId; }); savePlanning(); renderPlanningView(); toast('Modèle retiré'); }
@@ -1029,7 +1035,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
-    planCap: planCap, planDone: planDone, planStart: planStart, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel,
+    planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
