@@ -256,6 +256,28 @@
   }
   function mtClock(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; function p(n) { return n < 10 ? '0' + n : n; } return (h > 0 ? h + ':' : '') + p(m) + ':' + p(s); }
   function mtDur(sec) { sec = Math.round(sec); if (sec < 60) return sec + ' s'; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return (h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' min' : (h > 0 ? '' : '0 min')); }
+  function mtLinkify(s) {
+    s = String(s == null ? '' : s);
+    return s.split(/(\s+)/).map(function (tok) {
+      if (/^https?:\/\//i.test(tok)) return '<a href="' + esc(tok) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);text-decoration:underline;word-break:break-all">' + esc(tok) + '</a>';
+      return esc(tok);
+    }).join('');
+  }
+  function mtNoteInner(t) {
+    var editLink = '<button onclick="ADM.mtEditNote(\'' + t.id + '\')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0;text-decoration:underline">' + (t.notes ? 'Modifier la note' : '+ Ajouter une note ou un lien') + '</button>';
+    return (t.notes ? '<div style="font-size:12.5px;color:#6b5b4a;white-space:pre-wrap;line-height:1.5;margin-bottom:2px">' + mtLinkify(t.notes) + '</div>' : '') + editLink;
+  }
+  function mtEditNote(id) {
+    var c = el('mt-note-' + id); if (!c) return;
+    var t = MT_TASKS.find(function (x) { return x.id === id; }); var val = (t && t.notes) || '';
+    c.innerHTML = '<textarea id="mt-note-ta-' + id + '" class="inp" style="width:100%;box-sizing:border-box;min-height:68px;resize:vertical" placeholder="Note, lien (https://…), détails…">' + esc(val) + '</textarea><div class="row mt" style="gap:6px"><button class="pbtn pbtn--ok" onclick="ADM.mtSaveNote(\'' + id + '\')">Enregistrer</button><button class="pbtn" onclick="ADM.mtNoteRestore(\'' + id + '\')">Annuler</button></div>';
+    var ta = el('mt-note-ta-' + id); if (ta) ta.focus();
+  }
+  function mtNoteRestore(id) { var c = el('mt-note-' + id), t = MT_TASKS.find(function (x) { return x.id === id; }); if (c && t) c.innerHTML = mtNoteInner(t); }
+  function mtSaveNote(id) {
+    var ta = el('mt-note-ta-' + id); var val = ta ? ta.value : '';
+    jpost('/api/admin/tasks/' + id, { notes: val }, 'PATCH').then(function (r) { if (r.ok) { var t = MT_TASKS.find(function (x) { return x.id === id; }); if (t) t.notes = val; mtNoteRestore(id); toast('Note enregistrée'); } else toast('Erreur'); });
+  }
   function mtRow(t) {
     var pcol = { haute: 'var(--red)', normale: 'var(--glycine-900)', basse: '#c3b9a6' }[t.priority] || 'var(--glycine-900)';
     var plabel = { haute: 'Priorité haute', normale: 'Priorité normale', basse: 'Priorité basse' }[t.priority] || t.priority;
@@ -271,7 +293,8 @@
     return '<div class="prow">' +
       '<span class="pdot" style="background:' + pcol + ';align-self:center"></span>' +
       '<div class="prow__main"><div class="prow__el" style="' + (dn ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + esc(t.title) + '</div>' +
-        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div></div>' +
+        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div>' +
+        '<div id="mt-note-' + t.id + '" style="margin-top:4px">' + mtNoteInner(t) + '</div></div>' +
       '<div class="prow__act">' + timecode + timerBtn +
         (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
             : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
@@ -327,7 +350,8 @@
           '<input class="inp" id="mt-est" type="number" min="0" step="15" placeholder="min" style="width:80px" title="Durée estimée en minutes">' +
           '<input class="inp" id="mt-due" type="date" style="width:auto">' +
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">+ Ajouter</button></div>' +
-        '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le futur calendrier intelligent et les KPI de temps.</div></div>';
+        '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel) : https://… , détails…" style="width:100%;box-sizing:border-box">' +
+        '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le calendrier intelligent et les KPI de temps. La note accepte du texte et des liens cliquables.</div></div>';
       var rows = todo.map(mtRow).join('') || '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>';
       var doneRows = done.length ? '<div class="card mt"><h3>Terminées</h3>' + done.slice().reverse().slice(0, 25).map(mtRow).join('') + '</div>' : '';
       setMain(topbar('Mes tâches') + '<div class="wrap">' + kpis + form + '<div class="card mt"><h3>À faire</h3>' + rows + '</div>' + doneRows + '</div>');
@@ -335,7 +359,7 @@
   }
   function myTaskAdd() {
     var title = (el('mt-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
-    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
+    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim() }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
   }
   function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
@@ -1034,7 +1058,7 @@
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
