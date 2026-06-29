@@ -16,7 +16,7 @@
   --shadow-2:0 10px 28px -14px rgba(28,18,5,0.2);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-body);background:var(--bone);color:var(--text);font-size:16px;line-height:1.5}
+body{font-family:var(--font-body);font-synthesis:none;background:var(--bone);color:var(--text);font-size:16px;line-height:1.5}
 button,input,textarea,select{font-family:inherit;font-size:14px}
 a{color:var(--glycine-900)}
 .spin{width:34px;height:34px;border:3px solid rgba(28,18,5,0.15);border-top-color:var(--terre);border-radius:50%;animation:spin .8s linear infinite}
