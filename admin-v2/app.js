@@ -1055,9 +1055,11 @@
   function listDocs() {
     var pid = el('up-proj').value;
     api('/api/clients/' + CURKEY + '/files?projectId=' + encodeURIComponent(pid)).then(function (r) { return r.json(); }).then(function (d) {
+      var pid2 = el('up-proj').value;
       var list = (d.files || []).map(function (f) {
-        return '<div class="file"><span class="nm">' + esc(f.name) + ' ' + pill(f.category === 'deliverable' ? 'a_valider' : 'todo', f.category === 'deliverable' ? 'livrable' : 'document') + '</span>' +
+        return '<div class="file"><span class="nm">' + esc(f.name) + ' ' + pill(f.category === 'deliverable' ? 'a_valider' : 'todo', f.category === 'deliverable' ? 'livrable' : 'document') + (f.source === 'client' ? ' <span class="pill">déposé client</span>' : '') + (f.locked ? ' <span class="pill pill--done">verrouillé</span>' : '') + '</span>' +
           '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download">↓</a>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.lockDoc(\'' + encodeURIComponent(f.key) + '\',\'' + pid2 + '\',' + (f.locked ? 'false' : 'true') + ')">' + (f.locked ? 'Déverrouiller' : 'Verrouiller') + '</button>' +
           '<button class="btn btn--danger btn--sm" onclick="ADM.delDoc(\'' + encodeURIComponent(f.key) + '\')">Suppr.</button></div>';
       }).join('') || '<div class="empty">Aucun document.</div>';
       var dl = el('doclist'); if (dl) dl.innerHTML = list;
@@ -1072,6 +1074,7 @@
       .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur'); });
   }
   function delDoc(k) { jpost('/api/clients/' + CURKEY + '/files', { key: decodeURIComponent(k) }, 'DELETE').then(function (r) { if (r.ok) { toast('Supprimé'); listDocs(); } }); }
+  function lockDoc(k, pid, lock) { jpost('/api/clients/' + CURKEY + '/files/lock', { key: decodeURIComponent(k), projectId: pid, locked: lock }, 'PATCH').then(function (r) { if (r.ok) { toast(lock ? 'Fichier verrouillé' : 'Fichier déverrouillé'); listDocs(); } else toast('Erreur'); }); }
 
   /* ── Messagerie globale : clients -> projet -> fil ── */
   function renderChat() {
@@ -1117,7 +1120,7 @@
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
-    sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc,
+    sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
   };
   boot();

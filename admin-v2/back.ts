@@ -405,11 +405,22 @@ async function handleClientApi(
   }
 
   // Documents R2
-  if (method === 'GET' && sub === '/files') return handleFilesList(env, key, url);
+  if (method === 'GET' && sub === '/files') return handleFilesList(env, key, url, data);
   if (method === 'POST' && sub === '/files') return handleUpload(request, env, key, data);
   const dl = sub.match(/^\/files\/(.+)\/download$/);
   if (dl && method === 'GET') return handleDownload(env, key, decodeURIComponent(dl[1]));
   if (method === 'DELETE' && sub === '/files') return handleFileDelete(request, env, key);
+  if (method === 'PATCH' && sub === '/files/lock') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    const fkey = (body.key || '').toString();
+    if (!Array.isArray(container.lockedKeys)) container.lockedKeys = [];
+    container.lockedKeys = container.lockedKeys.filter((k: string) => k !== fkey);
+    if (body.locked === true) container.lockedKeys.push(fkey);
+    await saveClient(env, key, data);
+    return json({ ok: true, locked: body.locked === true });
+  }
 
   // Livrables : changer le statut
   m = sub.match(/^\/deliverables\/([a-zA-Z0-9_-]+)$/);
@@ -639,10 +650,15 @@ async function listFiles(env: Env, prefix: string): Promise<AnyObj[]> {
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
 }
-async function handleFilesList(env: Env, key: string, url: URL): Promise<Response> {
-  const fld = projectFolder(url.searchParams.get('projectId') || '');
+async function handleFilesList(env: Env, key: string, url: URL, data: AnyObj): Promise<Response> {
+  const projectId = url.searchParams.get('projectId') || '';
+  const fld = projectFolder(projectId);
   if (!fld) return json({ error: 'projectId invalide' }, 400);
-  return json({ files: await listFiles(env, `${key}/${fld}/`) });
+  const files = await listFiles(env, `${key}/${fld}/`);
+  const { container } = resolveProject(getEspace(data), projectId);
+  const lk = container && Array.isArray(container.lockedKeys) ? container.lockedKeys : [];
+  files.forEach((f: AnyObj) => { f.locked = lk.indexOf(f.key) !== -1; });
+  return json({ files });
 }
 function projectFolder(projectId: string): string {
   if (DOMAINS[projectId]) return DOMAINS[projectId].folder;
