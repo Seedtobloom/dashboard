@@ -241,12 +241,6 @@ js = js.replace(
   "stbTaskDeliverables(pid, project, t, sep) + '<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +"
 );
 
-// ── Mise à jour des guides : messagerie générale + livrables par tâche ──
-must(js.indexOf("text:'La section Messagerie vous permet d\\'échanger directement avec Cindy. Pas besoin d\\'e-mail : tout reste au même endroit, lié à votre espace.'") !== -1, 'guide messagerie');
-js = js.replace("text:'La section Messagerie vous permet d\\'échanger directement avec Cindy. Pas besoin d\\'e-mail : tout reste au même endroit, lié à votre espace.'", "text:'La Messagerie regroupe toutes vos conversations, classées par projet. Vous pouvez y rechercher un mot pour retrouver un ancien message. Tout reste au même endroit, sans e-mail.'");
-must(js.indexOf("text:'Déposez vos éléments (textes, photos, inspirations) et récupérez les fichiers finaux dans la section Fichiers. Chaque livrable est accessible dès qu\\'il est prêt.'") !== -1, 'guide livrables');
-js = js.replace("text:'Déposez vos éléments (textes, photos, inspirations) et récupérez les fichiers finaux dans la section Fichiers. Chaque livrable est accessible dès qu\\'il est prêt.'", "text:'Chaque tâche peut recevoir un livrable que vous validez en un clic, ou pour lequel vous demandez une révision. Un lien de révision est parfois fourni pour laisser vos retours. Vos fichiers déposés et les livrables finaux restent accessibles ici.'");
-
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');

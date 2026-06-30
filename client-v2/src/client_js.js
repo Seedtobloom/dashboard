@@ -4867,11 +4867,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       partenaire: [
         { icon:'flower', title:'Votre espace partenaire', text:'Bienvenue ! Cet espace est votre tableau de bord créatif. Chaque mois, vos demandes y sont planifiées, suivies et livrées. Ce guide vous présente chaque section en détail.' },
         { icon:'calendar', title:'Le calendrier des demandes', nav:'project', text:'C\'est le cœur de votre espace. Chaque demande apparaît dans le calendrier à la date prévue. Vous voyez en un clin d\'œil ce qui est planifié, en cours ou terminé cette semaine.' },
-        { icon:'tasks', title:'Urgences et priorités', nav:'project', text:'Chaque demande a un niveau d\'urgence : Tranquille (feuille), Normal (horloge), Urgent (éclair) ou Critique (flamme). Ces niveaux aident le studio à prioriser votre travail dans le mois.' },
-        { icon:'check', title:'Statuts des demandes', nav:'project', text:'Une demande passe par plusieurs statuts : À faire → En cours → En relecture → Fait. Vous suivez l\'avancement en temps réel directement depuis le calendrier.' },
-        { icon:'clock', title:'Votre forfait mensuel', nav:'project', text:'En haut de la page, une barre indique les heures utilisées sur votre forfait du mois. Quand elle est pleine, les nouvelles demandes passent sur le mois suivant ou font l\'objet d\'un devis.' },
-        { icon:'chat', title:'Écrire au studio', nav:'messages', text:'La section Messagerie vous permet d\'échanger directement avec Cindy. Pas besoin d\'e-mail : tout reste au même endroit, lié à votre espace.' },
-        { icon:'folder', title:'Fichiers et livrables', nav:'fichiers', text:'Déposez vos éléments (textes, photos, inspirations) et récupérez les fichiers finaux dans la section Fichiers. Chaque livrable est accessible dès qu\'il est prêt.' },
+        { icon:'check', title:'L\'avancement de vos demandes', nav:'project', text:'Chaque demande avance pas à pas, de « à faire » jusqu\'à « fait ». Vous suivez tout en direct depuis le calendrier, sans rien demander.' },
+        { icon:'clock', title:'Votre forfait du mois', nav:'project', text:'En haut de la page, une barre vous montre les heures déjà utilisées sur votre forfait. Une fois pleine, les nouvelles demandes passent au mois suivant ou font l\'objet d\'un devis.' },
+        { icon:'chat', title:'Échanger avec le studio', nav:'messages', text:'La messagerie vous permet de parler directement avec Cindy. Pas besoin d\'e-mail, tout reste au même endroit, classé par projet.' },
+        { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources utiles, votre identité visuelle, des exemples et des photos, rangés par projet. Vous pouvez aussi y déposer vos propres éléments. Vos livrables finaux, eux, se récupèrent directement sur la tâche concernée.' },
         { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, n\'hésitez pas à écrire dans la Messagerie — on répond rapidement.' },
       ],
       maintenance: [
@@ -4890,7 +4889,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'check', title:'Votre rôle dans le projet', nav:'project', text:'Certaines étapes nécessitent une action de votre part (retour, validation, contenu à fournir). Elles sont signalées clairement. Votre réactivité influence directement le calendrier du projet.' },
         { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible — il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Posez vos questions, partagez vos inspirations ou faites vos retours directement ici. Tout reste au même endroit, sans passer par e-mail.' },
-        { icon:'folder', title:'Fichiers et livrables', nav:'fichiers', text:'Déposez vos éléments (photos, textes, logos existants) et retrouvez les fichiers livrés par le studio dès qu\'ils sont disponibles.' },
+        { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources, votre identité visuelle, des exemples et vos photos, rangés par projet. Vous pouvez aussi y déposer vos éléments. Les livrables finaux se récupèrent, eux, sur l\'étape ou la tâche concernée.' },
         { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. N\'hésitez pas à écrire dans la Messagerie — on est là pour que le projet se passe au mieux.' },
       ],
       site: [
@@ -4899,7 +4898,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'check', title:'Valider une phase', nav:'project', text:'Quand une phase passe au statut « En attente de votre retour », c\'est à vous de valider ou de demander des ajustements. Vos retours sont précieux pour avancer rapidement.' },
         { icon:'clock', title:'Les échéances', nav:'project', text:'Chaque phase a une date cible. Si une phase est en retard, elle apparaît en rouge. Votre participation rapide (retours, contenus à fournir) permet de tenir le calendrier.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Partagez vos retours, posez vos questions ou envoyez des inspirations directement ici. C\'est plus rapide et tout reste tracé.' },
-        { icon:'folder', title:'Fichiers', nav:'fichiers', text:'Déposez ici vos textes, images, logos et tout ce que le studio a besoin pour construire votre site. Les livrables finaux (export, accès) y seront aussi disponibles.' },
+        { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources et tout ce que le studio partage pour votre site (identité visuelle, exemples, images), rangé par projet. Vous pouvez aussi y déposer vos éléments. Les livrables finaux se récupèrent sur l\'étape concernée.' },
         { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut. Bonne construction !' },
       ],
     };
