@@ -55,6 +55,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .side__brand .n{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--paille)}
 .side__brand .s{font-family:var(--font-micro);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(242,229,194,0.55);margin-top:2px}
 .side__nav{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:3px}
+.navgroup__label{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,229,194,0.45);padding:6px 13px 4px}
 .navitem{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:8px;border:none;background:none;color:rgba(242,229,194,0.78);cursor:pointer;text-align:left;width:100%;font-family:var(--font-micro);font-size:12px;letter-spacing:0.05em;text-transform:uppercase}
 .navitem:hover{background:rgba(242,229,194,0.08);color:var(--paille)}
 .navitem.active{background:rgba(242,229,194,0.12);color:var(--paille);font-weight:600}

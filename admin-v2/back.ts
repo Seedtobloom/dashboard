@@ -349,6 +349,13 @@ async function handleClientApi(
   // Tâches : PATCH statut/temps, POST commentaire
   let m = sub.match(/^\/tasks\/([a-f0-9]+)$/);
   if (m && method === 'PATCH') return handleTaskPatch(request, env, key, data, m[1]);
+  if (m && method === 'DELETE') {
+    const found = findTask(esp, (url.searchParams.get('projectId') || 'partner').toString(), m[1]);
+    if (!found) return json({ error: 'Tâche introuvable' }, 404);
+    found.container.taches = (found.container.taches || []).filter((t: AnyObj) => t.id !== m![1]);
+    await saveClient(env, key, data);
+    return json({ ok: true });
+  }
   m = sub.match(/^\/tasks\/([a-f0-9]+)\/comments$/);
   if (m && method === 'POST') return handleTaskComment(request, env, key, data, m[1]);
 
