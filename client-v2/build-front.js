@@ -27,6 +27,7 @@ const drawerPatch = read('_drawer_patch.js');
 const inboxPatch = read('_inbox_patch.js');
 const filesPatch = read('_files_patch.js');
 const feedbackPatch = read('_feedback_patch.js');
+const maintenancePatch = read('_maintenance_patch.js');
 
 // var -> const (réutilisables tels quels comme constantes du worker)
 css = css.replace(/^var CLIENT_CSS =/, 'const CLIENT_CSS =');
@@ -253,7 +254,11 @@ js = js.replace("text:'Déposez vos éléments (textes, photos, inspirations) et
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + '\n' + feedbackPatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + '\n' + feedbackPatch + '\n' + maintenancePatch + anchor[0]);
+
+// ── Verrou « en préparation » : le contenu du projet est remplacé par un message ──
+must(js.indexOf("var project = pd.project, messages = pd.messages, files = pd.files;") !== -1, 'project view maintenance');
+js = js.replace("var project = pd.project, messages = pd.messages, files = pd.files;", "var project = pd.project, messages = pd.messages, files = pd.files;\n    if (project && project.status === 'maintenance') return cpMaintenanceView(project);");
 
 // ── Onglet « Bilan » (sidebar Échanges) quand Cindy sollicite un retour + « Votre avis » permanent ──
 must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +") !== -1, 'fichiers nav present pour bilan');
