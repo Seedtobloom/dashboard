@@ -313,6 +313,10 @@ async function handleClientApi(
   if (method === 'PATCH' && (sub === '' || sub === '/')) {
     return handleClientPatch(request, env, key, data);
   }
+  // Suppression complète du client + de son espace
+  if (method === 'DELETE' && (sub === '' || sub === '/')) {
+    return handleClientDelete(env, key);
+  }
 
   // Chat (admin répond en tant que cindy)
   if (method === 'POST' && sub === '/message') {
@@ -453,6 +457,20 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     domains,
     supports,
   };
+}
+
+async function handleClientDelete(env: Env, key: string): Promise<Response> {
+  // Supprime tous les fichiers R2 de l'espace (pagination incluse)
+  let cursor: string | undefined;
+  do {
+    const listed = await env.R2_FILES.list({ prefix: `${key}/`, cursor } as R2ListOptions);
+    for (const o of listed.objects) await env.R2_FILES.delete(o.key);
+    cursor = listed.truncated ? listed.cursor : undefined;
+  } while (cursor);
+  await env.KV_CLIENT.delete(key);
+  const idx = await getIndex(env);
+  await saveIndex(env, idx.filter((x) => x.key !== key));
+  return json({ ok: true });
 }
 
 async function handleClientPatch(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
