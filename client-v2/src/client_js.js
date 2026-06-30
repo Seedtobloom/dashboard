@@ -791,7 +791,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
             (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
             '<div class="cp-proj-card__meta">' +
-              '<span>Mensuel · en cours</span>' +
+              '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
             '</div>' +
             (openTasks.length ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine demande : <span style="color:var(--terre);font-style:italic">' + esc(openTasks[0].title||'Sans titre') + '</span></div>' : '') +
