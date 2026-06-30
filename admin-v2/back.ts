@@ -77,6 +77,7 @@ export default {
       if (method === 'GET' && pathname === '/api/dashboard') return handleDashboard(env);
       if (method === 'GET' && pathname === '/api/done') return handleDone(env);
       if (method === 'GET' && pathname === '/api/kpi') return handleKpi(env);
+      if (method === 'GET' && pathname === '/api/avis') return handleAvisAll(env);
 
       // Tâches personnelles de l'admin (stockées dans KV_ADMIN)
       if (pathname === '/api/admin/tasks') {
@@ -457,6 +458,24 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     domains,
     supports,
   };
+}
+
+async function handleAvisAll(env: Env): Promise<Response> {
+  const idx = await getIndex(env);
+  const avis: AnyObj[] = [];
+  const bilans: AnyObj[] = [];
+  for (const c of idx) {
+    const data = (await env.KV_CLIENT.get(c.key, { type: 'json' })) as AnyObj | null;
+    if (!data) continue;
+    const esp = getEspace(data);
+    const who = clientName(data);
+    (esp.spaceFeedback || []).forEach((f: AnyObj) => avis.push({ key: c.key, client: who, category: f.category || '', content: f.content || '', createdAt: f.createdAt || null }));
+    const pc = getDomainObj(esp, 'partenaireCreative');
+    if (pc && pc.bilan && pc.bilan.submittedAt) bilans.push({ key: c.key, client: who, rating: pc.bilan.rating || 0, recommend: !!pc.bilan.recommend, liked: pc.bilan.liked || '', improve: pc.bilan.improve || '', testimonial: pc.bilan.testimonial || '', allowTestimonial: !!pc.bilan.allowTestimonial, submittedAt: pc.bilan.submittedAt });
+  }
+  avis.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  bilans.sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+  return json({ avis, bilans });
 }
 
 async function handleClientDelete(env: Env, key: string): Promise<Response> {

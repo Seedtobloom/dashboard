@@ -19,6 +19,7 @@
     done: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
     clients: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
     chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+    avis: 'M11.5 3l2.5 5.1 5.6.8-4 3.9 1 5.6-5-2.6-5 2.6 1-5.6-4-3.9 5.6-.8z',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
@@ -75,7 +76,7 @@
   /* ── shell ── */
   function nav(v) { VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0); }
   function renderShell() {
-    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['kpi', 'KPI'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie']];
+    var items = [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['kpi', 'KPI'], ['done', 'Réalisé'], ['clients', 'Clients'], ['chat', 'Messagerie'], ['avis', 'Avis']];
     var navHtml = items.map(function (it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
@@ -120,6 +121,7 @@
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
     if (VIEW === 'chat') return renderChat();
+    if (VIEW === 'avis') return renderAvis();
   }
   function topbar(title, right) {
     return '<div class="topbar"><h1>' + esc(title) + '</h1><div class="right">' + (right || '') + '</div></div>';
@@ -1117,6 +1119,30 @@
   function gsend() {
     var i = el('gmsg'); var v = (i.value || '').trim(); if (!v) return;
     jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v }).then(function (r) { if (r.ok) { toast('Envoyé'); chatClient(CHAT.key); setTimeout(function () { chatProject(CHAT.project); }, 200); } });
+  }
+
+  /* ── Avis : avis sur l'espace + bilans, tous clients ── */
+  function renderAvis() {
+    setMain(topbar('Avis') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/avis').then(function (r) { return r.json(); }).then(function (d) {
+      var avis = d.avis || [], bilans = d.bilans || [];
+      var avisRows = avis.length ? avis.map(function (a) {
+        return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(a.client) + '</strong><span class="micro">' + (a.category ? esc(a.category) + ' · ' : '') + fmtDate(a.createdAt) + '</span></div><div class="muted mt" style="white-space:pre-wrap;line-height:1.5">' + esc(a.content) + '</div></div>';
+      }).join('') : '<div class="empty">Aucun avis sur l\'espace pour le moment. Les clients le laissent depuis l\'onglet « Votre avis » de leur espace.</div>';
+      var bilRows = bilans.length ? bilans.map(function (b) {
+        var stars = ''; for (var i = 1; i <= 5; i++) stars += '<span style="font-size:17px;color:' + ((b.rating >= i) ? '#d8a93a' : '#d9cfbe') + '">★</span>';
+        return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(b.client) + '</strong><span class="micro">' + fmtDate(b.submittedAt) + '</span></div>' +
+          '<div class="mt">' + stars + ' ' + (b.recommend ? '<span class="pill pill--done">recommande</span>' : '<span class="pill">pas encore</span>') + '</div>' +
+          (b.testimonial ? '<div class="muted mt" style="font-style:italic">« ' + esc(b.testimonial) + ' »' + (b.allowTestimonial ? ' <span class="pill pill--done">publiable</span>' : ' <span class="pill">interne</span>') + '</div>' : '') +
+          (b.liked ? '<div class="micro mt">Ce qui a plu : ' + esc(b.liked) + '</div>' : '') +
+          (b.improve ? '<div class="micro mt">À améliorer : ' + esc(b.improve) + '</div>' : '') + '</div>';
+      }).join('') : '<div class="empty">Aucun bilan de collaboration reçu.</div>';
+      setMain(topbar('Avis') + '<div class="wrap">' +
+        '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:0 0 4px">Avis sur l\'espace</h3>' +
+        '<div class="micro mb">Ce que les clients signalent pour améliorer leur espace (manques, incompréhensions, suggestions).</div>' + avisRows +
+        '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:26px 0 4px">Bilans de fin de collaboration</h3>' +
+        '<div class="micro mb">Retours de satisfaction reçus à la fin des accompagnements.</div>' + bilRows + '</div>');
+    }).catch(showError);
   }
 
   // API publique pour les onclick
