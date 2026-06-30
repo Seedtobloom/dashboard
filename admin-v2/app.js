@@ -755,8 +755,28 @@
     tabs.push(['bilanavis', 'Bilan & avis', 0, true]);
     var tabsHtml = tabs.map(function (t) { return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + (t[3] ? '' : ' title="offre inactive" style="opacity:0.55"') + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>'; }).join('');
     setMain(topbar(nm, '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
-      '<div class="wrap"><div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+      '<div class="wrap">' + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
+  }
+  function clientAlerts() {
+    var unread = 0, aValider = 0, review = 0, waitClient = 0;
+    function scan(list) {
+      (list || []).forEach(function (d) {
+        var c = d.content || {}; unread += d.unread || 0;
+        (c.livrables || []).forEach(function (l) { if (l.status === 'a_valider') aValider++; });
+        (c.taches || []).forEach(function (t) { if (t.status === 'review') review++; });
+        (c.suivi || []).forEach(function (s) { if (s.status === 'waiting_client') waitClient++; });
+      });
+    }
+    scan(CUR.domains); scan(CUR.supports);
+    var chips = [];
+    if (unread) chips.push(['Vous', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', '#fbf0d8', '#8a4a0e']);
+    if (review) chips.push(['Vous', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', '#fbf0d8', '#8a4a0e']);
+    if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', '#efe6fb', '#6c4ea4']);
+    if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', '#efe6fb', '#6c4ea4']);
+    if (!chips.length) return '<div class="card" style="background:#f0f6ee;border-color:#cfe0c6;max-width:none"><span class="micro" style="color:#5d7a52;font-weight:700;letter-spacing:0.04em">✓ Tout est à jour pour ce client</span></div>';
+    return '<div class="card" style="max-width:none"><div class="micro mb" style="font-weight:700;color:var(--terre);text-transform:uppercase;letter-spacing:0.05em">Ce qui attend</div><div class="row" style="gap:8px;flex-wrap:wrap">' +
+      chips.map(function (ch) { return '<span style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:' + ch[2] + ';color:' + ch[3] + ';font-size:12.5px;font-weight:600"><span style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7">' + ch[0] + '</span>' + esc(ch[1]) + '</span>'; }).join('') + '</div></div>';
   }
   function tab(t) { TAB = t; renderClient(); }
 
@@ -883,7 +903,7 @@
   }
   function partnerTasks(d) {
     var tasks = Array.isArray(d.content.taches) ? d.content.taches : [];
-    return tasks.length ? tasks.map(function (t) {
+    return tasks.length ? '<div class="grid grid--2" style="align-items:start">' + tasks.map(function (t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
       var pbase = ptBase(t);
@@ -902,7 +922,7 @@
         taskDlvBlock(d, t) +
         commentsBlock('partner', t) +
         '</div>';
-    }).join('') : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
+    }).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
   }
   function taskDlvBlock(d, t) {
     var ls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; });
