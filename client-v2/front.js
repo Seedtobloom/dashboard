@@ -1449,7 +1449,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
         (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#8a4a0e;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#c46a1a') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
-        '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('question',13) + ' Guide</button>' +
+        '<button class="cp-ptopbar__guide" onclick="cpOpenMessages()" title="Une question ? Écrivez à Cindy">' + cpIcon('question',13) + ' Une question ?</button>' +
+        '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('info',13) + ' Guide</button>' +
         (accessCode ? '<span class="cp-ptopbar__code">' + cpIcon('lock',13) + ' ' + esc(accessCode) + '</span>' : '') +
         '<span class="cp-ptopbar__av" style="cursor:pointer" onclick="cpConfirmLogout()" title="Se déconnecter">' + avInitial + '</span>' +
       '</div>' +
@@ -1853,10 +1854,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       }).join('') +
     '</div>' : '';
 
-    var helpCard = '<div class="cp-card" style="margin-top:22px"><div class="cp-card__hd"><span class="cp-card__title">Une question&nbsp;?</span></div>' +
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Retrouvez tous vos echanges, classes par projet, dans votre messagerie.</div>' +
-      '<button class="cp-btn" onclick="cpOpenMessages()" type="button">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +
-    '</div>';
+    // « Une question ? » est désormais en haut (barre du haut), plus en bas de chaque onglet.
+    var helpCard = '';
 
     function filesGroup(label, items) {
       if (!items.length) return '';
@@ -6527,14 +6526,30 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return '<div style="padding:15px 22px;border-bottom:1px solid var(--bone-d,#e8e0d4);background:var(--card,#fff);flex-shrink:0;display:flex;align-items:center;gap:10px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:19px;color:var(--terre,#412F21)">'+esc(p.projectTitle || p.id)+'</span>'+(common?'<span style="font-size:11px;color:#9a93a5">ressources communes</span>':'')+'</div>'+
       '<div style="flex:1;overflow-y:auto;padding:18px 22px;background:var(--bone,#faf7f1);min-height:0">'+rows+drop+'</div>';
   }
+  window.cpConfirmDA = function(message, confirmLabel, onConfirm){
+    var ov = document.createElement('div');
+    ov.id = 'cp-confirm';
+    ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
+    ov.onclick = function(e){ if (e.target === ov) ov.parentNode.removeChild(ov); };
+    ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#fffefb);border-radius:16px;padding:26px 24px;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55);text-align:center">'+
+      cpIcon('trash', 26, 'color:#c0533b;margin:0 auto 12px')+
+      '<div style="font-size:14.5px;color:var(--terre,#412F21);line-height:1.55;margin-bottom:20px">'+esc(message)+'</div>'+
+      '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;background:#fff;color:var(--terre,#412F21);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>'+
+      '<button id="cp-confirm-yes" style="flex:1;padding:11px;border:none;border-radius:10px;background:#c0533b;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">'+esc(confirmLabel || 'Supprimer')+'</button></div>'+
+    '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#cp-confirm-no').onclick = function(){ if (ov.parentNode) ov.parentNode.removeChild(ov); };
+    ov.querySelector('#cp-confirm-yes').onclick = function(){ if (ov.parentNode) ov.parentNode.removeChild(ov); onConfirm(); };
+  };
   window.stbFileDelete = function(pid, encKey){
     var key = decodeURIComponent(encKey);
-    if (!window.confirm('Supprimer ce fichier ?')) return;
-    var pd = getPD(pid); if (!pd) return;
-    fetch('/api/client/' + TOKEN + '/files?key=' + encodeURIComponent(key) + '&projectId=' + encodeURIComponent(pid), { method:'DELETE' })
-      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-      .then(function(res){ if (res.ok){ pd.files = (pd.files||[]).filter(function(x){ return x.key !== key; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Suppression impossible'); })
-      .catch(function(){ alert('Erreur'); });
+    window.cpConfirmDA('Voulez-vous vraiment supprimer ce fichier ? Cette action est définitive.', 'Supprimer', function(){
+      var pd = getPD(pid); if (!pd) return;
+      fetch('/api/client/' + TOKEN + '/files?key=' + encodeURIComponent(key) + '&projectId=' + encodeURIComponent(pid), { method:'DELETE' })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if (res.ok){ pd.files = (pd.files||[]).filter(function(x){ return x.key !== key; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Suppression impossible'); })
+        .catch(function(){ alert('Erreur'); });
+    });
   };
   window.stbFilesUpload = function(pid, files){
     if (!files || !files.length) return;
