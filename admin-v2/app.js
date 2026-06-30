@@ -1165,21 +1165,27 @@
   function renderChat() {
     setMain(topbar('Messagerie') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
-      var list = (d.clients || []).map(function (c) {
+      var clients = (d.clients || []).slice().sort(function (a, b) { return (b.unread || 0) - (a.unread || 0); });
+      var waiting = clients.filter(function (c) { return (c.unread || 0) > 0; }).length;
+      var list = clients.map(function (c) {
         var nm = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key;
-        return '<button class="navitem" style="background:var(--surface);color:var(--terre);border:1px solid var(--bone-d);margin-bottom:6px" onclick="ADM.chatClient(\'' + c.key + '\')">' + esc(nm) + '</button>';
+        var u = c.unread || 0;
+        return '<button class="navitem" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:' + (u ? '#fbf0d8' : 'var(--surface)') + ';color:var(--terre);border:1px solid ' + (u ? '#e8c98a' : 'var(--bone-d)') + ';margin-bottom:6px" onclick="ADM.chatClient(\'' + c.key + '\')"><span style="text-transform:none;letter-spacing:0">' + esc(nm) + '</span>' + (u ? '<span class="pill pill--a_valider">' + u + '</span>' : '') + '</button>';
       }).join('') || '<div class="empty">Aucun client.</div>';
-      setMain(topbar('Messagerie') + '<div class="wrap"><div class="grid grid--2" style="align-items:start"><div class="card"><h3>Clients</h3>' + list + '</div><div class="card" id="chatpane"><div class="empty">Choisissez un client.</div></div></div></div>');
+      var head = '<h3>Clients</h3>' + (waiting ? '<div class="micro mb" style="color:#8a4a0e;font-weight:700">' + waiting + ' conversation' + (waiting > 1 ? 's' : '') + ' en attente</div>' : '<div class="micro mb" style="color:#5d7a52">Tout est lu</div>');
+      setMain(topbar('Messagerie') + '<div class="wrap"><div class="grid grid--2" style="align-items:start"><div class="card">' + head + list + '</div><div class="card" id="chatpane"><div class="empty">Choisissez un client.</div></div></div></div>');
     }).catch(showError);
   }
   function chatClient(key) {
     api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (d) {
       CHAT.key = key; CUR = d; CURKEY = key;
-      var projects = [];
-      d.domains.forEach(function (dn) { projects.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label]); });
-      d.supports.forEach(function (s) { projects.push([s.id, s.label]); });
-      var btns = projects.map(function (p) { return '<button class="btn btn--outline btn--sm" onclick="ADM.chatProject(\'' + p[0] + '\')">' + esc(p[1]) + '</button>'; }).join(' ');
+      var items = [];
+      d.domains.forEach(function (dn) { items.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.unread || 0]); });
+      d.supports.forEach(function (s) { items.push([s.id, s.label, s.unread || 0]); });
+      var btns = items.map(function (p) { return '<button class="btn btn--outline btn--sm" onclick="ADM.chatProject(\'' + p[0] + '\')">' + esc(p[1]) + (p[2] ? ' ' + badge(p[2]) : '') + '</button>'; }).join(' ');
       var pane = el('chatpane'); if (pane) pane.innerHTML = '<h3>' + esc(((d.client.prenom || '') + ' ' + (d.client.nom || '')).trim() || d.key) + '</h3><div class="row mb">' + btns + '</div><div id="chatthread"><div class="empty">Choisissez un projet.</div></div>';
+      var auto = items.filter(function (p) { return p[2] > 0; })[0] || items[0];
+      if (auto) chatProject(auto[0]);
     });
   }
   function chatProject(pid) {
@@ -1187,7 +1193,9 @@
     var d = findDomain(pid); if (!d) return;
     var box = el('chatthread'); if (!box) return;
     box.innerHTML = '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatSearch(this.value)"></div>' +
-      '<div class="msgs" id="chatmsgs">' + chatBubbles(d, '') + '</div><div class="row"><textarea class="inp" id="gmsg"></textarea></div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.gsend()">Envoyer</button></div>';
+      '<div class="msgs" id="chatmsgs">' + chatBubbles(d, '') + '</div><div class="row"><textarea class="inp" id="gmsg" placeholder="Répondre au client…"></textarea></div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.gsend()">Envoyer</button></div>';
+    var box2 = el('chatmsgs'); if (box2) box2.scrollTop = box2.scrollHeight;
+    if (d.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: pid }, 'POST'); d.unread = 0; }
   }
   function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function gsend() {
