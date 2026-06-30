@@ -443,7 +443,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         project: {
           id: 'support-' + pid,
           type: 'support',
-          projectTitle: (parseInt(pid, 10) || 1) > 1 ? 'Support de com ' + (parseInt(pid, 10) || 1) : 'Support de com',
+          projectTitle: (obj.name && obj.name.trim()) || ((parseInt(pid, 10) || 1) > 1 ? 'Support de com ' + (parseInt(pid, 10) || 1) : 'Support de com'),
           clientName: name,
           status: obj.maintenance ? 'maintenance' : 'in_progress',
           steps,

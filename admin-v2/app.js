@@ -780,7 +780,7 @@
   function sectionsFor(d) {
     var s = [];
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
-    if (d.content.suivi !== undefined) s.push(['suivi', 'Suivi', 0]);
+    if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables)) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['msg', 'Messages', d.unread || 0]);
     return s;
@@ -798,8 +798,21 @@
       fld('inf-ent-siret', 'SIRET', e.siret) + fld('inf-ent-tva', 'TVA', e.tva) +
       '</div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
       '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>' +
-      offersCard();
+      offersCard() + supportsCard();
   }
+  function supportsCard() {
+    var rows = (CUR.supports || []).map(function (s) {
+      var nm = (s.content && s.content.name) || '';
+      return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
+    }).join('');
+    return '<div class="card" style="max-width:680px"><h3>Supports de com</h3>' +
+      '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
+      (rows || '<div class="empty">Aucun support pour ce client.</div>') +
+      '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
+  }
+  function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
+  function addSupport() { var name = (el('new-support-name').value || '').trim(); jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) { if (r.ok) { toast('Support ajouté'); loadClient(); } else toast('Erreur'); }); }
+  function delSupport(pid) { api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Support supprimé'); loadClient(); } else toast('Erreur'); }); }
   function offersCard() {
     var offers = [];
     CUR.domains.forEach(function (dn) { offers.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.isActive !== false, (dn.content && dn.content.bannerColor) || '', !!(dn.content && dn.content.maintenance)]); });
@@ -969,10 +982,14 @@
         '<td>' + fmtDate(s.date) + '</td>' +
         '<td><select class="inp" style="width:auto" onchange="ADM.stepStatus(\'' + d.id + '\',\'' + s.id + '\',this.value)">' + opts + '</select></td>' +
         '<td><button class="btn btn--danger btn--sm" onclick="ADM.stepDelete(\'' + d.id + '\',\'' + s.id + '\')">Suppr.</button></td></tr>';
-    }).join('') : '<tr><td colspan="4" class="empty">Aucune étape.</td></tr>';
-    return '<div class="card"><h3>Suivi du projet</h3><table><thead><tr><th>Étape</th><th>Date</th><th>Statut</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<div class="row mt"><input class="inp" id="st-title-' + d.id + '" placeholder="Nouvelle étape"><input class="inp" type="date" style="width:auto" id="st-date-' + d.id + '">' +
-      '<input class="inp" id="st-action-' + d.id + '" placeholder="Action client (optionnel)"><button class="btn btn--sm" onclick="ADM.stepAdd(\'' + d.id + '\')">+ Ajouter</button></div></div>';
+    }).join('') : '<tr><td colspan="4" class="empty">Aucune étape pour l\'instant. Ajoutez la première ci-dessous, elle s\'affichera dans l\'espace du client.</td></tr>';
+    return '<div class="card"><h3>Étapes du projet</h3>' +
+      '<div class="micro mb">Les étapes jalonnent le projet et sont visibles par le client (par exemple « Brief », « Maquettes », « Livraison »).</div>' +
+      '<table><thead><tr><th>Étape</th><th>Date</th><th>Statut</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div style="background:var(--surface);border:1px solid var(--bone-d);border-radius:10px;padding:12px 14px;margin-top:14px">' +
+      '<div class="micro mb"><strong>Ajouter une étape</strong></div>' +
+      '<div class="row" style="gap:8px;align-items:flex-end"><input class="inp" id="st-title-' + d.id + '" placeholder="Intitulé (ex. Maquettes)" style="flex:1;min-width:150px"><input class="inp" type="date" style="width:auto" id="st-date-' + d.id + '">' +
+      '<input class="inp" id="st-action-' + d.id + '" placeholder="Action attendue du client (optionnel)" style="flex:1;min-width:150px"><button class="btn btn--dark btn--sm" onclick="ADM.stepAdd(\'' + d.id + '\')">+ Ajouter l\'étape</button></div></div></div>';
   }
   function stepAdd(pid) { var t = el('st-title-' + pid).value.trim(); if (!t) return; jpost('/api/clients/' + CURKEY + '/steps', { projectId: pid, title: t, date: el('st-date-' + pid).value || null, clientAction: el('st-action-' + pid).value || '', status: 'upcoming' }).then(function (r) { if (r.ok) { toast('Étape ajoutée'); loadClient(); } }); }
   function stepStatus(pid, id, st) { jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut mis à jour'); loadClient(); } }); }
@@ -1093,7 +1110,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance,
+    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport,
     taskStatus: taskStatus, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
