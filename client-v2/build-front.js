@@ -259,6 +259,12 @@ js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '
 must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +") !== -1, 'fichiers nav present pour bilan');
 js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
 
+// ── Statut « En préparation » (mode maintenance d'une offre active) ──
+must(js.indexOf("var STATUS_LABELS = { discovery:'Decouverte',") !== -1, 'status labels maintenance');
+js = js.replace("var STATUS_LABELS = { discovery:'Decouverte',", "var STATUS_LABELS = { maintenance:'En préparation', discovery:'Decouverte',");
+must(js.indexOf("var STATUS_COLORS = { discovery:'#f7efff',") !== -1, 'status colors maintenance');
+js = js.replace("var STATUS_COLORS = { discovery:'#f7efff',", "var STATUS_COLORS = { maintenance:'rgba(201,149,47,0.18)', discovery:'#f7efff',");
+
 // ── Bannir le tiret cadratin « — » du texte visible (séparateurs -> virgule, placeholders -> vide) ──
 js = js.split(' — ').join(', ');
 js = js.split('>—<').join('><');
