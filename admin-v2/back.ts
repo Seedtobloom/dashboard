@@ -697,10 +697,15 @@ async function listFiles(env: Env, prefix: string): Promise<AnyObj[]> {
   const listed = await env.R2_FILES.list({ prefix, include: ['httpMetadata', 'customMetadata'] } as R2ListOptions);
   for (const obj of listed.objects) {
     if (obj.size === 0) continue;
-    const name = obj.key.slice(prefix.length);
-    if (!name || name.includes('/')) continue;
+    const rel = obj.key.slice(prefix.length);
+    if (!rel) continue;
+    const parts = rel.split('/');
+    if (parts.length > 2) continue;
+    const folder = parts.length === 2 ? parts[0] : '';
+    const name = parts[parts.length - 1];
+    if (!name) continue;
     const cm = (obj.customMetadata || {}) as AnyObj;
-    out.push({ key: obj.key, name, size: obj.size, type: (obj.httpMetadata && obj.httpMetadata.contentType) || guessType(name), category: cm.category || 'document', source: cm.source || 'cindy', uploadedAt: obj.uploaded });
+    out.push({ key: obj.key, name, folder, size: obj.size, type: (obj.httpMetadata && obj.httpMetadata.contentType) || guessType(name), category: cm.category || 'document', source: cm.source || 'cindy', uploadedAt: obj.uploaded });
   }
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
