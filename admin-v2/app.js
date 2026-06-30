@@ -20,6 +20,7 @@
     clients: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
     chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
     avis: 'M11.5 3l2.5 5.1 5.6.8-4 3.9 1 5.6-5-2.6-5 2.6 1-5.6-4-3.9 5.6-.8z',
+    emails: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 7l-10 6L2 7',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
@@ -106,7 +107,7 @@
     var groups = [
       ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Mes clients', [['clients', 'Clients'], ['chat', 'Messagerie']]],
-      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis']]],
+      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['emails', 'E-mails']]],
     ];
     function navItemHtml(it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
@@ -156,6 +157,7 @@
     if (VIEW === 'client') return renderClient();
     if (VIEW === 'chat') return renderChat();
     if (VIEW === 'avis') return renderAvis();
+    if (VIEW === 'emails') return renderEmails();
   }
   function topbar(title, right) {
     return '<div class="topbar"><h1>' + esc(title) + '</h1><div class="right">' + (right || '') + '</div></div>';
@@ -170,6 +172,43 @@
       if (d.ok) { toast('Email envoyé ✓'); alert('Resend OK — email envoyé à ' + to + '.'); }
       else { alert('Resend a échoué.\nFrom: ' + (d.from || '(non défini)') + '\nStatut: ' + d.status + '\nErreur: ' + (d.error || '—')); }
     }).catch(function () { toast('Erreur'); });
+  }
+
+  /* ── Textes des e-mails (envois volontaires : bilan + relances) ── */
+  var EMAIL_TPLS = [];
+  function renderEmails() {
+    setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
+      EMAIL_TPLS = d.templates || [];
+      var intro = '<div class="card" style="border-top:3px solid #6c4ea4">' +
+        '<div class="micro">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
+      setMain(topbar('Textes des e-mails') + '<div class="wrap" style="max-width:760px">' + intro + EMAIL_TPLS.map(emailCard).join('') + '</div>');
+    }).catch(function () { setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty">Erreur de chargement.</div></div>'); });
+  }
+  function emailCard(t) {
+    var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
+    return '<div class="card infocard" style="border-top:3px solid #c9952f">' +
+      '<h3><span class="infocard__dot" style="background:#c9952f"></span>' + esc(t.label) + '</h3>' +
+      '<div class="field"><label>Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
+      '<div class="field mt"><label>Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
+      (vars ? '<div class="micro mt">Variables : ' + vars + '</div>' : '') +
+      '<div class="between mt"><button class="btn btn--outline btn--sm" onclick="ADM.emailReset(\'' + t.key + '\')">Rétablir le texte d\'origine</button>' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.emailSave(\'' + t.key + '\')">Enregistrer</button></div></div>';
+  }
+  function emailFind(k) { for (var i = 0; i < EMAIL_TPLS.length; i++) if (EMAIL_TPLS[i].key === k) return EMAIL_TPLS[i]; return null; }
+  function emailPayload() { var p = {}; EMAIL_TPLS.forEach(function (x) { p[x.key] = { subject: x.subject, body: x.body }; }); return p; }
+  function emailSave(k) {
+    var t = emailFind(k); if (!t) return;
+    t.subject = el('em-subj-' + k).value; t.body = el('em-body-' + k).value;
+    jpost('/api/email-templates', { templates: emailPayload() }, 'PUT').then(function (r) { if (r.ok) toast('Texte enregistré ✓'); else toast('Erreur'); });
+  }
+  function emailReset(k) {
+    var t = emailFind(k); if (!t) return;
+    admConfirm({ title: 'Rétablir le texte d\'origine ?', message: 'Le texte personnalisé de cet e-mail sera remplacé par le texte par défaut.', yes: 'Oui, rétablir', no: 'Non' }, function () {
+      t.subject = t.defaultSubject; t.body = t.defaultBody;
+      el('em-subj-' + k).value = t.subject; el('em-body-' + k).value = t.body;
+      jpost('/api/email-templates', { templates: emailPayload() }, 'PUT').then(function (r) { if (r.ok) toast('Texte rétabli ✓'); else toast('Erreur'); });
+    });
   }
   function renderPriorities() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
@@ -1283,6 +1322,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
+    emailSave: emailSave, emailReset: emailReset,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,

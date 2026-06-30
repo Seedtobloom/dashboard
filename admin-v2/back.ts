@@ -78,6 +78,10 @@ export default {
       if (method === 'GET' && pathname === '/api/done') return handleDone(env);
       if (method === 'GET' && pathname === '/api/kpi') return handleKpi(env);
       if (method === 'GET' && pathname === '/api/avis') return handleAvisAll(env);
+      if (pathname === '/api/email-templates') {
+        if (method === 'GET') return handleEmailTemplatesGet(env);
+        if (method === 'PUT') return handleEmailTemplatesSave(request, env);
+      }
 
       // Tâches personnelles de l'admin (stockées dans KV_ADMIN)
       if (pathname === '/api/admin/tasks') {
@@ -558,9 +562,9 @@ async function handleBilanRequest(env: Env, key: string, data: AnyObj): Promise<
   if (!('submittedAt' in b)) b.submittedAt = null;
   container.bilan = b;
   await saveClient(env, key, data);
-  await notifyClient(env, data, 'Votre avis sur notre collaboration',
-    '<p>Nous arrivons au terme de notre collaboration. Votre retour compte beaucoup pour faire grandir le studio.</p>' +
-    '<p>Connectez-vous à votre espace, onglet <strong>Bilan</strong>, pour le partager en quelques minutes.</p>');
+  const tpls = await getEmailTemplates(env);
+  const r = renderEmailTpl(tpls.bilan, { prenom: getClient(data).prenom || '' });
+  await notifyClient(env, data, r.subject, r.html);
   return json({ ok: true, bilan: b });
 }
 async function handleBeneficeAdd(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
@@ -1043,18 +1047,83 @@ async function handleRemind(request: Request, env: Env, _key: string, data: AnyO
   const title = (body.title || '').toString();
   const projectLabel = (body.projectLabel || '').toString();
   const kind = (body.kind || '').toString();
-  let subject: string;
-  let html: string;
-  if (kind === 'deliverable') {
-    subject = 'Rappel : un livrable attend votre validation';
-    html = `<p>Petit rappel, le livrable <strong>${escHtml(title)}</strong>${projectLabel ? ` (${escHtml(projectLabel)})` : ''} attend votre validation dans votre espace.</p>` +
-      `<p>Quand vous avez un moment, vous pouvez le valider ou demander une révision directement depuis votre espace.</p>`;
-  } else {
-    subject = 'Rappel : une action vous attend';
-    html = `<p>Petit rappel, l'étape <strong>${escHtml(title)}</strong>${projectLabel ? ` de votre projet ${escHtml(projectLabel)}` : ''} attend votre retour.</p>` +
-      `<p>Vous pouvez agir directement depuis votre espace dès que possible.</p>`;
+  const tpls = await getEmailTemplates(env);
+  const tpl = kind === 'deliverable' ? tpls.remind_deliverable : tpls.remind_action;
+  const r = renderEmailTpl(tpl, { prenom: getClient(data).prenom || '', titre: title, projet: projectLabel });
+  await notifyClient(env, data, r.subject, r.html);
+  return json({ ok: true });
+}
+
+/* ── Modèles d'e-mails éditables (envois volontaires : bilan + relances) ── */
+const EMAIL_TPL_DEFAULTS: Record<string, { label: string; vars: string[]; subject: string; body: string }> = {
+  bilan: {
+    label: 'Invitation au bilan de collaboration',
+    vars: ['prenom'],
+    subject: 'Votre avis sur notre collaboration',
+    body: 'Bonjour {prenom},\n\nNous arrivons au terme de notre collaboration et votre retour compte beaucoup pour faire grandir le studio.\n\nConnectez-vous à votre espace, onglet Bilan, pour le partager en quelques minutes. Merci à vous.',
+  },
+  remind_deliverable: {
+    label: 'Relance — livrable à valider',
+    vars: ['prenom', 'titre', 'projet'],
+    subject: 'Rappel : un livrable attend votre validation',
+    body: 'Bonjour {prenom},\n\nPetit rappel, le livrable {titre} attend votre validation dans votre espace.\n\nQuand vous avez un moment, vous pouvez le valider ou demander une révision directement depuis votre espace.',
+  },
+  remind_action: {
+    label: 'Relance — action en attente',
+    vars: ['prenom', 'titre', 'projet'],
+    subject: 'Rappel : une action vous attend',
+    body: 'Bonjour {prenom},\n\nPetit rappel, l\'étape {titre} attend votre retour.\n\nVous pouvez agir directement depuis votre espace dès que possible.',
+  },
+};
+async function getEmailTemplates(env: Env): Promise<Record<string, { subject: string; body: string }>> {
+  const stored = ((await env.KV_ADMIN.get('email_templates', { type: 'json' })) as AnyObj | null) || {};
+  const out: Record<string, { subject: string; body: string }> = {};
+  for (const k in EMAIL_TPL_DEFAULTS) {
+    const s = (stored[k] && typeof stored[k] === 'object') ? stored[k] : {};
+    out[k] = {
+      subject: (s.subject != null && String(s.subject).trim()) ? String(s.subject) : EMAIL_TPL_DEFAULTS[k].subject,
+      body: (s.body != null && String(s.body).trim()) ? String(s.body) : EMAIL_TPL_DEFAULTS[k].body,
+    };
   }
-  await notifyClient(env, data, subject, html);
+  return out;
+}
+function renderEmailTpl(tpl: { subject: string; body: string }, vars: Record<string, string>): { subject: string; html: string } {
+  let body = escHtml(tpl.body);
+  let subject = tpl.subject;
+  for (const k in vars) {
+    const v = vars[k] || '';
+    body = body.split('{' + k + '}').join(escHtml(v));
+    subject = subject.split('{' + k + '}').join(v);
+  }
+  const html = body.split(/\n\n+/).map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  return { subject, html };
+}
+async function handleEmailTemplatesGet(env: Env): Promise<Response> {
+  const cur = await getEmailTemplates(env);
+  const list = Object.keys(EMAIL_TPL_DEFAULTS).map((k) => ({
+    key: k,
+    label: EMAIL_TPL_DEFAULTS[k].label,
+    vars: EMAIL_TPL_DEFAULTS[k].vars,
+    subject: cur[k].subject,
+    body: cur[k].body,
+    defaultSubject: EMAIL_TPL_DEFAULTS[k].subject,
+    defaultBody: EMAIL_TPL_DEFAULTS[k].body,
+  }));
+  return json({ templates: list });
+}
+async function handleEmailTemplatesSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const incoming = (body && typeof body.templates === 'object' && body.templates) || body || {};
+  const stored = ((await env.KV_ADMIN.get('email_templates', { type: 'json' })) as AnyObj | null) || {};
+  for (const k in EMAIL_TPL_DEFAULTS) {
+    if (incoming[k] && typeof incoming[k] === 'object') {
+      stored[k] = {
+        subject: String(incoming[k].subject || '').slice(0, 200),
+        body: String(incoming[k].body || '').slice(0, 4000),
+      };
+    }
+  }
+  await env.KV_ADMIN.put('email_templates', JSON.stringify(stored));
   return json({ ok: true });
 }
 
