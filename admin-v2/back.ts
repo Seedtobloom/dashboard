@@ -389,6 +389,20 @@ async function handleClientApi(
 
   // Supports : créer un nouveau projet support (00X)
   if (method === 'POST' && sub === '/supports') return handleSupportCreate(request, env, key, data);
+  const supm = sub.match(/^\/support\/(\d{3})$/);
+  if (supm && method === 'PATCH') {
+    const body = await readJson(request);
+    const o = getSupportObj(esp, supm[1]);
+    if (!o) return json({ error: 'Support introuvable' }, 404);
+    o.name = (body.name == null ? '' : String(body.name)).slice(0, 80).trim();
+    await saveClient(env, key, data);
+    return json({ ok: true, name: o.name });
+  }
+  if (supm && method === 'DELETE') {
+    const sd2 = esp.supportsDeCom && esp.supportsDeCom[0];
+    if (sd2 && sd2[supm[1]]) { delete sd2[supm[1]]; await saveClient(env, key, data); }
+    return json({ ok: true });
+  }
 
   // Documents R2
   if (method === 'GET' && sub === '/files') return handleFilesList(env, key, url);
@@ -416,7 +430,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
   const supports: AnyObj[] = [];
   if (sd) for (const pid of Object.keys(sd).sort()) {
     const o = getSupportObj(esp, pid);
-    if (o) supports.push({ id: 'support-' + pid, pid, label: supportLabel(pid), content: o, unread: unreadAdmin(o), isActive: o.isActive !== false });
+    if (o) supports.push({ id: 'support-' + pid, pid, label: (o.name && o.name.trim()) || supportLabel(pid), content: o, unread: unreadAdmin(o), isActive: o.isActive !== false });
   }
   return {
     key,
@@ -597,7 +611,7 @@ async function handleSupportCreate(request: Request, env: Env, key: string, data
   for (let i = 1; i <= 999; i++) { const id = String(i).padStart(3, '0'); if (!sd[id]) { pid = id; break; } }
   if (!pid) return json({ error: 'Trop de supports' }, 400);
   const body = await readJson(request);
-  sd[pid] = [{ chat: [], questionnaire: Array.isArray(body.questionnaire) ? body.questionnaire : [], suivi: [], livrables: [] }];
+  sd[pid] = [{ name: (body.name == null ? '' : String(body.name)).slice(0, 80).trim(), isActive: true, chat: [], questionnaire: Array.isArray(body.questionnaire) ? body.questionnaire : [], suivi: [], livrables: [] }];
   await saveClient(env, key, data);
   return json({ id: 'support-' + pid, pid }, 201);
 }
