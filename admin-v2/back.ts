@@ -163,8 +163,12 @@ function resolveProject(esp: AnyObj, projectId: string): { container: AnyObj | n
     return { container: getDomainObj(esp, d.internal), folder: d.folder, label: d.label };
   }
   const sm = projectId.match(/^support-(\d{3})$/);
-  if (sm) return { container: getSupportObj(esp, sm[1]), folder: `supportsDeCom/${sm[1]}`, label: 'Support de com ' + sm[1] };
+  if (sm) return { container: getSupportObj(esp, sm[1]), folder: `supportsDeCom/${sm[1]}`, label: supportLabel(sm[1]) };
   return { container: null, folder: '', label: '' };
+}
+function supportLabel(pid: string): string {
+  const n = parseInt(pid, 10) || 1;
+  return n > 1 ? 'Support de com ' + n : 'Support de com';
 }
 async function saveClient(env: Env, key: string, data: AnyObj): Promise<void> {
   await env.KV_CLIENT.put(key, JSON.stringify(data));
@@ -404,7 +408,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
   const supports: AnyObj[] = [];
   if (sd) for (const pid of Object.keys(sd).sort()) {
     const o = getSupportObj(esp, pid);
-    if (o) supports.push({ id: 'support-' + pid, pid, label: 'Support de com ' + pid, content: o, unread: unreadAdmin(o), isActive: o.isActive !== false });
+    if (o) supports.push({ id: 'support-' + pid, pid, label: supportLabel(pid), content: o, unread: unreadAdmin(o), isActive: o.isActive !== false });
   }
   return {
     key,
@@ -738,8 +742,8 @@ async function handleDashboard(env: Env): Promise<Response> {
     const sd = esp.supportsDeCom && esp.supportsDeCom[0];
     if (sd) for (const pid of Object.keys(sd)) {
       const o = getSupportObj(esp, pid);
-      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: 'Support ' + pid, kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
-      collectLiv(o, 'Support ' + pid);
+      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
+      collectLiv(o, supportLabel(pid));
     }
   }
   deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
@@ -765,7 +769,7 @@ async function handleDone(env: Env): Promise<Response> {
     const sd = esp.supportsDeCom && esp.supportsDeCom[0];
     if (sd) for (const pid of Object.keys(sd)) {
       const o = getSupportObj(esp, pid);
-      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status === 'done' && s.completedAt) completed.push({ key: ci.key, client: who, projectLabel: 'Support ' + pid, kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
+      if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status === 'done' && s.completedAt) completed.push({ key: ci.key, client: who, projectLabel: supportLabel(pid), kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
     }
   }
   completed.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
