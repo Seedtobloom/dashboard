@@ -224,7 +224,33 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [];
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'board';
+  function mtCard(t) {
+    var pcol = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority] || '#6c4ea4';
+    var est = t.estMinutes ? ('estimé ' + (t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
+    var dn = t.status === 'done';
+    var running = MT_TIMER && MT_TIMER.id === t.id;
+    var spent = t.timeSpentSeconds || 0;
+    var tcColor = running ? 'var(--green)' : (spent ? 'var(--terre)' : '#c3b9a6');
+    var meta = [est, (t.dueDate ? 'échéance ' + fmtDate(t.dueDate) : '')].filter(Boolean).join(' · ');
+    var timerBtn = dn ? '' : (running
+      ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸</button>'
+      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶</button>');
+    return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:flex-start;gap:8px"><span class="pdot" style="background:' + pcol + ';margin-top:5px;flex-shrink:0"></span>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500;line-height:1.3;color:' + (dn ? 'var(--muted)' : 'var(--terre)') + (dn ? ';text-decoration:line-through' : '') + '">' + esc(t.title) + '</div>' +
+          (meta ? '<div class="micro muted" style="margin-top:2px">' + meta + '</div>' : '') +
+          '<div id="mt-note-' + t.id + '" style="margin-top:4px">' + mtNoteInner(t) + '</div>' +
+        '</div></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:9px;border-top:1px solid var(--bone-d);padding-top:8px">' +
+        '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcColor + '">' + mtClock(spent) + '</span>' +
+        '<div class="row" style="gap:5px">' + timerBtn +
+          (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
+              : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
+          '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4" title="Supprimer">✕</button>' +
+        '</div></div></div>';
+  }
+  function mtSetView(v) { MT_VIEW = v; renderMyTasks(); }
   var PT_TIMER = null, PT_INT = null;
   var DOC_BASE_TITLE = '';
   function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; if (!DOC_BASE_TITLE) DOC_BASE_TITLE = document.title; document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
@@ -361,9 +387,19 @@
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">+ Ajouter</button></div>' +
         '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel) : https://… , détails…" style="width:100%;box-sizing:border-box">' +
         '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le calendrier intelligent et les KPI de temps. La note accepte du texte et des liens cliquables.</div></div>';
-      var rows = todo.map(mtRow).join('') || '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>';
-      var doneRows = done.length ? '<div class="card mt"><h3>Terminées</h3>' + done.slice().reverse().slice(0, 25).map(mtRow).join('') + '</div>' : '';
-      setMain(topbar('Mes tâches') + '<div class="wrap">' + kpis + form + '<div class="card mt"><h3>À faire</h3>' + rows + '</div>' + doneRows + '</div>');
+      var cols = [['haute', 'Haute', '#b83f29'], ['normale', 'Normale', '#6c4ea4'], ['basse', 'Basse', '#8a7355']];
+      var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
+        var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
+        return '<div style="flex:1;min-width:250px">' +
+          '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">' + c[1] + '</span><span class="micro muted">' + list.length + '</span></div>' +
+          (list.length ? list.map(mtCard).join('') : '<div class="micro muted" style="padding:6px 2px">Rien ici.</div>') +
+        '</div>';
+      }).join('') + '</div>';
+      var doneView = done.length ? done.slice().reverse().slice(0, 40).map(mtCard).join('') : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
+      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW !== 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
+        '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button></div>';
+      var content = MT_VIEW === 'done' ? doneView : (todo.length ? board : '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>');
+      setMain(topbar('Mes tâches') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
     }).catch(showError);
   }
   function myTaskAdd() {
@@ -1190,7 +1226,7 @@
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
