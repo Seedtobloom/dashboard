@@ -169,6 +169,7 @@ async function handleClientApi(
 
   // Fichiers
   if (method === 'POST' && sub === '/files') return handleFileUpload(request, env, masterKey, data);
+  if (method === 'DELETE' && sub === '/files') return handleClientFileDelete(request, env, masterKey, data, url);
   const dl = sub.match(/^\/files\/(.+)\/download$/);
   if (dl && method === 'GET') return handleFileDownload(env, masterKey, decodeURIComponent(dl[1]));
 
@@ -345,7 +346,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   // Partenaire créative
   const pc = getDomainObj(espace, 'partenaireCreative');
   if (pc && pc.isActive !== false) {
-    const files = await listFiles(env, `${masterKey}/partenaireCreative/`);
+    const files = markLocked(await listFiles(env, `${masterKey}/partenaireCreative/`), pc);
     projects.push({
       project: {
         id: 'partner',
@@ -375,7 +376,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   // Site web
   const sw = getDomainObj(espace, 'siteWeb');
   if (sw && sw.isActive !== false) {
-    const files = await listFiles(env, `${masterKey}/siteWeb/`);
+    const files = markLocked(await listFiles(env, `${masterKey}/siteWeb/`), sw);
     const steps = (sw.suivi || []).map((s: AnyObj, i: number) => ({
       id: s.id || genId(),
       title: s.title || '',
@@ -405,7 +406,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   // Identité visuelle
   const iv = getDomainObj(espace, 'identiteVisuelle');
   if (iv && iv.isActive !== false) {
-    const files = await listFiles(env, `${masterKey}/identiteVisuelle/`);
+    const files = markLocked(await listFiles(env, `${masterKey}/identiteVisuelle/`), iv);
     projects.push({
       project: {
         id: 'branding',
@@ -429,7 +430,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     for (const pid of Object.keys(sd).sort()) {
       const obj = getSupportObj(espace, pid);
       if (!obj || obj.isActive === false) continue;
-      const files = await listFiles(env, `${masterKey}/supportsDeCom/${pid}/`);
+      const files = markLocked(await listFiles(env, `${masterKey}/supportsDeCom/${pid}/`), obj);
       const steps = (obj.suivi || []).map((s: AnyObj, i: number) => ({
         id: s.id || genId(),
         title: s.title || '',
@@ -757,6 +758,12 @@ function guessType(name: string): string {
   return 'application/octet-stream';
 }
 
+function markLocked(files: AnyObj[], container: AnyObj | null): AnyObj[] {
+  const lk = container && Array.isArray(container.lockedKeys) ? container.lockedKeys : [];
+  files.forEach((f) => { f.locked = lk.indexOf(f.key) !== -1; });
+  return files;
+}
+
 async function listFiles(env: Env, prefix: string): Promise<AnyObj[]> {
   const out: AnyObj[] = [];
   const listed = await env.R2_FILES.list({ prefix, include: ['httpMetadata', 'customMetadata'] } as R2ListOptions);
@@ -795,6 +802,18 @@ async function handleFileUpload(request: Request, env: Env, masterKey: string, d
     customMetadata: { source: 'client', category: 'document' },
   });
   return json({ key, name: file.name, type: file.type || guessType(file.name), size: file.size, source: 'client' }, 201);
+}
+
+async function handleClientFileDelete(_request: Request, env: Env, masterKey: string, data: AnyObj, url: URL): Promise<Response> {
+  const key = url.searchParams.get('key') || '';
+  if (!key || key.includes('..') || !key.startsWith(masterKey + '/')) return json({ error: 'Requête invalide' }, 400);
+  const { container } = resolveProject(getEspace(data), (url.searchParams.get('projectId') || '').toString());
+  if (container && Array.isArray(container.lockedKeys) && container.lockedKeys.indexOf(key) !== -1) return json({ error: 'Ce fichier est verrouillé' }, 403);
+  const obj = await env.R2_FILES.head(key);
+  if (!obj) return json({ error: 'Fichier introuvable' }, 404);
+  if (((obj.customMetadata || {}) as AnyObj).source !== 'client') return json({ error: 'Seuls vos fichiers déposés peuvent être supprimés' }, 403);
+  await env.R2_FILES.delete(key);
+  return json({ ok: true });
 }
 
 async function handleFileDownload(env: Env, masterKey: string, key: string): Promise<Response> {
