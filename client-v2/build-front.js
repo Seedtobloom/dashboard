@@ -176,10 +176,6 @@ must(js.indexOf("              mForfaitCard + mMsgCard +") !== -1, 'home mMsgCar
 js = js.replace("              mForfaitCard + mMsgCard +", "              mForfaitCard +");
 must(js.indexOf("            msgCard +") !== -1, 'home msgCard');
 js = js.replace("            msgCard +", "            '' +");
-// La carte « Une question ? » redevient un CTA actionnable vers la messagerie générale.
-must(js.indexOf("'<button class=\"cp-btn\" onclick=\"cpOpenMessages()\" type=\"button\">'+cpIcon('messages',15)+' Ouvrir la messagerie</button>' +") !== -1, 'helpCard bouton');
-js = js.replace("'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Votre conversation avec Cindy couvre tout votre espace.</div>' +", "'<div style=\"font-size:13px;color:var(--muted);margin-bottom:10px\">Retrouvez tous vos echanges, classes par projet, dans votre messagerie.</div>' +");
-
 // ── Lisibilité des pastilles du calendrier (titre sur 2 lignes + meilleur contraste) ──
 must(js.indexOf("font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;") !== -1, 'pill title');
 js = js.replace(
