@@ -436,7 +436,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var TOKEN = getToken();
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
-  var STATUS_COLORS = { discovery:'#f7efff', in_progress:'#efddff', waiting_client:'rgba(201,149,47,0.16)', review:'#efddff', delivered:'#5c4633', archived:'rgba(92,70,51,0.1)' };
+  var STATUS_COLORS = { maintenance:'rgba(201,149,47,0.18)', discovery:'#f7efff', in_progress:'#efddff', waiting_client:'rgba(201,149,47,0.16)', review:'#efddff', delivered:'#5c4633', archived:'rgba(92,70,51,0.1)' };
 
   var ACCENTS = {
     glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
@@ -580,7 +580,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var label = STATUS_LABELS[status] || status;
     return '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;background:' + bg + ';color:' + fg + '">' + esc(label) + '</span>';
   }
-  var STATUS_LABELS = { discovery:'Decouverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En revision', delivered:'Livre', archived:'Archive' };
+  var STATUS_LABELS = { maintenance:'En préparation', discovery:'Decouverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En revision', delivered:'Livre', archived:'Archive' };
   var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
   var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)' };
   var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'À venir', todo:'À faire', review:'En révision' };

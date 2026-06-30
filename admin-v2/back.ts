@@ -362,6 +362,14 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true, isActive: container.isActive });
   }
+  if (method === 'PATCH' && sub === '/maintenance') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    container.maintenance = body.maintenance === true;
+    await saveClient(env, key, data);
+    return json({ ok: true, maintenance: container.maintenance });
+  }
   if (method === 'PATCH' && sub === '/banner') {
     const body = await readJson(request);
     const { container } = resolveProject(esp, (body.projectId || '').toString());
