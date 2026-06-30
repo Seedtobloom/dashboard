@@ -88,7 +88,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     pencil:'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z',
     messages:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
     paperclip:'M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48',
-    question:'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
+    question:'M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
     dot:'M12 12m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0',
     x:'M6 18L18 6M6 6l12 12',
     external:'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
@@ -629,7 +629,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         if (!f.configured) {
           forfaitCard = '<div class="card" style="padding:22px 24px">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Forfait du mois</div>' +
-            '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non encore défini — on en parle ensemble.</div>' +
+            '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-600)">Forfait non encore défini, voyons ça ensemble.</div>' +
           '</div>';
         } else {
           var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
@@ -646,7 +646,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span>'+cpFmtH(f.used)+' utilisées</span>' +
               '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':'')+'</span>' +
             '</div>' +
-            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8a3a2c;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, on réajustera le forfait ensemble.</div>' : '') +
+            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8a3a2c;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
           '</div>';
         }
       }
@@ -1498,7 +1498,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);margin-bottom:14px;display:block">' +
           '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
             '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-nous de votre projet</div>' +
+            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-moi de votre projet</div>' +
             (allAnswered
               ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
               : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
@@ -2515,7 +2515,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:'+(forfaitLeft<0?'#9b3a2e':'var(--brume-700)')+';border-radius:999px;width:'+forfaitPct2+'%"></div></div>' +
       '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + fmtH(_pf.used) + ' utilisées</span><span>sur ' + cpFmtH(_pf.available) + (_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'') + '</span></div>' +
-      (forfaitLeft<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a3a2c;margin-top:10px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, on réajustera le forfait ensemble.</div>' : '') +
+      (forfaitLeft<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a3a2c;margin-top:10px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
     '</div>' : '';
 
     var archivedHtml = '<div style="margin-top:28px">' +
@@ -4877,7 +4877,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'clock', title:'Votre forfait du mois', nav:'project', text:'En haut de la page, une barre vous montre les heures déjà utilisées sur votre forfait. Une fois pleine, les nouvelles demandes passent au mois suivant ou font l\'objet d\'un devis.' },
         { icon:'chat', title:'Échanger avec le studio', nav:'messages', text:'La messagerie vous permet de parler directement avec Cindy. Pas besoin d\'e-mail, tout reste au même endroit, classé par projet.' },
         { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources utiles, votre identité visuelle, des exemples et des photos, rangés par projet. Vous pouvez aussi y déposer vos propres éléments. Vos livrables finaux, eux, se récupèrent directement sur la tâche concernée.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, n\'hésitez pas à écrire dans la Messagerie — on répond rapidement.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, écrivez-moi dans la Messagerie, je réponds vite.' },
       ],
       maintenance: [
         { icon:'flower', title:'Votre espace maintenance', text:'Bienvenue ! Cet espace est dédié au suivi de votre contrat de maintenance. Ouvrez des tickets, suivez leur avancement et consultez votre quota d\'heures.' },
@@ -4887,7 +4887,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'check', title:'Statuts des tickets', nav:'interventions', text:'Un ticket peut être : Ouvert (reçu), En cours (traitement en cours), Résolu (fini, en attente de validation) ou Fermé. Vous êtes notifié à chaque changement.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Pour toute question qui ne nécessite pas un ticket formel, la Messagerie est là. Échangez directement avec le studio en temps réel.' },
         { icon:'folder', title:'Fichiers et ressources', nav:'hub', text:'Retrouvez ici les accès, les guides techniques et les documents partagés par le studio pour la gestion de votre site.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie — on revient vers vous rapidement.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie, je reviens vers vous vite.' },
       ],
       identite: [
         { icon:'flower', title:'Votre espace identité', text:'Bienvenue ! Cet espace réunit tout votre projet d\'identité visuelle avec le studio. Découvrez les étapes, partagez vos réponses et suivez l\'avancement en temps réel.' },
@@ -4896,7 +4896,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible — il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Posez vos questions, partagez vos inspirations ou faites vos retours directement ici. Tout reste au même endroit, sans passer par e-mail.' },
         { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources, votre identité visuelle, des exemples et vos photos, rangés par projet. Vous pouvez aussi y déposer vos éléments. Les livrables finaux se récupèrent, eux, sur l\'étape ou la tâche concernée.' },
-        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. N\'hésitez pas à écrire dans la Messagerie — on est là pour que le projet se passe au mieux.' },
+        { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. Écrivez-moi dans la Messagerie, je suis là pour que le projet se passe au mieux.' },
       ],
       site: [
         { icon:'flower', title:'Votre espace site web', text:'Bienvenue ! Cet espace vous permet de suivre la construction de votre site phase par phase, de valider chaque étape et d\'échanger avec le studio.' },
@@ -5013,7 +5013,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
         '<div style="padding:24px 28px">' +
-          '<p style="font-size:13px;color:var(--muted);margin-bottom:20px">Vos réponses nous aident à mieux cerner votre projet. Elles peuvent être modifiées à tout moment.</p>' +
+          '<p style="font-size:13px;color:var(--muted);margin-bottom:20px">Vos réponses m\'aident à mieux cerner votre projet. Elles peuvent être modifiées à tout moment.</p>' +
           '<div id="cp-q-fields">' + fields + '</div>' +
           '<div style="display:flex;justify-content:flex-end;gap:10px">' +
             '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="padding:10px 20px;border:1.5px solid var(--border);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--muted)">Fermer</button>' +

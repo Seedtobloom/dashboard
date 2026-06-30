@@ -32,10 +32,37 @@
   function api(path, opts) { return fetch(path, Object.assign({ credentials: 'same-origin' }, opts || {})); }
   function jpost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   function toast(m) { var t = el('toast'); if (!t) return; t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2600); }
+  // Confirmation oui / non stylée pour les boutons importants (envois d'e-mail, suppressions…)
+  function admConfirm(opts, onYes) {
+    opts = opts || {};
+    var ac = opts.danger ? '#b5462f' : 'var(--terre)';
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box">' +
+      '<div class="admconfirm__title">' + esc(opts.title || 'Confirmer') + '</div>' +
+      (opts.message ? '<div class="admconfirm__msg">' + opts.message + '</div>' : '') +
+      (opts.detail ? '<div class="admconfirm__detail">' + opts.detail + '</div>' : '') +
+      '<div class="admconfirm__row">' +
+        '<button class="btn btn--outline btn--sm" data-no>' + esc(opts.no || 'Non, annuler') + '</button>' +
+        '<button class="btn btn--sm" data-yes style="background:' + ac + ';color:#fff;border-color:' + ac + '">' + esc(opts.yes || 'Oui, envoyer') + '</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () { close(); onYes(); };
+    document.body.appendChild(ov);
+    var y = ov.querySelector('[data-yes]'); if (y) y.focus();
+  }
   function pill(status, label) { return '<span class="pill pill--' + esc(status) + '">' + esc(label || status) + '</span>'; }
   function jsq(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
   function remind(key, kind, title, projectLabel) {
-    jpost('/api/clients/' + key + '/remind', { kind: kind, title: title, projectLabel: projectLabel }).then(function (r) { if (r.ok) toast('Relance envoyée par mail ✓'); else toast('Erreur'); });
+    admConfirm({
+      title: 'Envoyer une relance par e-mail ?',
+      message: 'Le client recevra un e-mail de relance' + (title ? ' concernant « ' + esc(title) + ' »' : '') + '.',
+      yes: 'Oui, relancer', no: 'Non'
+    }, function () {
+      jpost('/api/clients/' + key + '/remind', { kind: kind, title: title, projectLabel: projectLabel }).then(function (r) { if (r.ok) toast('Relance envoyée par mail ✓'); else toast('Erreur'); });
+    });
   }
   function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
@@ -854,17 +881,25 @@
 
   function tabInfos() {
     var c = CUR.client, e = CUR.entreprise;
-    return '<div class="card" style="max-width:620px"><div class="between mb"><h3>Coordonnées</h3>' +
-      '<label class="checkbox"><input type="checkbox" id="inf-active"' + (CUR.isActive ? ' checked' : '') + ' onchange="ADM.saveInfos()"> espace actif</label></div>' +
+    var active = CUR.isActive;
+    var coord = '<div class="card infocard" style="border-top:3px solid #6c4ea4">' +
+      '<div class="between mb"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Coordonnées</h3>' +
+      '<label class="checkbox infocard__act' + (active ? ' is-on' : '') + '"><input type="checkbox" id="inf-active"' + (active ? ' checked' : '') + ' onchange="ADM.saveInfos()"> ' + (active ? 'espace actif' : 'espace inactif') + '</label></div>' +
       '<div class="grid grid--2">' +
       fld('inf-prenom', 'Prénom', c.prenom) + fld('inf-nom', 'Nom', c.nom) +
       fld('inf-email', 'Email', c.email) + fld('inf-tel', 'Téléphone', c.telephone) +
       fld('inf-ent-nom', 'Société', e.nom) + fld('inf-ent-adr', 'Adresse', e.adresse) +
       fld('inf-ent-siret', 'SIRET', e.siret) + fld('inf-ent-tva', 'TVA', e.tva) +
       '</div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
-      '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>' +
-      offersCard() + supportsCard() +
-      '<div class="card" style="max-width:680px"><h3>Zone sensible</h3><div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div><button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
+      '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>';
+    var danger = '<div class="card infocard" style="border-top:3px solid #b5462f;background:#fbf1ee">' +
+      '<h3 style="color:#b5462f"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
+      '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
+      '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
+    return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
+      '<div>' + coord + supportsCard() + '</div>' +
+      '<div>' + offersCard() + '</div>' +
+      '</div>' + danger;
   }
   function deleteClient() {
     var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || CUR.client.email || CUR.key;
@@ -879,7 +914,7 @@
       var nm = (s.content && s.content.name) || '';
       return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
-    return '<div class="card" style="max-width:680px"><h3>Supports de com</h3>' +
+    return '<div class="card infocard" style="border-top:3px solid #7da2e0"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
       '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
       (rows || '<div class="empty">Aucun support pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
@@ -905,7 +940,7 @@
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
-    return '<div class="card" style="max-width:680px"><h3>Offres / espaces</h3>' +
+    return '<div class="card infocard" style="border-top:3px solid #c9952f"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
       '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + '</div>';
   }
   function setBanner(pid, color) {
@@ -1043,7 +1078,18 @@
           '<button class="btn btn--sm" onclick="ADM.beneficeAdd()">+ Ajouter</button>' +
         '</div></div>';
   }
-  function bilanRequest() { jpost('/api/clients/' + CURKEY + '/bilan/request', {}, 'POST').then(function (r) { if (r.ok) { toast('Invitation envoyée au client'); loadClient(); } else toast('Erreur'); }); }
+  function bilanRequest() {
+    var email = (CUR && CUR.client && CUR.client.email) || '';
+    var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim();
+    admConfirm({
+      title: 'Envoyer l\'invitation au bilan ?',
+      message: 'Un e-mail sera envoyé' + (nm ? ' à ' + esc(nm) : ' au client') + ' pour l\'inviter à remplir son bilan de fin de collaboration.',
+      detail: email ? 'Destinataire : <strong>' + esc(email) + '</strong>' : 'Attention : aucune adresse e-mail renseignée pour ce client.',
+      yes: 'Oui, envoyer', no: 'Non, ne pas envoyer'
+    }, function () {
+      jpost('/api/clients/' + CURKEY + '/bilan/request', {}, 'POST').then(function (r) { if (r.ok) { toast('Invitation envoyée au client'); loadClient(); } else toast('Erreur'); });
+    });
+  }
   function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indiquez un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
   function beneficeDel(id) { api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); }); }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
