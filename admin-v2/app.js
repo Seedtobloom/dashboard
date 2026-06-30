@@ -1057,10 +1057,20 @@
     var msgs = ql ? all.filter(function (m) { return (m.message || '').toLowerCase().indexOf(ql) !== -1; }) : all;
     if (!all.length) return '<div class="empty">Aucun message.</div>';
     if (!msgs.length) return '<div class="empty">Aucun message ne contient ce mot.</div>';
-    return msgs.map(function (m) {
+    function bub(m) {
       var mine = m.from === 'cindy';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '"><div><div class="bubble">' + hi(m.message, q) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + '</div></div></div>';
-    }).join('');
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '"><div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + hi(m.message, q) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
+    }
+    var pinned = msgs.filter(function (m) { return m.pinned; });
+    var rest = msgs.filter(function (m) { return !m.pinned; });
+    return pinned.map(bub).join('') + rest.map(bub).join('');
+  }
+  function pinMsg(pid, id, pin) {
+    jpost('/api/clients/' + CURKEY + '/message/' + id + '/pin', { projectId: pid, pinned: pin }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast(pin ? 'Message épinglé' : 'Message détaché');
+      if (VIEW === 'client') loadClient(); else if (VIEW === 'chat' && CHAT && CHAT.project) chatProject(CHAT.project);
+    });
   }
   function chatCard(d) {
     return '<div class="card"><h3>Messages — ' + esc(DOMAIN_LABELS[d.id] || d.label) + '</h3>' +
@@ -1184,7 +1194,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
-    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch,
+    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg,
   };
   boot();
 })();
