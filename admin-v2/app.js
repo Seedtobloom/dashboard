@@ -20,6 +20,7 @@
     clients: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
     chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
     avis: 'M11.5 3l2.5 5.1 5.6.8-4 3.9 1 5.6-5-2.6-5 2.6 1-5.6-4-3.9 5.6-.8z',
+    emails: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 7l-10 6L2 7',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
@@ -32,10 +33,37 @@
   function api(path, opts) { return fetch(path, Object.assign({ credentials: 'same-origin' }, opts || {})); }
   function jpost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   function toast(m) { var t = el('toast'); if (!t) return; t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2600); }
+  // Confirmation oui / non stylée pour les boutons importants (envois d'e-mail, suppressions…)
+  function admConfirm(opts, onYes) {
+    opts = opts || {};
+    var ac = opts.danger ? '#b5462f' : 'var(--terre)';
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box">' +
+      '<div class="admconfirm__title">' + esc(opts.title || 'Confirmer') + '</div>' +
+      (opts.message ? '<div class="admconfirm__msg">' + opts.message + '</div>' : '') +
+      (opts.detail ? '<div class="admconfirm__detail">' + opts.detail + '</div>' : '') +
+      '<div class="admconfirm__row">' +
+        '<button class="btn btn--outline btn--sm" data-no>' + esc(opts.no || 'Non, annuler') + '</button>' +
+        '<button class="btn btn--sm" data-yes style="background:' + ac + ';color:#fff;border-color:' + ac + '">' + esc(opts.yes || 'Oui, envoyer') + '</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () { close(); onYes(); };
+    document.body.appendChild(ov);
+    var y = ov.querySelector('[data-yes]'); if (y) y.focus();
+  }
   function pill(status, label) { return '<span class="pill pill--' + esc(status) + '">' + esc(label || status) + '</span>'; }
   function jsq(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
   function remind(key, kind, title, projectLabel) {
-    jpost('/api/clients/' + key + '/remind', { kind: kind, title: title, projectLabel: projectLabel }).then(function (r) { if (r.ok) toast('Relance envoyée par mail ✓'); else toast('Erreur'); });
+    admConfirm({
+      title: 'Envoyer une relance par e-mail ?',
+      message: 'Le client recevra un e-mail de relance' + (title ? ' concernant « ' + esc(title) + ' »' : '') + '.',
+      yes: 'Oui, relancer', no: 'Non'
+    }, function () {
+      jpost('/api/clients/' + key + '/remind', { kind: kind, title: title, projectLabel: projectLabel }).then(function (r) { if (r.ok) toast('Relance envoyée par mail ✓'); else toast('Erreur'); });
+    });
   }
   function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
@@ -79,7 +107,7 @@
     var groups = [
       ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Mes clients', [['clients', 'Clients'], ['chat', 'Messagerie']]],
-      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis']]],
+      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['emails', 'E-mails']]],
     ];
     function navItemHtml(it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
@@ -129,6 +157,7 @@
     if (VIEW === 'client') return renderClient();
     if (VIEW === 'chat') return renderChat();
     if (VIEW === 'avis') return renderAvis();
+    if (VIEW === 'emails') return renderEmails();
   }
   function topbar(title, right) {
     return '<div class="topbar"><h1>' + esc(title) + '</h1><div class="right">' + (right || '') + '</div></div>';
@@ -143,6 +172,43 @@
       if (d.ok) { toast('Email envoyé ✓'); alert('Resend OK — email envoyé à ' + to + '.'); }
       else { alert('Resend a échoué.\nFrom: ' + (d.from || '(non défini)') + '\nStatut: ' + d.status + '\nErreur: ' + (d.error || '—')); }
     }).catch(function () { toast('Erreur'); });
+  }
+
+  /* ── Textes des e-mails (envois volontaires : bilan + relances) ── */
+  var EMAIL_TPLS = [];
+  function renderEmails() {
+    setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
+      EMAIL_TPLS = d.templates || [];
+      var intro = '<div class="card" style="border-top:3px solid #6c4ea4">' +
+        '<div class="micro">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
+      setMain(topbar('Textes des e-mails') + '<div class="wrap" style="max-width:760px">' + intro + EMAIL_TPLS.map(emailCard).join('') + '</div>');
+    }).catch(function () { setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty">Erreur de chargement.</div></div>'); });
+  }
+  function emailCard(t) {
+    var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
+    return '<div class="card infocard" style="border-top:3px solid #c9952f">' +
+      '<h3><span class="infocard__dot" style="background:#c9952f"></span>' + esc(t.label) + '</h3>' +
+      '<div class="field"><label>Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
+      '<div class="field mt"><label>Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
+      (vars ? '<div class="micro mt">Variables : ' + vars + '</div>' : '') +
+      '<div class="between mt"><button class="btn btn--outline btn--sm" onclick="ADM.emailReset(\'' + t.key + '\')">Rétablir le texte d\'origine</button>' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.emailSave(\'' + t.key + '\')">Enregistrer</button></div></div>';
+  }
+  function emailFind(k) { for (var i = 0; i < EMAIL_TPLS.length; i++) if (EMAIL_TPLS[i].key === k) return EMAIL_TPLS[i]; return null; }
+  function emailPayload() { var p = {}; EMAIL_TPLS.forEach(function (x) { p[x.key] = { subject: x.subject, body: x.body }; }); return p; }
+  function emailSave(k) {
+    var t = emailFind(k); if (!t) return;
+    t.subject = el('em-subj-' + k).value; t.body = el('em-body-' + k).value;
+    jpost('/api/email-templates', { templates: emailPayload() }, 'PUT').then(function (r) { if (r.ok) toast('Texte enregistré ✓'); else toast('Erreur'); });
+  }
+  function emailReset(k) {
+    var t = emailFind(k); if (!t) return;
+    admConfirm({ title: 'Rétablir le texte d\'origine ?', message: 'Le texte personnalisé de cet e-mail sera remplacé par le texte par défaut.', yes: 'Oui, rétablir', no: 'Non' }, function () {
+      t.subject = t.defaultSubject; t.body = t.defaultBody;
+      el('em-subj-' + k).value = t.subject; el('em-body-' + k).value = t.body;
+      jpost('/api/email-templates', { templates: emailPayload() }, 'PUT').then(function (r) { if (r.ok) toast('Texte rétabli ✓'); else toast('Erreur'); });
+    });
   }
   function renderPriorities() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
@@ -854,17 +920,25 @@
 
   function tabInfos() {
     var c = CUR.client, e = CUR.entreprise;
-    return '<div class="card" style="max-width:620px"><div class="between mb"><h3>Coordonnées</h3>' +
-      '<label class="checkbox"><input type="checkbox" id="inf-active"' + (CUR.isActive ? ' checked' : '') + ' onchange="ADM.saveInfos()"> espace actif</label></div>' +
+    var active = CUR.isActive;
+    var coord = '<div class="card infocard" style="border-top:3px solid #6c4ea4">' +
+      '<div class="between mb"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Coordonnées</h3>' +
+      '<label class="checkbox infocard__act' + (active ? ' is-on' : '') + '"><input type="checkbox" id="inf-active"' + (active ? ' checked' : '') + ' onchange="ADM.saveInfos()"> ' + (active ? 'espace actif' : 'espace inactif') + '</label></div>' +
       '<div class="grid grid--2">' +
       fld('inf-prenom', 'Prénom', c.prenom) + fld('inf-nom', 'Nom', c.nom) +
       fld('inf-email', 'Email', c.email) + fld('inf-tel', 'Téléphone', c.telephone) +
       fld('inf-ent-nom', 'Société', e.nom) + fld('inf-ent-adr', 'Adresse', e.adresse) +
       fld('inf-ent-siret', 'SIRET', e.siret) + fld('inf-ent-tva', 'TVA', e.tva) +
       '</div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
-      '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>' +
-      offersCard() + supportsCard() +
-      '<div class="card" style="max-width:680px"><h3>Zone sensible</h3><div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div><button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
+      '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>';
+    var danger = '<div class="card infocard" style="border-top:3px solid #b5462f;background:#fbf1ee">' +
+      '<h3 style="color:#b5462f"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
+      '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
+      '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
+    return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
+      '<div>' + coord + supportsCard() + '</div>' +
+      '<div>' + offersCard() + '</div>' +
+      '</div>' + danger;
   }
   function deleteClient() {
     var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || CUR.client.email || CUR.key;
@@ -879,7 +953,7 @@
       var nm = (s.content && s.content.name) || '';
       return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
-    return '<div class="card" style="max-width:680px"><h3>Supports de com</h3>' +
+    return '<div class="card infocard" style="border-top:3px solid #7da2e0"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
       '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
       (rows || '<div class="empty">Aucun support pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
@@ -905,7 +979,7 @@
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
-    return '<div class="card" style="max-width:680px"><h3>Offres / espaces</h3>' +
+    return '<div class="card infocard" style="border-top:3px solid #c9952f"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
       '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + '</div>';
   }
   function setBanner(pid, color) {
@@ -1043,7 +1117,18 @@
           '<button class="btn btn--sm" onclick="ADM.beneficeAdd()">+ Ajouter</button>' +
         '</div></div>';
   }
-  function bilanRequest() { jpost('/api/clients/' + CURKEY + '/bilan/request', {}, 'POST').then(function (r) { if (r.ok) { toast('Invitation envoyée au client'); loadClient(); } else toast('Erreur'); }); }
+  function bilanRequest() {
+    var email = (CUR && CUR.client && CUR.client.email) || '';
+    var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim();
+    admConfirm({
+      title: 'Envoyer l\'invitation au bilan ?',
+      message: 'Un e-mail sera envoyé' + (nm ? ' à ' + esc(nm) : ' au client') + ' pour l\'inviter à remplir son bilan de fin de collaboration.',
+      detail: email ? 'Destinataire : <strong>' + esc(email) + '</strong>' : 'Attention : aucune adresse e-mail renseignée pour ce client.',
+      yes: 'Oui, envoyer', no: 'Non, ne pas envoyer'
+    }, function () {
+      jpost('/api/clients/' + CURKEY + '/bilan/request', {}, 'POST').then(function (r) { if (r.ok) { toast('Invitation envoyée au client'); loadClient(); } else toast('Erreur'); });
+    });
+  }
   function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indiquez un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
   function beneficeDel(id) { api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); }); }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
@@ -1237,6 +1322,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
+    emailSave: emailSave, emailReset: emailReset,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
