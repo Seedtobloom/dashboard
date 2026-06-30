@@ -324,6 +324,17 @@ async function handleClientApi(
     return handleAdminMessage(request, env, key, data);
   }
   if (method === 'POST' && sub === '/remind') return handleRemind(request, env, key, data);
+  const pinm = sub.match(/^\/message\/([a-f0-9]+)\/pin$/);
+  if (pinm && method === 'PATCH') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    const msg = (container.chat || []).find((x: AnyObj) => x.id === pinm[1]);
+    if (!msg) return json({ error: 'Message introuvable' }, 404);
+    msg.pinned = body.pinned === true;
+    await saveClient(env, key, data);
+    return json({ ok: true, pinned: msg.pinned });
+  }
   // Marque lus (côté admin) les messages client d'un projet
   if (method === 'POST' && sub === '/message/read') {
     const body = await readJson(request);
