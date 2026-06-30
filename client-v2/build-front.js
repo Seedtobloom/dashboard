@@ -50,7 +50,7 @@ js = js.split('.catch(showError)').join('.catch(showLogin)');
 must(js.indexOf("[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes']].map(function(t){") !== -1, 'partner tabs');
 js = js.replace(
   "[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes']].map(function(t){",
-  "[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['msg','Messages'],['liv','Livrables']].map(function(t){"
+  "[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['liv','Livrables']].map(function(t){"
 );
 // 2) dispatch de l'onglet partenaire (Notes retiré, Messages + Livrables ajoutés)
 must(js.indexOf("    if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);") !== -1, 'partner dispatch');
@@ -62,7 +62,7 @@ js = js.replace(
 must(js.indexOf('    var sideTabs = [];') !== -1, 'sideTabs init');
 js = js.replace(
   '    var sideTabs = [];',
-  "    var sideTabs = [];\n    if (project.type !== 'partenaire') sideTabs.push({ id:'msg', label:'Messages' });\n    if (project.type !== 'partenaire' && (project.deliverables||[]).length) sideTabs.push({ id:'liv', label:'Livrables' });"
+  "    var sideTabs = [];\n    if (project.type !== 'partenaire' && (project.deliverables||[]).length) sideTabs.push({ id:'liv', label:'Livrables' });"
 );
 // 4) panneau chat + tabs toujours rendus quand il y a des onglets latéraux
 must(js.indexOf("    var sideCol = (adminSharedFiles.length ? tabs + filesPanel : '') + pracPanel + meetPanel + fileExchangeCard + helpCard;") !== -1, 'sideCol');
