@@ -18,22 +18,53 @@
     projects.sort(function(a, b){ return (a.project.id === 'branding' ? 0 : 1) - (b.project.id === 'branding' ? 0 : 1); });
     l.innerHTML = projects.length ? projects.map(function(pd){ return stbFileItem(pd, pd.project.id === 'branding'); }).join('') : '<div style="padding:18px;color:#9a93a5;font-size:13px">Aucun projet.</div>';
   }
+  function stbFileRow(p, f){
+    var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
+    var action = f.locked
+      ? cpIcon('lock',15,'color:#b9a4e0;flex-shrink:0')
+      : (f.source === 'client'
+          ? '<button onclick="window.stbFileDelete(\''+p.id+'\',\''+encodeURIComponent(f.key)+'\')" title="Supprimer ce fichier" style="background:none;border:none;cursor:pointer;color:#c0533b;flex-shrink:0;padding:0;display:flex;align-items:center">'+cpIcon('trash',15)+'</button>'
+          : '');
+    return '<div style="display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;margin-bottom:8px;background:var(--card,#fff)">'+cpIcon('file',18,'color:#9a8a72;flex-shrink:0')+'<a href="'+dl+'" target="_blank" style="flex:1;min-width:0;font-size:13.5px;color:var(--terre,#412F21);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><a href="'+dl+'" target="_blank" title="Télécharger" style="flex-shrink:0;color:#9a8a72;display:flex;align-items:center">'+cpIcon('download',16)+'</a>'+action+'</div>';
+  }
   function stbFilesPane(pd){
     var p = pd.project; var files = pd.files || [];
     var common = p.id === 'branding';
-    var rows = files.length ? files.map(function(f){
-      var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
-      var action = f.locked
-        ? cpIcon('lock',15,'color:#b9a4e0;flex-shrink:0')
-        : (f.source === 'client'
-            ? '<button onclick="window.stbFileDelete(\''+p.id+'\',\''+encodeURIComponent(f.key)+'\')" title="Supprimer ce fichier" style="background:none;border:none;cursor:pointer;color:#c0533b;flex-shrink:0;padding:0;display:flex;align-items:center">'+cpIcon('trash',15)+'</button>'
-            : '');
-      return '<div style="display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;margin-bottom:8px;background:var(--card,#fff)">'+cpIcon('file',18,'color:#9a8a72;flex-shrink:0')+'<a href="'+dl+'" target="_blank" style="flex:1;min-width:0;font-size:13.5px;color:var(--terre,#412F21);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><a href="'+dl+'" target="_blank" title="Télécharger" style="flex-shrink:0;color:#9a8a72;display:flex;align-items:center">'+cpIcon('download',16)+'</a>'+action+'</div>';
-    }).join('') : '<div style="color:#9a93a5;font-size:13px;text-align:center;margin:30px 0 18px">Aucun fichier pour ce projet.</div>';
-    var drop = '<label id="cp-files-drop" ondragover="event.preventDefault();this.style.borderColor=\'#b9a4e0\';this.style.background=\'#fbf8ff\'" ondragleave="this.style.borderColor=\'var(--bone-d,#e8e0d4)\';this.style.background=\'#fffdf9\'" ondrop="event.preventDefault();this.style.borderColor=\'var(--bone-d,#e8e0d4)\';this.style.background=\'#fffdf9\';window.stbFilesUpload(\''+p.id+'\',event.dataTransfer.files)" style="display:block;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:#9a8a72;font-size:13px;cursor:pointer;margin-top:6px;background:#fffdf9">'+cpIcon('upload',18,'color:#9a8a72;margin:0 auto 6px')+'<div>Déposez un fichier ici ou cliquez pour le déposer</div><input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\''+p.id+'\',this.files)"></label>';
+    var folders = (p.folders || []).slice();
+    function section(name, items, isFolder){
+      var rows = items.length ? items.map(function(f){ return stbFileRow(p, f); }).join('') : '<div style="color:#bcae99;font-size:12px;padding:4px 2px 8px">Vide pour l\'instant.</div>';
+      var del = isFolder ? '<button onclick="window.stbFolderDel(\''+p.id+'\',\''+encodeURIComponent(name)+'\')" title="Supprimer le dossier" style="background:none;border:none;color:#c0533b;cursor:pointer;font-size:11px;text-decoration:underline">Supprimer</button>' : '';
+      return '<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="display:flex;align-items:center;gap:7px;font-family:\'Inter Tight\',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre,#412F21)">'+cpIcon(isFolder?'folder':'file',14,'color:#b08968')+esc(name)+'</span>'+del+'</div>'+rows+'</div>';
+    }
+    var body = section('Général', files.filter(function(f){ return !f.folder; }), false);
+    folders.forEach(function(fn){ body += section(fn, files.filter(function(f){ return f.folder === fn; }), true); });
+    var inS = 'border:1px solid var(--bone-d,#e8e0d4);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13px;color:var(--terre,#412F21);background:var(--card,#fff);box-sizing:border-box';
+    var newFolder = '<div style="display:flex;gap:8px;margin-bottom:16px"><input id="cp-new-folder" placeholder="Créer un dossier (ex. Inspirations)" style="'+inS+';flex:1"><button onclick="window.stbFolderAdd(\''+p.id+'\')" style="border:none;border-radius:9px;background:var(--terre,#412F21);color:#fff;font-size:12.5px;font-weight:600;padding:0 14px;cursor:pointer;font-family:inherit;white-space:nowrap">+ Dossier</button></div>';
+    var folderOpts = '<option value="">Général</option>'+folders.map(function(fn){ return '<option value="'+esc(fn)+'">'+esc(fn)+'</option>'; }).join('');
+    var drop = '<div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span style="font-size:12px;color:#9a8a72;white-space:nowrap">Déposer dans</span><select id="cp-files-dropfolder" style="'+inS+'">'+folderOpts+'</select></div>'+
+      '<label id="cp-files-drop" ondragover="event.preventDefault();this.style.borderColor=\'#b9a4e0\';this.style.background=\'#fbf8ff\'" ondragleave="this.style.borderColor=\'var(--bone-d,#e8e0d4)\';this.style.background=\'#fffdf9\'" ondrop="event.preventDefault();this.style.borderColor=\'var(--bone-d,#e8e0d4)\';this.style.background=\'#fffdf9\';window.stbFilesUpload(\''+p.id+'\',event.dataTransfer.files)" style="display:block;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:18px;text-align:center;color:#9a8a72;font-size:13px;cursor:pointer;margin-top:8px;background:#fffdf9">'+cpIcon('upload',18,'color:#9a8a72;margin:0 auto 6px')+'<div>Déposez un fichier ici ou cliquez pour le déposer</div><input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\''+p.id+'\',this.files)"></label>';
     return '<div style="padding:15px 22px;border-bottom:1px solid var(--bone-d,#e8e0d4);background:var(--card,#fff);flex-shrink:0;display:flex;align-items:center;gap:10px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:19px;color:var(--terre,#412F21)">'+esc(p.projectTitle || p.id)+'</span>'+(common?'<span style="font-size:11px;color:#9a93a5">ressources communes</span>':'')+'</div>'+
-      '<div style="flex:1;overflow-y:auto;padding:18px 22px;background:var(--bone,#faf7f1);min-height:0">'+rows+drop+'</div>';
+      '<div style="flex:1;overflow-y:auto;padding:18px 22px;background:var(--bone,#faf7f1);min-height:0">'+newFolder+body+drop+'</div>';
   }
+  window.stbFolderAdd = function(pid){
+    var inp = document.getElementById('cp-new-folder'); var name = inp ? (inp.value||'').trim() : '';
+    if (!name) return;
+    var pd = getPD(pid); if (!pd) return;
+    fetch('/api/client/' + TOKEN + '/folders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){ if (res.ok && res.d && res.d.name){ if (!pd.project.folders) pd.project.folders = []; if (pd.project.folders.indexOf(res.d.name)===-1) pd.project.folders.push(res.d.name); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Erreur'); })
+      .catch(function(){ alert('Erreur'); });
+  };
+  window.stbFolderDel = function(pid, encName){
+    var name = decodeURIComponent(encName);
+    window.cpConfirmDA('Supprimer le dossier « '+name+' » et les fichiers qu\'il contient ?', 'Supprimer', function(){
+      var pd = getPD(pid); if (!pd) return;
+      fetch('/api/client/' + TOKEN + '/folders', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if (res.ok){ pd.project.folders = (pd.project.folders||[]).filter(function(x){ return x !== name; }); pd.files = (pd.files||[]).filter(function(f){ return f.folder !== name; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Erreur'); })
+        .catch(function(){ alert('Erreur'); });
+    });
+  };
   window.cpConfirmDA = function(message, confirmLabel, onConfirm){
     var ov = document.createElement('div');
     ov.id = 'cp-confirm';
@@ -62,10 +93,11 @@
   window.stbFilesUpload = function(pid, files){
     if (!files || !files.length) return;
     var pd = getPD(pid); if (!pd) return;
+    var folderSel = document.getElementById('cp-files-dropfolder'); var folder = folderSel ? folderSel.value : '';
     var drop = document.getElementById('cp-files-drop'); if (drop) drop.innerHTML = '<div style="color:#9a8a72">Envoi en cours…</div>';
     var arr = Array.prototype.slice.call(files); var done = 0;
     arr.forEach(function(f){
-      var fd = new FormData(); fd.append('file', f); fd.append('projectId', pid);
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', pid); if (folder) fd.append('folder', folder);
       fetch('/api/client/' + TOKEN + '/files', { method:'POST', body: fd })
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
         .then(function(res){ if (res.ok && res.d && res.d.key){ if (!pd.files) pd.files = []; pd.files.push(res.d); } done++; if (done === arr.length) window.stbFilesSelect(pid); })

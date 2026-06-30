@@ -170,6 +170,8 @@ async function handleClientApi(
   // Fichiers
   if (method === 'POST' && sub === '/files') return handleFileUpload(request, env, masterKey, data);
   if (method === 'DELETE' && sub === '/files') return handleClientFileDelete(request, env, masterKey, data, url);
+  if (method === 'POST' && sub === '/folders') return handleFolderAdd(request, env, masterKey, data);
+  if (method === 'DELETE' && sub === '/folders') return handleFolderDelete(request, env, masterKey, data);
   const dl = sub.match(/^\/files\/(.+)\/download$/);
   if (dl && method === 'GET') return handleFileDownload(env, masterKey, decodeURIComponent(dl[1]));
 
@@ -365,6 +367,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         resources: Array.isArray(pc.resources) ? pc.resources : [],
         deliverables: mapDeliverables(pc.livrables),
         bannerColor: pc.bannerColor || null,
+        folders: foldersFor(pc, files),
         steps: [],
         practicalInfo: { sections: [] },
       },
@@ -396,6 +399,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         steps,
         deliverables: mapDeliverables(sw.livrables),
         bannerColor: sw.bannerColor || null,
+        folders: foldersFor(sw, files),
         practicalInfo: { sections: [] },
       },
       messages: mapChatToMessages(sw.chat || []),
@@ -417,6 +421,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         steps: [],
         deliverables: mapDeliverables(iv.livrables),
         bannerColor: iv.bannerColor || null,
+        folders: foldersFor(iv, files),
         practicalInfo: { sections: [] },
       },
       messages: mapChatToMessages(iv.chat || []),
@@ -450,6 +455,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
           steps,
           deliverables: mapDeliverables(obj.livrables),
         bannerColor: obj.bannerColor || null,
+          folders: foldersFor(obj, files),
           practicalInfo: { sections: [] },
         },
         messages: mapChatToMessages(obj.chat || []),
@@ -758,6 +764,43 @@ function guessType(name: string): string {
   return 'application/octet-stream';
 }
 
+function sanitizeFolder(s: string): string {
+  return (s || '').toString().normalize('NFC').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+}
+function foldersFor(container: AnyObj | null, files: AnyObj[]): string[] {
+  const set: Record<string, boolean> = {};
+  if (container && Array.isArray(container.folders)) container.folders.forEach((f: string) => { if (f) set[f] = true; });
+  files.forEach((f) => { if (f.folder) set[f.folder] = true; });
+  return Object.keys(set).sort((a, b) => a.localeCompare(b));
+}
+async function handleFolderAdd(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
+  if (!container) return json({ error: 'Project not found' }, 404);
+  const name = sanitizeFolder(body.name || '');
+  if (!name) return json({ error: 'Nom de dossier requis' }, 400);
+  if (!Array.isArray(container.folders)) container.folders = [];
+  if (container.folders.indexOf(name) === -1) container.folders.push(name);
+  await save(env, masterKey, data);
+  return json({ ok: true, name }, 201);
+}
+async function handleFolderDelete(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const { container, folder } = resolveProject(getEspace(data), (body.projectId || '').toString());
+  if (!container || !folder) return json({ error: 'Project not found' }, 404);
+  const name = sanitizeFolder(body.name || '');
+  container.folders = (Array.isArray(container.folders) ? container.folders : []).filter((f: string) => f !== name);
+  const prefix = `${masterKey}/${folder}/${name}/`;
+  let cursor: string | undefined;
+  do {
+    const l = await env.R2_FILES.list({ prefix, cursor } as R2ListOptions);
+    for (const o of l.objects) await env.R2_FILES.delete(o.key);
+    cursor = l.truncated ? l.cursor : undefined;
+  } while (cursor);
+  await save(env, masterKey, data);
+  return json({ ok: true });
+}
+
 function markLocked(files: AnyObj[], container: AnyObj | null): AnyObj[] {
   const lk = container && Array.isArray(container.lockedKeys) ? container.lockedKeys : [];
   files.forEach((f) => { f.locked = lk.indexOf(f.key) !== -1; });
@@ -769,12 +812,18 @@ async function listFiles(env: Env, prefix: string): Promise<AnyObj[]> {
   const listed = await env.R2_FILES.list({ prefix, include: ['httpMetadata', 'customMetadata'] } as R2ListOptions);
   for (const obj of listed.objects) {
     if (obj.size === 0) continue;
-    const name = obj.key.slice(prefix.length);
-    if (!name || name.includes('/')) continue;
+    const rel = obj.key.slice(prefix.length);
+    if (!rel) continue;
+    const parts = rel.split('/');
+    if (parts.length > 2) continue; // un seul niveau de dossier
+    const folder = parts.length === 2 ? parts[0] : '';
+    const name = parts[parts.length - 1];
+    if (!name) continue;
     const cm = (obj.customMetadata || {}) as AnyObj;
     out.push({
       key: obj.key,
       name,
+      folder,
       size: obj.size,
       type: (obj.httpMetadata && obj.httpMetadata.contentType) || guessType(name),
       source: cm.source === 'client' ? 'client' : 'cindy',
@@ -795,13 +844,14 @@ async function handleFileUpload(request: Request, env: Env, masterKey: string, d
   if (!file) return json({ error: 'file is required' }, 400);
   const { container, folder } = resolveProject(getEspace(data), projectId);
   if (!container || !folder) return json({ error: 'Project not found' }, 404);
+  const sub = sanitizeFolder((form.get('folder') as string) || '');
 
-  const key = `${masterKey}/${folder}/${file.name}`;
+  const key = `${masterKey}/${folder}/${sub ? sub + '/' : ''}${file.name}`;
   await env.R2_FILES.put(key, file.stream(), {
     httpMetadata: { contentType: file.type || guessType(file.name) },
     customMetadata: { source: 'client', category: 'document' },
   });
-  return json({ key, name: file.name, type: file.type || guessType(file.name), size: file.size, source: 'client' }, 201);
+  return json({ key, name: file.name, folder: sub, type: file.type || guessType(file.name), size: file.size, source: 'client' }, 201);
 }
 
 async function handleClientFileDelete(_request: Request, env: Env, masterKey: string, data: AnyObj, url: URL): Promise<Response> {
