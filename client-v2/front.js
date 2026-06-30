@@ -1842,7 +1842,6 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // On ne l'affiche plus dans le board du projet, uniquement fichiers / infos / réunion.
     var adminSharedFiles = files.filter(function(f){ return f.source !== 'client'; });
     var sideTabs = [];
-    if (project.type !== 'partenaire') sideTabs.push({ id:'msg', label:'Messages' });
     if (project.type !== 'partenaire' && (project.deliverables||[]).length) sideTabs.push({ id:'liv', label:'Livrables' });
     if (adminSharedFiles.length) sideTabs.push({ id:'files', label:'Fichiers' });
     if (((project.practicalInfo||{}).sections||[]).length) sideTabs.push({ id:'prac', label:'Infos pratiques' });
@@ -2597,7 +2596,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px">' +
       '<div style="display:flex;gap:0">' +
-        [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['msg','Messages'],['liv','Livrables']].map(function(t){
+        [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['liv','Livrables']].map(function(t){
           return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
         }).join('') +
       '</div>' +
