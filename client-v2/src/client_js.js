@@ -3701,14 +3701,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (startDate) body.startDate = startDate;
     if (pole)      body.pole      = pole;
     if (Object.keys(properties).length) body.properties = properties;
-    fetch(API_BASE + '/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+    fetch(API_BASE + '/tasks', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('save ' + r.status + ' ' + (t||'').slice(0,140)); }); return r.json(); })
       .then(function(task) {
         var pd = getPD(pid);
         if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
         if (dueDate) cliCalSelected[pid] = dueDate;
-        toast('Demande ajoutee'); renderShell();
-      }).catch(function(){ toast('Erreur, reessayez.'); });
+        toast('Demande ajoutee');
+        try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
+      }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'reessayez')); });
   };
 
   function cliDoAddTask(pid) {
@@ -3716,14 +3717,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!f.title.trim()) { toast('Titre requis'); return; }
     document.getElementById('cli-add-task-overlay').remove();
     var body = Object.assign({ projectId: pid }, f);
-    fetch(API_BASE + '/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+    fetch(API_BASE + '/tasks', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('save ' + r.status + ' ' + (t||'').slice(0,140)); }); return r.json(); })
       .then(function(task) {
         var pd = getPD(pid);
         if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
         if (body.dueDate) cliCalSelected[pid] = body.dueDate;
-        toast('Tâche ajoutée ✓'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+        toast('Tâche ajoutée ✓');
+        try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
+      }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'réessayez')); });
   }
 
   window.cliEditTask = function(taskId, pid) {
