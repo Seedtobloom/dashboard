@@ -512,6 +512,7 @@ function buildClientDetail(_env, key, data) {
         client: c,
         entreprise: getEntreprise(c),
         isActive: esp.isActive === true,
+        meetingLink: esp.meetingLink || '',
         conversation: esp.conversation || [],
         spaceFeedback: esp.spaceFeedback || [],
         domains,
@@ -564,6 +565,8 @@ async function handleClientPatch(request, env, key, data) {
     }
     if (typeof body.isActive === 'boolean')
         esp.isActive = body.isActive;
+    if ('meetingLink' in body)
+        esp.meetingLink = (body.meetingLink || '').toString().trim().slice(0, 500);
     // re-wrap entreprise
     if (!Array.isArray(c.entreprise))
         c.entreprise = [e];

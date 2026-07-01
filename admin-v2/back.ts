@@ -475,6 +475,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     client: c,
     entreprise: getEntreprise(c),
     isActive: esp.isActive === true,
+    meetingLink: esp.meetingLink || '',
     conversation: esp.conversation || [],
     spaceFeedback: esp.spaceFeedback || [],
     domains,
@@ -524,6 +525,7 @@ async function handleClientPatch(request: Request, env: Env, key: string, data: 
     ['nom', 'adresse', 'siret', 'tva'].forEach((k) => { if (k in body.entreprise) e[k] = (body.entreprise[k] || '').toString(); });
   }
   if (typeof body.isActive === 'boolean') esp.isActive = body.isActive;
+  if ('meetingLink' in body) esp.meetingLink = (body.meetingLink || '').toString().trim().slice(0, 500);
   // re-wrap entreprise
   if (!Array.isArray(c.entreprise)) c.entreprise = [e];
   await saveClient(env, key, data);

@@ -931,7 +931,11 @@
       fld('inf-email', 'Email', c.email) + fld('inf-tel', 'Téléphone', c.telephone) +
       fld('inf-ent-nom', 'Société', e.nom) + fld('inf-ent-adr', 'Adresse', e.adresse) +
       fld('inf-ent-siret', 'SIRET', e.siret) + fld('inf-ent-tva', 'TVA', e.tva) +
-      '</div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
+      '</div>' +
+      '<div class="field mt"><label>Lien visio (bouton « Rejoindre la visio » dans son espace)</label>' +
+        '<input id="inf-visio" class="inp" value="' + esc(CUR.meetingLink || '') + '" placeholder="https://kmeet.infomaniak.com/… (collez le lien de votre salle)"></div>' +
+      '<div class="micro" style="margin-top:5px">Laissez vide pour masquer le bouton. Créez la salle sur Infomaniak kMeet et collez le lien ici.</div>' +
+      '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
       '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>';
     var danger = '<div class="card infocard" style="background:#fbf1ee">' +
       '<h3 style="color:#b5462f"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
@@ -1002,6 +1006,7 @@
       entreprise: { nom: el('inf-ent-nom').value, adresse: el('inf-ent-adr').value, siret: el('inf-ent-siret').value, tva: el('inf-ent-tva').value },
       isActive: el('inf-active').checked,
     };
+    if (el('inf-visio')) body.meetingLink = el('inf-visio').value;
     jpost('/api/clients/' + CURKEY, body, 'PATCH').then(function (r) { if (r.ok) { toast('Enregistré'); loadClient(); } else toast('Erreur'); });
   }
 
