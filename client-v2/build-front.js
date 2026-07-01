@@ -18,6 +18,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 let css = read('src/client_css.js');     // var CLIENT_CSS = String.raw`...`;
 let js = read('src/client_js.js');       // var CLIENT_JS  = String.raw`...`;
 let html = read('src/client_html.js');   // var CLIENT_HTML = `...`;
+const favicon = read('favicon.svg');
 const patch = read('_login_patch.js');
 const chatPatch = read('_chat_patch.js');
 const livPatch = read('_deliverables_patch.js');
@@ -281,6 +282,7 @@ const handler = [
   '    }',
   "    if (url.pathname === '/client.css') return new Response(CLIENT_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
   "    if (url.pathname === '/client.js') return new Response(CLIENT_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
+  "    if (url.pathname === '/favicon.svg') return new Response(CLIENT_FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
   "    return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });",
   '  }',
   '};',
@@ -288,7 +290,8 @@ const handler = [
   '',
 ].join('\n');
 
-const out = handler + css + '\n\n' + js + '\n\n' + html + '\n';
+const favConst = 'const CLIENT_FAVICON = ' + JSON.stringify(favicon) + ';\n';
+const out = handler + favConst + css + '\n\n' + js + '\n\n' + html + '\n';
 fs.writeFileSync(path.join(ROOT, 'front.js'), out);
 console.log('front.js écrit (' + out.length + ' octets)');
 
