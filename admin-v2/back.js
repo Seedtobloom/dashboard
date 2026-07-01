@@ -853,7 +853,21 @@ async function handleUpload(request, env, key, data) {
         if (container) {
             if (!Array.isArray(container.livrables))
                 container.livrables = [];
-            deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '' };
+            // Réponse à une révision : si un livrable de cette tâche est « à revoir », on le met à jour (nouvelle version) au lieu d'en créer un doublon.
+            const existing = taskId ? container.livrables.find((l) => l.taskId === taskId && (l.status === 'refuse' || l.status === 'revision')) : null;
+            if (existing) {
+                existing.name = file.name;
+                existing.fileKey = r2key;
+                existing.status = 'a_valider';
+                existing.clientComment = '';
+                existing.validatedAt = null;
+                existing.createdAt = nowIso();
+                deliverable = existing;
+            }
+            else {
+                deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '' };
+                container.livrables.push(deliverable);
+            }
             // Rattachement à une tâche : on mémorise son titre et on passe la tâche en « à valider ».
             if (taskId && Array.isArray(container.taches)) {
                 const tk = container.taches.find((t) => t.id === taskId);
@@ -863,7 +877,6 @@ async function handleUpload(request, env, key, data) {
                     deliverable.reviewLink = tk.reviewLink || '';
                 }
             }
-            container.livrables.push(deliverable);
             await saveClient(env, key, data);
             await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(file.name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
         }
@@ -945,18 +958,23 @@ async function handleDashboard(env) {
     const deadlines = [];
     const forfaits = [];
     const pendingValidation = [];
+    const revisions = [];
     for (const ci of idx) {
         const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' }));
         if (!data)
             continue;
         const esp = getEspace(data);
         const who = clientName(data);
-        // livrables déposés en attente de validation client (avancement des rendus)
-        const collectLiv = (container, label) => {
+        // livrables : en attente de validation client, ou révision demandée par le client
+        const collectLiv = (container, label, projectId) => {
             if (container && Array.isArray(container.livrables)) {
                 container.livrables.forEach((l) => {
-                    if ((l.status || 'a_valider') === 'a_valider') {
+                    const st = l.status || 'a_valider';
+                    if (st === 'a_valider') {
                         pendingValidation.push({ key: ci.key, client: who, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskTitle: l.taskTitle || '' });
+                    }
+                    else if (st === 'refuse' || st === 'revision') {
+                        revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null });
                     }
                 });
             }
@@ -970,14 +988,14 @@ async function handleDashboard(env) {
                     deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate, status: t.status });
             });
         }
-        collectLiv(pc, 'Partenaire créative');
+        collectLiv(pc, 'Partenaire créative', 'partner');
         // étapes de suivi non terminées (site + supports)
         const sw = getDomainObj(esp, 'siteWeb');
         if (sw)
             (sw.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
                 deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
-        collectLiv(sw, 'Site web');
-        collectLiv(getDomainObj(esp, 'identiteVisuelle'), 'Identité visuelle');
+        collectLiv(sw, 'Site web', 'website');
+        collectLiv(getDomainObj(esp, 'identiteVisuelle'), 'Identité visuelle', 'branding');
         const sd = esp.supportsDeCom && esp.supportsDeCom[0];
         if (sd)
             for (const pid of Object.keys(sd)) {
@@ -985,12 +1003,13 @@ async function handleDashboard(env) {
                 if (o)
                     (o.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
                         deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
-                collectLiv(o, supportLabel(pid));
+                collectLiv(o, supportLabel(pid), 'support-' + pid);
             }
     }
     deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
     pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    return json({ deadlines, forfaits, pendingValidation, clientCount: idx.length });
+    revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    return json({ deadlines, forfaits, pendingValidation, revisions, clientCount: idx.length });
 }
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
 async function handleDone(env) {

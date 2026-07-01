@@ -319,6 +319,28 @@
         ? '<div class="focusband"><div class="focusband__h"><span class="focusband__ic">◆</span>Focus du jour<span class="focusband__c">' + focusItems.length + '</span></div>' + focusItems.map(focusRow).join('') + '</div>'
         : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, vous êtes à jour.</div>';
 
+      // Révisions demandées par le client : la balle est dans votre camp
+      var revs = d.revisions || [];
+      function revRow(r) {
+        return '<div class="focusrow" style="background:#fbf1ee;align-items:flex-start">' +
+          '<span class="pdot" style="background:#a23c28;margin-top:6px;flex-shrink:0"></span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:600;color:var(--terre);font-size:14px">' + esc(r.name) + (r.taskTitle ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
+            '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
+            (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:13px;color:var(--terre);margin-top:5px;line-height:1.4">« ' + esc(r.comment) + ' »</div>' : '') +
+          '</div>' +
+          '<div class="prow__act" style="flex-shrink:0">' +
+            ((r.project === 'partner' && r.taskId) ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') +
+            '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' +
+          '</div>' +
+        '</div>';
+      }
+      var revBand = revs.length
+        ? '<div class="focusband" style="border-color:#e7c6bd"><div class="focusband__h" style="color:#a23c28"><span class="focusband__ic" style="color:#a23c28">↻</span>Révisions demandées<span class="focusband__c" style="background:#a23c28">' + revs.length + '</span></div>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
+          revs.map(revRow).join('') + '</div>'
+        : '';
+
       // Relances intelligentes : on trie par ancienneté d'attente et on signale ce qui traîne
       var waitAll = waiting.map(function (x) { return { kind: 'step', x: x, since: -ddiff(x.dueDate) }; })
         .concat(pv.map(function (l) { return { kind: 'dlv', x: l, since: -ddiff(l.createdAt) }; }));
@@ -349,7 +371,7 @@
           '</div>';
       }).join('');
 
-      setMain(topbar('Priorités', right) + '<div class="wrap">' + focusBand + kpis +
+      setMain(topbar('Priorités', right) + '<div class="wrap">' + revBand + focusBand + kpis +
         '<div class="pcols">' +
           '<div class="card infocard" style="background:var(--card)"><h3 style="color:#5e3fa0"><span class="infocard__dot" style="background:#5e3fa0"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
