@@ -24,6 +24,7 @@
     avis: 'M11.5 3l2.5 5.1 5.6.8-4 3.9 1 5.6-5-2.6-5 2.6 1-5.6-4-3.9 5.6-.8z',
     emails: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 7l-10 6L2 7',
     video: 'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
+    reglages: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
@@ -110,7 +111,7 @@
     var groups = [
       ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Mes clients', [['clients', 'Clients'], ['chat', 'Messagerie']]],
-      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['emails', 'E-mails']]],
+      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['emails', 'E-mails'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
@@ -161,6 +162,7 @@
     if (VIEW === 'chat') return renderChat();
     if (VIEW === 'avis') return renderAvis();
     if (VIEW === 'emails') return renderEmails();
+    if (VIEW === 'reglages') return renderReglages();
   }
   function topbar(title, right) {
     return '<div class="topbar"><h1>' + esc(title) + '</h1><div class="right">' + (right || '') + '</div></div>';
@@ -212,6 +214,44 @@
       el('em-subj-' + k).value = t.subject; el('em-body-' + k).value = t.body;
       jpost('/api/email-templates', { templates: emailPayload() }, 'PUT').then(function (r) { if (r.ok) toast('Texte rétabli ✓'); else toast('Erreur'); });
     });
+  }
+
+  /* ── Réglages : types de mission (taxonomie partagée avec l'espace client) ── */
+  var MISSION_LIST = [];
+  function renderReglages() {
+    setMain(topbar('Réglages') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) {
+      MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : [];
+      renderReglagesBody();
+    }).catch(showError);
+  }
+  function missionReadInputs() { return MISSION_LIST.map(function (_, i) { var e = el('mt-type-' + i); return e ? e.value : MISSION_LIST[i]; }); }
+  function renderReglagesBody() {
+    var rows = MISSION_LIST.map(function (t, i) {
+      return '<div class="row" style="gap:8px;margin-bottom:8px"><input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" style="flex:1"><button class="btn btn--danger btn--sm" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
+    }).join('');
+    var card = '<div class="card infocard" style="background:#f6f0ff;max-width:640px"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Types de mission</h3>' +
+      '<div class="micro mb">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifiez, ajoutez ou retirez selon vos besoins, puis enregistrez.</div>' +
+      (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
+      '<div class="row mt" style="gap:8px"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
+      '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
+    setMain(topbar('Réglages') + '<div class="wrap">' + card + '</div>');
+  }
+  function missionTypeAdd() {
+    MISSION_LIST = missionReadInputs();
+    var nv = (el('mt-type-new').value || '').trim();
+    if (nv) MISSION_LIST.push(nv);
+    renderReglagesBody();
+  }
+  function missionTypeDel(i) {
+    MISSION_LIST = missionReadInputs();
+    MISSION_LIST.splice(i, 1);
+    renderReglagesBody();
+  }
+  function missionTypeSave() {
+    var list = missionReadInputs().map(function (s) { return (s || '').trim(); }).filter(Boolean);
+    if (!list.length) { toast('La liste ne peut pas être vide'); return; }
+    jpost('/api/mission-types', { types: list }, 'PUT').then(function (r) { if (r.ok) { toast('Types de mission enregistrés ✓'); MISSION_LIST = list; renderReglagesBody(); } else toast('Erreur'); });
   }
   function renderPriorities() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
@@ -1374,6 +1414,7 @@
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, taskArchive: taskArchive, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset,
+    missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,

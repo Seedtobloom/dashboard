@@ -82,6 +82,10 @@ export default {
         if (method === 'GET') return handleEmailTemplatesGet(env);
         if (method === 'PUT') return handleEmailTemplatesSave(request, env);
       }
+      if (pathname === '/api/mission-types') {
+        if (method === 'GET') return handleMissionTypesGet(env);
+        if (method === 'PUT') return handleMissionTypesSave(request, env);
+      }
 
       // Tâches personnelles de l'admin (stockées dans KV_ADMIN)
       if (pathname === '/api/admin/tasks') {
@@ -1127,6 +1131,32 @@ async function handleEmailTemplatesSave(request: Request, env: Env): Promise<Res
   }
   await env.KV_ADMIN.put('email_templates', JSON.stringify(stored));
   return json({ ok: true });
+}
+
+/* ── Types de mission (taxonomie studio, partagée avec l'espace client via KV_CLIENT) ── */
+const MISSION_TYPES_DEFAULT = [
+  'Mise à jour / optimisation de supports existants',
+  'Visuels réseaux sociaux & communication digitale',
+  'Ajustements & évolutions graphiques',
+  'Déclinaison multi-formats / multi-canaux',
+  'Mise en page de documents',
+  'Modèles réutilisables (templates)',
+  'Conseil graphique & cohérence visuelle',
+  'Autre',
+];
+async function handleMissionTypesGet(env: Env): Promise<Response> {
+  const stored = (await env.KV_CLIENT.get('global:missionTypes', { type: 'json' })) as string[] | null;
+  const has = Array.isArray(stored) && stored.length > 0;
+  return json({ types: has ? stored : MISSION_TYPES_DEFAULT, isDefault: !has });
+}
+async function handleMissionTypesSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const arr = Array.isArray(body.types)
+    ? body.types.map((x: unknown) => String(x == null ? '' : x).trim()).filter((x: string) => !!x).slice(0, 40)
+    : [];
+  if (!arr.length) return json({ error: 'La liste ne peut pas être vide' }, 400);
+  await env.KV_CLIENT.put('global:missionTypes', JSON.stringify(arr));
+  return json({ ok: true, types: arr });
 }
 
 async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string): Promise<void> {
