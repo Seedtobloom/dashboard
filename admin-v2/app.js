@@ -498,7 +498,9 @@
       subsHtml + subAdd +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:12px">' +
         '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcColor + '">' + mtClock(spent) + '</span>' +
-        '<div class="row" style="gap:5px">' + timerBtn +
+        '<div class="row" style="gap:5px">' +
+          ((!dn && !t.archived) ? '<button class="pbtn" onclick="ADM.mtEditOpen(\'' + t.id + '\')" title="Modifier la tâche">Modifier</button>' : '') +
+          timerBtn +
           (t.archived
             ? '<button class="pbtn" onclick="ADM.myTaskArchive(\'' + t.id + '\',false)">Restaurer</button>'
             : (dn
@@ -602,6 +604,42 @@
   function mtSaveNote(id) {
     var ta = el('mt-note-ta-' + id); var val = ta ? ta.value : '';
     jpost('/api/admin/tasks/' + id, { notes: val }, 'PATCH').then(function (r) { if (r.ok) { var t = MT_TASKS.find(function (x) { return x.id === id; }); if (t) t.notes = val; mtNoteRestore(id); toast('Note enregistrée'); } else toast('Erreur'); });
+  }
+  function mtEditOpen(id) {
+    var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
+    var prioOpts = [['haute', 'Haute'], ['normale', 'Normale'], ['basse', 'Basse']].map(function (o) { return '<option value="' + o[0] + '"' + ((t.priority || 'normale') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+    var recOpts = [['', 'Ne pas répéter'], ['daily', 'Chaque jour'], ['weekly', 'Chaque semaine'], ['monthly', 'Chaque mois']].map(function (o) { return '<option value="' + o[0] + '"' + ((t.recurrence || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+    var cliOpts = '<option value="">Sans client</option>' + MT_CLIENTS.map(function (c) { return '<option value="' + esc(c.key) + '"' + ((t.clientKey || '') === c.key ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
+    var tagsVal = Array.isArray(t.tags) ? t.tags.join(', ') : '';
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
+      '<div class="admconfirm__title">Modifier la tâche</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
+        '<input class="inp" id="mte-title" value="' + esc(t.title || '') + '" placeholder="Titre">' +
+        '<div class="row" style="gap:8px"><select class="inp" id="mte-prio" style="flex:1">' + prioOpts + '</select>' +
+          '<input class="inp" id="mte-est" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" style="width:90px" title="Durée estimée en minutes">' +
+          '<input class="inp" id="mte-due" type="date" value="' + esc(t.dueDate || '') + '" style="width:auto"></div>' +
+        '<div class="row" style="gap:8px"><select class="inp" id="mte-client" style="flex:1">' + cliOpts + '</select>' +
+          '<select class="inp" id="mte-recur" style="flex:1">' + recOpts + '</select></div>' +
+        '<input class="inp" id="mte-tags" value="' + esc(tagsVal) + '" placeholder="Étiquettes séparées par des virgules">' +
+        '<textarea class="inp" id="mte-notes" style="min-height:64px;resize:vertical" placeholder="Note, lien (https://…), détails…">' + esc(t.notes || '') + '</textarea>' +
+      '</div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button></div>' +
+    '</div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var title = (el('mte-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
+      var tags = (el('mte-tags').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var ck = el('mte-client').value, cn = ''; for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } }
+      var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || '') };
+      jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { close(); toast('Tâche modifiée'); renderMyTasks(); } else toast('Erreur'); });
+    };
+    document.body.appendChild(ov);
+    var f = el('mte-title'); if (f) f.focus();
   }
   function mtRow(t) {
     var pcol = { haute: 'var(--red)', normale: 'var(--glycine-900)', basse: '#c3b9a6' }[t.priority] || 'var(--glycine-900)';
@@ -1691,7 +1729,7 @@
     emailSave: emailSave, emailReset: emailReset,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
