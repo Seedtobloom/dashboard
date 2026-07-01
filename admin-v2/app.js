@@ -70,6 +70,7 @@
     });
   }
   function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
+  function badgeAlert(n) { return n > 0 ? '<span title="Révision(s) à faire" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#a23c28;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
   /* ── boot / auth ── */
   function boot() {
@@ -114,7 +115,7 @@
       ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['emails', 'E-mails'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
-      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
+      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }
     var navHtml = groups.map(function (g, gi) {
@@ -148,6 +149,10 @@
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       ['chat', 'clients'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = UNREAD > 0 ? badge(UNREAD) : ''; });
+    }).catch(function () {});
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+      var n = (d.revisions || []).length;
+      var b = el('nav-unread-priorities'); if (b) b.innerHTML = badgeAlert(n);
     }).catch(function () {});
   }
   function renderMain() {
