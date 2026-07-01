@@ -652,7 +652,7 @@ async function handleTaskCreate(request, env, masterKey, data) {
         (task.content ? `<br><span style="color:#412F21">${escHtml(task.content)}</span>` : '') + `</p>`);
     return json(task, 201);
 }
-const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks'];
+const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date'];
 async function handleTaskUpdate(request, env, masterKey, data, taskId) {
     const body = await readJson(request);
     const espace = getEspace(data);
