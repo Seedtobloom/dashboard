@@ -468,6 +468,10 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   const studioHolidays = espace.studioHolidays || [];
   const bilan = pc && pc.bilan && typeof pc.bilan === 'object' ? pc.bilan : null;
 
+  // Lien de visioconférence (créé côté studio, ex. kMeet Infomaniak) : commun au client
+  const meetingLink = (espace.meetingLink || '').toString().trim();
+  projects.forEach((p) => { if (p.project) p.project.meetingLink = meetingLink; });
+
   // Une seule offre active -> atterrissage direct sur sa page riche (forme V1
   // "single-project", sans type:'client') au lieu d'une grille à une carte.
   if (projects.length === 1) {
