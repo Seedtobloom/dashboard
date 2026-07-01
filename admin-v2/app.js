@@ -298,6 +298,25 @@
       var later = mine.filter(function (x) { return x._d > 7; });
       var mineHtml = group('En retard', 'var(--red)', late) + group("Aujourd'hui", 'var(--orange)', tdy) + group('Cette semaine', 'var(--glycine-900)', week) + group('Plus tard', 'var(--bone-d)', later);
 
+      // Focus du jour : ce qui doit bouger maintenant (retard + aujourd'hui), actions directes
+      function focusRow(x) {
+        var iso = (x.dueDate || '').slice(0, 10);
+        var overdue = x._d < 0;
+        return '<div class="focusrow" style="background:' + (overdue ? '#fbf1ee' : '#fbf5e6') + '">' +
+          '<span class="pdot" style="background:' + (overdue ? '#b5462f' : '#c9952f') + ';margin-top:6px;flex-shrink:0"></span>' +
+          '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--terre);font-size:14px">' + esc(x.title) + '</div>' +
+            '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenCol(x._d) + ';font-weight:700">' + whenLabel(x._d) + '</span></div></div>' +
+          (x.id ? '<div class="prow__act" style="flex-shrink:0">' +
+            '<button class="pbtn pbtn--ok" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
+            '<button class="pbtn" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>' +
+          '</div>' : '') +
+        '</div>';
+      }
+      var focusItems = late.concat(tdy);
+      var focusBand = focusItems.length
+        ? '<div class="focusband"><div class="focusband__h"><span class="focusband__ic">◆</span>Focus du jour<span class="focusband__c">' + focusItems.length + '</span></div>' + focusItems.map(focusRow).join('') + '</div>'
+        : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, vous êtes à jour.</div>';
+
       var waitHtml = waiting.map(function (x) {
         return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
@@ -317,7 +336,7 @@
           '</div>';
       }).join('');
 
-      setMain(topbar('Priorités', right) + '<div class="wrap">' + kpis +
+      setMain(topbar('Priorités', right) + '<div class="wrap">' + focusBand + kpis +
         '<div class="pcols">' +
           '<div class="card infocard" style="background:#f6f0ff"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
