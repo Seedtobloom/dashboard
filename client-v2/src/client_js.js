@@ -950,8 +950,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<aside class="cp-sidebar">' +
       // Brand header
       '<div class="cp-sidebar__brand">' +
-        '<div style="line-height:1.12">' +
-          '<div class="cp-sidebar__logo" style="width:118px;margin-bottom:2px">' + CP_LOGO + '</div>' +
+        '<div>' +
+          '<div class="cp-sidebar__logo" style="width:92px;margin-bottom:12px">' + CP_LOGO + '</div>' +
           '<div class="cp-sidebar__name">' + esc(appData.clientName) + '</div>' +
         '</div>' +
         (clientType ? '<div style="margin-top:14px">' + cpTypeBadge(clientType, true) + '</div>' : '') +
