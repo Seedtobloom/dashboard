@@ -185,14 +185,14 @@
     setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
       EMAIL_TPLS = d.templates || [];
-      var intro = '<div class="card" style="background:#f6f0ff">' +
+      var intro = '<div class="card" style="background:var(--card)">' +
         '<div class="micro">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
       setMain(topbar('Textes des e-mails') + '<div class="wrap" style="max-width:760px">' + intro + EMAIL_TPLS.map(emailCard).join('') + '</div>');
     }).catch(function () { setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty">Erreur de chargement.</div></div>'); });
   }
   function emailCard(t) {
     var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
-    return '<div class="card infocard" style="background:#fbf6e8">' +
+    return '<div class="card infocard" style="background:var(--card)">' +
       '<h3><span class="infocard__dot" style="background:#c9952f"></span>' + esc(t.label) + '</h3>' +
       '<div class="field"><label>Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
       '<div class="field mt"><label>Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
@@ -230,7 +230,7 @@
     var rows = MISSION_LIST.map(function (t, i) {
       return '<div class="row" style="gap:8px;margin-bottom:8px"><input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" style="flex:1"><button class="btn btn--danger btn--sm" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
     }).join('');
-    var card = '<div class="card infocard" style="background:#f6f0ff;max-width:640px"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Types de mission</h3>' +
+    var card = '<div class="card infocard" style="background:var(--card);max-width:640px"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Types de mission</h3>' +
       '<div class="micro mb">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifiez, ajoutez ou retirez selon vos besoins, puis enregistrez.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
       '<div class="row mt" style="gap:8px"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
@@ -302,7 +302,7 @@
       function focusRow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
         var overdue = x._d < 0;
-        return '<div class="focusrow" style="background:' + (overdue ? '#fbf1ee' : '#fbf5e6') + '">' +
+        return '<div class="focusrow" style="background:#f6f2ea">' +
           '<span class="pdot" style="background:' + (overdue ? '#b5462f' : '#c9952f') + ';margin-top:6px;flex-shrink:0"></span>' +
           '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--terre);font-size:14px">' + esc(x.title) + '</div>' +
             '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenCol(x._d) + ';font-weight:700">' + whenLabel(x._d) + '</span></div></div>' +
@@ -349,12 +349,12 @@
 
       setMain(topbar('Priorités', right) + '<div class="wrap">' + focusBand + kpis +
         '<div class="pcols">' +
-          '<div class="card infocard" style="background:#f6f0ff"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Ce que vous avez à faire</h3>' +
+          '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
           '<div>' +
-            '<div class="card infocard" style="background:#eff4fb"><h3><span class="infocard__dot" style="background:#7da2e0"></span>En attente du client</h3>' +
+            '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#7da2e0"></span>En attente du client</h3>' +
               (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
-            '<div class="card mt infocard" style="background:#fbf6e8"><h3><span class="infocard__dot" style="background:#c9952f"></span>Forfaits du mois</h3>' +
+            '<div class="card mt infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#c9952f"></span>Forfaits du mois</h3>' +
               (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div>' +
           '</div>' +
         '</div>' +
@@ -530,7 +530,7 @@
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">+ Ajouter</button></div>' +
         '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel) : https://… , détails…" style="width:100%;box-sizing:border-box">' +
         '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le calendrier intelligent et les KPI de temps. La note accepte du texte et des liens cliquables.</div></div>';
-      var cols = [['haute', 'Haute', '#b83f29', '#fbf1ee'], ['normale', 'Normale', '#6c4ea4', '#f6f0ff'], ['basse', 'Basse', '#8a7355', '#f7f2ea']];
+      var cols = [['haute', 'Haute', '#b83f29', '#f6f2ea'], ['normale', 'Normale', '#6c4ea4', '#f6f2ea'], ['basse', 'Basse', '#8a7355', '#f6f2ea']];
       var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
         return '<div style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px">' +
@@ -1004,7 +1004,7 @@
   function tabInfos() {
     var c = CUR.client, e = CUR.entreprise;
     var active = CUR.isActive;
-    var coord = '<div class="card infocard" style="background:#f6f0ff">' +
+    var coord = '<div class="card infocard" style="background:var(--card)">' +
       '<div class="between mb"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Coordonnées</h3>' +
       '<label class="checkbox infocard__act' + (active ? ' is-on' : '') + '"><input type="checkbox" id="inf-active"' + (active ? ' checked' : '') + ' onchange="ADM.saveInfos()"> ' + (active ? 'espace actif' : 'espace inactif') + '</label></div>' +
       '<div class="grid grid--2">' +
@@ -1040,7 +1040,7 @@
       var nm = (s.content && s.content.name) || '';
       return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
-    return '<div class="card infocard" style="background:#eff4fb"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
+    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
       '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
       (rows || '<div class="empty">Aucun support pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
@@ -1066,7 +1066,7 @@
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
-    return '<div class="card infocard" style="background:#fbf6e8"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
+    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
       '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + '</div>';
   }
   function setBanner(pid, color) {
@@ -1119,7 +1119,7 @@
       var archBtn = t.archived
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
-      return '<div class="card" style="background:' + stBg + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
+      return '<div class="card" style="background:var(--card)' + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
         (t.content ? '<div class="muted mb mt" style="font-size:14px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '<div class="mt"></div>') +
         ((Array.isArray(t.attachments) && t.attachments.length) ? '<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '') +
         '<div class="row" style="align-items:center;gap:10px">' +
