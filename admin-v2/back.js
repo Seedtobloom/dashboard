@@ -494,6 +494,8 @@ async function handleClientApi(request, env, url, method, key, data, sub) {
     m = sub.match(/^\/deliverables\/([a-zA-Z0-9_-]+)$/);
     if (m && method === 'PATCH')
         return handleDeliverablePatch(request, env, key, data, m[1]);
+    if (m && method === 'DELETE')
+        return handleDeliverableDelete(request, env, key, data, m[1]);
     return json({ error: 'Not found' }, 404);
 }
 function buildClientDetail(_env, key, data) {
@@ -900,6 +902,31 @@ async function handleDeliverablePatch(request, env, key, data, id) {
         liv.status = body.status;
     await saveClient(env, key, data);
     return json(liv);
+}
+async function handleDeliverableDelete(request, env, key, data, id) {
+    const body = (await readJson(request).catch(() => ({})));
+    const { container } = resolveProject(getEspace(data), (body.projectId || 'partner').toString());
+    if (!container || !Array.isArray(container.livrables))
+        return json({ error: 'Livrable introuvable' }, 404);
+    const idx = container.livrables.findIndex((l) => l.id === id);
+    if (idx === -1)
+        return json({ error: 'Livrable introuvable' }, 404);
+    const liv = container.livrables[idx];
+    container.livrables.splice(idx, 1);
+    // Réinitialise le lien de la tâche vers ce livrable
+    if (liv.taskId && Array.isArray(container.taches)) {
+        const tk = container.taches.find((t) => t.id === liv.taskId);
+        if (tk && tk.deliverableFileKey === liv.fileKey)
+            tk.deliverableFileKey = null;
+    }
+    if (liv.fileKey && liv.fileKey.startsWith(key + '/')) {
+        try {
+            await env.R2_FILES.delete(liv.fileKey);
+        }
+        catch (e) { /* ignore */ }
+    }
+    await saveClient(env, key, data);
+    return json({ ok: true });
 }
 /* ─────────────────────────── tableau de bord (priorités + forfaits) ─────────────────────────── */
 function forfaitState(pc) {
