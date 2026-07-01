@@ -2963,23 +2963,24 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       .filter(function(c){ return c.min > 0; }).sort(function(a,b){ return b.min - a.min; });
     var maxCatMin = cats.length ? Math.max.apply(null, cats.map(function(c){ return c.min; })) : 1;
     var catCard = cats.length ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
-      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px">' +
+      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' +
         cpIcon('chart',16,'color:var(--brume-700)') +
-        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Temps par type de mission</span>' +
+        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">En moyenne, combien de temps ça prend</span>' +
       '</div>' +
+      '<p style="font-family:var(--font-body);font-size:13px;color:var(--terre-600);line-height:1.5;margin-bottom:18px">Le temps que je consacre en moyenne à chaque type de mission, pour vous donner un repère.</p>' +
       cats.map(function(c){
-        var pct = Math.round(c.min/maxCatMin*100);
         var avg = c.n ? Math.round(c.min/c.n) : 0;
-        return '<div style="margin-bottom:15px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">' +
-            '<span style="font-family:var(--font-body);font-size:14px;color:var(--terre)">' + esc(c.name) + '</span>' +
-            '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">' + partFmtH(c.min) + '</span>' +
+        return '<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--bone-d)">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-family:var(--font-body);font-size:15px;color:var(--terre);line-height:1.35">' + esc(c.name) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + c.n + ' tâche' + (c.n>1?'s':'') + ' · ' + partFmtH(c.min) + ' au total</div>' +
           '</div>' +
-          '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + Math.max(pct,3) + '%;background:var(--brume-700);border-radius:999px"></div></div>' +
-          '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.05em;color:var(--terre-400);margin-top:4px">moyenne ' + partFmtH(avg) + ' par tâche · ' + c.n + ' tâche' + (c.n>1?'s':'') + '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--brume-900,#6c4ea4);line-height:1">' + partFmtH(avg) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">en moyenne / tâche</div>' +
+          '</div>' +
         '</div>';
       }).join('') +
-      '<p style="margin-top:8px;font-family:var(--font-display);font-style:italic;font-size:13px;color:var(--terre-600);line-height:1.5">Le temps passé en moyenne selon le type de mission, pour mieux estimer les prochaines.</p>' +
     '</div>' : '';
 
     var _pf = cpForfaitState(project);
