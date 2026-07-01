@@ -661,7 +661,7 @@ function findTask(esp, projectId, taskId) {
     const task = container.taches.find((t) => t.id === taskId);
     return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'timeSpentMinutes', 'timeSpentSeconds', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'timeSpentMinutes', 'timeSpentSeconds', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date'];
 async function handleTaskPatch(request, env, key, data, taskId) {
     const body = await readJson(request);
     const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);

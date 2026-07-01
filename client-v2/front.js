@@ -2493,6 +2493,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>' +
       '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
+      ((t.v1Date||t.v2Date)?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
+        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#6c4ea4;background:#f2ebff;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
+        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#6c4ea4;background:#f2ebff;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
+      '</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
       (t.imageUrl?'<div style="margin-bottom:10px"><img src="'+esc(t.imageUrl)+'" alt="" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>':'') +
