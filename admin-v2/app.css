@@ -216,3 +216,23 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 .file{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:11px;margin-bottom:7px;background:var(--surface-2)}
 .file .nm{flex:1;font-size:14px;word-break:break-all}
 .checkbox{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text)}
+
+/* ── finitions globales ── */
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+::selection{background:var(--glycine);color:var(--terre)}
+:focus-visible{outline:2px solid var(--glycine-700);outline-offset:2px;border-radius:6px}
+.inp:focus-visible{outline:none}
+a{text-decoration:none;transition:color .15s,opacity .15s}
+a:hover{opacity:0.78}
+button{-webkit-tap-highlight-color:transparent}
+input,textarea,select{accent-color:var(--terre)}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+/* barres de défilement discrètes, dans la charte */
+*{scrollbar-width:thin;scrollbar-color:var(--terre-200) transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--terre-200);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--terre-400)}
+.side ::-webkit-scrollbar-thumb,.side::-webkit-scrollbar-thumb{background:rgba(242,229,194,0.28);background-clip:content-box}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto}}
