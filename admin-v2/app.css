@@ -126,6 +126,8 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 /* priorités : KPIs + lignes */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
 .kpi{background:var(--card);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow-1)}
+.kpi--clic{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.kpi--clic:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}
 .kpi__n{font-family:var(--font-display);font-size:38px;color:var(--terre);line-height:1}
 .kpi__l{font-family:var(--font-micro);font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--terre);opacity:0.5;margin-top:7px}
 .kpi--late .kpi__n{color:#a23c28}
