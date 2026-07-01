@@ -1332,6 +1332,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
 
+    var hasPartner = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
     // Nombre de livrables en attente de validation (toutes offres confondues)
     var dlvToValidate = 0;
     (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidate++; }); });
@@ -1341,6 +1342,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
       navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') +
+      (hasPartner ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
       navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +
       '' +
     '</div>';
@@ -2938,6 +2940,33 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Heures travaillees par mois, pour ajuster le forfait quand l\'activite grandit.</p>' +
     '</div>';
 
+    // Temps par catégorie (type de mission)
+    function catOf(t){ var c = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || ''; return c || 'Autre'; }
+    var catMap = {};
+    tasks.forEach(function(t){ var c = catOf(t); if (!catMap[c]) catMap[c] = { min:0, n:0 }; catMap[c].min += (t.timeSpentMinutes||0); catMap[c].n += 1; });
+    var cats = Object.keys(catMap).map(function(k){ return { name:k, min:catMap[k].min, n:catMap[k].n }; })
+      .filter(function(c){ return c.min > 0; }).sort(function(a,b){ return b.min - a.min; });
+    var maxCatMin = cats.length ? Math.max.apply(null, cats.map(function(c){ return c.min; })) : 1;
+    var catCard = cats.length ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px">' +
+        cpIcon('chart',16,'color:var(--brume-700)') +
+        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Temps par type de mission</span>' +
+      '</div>' +
+      cats.map(function(c){
+        var pct = Math.round(c.min/maxCatMin*100);
+        var avg = c.n ? Math.round(c.min/c.n) : 0;
+        return '<div style="margin-bottom:15px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">' +
+            '<span style="font-family:var(--font-body);font-size:14px;color:var(--terre)">' + esc(c.name) + '</span>' +
+            '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">' + partFmtH(c.min) + '</span>' +
+          '</div>' +
+          '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + Math.max(pct,3) + '%;background:var(--brume-700);border-radius:999px"></div></div>' +
+          '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.05em;color:var(--terre-400);margin-top:4px">moyenne ' + partFmtH(avg) + ' par tâche · ' + c.n + ' tâche' + (c.n>1?'s':'') + '</div>' +
+        '</div>';
+      }).join('') +
+      '<p style="margin-top:8px;font-family:var(--font-display);font-style:italic;font-size:13px;color:var(--terre-600);line-height:1.5">Le temps passé en moyenne selon le type de mission, pour mieux estimer les prochaines.</p>' +
+    '</div>' : '';
+
     var _pf = cpForfaitState(project);
     var forfaitLeft = _pf.remaining;
     var forfaitPct2 = _pf.available ? Math.min(100, Math.round(_pf.used/_pf.available*100)) : 0;
@@ -2965,7 +2994,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
 
     return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
-      '<div>' + tilesHtml + chartCard + archivedHtml + '</div>' +
+      '<div>' + tilesHtml + chartCard + catCard + archivedHtml + '</div>' +
       '<div>' + forfaitCard + '</div>' +
     '</div>';
   }
@@ -5272,7 +5301,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell({ resetScroll: true }); };
   window.cpOpenCal = function() { currentView = 'cal'; renderShell({ resetScroll: true }); };
-  window.cpOpenStats = function() { currentView = 'stats'; renderShell({ resetScroll: true }); };
+  window.cpOpenStats = function() {
+    var parts = (appData.projects || []).filter(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
+    var pick = parts[0] || (appData.projects || [])[0];
+    if (pick) currentId = pick.project.id;
+    currentView = 'stats';
+    renderShell({ resetScroll: true });
+  };
 
   window.cpSetView = function(v) { currentView = v; renderShell({ resetScroll: true }); };
 
