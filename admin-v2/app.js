@@ -317,15 +317,26 @@
         ? '<div class="focusband"><div class="focusband__h"><span class="focusband__ic">◆</span>Focus du jour<span class="focusband__c">' + focusItems.length + '</span></div>' + focusItems.map(focusRow).join('') + '</div>'
         : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, vous êtes à jour.</div>';
 
-      var waitHtml = waiting.map(function (x) {
-        return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
-          '<div class="prow__act">' + pill('waiting_client', 'Étape') + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'step\',\'' + jsq(x.title) + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
-      }).join('') + pv.map(function (l) {
-        return '<div class="prow"><div class="prow__date"><strong>' + fmtDate(l.createdAt) + '</strong></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(l.name) + (l.taskTitle ? ' <span class="micro">(' + esc(l.taskTitle) + ')</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + l.key + '\')">' + esc(l.client) + '</a> · ' + esc(l.projectLabel) + '</div></div>' +
-          '<div class="prow__act">' + pill('a_valider', 'Livrable') + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + l.key + '\',\'deliverable\',\'' + jsq(l.name) + '\',\'' + jsq(l.projectLabel) + '\')">Relancer</button></div></div>';
-      }).join('');
+      // Relances intelligentes : on trie par ancienneté d'attente et on signale ce qui traîne
+      var waitAll = waiting.map(function (x) { return { kind: 'step', x: x, since: -ddiff(x.dueDate) }; })
+        .concat(pv.map(function (l) { return { kind: 'dlv', x: l, since: -ddiff(l.createdAt) }; }));
+      waitAll.sort(function (a, b) { return b.since - a.since; });
+      function waitRow(w) {
+        var x = w.x, s = w.since;
+        var flag = s >= 10 ? '#fbeae5' : (s >= 5 ? '#fbf5e6' : '');
+        var ageCol = s >= 10 ? '#b5462f' : (s >= 5 ? '#b8871f' : 'var(--muted)');
+        var ageLbl = s > 0 ? ('en attente depuis ' + s + ' j' + (s >= 5 ? ' · à relancer' : '')) : 'tout récent';
+        var refDate = w.kind === 'step' ? x.dueDate : x.createdAt;
+        var isStep = w.kind === 'step';
+        var title = isStep ? esc(x.title) : (esc(x.name) + (x.taskTitle ? ' <span class="micro">(' + esc(x.taskTitle) + ')</span>' : ''));
+        var kindArg = isStep ? 'step' : 'deliverable';
+        var titleArg = isStep ? jsq(x.title) : jsq(x.name);
+        return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
+          '<div class="prow__date"><strong>' + fmtDate(refDate) + '</strong><span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
+          '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
+          '<div class="prow__act">' + pill(isStep ? 'waiting_client' : 'a_valider', isStep ? 'Étape' : 'Livrable') + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
+      }
+      var waitHtml = waitAll.map(waitRow).join('');
 
       var forf = (d.forfaits || []).map(function (f) {
         var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0;
