@@ -253,10 +253,15 @@
     if (!list.length) { toast('La liste ne peut pas être vide'); return; }
     jpost('/api/mission-types', { types: list }, 'PUT').then(function (r) { if (r.ok) { toast('Types de mission enregistrés ✓'); MISSION_LIST = list; renderReglagesBody(); } else toast('Erreur'); });
   }
+  var PRIO_GROUP = 'date', PRIO_FILTER = 'all', PRIO_D = null;
+  function prioSetGroup(v) { PRIO_GROUP = v; if (PRIO_D) renderPrioBody(PRIO_D); }
+  function prioSetFilter(v) { PRIO_FILTER = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function renderPriorities() {
-    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
-    setMain(topbar('Priorités', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+    setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
+  }
+  function renderPrioBody(d) {
+      var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
       var today = new Date(); today.setHours(0, 0, 0, 0);
       var SL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', waiting_client: 'Attente client', upcoming: 'À venir', done: 'Terminé' };
       function ddiff(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); return Math.round((t - today) / 86400000); }
@@ -293,11 +298,42 @@
         if (!items.length) return '';
         return '<div class="pgroup"><div class="pgroup__h"><span class="pdot" style="background:' + dotCol + '"></span><span class="pgroup__t">' + title + '</span><span class="pgroup__c">' + items.length + '</span></div>' + items.map(prow).join('') + '</div>';
       }
-      var late = mine.filter(function (x) { return x._d < 0; });
-      var tdy = mine.filter(function (x) { return x._d === 0; });
-      var week = mine.filter(function (x) { return x._d > 0 && x._d <= 7; });
-      var later = mine.filter(function (x) { return x._d > 7; });
-      var mineHtml = group('En retard', 'var(--red)', late) + group("Aujourd'hui", 'var(--orange)', tdy) + group('Cette semaine', 'var(--glycine-900)', week) + group('Plus tard', 'var(--bone-d)', later);
+      // Filtre par type (toutes / tâches / étapes) appliqué à la liste « à faire »
+      var mineF = PRIO_FILTER === 'all' ? mine : mine.filter(function (x) { return x.kind === PRIO_FILTER; });
+      var mineBody;
+      if (PRIO_GROUP === 'client') {
+        var byClient = {};
+        mineF.forEach(function (x) { (byClient[x.client] = byClient[x.client] || []).push(x); });
+        var clientNames = Object.keys(byClient).sort(function (a, b) {
+          var am = Math.min.apply(null, byClient[a].map(function (x) { return x._d; })), bm = Math.min.apply(null, byClient[b].map(function (x) { return x._d; }));
+          return am - bm;
+        });
+        mineBody = clientNames.map(function (nm) {
+          var items = byClient[nm].slice().sort(function (a, b) { return a._d - b._d; });
+          var urgent = items.some(function (x) { return x._d <= 0; });
+          return group(nm, urgent ? 'var(--red)' : 'var(--glycine-900)', items);
+        }).join('');
+      } else {
+        var late = mineF.filter(function (x) { return x._d < 0; });
+        var tdy = mineF.filter(function (x) { return x._d === 0; });
+        var week = mineF.filter(function (x) { return x._d > 0 && x._d <= 7; });
+        var later = mineF.filter(function (x) { return x._d > 7; });
+        mineBody = group('En retard', 'var(--red)', late) + group("Aujourd'hui", 'var(--orange)', tdy) + group('Cette semaine', 'var(--glycine-900)', week) + group('Plus tard', 'var(--bone-d)', later);
+      }
+      function prioChip(kind, cur, lbl, onclick) {
+        var on = cur === kind;
+        return '<button onclick="' + onclick + '" style="padding:5px 12px;border-radius:999px;border:1px solid ' + (on ? 'var(--terre)' : 'var(--bone-d)') + ';cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'transparent') + ';color:' + (on ? 'var(--paille)' : 'var(--muted)') + '">' + lbl + '</button>';
+      }
+      var prioControls = '<div class="row mb" style="gap:6px;flex-wrap:wrap;align-items:center">' +
+        '<span class="micro" style="margin-right:2px">Vue</span>' +
+        prioChip('date', PRIO_GROUP, 'Par date', 'ADM.prioSetGroup(\'date\')') +
+        prioChip('client', PRIO_GROUP, 'Par client', 'ADM.prioSetGroup(\'client\')') +
+        '<span style="width:12px"></span><span class="micro" style="margin-right:2px">Filtre</span>' +
+        prioChip('all', PRIO_FILTER, 'Tout', 'ADM.prioSetFilter(\'all\')') +
+        prioChip('tâche', PRIO_FILTER, 'Tâches', 'ADM.prioSetFilter(\'tâche\')') +
+        prioChip('étape', PRIO_FILTER, 'Étapes', 'ADM.prioSetFilter(\'étape\')') +
+        '</div>';
+      var mineHtml = prioControls + (mineBody || '<div class="empty">' + (mine.length ? 'Rien ici avec ce filtre.' : 'Rien à traiter, tout est à jour.') + '</div>');
 
       // Focus du jour : ce qui doit bouger maintenant (retard + aujourd'hui), actions directes
       function focusRow(x) {
@@ -413,7 +449,6 @@
           '</div>' +
         '</div>' +
         '</div>');
-    }).catch(showError);
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
@@ -1552,7 +1587,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
