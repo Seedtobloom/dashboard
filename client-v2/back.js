@@ -323,6 +323,13 @@ async function buildAppData(env, masterKey, data) {
     const espace = getEspace(data);
     const name = clientFullName(data);
     const projects = [];
+    // Types de mission personnalisés par le studio (partagés via KV_CLIENT)
+    const globalMissionTypes = (await env.KV_CLIENT.get('global:missionTypes', { type: 'json' }));
+    const withMissionTypes = (schema) => {
+        if (!Array.isArray(globalMissionTypes) || !globalMissionTypes.length)
+            return schema;
+        return (schema || []).map((d) => (d && d.id === 'p_typemission' ? { ...d, options: globalMissionTypes } : d));
+    };
     // Partenaire créative
     const pc = getDomainObj(espace, 'partenaireCreative');
     if (pc && pc.isActive !== false) {
@@ -336,7 +343,7 @@ async function buildAppData(env, masterKey, data) {
                 status: pc.maintenance ? 'maintenance' : 'in_progress',
                 startDate: pc.startDate || null,
                 tasks: Array.isArray(pc.taches) ? pc.taches : [],
-                propertySchema: Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA,
+                propertySchema: withMissionTypes(Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA),
                 monthlyHours: pc.monthlyHours || 0,
                 rolloverCapHours: pc.rolloverCapHours,
                 overageRate: pc.overageRate,

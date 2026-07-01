@@ -344,6 +344,12 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   const espace = getEspace(data);
   const name = clientFullName(data);
   const projects: AnyObj[] = [];
+  // Types de mission personnalisés par le studio (partagés via KV_CLIENT)
+  const globalMissionTypes = (await env.KV_CLIENT.get('global:missionTypes', { type: 'json' })) as string[] | null;
+  const withMissionTypes = (schema: AnyObj[]): AnyObj[] => {
+    if (!Array.isArray(globalMissionTypes) || !globalMissionTypes.length) return schema;
+    return (schema || []).map((d) => (d && d.id === 'p_typemission' ? { ...d, options: globalMissionTypes } : d));
+  };
 
   // Partenaire créative
   const pc = getDomainObj(espace, 'partenaireCreative');
@@ -358,7 +364,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: pc.maintenance ? 'maintenance' : 'in_progress',
         startDate: pc.startDate || null,
         tasks: Array.isArray(pc.taches) ? pc.taches : [],
-        propertySchema: Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA,
+        propertySchema: withMissionTypes(Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA),
         monthlyHours: pc.monthlyHours || 0,
         rolloverCapHours: pc.rolloverCapHours,
         overageRate: pc.overageRate,
