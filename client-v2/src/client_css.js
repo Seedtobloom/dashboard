@@ -77,7 +77,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-sidebar__brand-row { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
 .cp-sidebar__brand-icon { color: var(--paille); flex-shrink: 0; }
 .cp-sidebar__brand-text { line-height: 1.12; }
-.cp-sidebar__logo { font-family: var(--font-micro); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.6); }
+.cp-sidebar__logo { color: var(--paille); }
+.cp-sidebar__logo svg { width: 100%; height: auto; display: block; }
 .cp-sidebar__name { font-family: var(--font-display); font-style: italic; font-size: 21px; color: var(--paille); line-height: 1.1; }
 .cp-sidebar__greeting { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(242,229,194,0.6); }
 .cp-cindy { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-bottom: 1px solid rgba(242,229,194,0.1); }

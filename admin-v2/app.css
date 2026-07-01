@@ -28,6 +28,8 @@ a{color:var(--glycine-900)}
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--surface);padding:24px}
 .login__card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;box-shadow:var(--shadow-2);padding:38px 32px;display:flex;flex-direction:column;gap:16px}
 .login__title{text-align:center;font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)}
+.login__logo{color:var(--terre);width:150px;margin:0 auto}
+.login__logo svg{width:100%;height:auto;display:block}
 .login__sub{text-align:center;font-family:var(--font-micro);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-top:-10px}
 
 /* fields */
@@ -53,6 +55,8 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .side{width:var(--sw);flex-shrink:0;background:var(--nuit);color:var(--paille);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 .side__brand{padding:22px 20px;border-bottom:1px solid rgba(242,229,194,0.14)}
 .side__brand .n{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--paille)}
+.side__logo{color:var(--paille);width:132px}
+.side__logo svg{width:100%;height:auto;display:block}
 .side__brand .s{font-family:var(--font-micro);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(242,229,194,0.55);margin-top:2px}
 .side__nav{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:3px}
 .navgroup__label{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,229,194,0.45);padding:6px 13px 4px}
