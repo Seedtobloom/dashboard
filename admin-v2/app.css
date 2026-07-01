@@ -115,15 +115,11 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 .kpi{background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:15px 17px}
 .kpi__n{font-family:var(--font-display);font-size:30px;color:var(--terre);line-height:1}
 .kpi__l{font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-400);margin-top:5px}
-.kpi--late{background:#fbf1ee;border-color:#f2ddd6}
-.kpi--late .kpi__n{color:#b5462f}
-.kpi--today{background:#fbf5e6;border-color:#efe3c6}
-.kpi--today .kpi__n{color:#b8871f}
-.kpi--week{background:#f5eeff;border-color:#e6d9f6}
-.kpi--week .kpi__n{color:#6c4ea4}
-.kpi--wait{background:#eef3fb;border-color:#d9e4f3}
+.kpi__n{color:var(--terre)}
+.kpi--late .kpi__n{color:#a23c28}
+.kpi--today .kpi__n{color:#9c6f18}
+.kpi--week .kpi__n{color:var(--terre)}
 .kpi--wait .kpi__n{color:#3f6ea5}
-.kpi--done{background:#eef3ea;border-color:#dbe6d5}
 .kpi--done .kpi__n{color:#5d7a52}
 .kpi.is-on{box-shadow:var(--shadow-1)}
 .focusband{background:#fffdf7;border:1px solid var(--bone-d);border-radius:14px;padding:16px 18px;margin-bottom:20px;box-shadow:var(--shadow-1)}
