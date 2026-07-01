@@ -1127,6 +1127,9 @@ async function handleMyTaskUpdate(request, env, id) {
         return json({ error: 'Tâche introuvable' }, 404);
     MYTASK_FIELDS.forEach((k) => { if (k in b)
         t[k] = b[k]; });
+    if ('subtasks' in b) {
+        t.subtasks = Array.isArray(b.subtasks) ? b.subtasks.slice(0, 40).map((s) => ({ id: String((s && s.id) || genId()), text: String((s && s.text) || '').slice(0, 240), done: !!(s && s.done) })).filter((s) => s.text) : [];
+    }
     if (b.status === 'done' && !t.completedAt)
         t.completedAt = nowIso();
     if (b.status && b.status !== 'done')

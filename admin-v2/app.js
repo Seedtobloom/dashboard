@@ -451,26 +451,35 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'board';
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'board', MT_ADDOPEN = false;
   function mtCard(t) {
-    var pcol = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority] || '#6c4ea4';
     var est = t.estMinutes ? ('estimé ' + (t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
     var dn = t.status === 'done';
     var running = MT_TIMER && MT_TIMER.id === t.id;
     var spent = t.timeSpentSeconds || 0;
     var tcColor = running ? 'var(--green)' : (spent ? 'var(--terre)' : '#c3b9a6');
-    var meta = [est, (t.dueDate ? 'échéance ' + fmtDate(t.dueDate) : '')].filter(Boolean).join(' · ');
+    var td = new Date(); td.setHours(0, 0, 0, 0);
+    var overdue = !dn && t.dueDate && new Date(t.dueDate) < td;
+    var dueLbl = t.dueDate ? ((overdue ? 'en retard · ' : 'échéance ') + fmtDate(t.dueDate)) : '';
+    var meta = [est, dueLbl].filter(Boolean).join(' · ');
+    var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
+    var subN = subs.filter(function (s) { return s.done; }).length;
+    var subsHtml = subs.length ? '<div style="margin-top:10px">' +
+        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span>Sous-tâches</span><span>' + subN + '/' + subs.length + '</span></div>' +
+        '<div style="height:5px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:' + Math.round(subN / subs.length * 100) + '%;background:var(--green);border-radius:999px"></div></div>' +
+        subs.map(function (s) { return '<label style="display:flex;align-items:flex-start;gap:8px;padding:3px 0;cursor:pointer;font-size:13px;color:' + (s.done ? 'var(--muted)' : 'var(--terre)') + '"><input type="checkbox" ' + (s.done ? 'checked' : '') + ' onchange="ADM.mtSubToggle(\'' + t.id + '\',\'' + s.id + '\')" style="margin-top:3px;flex-shrink:0"><span style="flex:1;' + (s.done ? 'text-decoration:line-through' : '') + '">' + esc(s.text) + '</span><button onclick="event.preventDefault();ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;flex-shrink:0">✕</button></label>'; }).join('') +
+      '</div>' : '';
+    var subAdd = (!dn && !t.archived) ? '<input class="inp" id="mtsub-' + t.id + '" placeholder="+ ajouter une sous-tâche" style="margin-top:8px;padding:7px 10px;font-size:12.5px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtSubAdd(\'' + t.id + '\');}">' : '';
     var timerBtn = (dn || t.archived) ? '' : (running
-      ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸</button>'
-      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶</button>');
+      ? '<button class="pbtn" style="background:rgba(201,149,47,0.16);color:var(--orange)" onclick="ADM.mtPause(\'' + t.id + '\')">⏸ Pause</button>'
+      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶ Démarrer</button>');
     var canDrag = !dn && !t.archived;
-    return '<div' + (canDrag ? ' draggable="true" ondragstart="ADM.mtDragStart(event,\'' + t.id + '\')" ondragend="ADM.mtDragEnd(event)"' : '') + ' style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:8px' + (canDrag ? ';cursor:grab' : '') + '">' +
-      '<div style="display:flex;align-items:flex-start;gap:8px"><span class="pdot" style="background:' + pcol + ';margin-top:5px;flex-shrink:0"></span>' +
-        '<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500;line-height:1.3;color:' + (dn ? 'var(--muted)' : 'var(--terre)') + (dn ? ';text-decoration:line-through' : '') + '">' + esc(t.title) + '</div>' +
-          (meta ? '<div class="micro muted" style="margin-top:2px">' + meta + '</div>' : '') +
-          '<div id="mt-note-' + t.id + '" style="margin-top:4px">' + mtNoteInner(t) + '</div>' +
-        '</div></div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:9px;border-top:1px solid var(--bone-d);padding-top:8px">' +
+    return '<div' + (canDrag ? ' draggable="true" ondragstart="ADM.mtDragStart(event,\'' + t.id + '\')" ondragend="ADM.mtDragEnd(event)"' : '') + ' style="background:var(--card);border-radius:13px;padding:14px 15px;margin-bottom:10px;box-shadow:0 3px 12px -8px rgba(28,18,5,0.28)' + (canDrag ? ';cursor:grab' : '') + '">' +
+      '<div style="font-size:14.5px;font-weight:500;line-height:1.35;color:' + (dn ? 'var(--muted)' : 'var(--terre)') + (dn ? ';text-decoration:line-through' : '') + '">' + esc(t.title) + '</div>' +
+      (meta ? '<div class="micro" style="margin-top:4px;color:' + (overdue ? '#a23c28' : 'var(--muted)') + '">' + meta + '</div>' : '') +
+      '<div id="mt-note-' + t.id + '" style="margin-top:5px">' + mtNoteInner(t) + '</div>' +
+      subsHtml + subAdd +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:12px">' +
         '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcColor + '">' + mtClock(spent) + '</span>' +
         '<div class="row" style="gap:5px">' + timerBtn +
           (t.archived
@@ -478,12 +487,17 @@
             : (dn
                 ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button><button class="pbtn" onclick="ADM.myTaskArchive(\'' + t.id + '\',true)" title="Archiver">Archiver</button>'
                 : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>')) +
-          '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4" title="Supprimer">✕</button>' +
+          '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red)" title="Supprimer">✕</button>' +
         '</div></div></div>';
   }
   function mtSetView(v) { MT_VIEW = v; renderMyTasks(); }
+  function mtToggleAdd() { MT_ADDOPEN = !MT_ADDOPEN; renderMyTasks(); }
+  function mtSaveSubs(id, subs) { jpost('/api/admin/tasks/' + id, { subtasks: subs }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
+  function mtSubAdd(id) { var inp = el('mtsub-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var t = MT_TASKS.filter(function (x) { return x.id === id; })[0]; if (!t) return; var subs = Array.isArray(t.subtasks) ? t.subtasks.slice() : []; subs.push({ id: 'st' + Date.now(), text: v, done: false }); mtSaveSubs(id, subs); }
+  function mtSubToggle(id, subId) { var t = MT_TASKS.filter(function (x) { return x.id === id; })[0]; if (!t || !Array.isArray(t.subtasks)) return; mtSaveSubs(id, t.subtasks.map(function (s) { return s.id === subId ? { id: s.id, text: s.text, done: !s.done } : s; })); }
+  function mtSubDel(id, subId) { var t = MT_TASKS.filter(function (x) { return x.id === id; })[0]; if (!t || !Array.isArray(t.subtasks)) return; mtSaveSubs(id, t.subtasks.filter(function (s) { return s.id !== subId; })); }
   var MT_DRAG = null;
-  function mtDragStart(e, id) { MT_DRAG = id; if (e.dataTransfer) { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; } }
+  function mtDragStart(e, id) { if (e.target && /^(INPUT|TEXTAREA|BUTTON|LABEL|SELECT|A)$/.test(e.target.tagName)) { e.preventDefault(); return; } MT_DRAG = id; if (e.dataTransfer) { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; } }
   function mtDragEnd() { MT_DRAG = null; }
   function mtDragOver(e) { e.preventDefault(); var c = e.currentTarget; if (c && c.classList.contains('mtcol')) c.style.background = '#ece0c9'; }
   function mtDragLeave(e) { var c = e.currentTarget; if (c && c.classList.contains('mtcol')) c.style.background = '#f6f2ea'; }
@@ -625,14 +639,14 @@
       var doneWeek = done.filter(function (x) { return x.completedAt && new Date(x.completedAt) >= weekAgo; }).length;
       function kc(n, l, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
       var kpis = '<div class="kpis">' + kc(todo.length, 'À faire', 'kpi--week') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé', 'kpi--today') + kc((spentTotal / 3600).toFixed(1).replace('.0', '') + ' h', 'Temps passé', 'kpi--wait') + kc(doneWeek, 'Fait (7 j)', 'kpi--done') + '</div>';
-      var form = '<div class="card"><h3>Ajouter une tâche</h3>' +
+      var form = MT_ADDOPEN ? '<div class="card"><h3>Nouvelle tâche</h3>' +
         '<div class="row"><input class="inp" id="mt-title" placeholder="Que dois-tu faire ?" style="flex:2;min-width:160px">' +
           '<select class="inp" id="mt-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select>' +
           '<input class="inp" id="mt-est" type="number" min="0" step="15" placeholder="min" style="width:80px" title="Durée estimée en minutes">' +
           '<input class="inp" id="mt-due" type="date" style="width:auto">' +
-          '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">+ Ajouter</button></div>' +
-        '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel) : https://… , détails…" style="width:100%;box-sizing:border-box">' +
-        '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le calendrier intelligent et les KPI de temps. La note accepte du texte et des liens cliquables.</div></div>';
+          '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">Ajouter</button></div>' +
+        '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel), https://… , détails…" style="width:100%;box-sizing:border-box">' +
+        '<div class="micro mt">Durée estimée en minutes (15, 30, 60…), utile pour le calendrier et les KPI. La note accepte du texte et des liens.</div></div>' : '';
       var cols = [['haute', 'Haute', '#b83f29', '#f6f2ea'], ['normale', 'Normale', '#6c4ea4', '#f6f2ea'], ['basse', 'Basse', '#8a7355', '#f6f2ea']];
       var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
@@ -647,8 +661,10 @@
       var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
-      var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : (todo.length ? board : '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>'));
-      setMain(topbar('Mes tâches') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
+      var boardHint = todo.length ? '<div class="micro" style="margin:-6px 0 14px">Glissez une tâche d\'une colonne à l\'autre pour changer sa priorité.</div>' : '';
+      var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : (todo.length ? boardHint + board : '<div class="empty">Aucune tâche en cours. Ajoutez-en une avec « Nouvelle tâche ».</div>'));
+      var addBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">' + (MT_ADDOPEN ? 'Fermer' : '+ Nouvelle tâche') + '</button>';
+      setMain(topbar('Mes tâches', addBtn) + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
     }).catch(showError);
   }
   function myTaskAdd() {
@@ -1602,7 +1618,7 @@
     emailSave: emailSave, emailReset: emailReset,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
