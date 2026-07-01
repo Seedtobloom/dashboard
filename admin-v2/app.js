@@ -1032,32 +1032,44 @@
     }).join('') + '</div>';
   }
   function monthLbl(k) { var p = k.split('-'); var dd = new Date(p[0], p[1] - 1, 1); return dd.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') + ' ' + String(p[0]).slice(2); }
+  var KPI_TAB = 'evol';
+  function kpiSetTab(v) { KPI_TAB = v; if (KPI_D) renderKpiBody(KPI_D); }
+  var KPI_D = null;
   function renderKpi() {
     setMain(topbar('KPI partenaire créative') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/kpi').then(function (r) { return r.json(); }).then(function (d) {
-      var t = d.totals || {};
-      function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-      var kpis = '<div class="kpis">' + kc(t.done || 0, 'Tâches réalisées') + kc(((t.minutes || 0) / 60).toFixed(0) + ' h', 'Temps passé') + kc(t.open || 0, 'Tâches en cours') + kc(t.clients || 0, 'Clients actifs') + '</div>';
-      var keys = Object.keys(d.tasksByMonth || {}).sort().slice(-8);
-      var tItems = keys.map(function (k) { return { label: monthLbl(k), value: d.tasksByMonth[k] || 0 }; });
-      var mItems = keys.map(function (k) { return { label: monthLbl(k), value: Math.round((d.minutesByMonth[k] || 0) / 60 * 10) / 10 }; });
-      var clientRows = (d.byClient || []).map(function (c) {
-        return '<tr><td><a href="javascript:ADM.openClient(\'' + c.key + '\')">' + esc(c.client) + '</a></td>' +
-          '<td>' + c.tasksDone + '</td><td>' + (c.minutes / 60).toFixed(1).replace('.0', '') + ' h</td><td>' + c.openTasks + '</td></tr>';
-      }).join('') || '<tr><td colspan="4" class="empty">Aucun client partenaire.</td></tr>';
-      var forf = (d.forfaits || []).filter(function (f) { return f.configured; }).map(function (f) {
-        var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
-        return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
-      }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
-      setMain(topbar('KPI partenaire créative', '', 'Ton activité de partenaire créative, mois par mois') + '<div class="wrap">' + kpis +
-        '<div class="pcols">' +
-          '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
-          '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div>' +
-        '</div>' +
-        '<div class="card mt"><h3>Par client</h3><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>' +
-        '<div class="card mt"><h3>Forfaits du mois</h3>' + forf + '</div>' +
-        '</div>');
-    }).catch(showError);
+    api('/api/kpi').then(function (r) { return r.json(); }).then(function (d) { KPI_D = d; renderKpiBody(d); }).catch(showError);
+  }
+  function renderKpiBody(d) {
+    var t = d.totals || {};
+    function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+    var kpis = '<div class="kpis">' + kc(t.done || 0, 'Tâches réalisées') + kc(((t.minutes || 0) / 60).toFixed(0) + ' h', 'Temps passé') + kc(t.open || 0, 'Tâches en cours') + kc(t.clients || 0, 'Clients actifs') + '</div>';
+    var keys = Object.keys(d.tasksByMonth || {}).sort().slice(-8);
+    var tItems = keys.map(function (k) { return { label: monthLbl(k), value: d.tasksByMonth[k] || 0 }; });
+    var mItems = keys.map(function (k) { return { label: monthLbl(k), value: Math.round((d.minutesByMonth[k] || 0) / 60 * 10) / 10 }; });
+    var clientRows = (d.byClient || []).map(function (c) {
+      return '<tr><td><a href="javascript:ADM.openClient(\'' + c.key + '\')">' + esc(c.client) + '</a></td>' +
+        '<td>' + c.tasksDone + '</td><td>' + (c.minutes / 60).toFixed(1).replace('.0', '') + ' h</td><td>' + c.openTasks + '</td></tr>';
+    }).join('') || '<tr><td colspan="4" class="empty">Aucun client partenaire.</td></tr>';
+    var forf = (d.forfaits || []).filter(function (f) { return f.configured; }).map(function (f) {
+      var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
+      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
+    }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
+    var tabDefs = [['evol', 'Évolution', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
+    if (!tabDefs.some(function (x) { return x[0] === KPI_TAB; })) KPI_TAB = 'evol';
+    var tabBar = '<div class="tabs">' + tabDefs.map(function (x) {
+      return '<button class="tab' + (KPI_TAB === x[0] ? ' active' : '') + '" onclick="ADM.kpiSetTab(\'' + x[0] + '\')">' + esc(x[1]) + (x[2] != null ? badge(x[2]) : '') + '</button>';
+    }).join('') + '</div>';
+    var body;
+    if (KPI_TAB === 'clients') {
+      body = '<div class="card"><h3>Par client</h3><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>';
+    } else if (KPI_TAB === 'forfaits') {
+      body = '<div class="card"><h3>Forfaits du mois</h3>' + forf + '</div>';
+    } else {
+      body = '<div class="pcols">' +
+        '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
+        '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div></div>';
+    }
+    setMain(topbar('KPI partenaire créative', '', 'Ton activité de partenaire créative, mois par mois') + '<div class="wrap">' + kpis + tabBar + '<div id="kpibody">' + body + '</div></div>');
   }
 
   /* ── Réalisé (historique daté) ── */
@@ -1074,6 +1086,11 @@
       });
       function monthLabel(k) { var p = k.split('-'); var d = new Date(p[0], p[1] - 1, 1); var s = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); }
       function fmtDT(iso) { var d = new Date(iso); if (isNaN(d)) return esc(iso); var dd = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); var hh = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); return dd + ' à ' + hh; }
+      var nowD = new Date(); var curKey = nowD.getFullYear() + '-' + String(nowD.getMonth() + 1).padStart(2, '0');
+      var totalMinAll = list.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
+      var monthCount = (groups[curKey] || []).length;
+      function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var hero = list.length ? '<div class="kpis">' + kc(list.length, 'Réalisés en tout') + kc(monthCount, 'Ce mois-ci') + kc((totalMinAll / 60).toFixed(0) + ' h', 'Temps cumulé') + '</div>' : '';
       var html = order.map(function (k) {
         var items = groups[k];
         var totalMin = items.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
@@ -1086,7 +1103,7 @@
         }).join('');
         return '<div class="card"><h3>' + monthLabel(k) + ' <span class="micro" style="color:var(--muted)">· ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + (totalMin ? ' · ' + (totalMin / 60).toFixed(1).replace('.0', '') + ' h' : '') + '</span></h3>' + rows + '</div>';
       }).join('');
-      setMain(topbar('Réalisé', '', 'L\'historique daté de tout ce qui a été terminé') + '<div class="wrap">' + (html || '<div class="empty">Rien de terminé pour le moment. Marquez des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
+      setMain(topbar('Réalisé', '', 'L\'historique daté de tout ce qui a été terminé') + '<div class="wrap">' + hero + (html || '<div class="empty">Rien de terminé pour le moment. Marquez des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
     }).catch(showError);
   }
 
@@ -1747,28 +1764,44 @@
     jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v }).then(function (r) { if (r.ok) { toast('Envoyé'); chatClient(CHAT.key); setTimeout(function () { chatProject(CHAT.project); }, 200); } });
   }
 
-  /* ── Avis : avis sur l'espace + bilans, tous clients ── */
+  /* ── Avis : bilans + avis sur l'espace (hero + onglets) ── */
+  var AVIS_TAB = 'bilans', AVIS_D = null;
+  function avisSetTab(v) { AVIS_TAB = v; if (AVIS_D) renderAvisBody(AVIS_D); }
   function renderAvis() {
     setMain(topbar('Avis') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/avis').then(function (r) { return r.json(); }).then(function (d) {
-      var avis = d.avis || [], bilans = d.bilans || [];
-      var avisRows = avis.length ? avis.map(function (a) {
-        return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(a.client) + '</strong><span class="micro">' + (a.category ? esc(a.category) + ' · ' : '') + fmtDate(a.createdAt) + '</span></div><div class="muted mt" style="white-space:pre-wrap;line-height:1.5">' + esc(a.content) + '</div></div>';
-      }).join('') : '<div class="empty">Aucun avis sur l\'espace pour le moment. Les clients le laissent depuis l\'onglet « Votre avis » de leur espace.</div>';
-      var bilRows = bilans.length ? bilans.map(function (b) {
-        var stars = ''; for (var i = 1; i <= 5; i++) stars += '<span style="font-size:17px;color:' + ((b.rating >= i) ? '#d8a93a' : '#d9cfbe') + '">★</span>';
-        return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(b.client) + '</strong><span class="micro">' + fmtDate(b.submittedAt) + '</span></div>' +
-          '<div class="mt">' + stars + ' ' + (b.recommend ? '<span class="pill pill--done">recommande</span>' : '<span class="pill">pas encore</span>') + '</div>' +
-          (b.testimonial ? '<div class="muted mt" style="font-style:italic">« ' + esc(b.testimonial) + ' »' + (b.allowTestimonial ? ' <span class="pill pill--done">publiable</span>' : ' <span class="pill">interne</span>') + '</div>' : '') +
-          (b.liked ? '<div class="micro mt">Ce qui a plu : ' + esc(b.liked) + '</div>' : '') +
-          (b.improve ? '<div class="micro mt">À améliorer : ' + esc(b.improve) + '</div>' : '') + '</div>';
-      }).join('') : '<div class="empty">Aucun bilan de collaboration reçu.</div>';
-      setMain(topbar('Avis', '', 'Les bilans de collaboration remplis par tes clients') + '<div class="wrap">' +
-        '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:0 0 4px">Avis sur l\'espace</h3>' +
-        '<div class="micro mb">Ce que les clients signalent pour améliorer leur espace (manques, incompréhensions, suggestions).</div>' + avisRows +
-        '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:26px 0 4px">Bilans de fin de collaboration</h3>' +
-        '<div class="micro mb">Retours de satisfaction reçus à la fin des accompagnements.</div>' + bilRows + '</div>');
-    }).catch(showError);
+    api('/api/avis').then(function (r) { return r.json(); }).then(function (d) { AVIS_D = d; renderAvisBody(d); }).catch(showError);
+  }
+  function renderAvisBody(d) {
+    var avis = d.avis || [], bilans = d.bilans || [];
+    var rated = bilans.filter(function (b) { return b.rating; });
+    var avg = rated.length ? (rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length) : 0;
+    var reco = bilans.filter(function (b) { return b.recommend; }).length;
+    function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+    var hero = (bilans.length || avis.length) ? '<div class="kpis">' +
+      kc(bilans.length, 'Bilans reçus') +
+      kc(avg ? avg.toFixed(1).replace('.0', '') + '/5' : '·', 'Note moyenne') +
+      kc(bilans.length ? Math.round(reco / bilans.length * 100) + ' %' : '·', 'Recommandent') +
+      kc(avis.length, 'Avis sur l\'espace') + '</div>' : '';
+    var avisRows = avis.length ? avis.map(function (a) {
+      return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(a.client) + '</strong><span class="micro">' + (a.category ? esc(a.category) + ' · ' : '') + fmtDate(a.createdAt) + '</span></div><div class="muted mt" style="white-space:pre-wrap;line-height:1.5">' + esc(a.content) + '</div></div>';
+    }).join('') : '<div class="empty">Aucun avis sur l\'espace pour le moment. Les clients le laissent depuis l\'onglet « Votre avis » de leur espace.</div>';
+    var bilRows = bilans.length ? bilans.map(function (b) {
+      var stars = ''; for (var i = 1; i <= 5; i++) stars += '<span style="font-size:17px;color:' + ((b.rating >= i) ? '#d8a93a' : '#d9cfbe') + '">★</span>';
+      return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(b.client) + '</strong><span class="micro">' + fmtDate(b.submittedAt) + '</span></div>' +
+        '<div class="mt">' + stars + ' ' + (b.recommend ? '<span class="pill pill--done">recommande</span>' : '<span class="pill">pas encore</span>') + '</div>' +
+        (b.testimonial ? '<div class="muted mt" style="font-style:italic">« ' + esc(b.testimonial) + ' »' + (b.allowTestimonial ? ' <span class="pill pill--done">publiable</span>' : ' <span class="pill">interne</span>') + '</div>' : '') +
+        (b.liked ? '<div class="micro mt">Ce qui a plu : ' + esc(b.liked) + '</div>' : '') +
+        (b.improve ? '<div class="micro mt">À améliorer : ' + esc(b.improve) + '</div>' : '') + '</div>';
+    }).join('') : '<div class="empty">Aucun bilan de collaboration reçu.</div>';
+    var tabDefs = [['bilans', 'Bilans de collaboration', bilans.length], ['avis', 'Avis sur l\'espace', avis.length]];
+    if (!tabDefs.some(function (x) { return x[0] === AVIS_TAB; })) AVIS_TAB = 'bilans';
+    var tabBar = '<div class="tabs">' + tabDefs.map(function (x) {
+      return '<button class="tab' + (AVIS_TAB === x[0] ? ' active' : '') + '" onclick="ADM.avisSetTab(\'' + x[0] + '\')">' + esc(x[1]) + badge(x[2]) + '</button>';
+    }).join('') + '</div>';
+    var body = AVIS_TAB === 'avis'
+      ? '<div class="micro mb">Ce que les clients signalent pour améliorer leur espace (manques, incompréhensions, suggestions).</div>' + avisRows
+      : '<div class="micro mb">Retours de satisfaction reçus à la fin des accompagnements.</div>' + bilRows;
+    setMain(topbar('Avis', '', 'Les retours et bilans remplis par tes clients') + '<div class="wrap">' + hero + tabBar + '<div id="avisbody">' + body + '</div></div>');
   }
 
   // API publique pour les onclick
@@ -1779,7 +1812,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, avisSetTab: avisSetTab, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
