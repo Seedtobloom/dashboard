@@ -507,6 +507,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     banner:'M4 4h16v9H4zM4 17h16',
     steps:'M4 8h4v4H4zM10 8h4v4h-4zM16 8h4v4h-4zM6 12v4M12 12v4M18 12v4M6 16h12',
     cards:'M3 5h7v7H3zM14 5h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+    download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
     bullet:'M8 12h.01M8 6h.01M8 18h.01M12 12h8M12 6h8M12 18h8',
     chart:'M3 3v18h18M18 17l-5-5-3 3-5-5',
     wrench:'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
@@ -1331,10 +1332,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
 
+    // Nombre de livrables en attente de validation (toutes offres confondues)
+    var dlvToValidate = 0;
+    (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidate++; }); });
+
     // Echanges group
     var exchangeNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
+      navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') +
       navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +
       '' +
     '</div>';
@@ -4790,11 +4796,77 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
+  function buildLivrablesView() {
+    var projects = appData.projects || [];
+    var items = [];
+    projects.forEach(function(pd) {
+      var proj = pd.project || {};
+      var label = proj.projectTitle || 'Projet';
+      var pid = proj.id || '';
+      var seen = {};
+      (proj.deliverables || []).forEach(function(d) {
+        if (!d.fileKey && !d.reviewLink) return;
+        if (d.fileKey) seen[d.fileKey] = true;
+        items.push({ name: d.name || 'Livrable', pid: pid, projLabel: label, taskTitle: d.taskTitle || '',
+          status: d.status || 'a_valider', date: d.validatedAt || d.createdAt || null,
+          dlUrl: d.fileKey ? (API_BASE + '/files/' + encodeURIComponent(d.fileKey) + '/download') : '',
+          reviewLink: d.reviewLink || '' });
+      });
+      (pd.files || []).forEach(function(f) {
+        if (f.category !== 'deliverable' || seen[f.key]) return;
+        items.push({ name: f.name || 'Livrable', pid: pid, projLabel: label, taskTitle: '',
+          status: 'recu', date: f.uploadedAt || null,
+          dlUrl: API_BASE + '/files/' + encodeURIComponent(f.key) + '/download', reviewLink: '' });
+      });
+    });
+    var multi = projects.length > 1;
+    var visible = items.filter(function(it) { return cpLivrFilter === 'all' || it.pid === cpLivrFilter; });
+    function ts(it) { return it.date ? new Date(it.date).getTime() : 0; }
+    visible.sort(function(a, b) {
+      var aa = a.status === 'a_valider' ? 0 : 1, bb = b.status === 'a_valider' ? 0 : 1;
+      if (aa !== bb) return aa - bb;
+      return ts(b) - ts(a);
+    });
+    function statusBadge(st) {
+      var m = { a_valider: ['À valider', '#8a5a00', '#fbf0d8'], revision: ['En révision', '#8a3a2c', '#fbeae5'], valide: ['Validé', '#3f6b3a', '#e7f0e3'], validated: ['Validé', '#3f6b3a', '#e7f0e3'], recu: ['Reçu', '#5a4632', '#f0ece3'] };
+      var c = m[st] || m.recu;
+      return '<span style="font-family:var(--font-micro);font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[2] + ';color:' + c[1] + '">' + c[0] + '</span>';
+    }
+    function row(it) {
+      var meta = [it.projLabel, it.taskTitle, it.date ? fmtShort(it.date) : ''].filter(Boolean).join(' · ');
+      var action = it.dlUrl
+        ? '<a href="' + esc(it.dlUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--terre);color:var(--paille);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('download', 14, 'color:var(--paille)') + ' Télécharger</a>'
+        : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
+      return '<div style="display:flex;align-items:center;gap:14px;padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
+        '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon('download', 18) + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.name) + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(meta) + '</div>' +
+        '</div>' +
+        statusBadge(it.status) + action +
+      '</div>';
+    }
+    function chip(v, lbl) {
+      var on = cpLivrFilter === v;
+      return '<button onclick="cpLivrSetFilter(\'' + esc(v) + '\')" style="padding:6px 14px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'var(--glycine-50)') + ';color:' + (on ? 'var(--paille)' : 'var(--terre-600)') + '">' + esc(lbl) + '</button>';
+    }
+    var chips = multi ? '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px">' + chip('all', 'Tous') + projects.map(function(pd) { return chip(pd.project.id, pd.project.projectTitle || 'Projet'); }).join('') + '</div>' : '';
+    var listHtml = visible.length ? visible.map(row).join('')
+      : '<div style="padding:50px 24px;text-align:center"><div style="font-size:38px;margin-bottom:12px;opacity:0.3">📦</div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:6px">Pas encore de livrable</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Vos livrables apparaîtront ici dès que Cindy les dépose.</div></div>';
+    return '<div class="fade-up">' +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Les éléments à valider apparaissent en premier.</p>' +
+      chips + listHtml +
+    '</div>';
+  }
+
   function mainForView() {
     if (currentView === 'messages') return '<div class="cp-portal-main">' + buildConversation() + '</div>';
     if (currentView === 'project') return buildProjectView(getPD(currentId));
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
+    if (currentView === 'livrables') return '<div class="cp-portal-main">' + buildLivrablesView() + '</div>';
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);
       return pd0 ? '<div class="cp-content" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
@@ -5121,6 +5193,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     currentView = 'fichiers';
     renderShell({ resetScroll: true });
   };
+  var cpLivrFilter = 'all';
+  window.cpGoLivrables = function() {
+    currentView = 'livrables';
+    renderShell({ resetScroll: true });
+  };
+  window.cpLivrSetFilter = function(v) { cpLivrFilter = v; renderShell(); };
 
   var _hubCache = null;
 
