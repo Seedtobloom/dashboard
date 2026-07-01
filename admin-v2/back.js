@@ -1,14 +1,14 @@
 /**
- * stb-admin-back — API de la vue ADMIN (v2) — Seed to Bloom.
+ * stb-admin-back · API de la vue ADMIN (v2) · Seed to Bloom.
  *
  * Même modèle KV que la vue client (1 key = 1 espace client), plus un KV d'auth
  * admin. Le back n'est jamais joignable en direct : il exige
  * `X-Internal-Auth: <INTERNAL_SECRET>` injecté par le front admin.
  *
  * Bindings (wrangler.admin-back.toml) :
- *   KV  KV_CLIENT   — espaces clients (clé 32 chars = 1 client) + sessions client
- *   KV  KV_ADMIN    — auth admin (admin:auth), sessions admin (session:<id>), index clients
- *   R2  R2_FILES    — bucket "stb-files"
+ *   KV  KV_CLIENT   · espaces clients (clé 32 chars = 1 client) + sessions client
+ *   KV  KV_ADMIN    · auth admin (admin:auth), sessions admin (session:<id>), index clients
+ *   R2  R2_FILES    · bucket "stb-files"
  *   Secrets : RESEND_API_KEY, RESEND_FROM_EMAIL, INTERNAL_SECRET
  *
  * Auth admin : 2 clés de 32 chars (KV_ADMIN `admin:auth` = {keyA, keyB}),
@@ -606,7 +606,7 @@ async function handleAdminMessage(request, env, key, data) {
     const entry = { id: genId(), from: 'cindy', message: content, date: nowIso(), readByClient: false, readByAdmin: true };
     container.chat.push(entry);
     await saveClient(env, key, data);
-    await notifyClient(env, data, `Nouveau message — ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`);
+    await notifyClient(env, data, `Nouveau message · ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`);
     return json({ message: mapMsg(entry) }, 201);
 }
 /* ── bilan de collaboration + bénéfices ── */
@@ -682,7 +682,7 @@ async function handleTaskPatch(request, env, key, data, taskId) {
     await saveClient(env, key, data);
     if (body.status && body.status !== prevStatus) {
         const label = body.status === 'done' ? 'terminée' : body.status === 'in_progress' ? 'en cours' : body.status === 'review' ? 'à valider' : 'mise à jour';
-        await notifyClient(env, data, `Tâche ${label} — ${escHtml(t.title || '')}`, `<p>Votre tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`);
+        await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, `<p>Votre tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`);
     }
     return json(t);
 }
@@ -699,7 +699,7 @@ async function handleTaskComment(request, env, key, data, taskId) {
         found.task.comments = [];
     found.task.comments.push(comment);
     await saveClient(env, key, data);
-    await notifyClient(env, data, `Commentaire — ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`);
+    await notifyClient(env, data, `Commentaire · ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`);
     return json(comment, 201);
 }
 /* ── suivi / étapes ── */
@@ -737,9 +737,9 @@ async function handleStepPatch(request, env, key, data, stepId) {
     await saveClient(env, key, data);
     if (body.status && body.status !== prev) {
         if (body.status === 'done')
-            await notifyClient(env, data, `Étape validée — ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> de votre projet ${escHtml(label)} vient d'être validée ✓.</p>`);
+            await notifyClient(env, data, `Étape validée · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> de votre projet ${escHtml(label)} vient d'être validée ✓.</p>`);
         else if (body.status === 'waiting_client')
-            await notifyClient(env, data, `Action requise — ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> attend une action de votre part.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : ''));
+            await notifyClient(env, data, `Action requise · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> attend une action de votre part.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : ''));
     }
     return json(step);
 }
@@ -1168,7 +1168,7 @@ function emailWrapper(title, bodyHtml) {
   .h{background:#1C1205;padding:32px 40px;text-align:center}.h h1{color:#F2E5C2;font-size:22px;margin:0;font-weight:400;font-style:italic}
   .b{padding:36px 40px}.b p{color:#412F21;line-height:1.7;font-size:15px;margin:0 0 16px}
   .f{background:#F2E5C2;padding:20px 40px;text-align:center}.f p{color:#8a6f54;font-size:12px;margin:0}
-  </style></head><body><div class="c"><div class="h"><h1>✱ Seed to Bloom</h1></div>
+  </style></head><body><div class="c"><div class="h"><h1>Seed to Bloom</h1></div>
   <div class="b"><p><strong>${escHtml(title)}</strong></p>${bodyHtml}</div>
   <div class="f"><p>Seed to Bloom · seedtobloom.fr</p></div></div></body></html>`;
 }
@@ -1204,7 +1204,7 @@ async function handleTestEmail(request, env) {
     if (!to)
         return json({ ok: false, error: 'Indiquez une adresse "to".' }, 400);
     const html = emailWrapper('Test de configuration ✓', '<p>Cet e-mail confirme que Resend est correctement configuré pour Seed to Bloom 🎉</p>');
-    const r = await sendEmail(env, to, 'Test — Seed to Bloom', html);
+    const r = await sendEmail(env, to, 'Test · Seed to Bloom', html);
     return json({ ok: r.ok, status: r.status, error: r.error, from: env.RESEND_FROM_EMAIL || null });
 }
 // Notifie le client (awaité par les handlers pour garantir l'envoi sous Workers).
@@ -1229,13 +1229,13 @@ const EMAIL_TPL_DEFAULTS = {
         body: 'Bonjour {prenom},\n\nNous arrivons au terme de notre collaboration et votre retour compte beaucoup pour faire grandir le studio.\n\nConnectez-vous à votre espace, onglet Bilan, pour le partager en quelques minutes. Merci à vous.',
     },
     remind_deliverable: {
-        label: 'Relance — livrable à valider',
+        label: 'Relance · livrable à valider',
         vars: ['prenom', 'titre', 'projet'],
         subject: 'Rappel : un livrable attend votre validation',
         body: 'Bonjour {prenom},\n\nPetit rappel, le livrable {titre} attend votre validation dans votre espace.\n\nQuand vous avez un moment, vous pouvez le valider ou demander une révision directement depuis votre espace.',
     },
     remind_action: {
-        label: 'Relance — action en attente',
+        label: 'Relance · action en attente',
         vars: ['prenom', 'titre', 'projet'],
         subject: 'Rappel : une action vous attend',
         body: 'Bonjour {prenom},\n\nPetit rappel, l\'étape {titre} attend votre retour.\n\nVous pouvez agir directement depuis votre espace dès que possible.',

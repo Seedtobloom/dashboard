@@ -1,5 +1,5 @@
 /**
- * stb-client-back — API de la vue CLIENT (v2) — Seed to Bloom.
+ * stb-client-back · API de la vue CLIENT (v2) · Seed to Bloom.
  *
  * Architecture : reproduit l'API client du dashboard V1 (routes
  * `/api/client/<token>/…`) afin que le SPA client V1 fonctionne VERBATIM,
@@ -10,8 +10,8 @@
  * il exige `X-Internal-Auth: <INTERNAL_SECRET>` injecté par le front.
  *
  * Bindings (wrangler.client-back.toml) :
- *   KV  KV_CLIENT   — 1 key = 1 espace (clé 32 chars) + sessions (session:<id>)
- *   R2  R2_FILES    — bucket "stb-files" (source de vérité des documents)
+ *   KV  KV_CLIENT   · 1 key = 1 espace (clé 32 chars) + sessions (session:<id>)
+ *   R2  R2_FILES    · bucket "stb-files" (source de vérité des documents)
  *   Secrets : RESEND_API_KEY, RESEND_FROM_EMAIL, ADMIN_EMAIL, INTERNAL_SECRET
  *
  * Mapping KV -> "projets" V1 :
@@ -136,7 +136,7 @@ async function handleClientApi(
   if (method === 'GET' && sub === '/hub') {
     return json(getEspace(data).hub || { sections: [] });
   }
-  // Home (édition admin uniquement — toléré ici)
+  // Home (édition admin uniquement · toléré ici)
   if (method === 'PUT' && sub === '/home') {
     const body = await readJson(request);
     getEspace(data).home = body;
@@ -537,7 +537,7 @@ async function handleConversation(
     const entry = { id: genId(), from: 'client', message: content, date: nowIso(), readByClient: true, readByAdmin: false };
     espace.conversation.push(entry);
     await save(env, masterKey, data);
-    await notifyAdmin(env, `Nouveau message — ${clientFullName(data)}`,
+    await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`,
       `<p><strong>${escHtml(clientFullName(data))}</strong> vous a écrit :</p>` +
       `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>`);
     return json({ message: mapChatToMessages([entry])[0] }, 201);
@@ -557,7 +557,7 @@ async function handleMessage(request: Request, env: Env, masterKey: string, data
   const entry = { id: genId(), from: 'client', message: content, date: nowIso(), readByClient: true, readByAdmin: false };
   container.chat.push(entry);
   await save(env, masterKey, data);
-  await notifyAdmin(env, `Nouveau message — ${clientFullName(data)}`,
+  await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> vous a écrit (${escHtml((body.projectId || '').toString())}) :</p>` +
     `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>`);
   return json({ message: mapChatToMessages([entry])[0] }, 201);
@@ -585,7 +585,7 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
   }
   await save(env, masterKey, data);
   const who = clientFullName(data);
-  await notifyAdmin(env, `Livrable ${decision === 'valide' ? 'validé' : 'à revoir'} — ${who}`,
+  await notifyAdmin(env, `Livrable ${decision === 'valide' ? 'validé' : 'à revoir'} · ${who}`,
     `<p><strong>${escHtml(who)}</strong> ${decision === 'valide' ? 'a validé' : 'a demandé une révision sur'} le livrable <em>${escHtml(liv.name || '')}</em>.</p>` +
     (liv.clientComment ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(liv.clientComment)}</p>` : ''));
   return json({ deliverable: mapDeliverables([liv])[0] });
@@ -667,7 +667,7 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   tasksOf(container).push(task);
   await save(env, masterKey, data);
 
-  await notifyAdmin(env, `Nouvelle tâche — ${clientFullName(data)}`,
+  await notifyAdmin(env, `Nouvelle tâche · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a créé une tâche partenaire créative :</p>` +
     `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px"><strong>${escHtml(task.title)}</strong>` +
     (task.dueDate ? `<br><span style="color:#8a6f54">Échéance : ${escHtml(task.dueDate)}</span>` : '') +
@@ -913,7 +913,7 @@ async function handleTicketCreate(request: Request, env: Env, masterKey: string,
   };
   ticketsOf(container).unshift(ticket);
   await save(env, masterKey, data);
-  await notifyAdmin(env, `Nouvelle demande — ${clientFullName(data)}`,
+  await notifyAdmin(env, `Nouvelle demande · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a ouvert un ticket : <strong>${escHtml(ticket.title)}</strong></p>` +
     (ticket.description ? `<p style="color:#412F21">${escHtml(ticket.description)}</p>` : ''));
   return json(ticket, 201);
@@ -949,7 +949,7 @@ async function handleSpaceFeedback(request: Request, env: Env, masterKey: string
   const item = { id: genId(), category: (body.category || '').toString().slice(0, 40), content: content.slice(0, 2000), createdAt: nowIso(), readByAdmin: false };
   esp.spaceFeedback.unshift(item);
   await save(env, masterKey, data);
-  await notifyAdmin(env, `Avis sur l'espace — ${clientFullName(data)}`,
+  await notifyAdmin(env, `Avis sur l'espace · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a laissé un retour sur son espace` + (item.category ? ` (${escHtml(item.category)})` : '') + ` :</p>` +
     `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(content)}</p>`);
   return json(item, 201);
@@ -969,7 +969,7 @@ async function handleBilanSubmit(request: Request, env: Env, masterKey: string, 
   b.submittedAt = nowIso();
   pc.bilan = b;
   await save(env, masterKey, data);
-  await notifyAdmin(env, `Bilan de collaboration — ${clientFullName(data)}`,
+  await notifyAdmin(env, `Bilan de collaboration · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a partagé son bilan de fin de collaboration.</p>` +
     `<p>Note de satisfaction : <strong>${b.rating}/5</strong></p>` +
     (b.liked ? `<p>Ce qui a plu : ${escHtml(b.liked)}</p>` : '') +
@@ -1016,7 +1016,7 @@ function emailWrapper(title: string, bodyHtml: string): string {
   .h{background:#1C1205;padding:32px 40px;text-align:center}.h h1{color:#F2E5C2;font-size:22px;margin:0;font-weight:400;font-style:italic}
   .b{padding:36px 40px}.b p{color:#412F21;line-height:1.7;font-size:15px;margin:0 0 16px}
   .f{background:#F2E5C2;padding:20px 40px;text-align:center}.f p{color:#8a6f54;font-size:12px;margin:0}
-  </style></head><body><div class="c"><div class="h"><h1>✱ Seed to Bloom</h1></div>
+  </style></head><body><div class="c"><div class="h"><h1>Seed to Bloom</h1></div>
   <div class="b"><p><strong>${escHtml(title)}</strong></p>${bodyHtml}</div>
   <div class="f"><p>Seed to Bloom · seedtobloom.fr</p></div></div></body></html>`;
 }
