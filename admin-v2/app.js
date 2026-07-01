@@ -171,8 +171,10 @@
     if (VIEW === 'avis') return renderAvis();
     if (VIEW === 'reglages') return renderReglages();
   }
-  function topbar(title, right) {
-    return '<div class="topbar"><h1>' + esc(title) + '</h1><div class="right">' + (right || '') + '</div></div>';
+  function topbar(title, right, subtitle) {
+    return '<div class="topbar"><div class="topbar__head"><h1>' + esc(title) + '</h1>' +
+      (subtitle ? '<div class="topbar__sub">' + esc(subtitle) + '</div>' : '') +
+      '</div><div class="right">' + (right || '') + '</div></div>';
   }
   function setMain(html) { el('main').innerHTML = html; }
 
@@ -230,7 +232,7 @@
   }
   function reglSetTab(t) { REGL_TAB = t; renderReglages(); }
   function renderReglages() {
-    setMain(topbar('Réglages') + '<div class="wrap" style="max-width:820px">' + reglTabs() + '<div id="regl-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    setMain(topbar('Réglages', '', 'Les paramètres partagés avec l\'espace de tes clients') + '<div class="wrap" style="max-width:820px">' + reglTabs() + '<div id="regl-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
     if (REGL_TAB === 'emails') {
       api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
         EMAIL_TPLS = d.templates || [];
@@ -453,7 +455,7 @@
         }).join('') +
         '</div></div>';
 
-      setMain(topbar('Priorités', right) + '<div class="wrap">' + revBand + focusBand + kpis +
+      setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap">' + revBand + focusBand + kpis +
         '<div class="pcols">' +
           '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
@@ -777,7 +779,7 @@
       var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutez en une ci-dessus.</div>') : '';
       var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent);
       var addBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">' + (MT_ADDOPEN ? 'Fermer' : '+ Nouvelle tâche') + '</button>';
-      setMain(topbar('Mes tâches', addBtn) + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
+      setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
     }).catch(showError);
   }
   function myTaskAdd() {
@@ -958,7 +960,7 @@
     var cal = '<div class="card"><div class="between"><h3>Votre semaine</h3><div class="row" style="gap:10px;align-items:center"><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span><button class="btn btn--dark btn--sm" onclick="ADM.planTaskForm()">+ Tâche</button></div></div>' + ctaForm + '<div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
     var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmentez vos heures, retirez un bloc, ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
     var settings = '<details class="card mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre);list-style:none">Réglages, blocs et mode d\'emploi</summary><div class="mt">' + capEditor + blockEditor + guide + '</div></details>';
-    setMain(topbar('Calendrier intelligent') + '<div class="wrap" style="max-width:1440px">' + nudges + cal + overflowHtml + settings + '</div>');
+    setMain(topbar('Calendrier intelligent', '', 'Tes tâches réparties automatiquement sur la semaine') + '<div class="wrap" style="max-width:1440px">' + nudges + cal + overflowHtml + settings + '</div>');
   }
   function planStep(n, title, desc) {
     return '<div style="flex:1;min-width:180px">' +
@@ -1035,7 +1037,7 @@
         var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
         return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
       }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
-      setMain(topbar('KPI partenaire créative') + '<div class="wrap">' + kpis +
+      setMain(topbar('KPI partenaire créative', '', 'Ton activité de partenaire créative, mois par mois') + '<div class="wrap">' + kpis +
         '<div class="pcols">' +
           '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
           '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div>' +
@@ -1072,7 +1074,7 @@
         }).join('');
         return '<div class="card"><h3>' + monthLabel(k) + ' <span class="micro" style="color:var(--muted)">· ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + (totalMin ? ' · ' + (totalMin / 60).toFixed(1).replace('.0', '') + ' h' : '') + '</span></h3>' + rows + '</div>';
       }).join('');
-      setMain(topbar('Réalisé') + '<div class="wrap">' + (html || '<div class="empty">Rien de terminé pour le moment. Marquez des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
+      setMain(topbar('Réalisé', '', 'L\'historique daté de tout ce qui a été terminé') + '<div class="wrap">' + (html || '<div class="empty">Rien de terminé pour le moment. Marquez des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
     }).catch(showError);
   }
 
@@ -1120,7 +1122,7 @@
           '<div class="m">' + esc(c.entreprise || '·') + (c.email ? ' · ' + esc(c.email) : '') + '</div>' +
           '<div class="m">' + (c.isActive ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') + (c.unread > 0 ? ' <span class="pill pill--a_valider">' + c.unread + ' message' + (c.unread > 1 ? 's' : '') + '</span>' : '') + '</div></div>';
       }).join('');
-      setMain(topbar('Clients', right) + '<div class="wrap">' + (list ? '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Créez-en un, ou scannez le KV pour récupérer les clés existantes.</div>') + '</div>');
+      setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Créez-en un, ou scannez le KV pour récupérer les clés existantes.</div>') + '</div>');
     }).catch(showError);
   }
   function scan() { api('/api/clients/scan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) { toast((d.added || 0) + ' client(s) ajouté(s)'); renderClients(); }); }
@@ -1722,7 +1724,7 @@
           (b.liked ? '<div class="micro mt">Ce qui a plu : ' + esc(b.liked) + '</div>' : '') +
           (b.improve ? '<div class="micro mt">À améliorer : ' + esc(b.improve) + '</div>' : '') + '</div>';
       }).join('') : '<div class="empty">Aucun bilan de collaboration reçu.</div>';
-      setMain(topbar('Avis') + '<div class="wrap">' +
+      setMain(topbar('Avis', '', 'Les bilans de collaboration remplis par tes clients') + '<div class="wrap">' +
         '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:0 0 4px">Avis sur l\'espace</h3>' +
         '<div class="micro mb">Ce que les clients signalent pour améliorer leur espace (manques, incompréhensions, suggestions).</div>' + avisRows +
         '<h3 style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin:26px 0 4px">Bilans de fin de collaboration</h3>' +
