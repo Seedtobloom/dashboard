@@ -180,14 +180,14 @@
     setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
       EMAIL_TPLS = d.templates || [];
-      var intro = '<div class="card" style="border-top:3px solid #6c4ea4">' +
+      var intro = '<div class="card" style="background:#f6f0ff">' +
         '<div class="micro">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
       setMain(topbar('Textes des e-mails') + '<div class="wrap" style="max-width:760px">' + intro + EMAIL_TPLS.map(emailCard).join('') + '</div>');
     }).catch(function () { setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty">Erreur de chargement.</div></div>'); });
   }
   function emailCard(t) {
     var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
-    return '<div class="card infocard" style="border-top:3px solid #c9952f">' +
+    return '<div class="card infocard" style="background:#fbf6e8">' +
       '<h3><span class="infocard__dot" style="background:#c9952f"></span>' + esc(t.label) + '</h3>' +
       '<div class="field"><label>Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
       '<div class="field mt"><label>Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
@@ -230,8 +230,8 @@
       var nWeek = mine.filter(function (x) { return x._d > 0 && x._d <= 7; }).length;
       var nWait = waiting.length + pv.length;
 
-      function kpi(cls, n, l) { return '<div class="kpi ' + cls + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-      var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard') + kpi('kpi--today', nToday, "Aujourd'hui") + kpi('', nWeek, 'Cette semaine') + kpi('', nWait, 'Attente client') + '</div>';
+      function kpi(cls, n, l) { return '<div class="kpi ' + cls + (n > 0 ? ' is-on' : '') + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard') + kpi('kpi--today', nToday, "Aujourd'hui") + kpi('kpi--week', nWeek, 'Cette semaine') + kpi('kpi--wait', nWait, 'Attente client') + '</div>';
 
       function prow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
@@ -276,12 +276,12 @@
 
       setMain(topbar('Priorités', right) + '<div class="wrap">' + kpis +
         '<div class="pcols">' +
-          '<div class="card"><h3>Ce que vous avez à faire</h3>' +
+          '<div class="card infocard" style="background:#f6f0ff"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
           '<div>' +
-            '<div class="card"><h3>En attente du client</h3>' +
+            '<div class="card infocard" style="background:#eff4fb"><h3><span class="infocard__dot" style="background:#7da2e0"></span>En attente du client</h3>' +
               (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
-            '<div class="card mt"><h3>Forfaits du mois</h3>' +
+            '<div class="card mt infocard" style="background:#fbf6e8"><h3><span class="infocard__dot" style="background:#c9952f"></span>Forfaits du mois</h3>' +
               (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div>' +
           '</div>' +
         '</div>' +
@@ -443,8 +443,8 @@
       var estTotal = todo.reduce(function (s, x) { return s + (x.estMinutes || 0); }, 0);
       var weekAgo = new Date(Date.now() - 7 * 86400000);
       var doneWeek = done.filter(function (x) { return x.completedAt && new Date(x.completedAt) >= weekAgo; }).length;
-      function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-      var kpis = '<div class="kpis">' + kc(todo.length, 'À faire') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé') + kc((spentTotal / 3600).toFixed(1).replace('.0', '') + ' h', 'Temps passé') + kc(doneWeek, 'Fait (7 j)') + '</div>';
+      function kc(n, l, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var kpis = '<div class="kpis">' + kc(todo.length, 'À faire', 'kpi--week') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé', 'kpi--today') + kc((spentTotal / 3600).toFixed(1).replace('.0', '') + ' h', 'Temps passé', 'kpi--wait') + kc(doneWeek, 'Fait (7 j)', 'kpi--done') + '</div>';
       var form = '<div class="card"><h3>Ajouter une tâche</h3>' +
         '<div class="row"><input class="inp" id="mt-title" placeholder="Que dois-tu faire ?" style="flex:2;min-width:160px">' +
           '<select class="inp" id="mt-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select>' +
@@ -453,12 +453,12 @@
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">+ Ajouter</button></div>' +
         '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel) : https://… , détails…" style="width:100%;box-sizing:border-box">' +
         '<div class="micro mt">Durée estimée en minutes (15, 30, 60…) : utile pour le calendrier intelligent et les KPI de temps. La note accepte du texte et des liens cliquables.</div></div>';
-      var cols = [['haute', 'Haute', '#b83f29'], ['normale', 'Normale', '#6c4ea4'], ['basse', 'Basse', '#8a7355']];
+      var cols = [['haute', 'Haute', '#b83f29', '#fbf1ee'], ['normale', 'Normale', '#6c4ea4', '#f6f0ff'], ['basse', 'Basse', '#8a7355', '#f7f2ea']];
       var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
-        return '<div style="flex:1;min-width:250px">' +
-          '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">' + c[1] + '</span><span class="micro muted">' + list.length + '</span></div>' +
-          (list.length ? list.map(mtCard).join('') : '<div class="micro muted" style="padding:6px 2px">Rien ici.</div>') +
+        return '<div style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px">' +
+          '<div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + c[2] + '">' + c[1] + '</span><span style="margin-left:auto;font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + c[2] + ';background:#fff;min-width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center">' + list.length + '</span></div>' +
+          (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:6px 2px;color:' + c[2] + ';opacity:0.55">Rien ici.</div>') +
         '</div>';
       }).join('') + '</div>';
       var doneView = done.length ? done.slice().reverse().slice(0, 40).map(mtCard).join('') : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
@@ -921,7 +921,7 @@
   function tabInfos() {
     var c = CUR.client, e = CUR.entreprise;
     var active = CUR.isActive;
-    var coord = '<div class="card infocard" style="border-top:3px solid #6c4ea4">' +
+    var coord = '<div class="card infocard" style="background:#f6f0ff">' +
       '<div class="between mb"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Coordonnées</h3>' +
       '<label class="checkbox infocard__act' + (active ? ' is-on' : '') + '"><input type="checkbox" id="inf-active"' + (active ? ' checked' : '') + ' onchange="ADM.saveInfos()"> ' + (active ? 'espace actif' : 'espace inactif') + '</label></div>' +
       '<div class="grid grid--2">' +
@@ -931,7 +931,7 @@
       fld('inf-ent-siret', 'SIRET', e.siret) + fld('inf-ent-tva', 'TVA', e.tva) +
       '</div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
       '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div></div>';
-    var danger = '<div class="card infocard" style="border-top:3px solid #b5462f;background:#fbf1ee">' +
+    var danger = '<div class="card infocard" style="background:#fbf1ee">' +
       '<h3 style="color:#b5462f"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
       '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
@@ -953,7 +953,7 @@
       var nm = (s.content && s.content.name) || '';
       return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
-    return '<div class="card infocard" style="border-top:3px solid #7da2e0"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
+    return '<div class="card infocard" style="background:#eff4fb"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
       '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
       (rows || '<div class="empty">Aucun support pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
@@ -979,7 +979,7 @@
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
-    return '<div class="card infocard" style="border-top:3px solid #c9952f"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
+    return '<div class="card infocard" style="background:#fbf6e8"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
       '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + '</div>';
   }
   function setBanner(pid, color) {
@@ -1026,7 +1026,7 @@
       var stLbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' }[t.status] || t.status;
       var stBg = { todo: '#efe6fb', in_progress: '#e3edfb', review: '#fbf0d8', done: '#e7f0e3' }[t.status] || '#efe6fb';
       var needsAction = t.status === 'review';
-      return '<div class="card" style="border-top:3px solid ' + stCol + (needsAction ? ';box-shadow:0 0 0 1px #e8c98a' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
+      return '<div class="card" style="background:' + stBg + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
         (t.content ? '<div class="muted mb mt" style="font-size:14px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '<div class="mt"></div>') +
         '<div class="row" style="align-items:center;gap:10px">' +
         '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
