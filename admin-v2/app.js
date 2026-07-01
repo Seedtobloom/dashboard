@@ -464,7 +464,8 @@
     var timerBtn = (dn || t.archived) ? '' : (running
       ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸</button>'
       : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶</button>');
-    return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:8px">' +
+    var canDrag = !dn && !t.archived;
+    return '<div' + (canDrag ? ' draggable="true" ondragstart="ADM.mtDragStart(event,\'' + t.id + '\')" ondragend="ADM.mtDragEnd(event)"' : '') + ' style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:8px' + (canDrag ? ';cursor:grab' : '') + '">' +
       '<div style="display:flex;align-items:flex-start;gap:8px"><span class="pdot" style="background:' + pcol + ';margin-top:5px;flex-shrink:0"></span>' +
         '<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:500;line-height:1.3;color:' + (dn ? 'var(--muted)' : 'var(--terre)') + (dn ? ';text-decoration:line-through' : '') + '">' + esc(t.title) + '</div>' +
           (meta ? '<div class="micro muted" style="margin-top:2px">' + meta + '</div>' : '') +
@@ -482,6 +483,20 @@
         '</div></div></div>';
   }
   function mtSetView(v) { MT_VIEW = v; renderMyTasks(); }
+  var MT_DRAG = null;
+  function mtDragStart(e, id) { MT_DRAG = id; if (e.dataTransfer) { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; } }
+  function mtDragEnd() { MT_DRAG = null; }
+  function mtDragOver(e) { e.preventDefault(); var c = e.currentTarget; if (c && c.classList.contains('mtcol')) c.style.background = '#ece0c9'; }
+  function mtDragLeave(e) { var c = e.currentTarget; if (c && c.classList.contains('mtcol')) c.style.background = '#f6f2ea'; }
+  function mtDrop(e, priority) {
+    e.preventDefault();
+    var c = e.currentTarget; if (c && c.classList.contains('mtcol')) c.style.background = '#f6f2ea';
+    var id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || MT_DRAG; MT_DRAG = null;
+    if (!id) return;
+    var t = MT_TASKS.filter(function (x) { return x.id === id; })[0];
+    if (t && (t.priority || 'normale') === priority) return;
+    jpost('/api/admin/tasks/' + id, { priority: priority }, 'PATCH').then(function (r) { if (r.ok) { toast('Priorité mise à jour'); renderMyTasks(); } else toast('Erreur'); });
+  }
   var PT_TIMER = null, PT_INT = null;
   var DOC_BASE_TITLE = '';
   function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; if (!DOC_BASE_TITLE) DOC_BASE_TITLE = document.title; document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
@@ -622,9 +637,9 @@
       var cols = [['haute', 'Haute', '#b83f29', '#f6f2ea'], ['normale', 'Normale', '#6c4ea4', '#f6f2ea'], ['basse', 'Basse', '#8a7355', '#f6f2ea']];
       var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
-        return '<div style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px">' +
+        return '<div class="mtcol" data-prio="' + c[0] + '" ondragover="ADM.mtDragOver(event)" ondragleave="ADM.mtDragLeave(event)" ondrop="ADM.mtDrop(event,\'' + c[0] + '\')" style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px;transition:background 120ms">' +
           '<div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + c[2] + '">' + c[1] + '</span><span style="margin-left:auto;font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + c[2] + ';background:#fff;min-width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center">' + list.length + '</span></div>' +
-          (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:6px 2px;color:' + c[2] + ';opacity:0.55">Rien ici.</div>') +
+          (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Déposez une tâche ici</div>') +
         '</div>';
       }).join('') + '</div>';
       var doneView = done.length ? done.slice().reverse().slice(0, 40).map(mtCard).join('') : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
@@ -1588,7 +1603,7 @@
     emailSave: emailSave, emailReset: emailReset,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
