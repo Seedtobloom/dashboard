@@ -1116,14 +1116,41 @@
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()">Scanner le KV</button><button class="btn" onclick="ADM.nav(\'newclient\')">+ Nouveau client</button>';
     setMain(topbar('Clients', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
-      var list = (d.clients || []).map(function (c) {
-        var nm = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key;
-        return '<div class="tile" onclick="ADM.openClient(\'' + c.key + '\')"><div class="t">' + esc(nm) + badge(c.unread || 0) + '</div>' +
-          '<div class="m">' + esc(c.entreprise || '·') + (c.email ? ' · ' + esc(c.email) : '') + '</div>' +
-          '<div class="m">' + (c.isActive ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') + (c.unread > 0 ? ' <span class="pill pill--a_valider">' + c.unread + ' message' + (c.unread > 1 ? 's' : '') + '</span>' : '') + '</div></div>';
-      }).join('');
-      setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Créez-en un, ou scannez le KV pour récupérer les clés existantes.</div>') + '</div>');
+      var clients = (d.clients || []).slice().sort(function (a, b) {
+        if ((b.unread || 0) !== (a.unread || 0)) return (b.unread || 0) - (a.unread || 0);
+        if (!!b.isActive !== !!a.isActive) return (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0);
+        return clientName(a).localeCompare(clientName(b));
+      });
+      var actifs = clients.filter(function (c) { return c.isActive; }).length;
+      var totalUnread = clients.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
+      var head = '<div class="micro" style="margin:-2px 0 16px;color:var(--terre-600)">' + clients.length + ' espace' + (clients.length > 1 ? 's' : '') + ' · ' + actifs + ' actif' + (actifs > 1 ? 's' : '') + (totalUnread ? ' · ' + totalUnread + ' message' + (totalUnread > 1 ? 's' : '') + ' à lire' : '') + '</div>';
+      var list = clients.map(clientCard).join('');
+      setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Créez-en un, ou scannez le KV pour récupérer les clés existantes.</div>') + '</div>');
     }).catch(showError);
+  }
+  function clientName(c) { return ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key; }
+  function clientInitials(c) {
+    var src = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || '?';
+    var parts = src.replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+    var ini = parts.length >= 2 ? (parts[0][0] + parts[1][0]) : (parts[0] ? parts[0].slice(0, 2) : '?');
+    return ini.toUpperCase();
+  }
+  function clientCard(c) {
+    var nm = clientName(c);
+    var co = c.entreprise || '';
+    var active = c.isActive;
+    var unread = c.unread || 0;
+    return '<div class="ctile" tabindex="0" onclick="ADM.openClient(\'' + c.key + '\')" onkeydown="if(event.key===\'Enter\')ADM.openClient(\'' + c.key + '\')">' +
+      '<div class="ctile__top">' +
+        '<div class="ctile__av">' + esc(clientInitials(c)) + '</div>' +
+        '<div class="ctile__id"><div class="ctile__name">' + esc(nm) + '</div>' + (co ? '<div class="ctile__co">' + esc(co) + '</div>' : '') + '</div>' +
+        '<span class="ctile__dot' + (active ? ' on' : '') + '" title="' + (active ? 'Espace actif' : 'Espace inactif') + '"></span>' +
+      '</div>' +
+      (c.email ? '<div class="ctile__meta">' + esc(c.email) + '</div>' : '') +
+      '<div class="ctile__foot">' +
+        (active ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') +
+        (unread > 0 ? '<span class="pill pill--a_valider">' + unread + ' message' + (unread > 1 ? 's' : '') + '</span>' : '') +
+      '</div></div>';
   }
   function scan() { api('/api/clients/scan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) { toast((d.added || 0) + ' client(s) ajouté(s)'); renderClients(); }); }
 
