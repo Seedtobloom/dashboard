@@ -1302,17 +1302,22 @@
     var f = el('te-title'); if (f) f.focus();
   }
   function taskDlvBlock(d, t) {
-    var ls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; });
-    var rows = ls.map(function (l) {
-      return '<div class="file"><span class="nm">📦 ' + esc(l.name) + ' ' + pill(l.status, l.status) +
-        (l.clientComment ? '<div class="muted" style="font-size:13px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
+    var stLbl = { a_valider: 'à valider', valide: 'validé', refuse: 'à revoir', revision: 'à revoir' };
+    var ls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; }).slice()
+      .sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
+    var rows = ls.map(function (l, i) {
+      var isLast = i === ls.length - 1;
+      return '<div class="file" style="' + (isLast ? '' : 'opacity:0.72') + '"><span class="nm">' +
+        '<strong style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;color:var(--terre)">V' + (i + 1) + '</strong> ' + esc(l.name) + ' ' + pill(l.status, stLbl[l.status] || l.status) +
+        (l.createdAt ? ' <span class="micro" style="letter-spacing:0.02em">' + fmtDate(l.createdAt) + '</span>' : '') +
+        (l.clientComment ? '<div class="muted" style="font-size:13px;font-style:italic;margin-top:2px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
         (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
         '<button class="btn btn--danger btn--sm" onclick="ADM.delDeliverable(\'' + l.id + '\')">Retirer</button></div>';
     }).join('');
-    return '<div class="mt" style="border-top:1px dashed var(--bone-d);padding-top:10px">' +
-      '<div class="micro mb"><strong>Livrables de la tâche</strong></div>' +
+    return '<div class="mt">' +
+      '<div class="micro mb"><strong>Versions du livrable</strong>' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
       (rows || '<div class="micro muted">Aucun livrable rattaché.</div>') +
-      '<div class="row mt"><input class="inp" type="file" id="tdf-' + t.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">+ Livrable</button></div>' +
+      '<div class="row mt"><input class="inp" type="file" id="tdf-' + t.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + (ls.length ? '+ Nouvelle version' : '+ Livrable') + '</button></div>' +
       '<div class="field mt"><label>Lien de révision (pour récupérer les retours)</label><div class="row"><input id="trl-' + t.id + '" class="inp" placeholder="https://… (Figma, proofing…)" value="' + esc(t.reviewLink || '') + '"><button class="btn btn--sm" onclick="ADM.taskReview(\'' + t.id + '\')">OK</button></div></div>' +
       '</div>';
   }

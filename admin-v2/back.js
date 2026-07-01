@@ -853,21 +853,10 @@ async function handleUpload(request, env, key, data) {
         if (container) {
             if (!Array.isArray(container.livrables))
                 container.livrables = [];
-            // Réponse à une révision : si un livrable de cette tâche est « à revoir », on le met à jour (nouvelle version) au lieu d'en créer un doublon.
-            const existing = taskId ? container.livrables.find((l) => l.taskId === taskId && (l.status === 'refuse' || l.status === 'revision')) : null;
-            if (existing) {
-                existing.name = file.name;
-                existing.fileKey = r2key;
-                existing.status = 'a_valider';
-                existing.clientComment = '';
-                existing.validatedAt = null;
-                existing.createdAt = nowIso();
-                deliverable = existing;
-            }
-            else {
-                deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '' };
-                container.livrables.push(deliverable);
-            }
+            // Chaque dépôt crée une nouvelle version : on garde l'historique complet des livrables d'une tâche.
+            const version = taskId ? (container.livrables.filter((l) => l.taskId === taskId).length + 1) : 0;
+            deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version };
+            container.livrables.push(deliverable);
             // Rattachement à une tâche : on mémorise son titre et on passe la tâche en « à valider ».
             if (taskId && Array.isArray(container.taches)) {
                 const tk = container.taches.find((t) => t.id === taskId);
@@ -967,17 +956,28 @@ async function handleDashboard(env) {
         const who = clientName(data);
         // livrables : en attente de validation client, ou révision demandée par le client
         const collectLiv = (container, label, projectId) => {
-            if (container && Array.isArray(container.livrables)) {
-                container.livrables.forEach((l) => {
-                    const st = l.status || 'a_valider';
-                    if (st === 'a_valider') {
-                        pendingValidation.push({ key: ci.key, client: who, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskTitle: l.taskTitle || '' });
-                    }
-                    else if (st === 'refuse' || st === 'revision') {
-                        revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null });
-                    }
-                });
-            }
+            if (!container || !Array.isArray(container.livrables))
+                return;
+            // On ne considère que la dernière version d'une tâche (les versions précédentes sont l'historique).
+            const latestByTask = {};
+            container.livrables.forEach((l) => {
+                if (!l.taskId)
+                    return;
+                const cur = latestByTask[l.taskId];
+                if (!cur || String(l.createdAt || '') >= String(cur.createdAt || ''))
+                    latestByTask[l.taskId] = l;
+            });
+            container.livrables.forEach((l) => {
+                if (l.taskId && latestByTask[l.taskId] !== l)
+                    return;
+                const st = l.status || 'a_valider';
+                if (st === 'a_valider') {
+                    pendingValidation.push({ key: ci.key, client: who, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskTitle: l.taskTitle || '' });
+                }
+                else if (st === 'refuse' || st === 'revision') {
+                    revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null });
+                }
+            });
         };
         // partenaire : tâches non terminées avec échéance + forfait
         const pc = getDomainObj(esp, 'partenaireCreative');
