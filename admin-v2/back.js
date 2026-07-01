@@ -1111,6 +1111,7 @@ async function handleMyTaskCreate(request, env) {
         timeSpentSeconds: 0,
         dueDate: b.dueDate || null,
         status: 'todo',
+        tags: Array.isArray(b.tags) ? b.tags.slice(0, 8).map((x) => String(x == null ? '' : x).trim().slice(0, 24)).filter((x) => !!x) : [],
         createdAt: nowIso(),
         completedAt: null,
     };
@@ -1129,6 +1130,9 @@ async function handleMyTaskUpdate(request, env, id) {
         t[k] = b[k]; });
     if ('subtasks' in b) {
         t.subtasks = Array.isArray(b.subtasks) ? b.subtasks.slice(0, 40).map((s) => ({ id: String((s && s.id) || genId()), text: String((s && s.text) || '').slice(0, 240), done: !!(s && s.done) })).filter((s) => s.text) : [];
+    }
+    if ('tags' in b) {
+        t.tags = Array.isArray(b.tags) ? b.tags.slice(0, 8).map((x) => String(x == null ? '' : x).trim().slice(0, 24)).filter((x) => !!x) : [];
     }
     if (b.status === 'done' && !t.completedAt)
         t.completedAt = nowIso();
