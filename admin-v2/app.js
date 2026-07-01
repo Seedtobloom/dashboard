@@ -283,6 +283,7 @@
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div></div>' +
           (x.id ? '<div class="prow__act">' +
+            (x.project === 'partner' ? '<button class="pbtn" title="Ajouter le livrable à cette tâche" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
             '<button class="pbtn" title="Reporter à une autre date" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>' +
           '</div>' : '<div>' + pill(x.status, SL[x.status] || x.status) + '</div>') +
@@ -307,6 +308,7 @@
           '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--terre);font-size:14px">' + esc(x.title) + '</div>' +
             '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenCol(x._d) + ';font-weight:700">' + whenLabel(x._d) + '</span></div></div>' +
           (x.id ? '<div class="prow__act" style="flex-shrink:0">' +
+            (x.project === 'partner' ? '<button class="pbtn" title="Ajouter le livrable" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             '<button class="pbtn pbtn--ok" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
             '<button class="pbtn" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>' +
           '</div>' : '') +
@@ -844,6 +846,20 @@
   function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : '/steps/') + id; }
   function prioDone(key, project, kind, id) {
     jpost(prioUrl(key, kind, id), { projectId: project, status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { toast('Marqué fait ✓'); renderPriorities(); } else toast('Erreur'); });
+  }
+  function prioAddDlv(key, id) {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(inp);
+    var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
+      toast('Envoi du livrable…');
+      api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable ajouté · tâche « à valider »'); renderPriorities(); } else toast((res.d && res.d.error) || 'Erreur'); })
+        .catch(function () { cleanup(); toast('Erreur'); });
+    };
+    inp.click();
   }
   function prioPostpone(key, project, kind, id, cur) {
     var inp = document.createElement('input'); inp.type = 'date'; if (cur) inp.value = cur;
@@ -1482,7 +1498,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
