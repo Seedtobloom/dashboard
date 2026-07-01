@@ -2075,6 +2075,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#6c4ea4;background:#f2ebff;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
         (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#6c4ea4;background:#f2ebff;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
       '</div>':'') +
+      ((Array.isArray(t.attachments)&&t.attachments.length)?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
+        t.attachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--navy,#1C1205);background:#f4f0e8;border-radius:8px;padding:4px 9px;text-decoration:none">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+
+      '</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
       (t.imageUrl?'<div style="margin-bottom:10px"><img src="'+esc(t.imageUrl)+'" alt="" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover" onerror="this.style.display=\'none\'"></div>':'') +
@@ -3692,8 +3695,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="margin-bottom:14px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#1C1205);display:block;margin-bottom:6px">Votre brief</label>' +
           '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
           '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge."></textarea></div>' +
-        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
+        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
           '<textarea id="_ptask-links" rows="2" style="'+S+';resize:vertical" placeholder="Collez des liens d\'inspiration, exemples, Pinterest, Drive..."></textarea></div>' +
+        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
+          '<input type="file" id="_ptask-files" multiple style="width:100%;font-size:12px;color:var(--navy,#1C1205)">' +
+          '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:5px">Ajoutez des visuels, documents ou exemples utiles à la demande.</div></div>' +
         (function(){
           var schema = (Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
           if (!schema.length) return '';
@@ -3740,6 +3746,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var schema = Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : [];
     var properties = {};
     schema.forEach(function(def){ var el=document.getElementById('_ptask-prop-'+def.id); if(el&&el.value!=='') properties[def.id]=el.value; });
+    var fileInput = document.getElementById('_ptask-files');
+    var files = (fileInput && fileInput.files) ? Array.prototype.slice.call(fileInput.files) : [];
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };
@@ -3747,15 +3755,27 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (startDate) body.startDate = startDate;
     if (pole)      body.pole      = pole;
     if (Object.keys(properties).length) body.properties = properties;
-    fetch(API_BASE + '/tasks', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('save ' + r.status + ' ' + (t||'').slice(0,140)); }); return r.json(); })
-      .then(function(task) {
-        var pd = getPD(pid);
-        if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
-        if (dueDate) cliCalSelected[pid] = dueDate;
-        toast('Demande ajoutee');
-        try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
-      }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'reessayez')); });
+    if (files.length) toast('Envoi des fichiers…');
+    function uploadOne(f) {
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', pid);
+      return fetch(API_BASE + '/files', { method:'POST', credentials:'same-origin', body: fd })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(u){ return u ? { key: u.key, name: u.name, type: u.type || '' } : null; })
+        .catch(function(){ return null; });
+    }
+    Promise.all(files.map(uploadOne)).then(function(ups) {
+      var attachments = ups.filter(Boolean);
+      if (attachments.length) body.attachments = attachments;
+      return fetch(API_BASE + '/tasks', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('save ' + r.status + ' ' + (t||'').slice(0,140)); }); return r.json(); })
+        .then(function(task) {
+          var pd = getPD(pid);
+          if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); if(!Array.isArray(pd.files)) pd.files=[]; attachments.forEach(function(a){ pd.files.push({ key:a.key, name:a.name, type:a.type, category:'document', source:'client' }); }); }
+          if (dueDate) cliCalSelected[pid] = dueDate;
+          toast('Demande ajoutee');
+          try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
+        });
+    }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'reessayez')); });
   };
 
   function cliDoAddTask(pid) {

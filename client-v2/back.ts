@@ -657,6 +657,7 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     startDate: body.startDate,
     pole: body.pole,
     properties: body.properties && typeof body.properties === 'object' ? body.properties : {},
+    attachments: Array.isArray(body.attachments) ? body.attachments.slice(0, 10).map((a: AnyObj) => ({ key: String(a && a.key || ''), name: String(a && a.name || 'fichier'), type: String(a && a.type || '') })).filter((a: AnyObj) => a.key) : [],
     comments: [],
     pinned: false,
     timeSpentMinutes: 0,
@@ -675,7 +676,7 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   return json(task, 201);
 }
 
-const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date'];
+const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments'];
 
 async function handleTaskUpdate(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
