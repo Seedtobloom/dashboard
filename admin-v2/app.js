@@ -1183,6 +1183,7 @@
     while (true) { var idx = low.indexOf(ql, i); if (idx === -1) { out += esc(s.slice(i)); break; } out += esc(s.slice(i, idx)) + '<mark style="background:#fbe39a;border-radius:3px;padding:0 1px">' + esc(s.slice(idx, idx + ql.length)) + '</mark>'; i = idx + ql.length; }
     return out;
   }
+  function admClientInitial() { var c = (CUR && CUR.client) || {}; var s = (c.prenom || c.nom || '').trim(); return (s ? s[0] : '•').toUpperCase(); }
   function chatBubbles(d, q) {
     var all = d.content.chat || [];
     var ql = (q || '').toLowerCase();
@@ -1191,7 +1192,8 @@
     if (!msgs.length) return '<div class="empty">Aucun message ne contient ce mot.</div>';
     function bub(m) {
       var mine = m.from === 'cindy';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '"><div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + hi(m.message, q) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
+      var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + hi(m.message, q) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -1266,20 +1268,37 @@
       var list = clients.map(function (c) {
         var nm = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key;
         var u = c.unread || 0;
-        return '<button class="navitem" style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:' + (u ? '#fbf0d8' : 'var(--surface)') + ';color:var(--terre);border:1px solid ' + (u ? '#e8c98a' : 'var(--bone-d)') + ';margin-bottom:6px" onclick="ADM.chatClient(\'' + c.key + '\')"><span style="text-transform:none;letter-spacing:0">' + esc(nm) + '</span>' + (u ? '<span class="pill pill--a_valider">' + u + '</span>' : '') + '</button>';
+        var ini = (nm ? nm[0] : '?').toUpperCase();
+        return '<button class="chatperson' + (u ? ' unread' : '') + '" id="cp-' + c.key + '" onclick="ADM.chatClient(\'' + c.key + '\')">' +
+          '<span class="aavatar aavatar--client">' + esc(ini) + '</span>' +
+          '<span class="chatperson__nm">' + esc(nm) + '</span>' +
+          (u ? '<span class="pill pill--a_valider">' + u + '</span>' : '') + '</button>';
       }).join('') || '<div class="empty">Aucun client.</div>';
-      var head = '<h3>Clients</h3>' + (waiting ? '<div class="micro mb" style="color:#8a4a0e;font-weight:700">' + waiting + ' conversation' + (waiting > 1 ? 's' : '') + ' en attente</div>' : '<div class="micro mb" style="color:#5d7a52">Tout est lu</div>');
-      setMain(topbar('Messagerie') + '<div class="wrap"><div class="grid grid--2" style="align-items:start"><div class="card">' + head + list + '</div><div class="card" id="chatpane"><div class="empty">Choisissez un client.</div></div></div></div>');
+      var head = '<div class="chathead__t" style="font-size:18px">Conversations</div>' + (waiting ? '<div class="micro" style="color:#b8871f;font-weight:700;margin-top:3px">' + waiting + ' en attente</div>' : '<div class="micro" style="color:#5d7a52;margin-top:3px">Tout est lu ✓</div>');
+      setMain(topbar('Messagerie') + '<div class="wrap" style="max-width:1180px">' +
+        '<div class="chatwrap">' +
+          '<div class="chatlist"><div class="chatlist__head">' + head + '</div><div class="chatlist__scroll">' + list + '</div></div>' +
+          '<div class="chatpane" id="chatpane"><div class="empty" style="margin:auto">Choisissez une conversation.</div></div>' +
+        '</div></div>');
     }).catch(showError);
   }
   function chatClient(key) {
     api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (d) {
       CHAT.key = key; CUR = d; CURKEY = key;
+      var all = el('main').querySelectorAll('.chatperson'); for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
+      var self = el('cp-' + key); if (self) self.classList.add('active');
       var items = [];
       d.domains.forEach(function (dn) { items.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.unread || 0]); });
       d.supports.forEach(function (s) { items.push([s.id, s.label, s.unread || 0]); });
-      var btns = items.map(function (p) { return '<button class="btn btn--outline btn--sm" onclick="ADM.chatProject(\'' + p[0] + '\')">' + esc(p[1]) + (p[2] ? ' ' + badge(p[2]) : '') + '</button>'; }).join(' ');
-      var pane = el('chatpane'); if (pane) pane.innerHTML = '<h3>' + esc(((d.client.prenom || '') + ' ' + (d.client.nom || '')).trim() || d.key) + '</h3><div class="row mb">' + btns + '</div><div id="chatthread"><div class="empty">Choisissez un projet.</div></div>';
+      var nm = ((d.client.prenom || '') + ' ' + (d.client.nom || '')).trim() || d.key;
+      var chips = items.length > 1 ? '<div class="chatchips" id="chatchips">' + items.map(function (p) {
+        return '<button class="subtab" data-pid="' + p[0] + '" onclick="ADM.chatProject(\'' + p[0] + '\')">' + esc(p[1]) + (p[2] ? ' ' + badge(p[2]) : '') + '</button>';
+      }).join('') + '</div>' : '';
+      var pane = el('chatpane');
+      if (pane) pane.innerHTML =
+        '<div class="chathead"><span class="aavatar aavatar--client" style="width:42px;height:42px;font-size:18px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
+          '<div><div class="chathead__t">' + esc(nm) + '</div><div class="chathead__s">' + (d.client.email ? esc(d.client.email) : 'Client') + '</div></div></div>' +
+        chips + '<div class="chatbody" id="chatthread"></div>';
       var auto = items.filter(function (p) { return p[2] > 0; })[0] || items[0];
       if (auto) chatProject(auto[0]);
     });
@@ -1288,11 +1307,14 @@
     CHAT.project = pid;
     var d = findDomain(pid); if (!d) return;
     var box = el('chatthread'); if (!box) return;
-    box.innerHTML = '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatSearch(this.value)"></div>' +
-      '<div class="msgs" id="chatmsgs">' + chatBubbles(d, '') + '</div><div class="row"><textarea class="inp" id="gmsg" placeholder="Répondre au client…"></textarea></div><div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.gsend()">Envoyer</button></div>';
+    var chips = el('chatchips'); if (chips) { var bs = chips.querySelectorAll('.subtab'); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('active', bs[i].getAttribute('data-pid') === pid); }
+    box.innerHTML = '<div class="chatscroll" id="chatmsgs">' + chatBubbles(d, '') + '</div>' +
+      '<div class="chatcompose"><textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)"></textarea>' +
+      '<button class="btn btn--dark" onclick="ADM.gsend()">Envoyer</button></div>';
     var box2 = el('chatmsgs'); if (box2) box2.scrollTop = box2.scrollHeight;
-    if (d.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: pid }, 'POST'); d.unread = 0; }
+    if (d.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: pid }, 'POST'); d.unread = 0; var self = el('cp-' + CHAT.key); if (self) self.classList.remove('unread'); }
   }
+  function chatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); gsend(); } }
   function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function gsend() {
     var i = el('gmsg'); var v = (i.value || '').trim(); if (!v) return;
@@ -1335,7 +1357,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
-    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg,
+    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey,
   };
   boot();
 })();
