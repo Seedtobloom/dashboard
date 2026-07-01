@@ -4529,17 +4529,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return '<span style="font-family:var(--font-micro);font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[2] + ';color:' + c[1] + '">' + c[0] + '</span>';
     }
     function row(it) {
-      var meta = [it.projLabel, it.taskTitle, it.date ? fmtShort(it.date) : ''].filter(Boolean).join(' · ');
+      var validated = it.status === 'valide' || it.status === 'validated';
+      var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
+      var line1 = [it.projLabel, dateLbl].filter(Boolean).join(' · ');
       var action = it.dlUrl
         ? '<a href="' + esc(it.dlUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--terre);color:var(--paille);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('download', 14, 'color:var(--paille)') + ' Télécharger</a>'
         : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
-      return '<div style="display:flex;align-items:center;gap:14px;padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
+      return '<div style="display:flex;align-items:flex-start;gap:14px;padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
         '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon('download', 18) + '</span>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.name) + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(meta) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.3">' + esc(it.name) + '</div>' +
+          (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);margin-top:4px;letter-spacing:0.05em;text-transform:uppercase">' + esc(line1) + '</div>' : '') +
+          (it.taskTitle ? '<div style="font-family:var(--font-body);font-size:12.5px;font-style:italic;color:var(--terre-400);margin-top:3px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
         '</div>' +
-        statusBadge(it.status) + action +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">' + statusBadge(it.status) + action + '</div>' +
       '</div>';
     }
     function chip(v, lbl) {
