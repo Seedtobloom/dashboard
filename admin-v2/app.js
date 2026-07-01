@@ -1,4 +1,4 @@
-// Admin v2 SPA — Seed to Bloom. Servi par le worker front, parle au back via /api/*.
+// Admin v2 SPA · Seed to Bloom. Servi par le worker front, parle au back via /api/*.
 (function () {
   'use strict';
 
@@ -31,7 +31,7 @@
   var STEP_STATUS = [['upcoming', 'À venir'], ['in_progress', 'En cours'], ['waiting_client', 'Action client'], ['done', 'Terminé']];
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-  function fmtDate(d) { if (!d) return '—'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
   function el(id) { return document.getElementById(id); }
   function api(path, opts) { return fetch(path, Object.assign({ credentials: 'same-origin' }, opts || {})); }
@@ -174,8 +174,8 @@
     var to = prompt('Adresse de test pour Resend :', '');
     if (!to) return;
     jpost('/api/test-email', { to: to }).then(function (r) { return r.json(); }).then(function (d) {
-      if (d.ok) { toast('Email envoyé ✓'); alert('Resend OK — email envoyé à ' + to + '.'); }
-      else { alert('Resend a échoué.\nFrom: ' + (d.from || '(non défini)') + '\nStatut: ' + d.status + '\nErreur: ' + (d.error || '—')); }
+      if (d.ok) { toast('Email envoyé ✓'); alert('Resend OK · email envoyé à ' + to + '.'); }
+      else { alert('Resend a échoué.\nFrom: ' + (d.from || '(non défini)') + '\nStatut: ' + d.status + '\nErreur: ' + (d.error || '·')); }
     }).catch(function () { toast('Erreur'); });
   }
 
@@ -884,7 +884,7 @@
       var list = (d.clients || []).map(function (c) {
         var nm = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key;
         return '<div class="tile" onclick="ADM.openClient(\'' + c.key + '\')"><div class="t">' + esc(nm) + badge(c.unread || 0) + '</div>' +
-          '<div class="m">' + esc(c.entreprise || '—') + (c.email ? ' · ' + esc(c.email) : '') + '</div>' +
+          '<div class="m">' + esc(c.entreprise || '·') + (c.email ? ' · ' + esc(c.email) : '') + '</div>' +
           '<div class="m">' + (c.isActive ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') + (c.unread > 0 ? ' <span class="pill pill--a_valider">' + c.unread + ' message' + (c.unread > 1 ? 's' : '') + '</span>' : '') + '</div></div>';
       }).join('');
       setMain(topbar('Clients', right) + '<div class="wrap">' + (list ? '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Créez-en un, ou scannez le KV pour récupérer les clés existantes.</div>') + '</div>');
@@ -989,7 +989,7 @@
     if (TAB === 'documents') return renderDocuments(body);
     if (TAB === 'bilanavis') return body.innerHTML = bilanAvisTab();
     var d = findDomain(TAB);
-    if (!d) { body.innerHTML = '<div class="empty">—</div>'; return; }
+    if (!d) { body.innerHTML = '<div class="empty">·</div>'; return; }
     var secs = sectionsFor(d);
     var keys = secs.map(function (x) { return x[0]; });
     var cur = SUBTAB[d.id]; if (keys.indexOf(cur) === -1) cur = keys[0];
@@ -1350,7 +1350,7 @@
     });
   }
   function chatCard(d) {
-    return '<div class="card"><h3>Messages — ' + esc(DOMAIN_LABELS[d.id] || d.label) + '</h3>' +
+    return '<div class="card"><h3>Messages · ' + esc(DOMAIN_LABELS[d.id] || d.label) + '</h3>' +
       '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
       '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, '') + '</div>' +
       '<div class="row"><textarea class="inp" id="msg-' + d.id + '" placeholder="Répondre au client…"></textarea></div>' +
@@ -1375,7 +1375,7 @@
       '</div>' +
       '<div class="row mt"><input class="inp" type="file" id="up-file"><button class="btn btn--dark btn--sm" id="up-btn" onclick="ADM.upload()">Uploader</button></div>' +
       '<div class="micro mt">Décochez « livrable » pour un document administratif (devis, facture, contrat…).</div></div>' +
-      '<div class="card"><h3>Documents du projet</h3><div id="doclist"><div class="empty">—</div></div></div>';
+      '<div class="card"><h3>Documents du projet</h3><div id="doclist"><div class="empty">·</div></div></div>';
     listDocs();
   }
   function listDocs() {
