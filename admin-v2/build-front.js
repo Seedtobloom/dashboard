@@ -11,9 +11,12 @@ const { execSync } = require('child_process');
 const dir = __dirname;
 const css = fs.readFileSync(path.join(dir, 'app.css'), 'utf8');
 const js = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
+const favicon = fs.readFileSync(path.join(dir, 'favicon.svg'), 'utf8');
 
 const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin · Seed to Bloom</title>' +
+  '<link rel="icon" type="image/svg+xml" href="/favicon.svg">' +
+  '<link rel="apple-touch-icon" href="/favicon.svg">' +
   '<link rel="preconnect" href="https://fonts.googleapis.com">' +
   '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">' +
   '<link rel="stylesheet" href="/admin.css"></head><body>' +
@@ -32,6 +35,7 @@ const handler = [
   '    }',
   "    if (url.pathname === '/admin.css') return new Response(ADMIN_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
   "    if (url.pathname === '/admin.js') return new Response(ADMIN_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
+  "    if (url.pathname === '/favicon.svg') return new Response(FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
   "    return new Response(HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });",
   '  }',
   '};',
@@ -41,6 +45,7 @@ const handler = [
 const out = handler +
   '\nconst ADMIN_CSS = ' + JSON.stringify(css) + ';\n' +
   'const ADMIN_JS = ' + JSON.stringify(js) + ';\n' +
+  'const FAVICON = ' + JSON.stringify(favicon) + ';\n' +
   'const HTML = ' + JSON.stringify(html) + ';\n';
 
 fs.writeFileSync(path.join(dir, 'front.js'), out);
