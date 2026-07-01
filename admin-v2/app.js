@@ -273,9 +273,10 @@
     if (!list.length) { toast('La liste ne peut pas être vide'); return; }
     jpost('/api/mission-types', { types: list }, 'PUT').then(function (r) { if (r.ok) { toast('Types de mission enregistrés ✓'); MISSION_LIST = list; renderReglagesBody(); } else toast('Erreur'); });
   }
-  var PRIO_GROUP = 'date', PRIO_FILTER = 'all', PRIO_D = null;
+  var PRIO_GROUP = 'date', PRIO_FILTER = 'all', PRIO_D = null, PRIO_TAB = 'todo';
   function prioSetGroup(v) { PRIO_GROUP = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function prioSetFilter(v) { PRIO_FILTER = v; if (PRIO_D) renderPrioBody(PRIO_D); }
+  function prioSetTab(v) { PRIO_TAB = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
@@ -298,8 +299,8 @@
       var nWeek = mine.filter(function (x) { return x._d > 0 && x._d <= 7; }).length;
       var nWait = waiting.length + pv.length;
 
-      function kpi(cls, n, l) { return '<div class="kpi ' + cls + (n > 0 ? ' is-on' : '') + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-      var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard') + kpi('kpi--today', nToday, "Aujourd'hui") + kpi('kpi--week', nWeek, 'Cette semaine') + kpi('kpi--wait', nWait, 'Attente client') + '</div>';
+      function kpi(cls, n, l, tab) { return '<div class="kpi ' + cls + (n > 0 ? ' is-on' : '') + (tab ? ' kpi--clic' : '') + '"' + (tab ? ' onclick="ADM.prioSetTab(\'' + tab + '\')"' : '') + '><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
+      var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard', 'todo') + kpi('kpi--today', nToday, "Aujourd'hui", 'todo') + kpi('kpi--week', nWeek, 'Cette semaine', 'todo') + kpi('kpi--wait', nWait, 'Attente client', 'waiting') + '</div>';
 
       function prow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
@@ -390,12 +391,6 @@
           '</div>' +
         '</div>';
       }
-      var revBand = revs.length
-        ? '<div class="card"><h3 style="color:#a23c28">Révisions demandées <span style="font-family:var(--font-micro);font-size:12px;font-weight:700;background:#a23c28;color:var(--paille);min-width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:4px">' + revs.length + '</span></h3>' +
-          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
-          revs.map(revRow).join('') + '</div>'
-        : '';
-
       // Relances intelligentes : on trie par ancienneté d'attente et on signale ce qui traîne
       var waitAll = waiting.map(function (x) { return { kind: 'step', x: x, since: -ddiff(x.dueDate) }; })
         .concat(pv.map(function (l) { return { kind: 'dlv', x: l, since: -ddiff(l.createdAt) }; }));
@@ -455,19 +450,36 @@
         }).join('') +
         '</div></div>';
 
-      setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap">' + revBand + focusBand + kpis +
-        '<div class="pcols">' +
-          '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Ce que vous avez à faire</h3>' +
-            (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
-          '<div>' +
-            meteo +
-            '<div class="card mt infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>En attente du client</h3>' +
-              (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
-            '<div class="card mt infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#9c6f18"></span>Forfaits du mois</h3>' +
-              (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div>' +
-          '</div>' +
-        '</div>' +
-        '</div>');
+      // ── Onglets : on segmente la page (plus de long scroll) ──
+      var tabDefs = [['todo', 'À faire', mine.length, false], ['waiting', 'Attente client', nWait, false]];
+      if (revs.length) tabDefs.push(['revisions', 'Révisions', revs.length, true]);
+      tabDefs.push(['load', 'Charge & forfaits', null, false]);
+      if (!tabDefs.some(function (t) { return t[0] === PRIO_TAB; })) PRIO_TAB = 'todo';
+      var tabBar = '<div class="tabs">' + tabDefs.map(function (t) {
+        var b = t[3] ? badgeAlert(t[2]) : (t[2] != null ? badge(t[2]) : '');
+        return '<button class="tab' + (PRIO_TAB === t[0] ? ' active' : '') + '" onclick="ADM.prioSetTab(\'' + t[0] + '\')">' + esc(t[1]) + b + '</button>';
+      }).join('') + '</div>';
+
+      var tabBody;
+      if (PRIO_TAB === 'waiting') {
+        tabBody = '<div class="card infocard" style="background:var(--card)"><h3>En attente du client</h3>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Trié par ancienneté : ce qui traîne remonte en premier, avec un rappel possible en un clic.</div>' +
+          (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>';
+      } else if (PRIO_TAB === 'revisions') {
+        tabBody = '<div class="card"><h3 style="color:#a23c28">Révisions demandées</h3>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
+          (revs.map(revRow).join('') || '<div class="empty">Aucune révision en attente.</div>') + '</div>';
+      } else if (PRIO_TAB === 'load') {
+        tabBody = '<div class="pcols">' + meteo +
+          '<div class="card infocard" style="background:var(--card)"><h3>Forfaits du mois</h3>' +
+            (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div></div>';
+      } else {
+        tabBody = '<div class="card infocard" style="background:var(--card)"><h3>Ce que vous avez à faire</h3>' +
+          (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>';
+      }
+
+      setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap">' +
+        focusBand + kpis + tabBar + '<div id="priobody">' + tabBody + '</div></div>');
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
@@ -1767,7 +1779,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
