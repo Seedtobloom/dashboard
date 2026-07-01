@@ -1066,7 +1066,7 @@ async function handleMyTaskCreate(request, env) {
     await saveMyTasks(env, tasks);
     return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status', 'archived'];
 async function handleMyTaskUpdate(request, env, id) {
     const b = await readJson(request);
     const tasks = await getMyTasks(env);

@@ -943,7 +943,7 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
   await saveMyTasks(env, tasks);
   return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status', 'archived'];
 async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promise<Response> {
   const b = await readJson(request);
   const tasks = await getMyTasks(env);

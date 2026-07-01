@@ -302,7 +302,7 @@
     var spent = t.timeSpentSeconds || 0;
     var tcColor = running ? 'var(--green)' : (spent ? 'var(--terre)' : '#c3b9a6');
     var meta = [est, (t.dueDate ? 'échéance ' + fmtDate(t.dueDate) : '')].filter(Boolean).join(' · ');
-    var timerBtn = dn ? '' : (running
+    var timerBtn = (dn || t.archived) ? '' : (running
       ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸</button>'
       : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶</button>');
     return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:8px">' +
@@ -314,8 +314,11 @@
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:9px;border-top:1px solid var(--bone-d);padding-top:8px">' +
         '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcColor + '">' + mtClock(spent) + '</span>' +
         '<div class="row" style="gap:5px">' + timerBtn +
-          (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
-              : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
+          (t.archived
+            ? '<button class="pbtn" onclick="ADM.myTaskArchive(\'' + t.id + '\',false)">Restaurer</button>'
+            : (dn
+                ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button><button class="pbtn" onclick="ADM.myTaskArchive(\'' + t.id + '\',true)" title="Archiver">Archiver</button>'
+                : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>')) +
           '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4" title="Supprimer">✕</button>' +
         '</div></div></div>';
   }
@@ -438,8 +441,9 @@
     api('/api/admin/tasks').then(function (r) { return r.json(); }).then(function (d) {
       var all = d.tasks || [];
       MT_TASKS = all;
-      var todo = all.filter(function (x) { return x.status !== 'done'; });
-      var done = all.filter(function (x) { return x.status === 'done'; });
+      var todo = all.filter(function (x) { return x.status !== 'done' && !x.archived; });
+      var done = all.filter(function (x) { return x.status === 'done' && !x.archived; });
+      var archived = all.filter(function (x) { return x.archived; });
       var spentTotal = all.reduce(function (s, x) { return s + (x.timeSpentSeconds || 0); }, 0);
       var prank = { haute: 0, normale: 1, basse: 2 };
       todo.sort(function (a, b) { var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority]; if (pa !== pb) return pa - pb; return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
@@ -465,9 +469,12 @@
         '</div>';
       }).join('') + '</div>';
       var doneView = done.length ? done.slice().reverse().slice(0, 40).map(mtCard).join('') : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
-      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW !== 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
-        '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button></div>';
-      var content = MT_VIEW === 'done' ? doneView : (todo.length ? board : '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>');
+      var archSorted = archived.slice().sort(function (a, b) { return String(b.completedAt || b.dueDate || '').localeCompare(String(a.completedAt || a.dueDate || '')); });
+      var archView = archived.length ? archSorted.map(mtCard).join('') : '<div class="empty">Aucune tâche archivée. Archivez une tâche terminée pour la ranger ici.</div>';
+      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
+        '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
+        '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
+      var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : (todo.length ? board : '<div class="empty">Aucune tâche en cours. Ajoutez-en une ci-dessus.</div>'));
       setMain(topbar('Mes tâches') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
     }).catch(showError);
   }
@@ -477,6 +484,7 @@
   }
   function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
+  function myTaskArchive(id, val) { if (val && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
   var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9.5, PLAN_END = 18, PLAN_LUNCH_START = 13, PLAN_LUNCH_END = 14, PLAN_BLOCKS = [], PLAN_SEQ = 0;
@@ -1022,8 +1030,10 @@
       (f.configured ? '<div class="micro mt">' + (f.used || 0) + ' h consommées ce mois · reste ' + (f.remaining) + ' h</div>' : '') + '</div>';
   }
   function partnerTasks(d) {
-    var tasks = Array.isArray(d.content.taches) ? d.content.taches : [];
-    return tasks.length ? '<div class="grid grid--2" style="align-items:start">' + tasks.map(function (t) {
+    var all = Array.isArray(d.content.taches) ? d.content.taches : [];
+    var active = all.filter(function (t) { return !t.archived; });
+    var archived = all.filter(function (t) { return t.archived; });
+    function ptCard(t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
       var pbase = ptBase(t);
@@ -1036,7 +1046,10 @@
       var stLbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' }[t.status] || t.status;
       var stBg = { todo: '#efe6fb', in_progress: '#e3edfb', review: '#fbf0d8', done: '#e7f0e3' }[t.status] || '#efe6fb';
       var needsAction = t.status === 'review';
-      return '<div class="card" style="background:' + stBg + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
+      var archBtn = t.archived
+        ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
+        : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
+      return '<div class="card" style="background:' + stBg + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
         (t.content ? '<div class="muted mb mt" style="font-size:14px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '<div class="mt"></div>') +
         '<div class="row" style="align-items:center;gap:10px">' +
         '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
@@ -1046,8 +1059,12 @@
         taskDlvBlock(d, t) +
         commentsBlock('partner', t) +
         '</div>';
-    }).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
+    }
+    var grid = active.length ? '<div class="grid grid--2" style="align-items:start">' + active.map(ptCard).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
+    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="grid grid--2" style="align-items:start;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
+    return grid + archHtml;
   }
+  function taskArchive(id, val) { if (val && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); loadClient(); } else toast('Erreur'); }); }
   function taskDlvBlock(d, t) {
     var ls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; });
     var rows = ls.map(function (l) {
@@ -1354,11 +1371,11 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, taskArchive: taskArchive, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset,
     prioDone: prioDone, prioPostpone: prioPostpone, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
