@@ -371,12 +371,42 @@
           '</div>';
       }).join('');
 
+      // Météo de la semaine : nombre d'échéances par jour (5 prochains jours ouvrés) pour anticiper la charge
+      var weekLoad = [];
+      var cursor = new Date(today);
+      while (weekLoad.length < 5) {
+        var dow = cursor.getDay();
+        if (dow !== 0 && dow !== 6) {
+          var iso = cursor.getFullYear() + '-' + ('0' + (cursor.getMonth() + 1)).slice(-2) + '-' + ('0' + cursor.getDate()).slice(-2);
+          var cnt = mine.filter(function (x) { return (x.dueDate || '').slice(0, 10) === iso; }).length;
+          var isToday = weekLoad.length === 0 && cursor.getTime() === today.getTime();
+          weekLoad.push({ count: cnt, label: isToday ? 'Auj.' : cursor.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '') });
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      var maxLoad = Math.max.apply(null, weekLoad.map(function (w) { return w.count; })) || 1;
+      var meteo = '<div class="card infocard"><h3 style="color:#5e3fa0"><span class="infocard__dot" style="background:#5e3fa0"></span>Météo de la semaine</h3>' +
+        '<div class="micro mb">Vos échéances par jour, pour anticiper les journées chargées.</div>' +
+        '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px">' +
+        weekLoad.map(function (w) {
+          var barH = w.count ? Math.max(Math.round(w.count / maxLoad * 60), 8) : 3;
+          var heavy = w.count >= 4;
+          var col = heavy ? '#a23c28' : (w.count ? '#5e3fa0' : 'var(--bone-d)');
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">' +
+            '<div style="font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + (heavy ? '#a23c28' : 'var(--terre)') + '">' + (w.count || '·') + '</div>' +
+            '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '"></div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
+          '</div>';
+        }).join('') +
+        '</div></div>';
+
       setMain(topbar('Priorités', right) + '<div class="wrap">' + revBand + focusBand + kpis +
         '<div class="pcols">' +
           '<div class="card infocard" style="background:var(--card)"><h3 style="color:#5e3fa0"><span class="infocard__dot" style="background:#5e3fa0"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
           '<div>' +
-            '<div class="card infocard" style="background:var(--card)"><h3 style="color:#35608f"><span class="infocard__dot" style="background:#35608f"></span>En attente du client</h3>' +
+            meteo +
+            '<div class="card mt infocard" style="background:var(--card)"><h3 style="color:#35608f"><span class="infocard__dot" style="background:#35608f"></span>En attente du client</h3>' +
               (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
             '<div class="card mt infocard" style="background:var(--card)"><h3 style="color:#9c6f18"><span class="infocard__dot" style="background:#9c6f18"></span>Forfaits du mois</h3>' +
               (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div>' +
