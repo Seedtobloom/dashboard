@@ -600,6 +600,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var cpHolidays = []; // conges du studio (depuis les reglages)
   var convData = []; // fil de conversation unifié (espace client)
   var cpConvThread = '_general'; // fil sélectionné dans la messagerie (général ou support)
+  var cpNewTaskFiles = []; // fichiers ajoutés un à un dans le formulaire de nouvelle tâche
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages'
   var convoId = null; // projet sélectionné dans la messagerie
@@ -3316,6 +3317,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.cliOpenTaskFromHome = function(pid, taskId) { cliSelTask[pid] = taskId; cliPartTab[pid] = 'cal'; cpSel(pid); };
   window.cliCloseTaskDrawer = function(pid) { delete cliSelTask[pid]; renderShell(); };
   window.cliCalGoToday = function(pid) { var d=new Date(); d.setDate(1); d.setHours(0,0,0,0); cliCalMonth[pid]=d; renderShell(); };
+  function _ptaskRenderFiles() {
+    var box = document.getElementById('_ptask-files-list');
+    if (!box) return;
+    box.innerHTML = cpNewTaskFiles.map(function(f, i) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:8px;margin-bottom:6px">' +
+        cpIcon('paperclip',13,'color:var(--muted,#8090a8);flex-shrink:0') +
+        '<span style="flex:1;min-width:0;font-size:12.5px;color:var(--navy,#1C1205);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name) + '</span>' +
+        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#c44;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
+      '</div>';
+    }).join('');
+  }
+  window._ptaskAddFile = function(input) {
+    if (input && input.files) { Array.prototype.slice.call(input.files).forEach(function(f){ cpNewTaskFiles.push(f); }); input.value = ''; }
+    _ptaskRenderFiles();
+  };
+  window._ptaskRemoveFile = function(i) { cpNewTaskFiles.splice(i, 1); _ptaskRenderFiles(); };
   window._ptaskSelUrg = function(u) {
     document.getElementById('_ptask-urgency').value = u;
     ['tranquille','normal','urgent','critique'].forEach(function(x){
@@ -4102,6 +4119,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var projectType = pd && pd.project && pd.project.type ? pd.project.type : '';
     if (projectType === 'partenaire') {
       // Modal spécifique partenaire
+      cpNewTaskFiles = [];
       var existing = document.getElementById('_cp-partenaire-task-ov');
       if (existing) existing.remove();
       var ov = document.createElement('div');
@@ -4130,8 +4148,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
           '<textarea id="_ptask-links" rows="2" style="'+S+';resize:vertical" placeholder="Collez des liens d\'inspiration, exemples, Pinterest, Drive..."></textarea></div>' +
         '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
-          '<input type="file" id="_ptask-files" multiple style="width:100%;font-size:12px;color:var(--navy,#1C1205)">' +
-          '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:5px">Ajoutez des visuels, documents ou exemples utiles à la demande.</div></div>' +
+          '<div id="_ptask-files-list"></div>' +
+          '<input type="file" id="_ptask-file-input" style="display:none" onchange="window._ptaskAddFile(this)">' +
+          '<button type="button" onclick="document.getElementById(\'_ptask-file-input\').click()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1.5px dashed var(--border,#e2dbd0);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--navy,#1C1205);width:100%;justify-content:center">'+cpIcon('paperclip',14)+' Ajouter un fichier</button>' +
+          '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:5px">Cliquez pour ajouter un fichier, puis à nouveau pour en ajouter d\'autres.</div></div>' +
         (function(){
           var schema = (Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
           if (!schema.length) return '';
@@ -4178,8 +4198,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var schema = Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : [];
     var properties = {};
     schema.forEach(function(def){ var el=document.getElementById('_ptask-prop-'+def.id); if(el&&el.value!=='') properties[def.id]=el.value; });
-    var fileInput = document.getElementById('_ptask-files');
-    var files = (fileInput && fileInput.files) ? Array.prototype.slice.call(fileInput.files) : [];
+    var files = cpNewTaskFiles.slice();
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };

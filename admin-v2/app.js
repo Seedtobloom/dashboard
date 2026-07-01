@@ -1089,7 +1089,7 @@
       var archBtn = t.archived
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
-      return '<div class="card" style="background:' + stBg + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
+      return '<div class="card" style="background:' + stBg + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
         (t.content ? '<div class="muted mb mt" style="font-size:14px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '<div class="mt"></div>') +
         ((Array.isArray(t.attachments) && t.attachments.length) ? '<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '') +
         '<div class="row" style="align-items:center;gap:10px">' +
@@ -1112,6 +1112,30 @@
   }
   function taskArchive(id, val) { if (val && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); loadClient(); } else toast('Erreur'); }); }
   function taskMilestone(id, field, val) { var body = { projectId: 'partner' }; body[field] = val || null; jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Jalon enregistré' : 'Jalon retiré'); loadClient(); } else toast('Erreur'); }); }
+  function taskFind(id) { var found = null; (CUR.domains || []).forEach(function (dn) { ((dn.content && dn.content.taches) || []).forEach(function (x) { if (x.id === id) found = x; }); }); (CUR.supports || []).forEach(function (s) { ((s.content && s.content.taches) || []).forEach(function (x) { if (x.id === id) found = x; }); }); return found; }
+  function taskEditOpen(id) {
+    var t = taskFind(id); if (!t) { toast('Tâche introuvable'); return; }
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px">' +
+      '<div class="admconfirm__title">Modifier la tâche</div>' +
+      '<div class="field mt"><label>Titre</label><input id="te-title" class="inp" value="' + esc(t.title || '') + '"></div>' +
+      '<div class="field mt"><label>Détail / brief</label><textarea id="te-content" class="inp" style="min-height:120px">' + esc(t.content || '') + '</textarea></div>' +
+      '<div class="field mt"><label>Échéance</label><input id="te-due" class="inp" type="date" value="' + esc((t.dueDate || '').slice(0, 10)) + '"></div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--dark btn--sm" data-yes>Enregistrer</button></div>' +
+      '</div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var body = { projectId: 'partner', title: (el('te-title').value || '').trim(), content: el('te-content').value, dueDate: el('te-due').value || null };
+      if (!body.title) { toast('Titre requis'); return; }
+      close();
+      jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast('Tâche modifiée'); loadClient(); } else toast('Erreur'); });
+    };
+    document.body.appendChild(ov);
+    var f = el('te-title'); if (f) f.focus();
+  }
   function taskDlvBlock(d, t) {
     var ls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; });
     var rows = ls.map(function (l) {
@@ -1418,7 +1442,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, taskArchive: taskArchive, taskMilestone: taskMilestone, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
