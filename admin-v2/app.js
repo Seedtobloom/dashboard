@@ -193,7 +193,7 @@
   function emailCard(t) {
     var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
     return '<div class="card infocard" style="background:var(--card)">' +
-      '<h3><span class="infocard__dot" style="background:#c9952f"></span>' + esc(t.label) + '</h3>' +
+      '<h3 style="color:#9c6f18"><span class="infocard__dot" style="background:#9c6f18"></span>' + esc(t.label) + '</h3>' +
       '<div class="field"><label>Objet de l\'e-mail</label><input id="em-subj-' + t.key + '" class="inp" value="' + esc(t.subject) + '"></div>' +
       '<div class="field mt"><label>Message</label><textarea id="em-body-' + t.key + '" class="inp" style="min-height:150px">' + esc(t.body) + '</textarea></div>' +
       (vars ? '<div class="micro mt">Variables : ' + vars + '</div>' : '') +
@@ -230,7 +230,7 @@
     var rows = MISSION_LIST.map(function (t, i) {
       return '<div class="row" style="gap:8px;margin-bottom:8px"><input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" style="flex:1"><button class="btn btn--danger btn--sm" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
     }).join('');
-    var card = '<div class="card infocard" style="background:var(--card);max-width:640px"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Types de mission</h3>' +
+    var card = '<div class="card infocard" style="background:var(--card);max-width:640px"><h3 style="color:#5e3fa0"><span class="infocard__dot" style="background:#5e3fa0"></span>Types de mission</h3>' +
       '<div class="micro mb">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifiez, ajoutez ou retirez selon vos besoins, puis enregistrez.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
       '<div class="row mt" style="gap:8px"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
@@ -351,12 +351,12 @@
 
       setMain(topbar('Priorités', right) + '<div class="wrap">' + focusBand + kpis +
         '<div class="pcols">' +
-          '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Ce que vous avez à faire</h3>' +
+          '<div class="card infocard" style="background:var(--card)"><h3 style="color:#5e3fa0"><span class="infocard__dot" style="background:#5e3fa0"></span>Ce que vous avez à faire</h3>' +
             (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>' +
           '<div>' +
-            '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#7da2e0"></span>En attente du client</h3>' +
+            '<div class="card infocard" style="background:var(--card)"><h3 style="color:#35608f"><span class="infocard__dot" style="background:#35608f"></span>En attente du client</h3>' +
               (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>' +
-            '<div class="card mt infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#c9952f"></span>Forfaits du mois</h3>' +
+            '<div class="card mt infocard" style="background:var(--card)"><h3 style="color:#9c6f18"><span class="infocard__dot" style="background:#9c6f18"></span>Forfaits du mois</h3>' +
               (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div>' +
           '</div>' +
         '</div>' +
@@ -1021,7 +1021,7 @@
     var c = CUR.client, e = CUR.entreprise;
     var active = CUR.isActive;
     var coord = '<div class="card infocard" style="background:var(--card)">' +
-      '<div class="between mb"><h3><span class="infocard__dot" style="background:#6c4ea4"></span>Coordonnées</h3>' +
+      '<div class="between mb"><h3 style="color:#5e3fa0"><span class="infocard__dot" style="background:#5e3fa0"></span>Coordonnées</h3>' +
       '<label class="checkbox infocard__act' + (active ? ' is-on' : '') + '"><input type="checkbox" id="inf-active"' + (active ? ' checked' : '') + ' onchange="ADM.saveInfos()"> ' + (active ? 'espace actif' : 'espace inactif') + '</label></div>' +
       '<div class="grid grid--2">' +
       fld('inf-prenom', 'Prénom', c.prenom) + fld('inf-nom', 'Nom', c.nom) +
@@ -1056,7 +1056,7 @@
       var nm = (s.content && s.content.name) || '';
       return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
-    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#7da2e0"></span>Supports de com</h3>' +
+    return '<div class="card infocard" style="background:var(--card)"><h3 style="color:#35608f"><span class="infocard__dot" style="background:#35608f"></span>Supports de com</h3>' +
       '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
       (rows || '<div class="empty">Aucun support pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
@@ -1082,7 +1082,7 @@
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
-    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#c9952f"></span>Offres / espaces</h3>' +
+    return '<div class="card infocard" style="background:var(--card)"><h3 style="color:#9c6f18"><span class="infocard__dot" style="background:#9c6f18"></span>Offres / espaces</h3>' +
       '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + '</div>';
   }
   function setBanner(pid, color) {
@@ -1128,7 +1128,7 @@
       var chBtn = prun
         ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.ptPause(\'' + t.id + '\')">⏸ Pause</button>'
         : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">▶ Démarrer</button>';
-      var stCol = { todo: '#a98bd6', in_progress: '#7da2e0', review: '#c9952f', done: '#5d7a52' }[t.status] || '#a98bd6';
+      var stCol = { todo: '#a98bd6', in_progress: '#35608f', review: '#c9952f', done: '#5d7a52' }[t.status] || '#a98bd6';
       var stLbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' }[t.status] || t.status;
       var stBg = { todo: '#efe6fb', in_progress: '#e3edfb', review: '#fbf0d8', done: '#e7f0e3' }[t.status] || '#efe6fb';
       var needsAction = t.status === 'review';

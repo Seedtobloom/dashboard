@@ -74,7 +74,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .card{background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow-1)}
 .card h3{font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);font-weight:400;margin-bottom:6px}
 .infocard h3{display:flex;align-items:center;gap:9px}
-.infocard__dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(0,0,0,0.04)}
+.infocard__dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .infocard__act{font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
 .infocard__act.is-on{color:#5d7a52}
 .admconfirm{position:fixed;inset:0;z-index:1000;background:rgba(28,18,5,0.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:admcf 140ms ease}
@@ -118,7 +118,7 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 .kpi__n{color:var(--terre)}
 .kpi--late .kpi__n{color:#a23c28}
 .kpi--today .kpi__n{color:#9c6f18}
-.kpi--week .kpi__n{color:var(--terre)}
+.kpi--week .kpi__n{color:#5e3fa0}
 .kpi--wait .kpi__n{color:#3f6ea5}
 .kpi--done .kpi__n{color:#5d7a52}
 .kpi.is-on{box-shadow:var(--shadow-1)}
