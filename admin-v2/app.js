@@ -144,15 +144,18 @@
   }
   function refreshNavTimer() { var s = el('nav-timer-slot'); if (s) s.innerHTML = navTimerHtml(); }
   function navTimerPause() { if (MT_TIMER) mtPause(MT_TIMER.id, true); else if (PT_TIMER) ptPause(PT_TIMER.id, true); refreshNavTimer(); renderMain(); }
-  var UNREAD = 0;
+  var UNREAD = 0, REV_N = 0, NOTIF_N = 0;
+  function refreshTabTitle() { NOTIF_N = UNREAD + REV_N; applyTabTitle(); }
   function refreshUnread() {
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       ['chat', 'clients'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = UNREAD > 0 ? badge(UNREAD) : ''; });
+      refreshTabTitle();
     }).catch(function () {});
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
-      var n = (d.revisions || []).length;
-      var b = el('nav-unread-priorities'); if (b) b.innerHTML = badgeAlert(n);
+      REV_N = (d.revisions || []).length;
+      var b = el('nav-unread-priorities'); if (b) b.innerHTML = badgeAlert(REV_N);
+      refreshTabTitle();
     }).catch(function () {});
   }
   function renderMain() {
@@ -538,8 +541,10 @@
   }
   var PT_TIMER = null, PT_INT = null;
   var DOC_BASE_TITLE = '';
-  function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; if (!DOC_BASE_TITLE) DOC_BASE_TITLE = document.title; document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
-  function tabTimerOff() { if (typeof document === 'undefined') return; if (DOC_BASE_TITLE) document.title = DOC_BASE_TITLE; }
+  function baseTitle() { if (typeof document === 'undefined') return ''; if (!DOC_BASE_TITLE) DOC_BASE_TITLE = document.title.replace(/^\(\d+\)\s*/, ''); return DOC_BASE_TITLE; }
+  function applyTabTitle() { if (typeof document === 'undefined') return; if (MT_TIMER || PT_TIMER) return; var b = baseTitle(); document.title = NOTIF_N > 0 ? '(' + NOTIF_N + ') ' + b : b; }
+  function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; baseTitle(); document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
+  function tabTimerOff() { applyTabTitle(); }
   function ptBase(t) { return t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60; }
   function ptStart(id) {
     if (PT_TIMER && PT_TIMER.id !== id) ptPause(PT_TIMER.id, true);
