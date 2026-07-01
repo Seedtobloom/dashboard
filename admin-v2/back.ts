@@ -973,6 +973,9 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
     dueDate: b.dueDate || null,
     status: 'todo',
     tags: Array.isArray(b.tags) ? b.tags.slice(0, 8).map((x: unknown) => String(x == null ? '' : x).trim().slice(0, 24)).filter((x: string) => !!x) : [],
+    clientKey: b.clientKey ? String(b.clientKey).slice(0, 80) : '',
+    clientName: b.clientName ? String(b.clientName).slice(0, 80) : '',
+    recurrence: ['daily', 'weekly', 'monthly'].indexOf(b.recurrence) !== -1 ? b.recurrence : '',
     createdAt: nowIso(),
     completedAt: null,
   };
@@ -980,7 +983,14 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
   await saveMyTasks(env, tasks);
   return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status', 'archived'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status', 'archived', 'clientKey', 'clientName'];
+function nextRecurDate(dateStr: string | null, rec: string): string {
+  const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
+  if (rec === 'daily') base.setUTCDate(base.getUTCDate() + 1);
+  else if (rec === 'weekly') base.setUTCDate(base.getUTCDate() + 7);
+  else if (rec === 'monthly') base.setUTCMonth(base.getUTCMonth() + 1);
+  return base.toISOString().slice(0, 10);
+}
 async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promise<Response> {
   const b = await readJson(request);
   const tasks = await getMyTasks(env);
@@ -993,8 +1003,28 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
   if ('tags' in b) {
     t.tags = Array.isArray(b.tags) ? b.tags.slice(0, 8).map((x: unknown) => String(x == null ? '' : x).trim().slice(0, 24)).filter((x: string) => !!x) : [];
   }
-  if (b.status === 'done' && !t.completedAt) t.completedAt = nowIso();
+  if ('recurrence' in b) t.recurrence = ['daily', 'weekly', 'monthly'].indexOf(b.recurrence) !== -1 ? b.recurrence : '';
+  let spawnNext = false;
+  if (b.status === 'done' && !t.completedAt) { t.completedAt = nowIso(); if (t.recurrence) spawnNext = true; }
   if (b.status && b.status !== 'done') t.completedAt = null;
+  if (spawnNext) {
+    tasks.push({
+      id: genId(),
+      title: t.title,
+      notes: t.notes || '',
+      priority: t.priority || 'normale',
+      estMinutes: t.estMinutes || 0,
+      timeSpentSeconds: 0,
+      dueDate: nextRecurDate(t.dueDate || null, t.recurrence),
+      status: 'todo',
+      tags: Array.isArray(t.tags) ? t.tags.slice() : [],
+      clientKey: t.clientKey || '',
+      clientName: t.clientName || '',
+      recurrence: t.recurrence,
+      createdAt: nowIso(),
+      completedAt: null,
+    });
+  }
   await saveMyTasks(env, tasks);
   return json(t);
 }
