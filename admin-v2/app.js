@@ -112,7 +112,7 @@
     var groups = [
       ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Mes clients', [['clients', 'Clients'], ['chat', 'Messagerie']]],
-      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['emails', 'E-mails'], ['reglages', 'Réglages']]],
+      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
@@ -169,7 +169,6 @@
     if (VIEW === 'client') return renderClient();
     if (VIEW === 'chat') return renderChat();
     if (VIEW === 'avis') return renderAvis();
-    if (VIEW === 'emails') return renderEmails();
     if (VIEW === 'reglages') return renderReglages();
   }
   function topbar(title, right) {
@@ -189,14 +188,10 @@
 
   /* ── Textes des e-mails (envois volontaires : bilan + relances) ── */
   var EMAIL_TPLS = [];
-  function renderEmails() {
-    setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
-      EMAIL_TPLS = d.templates || [];
-      var intro = '<div class="card" style="background:var(--card)">' +
-        '<div class="micro">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
-      setMain(topbar('Textes des e-mails') + '<div class="wrap" style="max-width:760px">' + intro + EMAIL_TPLS.map(emailCard).join('') + '</div>');
-    }).catch(function () { setMain(topbar('Textes des e-mails') + '<div class="wrap"><div class="empty">Erreur de chargement.</div></div>'); });
+  function emailsBody() {
+    var intro = '<div class="card" style="background:var(--card)">' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
+    return intro + EMAIL_TPLS.map(emailCard).join('');
   }
   function emailCard(t) {
     var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
@@ -224,27 +219,42 @@
     });
   }
 
-  /* ── Réglages : types de mission (taxonomie partagée avec l'espace client) ── */
+  /* ── Réglages : types de mission + textes des e-mails (sections en onglets) ── */
   var MISSION_LIST = [];
+  var REGL_TAB = 'types';
+  function reglTabs() {
+    var items = [['types', 'Types de mission'], ['emails', 'Textes des e-mails']];
+    return '<div class="subtabs">' + items.map(function (it) {
+      return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  function reglSetTab(t) { REGL_TAB = t; renderReglages(); }
   function renderReglages() {
-    setMain(topbar('Réglages') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) {
-      MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : [];
-      renderReglagesBody();
-    }).catch(showError);
+    setMain(topbar('Réglages') + '<div class="wrap" style="max-width:820px">' + reglTabs() + '<div id="regl-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
+    if (REGL_TAB === 'emails') {
+      api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
+        EMAIL_TPLS = d.templates || [];
+        var b = el('regl-body'); if (b) b.innerHTML = emailsBody();
+      }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+    } else {
+      api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) {
+        MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : [];
+        renderReglagesBody();
+      }).catch(showError);
+    }
   }
   function missionReadInputs() { return MISSION_LIST.map(function (_, i) { var e = el('mt-type-' + i); return e ? e.value : MISSION_LIST[i]; }); }
-  function renderReglagesBody() {
+  function missionBody() {
     var rows = MISSION_LIST.map(function (t, i) {
       return '<div class="row" style="gap:8px;margin-bottom:8px"><input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" style="flex:1"><button class="btn btn--danger btn--sm" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
     }).join('');
-    var card = '<div class="card infocard" style="background:var(--card);max-width:640px"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Types de mission</h3>' +
-      '<div class="micro mb">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifiez, ajoutez ou retirez selon vos besoins, puis enregistrez.</div>' +
+    return '<div class="card infocard" style="background:var(--card)"><h3>Types de mission</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifiez, ajoutez ou retirez selon vos besoins, puis enregistrez.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
       '<div class="row mt" style="gap:8px"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
-    setMain(topbar('Réglages') + '<div class="wrap">' + card + '</div>');
   }
+  function renderReglagesBody() { var b = el('regl-body'); if (b) b.innerHTML = missionBody(); }
   function missionTypeAdd() {
     MISSION_LIST = missionReadInputs();
     var nv = (el('mt-type-new').value || '').trim();
@@ -1726,7 +1736,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
-    emailSave: emailSave, emailReset: emailReset,
+    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
