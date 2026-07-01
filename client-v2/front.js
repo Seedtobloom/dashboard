@@ -599,6 +599,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var appData = null;
   var cpHolidays = []; // conges du studio (depuis les reglages)
   var convData = []; // fil de conversation unifié (espace client)
+  var cpConvThread = '_general'; // fil sélectionné dans la messagerie (général ou support)
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages'
   var convoId = null; // projet sélectionné dans la messagerie
@@ -1305,7 +1306,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
 
   function totalUnread() {
-    return convData.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
+    var n = convData.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
+    (appData && appData.projects || []).forEach(function(pd) {
+      if (pd.project && pd.project.type === 'support' && Array.isArray(pd.messages)) {
+        n += pd.messages.filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
+      }
+    });
+    return n;
   }
 
   function buildSidebar() {
@@ -4507,9 +4514,42 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
+  function convThreads() {
+    var list = [{ id: '_general', label: 'Cindy · Général', kind: 'general' }];
+    (appData.projects || []).forEach(function(pd) {
+      if (pd.project && pd.project.type === 'support') list.push({ id: pd.project.id, label: pd.project.projectTitle || 'Support de com', kind: 'project' });
+    });
+    return list;
+  }
+  function convThreadMsgs(thread) {
+    if (!thread || thread.kind === 'general') return convData;
+    var pd = getPD(thread.id);
+    return (pd && Array.isArray(pd.messages)) ? pd.messages : [];
+  }
+  function convThreadUnread(thread) {
+    return convThreadMsgs(thread).filter(function(m){ return m.author === 'cindy' && !m.readByClient; }).length;
+  }
+  window.cpConvSetThread = function(id) {
+    cpConvThread = id;
+    var threads = convThreads();
+    var t = threads.filter(function(x){ return x.id === id; })[0];
+    // Marquer lu côté serveur pour un fil support
+    if (t && t.kind === 'project') {
+      var pd = getPD(t.id);
+      if (pd && Array.isArray(pd.messages)) pd.messages.forEach(function(m){ if (m.author === 'cindy') m.readByClient = true; });
+      fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: t.id }) }).catch(function(){});
+    }
+    renderShell();
+  };
+
   function buildConversation() {
-    var msgs = convData.length
-      ? convData.map(convoMsgHtml).join('')
+    var threads = convThreads();
+    var multi = threads.length > 1;
+    if (!threads.some(function(t){ return t.id === cpConvThread; })) cpConvThread = '_general';
+    var cur = threads.filter(function(t){ return t.id === cpConvThread; })[0] || threads[0];
+    var arr = convThreadMsgs(cur);
+    var msgs = arr.length
+      ? arr.map(convoMsgHtml).join('')
       : '<div style="padding:60px 24px;text-align:center">' +
           '<div style="font-size:40px;margin-bottom:12px;opacity:0.3">💬</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de messages</div>' +
@@ -4517,17 +4557,28 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<button class="cp-btn" onclick="document.getElementById(\'cp-convo-draft\')&&document.getElementById(\'cp-convo-draft\').focus()">Écrire un message</button>' +
         '</div>';
 
+    var selector = multi ? '<div style="display:flex;gap:7px;flex-wrap:wrap;padding:14px 24px 0;flex-shrink:0">' + threads.map(function(t){
+      var on = t.id === cpConvThread;
+      var u = convThreadUnread(t);
+      return '<button onclick="cpConvSetThread(\'' + esc(t.id) + '\')" style="padding:7px 15px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:10.5px;font-weight:600;letter-spacing:0.04em;background:' + (on ? 'var(--terre)' : 'var(--glycine-50)') + ';color:' + (on ? 'var(--paille)' : 'var(--terre-600)') + '">' + esc(t.label) + (u ? ' · ' + u : '') + '</button>';
+    }).join('') + '</div>' : '';
+
+    var subtitle = cur.kind === 'general' ? 'Répond en général sous 24 h' : 'Fil dédié à ce support';
+    var headTitle = cur.kind === 'general' ? 'Cindy · Seed to Bloom' : esc(cur.label);
+    var placeholder = cur.kind === 'general' ? 'Écrire un message à Cindy…' : 'Écrire au sujet de ce support…';
+
     var convoHtml = '<div class="card fade-up" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:480px">' +
+      selector +
       '<div style="padding:18px 24px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:12px;flex-shrink:0">' +
         cpAvatar('Cindy', 'cindy', 38) +
         '<div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">Cindy · Seed to Bloom</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.06em">Répond en général sous 24 h</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + headTitle + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.06em">' + subtitle + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
       '<div style="padding:16px 20px;border-top:1px solid var(--bone-d);display:flex;gap:12px;align-items:flex-end;flex-shrink:0">' +
-        '<textarea id="cp-convo-draft" placeholder="Écrire un message à Cindy…" rows="1" style="flex:1;resize:none;min-height:46px;max-height:160px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:hidden" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
+        '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:160px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:hidden" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
         '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
       '</div>' +
     '</div>';
@@ -4550,22 +4601,27 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (!ta) return;
     var content = ta.value.trim();
     if (!content) return;
+    var isProject = cpConvThread && cpConvThread !== '_general';
+    var url = isProject ? (API_BASE + '/message') : (API_BASE + '/conversation');
+    var payload = isProject ? { projectId: cpConvThread, content: content } : { content: content };
     ta.disabled = true;
-    fetch(API_BASE + '/conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: content }) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+    fetch(url, { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ' ' + (t||'').slice(0,120)); }); return r.json(); })
       .then(function(d) {
-        convData.push(d.message);
+        var msg = d.message || d;
+        if (isProject) { var pd = getPD(cpConvThread); if (pd) { if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(msg); } }
+        else { convData.push(msg); }
         var list = document.getElementById('cp-convo-list');
         var empty = list && list.querySelector('.cp-empty');
         if (empty) empty.remove();
         var div = document.createElement('div');
-        div.innerHTML = convoMsgHtml(d.message);
+        div.innerHTML = convoMsgHtml(msg);
         var node = div.firstChild;
         if (list && node) { list.appendChild(node); node.scrollIntoView({behavior:'smooth',block:'nearest'}); }
         ta.value = '';
         toast('Message envoye ✓');
       })
-      .catch(function(){ toast('Erreur, réessayez.'); })
+      .catch(function(err){ console.error('envoi message', err); toast('Erreur, réessayez.'); })
       .finally(function(){ ta.disabled = false; ta.focus(); });
   };
 
