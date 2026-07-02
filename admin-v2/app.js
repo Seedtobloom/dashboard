@@ -652,7 +652,7 @@
       var nc = el('nav-timer-clock'); if (nc) nc.textContent = mtClock(sec);
       tabTimerOn(mtClock(sec), PT_TIMER.title);
     }, 1000);
-    loadClient();
+    if (VIEW === 'client') renderClient();
   }
   function ptPause(id, silent) {
     if (!PT_TIMER || PT_TIMER.id !== id) return;
@@ -661,8 +661,11 @@
     PT_TIMER = null;
     tabTimerOff();
     refreshNavTimer();
+    // Total mis à jour localement et affiché tout de suite : pas de relecture
+    // serveur (KV à cohérence différée => le chrono retombait à zéro).
     var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
-    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) loadClient(); else toast('Erreur'); } });
+    if (!silent && VIEW === 'client') renderClient();
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function ptFind(id) {
     var d = (CUR && CUR.domains || []).find(function (x) { return x.id === 'partner'; });
@@ -768,7 +771,7 @@
       var nc = el('nav-timer-clock'); if (nc) nc.textContent = mtClock(sec);
       tabTimerOn(mtClock(sec), MT_TIMER.title);
     }, 1000);
-    renderMyTasks();
+    if (VIEW === 'mytasks') renderMyTasksBody();
   }
   function mtPause(id, silent) {
     if (!MT_TIMER || MT_TIMER.id !== id) return;
@@ -777,8 +780,11 @@
     MT_TIMER = null;
     tabTimerOff();
     refreshNavTimer();
+    // Le total est mis à jour localement et affiché tout de suite : on ne
+    // relit pas le serveur (KV à cohérence différée => on revoyait zéro).
     var local = MT_TASKS.find(function (x) { return x.id === id; }); if (local) local.timeSpentSeconds = total;
-    jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total }, 'PATCH').then(function (r) { if (!silent) { if (r.ok) renderMyTasks(); else toast('Erreur'); } });
+    if (!silent && VIEW === 'mytasks') renderMyTasksBody();
+    jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function renderMyTasks() {
     setMain(topbar('Mes tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -788,8 +794,13 @@
     ]).then(function (res) {
       var d = res[0];
       MT_CLIENTS = (res[1].clients || []).map(function (c) { return { key: c.key, name: (((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key) }; });
-      var all = d.tasks || [];
-      MT_TASKS = all;
+      MT_TASKS = d.tasks || [];
+      renderMyTasksBody();
+    }).catch(showError);
+  }
+  // Rendu depuis l'état local (MT_TASKS), sans re-télécharger.
+  function renderMyTasksBody() {
+      var all = MT_TASKS;
       var todo = all.filter(function (x) { return x.status !== 'done' && !x.archived; });
       var done = all.filter(function (x) { return x.status === 'done' && !x.archived; });
       var archived = all.filter(function (x) { return x.archived; });
@@ -860,7 +871,6 @@
       var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent);
       var addBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">' + (MT_ADDOPEN ? 'Fermer' : '+ Nouvelle tâche') + '</button>';
       setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
-    }).catch(showError);
   }
   function myTaskAdd() {
     var title = (el('mt-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }

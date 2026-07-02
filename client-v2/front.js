@@ -6326,7 +6326,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
-    return '<textarea id="stb-f-'+b.id+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(b.text||'')+'</textarea>';
+    // Hauteur estimée dès le rendu (l'auto-agrandissement ne joue qu'à la
+    // frappe) : sans ça, un brief de plusieurs lignes s'affichait tronqué.
+    var txt = b.text || '';
+    var rows = 0;
+    txt.split('\n').forEach(function(l){ rows += Math.max(1, Math.ceil((l.length || 1) / 55)); });
+    rows = Math.max(2, Math.min(rows + 1, 60));
+    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(txt)+'</textarea>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   function stbLineInput(pid, taskId, b, ph, extra){
@@ -6687,8 +6693,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var attachBlock = atts.length
       ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Fichiers joints à la demande</div>'+
         atts.map(function(a){
+          var fk = a.fileKey || a.key || '';
           return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f7f2ea;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#9a8a72')+
-            '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.fileKey||a.key||'')+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
+            '<a href="'+API_BASE+'/files/'+encodeURIComponent(fk)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
+            '<button onclick="cliRemoveTaskAttachment(\''+pid+'\',\''+t.id+'\',\''+esc(fk)+'\')" title="Retirer ce fichier" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>'+
           '</div>';
         }).join('')+'</div>'
       : '';
@@ -6715,6 +6723,26 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>'+
       '</div>';
   }
+
+  window.cliRemoveTaskAttachment = function(pid, taskId, fileKey){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
+    if (!t) return;
+    showConfirm('Le fichier sera retiré de la demande et supprimé de votre espace.', function(){
+      var rest = (Array.isArray(t.attachments) ? t.attachments : []).filter(function(a){ return (a.fileKey || a.key || '') !== fileKey; });
+      fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, attachments: rest.map(function(a){ return { name: a.name || '', fileKey: a.fileKey || a.key || '' }; }) }) })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(updated){
+          t.attachments = updated && Array.isArray(updated.attachments) ? updated.attachments : rest;
+          // Suppression du fichier lui-même (déposé par le client), au mieux.
+          fetch(API_BASE + '/files?key=' + encodeURIComponent(fileKey) + '&projectId=' + encodeURIComponent(pid), { method:'DELETE' }).catch(function(){});
+          if (pd && Array.isArray(pd.files)) pd.files = pd.files.filter(function(f){ return f.key !== fileKey; });
+          toast('Fichier retiré');
+          renderShell();
+        })
+        .catch(function(){ toast('Erreur, réessayez.'); });
+    }, { title: 'Retirer ce fichier ?', okLabel: 'Retirer', danger: true });
+  };
 
 /* ── Greffe v2 : messagerie générale catégorisée (côté client) ──────────────
  * Onglet "Messagerie" qui regroupe TOUS les fils de discussion, un par projet,
