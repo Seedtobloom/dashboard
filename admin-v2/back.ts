@@ -262,7 +262,20 @@ async function handleClientsList(env: Env): Promise<Response> {
     const data = (await env.KV_CLIENT.get(c.key, { type: 'json' })) as AnyObj | null;
     const esp = data ? getEspace(data) : {};
     const pres = parseInt((await env.KV_CLIENT.get('presence:' + c.key)) || '0', 10);
-    return { ...c, unread: data ? totalUnreadAdmin(data) : 0, lastSeen: pres || esp.lastSeen || 0 };
+    // Sections de l'espace (offres + supports) pour la navigation latérale admin
+    const sections: AnyObj[] = [];
+    if (data) {
+      for (const ext of Object.keys(DOMAINS)) {
+        const o = getDomainObj(esp, DOMAINS[ext].internal);
+        if (o) sections.push({ id: ext, label: DOMAINS[ext].label, unread: unreadAdmin(o) });
+      }
+      const sd = esp.supportsDeCom && esp.supportsDeCom[0];
+      if (sd) for (const pid of Object.keys(sd)) {
+        const o = getSupportObj(esp, pid);
+        if (o) sections.push({ id: 'support-' + pid, label: (o.name && String(o.name).trim()) || supportLabel(pid), unread: unreadAdmin(o) });
+      }
+    }
+    return { ...c, unread: data ? totalUnreadAdmin(data) : 0, lastSeen: pres || esp.lastSeen || 0, sections };
   }));
   return json({ clients });
 }

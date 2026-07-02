@@ -140,23 +140,64 @@
 
   /* ── shell ── */
   function nav(v) { VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0); }
-  function renderShell() {
+  var NAV_CLIENTS = [], NAV_OPEN = {};
+  function buildNavHtml() {
     var groups = [
       ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
-      ['Mes clients', [['clients', 'Clients'], ['chat', 'Messagerie']]],
       ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
-      return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
+      return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }
-    var navHtml = groups.map(function (g, gi) {
-      return '<div class="navgroup__label"' + (gi ? ' style="margin-top:14px"' : '') + '>' + g[0] + '</div>' + g[1].map(navItemHtml).join('');
-    }).join('');
+    // Accès direct : chaque client a son entrée, dépliable en sous-sections.
+    function clientNavHtml(c) {
+      var isCur = VIEW === 'client' && CURKEY === c.key;
+      var open = NAV_OPEN[c.key] || isCur;
+      var nm = clientName(c);
+      var subs = [['infos', 'Infos', 0]];
+      (c.sections || []).forEach(function (x) { subs.push([x.id, x.label, x.unread || 0]); });
+      subs.push(['documents', 'Documents', 0]);
+      subs.push(['bilanavis', 'Bilan & avis', 0]);
+      var head = '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:6px">' +
+        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:12px;flex-shrink:0">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
+        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm) + '</span>' +
+        (c.unread > 0 ? badge(c.unread) : '') +
+        '<span onclick="event.stopPropagation();ADM.navToggleClient(\'' + c.key + '\')" title="' + (open ? 'Replier' : 'Déplier') + '" style="margin-left:auto;padding:2px 7px;opacity:0.55;font-size:10px">' + (open ? '▾' : '▸') + '</span></button>';
+      var subsHtml = open ? subs.map(function (sub) {
+        var on = isCur && TAB === sub[0];
+        return '<button class="navitem" onclick="ADM.navClientTab(\'' + c.key + '\',\'' + sub[0] + '\')" style="padding:6px 12px 6px 44px;font-size:12.5px;' + (on ? 'color:var(--paille)' : 'opacity:0.72') + '">' +
+          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(sub[1]) + '</span>' + (sub[2] > 0 ? badge(sub[2]) : '') + '</button>';
+      }).join('') : '';
+      return head + subsHtml;
+    }
+    var clientsGroup = '<div class="navgroup__label" style="margin-top:14px">Mes clients</div>' +
+      navItemHtml(['clients', 'Clients']) +
+      NAV_CLIENTS.map(clientNavHtml).join('') +
+      navItemHtml(['chat', 'Messagerie']);
+    return navItemsGroup(groups[0], false) + clientsGroup + navItemsGroup(groups[1], true);
+    function navItemsGroup(g, mt) {
+      return '<div class="navgroup__label"' + (mt ? ' style="margin-top:14px"' : '') + '>' + g[0] + '</div>' + g[1].map(navItemHtml).join('');
+    }
+  }
+  var BADGE_CACHE = { chat: '', clients: '', priorities: '', mytasks: '' };
+  function paintBadges() { ['chat', 'clients', 'priorities', 'mytasks'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = BADGE_CACHE[k] || ''; }); }
+  function renderNav() { var n = el('side-nav'); if (n) { n.innerHTML = buildNavHtml(); paintBadges(); } }
+  function navToggleClient(key) { NAV_OPEN[key] = !(NAV_OPEN[key] || (VIEW === 'client' && CURKEY === key)); renderNav(); }
+  function navClientTab(key, tab) {
+    var sameClient = CUR && CUR.key === key;
+    CURKEY = key; VIEW = 'client'; NAV_OPEN[key] = true;
+    TAB = tab || TAB_BY_CLIENT[key] || 'infos';
+    if (tab) TAB_BY_CLIENT[key] = tab;
+    renderShell(); // renderClient charge le client si besoin
+    if (sameClient) loadClient(); // même client : on rafraîchit en arrière-plan
+  }
+  var TAB_BY_CLIENT = {};
+  function renderShell() {
     el('app').innerHTML =
       '<div class="shell"><aside class="side">' +
       '<div class="side__brand"><div class="side__logo" title="Seed to Bloom">' + LOGO_SVG + '</div><div class="s">Administration</div></div>' +
-      '<nav class="side__nav">' + navHtml + '</nav>' +
+      '<nav class="side__nav" id="side-nav">' + buildNavHtml() + '</nav>' +
       '<div id="nav-timer-slot">' + navTimerHtml() + '</div>' +
       '<div class="side__foot"><button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.25)" onclick="ADM.logout()">Déconnexion</button></div>' +
       '</aside><div class="main" id="main"></div></div>';
@@ -181,7 +222,12 @@
   function refreshUnread() {
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
-      ['chat', 'clients'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = UNREAD > 0 ? badge(UNREAD) : ''; });
+      BADGE_CACHE.chat = UNREAD > 0 ? badge(UNREAD) : '';
+      BADGE_CACHE.clients = BADGE_CACHE.chat;
+      var sig = JSON.stringify((d.clients || []).map(function (c) { return [c.key, clientName(c), c.unread || 0, (c.sections || []).map(function (x) { return x.id + x.label + (x.unread || 0); }).join('|')]; }));
+      var changed = sig !== JSON.stringify(NAV_CLIENTS.map(function (c) { return [c.key, clientName(c), c.unread || 0, (c.sections || []).map(function (x) { return x.id + x.label + (x.unread || 0); }).join('|')]; }));
+      NAV_CLIENTS = d.clients || [];
+      if (changed) renderNav(); else paintBadges();
       refreshTabTitle();
     }).catch(function () {});
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
@@ -193,8 +239,9 @@
         var t = new Date(x.dueDate); t.setHours(0, 0, 0, 0);
         return t <= today;
       }).length;
+      BADGE_CACHE.priorities = badgeAlert(REV_N + urgentDl);
       var b = el('nav-unread-priorities');
-      if (b) b.innerHTML = badgeAlert(REV_N + urgentDl);
+      if (b) b.innerHTML = BADGE_CACHE.priorities;
       refreshTabTitle();
     }).catch(function () {});
     // Bulle Mes tâches : rouge si des tâches sont en retard ou pour aujourd'hui,
@@ -203,8 +250,9 @@
       var today = new Date(); today.setHours(0, 0, 0, 0);
       var todo = (d.tasks || []).filter(function (x) { return x.status !== 'done' && !x.archived; });
       var urgent = todo.filter(function (x) { if (!x.dueDate) return false; var t = new Date(x.dueDate); t.setHours(0, 0, 0, 0); return t <= today; }).length;
+      BADGE_CACHE.mytasks = urgent > 0 ? badgeAlert(urgent) : (todo.length > 0 ? badge(todo.length) : '');
       var b = el('nav-unread-mytasks');
-      if (b) b.innerHTML = urgent > 0 ? badgeAlert(urgent) : (todo.length > 0 ? badge(todo.length) : '');
+      if (b) b.innerHTML = BADGE_CACHE.mytasks;
     }).catch(function () {});
   }
   function renderMain() {
@@ -1449,7 +1497,7 @@
     return '<div class="card" style="max-width:none"><div class="micro mb" style="font-weight:700;color:var(--terre);text-transform:uppercase;letter-spacing:0.05em">Ce qui attend</div><div class="row" style="gap:8px;flex-wrap:wrap">' +
       chips.map(function (ch) { return '<span style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:' + ch[2] + ';color:' + ch[3] + ';font-size:12.5px;font-weight:600"><span style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7">' + ch[0] + '</span>' + esc(ch[1]) + '</span>'; }).join('') + '</div></div>';
   }
-  function tab(t) { TAB = t; renderClient(); }
+  function tab(t) { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }
 
   function findDomain(id) { var d = CUR.domains.filter(function (x) { return x.id === id; })[0]; if (d) return d; return CUR.supports.filter(function (x) { return x.id === id; })[0]; }
 
@@ -2066,7 +2114,7 @@
 
   // API publique pour les onclick
   window.ADM = {
-    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken,
+    nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
