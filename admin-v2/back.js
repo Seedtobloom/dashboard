@@ -281,7 +281,8 @@ async function handleClientsList(env) {
     // unread par client (lecture de chaque espace)
     const clients = await Promise.all(idx.map(async (c) => {
         const data = (await env.KV_CLIENT.get(c.key, { type: 'json' }));
-        return { ...c, unread: data ? totalUnreadAdmin(data) : 0 };
+        const esp = data ? getEspace(data) : {};
+        return { ...c, unread: data ? totalUnreadAdmin(data) : 0, lastSeen: esp.lastSeen || 0 };
     }));
     return json({ clients });
 }
@@ -565,6 +566,7 @@ function buildClientDetail(_env, key, data) {
         client: c,
         entreprise: getEntreprise(c),
         isActive: esp.isActive === true,
+        lastSeen: esp.lastSeen || 0,
         meetingLink: esp.meetingLink || '',
         conversation: esp.conversation || [],
         spaceFeedback: esp.spaceFeedback || [],
