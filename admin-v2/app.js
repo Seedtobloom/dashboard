@@ -153,7 +153,9 @@
     // Accès direct : chaque client a son entrée, dépliable en sous-sections.
     function clientNavHtml(c) {
       var isCur = VIEW === 'client' && CURKEY === c.key;
-      var open = NAV_OPEN[c.key] || isCur;
+      // NAV_OPEN[key] : true/false explicite si l'utilisateur a cliqué le chevron,
+      // undefined = défaut (déplié seulement si c'est le client courant).
+      var open = NAV_OPEN[c.key] === true || (NAV_OPEN[c.key] === undefined && isCur);
       var nm = clientName(c);
       var subs = [['infos', 'Infos', 0]];
       (c.sections || []).forEach(function (x) { subs.push([x.id, x.label, x.unread || 0]); });
@@ -183,7 +185,12 @@
   var BADGE_CACHE = { chat: '', clients: '', priorities: '', mytasks: '' };
   function paintBadges() { ['chat', 'clients', 'priorities', 'mytasks'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = BADGE_CACHE[k] || ''; }); }
   function renderNav() { var n = el('side-nav'); if (n) { n.innerHTML = buildNavHtml(); paintBadges(); } }
-  function navToggleClient(key) { NAV_OPEN[key] = !(NAV_OPEN[key] || (VIEW === 'client' && CURKEY === key)); renderNav(); }
+  function navToggleClient(key) {
+    var isCur = VIEW === 'client' && CURKEY === key;
+    var open = NAV_OPEN[key] === true || (NAV_OPEN[key] === undefined && isCur);
+    NAV_OPEN[key] = !open; // bascule explicite, y compris pour le client courant
+    renderNav();
+  }
   function navClientTab(key, tab) {
     var sameClient = CUR && CUR.key === key;
     CURKEY = key; VIEW = 'client'; NAV_OPEN[key] = true;
