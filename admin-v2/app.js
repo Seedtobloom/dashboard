@@ -272,7 +272,7 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['emails', 'Textes des e-mails']];
+    var items = [['types', 'Types de mission'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous']];
     return '<div class="subtabs">' + items.map(function (it) {
       return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
     }).join('') + '</div>';
@@ -285,12 +285,25 @@
         EMAIL_TPLS = d.templates || [];
         var b = el('regl-body'); if (b) b.innerHTML = emailsBody();
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+    } else if (REGL_TAB === 'rdv') {
+      api('/api/booking-link').then(function (r) { return r.json(); }).then(function (d) {
+        var b = el('regl-body'); if (!b) return;
+        b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Réservation de créneau</h3>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Colle ici ton lien Cal.com (ou équivalent). Un bouton « Réserver un créneau » apparaîtra dans l\'espace de tous tes clients. Laisse vide pour le masquer.</div>' +
+          '<div class="field"><label>Lien de réservation</label><input class="inp" id="bk-link" value="' + esc(d.link || '') + '" placeholder="https://cal.com/ton-lien"></div>' +
+          '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.bookingSave()">Enregistrer</button></div></div>';
+      }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else {
       api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) {
         MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : [];
         renderReglagesBody();
       }).catch(showError);
     }
+  }
+  function bookingSave() {
+    jpost('/api/booking-link', { link: (el('bk-link').value || '').trim() }, 'PUT').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) { if (res.ok) toast(res.d.link ? 'Lien enregistré — bouton visible chez tes clients ✓' : 'Lien retiré, bouton masqué'); else toast((res.d && res.d.error) || 'Erreur'); })
+      .catch(function () { toast('Erreur'); });
   }
   function missionReadInputs() { return MISSION_LIST.map(function (_, i) { var e = el('mt-type-' + i); return e ? e.value : MISSION_LIST[i]; }); }
   function missionBody() {
@@ -1911,7 +1924,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
-    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab,
+    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, avisSetTab: avisSetTab, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,

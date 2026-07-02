@@ -76,6 +76,12 @@ export default {
                 if (method === 'PUT')
                     return handleEmailTemplatesSave(request, env);
             }
+            if (pathname === '/api/booking-link') {
+                if (method === 'GET')
+                    return handleBookingLinkGet(env);
+                if (method === 'PUT')
+                    return handleBookingLinkSave(request, env);
+            }
             if (pathname === '/api/mission-types') {
                 if (method === 'GET')
                     return handleMissionTypesGet(env);
@@ -336,6 +342,13 @@ async function handleClientCreate(request, env) {
     const idx = await getIndex(env);
     idx.push(indexEntry(key, data));
     await saveIndex(env, idx);
+    // E-mail de bienvenue (texte éditable dans Réglages), sans la clé d'accès :
+    // elle se transmet à part, par un autre canal.
+    const tplsW = await getEmailTemplates(env);
+    if (tplsW.welcome) {
+        const rw = renderEmailTpl(tplsW.welcome, { prenom: getClient(data).prenom || '' });
+        await notifyClient(env, data, rw.subject, rw.html);
+    }
     return json({ key, client: indexEntry(key, data) }, 201);
 }
 /* ─────────────────────────── API par client ─────────────────────────── */
@@ -426,11 +439,21 @@ async function handleClientApi(request, env, url, method, key, data, sub) {
     // Activation d'une offre (visible côté client uniquement si active)
     if (method === 'PATCH' && sub === '/offer') {
         const body = await readJson(request);
-        const { container } = resolveProject(esp, (body.projectId || '').toString());
+        const { container, label } = resolveProject(esp, (body.projectId || '').toString());
         if (!container)
             return json({ error: 'Offre introuvable' }, 404);
+        const wasActive = container.isActive === true;
         container.isActive = body.isActive === true;
         await saveClient(env, key, data);
+        // Moment clé : l'offre devient visible côté client → on le prévient.
+        if (!wasActive && container.isActive) {
+            const offLabel = (container.name && String(container.name).trim()) || label || 'votre offre';
+            const tplsO = await getEmailTemplates(env);
+            if (tplsO.offer_active) {
+                const ro = renderEmailTpl(tplsO.offer_active, { prenom: getClient(data).prenom || '', offre: offLabel });
+                await notifyClient(env, data, ro.subject, ro.html);
+            }
+        }
         return json({ ok: true, isActive: container.isActive });
     }
     if (method === 'PATCH' && sub === '/maintenance') {
@@ -708,8 +731,10 @@ async function handleTaskPatch(request, env, key, data, taskId) {
     if (body.status && body.status !== 'done')
         t.completedAt = null;
     await saveClient(env, key, data);
-    if (body.status && body.status !== prevStatus) {
-        const label = body.status === 'done' ? 'terminée' : body.status === 'in_progress' ? 'en cours' : body.status === 'review' ? 'à valider' : 'mise à jour';
+    // E-mail seulement aux moments clés (terminée, à valider) : les
+    // allers-retours de statut intermédiaires ne génèrent plus de mail.
+    if (body.status && body.status !== prevStatus && (body.status === 'done' || body.status === 'review')) {
+        const label = body.status === 'done' ? 'terminée' : 'à valider';
         await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, `<p>Votre tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`);
     }
     return json(t);
@@ -1358,7 +1383,19 @@ const EMAIL_TPL_DEFAULTS = {
         label: 'Invitation au bilan de collaboration',
         vars: ['prenom'],
         subject: 'Votre avis sur notre collaboration',
-        body: 'Bonjour {prenom},\n\nNous arrivons au terme de notre collaboration et votre retour compte beaucoup pour faire grandir le studio.\n\nConnectez-vous à votre espace, onglet Bilan, pour le partager en quelques minutes. Merci à vous.',
+        body: 'Bonjour {prenom},\n\nVotre accompagnement arrive à son terme et votre retour compte beaucoup pour faire grandir le studio.\n\nConnectez-vous à votre espace, onglet Bilan, pour le partager en quelques minutes. Merci à vous.',
+    },
+    welcome: {
+        label: 'Bienvenue · création de l\'espace',
+        vars: ['prenom'],
+        subject: 'Votre espace client Seed to Bloom est prêt',
+        body: 'Bonjour {prenom},\n\nJe viens de créer votre espace client : c\'est ici que je centralise tout ce que je fais pour vous (avancement, livrables à valider, messages, documents).\n\nJe vous transmets votre clé d\'accès personnelle juste après. Gardez-la précieusement, elle vous servira à chaque connexion.\n\nÀ très vite !',
+    },
+    offer_active: {
+        label: 'Activation d\'une offre',
+        vars: ['prenom', 'offre'],
+        subject: 'C\'est parti : votre offre {offre} est active',
+        body: 'Bonjour {prenom},\n\nBonne nouvelle : votre offre {offre} vient d\'être activée dans votre espace client.\n\nConnectez-vous pour découvrir votre suivi, déposer vos demandes et retrouver vos documents. Je vous y attends !',
     },
     remind_deliverable: {
         label: 'Relance · livrable à valider',
@@ -1449,6 +1486,19 @@ async function handleMissionTypesSave(request, env) {
         return json({ error: 'La liste ne peut pas être vide' }, 400);
     await env.KV_CLIENT.put('global:missionTypes', JSON.stringify(arr));
     return json({ ok: true, types: arr });
+}
+/* ── lien de réservation (Cal.com ou équivalent), partagé avec l'espace client ── */
+async function handleBookingLinkGet(env) {
+    const link = (await env.KV_CLIENT.get('global:bookingLink')) || '';
+    return json({ link });
+}
+async function handleBookingLinkSave(request, env) {
+    const body = await readJson(request);
+    const link = (body.link || '').toString().trim().slice(0, 500);
+    if (link && !/^https?:\/\//i.test(link) && !/^[a-z0-9.-]+\.[a-z]{2,}/i.test(link))
+        return json({ error: 'Lien invalide' }, 400);
+    await env.KV_CLIENT.put('global:bookingLink', link);
+    return json({ ok: true, link });
 }
 async function notifyClient(env, data, subject, bodyHtml) {
     const email = getClient(data).email;

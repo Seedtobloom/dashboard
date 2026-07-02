@@ -501,6 +501,8 @@ async function buildAppData(env, masterKey, data) {
     const meetingLink = (espace.meetingLink || '').toString().trim();
     projects.forEach((p) => { if (p.project)
         p.project.meetingLink = meetingLink; });
+    // Lien de réservation de créneau (Cal.com), réglé globalement côté admin
+    const bookingLink = ((await env.KV_CLIENT.get('global:bookingLink')) || '').trim();
     // Une seule offre active -> atterrissage direct sur sa page riche (forme V1
     // "single-project", sans type:'client') au lieu d'une grille à une carte.
     if (projects.length === 1) {
@@ -513,6 +515,8 @@ async function buildAppData(env, masterKey, data) {
             conversation,
             studioHolidays,
             bilan,
+            bookingLink,
+            home: espace.home || null,
         };
     }
     return {
@@ -523,6 +527,7 @@ async function buildAppData(env, masterKey, data) {
         home: espace.home || null,
         studioHolidays,
         bilan,
+        bookingLink,
     };
 }
 /* ──────────────────────────────────────────────────────────────────────────
@@ -756,6 +761,7 @@ async function handleTaskComplete(_request, env, masterKey, data, taskId) {
     found.task.status = 'done';
     found.task.completedAt = nowIso();
     await save(env, masterKey, data);
+    await notifyAdmin(env, `Tâche terminée · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a marqué la tâche <strong>${escHtml(found.task.title || '')}</strong> comme terminée.</p>`);
     return json({ ok: true });
 }
 async function handleTaskComment(request, env, masterKey, data, taskId) {
@@ -947,6 +953,7 @@ async function handleFileUpload(request, env, masterKey, data) {
         httpMetadata: { contentType: file.type || guessType(name) },
         customMetadata: { source: 'client', category: 'document' },
     });
+    await notifyAdmin(env, `Fichier déposé · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a déposé le fichier <strong>${escHtml(name)}</strong>${sub ? ` (dossier ${escHtml(sub)})` : ''} dans son espace.</p>`);
     return json({ key, name, folder: sub, type: file.type || guessType(name), size: file.size, source: 'client' }, 201);
 }
 function allLockedKeys(esp) {

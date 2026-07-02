@@ -1392,6 +1392,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(visioLink.replace(/^https?:\/\//,'')) + '</div>' +
       '</div>' +
     '</a>' : '';
+    // Réservation de créneau (Cal.com) : lien global réglé côté admin
+    var bookingLink = (appData.bookingLink || '').trim();
+    var bookingHtml = bookingLink ? '<a href="' + esc(bookingLink.startsWith('http') ? bookingLink : 'https://'+bookingLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:rgba(242,229,194,0.14);color:var(--paille);border:1px solid rgba(242,229,194,0.25)">' +
+      cpIcon('calendar',15,'color:var(--paille)') +
+      '<div style="line-height:1.15;flex:1;min-width:0">' +
+        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">Réserver un créneau</div>' +
+        '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0">Choisissez un moment avec Cindy</div>' +
+      '</div>' +
+    '</a>' : '';
+    visioHtml = visioHtml + bookingHtml;
 
     return '<aside class="cp-sidebar">' +
       // Brand header
