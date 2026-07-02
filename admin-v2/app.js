@@ -600,7 +600,7 @@
       (meta ? '<div class="micro" style="margin-top:4px;color:' + (overdue ? '#a23c28' : 'var(--muted)') + '">' + meta + '</div>' : '') +
       chipsHtml +
       '<div id="mt-note-' + t.id + '" style="margin-top:5px">' + mtNoteInner(t) + '</div>' +
-      subsHtml + subAdd +
+      subsHtml + subAdd + sessionsBlock(t) +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:12px">' +
         '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:' + tcColor + '">' + mtClock(spent) + '</span>' +
         '<div class="row" style="gap:5px">' +
@@ -683,6 +683,7 @@
   }
   function ptPause(id, silent) {
     if (!PT_TIMER || PT_TIMER.id !== id) return;
+    var startedAt = PT_TIMER.startedAt;
     var total = Math.round(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000);
     if (PT_INT) { clearInterval(PT_INT); PT_INT = null; }
     PT_TIMER = null;
@@ -690,14 +691,30 @@
     refreshNavTimer();
     // Total mis à jour localement et affiché tout de suite : pas de relecture
     // serveur (KV à cohérence différée => le chrono retombait à zéro).
-    var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
+    var sessStart = new Date(startedAt).toISOString(), sessEnd = new Date().toISOString();
+    var local = ptFind(id);
+    if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); if (!Array.isArray(local.sessions)) local.sessions = []; local.sessions.push({ start: sessStart, end: sessEnd }); }
     if (!silent && VIEW === 'client') renderClient();
-    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function ptFind(id) {
     var d = (CUR && CUR.domains || []).find(function (x) { return x.id === 'partner'; });
     var ts = d && d.content && Array.isArray(d.content.taches) ? d.content.taches : [];
     return ts.find(function (x) { return x.id === id; });
+  }
+  function mtFmtSession(x) {
+    var a = new Date(x.start), b = new Date(x.end);
+    if (isNaN(a) || isNaN(b)) return '';
+    var sameDay = a.toDateString() === b.toDateString();
+    function hm(d) { return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+    var day = a.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    return day + ' · ' + hm(a) + ' → ' + hm(b) + (sameDay ? '' : ' (+1 j)') + ' · ' + mtDur((b - a) / 1000);
+  }
+  function sessionsBlock(t) {
+    var ss = Array.isArray(t.sessions) ? t.sessions : [];
+    if (!ss.length) return '';
+    var rows = ss.slice(-8).reverse().map(function (x) { var l = mtFmtSession(x); return l ? '<div style="font-family:var(--font-micro);font-size:11.5px;color:var(--terre-600);padding:3px 0;font-variant-numeric:tabular-nums">' + l + '</div>' : ''; }).join('');
+    return '<details class="mt" style="margin-top:8px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:3px 0">Historique du chrono · ' + ss.length + '</summary><div style="padding:4px 0 2px">' + rows + (ss.length > 8 ? '<div class="micro" style="text-transform:none;letter-spacing:0">… et ' + (ss.length - 8) + ' session' + (ss.length - 8 > 1 ? 's' : '') + ' plus ancienne' + (ss.length - 8 > 1 ? 's' : '') + '</div>' : '') + '</div></details>';
   }
   function mtClock(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; function p(n) { return n < 10 ? '0' + n : n; } return (h > 0 ? h + ':' : '') + p(m) + ':' + p(s); }
   function mtDur(sec) { sec = Math.round(sec); if (sec < 60) return sec + ' s'; var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return (h > 0 ? h + ' h ' : '') + (m > 0 ? m + ' min' : (h > 0 ? '' : '0 min')); }
@@ -805,6 +822,7 @@
   }
   function mtPause(id, silent) {
     if (!MT_TIMER || MT_TIMER.id !== id) return;
+    var startedAt = MT_TIMER.startedAt;
     var total = Math.round(MT_TIMER.base + (Date.now() - MT_TIMER.startedAt) / 1000);
     if (MT_INT) { clearInterval(MT_INT); MT_INT = null; }
     MT_TIMER = null;
@@ -812,9 +830,11 @@
     refreshNavTimer();
     // Le total est mis à jour localement et affiché tout de suite : on ne
     // relit pas le serveur (KV à cohérence différée => on revoyait zéro).
-    var local = MT_TASKS.find(function (x) { return x.id === id; }); if (local) local.timeSpentSeconds = total;
+    var sessStart = new Date(startedAt).toISOString(), sessEnd = new Date().toISOString();
+    var local = MT_TASKS.find(function (x) { return x.id === id; });
+    if (local) { local.timeSpentSeconds = total; if (!Array.isArray(local.sessions)) local.sessions = []; local.sessions.push({ start: sessStart, end: sessEnd }); }
     if (!silent && VIEW === 'mytasks') renderMyTasksBody();
-    jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
+    jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total, sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function renderMyTasks() {
     setMain(topbar('Mes tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -1616,6 +1636,7 @@
         taskDlvBlock(d, t) +
         '<details class="mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:5px 0">Plus d\'options</summary>' +
           '<div class="row mt" style="align-items:center;gap:10px"><span class="micro">Temps passé</span><input class="inp" type="number" style="width:80px" value="' + (t.timeSpentMinutes || 0) + '" title="ajuster les minutes" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></div>' +
+          sessionsBlock(t) +
           '<div class="row mt" style="align-items:center;gap:12px;flex-wrap:wrap">' +
             '<span class="micro">Jalons proposés</span>' +
             '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">V1 <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.v1Date || '') + '" onchange="ADM.taskMilestone(\'' + t.id + '\',\'v1Date\',this.value)"></label>' +

@@ -4465,6 +4465,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var k = a.fileKey || a.key || '';
           if (k) taskOfFile[k] = t.title || 'Tâche';
         });
+        // Fichiers ajoutés ensuite via « Lien & fichiers » de la tâche (p_elements)
+        var bv = briefVal((t.properties || {}).p_elements);
+        (bv.files || []).forEach(function(fx) { if (fx && fx.key) taskOfFile[fx.key] = t.title || 'Tâche'; });
       });
       (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project, task: taskOfFile[f.key] || '' }); });
     });

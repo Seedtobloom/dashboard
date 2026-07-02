@@ -672,6 +672,11 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     t.timeSpentSeconds = finalSec;
     t.timeSpentMinutes = Math.round(finalSec / 60);
   }
+  if (body.sessionStart && body.sessionEnd) {
+    if (!Array.isArray(t.sessions)) t.sessions = [];
+    t.sessions.push({ start: String(body.sessionStart).slice(0, 30), end: String(body.sessionEnd).slice(0, 30) });
+    if (t.sessions.length > 100) t.sessions = t.sessions.slice(-100);
+  }
   if (body.properties && typeof body.properties === 'object') t.properties = Object.assign({}, t.properties || {}, body.properties);
   if (body.status === 'done' && !t.completedAt) t.completedAt = nowIso();
   if (body.status && body.status !== 'done') t.completedAt = null;
@@ -1091,6 +1096,13 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
     // Garde anti-écrasement : un chrono reparti d'un état périmé ne peut pas
     // réduire le total. La saisie manuelle passe forceTime pour corriger.
     t.timeSpentSeconds = b.forceTime === true ? nv : Math.max(nv, t.timeSpentSeconds || 0);
+  }
+  // Journal des sessions de chrono : heure de début et de fin de chaque
+  // période travaillée (envoyées à la mise en pause).
+  if (b.sessionStart && b.sessionEnd) {
+    if (!Array.isArray(t.sessions)) t.sessions = [];
+    t.sessions.push({ start: String(b.sessionStart).slice(0, 30), end: String(b.sessionEnd).slice(0, 30) });
+    if (t.sessions.length > 100) t.sessions = t.sessions.slice(-100);
   }
   if ('subtasks' in b) {
     t.subtasks = Array.isArray(b.subtasks) ? b.subtasks.slice(0, 40).map((s: AnyObj) => ({ id: String((s && s.id) || genId()), text: String((s && s.text) || '').slice(0, 240), done: !!(s && s.done) })).filter((s: AnyObj) => s.text) : [];
