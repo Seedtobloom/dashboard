@@ -1603,7 +1603,11 @@
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
       return '<div class="card" style="background:var(--card)' + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
-        (t.content ? '<div class="muted mb mt" style="font-size:14px;white-space:pre-wrap">' + esc(t.content) + '</div>' : '<div class="mt"></div>') +
+        (t.content ? (function () {
+          var long = t.content.length > 260 || (t.content.match(/\n/g) || []).length > 4;
+          return '<div class="mt"><div id="ptc-' + t.id + '" class="muted" style="font-size:14px;white-space:pre-wrap;line-height:1.5' + (long ? ';display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden' : '') + '">' + mtLinkify(t.content) + '</div>' +
+            (long ? '<button id="ptc-btn-' + t.id + '" onclick="ADM.ptToggleContent(\'' + t.id + '\')" style="background:none;border:none;color:var(--glycine-900);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline">Tout afficher</button>' : '') + '</div>';
+        })() : '<div class="mt"></div>') +
         ((Array.isArray(t.attachments) && t.attachments.length) ? '<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '') +
         '<div class="row" style="align-items:center;gap:10px">' +
         '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
@@ -1624,6 +1628,12 @@
     var grid = active.length ? '<div class="grid grid--2" style="align-items:start">' + active.map(ptCard).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
     var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="grid grid--2" style="align-items:start;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
     return grid + archHtml;
+  }
+  function ptToggleContent(id) {
+    var c = el('ptc-' + id), b = el('ptc-btn-' + id); if (!c || !b) return;
+    var clamped = c.style.webkitLineClamp !== '';
+    if (clamped) { c.style.display = 'block'; c.style.webkitLineClamp = ''; c.style.webkitBoxOrient = ''; c.style.overflow = 'visible'; b.textContent = 'Réduire'; }
+    else { c.style.display = '-webkit-box'; c.style.webkitLineClamp = '5'; c.style.webkitBoxOrient = 'vertical'; c.style.overflow = 'hidden'; b.textContent = 'Tout afficher'; }
   }
   function taskArchive(id, val) { if (val && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); loadClient(); } else toast('Erreur'); }); }
   function taskMilestone(id, field, val) { var body = { projectId: 'partner' }; body[field] = val || null; jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Jalon enregistré' : 'Jalon retiré'); loadClient(); } else toast('Erreur'); }); }
@@ -2037,7 +2047,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
