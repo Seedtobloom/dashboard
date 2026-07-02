@@ -191,7 +191,21 @@ async function saveClient(env, key, data) {
     await env.KV_CLIENT.put(key, JSON.stringify(data));
 }
 /* ─────────────────────────── auth ─────────────────────────── */
+// Anti force-brute : 10 échecs max par IP sur 15 minutes.
+async function loginBlocked(kv, request) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const n = parseInt((await kv.get('rl:login:' + ip)) || '0', 10);
+    return n >= 10;
+}
+async function loginFailed(kv, request) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const k = 'rl:login:' + ip;
+    const n = parseInt((await kv.get(k)) || '0', 10);
+    await kv.put(k, String(n + 1), { expirationTtl: 900 });
+}
 async function handleLogin(request, env) {
+    if (await loginBlocked(env.KV_ADMIN, request))
+        return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
     const body = await readJson(request);
     const keyA = (body.keyA || '').toString().trim();
     const keyB = (body.keyB || '').toString().trim();
@@ -200,8 +214,10 @@ async function handleLogin(request, env) {
     const auth = (await env.KV_ADMIN.get('admin:auth', { type: 'json' }));
     if (!auth || !auth.keyA || !auth.keyB)
         return json({ error: 'Auth admin non configurée' }, 500);
-    if (keyA !== auth.keyA || keyB !== auth.keyB)
+    if (keyA !== auth.keyA || keyB !== auth.keyB) {
+        await loginFailed(env.KV_ADMIN, request);
         return json({ error: 'Clés invalides' }, 401);
+    }
     const sid = genSession();
     await env.KV_ADMIN.put(SESSION_PREFIX + sid, JSON.stringify({ admin: true, at: nowIso() }), { expirationTtl: SESSION_TTL });
     const cookie = `stb_admin=${sid}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL}`;
@@ -607,6 +623,8 @@ async function handleAdminMessage(request, env, key, data) {
     const content = (body.content || '').toString().trim();
     if (!content)
         return json({ error: 'content requis' }, 400);
+    if (content.length > 4000)
+        return json({ error: 'Message trop long' }, 400);
     if (!Array.isArray(container.chat))
         container.chat = [];
     const entry = { id: genId(), from: 'cindy', message: content, date: nowIso(), readByClient: false, readByAdmin: true };
@@ -636,7 +654,7 @@ async function handleBeneficeAdd(request, env, key, data) {
     const { container } = resolveProject(getEspace(data), 'partner');
     if (!container)
         return json({ error: 'Projet introuvable' }, 404);
-    const label = (body.label || '').toString().trim();
+    const label = (body.label || '').toString().trim().slice(0, 200);
     if (!label)
         return json({ error: 'label requis' }, 400);
     if (!Array.isArray(container.benefices))
@@ -644,9 +662,9 @@ async function handleBeneficeAdd(request, env, key, data) {
     const item = {
         id: genId(),
         label,
-        value: (body.value || '').toString().trim(),
-        note: (body.note || '').toString().trim(),
-        date: (body.date || '').toString().trim() || nowIso().slice(0, 10),
+        value: (body.value || '').toString().trim().slice(0, 200),
+        note: (body.note || '').toString().trim().slice(0, 1000),
+        date: (body.date || '').toString().trim().slice(0, 10) || nowIso().slice(0, 10),
         createdAt: nowIso(),
     };
     container.benefices.unshift(item);
@@ -677,6 +695,10 @@ async function handleTaskPatch(request, env, key, data, taskId) {
         return json({ error: 'Tâche introuvable' }, 404);
     const t = found.task;
     const prevStatus = t.status;
+    if ('title' in body)
+        body.title = (body.title || '').toString().slice(0, 300);
+    if ('content' in body)
+        body.content = (body.content || '').toString().slice(0, 10000);
     ADMIN_TASK_FIELDS.forEach((k) => { if (k in body)
         t[k] = body[k]; });
     if (body.properties && typeof body.properties === 'object')
@@ -697,7 +719,7 @@ async function handleTaskComment(request, env, key, data, taskId) {
     const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
     if (!found)
         return json({ error: 'Tâche introuvable' }, 404);
-    const text = (body.text || '').toString().trim();
+    const text = (body.text || '').toString().trim().slice(0, 2000);
     if (!text)
         return json({ error: 'text requis' }, 400);
     const comment = { id: genId(), author: 'cindy', text, createdAt: nowIso() };
@@ -719,7 +741,7 @@ async function handleStepCreate(request, env, key, data) {
     if (!body.title)
         return json({ error: 'title requis' }, 400);
     const arr = stepsArr(container);
-    const step = { id: genId(), title: (body.title || '').toString(), description: (body.description || '').toString(), status: body.status || 'upcoming', date: body.date || null, clientAction: (body.clientAction || '').toString(), order: arr.length };
+    const step = { id: genId(), title: (body.title || '').toString().slice(0, 300), description: (body.description || '').toString().slice(0, 2000), status: body.status || 'upcoming', date: body.date || null, clientAction: (body.clientAction || '').toString().slice(0, 1000), order: arr.length };
     arr.push(step);
     await saveClient(env, key, data);
     return json(step, 201);
@@ -734,6 +756,12 @@ async function handleStepPatch(request, env, key, data, stepId) {
     if (!step)
         return json({ error: 'Étape introuvable' }, 404);
     const prev = step.status;
+    if ('title' in body)
+        body.title = (body.title || '').toString().slice(0, 300);
+    if ('description' in body)
+        body.description = (body.description || '').toString().slice(0, 2000);
+    if ('clientAction' in body)
+        body.clientAction = (body.clientAction || '').toString().slice(0, 1000);
     ['title', 'description', 'status', 'date', 'clientAction', 'order'].forEach((k) => { if (k in body)
         step[k] = body[k]; });
     if (body.status === 'done' && !step.completedAt)
@@ -929,8 +957,12 @@ async function handleDeliverablePatch(request, env, key, data, id) {
     const liv = container.livrables.find((l) => l.id === id);
     if (!liv)
         return json({ error: 'Livrable introuvable' }, 404);
-    if (body.status)
+    if (body.status) {
+        if (['a_valider', 'valide', 'refuse'].indexOf(body.status) === -1)
+            return json({ error: 'Statut invalide' }, 400);
         liv.status = body.status;
+        liv.validatedAt = body.status === 'a_valider' ? null : nowIso();
+    }
     await saveClient(env, key, data);
     return json(liv);
 }
@@ -1024,7 +1056,11 @@ async function handleDashboard(env) {
             (sw.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
                 deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
         collectLiv(sw, 'Site web', 'website');
-        collectLiv(getDomainObj(esp, 'identiteVisuelle'), 'Identité visuelle', 'branding');
+        const iv = getDomainObj(esp, 'identiteVisuelle');
+        if (iv)
+            (iv.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
+                deadlines.push({ key: ci.key, client: who, project: 'branding', projectLabel: 'Identité visuelle', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
+        collectLiv(iv, 'Identité visuelle', 'branding');
         const sd = esp.supportsDeCom && esp.supportsDeCom[0];
         if (sd)
             for (const pid of Object.keys(sd)) {
@@ -1060,6 +1096,10 @@ async function handleDone(env) {
         if (sw)
             (sw.suivi || []).forEach((s) => { if (s.status === 'done' && s.completedAt)
                 completed.push({ key: ci.key, client: who, projectLabel: 'Site web', kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
+        const iv = getDomainObj(esp, 'identiteVisuelle');
+        if (iv)
+            (iv.suivi || []).forEach((s) => { if (s.status === 'done' && s.completedAt)
+                completed.push({ key: ci.key, client: who, projectLabel: 'Identité visuelle', kind: 'étape', title: s.title, completedAt: s.completedAt, timeSpentMinutes: 0 }); });
         const sd = esp.supportsDeCom && esp.supportsDeCom[0];
         if (sd)
             for (const pid of Object.keys(sd)) {
