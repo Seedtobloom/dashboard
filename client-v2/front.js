@@ -6655,6 +6655,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var propertiesHtml =
       dRow(cpIcon('check-circle', 15), 'État', dStatusPill(pid, t)) +
       dRow(cpIcon('calendar', 15), 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow(cpIcon('zap', 15), 'Priorité', (function(){
+        var cur = t.urgency || 'normal';
+        var sel = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'urgency\',this.value)" style="'+dPillStyle(PART_URGENCY[cur]||'#F2E5C2')+'">';
+        ['tranquille','normal','urgent','critique'].forEach(function(u){ sel += '<option value="'+u+'"'+(cur===u?' selected':'')+'>'+(PART_URG_LABEL[u]||u)+'</option>'; });
+        return sel + '</select>';
+      })()) +
       dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
       dRow(cpIcon('chart', 15), 'Avancement', (function(){
         // Statut de travail du studio : lecture seule pour le client
