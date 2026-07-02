@@ -81,7 +81,39 @@
     }).then(function (d) { if (d) { VIEW = 'priorities'; renderShell(); startPoll(); } }).catch(showError);
   }
   var _poll = null;
-  function startPoll() { if (_poll) return; _poll = setInterval(refreshUnread, 45000); }
+  function startPoll() { if (_poll) return; _poll = setInterval(refreshUnread, 45000); setInterval(refreshOpenChat, 15000); }
+  // Rafraîchit le fil de discussion ouvert (messagerie globale ou fiche client)
+  // sans toucher au champ de saisie : les nouveaux messages arrivent seuls.
+  function refreshOpenChat() {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    function updateBox(box, dom) {
+      if (!box || !dom) return;
+      var html = chatBubbles(dom, '');
+      if (box.innerHTML === html) return;
+      var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      box.innerHTML = html;
+      if (atBottom) box.scrollTop = box.scrollHeight;
+    }
+    if (VIEW === 'chat' && CHAT.key && CHAT.project) {
+      api('/api/clients/' + CHAT.key).then(function (r) { return r.json(); }).then(function (d) {
+        if (VIEW !== 'chat' || CHAT.key !== d.key) return;
+        CUR = d; CURKEY = CHAT.key;
+        var dom = findDomain(CHAT.project); if (!dom) return;
+        updateBox(el('chatmsgs'), dom);
+        if (dom.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: CHAT.project }, 'POST'); dom.unread = 0; }
+      }).catch(function () {});
+    } else if (VIEW === 'client' && CURKEY && document.querySelector('[id^="chat-"]')) {
+      api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) {
+        if (VIEW !== 'client' || !CUR || CUR.key !== d.key) return;
+        CUR = d;
+        var boxes = document.querySelectorAll('[id^="chat-"]');
+        for (var i = 0; i < boxes.length; i++) {
+          var dom = findDomain(boxes[i].id.slice(5));
+          if (dom) updateBox(boxes[i], dom);
+        }
+      }).catch(function () {});
+    }
+  }
   function showError() { el('app').innerHTML = '<div class="center"><p class="muted">Erreur. <a href="javascript:location.reload()">Réessayer</a></p></div>'; }
 
   function showLogin(err) {
@@ -1821,7 +1853,16 @@
   function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function gsend() {
     var i = el('gmsg'); var v = (i.value || '').trim(); if (!v) return;
-    jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v }).then(function (r) { if (r.ok) { toast('Envoyé'); chatClient(CHAT.key); setTimeout(function () { chatProject(CHAT.project); }, 200); } });
+    jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v }).then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      i.value = '';
+      api('/api/clients/' + CHAT.key).then(function (r2) { return r2.json(); }).then(function (d) {
+        if (CHAT.key !== d.key) return;
+        CUR = d; CURKEY = CHAT.key;
+        var dom = findDomain(CHAT.project); var box = el('chatmsgs');
+        if (dom && box) { box.innerHTML = chatBubbles(dom, ''); box.scrollTop = box.scrollHeight; }
+      });
+    });
   }
 
   /* ── Avis : bilans + avis sur l'espace (hero + onglets) ── */

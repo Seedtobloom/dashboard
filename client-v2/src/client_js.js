@@ -5351,7 +5351,52 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).catch(function() {});
   }
 
-  function startPoll() { /* Polling supprimé — requêtes uniquement à la demande. */ }
+  function cpRefreshBadge() {
+    var unreadNow = totalUnread();
+    document.querySelectorAll('[data-nav="messages"] .cp-nav__badge').forEach(function(b){ b.remove(); });
+    if (unreadNow > 0) {
+      var msgBtn = document.querySelector('[data-nav="messages"]');
+      if (msgBtn) { var b = document.createElement('span'); b.className = 'cp-nav__badge'; b.textContent = String(unreadNow); msgBtn.appendChild(b); }
+    }
+  }
+  var _pollBusy = false;
+  function startPoll() {
+    // Rafraîchissement doux : badge de messages non lus partout, et fil de
+    // conversation ouvert mis à jour sans toucher au brouillon en cours.
+    setInterval(function() {
+      if (!API_BASE || !appData) return;
+      if (_isAdminEdit) return; // pas de remplacement des données pendant l'édition
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      if (_pollBusy) return; _pollBusy = true;
+      var headers = {};
+      try { var sc = sessionStorage.getItem('_sc'); if (sc) headers['x-space-code'] = sc; } catch(e) {}
+      fetch(API_BASE, { headers: headers })
+        .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(data) {
+          if (!data || data.wrongCode || data.locked || !data.projects) return;
+          appData = data;
+          cpRefreshBadge();
+          if (currentView === 'messages') {
+            var list = document.getElementById('cp-convo-list');
+            if (list) {
+              var threads = convThreads();
+              var cur = threads.filter(function(t){ return t.id === cpConvThread; })[0] || threads[0];
+              var arr = cur ? convThreadMsgs(cur) : [];
+              if (arr.length) {
+                var html = arr.map(convoMsgHtml).join('');
+                if (list.innerHTML !== html) {
+                  var atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+                  list.innerHTML = html;
+                  if (atBottom) list.scrollTop = list.scrollHeight;
+                }
+              }
+            }
+          }
+        })
+        .catch(function(){})
+        .then(function(){ _pollBusy = false; });
+    }, 30000);
+  }
 
   function buildClientFileExchange(pid, files) {
     var adminFiles = (files||[]).filter(function(f){ return f.source !== 'client'; });
