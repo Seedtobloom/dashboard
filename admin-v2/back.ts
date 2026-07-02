@@ -261,7 +261,8 @@ async function handleClientsList(env: Env): Promise<Response> {
   const clients = await Promise.all(idx.map(async (c) => {
     const data = (await env.KV_CLIENT.get(c.key, { type: 'json' })) as AnyObj | null;
     const esp = data ? getEspace(data) : {};
-    return { ...c, unread: data ? totalUnreadAdmin(data) : 0, lastSeen: esp.lastSeen || 0 };
+    const pres = parseInt((await env.KV_CLIENT.get('presence:' + c.key)) || '0', 10);
+    return { ...c, unread: data ? totalUnreadAdmin(data) : 0, lastSeen: pres || esp.lastSeen || 0 };
   }));
   return json({ clients });
 }
@@ -341,7 +342,10 @@ async function handleClientApi(
 
   // Détail complet + données calculées
   if (method === 'GET' && (sub === '' || sub === '/')) {
-    return json(buildClientDetail(env, key, data));
+    const detail = buildClientDetail(env, key, data);
+    const pres = parseInt((await env.KV_CLIENT.get('presence:' + key)) || '0', 10);
+    if (pres) detail.lastSeen = pres;
+    return json(detail);
   }
   // Mise à jour profil / activation
   if (method === 'PATCH' && (sub === '' || sub === '/')) {

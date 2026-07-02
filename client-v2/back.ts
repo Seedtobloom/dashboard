@@ -126,11 +126,12 @@ async function handleClientApi(
 ): Promise<Response> {
   // GET racine -> payload complet (appData V1)
   if (method === 'GET' && (sub === '' || sub === '/')) {
-    // Présence : horodate la dernière activité du client (throttlé à 5 min
-    // pour limiter les écritures KV) ; le poll de 30 s entretient la mesure.
-    const esp0 = getEspace(data);
+    // Présence : horodatée dans une clé KV SÉPARÉE (presence:<clé>), jamais
+    // dans le blob de l'espace. Réécrire tout l'espace pour un horodatage
+    // pouvait écraser une écriture concurrente (ex. temps passé côté admin).
     const nowSec = Math.floor(Date.now() / 1000);
-    if (!esp0.lastSeen || nowSec - esp0.lastSeen > 300) { esp0.lastSeen = nowSec; await save(env, masterKey, data); }
+    const lastP = parseInt((await env.KV_CLIENT.get('presence:' + masterKey)) || '0', 10);
+    if (nowSec - lastP > 120) await env.KV_CLIENT.put('presence:' + masterKey, String(nowSec), { expirationTtl: 60 * 86400 });
     return json(await buildAppData(env, masterKey, data));
   }
 
@@ -314,8 +315,9 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   }
   if (espace.isActive !== true) return json({ error: 'Cet espace est désactivé. Contactez Cindy.' }, 403);
 
-  espace.lastSeen = Math.floor(Date.now() / 1000); // maj au login
-  await save(env, key, data);
+  // Présence en clé séparée : on ne réécrit pas tout l'espace au login
+  // (risque d'écraser une écriture concurrente avec des données périmées).
+  await env.KV_CLIENT.put('presence:' + key, String(Math.floor(Date.now() / 1000)), { expirationTtl: 60 * 86400 });
 
   // Mode édition (Cindy) : un jeton généré depuis l'admin, transmis au login,
   // marque la session comme éditrice. Sans lui, les écritures sensibles
