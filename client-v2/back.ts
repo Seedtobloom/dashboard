@@ -369,6 +369,7 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
     taskTitle: l.taskTitle || '',
     reviewLink: l.reviewLink || '',
     createdAt: l.createdAt || null,
+    version: typeof l.version === 'number' ? l.version : 0,
   }));
 }
 

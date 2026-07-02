@@ -4938,8 +4938,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (proj.deliverables || []).forEach(function(d) {
         if (!d.fileKey && !d.reviewLink) return;
         if (d.fileKey) seen[d.fileKey] = true;
-        items.push({ name: d.name || 'Livrable', pid: pid, projLabel: label, taskTitle: d.taskTitle || '',
+        items.push({ id: d.id || '', name: d.name || 'Livrable', pid: pid, projLabel: label, taskTitle: d.taskTitle || '',
           status: d.status || 'a_valider', date: d.validatedAt || d.createdAt || null,
+          version: d.version || 0, clientComment: d.clientComment || '',
           dlUrl: d.fileKey ? (API_BASE + '/files/' + encodeURIComponent(d.fileKey) + '/download') : '',
           reviewLink: d.reviewLink || '' });
       });
@@ -4959,7 +4960,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       return ts(b) - ts(a);
     });
     function statusBadge(st) {
-      var m = { a_valider: ['À valider', '#8a5a00', '#fbf0d8'], revision: ['En révision', '#8a3a2c', '#fbeae5'], valide: ['Validé', '#3f6b3a', '#e7f0e3'], validated: ['Validé', '#3f6b3a', '#e7f0e3'], recu: ['Reçu', '#5a4632', '#f0ece3'] };
+      var m = { a_valider: ['À valider', '#8a5a00', '#fbf0d8'], revision: ['En révision', '#8a3a2c', '#fbeae5'], refuse: ['Révision demandée', '#8a3a2c', '#fbeae5'], valide: ['Validé', '#3f6b3a', '#e7f0e3'], validated: ['Validé', '#3f6b3a', '#e7f0e3'], recu: ['Reçu', '#5a4632', '#f0ece3'] };
       var c = m[st] || m.recu;
       return '<span style="font-family:var(--font-micro);font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[2] + ';color:' + c[1] + '">' + c[0] + '</span>';
     }
@@ -4967,17 +4968,30 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var validated = it.status === 'valide' || it.status === 'validated';
       var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
       var line1 = [it.projLabel, dateLbl].filter(Boolean).join(' · ');
+      var vTag = it.version > 0 ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:6px;background:var(--surface-2,#f0ece3);color:var(--terre-600);margin-left:8px;vertical-align:2px">V' + it.version + '</span>' : '';
       var action = it.dlUrl
         ? '<a href="' + esc(it.dlUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--terre);color:var(--paille);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('download', 14, 'color:var(--paille)') + ' Télécharger</a>'
         : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
-      return '<div style="display:flex;align-items:flex-start;gap:14px;padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
+      var decide = (it.status === 'a_valider' && it.id)
+        ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="padding:9px 18px;border:none;border-radius:999px;background:#3f6b3a;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Valider ce livrable</button>' +
+            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="padding:9px 18px;border:1px solid var(--bone-d);border-radius:999px;background:var(--card);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Demander une révision</button>' +
+          '</div>'
+        : '';
+      var comment = (it.status === 'refuse' && it.clientComment)
+        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8a3a2c;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
+        : '';
+      return '<div style="padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
+        '<div style="display:flex;align-items:flex-start;gap:14px">' +
         '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon('download', 18) + '</span>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.3">' + esc(it.name) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.3">' + esc(it.name) + vTag + '</div>' +
           (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);margin-top:4px;letter-spacing:0.05em;text-transform:uppercase">' + esc(line1) + '</div>' : '') +
           (it.taskTitle ? '<div style="font-family:var(--font-body);font-size:12.5px;font-style:italic;color:var(--terre-400);margin-top:3px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
+          comment +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">' + statusBadge(it.status) + action + '</div>' +
+        '</div>' + decide +
       '</div>';
     }
     function chip(v, lbl) {
@@ -6153,10 +6167,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }).join('') : '<div class="cp-empty">Aucun livrable pour le moment.</div>';
     return '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Livrables</span></div>'+rows+'</div>';
   }
-  window.stbValidate = function(pid, id, decision){
-    var comment = '';
-    if (decision === 'refuse') { comment = prompt('Que faut-il revoir ? (optionnel)') || ''; }
-    fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment }) })
+  function stbSendDecision(pid, id, decision, comment){
+    fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment || '' }) })
       .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
       .then(function(res){
         var pd = getPD(pid);
@@ -6165,9 +6177,20 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           for (var i=0;i<arr.length;i++){ if(arr[i].id===id && res.deliverable){ arr[i]=res.deliverable; } }
         }
         renderShell();
-        toast(decision === 'valide' ? 'Livrable valide' : 'Revision demandee');
+        toast(decision === 'valide' ? 'Livrable validé, Cindy est prévenue' : 'Révision demandée, Cindy est prévenue');
       })
-      .catch(function(){ toast('Erreur, reessayez.'); });
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  }
+  window.stbValidate = function(pid, id, decision){
+    if (decision === 'refuse') {
+      cpShowPrompt('Demander une révision', 'Dites en quelques mots ce qui doit être revu (optionnel)', '', function(val){
+        stbSendDecision(pid, id, 'refuse', (val || '').slice(0, 1000));
+      }, { okLabel: 'Envoyer la demande', placeholder: 'ex. La couleur du fond ne correspond pas…' });
+      return;
+    }
+    showConfirm('Une fois validé, ce livrable sera marqué comme accepté et Cindy en sera informée.', function(){
+      stbSendDecision(pid, id, 'valide', '');
+    }, { title: 'Valider ce livrable ?', okLabel: 'Oui, je valide' });
   };
 
 /* ── Greffe v2 : livrables rattachés à une tâche (calendrier partenaire) ──
