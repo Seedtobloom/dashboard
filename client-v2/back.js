@@ -353,6 +353,7 @@ function mapDeliverables(livrables) {
         taskTitle: l.taskTitle || '',
         reviewLink: l.reviewLink || '',
         createdAt: l.createdAt || null,
+        version: typeof l.version === 'number' ? l.version : 0,
     }));
 }
 function mapChatToMessages(chat) {
