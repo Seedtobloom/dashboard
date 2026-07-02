@@ -63,10 +63,17 @@
       // Champ de progression unique « Avancement » : reflète automatiquement
       // le statut réel de la tâche (Pas commencé / En cours / À valider /
       // Livrée). Lecture seule pour le client, mis à jour par Cindy.
-      dRow(cpIcon('chart', 15), 'Avancement' + MK_L, (function(){
+      dRow(cpIcon('chart', 15), 'Avancement' + (_isAdminEdit ? MK_E : MK_L), (function(){
         var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
         var col = { todo:'#E9E2D2', in_progress:'#CBD8F5', review:'#F6E59E', done:'#C9E6CB' };
         var s = t.status || 'todo';
+        // Modifiable par Cindy (mode édition), synchronisé avec l'admin ;
+        // lecture seule pour le client.
+        if (_isAdminEdit) {
+          var sel = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[s]||'#EFEAF7')+'">';
+          ['todo','in_progress','review','done'].forEach(function(k){ sel += '<option value="'+k+'"'+(s===k?' selected':'')+'>'+map[k]+'</option>'; });
+          return sel + '</select>';
+        }
         return '<span style="display:inline-block;background:'+(col[s]||'#EFEAF7')+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Mis à jour automatiquement">'+esc(map[s]||s)+'</span>';
       })()) +
       dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +

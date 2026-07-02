@@ -2869,10 +2869,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
           '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>' +
         '</div>';
-        // Avancement = statut réel de la tâche, automatique et en lecture seule.
+        // Avancement = statut réel de la tâche. Modifiable par Cindy en mode
+        // édition (synchronisé avec l'admin), lecture seule pour le client.
         var _stMap = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
-        var prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">Avancement <span title="Mis à jour automatiquement" style="font-size:10px">🔒</span></div>' +
-          '<div style="font-size:13px;padding:8px 10px;background:#f7f2ea;border-radius:8px;color:var(--navy,#1C1205)">'+esc(_stMap[t.status||'todo']||'Pas commencé')+'</div></div>';
+        var _stCur = t.status || 'todo';
+        var prog;
+        if (_isAdminEdit) {
+          prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">Avancement</div>' +
+            '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+inpStyle+';cursor:pointer">' +
+            ['todo','in_progress','review','done'].map(function(k){ return '<option value="'+k+'"'+(_stCur===k?' selected':'')+'>'+_stMap[k]+'</option>'; }).join('') +
+            '</select></div>';
+        } else {
+          prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">Avancement <span title="Mis à jour automatiquement" style="font-size:10px">🔒</span></div>' +
+            '<div style="font-size:13px;padding:8px 10px;background:#f7f2ea;border-radius:8px;color:var(--navy,#1C1205)">'+esc(_stMap[_stCur]||'Pas commencé')+'</div></div>';
+        }
         return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
           prog + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
