@@ -597,6 +597,16 @@
           '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red)" title="Supprimer">✕</button>' +
         '</div></div></div>';
   }
+  // Applique la tâche renvoyée par le serveur à l'état local puis re-rend,
+  // SANS relire la liste (KV à cohérence différée : la relecture immédiate
+  // renvoyait l'ancienne valeur et l'écran semblait ignorer la modification).
+  function mtApplyLocal(task) {
+    if (task && task.id) {
+      var i = MT_TASKS.findIndex(function (x) { return x.id === task.id; });
+      if (i >= 0) MT_TASKS[i] = task; else MT_TASKS.push(task);
+    }
+    if (VIEW === 'mytasks') renderMyTasksBody();
+  }
   function mtSetView(v) { MT_VIEW = v; renderMyTasks(); }
   function mtSetTag(v) { MT_TAG = v; renderMyTasks(); }
   function mtQuickAdd() {
@@ -608,7 +618,7 @@
     if (/(^|\s)!+(\s|$)/.test(text) || /!+\s*$/.test(text)) { prio = 'haute'; text = text.replace(/!+/g, ' '); }
     text = text.replace(/\s+/g, ' ').trim();
     if (!text) { toast('Titre requis'); return; }
-    jpost('/api/admin/tasks', { title: text, priority: prio, tags: tags }).then(function (r) { if (r.ok) { inp.value = ''; toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
+    jpost('/api/admin/tasks', { title: text, priority: prio, tags: tags }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { inp.value = ''; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
   function mtToggleAdd() { MT_ADDOPEN = !MT_ADDOPEN; renderMyTasks(); }
   function mtSaveSubs(id, subs) { jpost('/api/admin/tasks/' + id, { subtasks: subs }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
@@ -730,7 +740,7 @@
       var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || '') };
       var tm = parseInt(el('mte-time').value, 10);
       if (!isNaN(tm) && tm >= 0 && tm * 60 !== (t.timeSpentSeconds || 0)) { body.timeSpentSeconds = tm * 60; body.forceTime = true; }
-      jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { close(); toast('Tâche modifiée'); renderMyTasks(); } else toast('Erreur'); });
+      jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { close(); toast('Tâche modifiée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
     };
     document.body.appendChild(ov);
     var f = el('mte-title'); if (f) f.focus();
@@ -880,15 +890,15 @@
     var tags = (el('mt-tags') ? el('mt-tags').value : '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
     var ck = el('mt-client') ? el('mt-client').value : '';
     var cn = ''; if (ck) { for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } } }
-    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '' }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
+    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '' }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { MT_ADDOPEN = false; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
-  function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
+  function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) mtApplyLocal(task); }).catch(function () { toast('Erreur'); }); }
   function myTaskDel(id) {
     admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche et son temps passé seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
-      api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); });
+      api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); MT_TASKS = MT_TASKS.filter(function (x) { return x.id !== id; }); if (VIEW === 'mytasks') renderMyTasksBody(); } else toast('Erreur'); });
     });
   }
-  function myTaskArchive(id, val) { if (val && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); renderMyTasks(); } else toast('Erreur'); }); }
+  function myTaskArchive(id, val) { if (val && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { archived: !!val }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
   var PLAN_TASKS = [], PLAN_CAP = {}, PLAN_START = 9.5, PLAN_END = 18, PLAN_LUNCH_START = 13, PLAN_LUNCH_END = 14, PLAN_BLOCKS = [], PLAN_SEQ = 0;

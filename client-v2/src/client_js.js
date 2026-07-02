@@ -2038,7 +2038,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var CLI_BRIEF = {
     pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
     brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
-    brief_pret:    { label:'Brief terminé',  bg:'#d8f0e8', tx:'#1a5c38' },
+    brief_pret:    { label:'Brief prêt',     bg:'#d8f0e8', tx:'#1a5c38' },
     en_projet:     { label:'En projet',      bg:'#dce8ff', tx:'#1a3a7a' },
     a_retravailler:{ label:'A retravailler', bg:'#fdf0d0', tx:'#7a5a00' },
     archive:       { label:'Archivé',        bg:'#ebebeb', tx:'#6b6b6b' },
@@ -2701,7 +2701,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var propVals = t.properties || {};
         // Affichage compact : on ne montre une pastille que si la propriété a une valeur.
         // L'édition se fait dans la fiche de la tâche (clic sur la carte).
-        var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };
+        var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'Brief terminé':'#dcecd3' };
         var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };
         function propChip(val, colorMap){
           if (!val) return '';
@@ -2832,7 +2832,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
           (function(){
             var v = (t.properties||{}).p_clientbrief || '';
-            var o = ['Brief en cours', 'Brief terminé'];
+            var o = ['Brief en cours', 'Brief prêt'];
             return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>' +
               o.map(function(x){ return '<option'+(v===x?' selected':'')+'>'+x+'</option>'; }).join('') + '</select>';
           })() + '</div>' +

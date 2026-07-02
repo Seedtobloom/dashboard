@@ -186,8 +186,8 @@ js = js.replace(
   "font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;"
 );
 // fonds plus saturés pour distinguer les deux familles de pastilles
-must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
-js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };");
+must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
+js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };");
 must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };") !== -1, 'pill prog col');
 js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };");
 // fond des cartes de tâche : beige (DA) au lieu du dégradé d'urgence

@@ -2469,7 +2469,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var CLI_BRIEF = {
     pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
     brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
-    brief_pret:    { label:'Brief terminé',  bg:'#d8f0e8', tx:'#1a5c38' },
+    brief_pret:    { label:'Brief prêt',     bg:'#d8f0e8', tx:'#1a5c38' },
     en_projet:     { label:'En projet',      bg:'#dce8ff', tx:'#1a3a7a' },
     a_retravailler:{ label:'A retravailler', bg:'#fdf0d0', tx:'#7a5a00' },
     archive:       { label:'Archivé',        bg:'#ebebeb', tx:'#6b6b6b' },
@@ -3135,7 +3135,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var propVals = t.properties || {};
         // Affichage compact : on ne montre une pastille que si la propriété a une valeur.
         // L'édition se fait dans la fiche de la tâche (clic sur la carte).
-        var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };
+        var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };
         var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
         function propChip(val, colorMap){
           if (!val) return '';
@@ -3266,7 +3266,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
           (function(){
             var v = (t.properties||{}).p_clientbrief || '';
-            var o = ['Brief en cours', 'Brief terminé'];
+            var o = ['Brief en cours', 'Brief prêt'];
             return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value=""></option>' +
               o.map(function(x){ return '<option'+(v===x?' selected':'')+'>'+x+'</option>'; }).join('') + '</select>';
           })() + '</div>' +
@@ -6633,7 +6633,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var sep = '<hr style="border:none;border-top:1px solid #ece6da;margin:18px 0">';
     var dueStr = (t.dueDate||'').slice(0,10);
 
-    var CLIENTBRIEF_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };
+    var CLIENTBRIEF_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };
     var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
     var TYPE_COL = {};
     var props = t.properties || {};
@@ -6655,7 +6655,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var propertiesHtml =
       dRow(cpIcon('check-circle', 15), 'État', dStatusPill(pid, t)) +
       dRow(cpIcon('calendar', 15), 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
-      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', props.p_clientbrief||'', ['Brief en cours','Brief terminé'], CLIENTBRIEF_COL, 'À commencer')) +
+      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
       dRow(cpIcon('chart', 15), 'Avancement', (function(){
         // Statut de travail du studio : lecture seule pour le client
         // (modifiable uniquement en mode édition admin).
