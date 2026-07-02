@@ -29,7 +29,13 @@
   }
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
-    return '<textarea id="stb-f-'+b.id+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(b.text||'')+'</textarea>';
+    // Hauteur estimée dès le rendu (l'auto-agrandissement ne joue qu'à la
+    // frappe) : sans ça, un brief de plusieurs lignes s'affichait tronqué.
+    var txt = b.text || '';
+    var rows = 0;
+    txt.split('\n').forEach(function(l){ rows += Math.max(1, Math.ceil((l.length || 1) / 55)); });
+    rows = Math.max(2, Math.min(rows + 1, 60));
+    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(txt)+'</textarea>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   function stbLineInput(pid, taskId, b, ph, extra){
