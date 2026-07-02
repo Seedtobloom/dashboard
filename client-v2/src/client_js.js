@@ -2038,7 +2038,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var CLI_BRIEF = {
     pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
     brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
-    brief_pret:    { label:'Brief prêt',     bg:'#d8f0e8', tx:'#1a5c38' },
+    brief_pret:    { label:'Brief terminé',  bg:'#d8f0e8', tx:'#1a5c38' },
     en_projet:     { label:'En projet',      bg:'#dce8ff', tx:'#1a3a7a' },
     a_retravailler:{ label:'A retravailler', bg:'#fdf0d0', tx:'#7a5a00' },
     archive:       { label:'Archivé',        bg:'#ebebeb', tx:'#6b6b6b' },
