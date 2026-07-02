@@ -26,7 +26,8 @@
     var email=((em&&em.value)||'').trim(), key=((kk&&kk.value)||'').trim();
     if(!email||!key){ if(er){er.textContent='Renseignez les deux champs.';er.style.display='block';} return; }
     if(bt){bt.disabled=true;bt.textContent='Connexion...';}
-    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,key:key})})
+    var etkm=window.location.search.match(/[?&]etk=([a-f0-9]{16,64})/); var etk=etkm?etkm[1]:'';
+    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,key:key,etk:etk})})
       .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
       .then(function(res){ if(res.ok){ location.reload(); return; } if(er){er.textContent=(res.d&&res.d.error)||'Identifiants invalides';er.style.display='block';} if(bt){bt.disabled=false;bt.textContent='Acceder a mon espace';} })
       .catch(function(){ if(er){er.textContent='Erreur reseau';er.style.display='block';} if(bt){bt.disabled=false;bt.textContent='Acceder a mon espace';} });

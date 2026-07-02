@@ -439,6 +439,12 @@ async function handleClientApi(request, env, url, method, key, data, sub) {
     // Bilan de fin de collaboration : inviter le client à le remplir
     if (method === 'POST' && sub === '/bilan/request')
         return handleBilanRequest(env, key, data);
+    // Jeton du mode édition de l'espace client (24 h) : à ajouter à l'URL (?edit=1&etk=…)
+    if (method === 'POST' && sub === '/edit-token') {
+        const etk = genId() + genId();
+        await env.KV_CLIENT.put('edittoken:' + etk, key, { expirationTtl: 86400 });
+        return json({ etk });
+    }
     // Bénéfices : suivi après la collaboration
     if (method === 'POST' && sub === '/benefices')
         return handleBeneficeAdd(request, env, key, data);
@@ -828,6 +834,24 @@ function projectFolder(projectId) {
         return `supportsDeCom/${sm[1]}`;
     return '';
 }
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 Mo par fichier côté admin
+function sanitizeFileName(s) {
+    const base = ((s || '').toString().normalize('NFC').split(/[\/\\]/).pop() || '');
+    const clean = base.replace(/[\u0000-\u001f\u007f:*?"<>|]/g, '').replace(/\.{2,}/g, '.').replace(/\s+/g, ' ').trim().slice(0, 120);
+    return (clean === '' || clean === '.') ? '' : clean;
+}
+async function uniqueR2Key(env, prefix, name) {
+    const dot = name.lastIndexOf('.');
+    const stem = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot) : '';
+    let candidate = name;
+    for (let i = 2; i <= 50; i++) {
+        if (!(await env.R2_FILES.head(prefix + candidate)))
+            return { key: prefix + candidate, name: candidate };
+        candidate = `${stem} (${i})${ext}`;
+    }
+    return { key: prefix + candidate, name: candidate };
+}
 async function handleUpload(request, env, key, data) {
     const ct = request.headers.get('Content-Type') || '';
     if (!ct.includes('multipart/form-data'))
@@ -842,9 +866,14 @@ async function handleUpload(request, env, key, data) {
     const folder = projectFolder(projectId);
     if (!folder)
         return json({ error: 'projectId invalide' }, 400);
-    const r2key = `${key}/${folder}/${file.name}`;
+    const safeName = sanitizeFileName(file.name);
+    if (!safeName)
+        return json({ error: 'Nom de fichier invalide' }, 400);
+    if (typeof file.size === 'number' && file.size > MAX_UPLOAD_BYTES)
+        return json({ error: 'Fichier trop lourd (100 Mo maximum)' }, 413);
+    const { key: r2key, name: fileName } = await uniqueR2Key(env, `${key}/${folder}/`, safeName);
     await env.R2_FILES.put(r2key, file.stream(), {
-        httpMetadata: { contentType: file.type || guessType(file.name) },
+        httpMetadata: { contentType: file.type || guessType(fileName) },
         customMetadata: { source: 'cindy', category: asDeliverable ? 'deliverable' : 'document' },
     });
     let deliverable = null;
@@ -855,7 +884,7 @@ async function handleUpload(request, env, key, data) {
                 container.livrables = [];
             // Chaque dépôt crée une nouvelle version : on garde l'historique complet des livrables d'une tâche.
             const version = taskId ? (container.livrables.filter((l) => l.taskId === taskId).length + 1) : 0;
-            deliverable = { id: genId(), name: file.name, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version };
+            deliverable = { id: genId(), name: fileName, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version };
             container.livrables.push(deliverable);
             // Rattachement à une tâche : on mémorise son titre et on passe la tâche en « à valider ».
             if (taskId && Array.isArray(container.taches)) {
@@ -867,10 +896,10 @@ async function handleUpload(request, env, key, data) {
                 }
             }
             await saveClient(env, key, data);
-            await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(file.name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+            await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
         }
     }
-    return json({ key: r2key, name: file.name, type: file.type || guessType(file.name), size: file.size, category: asDeliverable ? 'deliverable' : 'document', deliverable }, 201);
+    return json({ key: r2key, name: fileName, type: file.type || guessType(fileName), size: file.size, category: asDeliverable ? 'deliverable' : 'document', deliverable }, 201);
 }
 async function handleDownload(env, key, r2key) {
     if (!r2key || r2key.includes('..') || !r2key.startsWith(key + '/'))
@@ -881,7 +910,7 @@ async function handleDownload(env, key, r2key) {
     const headers = new Headers();
     obj.writeHttpMetadata(headers);
     headers.set('etag', obj.httpEtag);
-    headers.set('Content-Disposition', `attachment; filename="${(r2key.split('/').pop() || 'document')}"`);
+    headers.set('Content-Disposition', `attachment; filename="${(r2key.split('/').pop() || 'document').replace(/["\r\n\\]/g, '')}"`);
     return new Response(obj.body, { headers });
 }
 async function handleFileDelete(request, env, key) {
