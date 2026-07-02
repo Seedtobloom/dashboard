@@ -360,15 +360,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cpBuildEditableIntro(pid, isPart) {
     var _firstName = (appData.clientName||'').split(' ')[0];
     var defaultText = 'Bienvenue ' + _firstName + ' ✨\n\n'
-      + 'Considère cet espace comme notre bureau virtuel.\n\n'
-      + 'C\'est ici que tu peux déposer tes demandes, suivre leur traitement et retrouver tout ce dont tu as besoin pour notre collaboration.\n\n'
-      + 'Un seul endroit pour garder une vision claire de ce qui est en cours et avancer ensemble, sereinement. 💛';
+      + 'Cet espace est votre bureau de projet : j\'y centralise tout ce que je fais pour vous.\n\n'
+      + 'Déposez vos demandes, suivez leur avancement, validez les livrables et retrouvez chaque document au même endroit.\n\n'
+      + 'Un seul endroit pour garder une vision claire, du premier brief au résultat final. 💛';
     var stored = (appData && appData.home && appData.home.intro != null) ? appData.home.intro : null;
     // Migration : les anciens textes par défaut (enregistrés tels quels) sont
     // remplacés par le nouveau message, sans écraser un texte personnalisé.
     var _legacy = [
       'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de vos demandes pas à pas : je dépose les éléments à valider, vous me laissez vos retours — et tout reste au clair, ensemble.',
-      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.'
+      'Bienvenue ' + _firstName + '. Ici on suit l\'avancée de votre projet pas à pas — je dépose les éléments à valider, vous me laissez vos retours.',
+      'Bienvenue ' + _firstName + ' ✨\n\nConsidère cet espace comme notre bureau virtuel.\n\nC\'est ici que tu peux déposer tes demandes, suivre leur traitement et retrouver tout ce dont tu as besoin pour notre collaboration.\n\nUn seul endroit pour garder une vision claire de ce qui est en cours et avancer ensemble, sereinement. 💛'
     ];
     if (stored != null && _legacy.indexOf(stored.trim()) !== -1) stored = null;
     var text = (stored != null) ? stored : defaultText;
@@ -2453,7 +2454,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">A retenir</div>' +
       '<p style="font-family:var(--font-ui);font-size:13px;color:var(--terre);margin:0;white-space:pre-wrap">'+esc(project.maintNote)+'</p>' +
     '</div>' : '';
-    var callCard = project.maintCallUrl ? '<div style="margin-top:18px;text-align:center"><a href="'+esc(project.maintCallUrl)+'" target="_blank" rel="noopener" style="display:inline-block;font-family:var(--font-ui);font-size:13px;font-weight:500;padding:10px 20px;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);text-decoration:none">Reserve ton call</a></div>' : '';
+    var callCard = project.maintCallUrl ? '<div style="margin-top:18px;text-align:center"><a href="'+esc(project.maintCallUrl)+'" target="_blank" rel="noopener" style="display:inline-block;font-family:var(--font-ui);font-size:13px;font-weight:500;padding:10px 20px;border-radius:var(--radius-pill);background:var(--terre);color:var(--paille);text-decoration:none">Réserver un créneau</a></div>' : '';
 
     return kpiHtml + chart + table + noteCard + callCard;
   }
@@ -5590,7 +5591,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:rgba(242,229,194,0.6);margin-bottom:6px">Bonjour, ici</div>' +
           '<h1 style="font-family:var(--font-display);font-size:clamp(40px,7vw,60px);font-weight:400;line-height:1.04;color:var(--brume);margin:0 0 22px">l\'atelier de <span style="font-style:italic;color:var(--glycine)">Cindy</span></h1>' +
-          '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(242,229,194,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que nous avancons ensemble, en confiance. Entrez le code que je vous ai transmis.</p>' +
+          '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(242,229,194,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que je vous tiens au courant de tout, en toute confiance. Entrez le code que je vous ai transmis.</p>' +
           '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">' +
             '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(228,209,254,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(228,209,254,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
             '<button onclick="cpSubmitCode()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--glycine);color:var(--terre);border:0;border-radius:var(--radius-2);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Entrer ' + cpIcon('arrow', 14) + '</button>' +

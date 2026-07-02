@@ -239,7 +239,7 @@
   var EMAIL_TPLS = [];
   function emailsBody() {
     var intro = '<div class="card" style="background:var(--card)">' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces e-mails ne partent que lorsque vous cliquez vous-même (invitation au bilan, relances). Vous pouvez modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
+      '<div class="micro" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces e-mails ne partent que lorsque tu cliques toi-même (invitation au bilan, relances). Tu peux modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
     return intro + EMAIL_TPLS.map(emailCard).join('');
   }
   function emailCard(t) {
@@ -298,7 +298,7 @@
       return '<div class="row" style="gap:8px;margin-bottom:8px"><input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" style="flex:1"><button class="btn btn--danger btn--sm" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3>Types de mission</h3>' +
-      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifiez, ajoutez ou retirez selon vos besoins, puis enregistrez.</div>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifie, ajoute ou retire selon tes besoins, puis enregistre.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
       '<div class="row mt" style="gap:8px"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
@@ -421,7 +421,7 @@
       var focusItems = late.concat(tdy);
       var focusBand = focusItems.length
         ? '<div class="focusband"><div class="focusband__h">Focus du jour<span class="focusband__c">' + focusItems.length + '</span></div>' + focusItems.map(focusRow).join('') + '</div>'
-        : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, vous êtes à jour.</div>';
+        : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, tu es à jour.</div>';
 
       // Révisions demandées par le client : la balle est dans votre camp
       var revs = d.revisions || [];
@@ -483,7 +483,7 @@
       }
       var maxLoad = Math.max.apply(null, weekLoad.map(function (w) { return w.count; })) || 1;
       var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Météo de la semaine</h3>' +
-        '<div class="micro mb">Vos échéances par jour, pour anticiper les journées chargées.</div>' +
+        '<div class="micro mb">Tes échéances par jour, pour anticiper les journées chargées.</div>' +
         '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px">' +
         weekLoad.map(function (w) {
           var barH = w.count ? Math.max(Math.round(w.count / maxLoad * 60), 8) : 3;
@@ -521,7 +521,7 @@
           '<div class="card infocard" style="background:var(--card)"><h3>Forfaits du mois</h3>' +
             (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div></div>';
       } else {
-        tabBody = '<div class="card infocard" style="background:var(--card)"><h3>Ce que vous avez à faire</h3>' +
+        tabBody = '<div class="card infocard" style="background:var(--card)"><h3>Ce que tu as à faire</h3>' +
           (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>';
       }
 
@@ -803,7 +803,7 @@
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
         return '<div class="mtcol" data-prio="' + c[0] + '" ondragover="ADM.mtDragOver(event)" ondragleave="ADM.mtDragLeave(event)" ondrop="ADM.mtDrop(event,\'' + c[0] + '\')" style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px;transition:background 120ms">' +
           '<div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + c[2] + '">' + c[1] + '</span><span style="margin-left:auto;font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + c[2] + ';background:#fff;min-width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center">' + list.length + '</span></div>' +
-          (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Déposez une tâche ici</div>') +
+          (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Dépose une tâche ici</div>') +
         '</div>';
       }).join('') + '</div>';
       var doneView = done.length ? done.slice().reverse().slice(0, 40).map(mtCard).join('') : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
@@ -812,7 +812,7 @@
       var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
-      var boardHint = todo.length ? '<div class="micro" style="margin:-6px 0 14px">Glissez une tâche d\'une colonne à l\'autre pour changer sa priorité.</div>' : '';
+      var boardHint = todo.length ? '<div class="micro" style="margin:-6px 0 14px">Glisse une tâche d\'une colonne à l\'autre pour changer sa priorité.</div>' : '';
       var tagSet = {}; todo.forEach(function (t) { (Array.isArray(t.tags) ? t.tags : []).forEach(function (tg) { tagSet[tg] = (tagSet[tg] || 0) + 1; }); });
       var allTags = Object.keys(tagSet).sort(function (a, b) { return a.localeCompare(b); });
       if (MT_TAG !== 'all' && !tagSet[MT_TAG]) MT_TAG = 'all';
@@ -835,7 +835,7 @@
         '<input class="inp" id="mt-quick" placeholder="Ajout rapide… (ex. Relancer Émilie #Admin !)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtQuickAdd();}">' +
         '<button class="btn btn--dark" onclick="ADM.mtQuickAdd()">Ajouter</button></div>' +
         '<div class="micro" style="margin-top:6px">Astuce : ajoutez <b>#étiquette</b> pour classer, et un <b>!</b> pour la priorité haute. « + Nouvelle tâche » ouvre le détail (client, échéance, récurrence…).</div></div>';
-      var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutez en une ci-dessus.</div>') : '';
+      var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus.</div>') : '';
       var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent);
       var addBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">' + (MT_ADDOPEN ? 'Fermer' : '+ Nouvelle tâche') + '</button>';
       setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
@@ -958,16 +958,16 @@
     // Mode d'emploi en 3 étapes
     var guide = '<div class="card"><h3>Comment ça marche</h3>' +
       '<div style="display:flex;flex-wrap:wrap;gap:14px">' +
-      planStep(1, 'Indiquez vos heures dispo', 'Pour chaque jour, le nombre d\'heures que vous pouvez consacrer à vos tâches (ci-dessous).') +
-      planStep(2, 'Donnez une durée à vos tâches', 'Dans « Mes tâches », ajoutez une durée estimée (en minutes). Sans durée, on compte 30 min.') +
-      planStep(3, 'Posez vos blocs fixes', 'Réservez des créneaux (rendez-vous, créa, pause). Vos tâches se placent automatiquement dans le temps libre restant.') +
-      planStep(4, 'Le planning se construit seul', 'Tout se range sur la semaine (lun-ven), par priorité puis par échéance. Cliquez une tâche pour la marquer faite.') +
+      planStep(1, 'Indique tes heures dispo', 'Pour chaque jour, le nombre d\'heures que tu peux consacrer à tes tâches (ci-dessous).') +
+      planStep(2, 'Donne une durée à tes tâches', 'Dans « Mes tâches », ajoute une durée estimée (en minutes). Sans durée, la tâche compte 30 min.') +
+      planStep(3, 'Pose tes blocs fixes', 'Réserve des créneaux (rendez-vous, créa, pause). Tes tâches se placent automatiquement dans le temps libre restant.') +
+      planStep(4, 'Le planning se construit seul', 'Tout se range sur la semaine (lun-ven), par priorité puis par échéance. Clique une tâche pour la marquer faite.') +
       '</div></div>';
     var nudges = '';
-    if (!hasCap) nudges += '<div class="card" style="background:#fbf3e0"><strong>Commencez ici</strong><div class="micro mt">Renseignez vos heures disponibles par jour juste en dessous. Tant que tout est à 0, aucune tâche ne peut être placée.</div></div>';
-    if (todoCount === 0) nudges += '<div class="card"><strong>Aucune tâche à planifier</strong><div class="micro mt mb">Ajoutez des tâches avec une durée estimée pour les voir se placer ici.</div><button class="btn btn--dark btn--sm" onclick="ADM.nav(\'mytasks\')">Aller à Mes tâches</button></div>';
-    else if (hasCap && placedCount === 0 && plan.overflow.length) nudges += '<div class="card" style="background:#fbf3e0"><strong>Rien n\'a pu être casé</strong><div class="micro mt">Vos échéances sont peut-être déjà passées, ou vos heures dispo trop justes. Augmentez vos heures ou repoussez les échéances dans « Mes tâches ».</div></div>';
-    var capEditor = '<div class="card"><h3>Vos disponibilités</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
+    if (!hasCap) nudges += '<div class="card" style="background:#fbf3e0"><strong>Commence ici</strong><div class="micro mt">Renseigne tes heures disponibles par jour juste en dessous. Tant que tout est à 0, aucune tâche ne peut être placée.</div></div>';
+    if (todoCount === 0) nudges += '<div class="card"><strong>Aucune tâche à planifier</strong><div class="micro mt mb">Ajoute des tâches avec une durée estimée pour les voir se placer ici.</div><button class="btn btn--dark btn--sm" onclick="ADM.nav(\'mytasks\')">Aller à Mes tâches</button></div>';
+    else if (hasCap && placedCount === 0 && plan.overflow.length) nudges += '<div class="card" style="background:#fbf3e0"><strong>Rien n\'a pu être casé</strong><div class="micro mt">Tes échéances sont peut-être déjà passées, ou tes heures dispo trop justes. Augmente tes heures ou repousse les échéances dans « Mes tâches ».</div></div>';
+    var capEditor = '<div class="card"><h3>Tes disponibilités</h3><div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">' +
       '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Début de journée<input class="inp" type="number" min="5" max="20" step="0.5" style="width:90px" value="' + startHour + '" onchange="ADM.planStart(this.value)"></label>' +
       '<label style="display:flex;flex-direction:column;font-family:var(--font-micro);font-size:10px;color:var(--muted);gap:3px">Fin de journée<input class="inp" type="number" min="6" max="23" step="0.5" style="width:90px" value="' + endHour + '" onchange="ADM.planEnd(this.value)"></label>' +
       '<span style="width:1px;height:34px;background:var(--bone-d)"></span>' +
@@ -992,15 +992,15 @@
     var groups = planGroups();
     var typeOpts = '<option value="__new__">Nouveau bloc…</option>' + groups.map(function (g) { return '<option value="' + g.groupId + '">' + esc(g.label || 'Bloc') + '</option>'; }).join('');
     var swatches = DA_BANNER.map(function (c) { return '<button type="button" onclick="document.getElementById(\'blk-color\').value=\'' + c[0] + '\'" title="' + c[1] + '" style="width:20px;height:20px;border-radius:5px;cursor:pointer;background:' + c[0] + ';border:1px solid var(--bone-d)"></button>'; }).join('');
-    var modelsList = groups.length ? '<div class="micro" style="margin-top:16px;margin-bottom:6px;font-weight:600;color:var(--terre);text-transform:uppercase;letter-spacing:0.04em">Vos modèles de blocs</div>' +
+    var modelsList = groups.length ? '<div class="micro" style="margin-top:16px;margin-bottom:6px;font-weight:600;color:var(--terre);text-transform:uppercase;letter-spacing:0.04em">Tes modèles de blocs</div>' +
       groups.map(function (g) {
         return '<div class="file"><span class="nm" style="display:flex;align-items:center;gap:10px">' +
           '<input type="color" value="' + g.color + '" onchange="ADM.planGroupColor(\'' + g.groupId + '\',this.value)" title="Couleur (appliquée à toutes les occurrences)" style="width:30px;height:24px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer">' +
           esc(g.label || 'Bloc') + ' <span class="micro muted">' + g.count + ' fois</span></span>' +
           '<button class="btn btn--danger btn--sm" onclick="ADM.planGroupDel(\'' + g.groupId + '\')">Tout retirer</button></div>';
       }).join('') : '';
-    var blockEditor = '<div class="card"><h3>Vos blocs de temps</h3>' +
-      '<div class="micro mb">Réservez des créneaux récurrents (rendez-vous, créa, pause) qui reviennent chaque semaine le même jour. Vos tâches se placent automatiquement autour. Reposez un même modèle plusieurs fois, ils restent liés.</div>' +
+    var blockEditor = '<div class="card"><h3>Tes blocs de temps</h3>' +
+      '<div class="micro mb">Réserve des créneaux récurrents (rendez-vous, créa, pause) qui reviennent chaque semaine le même jour. Tes tâches se placent automatiquement autour. Repose un même modèle plusieurs fois, ils restent liés.</div>' +
       '<div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end">' +
         '<label style="' + fld + '">Type<select class="inp" id="blk-type" style="width:auto" onchange="ADM.planTypeChange()">' + typeOpts + '</select></label>' +
         '<label style="' + fld + '">Jour<select class="inp" id="blk-day" style="width:auto">' + dayOpts + '</select></label>' +
@@ -1020,8 +1020,8 @@
         '<button class="btn btn--dark btn--sm" onclick="ADM.planTaskAdd()">Ajouter</button>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.planTaskForm()">Fermer</button>' +
       '</div><div class="micro mt">La tâche se place automatiquement dans un créneau libre, selon sa priorité et son échéance.</div></div>';
-    var cal = '<div class="card"><div class="between"><h3>Votre semaine</h3><div class="row" style="gap:10px;align-items:center"><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span><button class="btn btn--dark btn--sm" onclick="ADM.planTaskForm()">+ Tâche</button></div></div>' + ctaForm + '<div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
-    var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmentez vos heures, retirez un bloc, ou reportez ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
+    var cal = '<div class="card"><div class="between"><h3>Ta semaine</h3><div class="row" style="gap:10px;align-items:center"><span class="micro" style="color:var(--muted)">' + planHM(startMin) + ' à ' + planHM(endMin) + '</span><button class="btn btn--dark btn--sm" onclick="ADM.planTaskForm()">+ Tâche</button></div></div>' + ctaForm + '<div style="overflow-x:auto;padding-bottom:4px">' + headRow + bodyRow + '</div></div>';
+    var overflowHtml = plan.overflow.length ? '<div class="card mt"><h3>Non casé cette semaine <span class="micro" style="color:var(--muted)">· ' + plan.overflow.length + '</span></h3><div class="micro mb">Pas assez de créneaux libres, ou échéance déjà passée. Augmente tes heures, retire un bloc, ou reporte ces tâches.</div>' + plan.overflow.map(planTaskPill).join('') + '</div>' : '';
     var settings = '<details class="card mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre);list-style:none">Réglages, blocs et mode d\'emploi</summary><div class="mt">' + capEditor + blockEditor + guide + '</div></details>';
     setMain(topbar('Calendrier intelligent', '', 'Tes tâches réparties automatiquement sur la semaine') + '<div class="wrap" style="max-width:1440px">' + nudges + cal + overflowHtml + settings + '</div>');
   }
@@ -1046,7 +1046,7 @@
   function planTypeChange() { var isNew = el('blk-type').value === '__new__'; var lw = el('blk-label-wrap'), cw = el('blk-color-wrap'); if (lw) lw.style.display = isNew ? '' : 'none'; if (cw) cw.style.display = isNew ? '' : 'none'; }
   function planBlockAdd() {
     var type = el('blk-type').value, dow = parseInt(el('blk-day').value, 10) || 0, time = el('blk-time').value || '09:00', dur = parseInt(el('blk-dur').value, 10) || 60, link = (el('blk-link').value || '').trim();
-    if (!dow) { toast('Choisissez un jour'); return; }
+    if (!dow) { toast('Choisis un jour'); return; }
     var p = time.split(':'); var start = (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
     var groupId, label, color;
     if (type && type !== '__new__') { var g = planGroups().filter(function (x) { return x.groupId === type; })[0]; if (!g) { toast('Modèle introuvable'); return; } groupId = g.groupId; label = g.label; color = g.color; }
@@ -1205,7 +1205,7 @@
       var totalUnread = clients.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       var head = '<div class="micro" style="margin:-2px 0 16px;color:var(--terre-600)">' + clients.length + ' espace' + (clients.length > 1 ? 's' : '') + ' · ' + actifs + ' actif' + (actifs > 1 ? 's' : '') + (totalUnread ? ' · ' + totalUnread + ' message' + (totalUnread > 1 ? 's' : '') + ' à lire' : '') + '</div>';
       var list = clients.map(clientCard).join('');
-      setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Créez-en un, ou scannez le KV pour récupérer les clés existantes.</div>') + '</div>');
+      setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
     }).catch(showError);
   }
   function clientName(c) { return ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key; }
@@ -1379,8 +1379,8 @@
       fld('inf-ent-siret', 'SIRET', e.siret) + fld('inf-ent-tva', 'TVA', e.tva) +
       '</div>' +
       '<div class="field mt"><label>Lien visio (bouton « Rejoindre la visio » dans son espace)</label>' +
-        '<input id="inf-visio" class="inp" value="' + esc(CUR.meetingLink || '') + '" placeholder="https://kmeet.infomaniak.com/… (collez le lien de votre salle)"></div>' +
-      '<div class="micro" style="margin-top:5px">Laissez vide pour masquer le bouton. Créez la salle sur Infomaniak kMeet et collez le lien ici.</div>' +
+        '<input id="inf-visio" class="inp" value="' + esc(CUR.meetingLink || '') + '" placeholder="https://kmeet.infomaniak.com/… (colle le lien de ta salle)"></div>' +
+      '<div class="micro" style="margin-top:5px">Laisse vide pour masquer le bouton. Crée la salle sur Infomaniak kMeet et colle le lien ici.</div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.saveInfos()">Enregistrer</button></div>' +
       '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div>' +
       '<div class="row mt" style="align-items:center;gap:10px"><button class="btn btn--outline btn--sm" onclick="ADM.editToken()">Copier le code du mode édition (24 h)</button>' +
@@ -1419,7 +1419,7 @@
       return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Supports de com</h3>' +
-      '<div class="micro mb">Cette catégorie regroupe tous vos projets de support. Nommez-les pour vous y retrouver (réseaux sociaux, flyers, brochure…) et ajoutez-en autant que nécessaire.</div>' +
+      '<div class="micro mb">Cette catégorie regroupe tous tes projets de support. Nomme-les pour t\'y retrouver (réseaux sociaux, flyers, brochure…) et ajoutes-en autant que nécessaire.</div>' +
       (rows || '<div class="empty">Aucun support pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
   }
@@ -1579,7 +1579,7 @@
     jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: (el('trl-' + id).value || '').trim() }, 'PATCH').then(function (r) { if (r.ok) { toast('Lien de révision enregistré'); loadClient(); } else toast('Erreur'); });
   }
   function uploadTaskDlv(id) {
-    var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisissez un fichier'); return; }
+    var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisis un fichier'); return; }
     var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
     toast('Envoi du livrable…');
     api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
@@ -1631,7 +1631,7 @@
     }).join('') : '<div class="empty">Aucun bénéfice enregistré pour l\'instant.</div>';
     return '<div class="card" style="max-width:680px"><h3>Bilan de collaboration</h3>' + bilanHtml + '</div>' +
       '<div class="card" style="max-width:680px"><h3>Suivi des bénéfices</h3>' +
-        '<div class="micro mb">Notez les retombées concrètes après la collaboration (nouveaux clients, visibilité, chiffre d\'affaires).</div>' + rows +
+        '<div class="micro mb">Note les retombées concrètes après la collaboration (nouveaux clients, visibilité, chiffre d\'affaires).</div>' + rows +
         '<div class="row mt" style="flex-wrap:wrap;gap:8px">' +
           '<input class="inp" id="ben-label" placeholder="Bénéfice (ex. plus de demandes)">' +
           '<input class="inp" id="ben-value" style="width:120px" placeholder="Valeur">' +
@@ -1652,7 +1652,7 @@
       jpost('/api/clients/' + CURKEY + '/bilan/request', {}, 'POST').then(function (r) { if (r.ok) { toast('Invitation envoyée au client'); loadClient(); } else toast('Erreur'); });
     });
   }
-  function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indiquez un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
+  function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indique un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
   function beneficeDel(id) {
     admConfirm({ title: 'Retirer ce bénéfice ?', yes: 'Oui, retirer', no: 'Non', danger: true }, function () {
       api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); });
@@ -1701,7 +1701,7 @@
     var rows = ls.length ? ls.map(function (l) {
       return '<div class="file"><span class="nm">' + esc(l.name) + ' ' + pill(l.status, { a_valider: 'à valider', valide: 'validé', refuse: 'à revoir' }[l.status] || l.status) + (l.clientComment ? '<div class="muted" style="font-size:13px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
         (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">Télécharger</a>' : '') + '</div>';
-    }).join('') : '<div class="empty">Aucun livrable. Déposez-en un depuis l\'onglet Documents (case « livrable »).</div>';
+    }).join('') : '<div class="empty">Aucun livrable. Déposes-en un depuis l\'onglet Documents (case « livrable »).</div>';
     return '<div class="card"><h3>Livrables</h3>' + rows + '</div>';
   }
 
@@ -1778,7 +1778,7 @@
     });
   }
   function upload() {
-    var f = el('up-file').files[0]; if (!f) { toast('Choisissez un fichier'); return; }
+    var f = el('up-file').files[0]; if (!f) { toast('Choisis un fichier'); return; }
     var fd = new FormData(); fd.append('file', f); fd.append('projectId', el('up-proj').value); if (el('up-liv').checked) fd.append('deliverable', '1');
     var btn = el('up-btn'); btn.disabled = true; btn.textContent = 'Envoi…';
     api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
@@ -1811,7 +1811,7 @@
       setMain(topbar('Messagerie') + '<div class="wrap" style="max-width:1180px">' +
         '<div class="chatwrap">' +
           '<div class="chatlist"><div class="chatlist__head">' + head + '</div><div class="chatlist__scroll">' + list + '</div></div>' +
-          '<div class="chatpane" id="chatpane"><div class="empty" style="margin:auto">Choisissez une conversation.</div></div>' +
+          '<div class="chatpane" id="chatpane"><div class="empty" style="margin:auto">Choisis une conversation.</div></div>' +
         '</div></div>');
     }).catch(showError);
   }
