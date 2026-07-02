@@ -6681,6 +6681,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     // Actions
     var actions =
+      '<button onclick="cliEditPartTask(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:1.5px solid var(--terre,#412F21);border-radius:10px;background:none;color:var(--terre,#412F21);cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Modifier ma demande</button>'+
       '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
       '<div style="display:flex;gap:8px">'+
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #e2dbd0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+
@@ -6742,6 +6743,60 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         })
         .catch(function(){ toast('Erreur, réessayez.'); });
     }, { title: 'Retirer ce fichier ?', okLabel: 'Retirer', danger: true });
+  };
+
+  window.cliEditPartTask = function(pid, taskId){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
+    if (!t) return;
+    var existing = document.getElementById('_cp-edit-task-ov');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = '_cp-edit-task-ov';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9200;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+    var urgSel = ['tranquille','normal','urgent','critique'].map(function(u){
+      return '<option value="'+u+'"'+((t.urgency||'normal')===u?' selected':'')+'>'+(PART_URG_LABEL[u]||u)+'</option>';
+    }).join('');
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'+
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Modifier ma demande</span>'+
+        '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>'+
+      '</div>'+
+      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la demande</label>'+
+        '<input id="_etask-title" type="text" value="'+esc(t.title||'')+'" style="'+S+'"></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+        '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Échéance souhaitée</label>'+
+          '<input id="_etask-due" type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" style="'+S+'"></div>'+
+        '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Priorité</label>'+
+          '<select id="_etask-urg" style="'+S+'">'+urgSel+'</select></div>'+
+      '</div>'+
+      '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:18px">Le texte du brief et les fichiers se modifient directement dans la tâche, section « Votre demande ».</div>'+
+      '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+        '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>'+
+        '<button onclick="cliSaveEditPartTask(\''+pid+'\',\''+taskId+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>'+
+      '</div>'+
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+    setTimeout(function(){ var el0 = document.getElementById('_etask-title'); if (el0) el0.focus(); }, 60);
+  };
+  window.cliSaveEditPartTask = function(pid, taskId){
+    var title = ((document.getElementById('_etask-title')||{}).value || '').trim();
+    if (!title) { toast('Le titre est requis'); return; }
+    var due = (document.getElementById('_etask-due')||{}).value || null;
+    var urg = (document.getElementById('_etask-urg')||{}).value || 'normal';
+    var ov = document.getElementById('_cp-edit-task-ov');
+    if (ov) ov.remove();
+    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, title: title, dueDate: due, urgency: urg }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(updated){
+        var pd = getPD(pid);
+        if (pd) { var idx = (pd.project.tasks||[]).findIndex(function(x){ return x.id === taskId; }); if (idx >= 0) pd.project.tasks[idx] = updated; }
+        toast('Demande mise à jour');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); });
   };
 
 /* ── Greffe v2 : messagerie générale catégorisée (côté client) ──────────────
