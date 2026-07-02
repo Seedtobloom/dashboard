@@ -1417,34 +1417,35 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
 
   function buildTopbar() {
-    // Mobile topbar (shown only below 768px via CSS)
-    var mobilePills = '';
-    if (appData.projects.length > 1) {
-      mobilePills = '<div class="cp-pills">' +
-        appData.projects.map(function(pd) {
-          var p = pd.project;
-          var act = p.id === currentId ? ' active' : '';
-          var unread = pd.messages.filter(function(m) { return m.author==='cindy'&&!m.readByClient; }).length;
-          return '<button class="cp-pill' + act + '" onclick="cpSel(\'' + p.id + '\')">' +
-            esc(p.projectTitle) +
-            (unread > 0 ? ' <span style="background:var(--glycine);color:var(--terre);font-size:10px;padding:1px 5px;border-radius:999px">' + unread + '</span>' : '') +
-          '</button>';
-        }).join('') + '</div>';
-    } else {
-      // Single-project: show nav pills on mobile too
-      var unreadSingle = appData.projects[0] ? appData.projects[0].messages.filter(function(m){ return m.author==='cindy'&&!m.readByClient; }).length : 0;
-      var navItems = [
-        { label: 'Projet', view: 'project', fn: 'cpSel(\'' + (appData.projects[0] ? appData.projects[0].project.id : '') + '\')' },
-        { label: 'Messages' + (unreadSingle > 0 ? ' · '+unreadSingle : ''), fn: 'cpOpenMessages()' },
-        { label: 'Fichiers', fn: 'cpSetView(\'fichiers\')' },
-        { label: 'Ressources', fn: 'cpSetView(\'hub\')' },
-      ];
-      mobilePills = '<div class="cp-pills">' +
-        navItems.map(function(item){
-          return '<button class="cp-pill" onclick="' + item.fn + '">' + item.label + '</button>';
-        }).join('') +
-      '</div>';
+    // Mobile topbar (shown only below 768px via CSS), navigation complète :
+    // projets + Messages, Livrables, Temps passé, Fichiers, Ressources.
+    var portalTb = appData.type === 'client';
+    var hasPartnerTb = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
+    var unreadAll = totalUnread();
+    var dlvToValidateTb = 0;
+    (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidateTb++; }); });
+    function mPill(label, fn, active, badgeN) {
+      return '<button class="cp-pill' + (active ? ' active' : '') + '" onclick="' + fn + '">' + label +
+        (badgeN > 0 ? ' <span style="background:var(--glycine);color:var(--terre);font-size:10px;padding:1px 5px;border-radius:999px">' + badgeN + '</span>' : '') +
+      '</button>';
     }
+    var pills = [];
+    if (portalTb && appData.projects.length > 1) pills.push(mPill('Accueil', 'cpGoHome()', currentView === 'home', 0));
+    if (appData.projects.length > 1) {
+      appData.projects.forEach(function(pd) {
+        var p = pd.project;
+        var u = pd.messages.filter(function(m) { return m.author === 'cindy' && !m.readByClient; }).length;
+        pills.push(mPill(esc(p.projectTitle), 'cpSel(\'' + p.id + '\')', currentView === 'project' && p.id === currentId, u));
+      });
+    } else if (appData.projects[0]) {
+      pills.push(mPill('Projet', 'cpSel(\'' + appData.projects[0].project.id + '\')', currentView === 'project', 0));
+    }
+    pills.push(mPill('Messages', 'cpOpenMessages()', currentView === 'messages', unreadAll));
+    pills.push(mPill('Livrables', 'cpGoLivrables()', currentView === 'livrables', dlvToValidateTb));
+    if (hasPartnerTb) pills.push(mPill('Temps passé', 'cpOpenStats()', currentView === 'stats', 0));
+    pills.push(mPill('Fichiers', 'cpGoFichiers()', currentView === 'fichiers', 0));
+    if (portalTb) pills.push(mPill('Ressources', 'cpGoHub()', currentView === 'hub', 0));
+    var mobilePills = '<div class="cp-pills">' + pills.join('') + '</div>';
     var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Interventions', cal:'Calendrier partage', stats:'Statistiques' };
     var pageTitle = pageTitles[currentView] || 'Espace client';
     if (currentView === 'project' && currentId) {
@@ -1473,10 +1474,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<span class="cp-ptopbar__av" style="cursor:pointer" onclick="cpConfirmLogout()" title="Se déconnecter">' + avInitial + '</span>' +
       '</div>' +
     '</div>';
-    // Mobile topbar (hidden on desktop via CSS)
+    // Mobile topbar (hidden on desktop via CSS), avec guide et déconnexion
     var mobileBar = '<div class="cp-topbar">' +
       cpIcon('flower', 18, 'color:var(--brume)') +
-      '<div class="cp-topbar__name">' + esc(appData.clientName) + '</div>' +
+      '<div class="cp-topbar__name" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(appData.clientName) + '</div>' +
+      '<button onclick="cpOpenGuide()" title="Guide" style="background:none;border:none;color:rgba(242,229,194,0.75);padding:6px;cursor:pointer">' + cpIcon('info', 16, 'color:rgba(242,229,194,0.75)') + '</button>' +
+      '<button onclick="cpConfirmLogout()" title="Se déconnecter" style="background:none;border:1px solid rgba(242,229,194,0.3);border-radius:999px;color:rgba(242,229,194,0.85);padding:5px 12px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase">Sortir</button>' +
     '</div>' + mobilePills;
     return desktopBar + mobileBar;
   }
