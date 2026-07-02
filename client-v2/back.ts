@@ -279,18 +279,32 @@ function resolveProject(esp: AnyObj, projectId: string): { container: AnyObj | n
  * Authentification
  * ────────────────────────────────────────────────────────────────────────── */
 
+// Anti force-brute : 10 échecs max par IP sur 15 minutes.
+async function loginBlocked(env: Env, request: Request): Promise<boolean> {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const n = parseInt((await env.KV_CLIENT.get('rl:login:' + ip)) || '0', 10);
+  return n >= 10;
+}
+async function loginFailed(env: Env, request: Request): Promise<void> {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const k = 'rl:login:' + ip;
+  const n = parseInt((await env.KV_CLIENT.get(k)) || '0', 10);
+  await env.KV_CLIENT.put(k, String(n + 1), { expirationTtl: 900 });
+}
 async function handleLogin(request: Request, env: Env): Promise<Response> {
+  if (await loginBlocked(env, request)) return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
   const body = await readJson(request);
   const email = (body.email || '').toString().trim();
   const key = (body.key || body.masterKey || '').toString().trim();
   if (!email || !key) return json({ error: 'Email et clé requis' }, 400);
 
   const data = (await env.KV_CLIENT.get(key, { type: 'json' })) as AnyObj | null;
-  if (!data) return json({ error: 'Identifiants invalides' }, 401);
+  if (!data) { await loginFailed(env, request); return json({ error: 'Identifiants invalides' }, 401); }
 
   const client = getClient(data);
   const espace = getEspace(data);
   if (!client.email || client.email.toLowerCase() !== email.toLowerCase()) {
+    await loginFailed(env, request);
     return json({ error: 'Identifiants invalides' }, 401);
   }
   if (espace.isActive !== true) return json({ error: 'Cet espace est désactivé. Contactez Cindy.' }, 403);
@@ -421,6 +435,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
       status: s.status || 'upcoming',
       dueDate: s.date || s.dueDate || null,
       clientAction: s.clientAction || '',
+      pageBlocks: Array.isArray(s.pageBlocks) ? s.pageBlocks : [],
       order: s.order != null ? s.order : i,
     }));
     projects.push({
@@ -477,6 +492,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: s.status || 'upcoming',
         dueDate: s.date || s.dueDate || null,
         clientAction: s.clientAction || '',
+        pageBlocks: Array.isArray(s.pageBlocks) ? s.pageBlocks : [],
         order: s.order != null ? s.order : i,
       }));
       projects.push({
@@ -1065,7 +1081,10 @@ async function handleCRAdd(request: Request, env: Env, masterKey: string, data: 
 
 async function handleCRDelete(env: Env, masterKey: string, data: AnyObj, field: string, itemId: string): Promise<Response> {
   const esp = getEspace(data);
-  for (const pid of ['partner', 'website', 'branding']) {
+  const pids = ['partner', 'website', 'branding'];
+  const sd = esp.supportsDeCom && esp.supportsDeCom[0];
+  if (sd) for (const pid of Object.keys(sd)) pids.push('support-' + pid);
+  for (const pid of pids) {
     const { container } = resolveProject(esp, pid);
     if (container && Array.isArray(container[field])) {
       container[field] = container[field].filter((x: AnyObj) => x.id !== itemId);
