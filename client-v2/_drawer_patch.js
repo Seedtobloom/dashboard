@@ -70,12 +70,13 @@
       })()) +
       dRow(cpIcon('file-text', 15), 'Statut du brief' + MK_E, dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
       dRow(cpIcon('chart', 15), 'Avancement' + MK_L, (function(){
-        // Statut de travail du studio : lecture seule pour le client
-        // (modifiable uniquement en mode édition admin).
-        if (_isAdminEdit) return dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'Pas commencé');
-        var v = props.p_brief || '';
-        var bg = (v && PROG_COL[v]) || '#EFEAF7';
-        return '<span style="display:inline-block;background:'+bg+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Statut mis à jour par Cindy">'+esc(v || 'Pas commencé')+'</span>';
+        // Statut de travail du studio : lecture seule pour le client. Une
+        // tâche non démarrée (statut « todo ») affiche toujours « Pas
+        // commencé », jamais un avancement figé sur « En cours ».
+        var pv = (t.status === 'todo') ? '' : (props.p_brief || '');
+        if (_isAdminEdit) return dPropPill(pid, t, 'p_brief', pv, ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'Pas commencé');
+        var bg = (pv && PROG_COL[pv]) || '#EFEAF7';
+        return '<span style="display:inline-block;background:'+bg+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Statut mis à jour par Cindy">'+esc(pv || 'Pas commencé')+'</span>';
       })()) +
       (typeOpts.length ? dRow(cpIcon('tag', 15), esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
       dRow(cpIcon('link', 15), 'Lien & fichiers' + MK_E, linkFilesVal);
