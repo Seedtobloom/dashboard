@@ -2708,7 +2708,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var bg = colorMap[val] || '#efe8db';
           return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
         }
-        var propChipsHtml = propChip(propVals.p_clientbrief, STATUT_COL) + propChip(propVals.p_brief, PROG_COL);
+        // Pastille = vrai statut de la tâche (jamais figé), pas la propriété
+        // interne « avancement » qui restait sur « En cours » à tort.
+        var sm = cliTaskStatusMeta(t.status);
+        var statusPill = '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:' + sm.color + ';background:' + sm.bg + ';white-space:nowrap">' + esc(sm.label) + '</span>';
+        var briefRaw = propVals.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : propVals.p_clientbrief;
+        var propChipsHtml = propChip(briefRaw, STATUT_COL) + statusPill;
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
