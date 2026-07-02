@@ -15,7 +15,7 @@
     return s;
   }
   function dStatusPill(pid, t){
-    var map = { todo:'Reçue', in_progress:'En cours', review:'À valider', done:'Livrée' };
+    var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider', done:'Livrée' };
     var col = { todo:'#E9E2D2', in_progress:'#CBD8F5', review:'#F6E59E', done:'#C9E6CB' };
     var cur = t.status || 'todo';
     var s = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[cur]||'#EFEAF7')+'">';
@@ -70,10 +70,10 @@
       dRow(cpIcon('chart', 15), 'Avancement', (function(){
         // Statut de travail du studio : lecture seule pour le client
         // (modifiable uniquement en mode édition admin).
-        if (_isAdminEdit) return dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'À commencer');
+        if (_isAdminEdit) return dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'Pas commencé');
         var v = props.p_brief || '';
         var bg = (v && PROG_COL[v]) || '#EFEAF7';
-        return '<span style="display:inline-block;background:'+bg+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Statut mis à jour par Cindy">'+esc(v || 'À commencer')+'</span>';
+        return '<span style="display:inline-block;background:'+bg+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Statut mis à jour par Cindy">'+esc(v || 'Pas commencé')+'</span>';
       })()) +
       (typeOpts.length ? dRow(cpIcon('tag', 15), esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
       dRow(cpIcon('link', 15), 'Lien & fichiers', linkFilesVal);
