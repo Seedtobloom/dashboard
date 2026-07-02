@@ -48,6 +48,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     calendar:'M3 4h18v17H3zM16 2v4M8 2v4M3 10h18',
     clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
     bell:'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+    video:'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
+    zap:'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
     mail:'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6',
     link:'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
     download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
@@ -1029,11 +1031,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var accessCode = (appData.projects[0] && appData.projects[0].project && appData.projects[0].project.accessCode) || '';
     // Client initial for avatar
     var avInitial = appData.clientName ? appData.clientName.charAt(0).toUpperCase() : 'C';
-    // Pending actions count (étapes waiting_client + questionnaire incomplet)
+    // Pending actions count : étapes en attente du client + livrables à valider
     var pendingActions = appData.projects.reduce(function(n, pd) {
       var steps = pd.project.steps || [];
       return n + steps.filter(function(s){ return s.status === 'waiting_client'; }).length;
-    }, 0);
+    }, 0) + dlvToValidateTb;
     // Desktop sticky topbar (breadcrumb)
     var desktopBar = '<div class="cp-ptopbar">' +
       '<span class="cp-ptopbar__name">' + esc(appData.clientName) + '</span>' +
@@ -5018,6 +5020,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         return;
       }
     }
+    // Pas d'étape en attente : ce sont des livrables à valider
+    if (typeof window.cpGoLivrables === 'function') window.cpGoLivrables();
   };
 
   window.cpValidateStep = function(pid, stepId, stepTitle) {
