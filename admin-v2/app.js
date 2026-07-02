@@ -714,6 +714,7 @@
         '<div class="row" style="gap:8px"><select class="inp" id="mte-client" style="flex:1">' + cliOpts + '</select>' +
           '<select class="inp" id="mte-recur" style="flex:1">' + recOpts + '</select></div>' +
         '<input class="inp" id="mte-tags" value="' + esc(tagsVal) + '" placeholder="Étiquettes séparées par des virgules">' +
+        '<div class="field"><label>Temps passé (minutes) — corrige le chrono si besoin</label><input class="inp" id="mte-time" type="number" min="0" step="5" value="' + Math.round((t.timeSpentSeconds || 0) / 60) + '" style="width:140px"></div>' +
         '<textarea class="inp" id="mte-notes" style="min-height:64px;resize:vertical" placeholder="Note, lien (https://…), détails…">' + esc(t.notes || '') + '</textarea>' +
       '</div>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
@@ -727,6 +728,8 @@
       var tags = (el('mte-tags').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
       var ck = el('mte-client').value, cn = ''; for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } }
       var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || '') };
+      var tm = parseInt(el('mte-time').value, 10);
+      if (!isNaN(tm) && tm >= 0 && tm * 60 !== (t.timeSpentSeconds || 0)) { body.timeSpentSeconds = tm * 60; body.forceTime = true; }
       jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { close(); toast('Tâche modifiée'); renderMyTasks(); } else toast('Erreur'); });
     };
     document.body.appendChild(ov);
@@ -1737,7 +1740,7 @@
       api('/api/clients/' + CURKEY + '/tasks/' + id + '?projectId=partner', { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Tâche supprimée'); loadClient(); } else toast('Erreur'); });
     });
   }
-  function taskTime(id, mn) { var m = Number(mn) || 0; var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; } jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60 }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
+  function taskTime(id, mn) { var m = Number(mn) || 0; var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; } jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60, forceTime: true }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
   function taskComment(pid, id) { var i = el('cm-' + id); var v = (i.value || '').trim(); if (!v) return; jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/comments', { projectId: pid, text: v }).then(function (r) { if (r.ok) { toast('Commentaire envoyé'); loadClient(); } }); }
 
   /* suivi (étapes) */

@@ -717,7 +717,7 @@ function findTask(esp, projectId, taskId) {
     const task = container.taches.find((t) => t.id === taskId);
     return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'timeSpentMinutes', 'timeSpentSeconds', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date'];
 async function handleTaskPatch(request, env, key, data, taskId) {
     const body = await readJson(request);
     const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -731,6 +731,13 @@ async function handleTaskPatch(request, env, key, data, taskId) {
         body.content = (body.content || '').toString().slice(0, 10000);
     ADMIN_TASK_FIELDS.forEach((k) => { if (k in body)
         t[k] = body[k]; });
+    if ('timeSpentSeconds' in body || 'timeSpentMinutes' in body) {
+        const nsec = 'timeSpentSeconds' in body ? Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0)) : Math.max(0, Math.round(Number(body.timeSpentMinutes) || 0)) * 60;
+        const cur = t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60;
+        const finalSec = body.forceTime === true ? nsec : Math.max(nsec, cur);
+        t.timeSpentSeconds = finalSec;
+        t.timeSpentMinutes = Math.round(finalSec / 60);
+    }
     if (body.properties && typeof body.properties === 'object')
         t.properties = Object.assign({}, t.properties || {}, body.properties);
     if (body.status === 'done' && !t.completedAt)
@@ -1223,7 +1230,7 @@ async function handleMyTaskCreate(request, env) {
     await saveMyTasks(env, tasks);
     return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'timeSpentSeconds', 'dueDate', 'status', 'archived', 'clientKey', 'clientName'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'status', 'archived', 'clientKey', 'clientName'];
 function nextRecurDate(dateStr, rec) {
     const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
     if (rec === 'daily')
@@ -1242,6 +1249,12 @@ async function handleMyTaskUpdate(request, env, id) {
         return json({ error: 'Tâche introuvable' }, 404);
     MYTASK_FIELDS.forEach((k) => { if (k in b)
         t[k] = b[k]; });
+    if ('timeSpentSeconds' in b) {
+        const nv = Math.max(0, Math.round(Number(b.timeSpentSeconds) || 0));
+        // Garde anti-écrasement : un chrono reparti d'un état périmé ne peut pas
+        // réduire le total. La saisie manuelle passe forceTime pour corriger.
+        t.timeSpentSeconds = b.forceTime === true ? nv : Math.max(nv, t.timeSpentSeconds || 0);
+    }
     if ('subtasks' in b) {
         t.subtasks = Array.isArray(b.subtasks) ? b.subtasks.slice(0, 40).map((s) => ({ id: String((s && s.id) || genId()), text: String((s && s.text) || '').slice(0, 240), done: !!(s && s.done) })).filter((s) => s.text) : [];
     }
