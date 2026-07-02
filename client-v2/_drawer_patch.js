@@ -93,6 +93,17 @@
         '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>'+
       '</div>';
 
+    // Fichiers joints à la demande (pièces de la création de tâche)
+    var atts = Array.isArray(t.attachments) ? t.attachments : [];
+    var attachBlock = atts.length
+      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Fichiers joints à la demande</div>'+
+        atts.map(function(a){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f7f2ea;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#9a8a72')+
+            '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.fileKey||a.key||'')+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
+          '</div>';
+        }).join('')+'</div>'
+      : '';
+
     var backdrop = '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>';
     var cover = '<div style="height:104px;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
     var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
@@ -105,10 +116,11 @@
         '<div style="padding:0 44px 44px">'+
           title +
           '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
+          attachBlock +
+          stbBlocks(pid, t) +
           sep +
           stbTaskDeliverables(pid, project, t, sep) +
           commentsBlock +
-          stbBlocks(pid, t) +
           sep +
           actions +
         '</div>'+

@@ -149,8 +149,9 @@
       if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
       t._blkInit = true;
     }
-    return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:26px;padding-top:22px">'+
-      '<div style="margin-bottom:14px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Contenu</span></div>'+
+    return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:22px;padding-top:20px">'+
+      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Votre demande</span></div>'+
+      '<div style="font-size:11.5px;color:#9a93a5;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }
