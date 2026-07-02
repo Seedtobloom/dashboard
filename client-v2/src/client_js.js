@@ -2024,10 +2024,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     size = size || 11;
     return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="'+d+'"/></svg>';
   }
-  var CLI_TSTATUS    = { todo:'Reçue', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
+  var CLI_TSTATUS    = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
   function cliTaskStatusMeta(s){
     var M = {
-      todo:        { label:'Reçue',               color:'#8a6f54', bg:'#f0e8db' },
+      todo:        { label:'Pas commencé',        color:'#8a6f54', bg:'#f0e8db' },
       in_progress: { label:'En cours',            color:'#6c4ea4', bg:'#efe6ff' },
       review:      { label:'À valider chez vous', color:'#8a4a0e', bg:'#fdf3e8' },
       done:        { label:'Livrée',              color:'#3a6b4a', bg:'#e7f0e9' }
@@ -2793,7 +2793,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
-    var statusMap = {todo:'Reçue',in_progress:'En cours',review:'À valider chez vous',done:'Livrée'};
+    var statusMap = {todo:'Pas commencé',in_progress:'En cours',review:'À valider chez vous',done:'Livrée'};
     var statusOpts = ['todo','in_progress','review','done'].map(function(s){
       return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+statusMap[s]+'</option>';
     }).join('');
