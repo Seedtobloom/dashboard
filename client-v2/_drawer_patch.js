@@ -57,17 +57,19 @@
       filesHtml+
       '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
+    var MK_E = ' <span title="Modifiable par vous" style="color:#b8a98f;font-size:11px">✎</span>';
+    var MK_L = ' <span title="Suivi par Cindy" style="font-size:10px">🔒</span>';
     var propertiesHtml =
-      dRow(cpIcon('check-circle', 15), 'État', dStatusPill(pid, t)) +
-      dRow(cpIcon('calendar', 15), 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
-      dRow(cpIcon('zap', 15), 'Priorité', (function(){
+      dRow(cpIcon('check-circle', 15), 'État' + MK_E, dStatusPill(pid, t)) +
+      dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow(cpIcon('zap', 15), 'Priorité' + MK_E, (function(){
         var cur = t.urgency || 'normal';
         var sel = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'urgency\',this.value)" style="'+dPillStyle(PART_URGENCY[cur]||'#F2E5C2')+'">';
         ['tranquille','normal','urgent','critique'].forEach(function(u){ sel += '<option value="'+u+'"'+(cur===u?' selected':'')+'>'+(PART_URG_LABEL[u]||u)+'</option>'; });
         return sel + '</select>';
       })()) +
-      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
-      dRow(cpIcon('chart', 15), 'Avancement', (function(){
+      dRow(cpIcon('file-text', 15), 'Statut du brief' + MK_E, dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
+      dRow(cpIcon('chart', 15), 'Avancement' + MK_L, (function(){
         // Statut de travail du studio : lecture seule pour le client
         // (modifiable uniquement en mode édition admin).
         if (_isAdminEdit) return dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'Pas commencé');
@@ -76,7 +78,7 @@
         return '<span style="display:inline-block;background:'+bg+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Statut mis à jour par Cindy">'+esc(v || 'Pas commencé')+'</span>';
       })()) +
       (typeOpts.length ? dRow(cpIcon('tag', 15), esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
-      dRow(cpIcon('link', 15), 'Lien & fichiers', linkFilesVal);
+      dRow(cpIcon('link', 15), 'Lien & fichiers' + MK_E, linkFilesVal);
 
     // Commentaires
     var comments = Array.isArray(t.comments) ? t.comments : [];
@@ -132,6 +134,7 @@
         '<div style="padding:0 44px 44px">'+
           title +
           '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
+          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
           attachBlock +
           stbBlocks(pid, t) +
           sep +
