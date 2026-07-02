@@ -1733,19 +1733,41 @@
       var archBtn = t.archived
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
-      return '<div class="card" style="background:var(--card)' + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '"><div class="between" style="align-items:flex-start"><div style="min-width:0"><strong style="display:block">' + esc(t.title) + '</strong><span style="display:inline-block;margin-top:5px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:3px 9px;border-radius:999px">' + stLbl + '</span></div><span class="row" style="gap:8px;align-items:center;flex-shrink:0"><span class="micro">échéance ' + fmtDate(t.dueDate) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn + '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button></span></div>' +
-        (t.content ? (function () {
-          var long = t.content.length > 260 || (t.content.match(/\n/g) || []).length > 4;
-          return '<div class="mt"><div id="ptc-' + t.id + '" class="muted" style="font-size:14px;white-space:pre-wrap;line-height:1.5' + (long ? ';display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden' : '') + '">' + mtLinkify(t.content) + '</div>' +
-            (long ? '<button id="ptc-btn-' + t.id + '" onclick="ADM.ptToggleContent(\'' + t.id + '\')" style="background:none;border:none;color:var(--glycine-900);font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline">Tout afficher</button>' : '') + '</div>';
-        })() : '<div class="mt"></div>') +
-        ((Array.isArray(t.attachments) && t.attachments.length) ? '<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '') +
-        '<div class="row" style="align-items:center;gap:10px">' +
-        '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
-        chBtn + chrono +
+      var hair = 'height:1px;background:var(--bone-d);margin:18px 0;opacity:0.7';
+      var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
+      var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">échéance ' + fmtDate(t.dueDate) + '</span>' : '';
+      // en-tête : titre + statut/échéance à gauche, actions à droite
+      var header = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">' +
+        '<div style="min-width:0">' +
+          '<div style="font-size:18px;font-weight:600;color:var(--terre);line-height:1.25">' + esc(t.title) + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + dueTag + '</div>' +
         '</div>' +
+        '<div style="display:flex;gap:7px;flex-shrink:0">' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn +
+          '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button>' +
+        '</div></div>';
+      // brief de la demande
+      var brief = t.content ? (function () {
+        var long = t.content.length > 260 || (t.content.match(/\n/g) || []).length > 4;
+        return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">La demande du client</div>' +
+          '<div id="ptc-' + t.id + '" style="font-size:14px;white-space:pre-wrap;line-height:1.6;color:var(--terre-600)' + (long ? ';display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden' : '') + '">' + mtLinkify(t.content) + '</div>' +
+          (long ? '<button id="ptc-btn-' + t.id + '" onclick="ADM.ptToggleContent(\'' + t.id + '\')" style="background:none;border:none;color:var(--glycine-900);font-size:12px;cursor:pointer;padding:6px 0 0;text-decoration:underline">Tout afficher</button>' : '') + '</div>';
+      })() : '';
+      var atts = (Array.isArray(t.attachments) && t.attachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
+      // bloc « suivi » : statut + chrono, dans un encart doux
+      var work = '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px">' +
+        '<div class="micro" style="margin-bottom:9px">Où en est cette tâche ?</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
+          chBtn +
+          '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span>' + chrono + '</span>' +
+        '</div></div>';
+      return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '">' +
+        header + brief + atts + work +
+        '<div style="' + hair + '"></div>' +
         taskDlvBlock(d, t) +
-        '<details class="mt"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:5px 0">Plus d\'options</summary>' +
+        '<div style="' + hair + '"></div>' +
+        '<details><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:2px 0">Plus d\'options</summary>' +
           '<div class="row mt" style="align-items:center;gap:10px"><span class="micro">Temps passé</span><input class="inp" type="number" style="width:80px" value="' + (t.timeSpentMinutes || 0) + '" title="ajuster les minutes" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></div>' +
           sessionsBlock(t) +
           '<div class="row mt" style="align-items:center;gap:12px;flex-wrap:wrap">' +
@@ -1757,8 +1779,8 @@
         '</details>' +
         '</div>';
     }
-    var grid = active.length ? '<div class="grid grid--2" style="align-items:start">' + active.map(ptCard).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
-    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div class="grid grid--2" style="align-items:start;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
+    var grid = active.length ? '<div style="display:flex;flex-direction:column;gap:16px;max-width:760px">' + active.map(ptCard).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
+    var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
     return grid + archHtml;
   }
   function ptToggleContent(id) {
@@ -1806,11 +1828,11 @@
         (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
         '<button class="btn btn--danger btn--sm" onclick="ADM.delDeliverable(\'' + l.id + '\')">Retirer</button></div>';
     }).join('');
-    return '<div class="mt">' +
-      '<div class="micro mb"><strong>Versions du livrable</strong>' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
-      (rows || '<div class="micro muted">Aucun livrable rattaché.</div>') +
-      '<div class="row mt"><input class="inp" type="file" id="tdf-' + t.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + (ls.length ? '+ Nouvelle version' : '+ Livrable') + '</button></div>' +
-      '<div class="field mt"><label>Lien de révision (pour récupérer les retours)</label><div class="row"><input id="trl-' + t.id + '" class="inp" placeholder="https://… (Figma, proofing…)" value="' + esc(t.reviewLink || '') + '"><button class="btn btn--sm" onclick="ADM.taskReview(\'' + t.id + '\')">OK</button></div></div>' +
+    return '<div>' +
+      '<div class="micro" style="margin-bottom:10px">Versions du livrable' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
+      (rows ? '<div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div>' : '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 4px">Aucun livrable déposé pour l\'instant.</div>') +
+      '<div class="row" style="margin-top:12px;gap:8px"><input class="inp" type="file" id="tdf-' + t.id + '" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + (ls.length ? '+ Nouvelle version' : '+ Livrable') + '</button></div>' +
+      '<div class="field" style="margin-top:14px"><label>Lien de révision (pour récupérer les retours)</label><div class="row" style="gap:8px"><input id="trl-' + t.id + '" class="inp" style="flex:1" placeholder="https://… (Figma, proofing…)" value="' + esc(t.reviewLink || '') + '"><button class="btn btn--outline btn--sm" onclick="ADM.taskReview(\'' + t.id + '\')">OK</button></div></div>' +
       '</div>';
   }
   function delDeliverable(id) {
