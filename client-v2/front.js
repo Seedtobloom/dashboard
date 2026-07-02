@@ -5878,14 +5878,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
-  function showError() {
+  function showError(kind) {
+    // Par défaut : erreur de chargement (réseau, serveur) avec bouton
+    // Réessayer. « Lien expiré » réservé aux vrais refus d'accès (403).
+    var revoked = kind === 'revoked';
+    var title = revoked ? 'Ce lien n\'est plus valide' : 'Impossible de charger votre espace';
+    var body = revoked
+      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a> pour obtenir un nouveau lien.'
+      : 'Le chargement n\'a pas abouti, souvent à cause d\'une connexion instable.<br><br>' +
+        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Réessayer</button><br><br>' +
+        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a>.';
     document.getElementById('app').innerHTML =
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">Ce lien n\'est plus valide</h1>' +
-        '<p style="color:#8090a8;line-height:1.7;font-size:15px">Le lien a expiré ou a été révoqué.<br><br>' +
-          'Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a> pour obtenir un nouveau lien.</p>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
+        '<p style="color:#8090a8;line-height:1.7;font-size:15px">' + body + '</p>' +
       '</div></div>';
   }
 
@@ -6070,7 +6078,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var headers = {};
     if (storedCode) headers['x-space-code'] = storedCode;
     fetch(API_BASE, { headers: headers })
-      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(r) { if (r.status === 401 || r.status === 403) throw new Error('revoked'); if (!r.ok) throw new Error('net'); return r.json(); })
       .then(function(data) {
         if (data.wrongCode) {
           sessionStorage.removeItem('_sc');
@@ -6105,7 +6113,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         }
         cpRefreshEditToggle();
       })
-      .catch(showLogin);
+      .catch(function(e){ if (e && e.message === 'revoked') { showLogin(); } else { showError(''); } });
   }
 
 /* ── Greffe v2 : écran de login (email + clé) ───────────────────────────────
