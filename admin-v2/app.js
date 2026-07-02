@@ -147,7 +147,7 @@
       ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
-      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
+      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'client' && it[0] === 'clients') || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }
     var navHtml = groups.map(function (g, gi) {
@@ -186,8 +186,25 @@
     }).catch(function () {});
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
       REV_N = (d.revisions || []).length;
-      var b = el('nav-unread-priorities'); if (b) b.innerHTML = badgeAlert(REV_N);
+      // Bulle Priorités : révisions + échéances dépassées ou du jour.
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var urgentDl = (d.deadlines || []).filter(function (x) {
+        if (x.status === 'waiting_client' || !x.dueDate) return false;
+        var t = new Date(x.dueDate); t.setHours(0, 0, 0, 0);
+        return t <= today;
+      }).length;
+      var b = el('nav-unread-priorities');
+      if (b) b.innerHTML = badgeAlert(REV_N + urgentDl);
       refreshTabTitle();
+    }).catch(function () {});
+    // Bulle Mes tâches : rouge si des tâches sont en retard ou pour aujourd'hui,
+    // sinon compteur discret des tâches à faire.
+    api('/api/admin/tasks').then(function (r) { return r.json(); }).then(function (d) {
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var todo = (d.tasks || []).filter(function (x) { return x.status !== 'done' && !x.archived; });
+      var urgent = todo.filter(function (x) { if (!x.dueDate) return false; var t = new Date(x.dueDate); t.setHours(0, 0, 0, 0); return t <= today; }).length;
+      var b = el('nav-unread-mytasks');
+      if (b) b.innerHTML = urgent > 0 ? badgeAlert(urgent) : (todo.length > 0 ? badge(todo.length) : '');
     }).catch(function () {});
   }
   function renderMain() {
