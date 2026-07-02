@@ -2866,10 +2866,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
         var progVal = props.p_brief!=null ? props.p_brief : '';
         var progOpts = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
-        var prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement</div>' +
-          '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
-          progOpts.map(function(x){ return '<option'+(progVal===x?' selected':'')+'>'+x+'</option>'; }).join('') +
-          '</select></div>';
+        // Avancement = statut de travail du studio : lecture seule pour le
+        // client (modifiable seulement en mode édition admin).
+        var prog;
+        if (_isAdminEdit) {
+          prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement</div>' +
+            '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value="">—</option>' +
+            progOpts.map(function(x){ return '<option'+(progVal===x?' selected':'')+'>'+x+'</option>'; }).join('') +
+            '</select></div>';
+        } else {
+          prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement <span title="Suivi par Cindy" style="font-size:10px">🔒</span></div>' +
+            '<div style="font-size:13px;padding:8px 10px;background:#f7f2ea;border-radius:8px;color:var(--navy,#1C1205)" title="Statut mis à jour par Cindy">'+esc(progVal || 'Pas commencé')+'</div></div>';
+        }
         return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
           prog + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
@@ -4449,8 +4457,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
   function buildFichiersView() {
     var allFiles = [];
+    // fichier -> titre de la tâche à laquelle il est joint (pièces des demandes)
+    var taskOfFile = {};
     appData.projects.forEach(function(pd) {
-      (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project }); });
+      ((pd.project && pd.project.tasks) || []).forEach(function(t) {
+        (Array.isArray(t.attachments) ? t.attachments : []).forEach(function(a) {
+          var k = a.fileKey || a.key || '';
+          if (k) taskOfFile[k] = t.title || 'Tâche';
+        });
+      });
+      (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project, task: taskOfFile[f.key] || '' }); });
     });
 
     function fileTypeIcon(f) {
@@ -4472,6 +4488,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var sub = isCindy
         ? 'Livré par Cindy' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '')
         : 'Déposé par vous' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
+      if (item.task) sub += ' · tâche « ' + item.task + ' »';
       return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px">' +
         '<span style="width:38px;height:38px;border-radius:var(--radius-2);background:'+iconBg+';color:'+iconCol+';display:grid;place-items:center;flex-shrink:0">' + cpIcon(ti.icon,17) + '</span>' +
         '<div style="flex:1;min-width:0">' +
@@ -4483,7 +4500,29 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
 
     var cindyFiles = allFiles.filter(function(x){ return x.f.source !== 'client'; });
-    var clientFiles = allFiles.filter(function(x){ return x.f.source === 'client'; });
+    var clientFiles = allFiles.filter(function(x){ return x.f.source === 'client' && !x.task; });
+    var taskFiles = allFiles.filter(function(x){ return x.f.source === 'client' && x.task; });
+    var byTask = {};
+    taskFiles.forEach(function(x){ (byTask[x.task] = byTask[x.task] || []).push(x); });
+    var taskGroupsHtml = Object.keys(byTask).sort().map(function(tt){
+      var items = byTask[tt];
+      return '<div style="margin-bottom:18px">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+          cpIcon('check',13,'color:var(--terre-400)') +
+          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--terre-600)">Tâche · ' + esc(tt) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">' + items.length + '</span>' +
+        '</div>' + items.map(fileRow).join('') +
+      '</div>';
+    }).join('');
+    var taskSection = taskGroupsHtml
+      ? '<div style="margin-bottom:28px">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+            cpIcon('paperclip',16,'color:var(--terre-400)') +
+            '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">Fichiers de vos demandes</span>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em">' + taskFiles.length + '</span>' +
+          '</div>' + taskGroupsHtml +
+        '</div>'
+      : '';
 
     function section(title, items, showUpload) {
       return '<div style="margin-bottom:28px">' +
@@ -4505,6 +4544,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<div class="fade-up">' +
       '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Déposez vos éléments, récupérez les livrables — tout reste au même endroit.</p>' +
       section('Fichiers du projet', cindyFiles, false) +
+      taskSection +
       section('Mes documents', clientFiles, true) +
     '</div>';
   }

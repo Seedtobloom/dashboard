@@ -3300,10 +3300,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>';
         var progVal = props.p_brief!=null ? props.p_brief : '';
         var progOpts = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
-        var prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement</div>' +
-          '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value=""></option>' +
-          progOpts.map(function(x){ return '<option'+(progVal===x?' selected':'')+'>'+x+'</option>'; }).join('') +
-          '</select></div>';
+        // Avancement = statut de travail du studio : lecture seule pour le
+        // client (modifiable seulement en mode édition admin).
+        var prog;
+        if (_isAdminEdit) {
+          prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement</div>' +
+            '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_brief\',this.value)" style="'+inpStyle+';cursor:pointer"><option value=""></option>' +
+            progOpts.map(function(x){ return '<option'+(progVal===x?' selected':'')+'>'+x+'</option>'; }).join('') +
+            '</select></div>';
+        } else {
+          prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">État d\'avancement <span title="Suivi par Cindy" style="font-size:10px">🔒</span></div>' +
+            '<div style="font-size:13px;padding:8px 10px;background:#f7f2ea;border-radius:8px;color:var(--navy,#1C1205)" title="Statut mis à jour par Cindy">'+esc(progVal || 'Pas commencé')+'</div></div>';
+        }
         return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
           prog + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
@@ -4883,8 +4891,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   function buildFichiersView() {
     var allFiles = [];
+    // fichier -> titre de la tâche à laquelle il est joint (pièces des demandes)
+    var taskOfFile = {};
     appData.projects.forEach(function(pd) {
-      (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project }); });
+      ((pd.project && pd.project.tasks) || []).forEach(function(t) {
+        (Array.isArray(t.attachments) ? t.attachments : []).forEach(function(a) {
+          var k = a.fileKey || a.key || '';
+          if (k) taskOfFile[k] = t.title || 'Tâche';
+        });
+      });
+      (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project, task: taskOfFile[f.key] || '' }); });
     });
 
     function fileTypeIcon(f) {
@@ -4906,6 +4922,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var sub = isCindy
         ? 'Livré par Cindy' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '')
         : 'Déposé par vous' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
+      if (item.task) sub += ' · tâche « ' + item.task + ' »';
       return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px">' +
         '<span style="width:38px;height:38px;border-radius:var(--radius-2);background:'+iconBg+';color:'+iconCol+';display:grid;place-items:center;flex-shrink:0">' + cpIcon(ti.icon,17) + '</span>' +
         '<div style="flex:1;min-width:0">' +
@@ -4917,7 +4934,29 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }
 
     var cindyFiles = allFiles.filter(function(x){ return x.f.source !== 'client'; });
-    var clientFiles = allFiles.filter(function(x){ return x.f.source === 'client'; });
+    var clientFiles = allFiles.filter(function(x){ return x.f.source === 'client' && !x.task; });
+    var taskFiles = allFiles.filter(function(x){ return x.f.source === 'client' && x.task; });
+    var byTask = {};
+    taskFiles.forEach(function(x){ (byTask[x.task] = byTask[x.task] || []).push(x); });
+    var taskGroupsHtml = Object.keys(byTask).sort().map(function(tt){
+      var items = byTask[tt];
+      return '<div style="margin-bottom:18px">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+          cpIcon('check',13,'color:var(--terre-400)') +
+          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--terre-600)">Tâche · ' + esc(tt) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">' + items.length + '</span>' +
+        '</div>' + items.map(fileRow).join('') +
+      '</div>';
+    }).join('');
+    var taskSection = taskGroupsHtml
+      ? '<div style="margin-bottom:28px">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+            cpIcon('paperclip',16,'color:var(--terre-400)') +
+            '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">Fichiers de vos demandes</span>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em">' + taskFiles.length + '</span>' +
+          '</div>' + taskGroupsHtml +
+        '</div>'
+      : '';
 
     function section(title, items, showUpload) {
       return '<div style="margin-bottom:28px">' +
@@ -4939,6 +4978,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return '<div class="fade-up">' +
       '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Déposez vos éléments, récupérez les livrables, tout reste au même endroit.</p>' +
       section('Fichiers du projet', cindyFiles, false) +
+      taskSection +
       section('Mes documents', clientFiles, true) +
     '</div>';
   }
@@ -6652,17 +6692,19 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       filesHtml+
       '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
+    var MK_E = ' <span title="Modifiable par vous" style="color:#b8a98f;font-size:11px">✎</span>';
+    var MK_L = ' <span title="Suivi par Cindy" style="font-size:10px">🔒</span>';
     var propertiesHtml =
-      dRow(cpIcon('check-circle', 15), 'État', dStatusPill(pid, t)) +
-      dRow(cpIcon('calendar', 15), 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
-      dRow(cpIcon('zap', 15), 'Priorité', (function(){
+      dRow(cpIcon('check-circle', 15), 'État' + MK_E, dStatusPill(pid, t)) +
+      dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow(cpIcon('zap', 15), 'Priorité' + MK_E, (function(){
         var cur = t.urgency || 'normal';
         var sel = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'urgency\',this.value)" style="'+dPillStyle(PART_URGENCY[cur]||'#F2E5C2')+'">';
         ['tranquille','normal','urgent','critique'].forEach(function(u){ sel += '<option value="'+u+'"'+(cur===u?' selected':'')+'>'+(PART_URG_LABEL[u]||u)+'</option>'; });
         return sel + '</select>';
       })()) +
-      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
-      dRow(cpIcon('chart', 15), 'Avancement', (function(){
+      dRow(cpIcon('file-text', 15), 'Statut du brief' + MK_E, dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
+      dRow(cpIcon('chart', 15), 'Avancement' + MK_L, (function(){
         // Statut de travail du studio : lecture seule pour le client
         // (modifiable uniquement en mode édition admin).
         if (_isAdminEdit) return dPropPill(pid, t, 'p_brief', props.p_brief||'', ['En attente du brief','En cours','À retravailler','Besoin d\'une info','Terminé'], PROG_COL, 'Pas commencé');
@@ -6671,7 +6713,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         return '<span style="display:inline-block;background:'+bg+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Statut mis à jour par Cindy">'+esc(v || 'Pas commencé')+'</span>';
       })()) +
       (typeOpts.length ? dRow(cpIcon('tag', 15), esc(typeDef.name||'Type'), dPropPill(pid, t, 'p_typemission', props.p_typemission||'', typeOpts, TYPE_COL, 'À définir')) : '') +
-      dRow(cpIcon('link', 15), 'Lien & fichiers', linkFilesVal);
+      dRow(cpIcon('link', 15), 'Lien & fichiers' + MK_E, linkFilesVal);
 
     // Commentaires
     var comments = Array.isArray(t.comments) ? t.comments : [];
@@ -6727,6 +6769,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div style="padding:0 44px 44px">'+
           title +
           '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
+          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
           attachBlock +
           stbBlocks(pid, t) +
           sep +
