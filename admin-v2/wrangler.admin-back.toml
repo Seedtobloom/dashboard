@@ -26,3 +26,8 @@ ENVIRONMENT = "production"
 #   INTERNAL_SECRET   (identique au front admin)
 #   RESEND_API_KEY    (notifications client)
 #   RESEND_FROM_EMAIL (expéditeur vérifié)
+
+# Sauvegarde automatique quotidienne (03h17 UTC) : instantané complet des
+# données KV vers R2 (_backups/), 30 jours conservés.
+[triggers]
+crons = ["17 3 * * *"]

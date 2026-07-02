@@ -42,6 +42,15 @@ const DOMAINS = {
     branding: { internal: 'identiteVisuelle', folder: 'identiteVisuelle', label: 'Identité visuelle' },
 };
 export default {
+    // Sauvegarde automatique quotidienne (cron défini dans wrangler.admin-back.toml)
+    async scheduled(_event, env) {
+        try {
+            await backupSnapshot(env);
+        }
+        catch (e) {
+            console.error('backup cron:', e);
+        }
+    },
     async fetch(request, env) {
         if (!env.INTERNAL_SECRET || request.headers.get('X-Internal-Auth') !== env.INTERNAL_SECRET) {
             return json({ error: 'Forbidden' }, 403);
@@ -88,6 +97,15 @@ export default {
                 if (method === 'PUT')
                     return handleMissionTypesSave(request, env);
             }
+            // Sauvegardes : instantanés complets des données (KV) stockés dans R2
+            if (method === 'GET' && pathname === '/api/backups')
+                return handleBackupList(env);
+            if (method === 'POST' && pathname === '/api/backups')
+                return handleBackupRun(env);
+            if (method === 'GET' && pathname === '/api/backups/download')
+                return handleBackupDownload(env, url);
+            if (method === 'POST' && pathname === '/api/backups/restore')
+                return handleBackupRestore(request, env);
             // Tâches personnelles de l'admin (stockées dans KV_ADMIN)
             if (pathname === '/api/admin/tasks') {
                 if (method === 'GET')
@@ -1551,6 +1569,93 @@ async function handleBookingLinkSave(request, env) {
         return json({ error: 'Lien invalide' }, 400);
     await env.KV_CLIENT.put('global:bookingLink', link);
     return json({ ok: true, link });
+}
+/* ── Sauvegardes ──
+ * Un instantané = un JSON dans R2 (_backups/AAAA-MM-JJTHHMM.json) contenant
+ * tous les espaces clients + les données admin (tâches, planning, réglages).
+ * Les fichiers eux-mêmes vivent déjà dans R2 et ne sont pas dupliqués.
+ */
+const BACKUP_PREFIX = '_backups/';
+const BACKUP_KEEP = 30;
+async function backupSnapshot(env) {
+    const idx = await getIndex(env);
+    const clients = {};
+    for (const ci of idx) {
+        clients[ci.key] = (await env.KV_CLIENT.get(ci.key, { type: 'json' }));
+    }
+    const snapshot = {
+        at: nowIso(),
+        version: 1,
+        clientsIndex: idx,
+        clients,
+        adminTasks: await env.KV_ADMIN.get('admin:tasks', { type: 'json' }),
+        adminPlanning: await env.KV_ADMIN.get('admin:planning', { type: 'json' }),
+        emailTemplates: await env.KV_ADMIN.get('email_templates', { type: 'json' }),
+        missionTypes: await env.KV_CLIENT.get('global:missionTypes', { type: 'json' }),
+        bookingLink: await env.KV_CLIENT.get('global:bookingLink'),
+    };
+    const body = JSON.stringify(snapshot);
+    const name = BACKUP_PREFIX + nowIso().slice(0, 16).replace(':', 'h') + '.json';
+    await env.R2_FILES.put(name, body, { httpMetadata: { contentType: 'application/json' } });
+    // Rotation : on garde les BACKUP_KEEP plus récents
+    const listed = await env.R2_FILES.list({ prefix: BACKUP_PREFIX });
+    const names = listed.objects.map((o) => o.key).sort();
+    for (const k of names.slice(0, Math.max(0, names.length - BACKUP_KEEP))) {
+        await env.R2_FILES.delete(k);
+    }
+    return { name, size: body.length, clients: idx.length };
+}
+async function handleBackupRun(env) {
+    const r = await backupSnapshot(env);
+    return json({ ok: true, ...r }, 201);
+}
+async function handleBackupList(env) {
+    const listed = await env.R2_FILES.list({ prefix: BACKUP_PREFIX });
+    const backups = listed.objects
+        .map((o) => ({ name: o.key.slice(BACKUP_PREFIX.length), size: o.size, at: o.uploaded }))
+        .sort((a, b) => String(b.name).localeCompare(String(a.name)));
+    return json({ backups });
+}
+function backupKeyOk(name) { return /^[0-9T\-h]+\.json$/.test(name); }
+async function handleBackupDownload(env, url) {
+    const name = url.searchParams.get('name') || '';
+    if (!backupKeyOk(name))
+        return json({ error: 'Nom invalide' }, 400);
+    const obj = await env.R2_FILES.get(BACKUP_PREFIX + name);
+    if (!obj)
+        return json({ error: 'Sauvegarde introuvable' }, 404);
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    headers.set('Content-Disposition', 'attachment; filename="seedtobloom-sauvegarde-' + name + '"');
+    return new Response(obj.body, { headers });
+}
+async function handleBackupRestore(request, env) {
+    const body = await readJson(request);
+    const name = (body.name || '').toString();
+    const target = (body.target || '').toString(); // clé client ou 'admin:tasks'
+    if (!backupKeyOk(name) || !target)
+        return json({ error: 'Requête invalide' }, 400);
+    const obj = await env.R2_FILES.get(BACKUP_PREFIX + name);
+    if (!obj)
+        return json({ error: 'Sauvegarde introuvable' }, 404);
+    const snap = (await obj.json());
+    if (target === 'admin:tasks') {
+        if (!snap.adminTasks)
+            return json({ error: 'Pas de tâches dans cette sauvegarde' }, 400);
+        await env.KV_ADMIN.put('admin:tasks', JSON.stringify(snap.adminTasks));
+        return json({ ok: true, restored: 'Mes tâches' });
+    }
+    const data = snap.clients && snap.clients[target];
+    if (!data)
+        return json({ error: 'Ce client n\'est pas dans cette sauvegarde' }, 400);
+    await env.KV_CLIENT.put(target, JSON.stringify(data));
+    // le client restauré doit exister dans l'index
+    const idx = await getIndex(env);
+    if (!idx.some((c) => c.key === target)) {
+        idx.push(indexEntry(target, data));
+        await saveIndex(env, idx);
+    }
+    return json({ ok: true, restored: clientName(data) });
 }
 async function notifyClient(env, data, subject, bodyHtml) {
     const email = getClient(data).email;

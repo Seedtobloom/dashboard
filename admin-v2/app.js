@@ -337,7 +337,7 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous']];
+    var items = [['types', 'Types de mission'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['backups', 'Sauvegardes']];
     return '<div class="subtabs">' + items.map(function (it) {
       return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
     }).join('') + '</div>';
@@ -350,6 +350,8 @@
         EMAIL_TPLS = d.templates || [];
         var b = el('regl-body'); if (b) b.innerHTML = emailsBody();
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+    } else if (REGL_TAB === 'backups') {
+      renderBackups();
     } else if (REGL_TAB === 'rdv') {
       api('/api/booking-link').then(function (r) { return r.json(); }).then(function (d) {
         var b = el('regl-body'); if (!b) return;
@@ -364,6 +366,60 @@
         renderReglagesBody();
       }).catch(showError);
     }
+  }
+  function renderBackups() {
+    api('/api/backups').then(function (r) { return r.json(); }).then(function (d) {
+      var b = el('regl-body'); if (!b) return;
+      var rows = (d.backups || []).map(function (x) {
+        var dt = x.name.replace('.json', '').replace('T', ' à ').replace('h', ':');
+        var mb = (x.size / 1024).toFixed(0) + ' Ko';
+        return '<div class="file" style="gap:10px"><span class="nm">' + esc(dt) + ' <span class="micro" style="color:var(--muted)">· ' + mb + '</span></span>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.backupDownload(\'' + esc(x.name) + '\')">Télécharger</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.backupRestoreOpen(\'' + esc(x.name) + '\')">Restaurer…</button></div>';
+      }).join('');
+      b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Sauvegardes</h3>' +
+        '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Une sauvegarde complète (espaces clients, tes tâches, planning, réglages) est créée automatiquement chaque nuit et conservée 30 jours. Les fichiers déposés vivent déjà dans un stockage durable et ne sont pas dupliqués. Tu peux aussi créer une sauvegarde à la demande, la télécharger sur ton ordinateur, ou restaurer un client depuis un instantané.</div>' +
+        '<div class="row mb"><button class="btn btn--dark btn--sm" onclick="ADM.backupRun()">Créer une sauvegarde maintenant</button></div>' +
+        (rows || '<div class="empty">Aucune sauvegarde pour le moment. La première se créera cette nuit, ou clique ci-dessus.</div>') + '</div>';
+    }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+  }
+  function backupRun() {
+    toast('Sauvegarde en cours…');
+    jpost('/api/backups', {}).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) { toast('Sauvegarde créée ✓ (' + d.clients + ' client' + (d.clients > 1 ? 's' : '') + ')'); renderBackups(); }
+      else toast(d.error || 'Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
+  function backupDownload(name) {
+    api('/api/backups/download?name=' + encodeURIComponent(name)).then(function (r) { if (!r.ok) throw new Error(); return r.blob(); }).then(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'seedtobloom-sauvegarde-' + name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+    }).catch(function () { toast('Erreur de téléchargement'); });
+  }
+  function backupRestoreOpen(name) {
+    var opts = '<option value="admin:tasks">Mes tâches (perso)</option>' + NAV_CLIENTS.map(function (c) { return '<option value="' + esc(c.key) + '">' + esc(clientName(c)) + '</option>'; }).join('');
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="text-align:left">' +
+      '<div class="admconfirm__title">Restaurer depuis « ' + esc(name.replace('.json', '')) + ' »</div>' +
+      '<div class="admconfirm__msg">Choisis ce qu\'il faut restaurer. Les données actuelles de la cible seront remplacées par celles de la sauvegarde.</div>' +
+      '<div class="field mt"><label>Restaurer</label><select class="inp" id="bk-target">' + opts + '</select></div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:#b5462f;color:#fff;border-color:#b5462f">Restaurer</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var target = el('bk-target').value; close();
+      admConfirm({ title: 'Dernière confirmation', message: 'Les données actuelles seront écrasées par la sauvegarde. Continuer ?', yes: 'Oui, restaurer', no: 'Non', danger: true }, function () {
+        jpost('/api/backups/restore', { name: name, target: target }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d.ok) toast('Restauré : ' + d.restored + ' ✓'); else toast(d.error || 'Erreur');
+        }).catch(function () { toast('Erreur'); });
+      });
+    };
+    document.body.appendChild(ov);
   }
   function bookingSave() {
     jpost('/api/booking-link', { link: (el('bk-link').value || '').trim() }, 'PUT').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
@@ -2118,7 +2174,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
-    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave,
+    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
