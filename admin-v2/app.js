@@ -180,12 +180,27 @@
 
   /* ── Priorités ── */
   function testEmail() {
-    var to = prompt('Adresse de test pour Resend :', '');
-    if (!to) return;
-    jpost('/api/test-email', { to: to }).then(function (r) { return r.json(); }).then(function (d) {
-      if (d.ok) { toast('Email envoyé ✓'); alert('Resend OK · email envoyé à ' + to + '.'); }
-      else { alert('Resend a échoué.\nFrom: ' + (d.from || '(non défini)') + '\nStatut: ' + d.status + '\nErreur: ' + (d.error || '·')); }
-    }).catch(function () { toast('Erreur'); });
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="text-align:left">' +
+      '<div class="admconfirm__title">Tester l\'envoi d\'e-mail</div>' +
+      '<div class="field mt"><label>Adresse de test</label><input class="inp" id="te-to" type="email" placeholder="toi@exemple.fr"></div>' +
+      '<div id="te-result" class="micro mt" style="text-transform:none;letter-spacing:0"></div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Fermer</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer le test</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var to = (el('te-to').value || '').trim(); if (!to) { toast('Adresse requise'); return; }
+      var res = el('te-result'); res.textContent = 'Envoi en cours…';
+      jpost('/api/test-email', { to: to }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.ok) { res.style.color = 'var(--green)'; res.textContent = 'Resend OK · e-mail envoyé à ' + to + '.'; toast('Email envoyé ✓'); }
+        else { res.style.color = 'var(--red)'; res.textContent = 'Échec Resend · from : ' + (d.from || '(non défini)') + ' · statut ' + d.status + (d.error ? ' · ' + d.error : ''); }
+      }).catch(function () { res.style.color = 'var(--red)'; res.textContent = 'Erreur réseau.'; });
+    };
+    document.body.appendChild(ov);
+    var f = el('te-to'); if (f) f.focus();
   }
 
   /* ── Textes des e-mails (envois volontaires : bilan + relances) ── */
@@ -802,7 +817,11 @@
     jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '' }).then(function (r) { if (r.ok) { toast('Tâche ajoutée'); renderMyTasks(); } else toast('Erreur'); });
   }
   function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
-  function myTaskDel(id) { api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); }); }
+  function myTaskDel(id) {
+    admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche et son temps passé seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimée'); renderMyTasks(); } else toast('Erreur'); });
+    });
+  }
   function myTaskArchive(id, val) { if (val && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); renderMyTasks(); } else toast('Erreur'); }); }
 
   /* ── Calendrier intelligent (planning hebdo) ── */
@@ -1345,11 +1364,22 @@
   }
   function deleteClient() {
     var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || CUR.client.email || CUR.key;
-    if (!window.confirm('Supprimer définitivement « ' + nm + ' » et tout son espace ? Cette action est irréversible.')) return;
-    if (!window.confirm('Confirmez une dernière fois : tout sera effacé, fichiers compris.')) return;
-    api('/api/clients/' + CURKEY, { method: 'DELETE' }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) { if (res.ok) { toast('Client supprimé'); nav('clients'); } else toast((res.d && res.d.error) || 'Erreur'); })
-      .catch(function () { toast('Erreur'); });
+    admConfirm({
+      title: 'Supprimer « ' + nm + ' » ?',
+      message: 'Tout son espace sera supprimé : projets, messages, livrables et fichiers.',
+      detail: 'Cette action est irréversible.',
+      yes: 'Continuer', no: 'Non, annuler', danger: true,
+    }, function () {
+      admConfirm({
+        title: 'Dernière confirmation',
+        message: 'Tout sera effacé définitivement, fichiers compris. Es-tu sûre ?',
+        yes: 'Oui, tout supprimer', no: 'Non, annuler', danger: true,
+      }, function () {
+        api('/api/clients/' + CURKEY, { method: 'DELETE' }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) { if (res.ok) { toast('Client supprimé'); nav('clients'); } else toast((res.d && res.d.error) || 'Erreur'); })
+          .catch(function () { toast('Erreur'); });
+      });
+    });
   }
   function supportsCard() {
     var rows = (CUR.supports || []).map(function (s) {
@@ -1363,7 +1393,11 @@
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
   function addSupport() { var name = (el('new-support-name').value || '').trim(); jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) { if (r.ok) { toast('Support ajouté'); loadClient(); } else toast('Erreur'); }); }
-  function delSupport(pid) { api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Support supprimé'); loadClient(); } else toast('Erreur'); }); }
+  function delSupport(pid) {
+    admConfirm({ title: 'Supprimer ce support ?', message: 'Le support et tout son contenu (messages, étapes, livrables) seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Support supprimé'); loadClient(); } else toast('Erreur'); });
+    });
+  }
   function offersCard() {
     var offers = [];
     CUR.domains.forEach(function (dn) { offers.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.isActive !== false, (dn.content && dn.content.bannerColor) || '', !!(dn.content && dn.content.maintenance)]); });
@@ -1587,10 +1621,19 @@
     });
   }
   function beneficeAdd() { var label = (el('ben-label').value || '').trim(); if (!label) { toast('Indiquez un bénéfice'); return; } jpost('/api/clients/' + CURKEY + '/benefices', { label: label, value: el('ben-value').value || '', note: el('ben-note').value || '', date: el('ben-date').value || '' }, 'POST').then(function (r) { if (r.ok) { toast('Bénéfice ajouté'); loadClient(); } else toast('Erreur'); }); }
-  function beneficeDel(id) { api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); }); }
+  function beneficeDel(id) {
+    admConfirm({ title: 'Retirer ce bénéfice ?', yes: 'Oui, retirer', no: 'Non', danger: true }, function () {
+      api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); });
+    });
+  }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
   function taskStatus(id, st) { if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut: ' + st); loadClient(); } }); }
-  function taskDelete(id) { if (!window.confirm('Supprimer cette tâche ?')) return; if (PT_TIMER && PT_TIMER.id === id) ptPause(id, true); api('/api/clients/' + CURKEY + '/tasks/' + id + '?projectId=partner', { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Tâche supprimée'); loadClient(); } else toast('Erreur'); }); }
+  function taskDelete(id) {
+    admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche, ses commentaires et son temps passé seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      if (PT_TIMER && PT_TIMER.id === id) ptPause(id, true);
+      api('/api/clients/' + CURKEY + '/tasks/' + id + '?projectId=partner', { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Tâche supprimée'); loadClient(); } else toast('Erreur'); });
+    });
+  }
   function taskTime(id, mn) { var m = Number(mn) || 0; var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; } jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60 }, 'PATCH').then(function (r) { if (r.ok) toast('Temps enregistré'); }); }
   function taskComment(pid, id) { var i = el('cm-' + id); var v = (i.value || '').trim(); if (!v) return; jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/comments', { projectId: pid, text: v }).then(function (r) { if (r.ok) { toast('Commentaire envoyé'); loadClient(); } }); }
 
@@ -1614,7 +1657,11 @@
   }
   function stepAdd(pid) { var t = el('st-title-' + pid).value.trim(); if (!t) return; jpost('/api/clients/' + CURKEY + '/steps', { projectId: pid, title: t, date: el('st-date-' + pid).value || null, clientAction: el('st-action-' + pid).value || '', status: 'upcoming' }).then(function (r) { if (r.ok) { toast('Étape ajoutée'); loadClient(); } }); }
   function stepStatus(pid, id, st) { jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut mis à jour'); loadClient(); } }); }
-  function stepDelete(pid, id) { api('/api/clients/' + CURKEY + '/steps/' + id + '?projectId=' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } }); }
+  function stepDelete(pid, id) {
+    admConfirm({ title: 'Supprimer cette étape ?', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      api('/api/clients/' + CURKEY + '/steps/' + id + '?projectId=' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); });
+    });
+  }
 
   /* livrables */
   function livrablesCard(d) {
@@ -1706,7 +1753,11 @@
       .then(function (res) { btn.disabled = false; btn.textContent = 'Uploader'; if (res.ok) { toast('Document déposé'); el('up-file').value = ''; listDocs(); } else toast(res.d.error || 'Erreur'); })
       .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur'); });
   }
-  function delDoc(k) { jpost('/api/clients/' + CURKEY + '/files', { key: decodeURIComponent(k) }, 'DELETE').then(function (r) { if (r.ok) { toast('Supprimé'); listDocs(); } }); }
+  function delDoc(k) {
+    admConfirm({ title: 'Supprimer ce document ?', message: 'Le fichier sera supprimé pour vous et pour le client.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      jpost('/api/clients/' + CURKEY + '/files', { key: decodeURIComponent(k) }, 'DELETE').then(function (r) { if (r.ok) { toast('Supprimé'); listDocs(); } else toast('Erreur'); });
+    });
+  }
   function lockDoc(k, pid, lock) { jpost('/api/clients/' + CURKEY + '/files/lock', { key: decodeURIComponent(k), projectId: pid, locked: lock }, 'PATCH').then(function (r) { if (r.ok) { toast(lock ? 'Fichier verrouillé' : 'Fichier déverrouillé'); listDocs(); } else toast('Erreur'); }); }
 
   /* ── Messagerie globale : clients -> projet -> fil ── */
