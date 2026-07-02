@@ -71,7 +71,21 @@ export default {
             const masterKey = auth.masterKey;
             const data = auth.data;
             const sub = m[2] || '';
-            return handleClientApi(request, env, url, method, masterKey, data, sub);
+            // Déverrouillage du mode édition sur une session déjà ouverte (Cindy
+            // ajoute ?edit=1&etk=… alors que son cookie de session existe déjà).
+            if (method === 'POST' && sub === '/edit-unlock') {
+                const body = await readJson(request);
+                const etk = (body.etk || '').toString().trim();
+                if (etk && /^[a-f0-9]{16,64}$/.test(etk)) {
+                    const owner = await env.KV_CLIENT.get('edittoken:' + etk);
+                    if (owner === masterKey) {
+                        await env.KV_CLIENT.put(SESSION_PREFIX + m[1], JSON.stringify({ masterKey, email: getClient(data).email, editor: true }), { expirationTtl: SESSION_TTL });
+                        return json({ ok: true, editor: true });
+                    }
+                }
+                return json({ error: 'Code d’édition invalide ou expiré' }, 403);
+            }
+            return handleClientApi(request, env, url, method, masterKey, data, sub, auth.editor === true);
         }
         catch (err) {
             console.error('back error:', err);
@@ -82,7 +96,7 @@ export default {
 /* ──────────────────────────────────────────────────────────────────────────
  * Routeur API client (sous-chemins relatifs à /api/client/<token>)
  * ────────────────────────────────────────────────────────────────────────── */
-async function handleClientApi(request, env, url, method, masterKey, data, sub) {
+async function handleClientApi(request, env, url, method, masterKey, data, sub, editor) {
     // GET racine -> payload complet (appData V1)
     if (method === 'GET' && (sub === '' || sub === '/')) {
         return json(await buildAppData(env, masterKey, data));
@@ -109,8 +123,10 @@ async function handleClientApi(request, env, url, method, masterKey, data, sub) 
     if (method === 'GET' && sub === '/hub') {
         return json(getEspace(data).hub || { sections: [] });
     }
-    // Home (édition admin uniquement · toléré ici)
+    // Home : réservé au mode édition (session ouverte avec un jeton d'édition)
     if (method === 'PUT' && sub === '/home') {
+        if (!editor)
+            return json({ error: 'Réservé au mode édition' }, 403);
         const body = await readJson(request);
         getEspace(data).home = body;
         await save(env, masterKey, data);
@@ -120,8 +136,10 @@ async function handleClientApi(request, env, url, method, masterKey, data, sub) 
     if (method === 'PATCH' && sub === '/notes') {
         return handleNotes(request, env, masterKey, data);
     }
-    // Forfait (heures mensuelles + overrides)
+    // Forfait (heures mensuelles + overrides) : réservé au mode édition
     if (method === 'PATCH' && sub === '/forfait') {
+        if (!editor)
+            return json({ error: 'Réservé au mode édition' }, 403);
         return handleForfait(request, env, masterKey, data);
     }
     // Tâches
@@ -129,7 +147,7 @@ async function handleClientApi(request, env, url, method, masterKey, data, sub) 
         return handleTaskCreate(request, env, masterKey, data);
     let t = sub.match(/^\/tasks\/([a-f0-9]+)$/);
     if (t && method === 'PATCH')
-        return handleTaskUpdate(request, env, masterKey, data, t[1]);
+        return handleTaskUpdate(request, env, masterKey, data, t[1], editor);
     if (t && method === 'DELETE')
         return handleTaskDelete(request, env, masterKey, data, t[1], url);
     t = sub.match(/^\/tasks\/([a-f0-9]+)\/complete$/);
@@ -262,8 +280,18 @@ async function handleLogin(request, env) {
         return json({ error: 'Cet espace est désactivé. Contactez Cindy.' }, 403);
     espace.lastSeen = Math.floor(Date.now() / 1000); // maj au login
     await save(env, key, data);
+    // Mode édition (Cindy) : un jeton généré depuis l'admin, transmis au login,
+    // marque la session comme éditrice. Sans lui, les écritures sensibles
+    // (accueil, forfait, temps passé) sont refusées côté serveur.
+    let editor = false;
+    const etk = (body.etk || '').toString().trim();
+    if (etk && /^[a-f0-9]{16,64}$/.test(etk)) {
+        const owner = await env.KV_CLIENT.get('edittoken:' + etk);
+        if (owner === key)
+            editor = true;
+    }
     const token = genToken(); // 64 hex
-    await env.KV_CLIENT.put(SESSION_PREFIX + token, JSON.stringify({ masterKey: key, email: client.email }), {
+    await env.KV_CLIENT.put(SESSION_PREFIX + token, JSON.stringify({ masterKey: key, email: client.email, editor }), {
         expirationTtl: SESSION_TTL,
     });
     // Pas de HttpOnly : le SPA V1 lit ce cookie via document.cookie (getToken()).
@@ -291,7 +319,7 @@ async function authenticate(token, env) {
     }
     if (getEspace(data).isActive !== true)
         return { valid: false, reason: 'Espace désactivé' };
-    return { valid: true, masterKey: session.masterKey, data };
+    return { valid: true, masterKey: session.masterKey, data, editor: session.editor === true };
 }
 /* ──────────────────────────────────────────────────────────────────────────
  * Construction du payload appData (forme V1 "client")
@@ -501,6 +529,8 @@ async function handleConversation(request, env, method, masterKey, data) {
         const content = (body.content || '').toString().trim();
         if (!content)
             return json({ error: 'content is required' }, 400);
+        if (content.length > 4000)
+            return json({ error: 'Message trop long' }, 400);
         const entry = { id: genId(), from: 'client', message: content, date: nowIso(), readByClient: true, readByAdmin: false };
         espace.conversation.push(entry);
         await save(env, masterKey, data);
@@ -542,6 +572,10 @@ async function handleDeliverable(request, env, masterKey, data, id) {
     const liv = container.livrables.find((l) => l.id === id);
     if (!liv)
         return json({ error: 'Livrable introuvable' }, 404);
+    // Une décision est définitive : on ne revient pas sur un livrable déjà traité
+    // (une révision donne lieu à une nouvelle version, donc un nouveau livrable).
+    if (liv.status && liv.status !== 'a_valider')
+        return json({ error: 'Ce livrable a déjà été traité' }, 409);
     liv.status = decision;
     liv.clientComment = (body.comment || '').toString().substring(0, 1000);
     liv.validatedAt = nowIso();
@@ -654,7 +688,8 @@ async function handleTaskCreate(request, env, masterKey, data) {
     return json(task, 201);
 }
 const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments'];
-async function handleTaskUpdate(request, env, masterKey, data, taskId) {
+const TASK_STATUSES = ['todo', 'in_progress', 'review', 'done'];
+async function handleTaskUpdate(request, env, masterKey, data, taskId, editor) {
     const body = await readJson(request);
     const espace = getEspace(data);
     // chercher la tâche dans le projet indiqué, sinon dans tous les domaines à tâches
@@ -662,6 +697,16 @@ async function handleTaskUpdate(request, env, masterKey, data, taskId) {
     if (!found)
         return json({ error: 'Task not found' }, 404);
     const task = found.task;
+    if ('status' in body && TASK_STATUSES.indexOf(body.status) === -1)
+        return json({ error: 'Statut invalide' }, 400);
+    // Le temps passé est une donnée du studio : modifiable seulement en mode édition.
+    if (!editor)
+        delete body.timeSpentMinutes;
+    if ('attachments' in body) {
+        body.attachments = Array.isArray(body.attachments)
+            ? body.attachments.slice(0, 10).map((a) => ({ name: String((a && a.name) || '').slice(0, 120), fileKey: String((a && a.fileKey) || '').slice(0, 300) })).filter((a) => a.fileKey)
+            : [];
+    }
     TASK_ALLOWED.forEach((k) => { if (k in body)
         task[k] = body[k]; });
     if (body.properties && typeof body.properties === 'object') {
@@ -763,6 +808,24 @@ function guessType(name) {
 function sanitizeFolder(s) {
     return (s || '').toString().normalize('NFC').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
 }
+const MAX_UPLOAD_BYTES = 30 * 1024 * 1024; // 30 Mo par fichier
+function sanitizeFileName(s) {
+    const base = ((s || '').toString().normalize('NFC').split(/[\/\\]/).pop() || '');
+    const clean = base.replace(/[\u0000-\u001f\u007f:*?"<>|]/g, '').replace(/\.{2,}/g, '.').replace(/\s+/g, ' ').trim().slice(0, 120);
+    return (clean === '' || clean === '.') ? '' : clean;
+}
+async function uniqueR2Key(env, prefix, name) {
+    const dot = name.lastIndexOf('.');
+    const stem = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot) : '';
+    let candidate = name;
+    for (let i = 2; i <= 50; i++) {
+        if (!(await env.R2_FILES.head(prefix + candidate)))
+            return { key: prefix + candidate, name: candidate };
+        candidate = `${stem} (${i})${ext}`;
+    }
+    return { key: prefix + candidate, name: candidate };
+}
 function foldersFor(container, files) {
     const set = {};
     if (container && Array.isArray(container.folders))
@@ -854,19 +917,39 @@ async function handleFileUpload(request, env, masterKey, data) {
     if (!container || !folder)
         return json({ error: 'Project not found' }, 404);
     const sub = sanitizeFolder(form.get('folder') || '');
-    const key = `${masterKey}/${folder}/${sub ? sub + '/' : ''}${file.name}`;
+    const safeName = sanitizeFileName(file.name);
+    if (!safeName)
+        return json({ error: 'Nom de fichier invalide' }, 400);
+    if (typeof file.size === 'number' && file.size > MAX_UPLOAD_BYTES)
+        return json({ error: 'Fichier trop lourd (30 Mo maximum)' }, 413);
+    const { key, name } = await uniqueR2Key(env, `${masterKey}/${folder}/${sub ? sub + '/' : ''}`, safeName);
     await env.R2_FILES.put(key, file.stream(), {
-        httpMetadata: { contentType: file.type || guessType(file.name) },
+        httpMetadata: { contentType: file.type || guessType(name) },
         customMetadata: { source: 'client', category: 'document' },
     });
-    return json({ key, name: file.name, folder: sub, type: file.type || guessType(file.name), size: file.size, source: 'client' }, 201);
+    return json({ key, name, folder: sub, type: file.type || guessType(name), size: file.size, source: 'client' }, 201);
+}
+function allLockedKeys(esp) {
+    const out = [];
+    ['partenaireCreative', 'siteWeb', 'identiteVisuelle'].forEach((k) => {
+        const o = getDomainObj(esp, k);
+        if (o && Array.isArray(o.lockedKeys))
+            out.push(...o.lockedKeys);
+    });
+    const sd = esp.supportsDeCom && esp.supportsDeCom[0];
+    if (sd)
+        for (const pid of Object.keys(sd)) {
+            const o = getSupportObj(esp, pid);
+            if (o && Array.isArray(o.lockedKeys))
+                out.push(...o.lockedKeys);
+        }
+    return out;
 }
 async function handleClientFileDelete(_request, env, masterKey, data, url) {
     const key = url.searchParams.get('key') || '';
     if (!key || key.includes('..') || !key.startsWith(masterKey + '/'))
         return json({ error: 'Requête invalide' }, 400);
-    const { container } = resolveProject(getEspace(data), (url.searchParams.get('projectId') || '').toString());
-    if (container && Array.isArray(container.lockedKeys) && container.lockedKeys.indexOf(key) !== -1)
+    if (allLockedKeys(getEspace(data)).indexOf(key) !== -1)
         return json({ error: 'Ce fichier est verrouillé' }, 403);
     const obj = await env.R2_FILES.head(key);
     if (!obj)
@@ -885,7 +968,7 @@ async function handleFileDownload(env, masterKey, key) {
     const headers = new Headers();
     object.writeHttpMetadata(headers);
     headers.set('etag', object.httpEtag);
-    headers.set('Content-Disposition', `attachment; filename="${(key.split('/').pop() || 'document')}"`);
+    headers.set('Content-Disposition', `attachment; filename="${(key.split('/').pop() || 'document').replace(/["\r\n\\]/g, '')}"`);
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Cache-Control', 'private, max-age=3600');
     return new Response(object.body, { headers });

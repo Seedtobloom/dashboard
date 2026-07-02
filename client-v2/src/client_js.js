@@ -5573,8 +5573,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           return;
         }
         if (_isAdminEdit) {
-          // Mode edition : on l'active directement (l'enregistrement reste protege
-          // par la session admin cote serveur, un client ne peut pas sauvegarder).
+          // Mode edition : l'interface s'active tout de suite, et on deverrouille
+          // la session cote serveur avec le code ?etk=… (sans lui, les
+          // enregistrements sensibles sont refuses en 403).
+          var etkm = window.location.search.match(/[?&]etk=([a-f0-9]{16,64})/);
+          if (etkm && API_BASE) {
+            fetch(API_BASE + '/edit-unlock', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ etk: etkm[1] }) })
+              .then(function(r){ if (!r.ok) toast('Code d’édition invalide ou expiré — les enregistrements seront refusés.'); })
+              .catch(function(){});
+          }
           _canEdit = true;
           renderApp(data);
           if (appData && appData.projects && appData.projects.length) {

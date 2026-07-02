@@ -6007,8 +6007,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           return;
         }
         if (_isAdminEdit) {
-          // Mode edition : on l'active directement (l'enregistrement reste protege
-          // par la session admin cote serveur, un client ne peut pas sauvegarder).
+          // Mode edition : l'interface s'active tout de suite, et on deverrouille
+          // la session cote serveur avec le code ?etk=… (sans lui, les
+          // enregistrements sensibles sont refuses en 403).
+          var etkm = window.location.search.match(/[?&]etk=([a-f0-9]{16,64})/);
+          if (etkm && API_BASE) {
+            fetch(API_BASE + '/edit-unlock', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ etk: etkm[1] }) })
+              .then(function(r){ if (!r.ok) toast('Code d’édition invalide ou expiré, les enregistrements seront refusés.'); })
+              .catch(function(){});
+          }
           _canEdit = true;
           renderApp(data);
           if (appData && appData.projects && appData.projects.length) {
@@ -6052,7 +6059,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var email=((em&&em.value)||'').trim(), key=((kk&&kk.value)||'').trim();
     if(!email||!key){ if(er){er.textContent='Renseignez les deux champs.';er.style.display='block';} return; }
     if(bt){bt.disabled=true;bt.textContent='Connexion...';}
-    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,key:key})})
+    var etkm=window.location.search.match(/[?&]etk=([a-f0-9]{16,64})/); var etk=etkm?etkm[1]:'';
+    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,key:key,etk:etk})})
       .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
       .then(function(res){ if(res.ok){ location.reload(); return; } if(er){er.textContent=(res.d&&res.d.error)||'Identifiants invalides';er.style.display='block';} if(bt){bt.disabled=false;bt.textContent='Acceder a mon espace';} })
       .catch(function(){ if(er){er.textContent='Erreur reseau';er.style.display='block';} if(bt){bt.disabled=false;bt.textContent='Acceder a mon espace';} });
