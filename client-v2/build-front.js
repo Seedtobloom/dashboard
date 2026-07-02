@@ -42,9 +42,11 @@ const guardBefore = 'if (!TOKEN || !API_BASE) { showError(); return; }';
 must(js.indexOf(guardBefore) !== -1, 'guard showError');
 js = js.replace(guardBefore, 'if (!TOKEN || !API_BASE) { showLogin(); return; }');
 
-// Toute erreur de chargement initial -> on propose le login plutôt que "lien invalide"
-must(js.indexOf('.catch(showError)') !== -1, 'catch showError');
-js = js.split('.catch(showError)').join('.catch(showLogin)');
+// Erreur de chargement initial : session refusée (401/403) -> login ;
+// erreur réseau/serveur -> écran « Réessayer » (pas de faux « lien invalide »)
+const catchSrc = ".catch(function(e){ showError(e && e.message === 'revoked' ? 'revoked' : ''); });";
+must(js.indexOf(catchSrc) !== -1, 'catch showError');
+js = js.replace(catchSrc, ".catch(function(e){ if (e && e.message === 'revoked') { showLogin(); } else { showError(''); } });");
 
 // ── Chat par projet (onglet "Messages") ──
 // 1) onglet supplémentaire dans la vue partenaire

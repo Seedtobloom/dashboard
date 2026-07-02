@@ -543,7 +543,8 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'board', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [];
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'board', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40;
+  function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#f2ebff', '#5e3fa0'], ['#eaf1fb', '#35608f'], ['#f6ecd5', '#9c6f18'], ['#eaf1e6', '#4f6a46'], ['#f7ece7', '#a23c28'], ['#efe7d7', '#6b533b']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
   function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
@@ -819,7 +820,11 @@
           (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Dépose une tâche ici</div>') +
         '</div>';
       }).join('') + '</div>';
-      var doneView = done.length ? done.slice().reverse().slice(0, 40).map(mtCard).join('') : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
+      var doneRev = done.slice().reverse();
+      var doneShown = doneRev.slice(0, MT_DONE_LIMIT);
+      var doneView = done.length
+        ? doneShown.map(mtCard).join('') + (doneRev.length > MT_DONE_LIMIT ? '<div style="text-align:center;margin-top:6px"><button class="btn btn--outline btn--sm" onclick="ADM.mtMoreDone()">Voir plus (' + (doneRev.length - MT_DONE_LIMIT) + ' restantes)</button></div>' : '')
+        : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
       var archSorted = archived.slice().sort(function (a, b) { return String(b.completedAt || b.dueDate || '').localeCompare(String(a.completedAt || a.dueDate || '')); });
       var archView = archived.length ? archSorted.map(mtCard).join('') : '<div class="empty">Aucune tâche archivée. Archivez une tâche terminée pour la ranger ici.</div>';
       var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
@@ -1098,6 +1103,14 @@
   function monthLbl(k) { var p = k.split('-'); var dd = new Date(p[0], p[1] - 1, 1); return dd.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') + ' ' + String(p[0]).slice(2); }
   var KPI_TAB = 'evol';
   function kpiSetTab(v) { KPI_TAB = v; if (KPI_D) renderKpiBody(KPI_D); }
+  function kpiExport() {
+    var byClient = (KPI_D && KPI_D.byClient) || [];
+    if (!byClient.length) { toast('Rien à exporter'); return; }
+    var rows = [['Client', 'Tâches réalisées', 'Temps (h)', 'Tâches en cours']];
+    byClient.forEach(function (c) { rows.push([c.client || '', c.tasksDone || 0, (c.minutes / 60).toFixed(2), c.openTasks || 0]); });
+    csvDownload('seedtobloom-kpi-clients.csv', rows);
+    toast('Export CSV téléchargé');
+  }
   var KPI_D = null;
   function renderKpi() {
     setMain(topbar('KPI partenaire créative') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -1125,7 +1138,7 @@
     }).join('') + '</div>';
     var body;
     if (KPI_TAB === 'clients') {
-      body = '<div class="card"><h3>Par client</h3><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>';
+      body = '<div class="card"><div class="between mb"><h3 style="margin:0">Par client</h3><button class="btn btn--outline btn--sm" onclick="ADM.kpiExport()">Exporter en CSV</button></div><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>';
     } else if (KPI_TAB === 'forfaits') {
       body = '<div class="card"><h3>Forfaits du mois</h3>' + forf + '</div>';
     } else {
@@ -1137,10 +1150,30 @@
   }
 
   /* ── Réalisé (historique daté) ── */
+  var DONE_LIST = [];
+  function csvCell(v) { v = String(v == null ? '' : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function csvDownload(name, rows) {
+    var csv = '﻿' + rows.map(function (r) { return r.map(csvCell).join(';'); }).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  }
+  function doneExport() {
+    if (!DONE_LIST.length) { toast('Rien à exporter'); return; }
+    var rows = [['Date', 'Client', 'Projet', 'Type', 'Titre', 'Temps (h)']];
+    DONE_LIST.forEach(function (x) {
+      rows.push([(x.completedAt || '').slice(0, 10), x.client || '', x.projectLabel || '', x.kind || '', x.title || '', x.timeSpentMinutes ? (x.timeSpentMinutes / 60).toFixed(2) : '']);
+    });
+    csvDownload('seedtobloom-realise.csv', rows);
+    toast('Export CSV téléchargé');
+  }
   function renderDone() {
     setMain(topbar('Réalisé') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/done').then(function (r) { return r.json(); }).then(function (d) {
       var list = d.completed || [];
+      DONE_LIST = list;
       var groups = {}, order = [];
       list.forEach(function (x) {
         var dt = new Date(x.completedAt);
@@ -1167,7 +1200,8 @@
         }).join('');
         return '<div class="card"><h3>' + monthLabel(k) + ' <span class="micro" style="color:var(--muted)">· ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + (totalMin ? ' · ' + (totalMin / 60).toFixed(1).replace('.0', '') + ' h' : '') + '</span></h3>' + rows + '</div>';
       }).join('');
-      setMain(topbar('Réalisé', '', 'L\'historique daté de tout ce qui a été terminé') + '<div class="wrap">' + hero + (html || '<div class="empty">Rien de terminé pour le moment. Marquez des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
+      var exportBtn = list.length ? '<button class="btn btn--outline btn--sm" onclick="ADM.doneExport()">Exporter en CSV</button>' : '';
+      setMain(topbar('Réalisé', exportBtn, 'L\'historique daté de tout ce qui a été terminé') + '<div class="wrap">' + hero + (html || '<div class="empty">Rien de terminé pour le moment. Marque des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
     }).catch(showError);
   }
 
@@ -1926,8 +1960,8 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, avisSetTab: avisSetTab, remind: remind,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
