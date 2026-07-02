@@ -38,7 +38,7 @@
     var sep = '<hr style="border:none;border-top:1px solid #ece6da;margin:18px 0">';
     var dueStr = (t.dueDate||'').slice(0,10);
 
-    var CLIENTBRIEF_COL = { 'Brief en cours':'#F3D9A0', 'Brief terminé':'#DEC8F7' };
+    var CLIENTBRIEF_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };
     var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
     var TYPE_COL = {};
     var props = t.properties || {};
@@ -60,7 +60,7 @@
     var propertiesHtml =
       dRow(cpIcon('check-circle', 15), 'État', dStatusPill(pid, t)) +
       dRow(cpIcon('calendar', 15), 'Échéance', '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
-      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', props.p_clientbrief||'', ['Brief en cours','Brief terminé'], CLIENTBRIEF_COL, 'À commencer')) +
+      dRow(cpIcon('file-text', 15), 'Statut du brief', dPropPill(pid, t, 'p_clientbrief', (props.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : (props.p_clientbrief || '')), ['Brief en cours','Brief prêt'], CLIENTBRIEF_COL, 'À commencer')) +
       dRow(cpIcon('chart', 15), 'Avancement', (function(){
         // Statut de travail du studio : lecture seule pour le client
         // (modifiable uniquement en mode édition admin).
