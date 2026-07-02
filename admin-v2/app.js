@@ -431,7 +431,10 @@
           '</div>' : '') +
         '</div>';
       }
-      var focusItems = late.concat(tdy);
+      // Indépendant de la vue (par date / par client) et du filtre : sinon le
+      // rendu plantait en vue « Par client » (late/tdy non définies) et les
+      // onglets ne répondaient plus.
+      var focusItems = mine.filter(function (x) { return x._d <= 0; }).sort(function (a, b) { return a._d - b._d; });
       var focusBand = focusItems.length
         ? '<div class="focusband"><div class="focusband__h">Focus du jour<span class="focusband__c">' + focusItems.length + '</span></div>' + focusItems.map(focusRow).join('') + '</div>'
         : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, tu es à jour.</div>';
@@ -1255,6 +1258,17 @@
       setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
     }).catch(showError);
   }
+  // Présence : « En ligne » si activité < 5 min (le poll client entretient
+  // l'horodatage), sinon dernière connexion en relatif.
+  function presence(lastSeen) {
+    if (!lastSeen) return { online: false, label: 'Jamais connecté' };
+    var diff = Math.floor(Date.now() / 1000) - lastSeen;
+    if (diff < 360) return { online: true, label: 'En ligne' };
+    if (diff < 3600) return { online: false, label: 'Vu il y a ' + Math.max(1, Math.round(diff / 60)) + ' min' };
+    if (diff < 86400) return { online: false, label: 'Vu il y a ' + Math.round(diff / 3600) + ' h' };
+    if (diff < 7 * 86400) return { online: false, label: 'Vu il y a ' + Math.round(diff / 86400) + ' j' };
+    return { online: false, label: 'Vu le ' + new Date(lastSeen * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) };
+  }
   function clientName(c) { return ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key; }
   function clientInitials(c) {
     var src = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || '?';
@@ -1271,9 +1285,9 @@
       '<div class="ctile__top">' +
         '<div class="ctile__av">' + esc(clientInitials(c)) + '</div>' +
         '<div class="ctile__id"><div class="ctile__name">' + esc(nm) + '</div>' + (co ? '<div class="ctile__co">' + esc(co) + '</div>' : '') + '</div>' +
-        '<span class="ctile__dot' + (active ? ' on' : '') + '" title="' + (active ? 'Espace actif' : 'Espace inactif') + '"></span>' +
+        (function () { var pr = presence(c.lastSeen); return '<span class="ctile__dot' + (pr.online ? ' on' : '') + '" title="' + pr.label + '"></span>'; })() +
       '</div>' +
-      (c.email ? '<div class="ctile__meta">' + esc(c.email) + '</div>' : '') +
+      (function () { var pr = presence(c.lastSeen); return '<div class="ctile__meta">' + (c.email ? esc(c.email) + ' · ' : '') + '<span style="color:' + (pr.online ? 'var(--green)' : 'var(--muted)') + (pr.online ? ';font-weight:600' : '') + '">' + pr.label + '</span></div>'; })() +
       '<div class="ctile__foot">' +
         (active ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') +
         (unread > 0 ? '<span class="pill pill--a_valider">' + unread + ' message' + (unread > 1 ? 's' : '') + '</span>' : '') +
@@ -1351,7 +1365,7 @@
     var tabsHtml = tabs.map(function (t) { return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + (t[3] ? '' : ' title="offre inactive" style="opacity:0.55"') + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>'; }).join('');
     var ml = (CUR.meetingLink || '').trim();
     var visioBtn = ml ? '<a class="btn btn--dark btn--sm" href="' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Ouvrir la salle de visioconférence">' + admIcon('video') + ' Rejoindre la visio</a>' : '';
-    setMain(topbar(nm, visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
+    setMain(topbar(nm, visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>', presence(CUR.lastSeen).label) +
       '<div class="wrap">' + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }

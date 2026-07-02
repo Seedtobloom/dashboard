@@ -126,6 +126,11 @@ async function handleClientApi(
 ): Promise<Response> {
   // GET racine -> payload complet (appData V1)
   if (method === 'GET' && (sub === '' || sub === '/')) {
+    // Présence : horodate la dernière activité du client (throttlé à 5 min
+    // pour limiter les écritures KV) ; le poll de 30 s entretient la mesure.
+    const esp0 = getEspace(data);
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!esp0.lastSeen || nowSec - esp0.lastSeen > 300) { esp0.lastSeen = nowSec; await save(env, masterKey, data); }
     return json(await buildAppData(env, masterKey, data));
   }
 
