@@ -2869,7 +2869,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
           '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>' +
         '</div>';
-        var progVal = props.p_brief!=null ? props.p_brief : '';
+        // Tâche non démarrée -> avancement « Pas commencé » (jamais figé « En cours »)
+        var progVal = (t.status === 'todo') ? '' : (props.p_brief != null ? props.p_brief : '');
         var progOpts = ['En attente du brief', 'En cours', 'À retravailler', 'Besoin d\'une info', 'Terminé'];
         // Avancement = statut de travail du studio : lecture seule pour le
         // client (modifiable seulement en mode édition admin).
