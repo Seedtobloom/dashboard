@@ -1724,7 +1724,8 @@
       return '<tr><td><strong>' + esc(s.title) + '</strong>' + (s.description ? '<div class="muted" style="font-size:13px">' + esc(s.description) + '</div>' : '') + '</td>' +
         '<td>' + fmtDate(s.date) + '</td>' +
         '<td><select class="inp" style="width:auto" onchange="ADM.stepStatus(\'' + d.id + '\',\'' + s.id + '\',this.value)">' + opts + '</select></td>' +
-        '<td><button class="btn btn--danger btn--sm" onclick="ADM.stepDelete(\'' + d.id + '\',\'' + s.id + '\')">Suppr.</button></td></tr>';
+        '<td><div class="row" style="gap:5px;flex-wrap:nowrap"><button class="pbtn" onclick="ADM.stepEditOpen(\'' + d.id + '\',\'' + s.id + '\')" title="Modifier l\'étape">Modifier</button>' +
+        '<button class="btn btn--danger btn--sm" onclick="ADM.stepDelete(\'' + d.id + '\',\'' + s.id + '\')">Suppr.</button></div></td></tr>';
     }).join('') : '<tr><td colspan="4" class="empty">Aucune étape pour l\'instant. Ajoutez la première ci-dessous, elle s\'affichera dans l\'espace du client.</td></tr>';
     return '<div class="card"><h3>Étapes du projet</h3>' +
       '<div class="micro mb">Les étapes jalonnent le projet et sont visibles par le client (par exemple « Brief », « Maquettes », « Livraison »).</div>' +
@@ -1735,6 +1736,32 @@
       '<input class="inp" id="st-action-' + d.id + '" placeholder="Action attendue du client (optionnel)" style="flex:1;min-width:150px"><button class="btn btn--dark btn--sm" onclick="ADM.stepAdd(\'' + d.id + '\')">+ Ajouter l\'étape</button></div></div></div>';
   }
   function stepAdd(pid) { var t = el('st-title-' + pid).value.trim(); if (!t) return; jpost('/api/clients/' + CURKEY + '/steps', { projectId: pid, title: t, date: el('st-date-' + pid).value || null, clientAction: el('st-action-' + pid).value || '', status: 'upcoming' }).then(function (r) { if (r.ok) { toast('Étape ajoutée'); loadClient(); } }); }
+  function stepEditOpen(pid, id) {
+    var d = findDomain(pid); if (!d) return;
+    var st = (d.content.suivi || []).filter(function (x) { return x.id === id; })[0]; if (!st) return;
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
+      '<div class="admconfirm__title">Modifier l\'étape</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
+        '<div class="field"><label>Intitulé</label><input class="inp" id="ste-title" value="' + esc(st.title || '') + '"></div>' +
+        '<div class="field"><label>Date</label><input class="inp" id="ste-date" type="date" value="' + esc((st.date || '').slice(0, 10)) + '" style="width:auto"></div>' +
+        '<div class="field"><label>Description (visible par le client)</label><textarea class="inp" id="ste-desc" style="min-height:64px;resize:vertical">' + esc(st.description || '') + '</textarea></div>' +
+        '<div class="field"><label>Action attendue du client</label><input class="inp" id="ste-action" value="' + esc(st.clientAction || '') + '"></div>' +
+      '</div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var title = (el('ste-title').value || '').trim(); if (!title) { toast('Intitulé requis'); return; }
+      jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, title: title, date: el('ste-date').value || null, description: (el('ste-desc').value || '').trim(), clientAction: (el('ste-action').value || '').trim() }, 'PATCH')
+        .then(function (r) { if (r.ok) { close(); toast('Étape modifiée'); loadClient(); } else toast('Erreur'); });
+    };
+    document.body.appendChild(ov);
+    var f = el('ste-title'); if (f) f.focus();
+  }
   function stepStatus(pid, id, st) { jpost('/api/clients/' + CURKEY + '/steps/' + id, { projectId: pid, status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut mis à jour'); loadClient(); } }); }
   function stepDelete(pid, id) {
     admConfirm({ title: 'Supprimer cette étape ?', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
@@ -1963,7 +1990,7 @@
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
-    stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete,
+    stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey,
   };
