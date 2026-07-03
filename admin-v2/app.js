@@ -676,10 +676,13 @@
         var badgeHtml = isReview
           ? '<span class="pill" style="background:#fbf0d8;color:#8a6f2e">Révision à faire</span>'
           : pill(isStep ? 'waiting_client' : 'a_valider', isStep ? 'Étape' : 'Livrable');
-        var linkBtn = (isReview && x.reviewLink) ? '<a class="pbtn" href="' + esc(/^https?:\/\//i.test(x.reviewLink) ? x.reviewLink : 'https://' + x.reviewLink) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Voir le lien</a>' : '';
+        var reviewUrl = (isReview && x.reviewLink) ? (/^https?:\/\//i.test(x.reviewLink) ? x.reviewLink : 'https://' + x.reviewLink) : '';
+        var linkBtn = reviewUrl ? '<a class="pbtn" href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Ouvrir</a>' : '';
+        // Lien affiché en clair (cliquable) pour le retrouver d'un coup d'œil.
+        var linkLine = reviewUrl ? '<div style="margin-top:4px;font-size:12.5px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.reviewLink) + '</a></div>' : '';
         return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
           '<div class="prow__date">' + (refDate ? '<strong>' + fmtDate(refDate) + '</strong>' : '<strong>—</strong>') + '<span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div></div>' +
+          '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div>' + linkLine + '</div>' +
           '<div class="prow__act">' + badgeHtml + linkBtn + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
       }
       var waitHtml = waitAll.map(waitRow).join('');
