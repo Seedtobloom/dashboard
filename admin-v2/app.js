@@ -220,12 +220,13 @@
   }
   // Notifications persistantes : tâches créées par les clients, tant qu'elles ne
   // sont pas traitées (bouton « Vu » ou tâche passée au-delà de « à faire »).
-  var NEW_TASKS = [], NOTIF_OPEN = false;
+  var NEW_TASKS = [], REWORK_TASKS = [], NOTIF_OPEN = false;
+  function notifCount() { return NEW_TASKS.length + REWORK_TASKS.length; }
   function bell() { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>'; }
   function paintNotif() {
     var fab = el('notif-fab'), panel = el('notif-panel');
     if (!fab || !panel) return;
-    var n = NEW_TASKS.length;
+    var n = notifCount();
     if (n === 0) { fab.style.display = 'none'; panel.style.display = 'none'; NOTIF_OPEN = false; }
     else {
       fab.style.display = 'flex';
@@ -235,6 +236,20 @@
     else panel.style.display = 'none';
   }
   function notifPanelHtml() {
+    var reworkRows = REWORK_TASKS.map(function (t) {
+      var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+      return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d);background:#f3f6f0">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
+          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
+          (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
+        '</div>' +
+        '<div class="micro" style="color:#3f5a37;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">↩ Retours reçus · à retravailler de ton côté</div>' +
+        '<div class="micro" style="color:var(--glycine-900);text-transform:none;letter-spacing:0;margin-top:2px">' + esc(t.client) + '</div>' +
+        '<div style="display:flex;gap:7px;margin-top:9px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.notifAckRework(\'' + t.key + '\',\'' + t.id + '\')">Vu</button>' +
+        '</div></div>';
+    }).join('');
     var rows = NEW_TASKS.map(function (t) {
       var when = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       var content = (t.content || '').trim();
@@ -253,9 +268,9 @@
         '</div></div>';
     }).join('');
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border-bottom:1px solid var(--bone-d)">' +
-      '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">Nouvelles tâches</strong>' +
+      '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">À traiter</strong>' +
       '<button onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">×</button></div>' +
-      '<div style="max-height:60vh;overflow-y:auto">' + rows + '</div>';
+      '<div style="max-height:60vh;overflow-y:auto">' + reworkRows + rows + '</div>';
   }
   function notifToggle() { NOTIF_OPEN = !NOTIF_OPEN; paintNotif(); }
   function notifOpen(key, id) { NOTIF_OPEN = false; paintNotif(); openClient(key); }
@@ -263,6 +278,11 @@
     NEW_TASKS = NEW_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
     paintNotif();
     api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', clientNotif: false }) }).catch(function () {});
+  }
+  function notifAckRework(key, id) {
+    REWORK_TASKS = REWORK_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
+    paintNotif();
+    api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', needsRework: false }) }).catch(function () {});
   }
   function navTimerHtml() {
     var run = MT_TIMER || PT_TIMER;
@@ -278,7 +298,7 @@
   function refreshNavTimer() { var s = el('nav-timer-slot'); if (s) s.innerHTML = navTimerHtml(); }
   function navTimerPause() { if (MT_TIMER) mtPause(MT_TIMER.id, true); else if (PT_TIMER) ptPause(PT_TIMER.id, true); refreshNavTimer(); renderMain(); }
   var UNREAD = 0, REV_N = 0, NOTIF_N = 0;
-  function refreshTabTitle() { NOTIF_N = UNREAD + REV_N + (NEW_TASKS ? NEW_TASKS.length : 0); applyTabTitle(); }
+  function refreshTabTitle() { NOTIF_N = UNREAD + REV_N + (typeof notifCount === 'function' ? notifCount() : 0); applyTabTitle(); }
   function refreshUnread() {
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
@@ -304,6 +324,7 @@
       var b = el('nav-unread-priorities');
       if (b) b.innerHTML = BADGE_CACHE.priorities;
       NEW_TASKS = d.newTasks || [];
+      REWORK_TASKS = d.reworkTasks || [];
       paintNotif();
       refreshTabTitle();
     }).catch(function () {});
@@ -581,7 +602,7 @@
         var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow">' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioBrief(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
@@ -638,7 +659,7 @@
         var overdue = x._d < 0;
         var whenLight = overdue ? '#efb2a2' : (x._d === 0 ? '#eccd93' : 'rgba(242,229,194,0.62)');
         return '<div class="focusrow">' +
-          '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + '</div>' +
+          '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#dff0d5;background:rgba(63,90,55,0.55);padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus</span>' : '') + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioBrief(x, true) + '</div>' +
           (x.id ? '<div class="prow__act" style="flex-shrink:0">' + prioTimer(x, true) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
@@ -2384,7 +2405,7 @@
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSendReview: prioSendReview, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
-    notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck,
+    notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
