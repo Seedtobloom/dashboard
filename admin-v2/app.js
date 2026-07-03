@@ -1499,7 +1499,16 @@
       if (!link) { toast('Ajoute un lien'); return; }
       close();
       jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true }, 'PATCH')
-        .then(function (r) { if (r.ok) { toast('Lien envoyé au client ✓'); renderPriorities(); } else toast('Erreur'); });
+        .then(function (r) {
+          if (!r.ok) { toast('Erreur'); return; }
+          toast('Lien envoyé au client ✓');
+          // MAJ optimiste locale : KV peut renvoyer l'ancien statut pendant
+          // ~1 s, ce qui donnait l'impression que rien ne bougeait. On bascule
+          // directement la tâche en « Attente client » sans re-fetch.
+          var it = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.project === 'partner'; })[0] : null;
+          if (it) { it.status = 'review'; it.reviewLink = link; it.reviewSentAt = new Date().toISOString(); PRIO_TAB = 'waiting'; renderPrioBody(PRIO_D); }
+          else { PRIO_TAB = 'waiting'; renderPriorities(); }
+        });
     };
     ov.querySelector('[data-yes]').onclick = send;
     document.body.appendChild(ov);
