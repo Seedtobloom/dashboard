@@ -563,13 +563,27 @@
         var att = x.attCount ? '<div style="margin-top:7px;font-size:12px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + ' — ouvrir la fiche client pour le' + (x.attCount > 1 ? 's' : '') + ' télécharger</div>' : '';
         return '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:' + sumCol + '">Voir la demande</summary>' + body + att + '</details>';
       }
+      // Chrono par tâche partenaire, utilisable directement depuis Priorités
+      // (Démarrer/Pause), avec le temps déjà passé. Le temps est aussi visible
+      // par le client sur son espace.
+      function prioTimer(x, dark) {
+        if (x.project !== 'partner' || !x.id) return '';
+        var run = PT_TIMER && PT_TIMER.id === x.id;
+        var sec = run ? (PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000) : (x.timeSpentSeconds || 0);
+        var col = run ? 'var(--green)' : (dark ? 'rgba(242,229,194,0.85)' : 'var(--terre)');
+        var clock = '<span id="pt-timer-' + x.id + '" title="Temps passé sur cette tâche" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:' + col + ';min-width:54px;text-align:right">' + mtClock(sec) + '</span>';
+        var btn = run
+          ? '<button class="pbtn" style="color:var(--orange)" title="Mettre le chrono en pause" onclick="ADM.ptPause(\'' + x.id + '\')">⏸</button>'
+          : '<button class="pbtn" title="Démarrer le chrono" onclick="ADM.ptStart(\'' + x.id + '\',\'' + x.key + '\')">▶</button>';
+        return '<span style="display:inline-flex;align-items:center;gap:5px">' + clock + btn + '</span>';
+      }
       function prow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow">' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioBrief(x, false) + '</div>' +
-          (x.id ? '<div class="prow__act">' +
+          (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Ajouter le livrable à cette tâche" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
@@ -626,7 +640,7 @@
         return '<div class="focusrow">' +
           '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioBrief(x, true) + '</div>' +
-          (x.id ? '<div class="prow__act" style="flex-shrink:0">' +
+          (x.id ? '<div class="prow__act" style="flex-shrink:0">' + prioTimer(x, true) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Ajouter le livrable" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             '<button class="pbtn pbtn--ok" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
@@ -683,7 +697,7 @@
         return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
           '<div class="prow__date">' + (refDate ? '<strong>' + fmtDate(refDate) + '</strong>' : '<strong>—</strong>') + '<span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div>' + linkLine + '</div>' +
-          '<div class="prow__act">' + badgeHtml + linkBtn + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
+          '<div class="prow__act">' + (isReview ? prioTimer(x, false) : '') + badgeHtml + linkBtn + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
       }
       var waitHtml = waitAll.map(waitRow).join('');
 
@@ -858,11 +872,13 @@
   function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; baseTitle(); document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
   function tabTimerOff() { applyTabTitle(); }
   function ptBase(t) { return t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60; }
-  function ptStart(id) {
+  function ptStart(id, key) {
     if (PT_TIMER && PT_TIMER.id !== id) ptPause(PT_TIMER.id, true);
     if (MT_TIMER) mtPause(MT_TIMER.id, true);
     var t = ptFind(id); if (!t) return;
-    PT_TIMER = { id: id, startedAt: Date.now(), base: ptBase(t), title: t.title };
+    // key : client concerné (depuis Priorités, tous clients confondus) ;
+    // sinon le client actuellement ouvert.
+    PT_TIMER = { id: id, key: key || CURKEY, startedAt: Date.now(), base: ptBase(t), title: t.title };
     if (PT_INT) clearInterval(PT_INT);
     tabTimerOn(mtClock(PT_TIMER.base), t.title);
     refreshNavTimer();
@@ -879,6 +895,7 @@
   function ptPause(id, silent) {
     if (!PT_TIMER || PT_TIMER.id !== id) return;
     var startedAt = PT_TIMER.startedAt;
+    var PT_TIMER_KEY = PT_TIMER.key;
     var total = Math.round(PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000);
     if (PT_INT) { clearInterval(PT_INT); PT_INT = null; }
     PT_TIMER = null;
@@ -887,15 +904,23 @@
     // Total mis à jour localement et affiché tout de suite : pas de relecture
     // serveur (KV à cohérence différée => le chrono retombait à zéro).
     var sessStart = new Date(startedAt).toISOString(), sessEnd = new Date().toISOString();
+    var tkey = (PT_TIMER_KEY || CURKEY);
     var local = ptFind(id);
     if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); if (!Array.isArray(local.sessions)) local.sessions = []; local.sessions.push({ start: sessStart, end: sessEnd }); }
+    // Depuis Priorités : reflète le temps sur la ligne + re-render local.
+    var pit = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+    if (pit) pit.timeSpentSeconds = total;
     if (!silent && VIEW === 'client') renderClient();
-    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
+    else if (!silent && VIEW === 'priorities' && PRIO_D) renderPrioBody(PRIO_D);
+    jpost('/api/clients/' + tkey + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function ptFind(id) {
     var d = (CUR && CUR.domains || []).find(function (x) { return x.id === 'partner'; });
     var ts = d && d.content && Array.isArray(d.content.taches) ? d.content.taches : [];
-    return ts.find(function (x) { return x.id === id; });
+    var found = ts.find(function (x) { return x.id === id; });
+    if (found) return found;
+    // Depuis Priorités : la tâche vit dans PRIO_D.deadlines (avec timeSpentSeconds).
+    return (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
   }
   function mtFmtSession(x) {
     var a = new Date(x.start), b = new Date(x.end);

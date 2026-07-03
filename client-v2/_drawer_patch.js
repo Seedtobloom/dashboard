@@ -76,6 +76,15 @@
         }
         return '<span style="display:inline-block;background:'+(col[s]||'#EFEAF7')+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Mis à jour automatiquement">'+esc(map[s]||s)+'</span>';
       })()) +
+      // Temps passé par Cindy sur la tâche (lecture seule) : la cliente voit le
+      // temps investi. Affiché seulement s'il y a du temps enregistré.
+      (function(){
+        var secs = t.timeSpentSeconds != null ? t.timeSpentSeconds : (t.timeSpentMinutes||0)*60;
+        if (!secs || secs < 60) return '';
+        var h = Math.floor(secs/3600), m = Math.round((secs%3600)/60);
+        var lbl = (h>0 ? h+' h'+(m>0?' '+m+' min':'') : m+' min');
+        return dRow(cpIcon('clock', 15), 'Temps passé' + MK_L, '<span style="display:inline-block;background:#eef1ea;color:#3f5a37;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Temps investi par Cindy sur cette tâche">'+esc(lbl)+'</span>');
+      })() +
       dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
       dRow(cpIcon('zap', 15), 'Priorité' + MK_E, (function(){
         var cur = t.urgency || 'normal';
