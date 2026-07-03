@@ -99,13 +99,15 @@ export default {
 async function handleClientApi(request, env, url, method, masterKey, data, sub, editor) {
     // GET racine -> payload complet (appData V1)
     if (method === 'GET' && (sub === '' || sub === '/')) {
-        // Présence : horodatée dans une clé KV SÉPARÉE (presence:<clé>), jamais
-        // dans le blob de l'espace. Réécrire tout l'espace pour un horodatage
-        // pouvait écraser une écriture concurrente (ex. temps passé côté admin).
-        const nowSec = Math.floor(Date.now() / 1000);
-        const lastP = parseInt((await env.KV_CLIENT.get('presence:' + masterKey)) || '0', 10);
-        if (nowSec - lastP > 120)
-            await env.KV_CLIENT.put('presence:' + masterKey, String(nowSec), { expirationTtl: 60 * 86400 });
+        // Présence : horodatée dans une clé KV SÉPARÉE (presence:<clé>). On ne
+        // compte QUE les vraies visites du client — pas les consultations de
+        // Cindy en mode édition (editor), qui fausseraient le « En ligne ».
+        if (!editor) {
+            const nowSec = Math.floor(Date.now() / 1000);
+            const lastP = parseInt((await env.KV_CLIENT.get('presence:' + masterKey)) || '0', 10);
+            if (nowSec - lastP > 120)
+                await env.KV_CLIENT.put('presence:' + masterKey, String(nowSec), { expirationTtl: 60 * 86400 });
+        }
         return json(await buildAppData(env, masterKey, data));
     }
     // Conversation unifiée (compat) + chat par projet
