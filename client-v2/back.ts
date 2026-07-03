@@ -186,6 +186,8 @@ async function handleClientApi(
   if (t && method === 'DELETE') return handleTaskDelete(request, env, masterKey, data, t[1], url);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/complete$/);
   if (t && method === 'POST') return handleTaskComplete(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tasks\/([a-f0-9]+)\/feedback$/);
+  if (t && method === 'POST') return handleTaskFeedback(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/comments$/);
   if (t && method === 'POST') return handleTaskComment(request, env, masterKey, data, t[1]);
 
@@ -792,6 +794,19 @@ async function handleTaskComplete(_request: Request, env: Env, masterKey: string
   await notifyAdmin(env, `Tâche terminée · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a marqué la tâche <strong>${escHtml(found.task.title || '')}</strong> comme terminée.</p>`);
   return json({ ok: true });
+}
+
+// Le client signale qu'il a fait ses retours de révision : la tâche repasse
+// « en cours » (la balle revient à Cindy) et Cindy est prévenue par e-mail.
+async function handleTaskFeedback(_request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
+  const found = findTask(getEspace(data), taskId, '');
+  if (!found) return json({ error: 'Task not found' }, 404);
+  found.task.status = 'in_progress';
+  found.task.clientFeedbackAt = nowIso();
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Retours faits · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a fait ses retours sur la tâche <strong>${escHtml(found.task.title || '')}</strong>. La balle est dans votre camp.</p>`);
+  return json(found.task);
 }
 
 async function handleTaskComment(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {

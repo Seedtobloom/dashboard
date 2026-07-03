@@ -142,8 +142,11 @@
           var u = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
           return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#fbf3d9;border:1px solid #f0e2b0">'+
             '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#8a6f2e;margin-bottom:6px">À vérifier de votre côté</div>'+
-            '<div style="font-size:14px;color:var(--navy,#1C1205);line-height:1.5;margin-bottom:12px">Cindy vous invite à consulter ce travail et à donner votre retour.</div>'+
-            '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#412F21);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
+            '<div style="font-size:14px;color:var(--navy,#1C1205);line-height:1.5;margin-bottom:12px">Cindy vous invite à consulter ce travail et à donner votre retour. Une fois vos retours transmis (via le lien ou en commentaire), cliquez « J\'ai fait mes retours » pour la prévenir.</div>'+
+            '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
+              '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#412F21);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
+              '<button onclick="cliFeedbackDone(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid var(--terre,#412F21);color:var(--terre,#412F21);cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' J\'ai fait mes retours</button>'+
+            '</div>'+
           '</div>';
         })()
       : '';
@@ -200,6 +203,21 @@
         })
         .catch(function(){ toast('Erreur, réessayez.'); });
     }, { title: 'Retirer ce fichier ?', okLabel: 'Retirer', danger: true });
+  };
+
+  // Le client signale à Cindy qu'il a fait ses retours : la tâche repasse en
+  // cours (côté Cindy), Cindy reçoit un e-mail.
+  window.cliFeedbackDone = function(pid, taskId){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
+    if (!t) return;
+    showConfirm('Cindy sera prévenue que vous avez transmis vos retours. La tâche repassera de son côté.', function(){
+      t.status = 'in_progress';
+      fetch(API_BASE + '/tasks/' + taskId + '/feedback', { method:'POST' })
+        .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+        .then(function(updated){ if (updated && updated.status) t.status = updated.status; toast('Cindy est prévenue ✓'); renderShell(); })
+        .catch(function(){ toast('Erreur, réessayez.'); });
+    }, { title: 'Confirmer vos retours ?', okLabel: 'Oui, prévenir Cindy' });
   };
 
   window.cliEditPartTask = function(pid, taskId){

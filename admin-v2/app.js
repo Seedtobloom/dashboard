@@ -533,15 +533,18 @@
       function whenLabel(n) { return n < 0 ? ((-n) + ' j de retard') : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : ('dans ' + n + ' j'); }
       function whenCol(n) { return n < 0 ? 'var(--red)' : n === 0 ? 'var(--orange)' : 'var(--muted)'; }
 
-      var all = (d.deadlines || []).map(function (x) { x._d = ddiff(x.dueDate); return x; });
-      var mine = all.filter(function (x) { return x.status !== 'waiting_client'; });
+      var all = (d.deadlines || []).map(function (x) { x._d = x.dueDate ? ddiff(x.dueDate) : 99; return x; });
+      // Les tâches « à valider » (review) attendent la révision du client :
+      // elles quittent « À faire » et rejoignent « Attente client ».
+      var reviewWait = all.filter(function (x) { return x.status === 'review'; });
+      var mine = all.filter(function (x) { return x.status !== 'waiting_client' && x.status !== 'review'; });
       var waiting = all.filter(function (x) { return x.status === 'waiting_client'; });
       var pv = d.pendingValidation || [];
 
       var nLate = mine.filter(function (x) { return x._d < 0; }).length;
       var nToday = mine.filter(function (x) { return x._d === 0; }).length;
       var nWeek = mine.filter(function (x) { return x._d > 0 && x._d <= 7; }).length;
-      var nWait = waiting.length + pv.length;
+      var nWait = waiting.length + pv.length + reviewWait.length;
 
       function kpi(cls, n, l, tab) { return '<div class="kpi ' + cls + (n > 0 ? ' is-on' : '') + (tab ? ' kpi--clic' : '') + '"' + (tab ? ' onclick="ADM.prioSetTab(\'' + tab + '\')"' : '') + '><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
       var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard', 'todo') + kpi('kpi--today', nToday, "Aujourd'hui", 'todo') + kpi('kpi--week', nWeek, 'Cette semaine', 'todo') + kpi('kpi--wait', nWait, 'Attente client', 'waiting') + '</div>';
@@ -656,22 +659,28 @@
       }
       // Relances intelligentes : on trie par ancienneté d'attente et on signale ce qui traîne
       var waitAll = waiting.map(function (x) { return { kind: 'step', x: x, since: -ddiff(x.dueDate) }; })
-        .concat(pv.map(function (l) { return { kind: 'dlv', x: l, since: -ddiff(l.createdAt) }; }));
+        .concat(pv.map(function (l) { return { kind: 'dlv', x: l, since: -ddiff(l.createdAt) }; }))
+        .concat(reviewWait.map(function (x) { var rd = x.reviewSentAt || x.dueDate || ''; return { kind: 'review', x: x, since: rd ? -ddiff(rd) : 0 }; }));
       waitAll.sort(function (a, b) { return b.since - a.since; });
       function waitRow(w) {
         var x = w.x, s = w.since;
         var flag = s >= 10 ? '#fbeae5' : (s >= 5 ? '#fbf5e6' : '');
         var ageCol = s >= 10 ? '#b5462f' : (s >= 5 ? '#b8871f' : 'var(--muted)');
         var ageLbl = s > 0 ? ('en attente depuis ' + s + ' j' + (s >= 5 ? ' · à relancer' : '')) : 'tout récent';
-        var refDate = w.kind === 'step' ? x.dueDate : x.createdAt;
+        var isReview = w.kind === 'review';
         var isStep = w.kind === 'step';
-        var title = isStep ? esc(x.title) : (esc(x.name) + (x.taskTitle ? ' <span class="micro">(' + esc(x.taskTitle) + ')</span>' : ''));
-        var kindArg = isStep ? 'step' : 'deliverable';
-        var titleArg = isStep ? jsq(x.title) : jsq(x.name);
+        var refDate = isStep ? x.dueDate : (isReview ? (x.reviewSentAt || x.dueDate) : x.createdAt);
+        var title = (isStep || isReview) ? esc(x.title) : (esc(x.name) + (x.taskTitle ? ' <span class="micro">(' + esc(x.taskTitle) + ')</span>' : ''));
+        var kindArg = isStep ? 'step' : (isReview ? 'review' : 'deliverable');
+        var titleArg = (isStep || isReview) ? jsq(x.title) : jsq(x.name);
+        var badgeHtml = isReview
+          ? '<span class="pill" style="background:#fbf0d8;color:#8a6f2e">Révision à faire</span>'
+          : pill(isStep ? 'waiting_client' : 'a_valider', isStep ? 'Étape' : 'Livrable');
+        var linkBtn = (isReview && x.reviewLink) ? '<a class="pbtn" href="' + esc(/^https?:\/\//i.test(x.reviewLink) ? x.reviewLink : 'https://' + x.reviewLink) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Voir le lien</a>' : '';
         return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
-          '<div class="prow__date"><strong>' + fmtDate(refDate) + '</strong><span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
-          '<div class="prow__act">' + pill(isStep ? 'waiting_client' : 'a_valider', isStep ? 'Étape' : 'Livrable') + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
+          '<div class="prow__date">' + (refDate ? '<strong>' + fmtDate(refDate) + '</strong>' : '<strong>—</strong>') + '<span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
+          '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div></div>' +
+          '<div class="prow__act">' + badgeHtml + linkBtn + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
       }
       var waitHtml = waitAll.map(waitRow).join('');
 
