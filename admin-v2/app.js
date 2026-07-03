@@ -1991,8 +1991,16 @@
         '</div>' + reviewSaved +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">« Envoyer au client » passe l\'avancement en « À valider » et prévient le client par e-mail qu\'il doit vérifier ce lien.</div>' +
         '</div>';
-      return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '">' +
-        header + brief + atts + work + review +
+      // Bandeau « retours reçus » : marqué directement sur la fiche tant que
+      // Cindy ne l'a pas traité (elle peut le lever ici, ou en renvoyant/terminant).
+      var reworkBanner = t.needsRework ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#eef4ea;border:1px solid #cfe0c6;border-radius:12px;padding:12px 15px;margin-bottom:16px">' +
+        '<span style="font-size:18px">↩</span>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#3f5a37;font-size:14px">Le client a fait ses retours</div>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:#5a7050">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
+        '</div>' : '';
+      return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework ? ';box-shadow:var(--shadow-2)' : '') + '">' +
+        reworkBanner + header + brief + atts + work + review +
         '<div style="' + hair + '"></div>' +
         taskDlvBlock(d, t) +
         '<div style="' + hair + '"></div>' +
@@ -2018,6 +2026,7 @@
     if (clamped) { c.style.display = 'block'; c.style.webkitLineClamp = ''; c.style.webkitBoxOrient = ''; c.style.overflow = 'visible'; b.textContent = 'Réduire'; }
     else { c.style.display = '-webkit-box'; c.style.webkitLineClamp = '5'; c.style.webkitBoxOrient = 'vertical'; c.style.overflow = 'hidden'; b.textContent = 'Tout afficher'; }
   }
+  function taskClearRework(id) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', needsRework: false }, 'PATCH').then(function (r) { if (r.ok) { toast('Retours marqués comme traités'); loadClient(); } else toast('Erreur'); }); }
   function taskArchive(id, val) { if (val && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); loadClient(); } else toast('Erreur'); }); }
   function taskMilestone(id, field, val) { var body = { projectId: 'partner' }; body[field] = val || null; jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Jalon enregistré' : 'Jalon retiré'); loadClient(); } else toast('Erreur'); }); }
   function taskFind(id) { var found = null; (CUR.domains || []).forEach(function (dn) { ((dn.content && dn.content.taches) || []).forEach(function (x) { if (x.id === id) found = x; }); }); (CUR.supports || []).forEach(function (s) { ((s.content && s.content.taches) || []).forEach(function (x) { if (x.id === id) found = x; }); }); return found; }
@@ -2438,7 +2447,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
