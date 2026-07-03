@@ -52,6 +52,11 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 /* shell */
 .shell{display:flex;min-height:100vh}
 .side{width:var(--sw);flex-shrink:0;background:var(--nuit);color:var(--paille);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.notiffab{position:fixed;bottom:22px;right:22px;z-index:60;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--terre);color:var(--paille);align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(28,18,5,0.28);transition:transform .15s,filter .15s}
+.notiffab:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.notiffab__c{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-family:var(--font-micro);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg,#fff)}
+.notifpanel{position:fixed;bottom:86px;right:22px;z-index:60;width:340px;max-width:calc(100vw - 44px);background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:16px;box-shadow:0 12px 40px rgba(28,18,5,0.22);overflow:hidden}
+@media(max-width:760px){.notiffab{bottom:16px;right:16px}.notifpanel{bottom:80px;right:16px}}
 .side__brand{padding:24px 22px}
 .side__brand .n{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--paille)}
 .side__logo{color:var(--paille);width:96px}

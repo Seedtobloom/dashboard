@@ -212,9 +212,57 @@
       '<nav class="side__nav" id="side-nav">' + buildNavHtml() + '</nav>' +
       '<div id="nav-timer-slot">' + navTimerHtml() + '</div>' +
       '<div class="side__foot"><button class="btn btn--outline btn--block btn--sm" style="color:var(--paille);border-color:rgba(242,229,194,0.25)" onclick="ADM.logout()">Déconnexion</button></div>' +
-      '</aside><div class="main" id="main"></div></div>';
+      '</aside><div class="main" id="main"></div></div>' +
+      '<div id="notif-panel" class="notifpanel" style="display:none"></div>' +
+      '<button id="notif-fab" class="notiffab" style="display:none" onclick="ADM.notifToggle()" title="Nouvelles tâches de vos clients"></button>';
     renderMain();
     refreshUnread();
+  }
+  // Notifications persistantes : tâches créées par les clients, tant qu'elles ne
+  // sont pas traitées (bouton « Vu » ou tâche passée au-delà de « à faire »).
+  var NEW_TASKS = [], NOTIF_OPEN = false;
+  function bell() { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>'; }
+  function paintNotif() {
+    var fab = el('notif-fab'), panel = el('notif-panel');
+    if (!fab || !panel) return;
+    var n = NEW_TASKS.length;
+    if (n === 0) { fab.style.display = 'none'; panel.style.display = 'none'; NOTIF_OPEN = false; }
+    else {
+      fab.style.display = 'flex';
+      fab.innerHTML = bell() + '<span class="notiffab__c">' + n + '</span>';
+    }
+    if (NOTIF_OPEN && n > 0) { panel.style.display = 'block'; panel.innerHTML = notifPanelHtml(); }
+    else panel.style.display = 'none';
+  }
+  function notifPanelHtml() {
+    var rows = NEW_TASKS.map(function (t) {
+      var when = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+      var content = (t.content || '').trim();
+      var preview = content ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + esc(content) + '</div>' : '<div style="font-size:12px;font-style:italic;color:var(--muted);margin-top:5px">Sans description.</div>';
+      var att = t.attCount ? '<span style="font-size:11px;color:var(--muted);margin-left:8px">📎 ' + t.attCount + '</span>' : '';
+      return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
+          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + att + '</div>' +
+          (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
+        '</div>' +
+        '<div class="micro" style="color:var(--glycine-900);text-transform:none;letter-spacing:0;margin-top:2px">' + esc(t.client) + '</div>' +
+        preview +
+        '<div style="display:flex;gap:7px;margin-top:9px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.notifAck(\'' + t.key + '\',\'' + t.id + '\')">Vu</button>' +
+        '</div></div>';
+    }).join('');
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border-bottom:1px solid var(--bone-d)">' +
+      '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">Nouvelles tâches</strong>' +
+      '<button onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">×</button></div>' +
+      '<div style="max-height:60vh;overflow-y:auto">' + rows + '</div>';
+  }
+  function notifToggle() { NOTIF_OPEN = !NOTIF_OPEN; paintNotif(); }
+  function notifOpen(key, id) { NOTIF_OPEN = false; paintNotif(); openClient(key); }
+  function notifAck(key, id) {
+    NEW_TASKS = NEW_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
+    paintNotif();
+    api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', clientNotif: false }) }).catch(function () {});
   }
   function navTimerHtml() {
     var run = MT_TIMER || PT_TIMER;
@@ -230,7 +278,7 @@
   function refreshNavTimer() { var s = el('nav-timer-slot'); if (s) s.innerHTML = navTimerHtml(); }
   function navTimerPause() { if (MT_TIMER) mtPause(MT_TIMER.id, true); else if (PT_TIMER) ptPause(PT_TIMER.id, true); refreshNavTimer(); renderMain(); }
   var UNREAD = 0, REV_N = 0, NOTIF_N = 0;
-  function refreshTabTitle() { NOTIF_N = UNREAD + REV_N; applyTabTitle(); }
+  function refreshTabTitle() { NOTIF_N = UNREAD + REV_N + (NEW_TASKS ? NEW_TASKS.length : 0); applyTabTitle(); }
   function refreshUnread() {
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
@@ -255,6 +303,8 @@
       BADGE_CACHE.priorities = badgeAlert(REV_N + urgentDl);
       var b = el('nav-unread-priorities');
       if (b) b.innerHTML = BADGE_CACHE.priorities;
+      NEW_TASKS = d.newTasks || [];
+      paintNotif();
       refreshTabTitle();
     }).catch(function () {});
     // Bulle Mes tâches : rouge si des tâches sont en retard ou pour aujourd'hui,
@@ -2226,6 +2276,7 @@
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
