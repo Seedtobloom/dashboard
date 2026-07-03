@@ -496,12 +496,26 @@
       function kpi(cls, n, l, tab) { return '<div class="kpi ' + cls + (n > 0 ? ' is-on' : '') + (tab ? ' kpi--clic' : '') + '"' + (tab ? ' onclick="ADM.prioSetTab(\'' + tab + '\')"' : '') + '><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
       var kpis = '<div class="kpis">' + kpi('kpi--late', nLate, 'En retard', 'todo') + kpi('kpi--today', nToday, "Aujourd'hui", 'todo') + kpi('kpi--week', nWeek, 'Cette semaine', 'todo') + kpi('kpi--wait', nWait, 'Attente client', 'waiting') + '</div>';
 
+      // Aperçu dépliable du contenu de la tâche (demande du client + pièces jointes),
+      // pour consulter « ce qu'il y a dedans » sans quitter la page Priorités.
+      function prioBrief(x, dark) {
+        var c = (x.content || '').trim();
+        if (!c && !x.attCount) return '';
+        var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
+        var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
+        var sumCol = dark ? 'rgba(242,229,194,0.7)' : 'var(--glycine-900)';
+        var body = c
+          ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
+          : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>';
+        var att = x.attCount ? '<div style="margin-top:7px;font-size:12px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + ' — ouvrir la fiche client pour le' + (x.attCount > 1 ? 's' : '') + ' télécharger</div>' : '';
+        return '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:' + sumCol + '">Voir la demande</summary>' + body + att + '</details>';
+      }
       function prow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow">' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
-            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div></div>' +
+            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioBrief(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' +
             (x.project === 'partner' ? '<button class="pbtn" title="Ajouter le livrable à cette tâche" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
@@ -557,7 +571,7 @@
         var whenLight = overdue ? '#efb2a2' : (x._d === 0 ? '#eccd93' : 'rgba(242,229,194,0.62)');
         return '<div class="focusrow">' +
           '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div></div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioBrief(x, true) + '</div>' +
           (x.id ? '<div class="prow__act" style="flex-shrink:0">' +
             (x.project === 'partner' ? '<button class="pbtn" title="Ajouter le livrable" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             '<button class="pbtn pbtn--ok" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +

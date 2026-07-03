@@ -1126,7 +1126,7 @@ async function handleDashboard(env) {
             forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
             (pc.taches || []).forEach((t) => {
                 if (t.status !== 'done' && t.dueDate)
-                    deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate, status: t.status });
+                    deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate, status: t.status, content: t.content || '', attCount: (t.attachments || []).length });
             });
         }
         collectLiv(pc, 'Partenaire créative', 'partner');
@@ -1134,12 +1134,12 @@ async function handleDashboard(env) {
         const sw = getDomainObj(esp, 'siteWeb');
         if (sw)
             (sw.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
-                deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
+                deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
         collectLiv(sw, 'Site web', 'website');
         const iv = getDomainObj(esp, 'identiteVisuelle');
         if (iv)
             (iv.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
-                deadlines.push({ key: ci.key, client: who, project: 'branding', projectLabel: 'Identité visuelle', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
+                deadlines.push({ key: ci.key, client: who, project: 'branding', projectLabel: 'Identité visuelle', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
         collectLiv(iv, 'Identité visuelle', 'branding');
         const sd = esp.supportsDeCom && esp.supportsDeCom[0];
         if (sd)
@@ -1147,7 +1147,7 @@ async function handleDashboard(env) {
                 const o = getSupportObj(esp, pid);
                 if (o)
                     (o.suivi || []).forEach((s) => { if (s.status !== 'done' && s.date)
-                        deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status }); });
+                        deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
                 collectLiv(o, supportLabel(pid), 'support-' + pid);
             }
     }
