@@ -596,7 +596,9 @@
         var btn = run
           ? '<button class="pbtn" style="color:var(--orange)" title="Mettre le chrono en pause" onclick="ADM.ptPause(\'' + x.id + '\')">⏸</button>'
           : '<button class="pbtn" title="Démarrer le chrono" onclick="ADM.ptStart(\'' + x.id + '\',\'' + x.key + '\')">▶</button>';
-        return '<span style="display:inline-flex;align-items:center;gap:5px">' + clock + btn + '</span>';
+        // Saisie manuelle du temps (désactivée pendant que le chrono tourne).
+        var edit = run ? '' : '<button class="pbtn" title="Saisir le temps à la main" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + (x.timeSpentSeconds || 0) + ')">✎</button>';
+        return '<span style="display:inline-flex;align-items:center;gap:5px">' + clock + btn + edit + '</span>';
       }
       function prow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
@@ -1563,6 +1565,42 @@
     document.body.appendChild(ov);
     var i = el('prio-rl'); if (i) { i.focus(); i.onkeydown = function (e) { if (e.key === 'Enter') send(); }; }
   }
+  // Saisie manuelle du temps passé (heures + minutes) depuis Priorités.
+  function prioSetTime(key, id, curSec) {
+    curSec = parseInt(curSec, 10) || 0;
+    var h0 = Math.floor(curSec / 3600), m0 = Math.round((curSec % 3600) / 60);
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box">' +
+      '<div class="admconfirm__title">Temps passé sur la tâche</div>' +
+      '<div class="admconfirm__msg">Corrige ou saisis le temps à la main. Il remplace la valeur actuelle et reste visible par le client.</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px">' +
+        '<input id="prio-th" class="inp" type="number" min="0" step="1" value="' + h0 + '" style="width:70px"><span class="micro" style="text-transform:none;letter-spacing:0">h</span>' +
+        '<input id="prio-tm" class="inp" type="number" min="0" max="59" step="5" value="' + m0 + '" style="width:70px"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
+      '</div>' +
+      '<div class="admconfirm__row">' +
+        '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Enregistrer</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    var save = function () {
+      var h = Math.max(0, parseInt(el('prio-th').value, 10) || 0);
+      var m = Math.max(0, Math.min(59, parseInt(el('prio-tm').value, 10) || 0));
+      var total = h * 3600 + m * 60;
+      close();
+      var pit = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+      if (pit) pit.timeSpentSeconds = total;
+      var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
+      if (PRIO_D) renderPrioBody(PRIO_D);
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), forceTime: true }, 'PATCH')
+        .then(function (r) { if (r.ok) toast('Temps enregistré ✓'); else toast('Erreur'); });
+    };
+    ov.querySelector('[data-yes]').onclick = save;
+    document.body.appendChild(ov);
+    var i = el('prio-th'); if (i) i.focus();
+  }
   function prioPostpone(key, project, kind, id, cur) {
     var inp = document.createElement('input'); inp.type = 'date'; if (cur) inp.value = cur;
     inp.style.cssText = 'position:fixed;left:-9999px;top:0';
@@ -2404,7 +2442,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSendReview: prioSendReview, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
