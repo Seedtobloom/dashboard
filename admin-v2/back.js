@@ -751,7 +751,7 @@ function findTask(esp, projectId, taskId) {
     const task = container.taches.find((t) => t.id === taskId);
     return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework'];
 async function handleTaskPatch(request, env, key, data, taskId) {
     const body = await readJson(request);
     const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -789,6 +789,10 @@ async function handleTaskPatch(request, env, key, data, taskId) {
     // notification persistante, en plus du bouton « Vu » explicite.
     if (body.status && body.status !== 'todo')
         t.clientNotif = false;
+    // Le marqueur « retours à retravailler » se lève quand la tâche repart en
+    // révision chez le client ou est terminée.
+    if (body.status === 'review' || body.status === 'done')
+        t.needsRework = false;
     // Historique des révisions : chaque envoi d'un lien au client est journalisé
     // (tour de révision daté), sans écraser les précédents.
     if (body.logReview === true && typeof body.reviewLink === 'string' && body.reviewLink.trim()) {
@@ -1112,6 +1116,7 @@ async function handleDashboard(env) {
     const pendingValidation = [];
     const revisions = [];
     const newTasks = [];
+    const reworkTasks = [];
     for (const ci of idx) {
         const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' }));
         if (!data)
@@ -1152,11 +1157,14 @@ async function handleDashboard(env) {
                 // remonte même sans échéance, avec le lien et la date d'envoi.
                 if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
                     const hist = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
-                    deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: (t.attachments || []).length, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60 });
+                    deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: (t.attachments || []).length, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, needsRework: !!t.needsRework });
                 }
                 // Notification persistante : tâche créée par le client et pas encore traitée.
                 if (t.clientNotif && !t.archived)
                     newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, createdAt: t.createdAt || '' });
+                // Notification persistante : le client a fait ses retours, à retravailler.
+                if (t.needsRework && !t.archived)
+                    reworkTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, dueDate: t.dueDate || '', reviewLink: t.reviewLink || '', at: t.clientFeedbackAt || '' });
             });
         }
         collectLiv(pc, 'Partenaire créative', 'partner');
@@ -1185,7 +1193,8 @@ async function handleDashboard(env) {
     pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
     newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, clientCount: idx.length });
+    reworkTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, clientCount: idx.length });
 }
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
 async function handleDone(env) {

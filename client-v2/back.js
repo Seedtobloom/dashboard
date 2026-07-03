@@ -788,6 +788,9 @@ async function handleTaskFeedback(_request, env, masterKey, data, taskId) {
         return json({ error: 'Task not found' }, 404);
     found.task.status = 'in_progress';
     found.task.clientFeedbackAt = nowIso();
+    // Marqueur persistant côté admin : « retours reçus, à retravailler ». Reste
+    // vrai tant que Cindy ne l'a pas traité (renvoi en révision, terminé, ou « Vu »).
+    found.task.needsRework = true;
     await save(env, masterKey, data);
     await notifyAdmin(env, `Retours faits · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a fait ses retours sur la tâche <strong>${escHtml(found.task.title || '')}</strong>. La balle est dans votre camp.</p>`);
     return json(found.task);
