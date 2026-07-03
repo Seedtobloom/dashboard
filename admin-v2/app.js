@@ -161,8 +161,13 @@
       (c.sections || []).forEach(function (x) { subs.push([x.id, x.label, x.unread || 0]); });
       subs.push(['documents', 'Documents', 0]);
       subs.push(['bilanavis', 'Bilan & avis', 0]);
-      var head = '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:6px">' +
-        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:12px;flex-shrink:0">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
+      var pr = presence(c.lastSeen);
+      var av = '<span style="position:relative;flex-shrink:0;width:22px;height:22px">' +
+        '<span style="width:22px;height:22px;border-radius:50%;background:rgba(242,229,194,0.16);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-style:italic;font-size:12px">' + esc((nm[0] || '?').toUpperCase()) + '</span>' +
+        (pr.online ? '<span title="En ligne" style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--nuit,#2a1f16)"></span>' : '') +
+        '</span>';
+      var head = '<button class="navitem' + (isCur ? ' active' : '') + '" onclick="ADM.navClientTab(\'' + c.key + '\',null)" style="padding-right:6px" title="' + esc(pr.label) + '">' +
+        av +
         '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm) + '</span>' +
         (c.unread > 0 ? badge(c.unread) : '') +
         '<span onclick="event.stopPropagation();ADM.navToggleClient(\'' + c.key + '\')" title="' + (open ? 'Replier' : 'Déplier') + '" style="margin-left:auto;padding:2px 7px;opacity:0.55;font-size:10px">' + (open ? '▾' : '▸') + '</span></button>';
@@ -231,8 +236,9 @@
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       BADGE_CACHE.chat = UNREAD > 0 ? badge(UNREAD) : '';
       BADGE_CACHE.clients = BADGE_CACHE.chat;
-      var sig = JSON.stringify((d.clients || []).map(function (c) { return [c.key, clientName(c), c.unread || 0, (c.sections || []).map(function (x) { return x.id + x.label + (x.unread || 0); }).join('|')]; }));
-      var changed = sig !== JSON.stringify(NAV_CLIENTS.map(function (c) { return [c.key, clientName(c), c.unread || 0, (c.sections || []).map(function (x) { return x.id + x.label + (x.unread || 0); }).join('|')]; }));
+      var sigOf = function (list) { return JSON.stringify((list || []).map(function (c) { return [c.key, clientName(c), c.unread || 0, presence(c.lastSeen).online, (c.sections || []).map(function (x) { return x.id + x.label + (x.unread || 0); }).join('|')]; })); };
+      var sig = sigOf(d.clients);
+      var changed = sig !== sigOf(NAV_CLIENTS);
       NAV_CLIENTS = d.clients || [];
       if (changed) renderNav(); else paintBadges();
       refreshTabTitle();
