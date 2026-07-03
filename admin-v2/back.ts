@@ -1002,7 +1002,12 @@ async function handleDashboard(env: Env): Promise<Response> {
     if (pc) {
       forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
       (pc.taches || []).forEach((t: AnyObj) => {
-        if (t.status !== 'done' && t.dueDate) deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate, status: t.status, content: t.content || '', attCount: (t.attachments || []).length });
+        // Une tâche « à valider » (review) est en attente du client : on la
+        // remonte même sans échéance, avec le lien et la date d'envoi.
+        if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
+          const hist = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
+          deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: (t.attachments || []).length, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '' });
+        }
         // Notification persistante : tâche créée par le client et pas encore traitée.
         if (t.clientNotif && !t.archived) newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, createdAt: t.createdAt || '' });
       });
