@@ -1835,9 +1835,19 @@
       // Lien de révision : l'endroit pour déposer un lien (Figma, proofing, Drive…)
       // que le client doit vérifier. « Envoyer au client » passe la tâche en
       // « À valider » et prévient le client par mail.
-      var reviewSaved = t.reviewLink
-        ? '<div style="margin-top:9px;font-size:12.5px"><a href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(t.reviewLink) + '</a> <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">— visible dans l\'espace du client</span></div>'
-        : '';
+      var histArr = Array.isArray(t.reviewHistory) ? t.reviewHistory.slice().reverse() : [];
+      var histHtml = histArr.length
+        ? '<div style="margin-top:12px"><div class="micro" style="margin-bottom:4px">Historique des révisions · ' + histArr.length + '</div>' +
+          histArr.map(function (h, i) {
+            return '<div style="display:flex;gap:9px;align-items:baseline;font-size:12.5px;padding:6px 0;border-top:1px solid var(--bone-d)">' +
+              '<span class="micro" style="color:var(--terre);text-transform:none;letter-spacing:0;flex-shrink:0">R' + (histArr.length - i) + '</span>' +
+              '<a href="' + esc(h.url) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(h.url) + '</a>' +
+              '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">' + fmtDate(h.at) + '</span></div>';
+          }).join('') + '</div>'
+        : (t.reviewLink
+          ? '<div style="margin-top:9px;font-size:12.5px"><a href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(t.reviewLink) + '</a> <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">— enregistré, pas encore envoyé</span></div>'
+          : '');
+      var reviewSaved = histHtml;
       var review = '<div style="background:#faf6ee;border:1px solid var(--bone-d);border-radius:13px;padding:14px 16px;margin-top:14px">' +
         '<div class="micro" style="margin-bottom:9px">Lien de révision à faire vérifier par le client</div>' +
         '<div class="row" style="gap:8px;flex-wrap:wrap">' +
@@ -1932,7 +1942,7 @@
   function taskSendReview(id) {
     var link = (el('trl-' + id).value || '').trim();
     if (!link) { toast('Ajoute d\'abord un lien de révision'); return; }
-    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review' }, 'PATCH').then(function (r) {
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true }, 'PATCH').then(function (r) {
       if (r.ok) { toast('Lien envoyé au client — la tâche passe en « À valider » ✓'); loadClient(); } else toast('Erreur');
     });
   }

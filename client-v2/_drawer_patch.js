@@ -148,6 +148,20 @@
         })()
       : '';
 
+    // Historique des révisions envoyées par Cindy (liens datés).
+    var revHist = Array.isArray(t.reviewHistory) ? t.reviewHistory.slice().reverse() : [];
+    var reviewHistHtml = revHist.length
+      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Historique des révisions</div>'+
+        revHist.map(function(h, i){
+          var u = /^https?:\/\//i.test(h.url) ? h.url : 'https://' + h.url;
+          return '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#f7f2ea;border-radius:9px;font-size:13px;margin-bottom:6px">'+
+            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:14px;color:#8a6f54;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
+            '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.url)+'</a>'+
+            '<span style="font-size:11px;color:#9a93a5;flex-shrink:0">'+fmtShort(h.at)+'</span>'+
+          '</div>';
+        }).join('')+'</div>'
+      : '';
+
     return backdrop +
       '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
         closeBtn + cover + icon +
@@ -157,6 +171,7 @@
           '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
           '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
           attachBlock +
+          reviewHistHtml +
           stbBlocks(pid, t) +
           sep +
           stbTaskDeliverables(pid, project, t, sep) +

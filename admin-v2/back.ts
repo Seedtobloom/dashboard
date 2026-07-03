@@ -706,6 +706,13 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   // Traiter la tâche (la faire avancer au-delà de « à faire ») lève sa
   // notification persistante, en plus du bouton « Vu » explicite.
   if (body.status && body.status !== 'todo') t.clientNotif = false;
+  // Historique des révisions : chaque envoi d'un lien au client est journalisé
+  // (tour de révision daté), sans écraser les précédents.
+  if (body.logReview === true && typeof body.reviewLink === 'string' && body.reviewLink.trim()) {
+    if (!Array.isArray(t.reviewHistory)) t.reviewHistory = [];
+    t.reviewHistory.push({ url: body.reviewLink.trim().slice(0, 2000), at: nowIso() });
+    if (t.reviewHistory.length > 50) t.reviewHistory = t.reviewHistory.slice(-50);
+  }
   await saveClient(env, key, data);
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
