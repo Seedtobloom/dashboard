@@ -678,7 +678,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   const task = container.taches.find((t: AnyObj) => t.id === taskId);
   return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif'];
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -703,6 +703,9 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if (body.properties && typeof body.properties === 'object') t.properties = Object.assign({}, t.properties || {}, body.properties);
   if (body.status === 'done' && !t.completedAt) t.completedAt = nowIso();
   if (body.status && body.status !== 'done') t.completedAt = null;
+  // Traiter la tâche (la faire avancer au-delà de « à faire ») lève sa
+  // notification persistante, en plus du bouton « Vu » explicite.
+  if (body.status && body.status !== 'todo') t.clientNotif = false;
   await saveClient(env, key, data);
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
@@ -952,6 +955,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const forfaits: AnyObj[] = [];
   const pendingValidation: AnyObj[] = [];
   const revisions: AnyObj[] = [];
+  const newTasks: AnyObj[] = [];
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
@@ -983,6 +987,8 @@ async function handleDashboard(env: Env): Promise<Response> {
       forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
       (pc.taches || []).forEach((t: AnyObj) => {
         if (t.status !== 'done' && t.dueDate) deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate, status: t.status, content: t.content || '', attCount: (t.attachments || []).length });
+        // Notification persistante : tâche créée par le client et pas encore traitée.
+        if (t.clientNotif && !t.archived) newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, createdAt: t.createdAt || '' });
       });
     }
     collectLiv(pc, 'Partenaire créative', 'partner');
@@ -1003,7 +1009,8 @@ async function handleDashboard(env: Env): Promise<Response> {
   deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
   pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  return json({ deadlines, forfaits, pendingValidation, revisions, clientCount: idx.length });
+  newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, clientCount: idx.length });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

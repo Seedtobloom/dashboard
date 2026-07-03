@@ -727,6 +727,9 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     timeSpentMinutes: 0,
     completedAt: null,
     createdAt: nowIso(),
+    // Notification persistante côté admin : reste vraie tant que Cindy n'a pas
+    // marqué la tâche « vue » depuis son espace (bouton dédié).
+    clientNotif: true,
   };
   tasksOf(container).push(task);
   await save(env, masterKey, data);
