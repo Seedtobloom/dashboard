@@ -794,7 +794,16 @@ async function handleTaskPatch(request, env, key, data, taskId) {
     // allers-retours de statut intermédiaires ne génèrent plus de mail.
     if (body.status && body.status !== prevStatus && (body.status === 'done' || body.status === 'review')) {
         const label = body.status === 'done' ? 'terminée' : 'à valider';
-        await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, `<p>Votre tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`);
+        let bodyHtml = `<p>Votre tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`;
+        // Si un lien de révision est présent, on invite explicitement le client à
+        // le consulter et à donner son retour (validation ou demande de révision).
+        if (body.status === 'review' && t.reviewLink) {
+            const url = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
+            bodyHtml = `<p>Cindy vous invite à vérifier un élément de votre tâche <strong>${escHtml(t.title || '')}</strong>. Elle est en attente de votre révision.</p>` +
+                `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Vérifier le travail</a></p>` +
+                `<p style="color:#8a6f54;font-size:13px">Retrouvez aussi ce lien et vos boutons de validation dans votre espace, sur la tâche concernée.</p>`;
+        }
+        await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, bodyHtml);
     }
     return json(t);
 }

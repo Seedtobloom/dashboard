@@ -1832,8 +1832,23 @@
           chBtn +
           '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span>' + chrono + '</span>' +
         '</div></div>';
+      // Lien de révision : l'endroit pour déposer un lien (Figma, proofing, Drive…)
+      // que le client doit vérifier. « Envoyer au client » passe la tâche en
+      // « À valider » et prévient le client par mail.
+      var reviewSaved = t.reviewLink
+        ? '<div style="margin-top:9px;font-size:12.5px"><a href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(t.reviewLink) + '</a> <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">— visible dans l\'espace du client</span></div>'
+        : '';
+      var review = '<div style="background:#faf6ee;border:1px solid var(--bone-d);border-radius:13px;padding:14px 16px;margin-top:14px">' +
+        '<div class="micro" style="margin-bottom:9px">Lien de révision à faire vérifier par le client</div>' +
+        '<div class="row" style="gap:8px;flex-wrap:wrap">' +
+          '<input id="trl-' + t.id + '" class="inp" style="flex:1;min-width:180px" placeholder="https://… (Figma, proofing, Drive…)" value="' + esc(t.reviewLink || '') + '">' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.taskReview(\'' + t.id + '\')">Enregistrer</button>' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.taskSendReview(\'' + t.id + '\')">Envoyer au client</button>' +
+        '</div>' + reviewSaved +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">« Envoyer au client » passe l\'avancement en « À valider » et prévient le client par e-mail qu\'il doit vérifier ce lien.</div>' +
+        '</div>';
       return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction ? ';box-shadow:var(--shadow-2)' : '') + '">' +
-        header + brief + atts + work +
+        header + brief + atts + work + review +
         '<div style="' + hair + '"></div>' +
         taskDlvBlock(d, t) +
         '<div style="' + hair + '"></div>' +
@@ -1902,7 +1917,6 @@
       '<div class="micro" style="margin-bottom:10px">Versions du livrable' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
       (rows ? '<div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div>' : '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 4px">Aucun livrable déposé pour l\'instant.</div>') +
       '<div class="row" style="margin-top:12px;gap:8px"><input class="inp" type="file" id="tdf-' + t.id + '" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + (ls.length ? '+ Nouvelle version' : '+ Livrable') + '</button></div>' +
-      '<div class="field" style="margin-top:14px"><label>Lien de révision (pour récupérer les retours)</label><div class="row" style="gap:8px"><input id="trl-' + t.id + '" class="inp" style="flex:1" placeholder="https://… (Figma, proofing…)" value="' + esc(t.reviewLink || '') + '"><button class="btn btn--outline btn--sm" onclick="ADM.taskReview(\'' + t.id + '\')">OK</button></div></div>' +
       '</div>';
   }
   function delDeliverable(id) {
@@ -1912,6 +1926,15 @@
   }
   function taskReview(id) {
     jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: (el('trl-' + id).value || '').trim() }, 'PATCH').then(function (r) { if (r.ok) { toast('Lien de révision enregistré'); loadClient(); } else toast('Erreur'); });
+  }
+  // Envoie le lien au client : enregistre, passe la tâche en « À valider »
+  // (review) et déclenche l'e-mail au client (côté serveur, sur le passage en review).
+  function taskSendReview(id) {
+    var link = (el('trl-' + id).value || '').trim();
+    if (!link) { toast('Ajoute d\'abord un lien de révision'); return; }
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review' }, 'PATCH').then(function (r) {
+      if (r.ok) { toast('Lien envoyé au client — la tâche passe en « À valider » ✓'); loadClient(); } else toast('Erreur');
+    });
   }
   function uploadTaskDlv(id) {
     var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisis un fichier'); return; }
@@ -2271,7 +2294,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,

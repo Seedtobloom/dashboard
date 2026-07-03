@@ -135,11 +135,25 @@
     var icon = '<div style="margin:-32px 0 0 44px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
     var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
 
+    // Lien de révision déposé par Cindy : appel à l'action mis en avant tant que
+    // la tâche est en attente de la révision du client (statut « review »).
+    var reviewCallout = (t.reviewLink && (t.status === 'review'))
+      ? (function(){
+          var u = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
+          return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#fbf3d9;border:1px solid #f0e2b0">'+
+            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#8a6f2e;margin-bottom:6px">À vérifier de votre côté</div>'+
+            '<div style="font-size:14px;color:var(--navy,#1C1205);line-height:1.5;margin-bottom:12px">Cindy vous invite à consulter ce travail et à donner votre retour.</div>'+
+            '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#412F21);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
+          '</div>';
+        })()
+      : '';
+
     return backdrop +
       '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
         closeBtn + cover + icon +
         '<div style="padding:0 44px 44px">'+
           title +
+          reviewCallout +
           '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
           '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
           attachBlock +
