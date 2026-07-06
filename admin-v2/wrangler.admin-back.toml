@@ -31,3 +31,5 @@ ENVIRONMENT = "production"
 # données KV vers R2 (_backups/), 30 jours conservés.
 [triggers]
 crons = ["17 3 * * *"]
+
+# redeploy: relance du déploiement après échec réseau transitoire (2026-07-06)
