@@ -39,36 +39,39 @@ jobs:
           node client-v2/build-front.js
           node admin-v2/build-front.js
 
-      # ── Backs d'abord (cibles des service bindings) ──
-      - name: Deploy stb-client-back
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: client-v2
-          command: deploy --config wrangler.client-back.toml
-
-      - name: Deploy stb-admin-back
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: admin-v2
-          command: deploy --config wrangler.admin-back.toml
-
-      # ── Fronts ensuite ──
-      - name: Deploy stb-client-front
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: client-v2
-          command: deploy --config wrangler.client-front.toml
-
-      - name: Deploy stb-admin-front
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: admin-v2
-          command: deploy --config wrangler.admin-front.toml
+      # Déploiement avec nouvelles tentatives automatiques : Cloudflare renvoie
+      # parfois une erreur réseau passagère (« fetch failed ») qui faisait
+      # échouer tout le déploiement. On réessaie chaque worker jusqu'à 5 fois
+      # avec un délai croissant, pour que le déploiement passe à chaque fois.
+      - name: Deploy tous les workers (avec retry)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          deploy_with_retry() {
+            local dir="$1" cfg="$2" name="$3"
+            local n=1 max=5
+            while true; do
+              echo "::group::Déploiement $name (tentative $n/$max)"
+              if (cd "$dir" && npx wrangler deploy --config "$cfg"); then
+                echo "✅ $name déployé"
+                echo "::endgroup::"
+                return 0
+              fi
+              echo "::endgroup::"
+              if [ "$n" -ge "$max" ]; then
+                echo "❌ Échec du déploiement de $name après $max tentatives"
+                return 1
+              fi
+              local wait=$((n * 15))
+              echo "⚠️  $name : échec (tentative $n), nouvelle tentative dans ${wait}s…"
+              sleep "$wait"
+              n=$((n + 1))
+            done
+          }
+          # Backs d'abord (cibles des service bindings), puis fronts.
+          deploy_with_retry client-v2 wrangler.client-back.toml  stb-client-back
+          deploy_with_retry admin-v2  wrangler.admin-back.toml   stb-admin-back
+          deploy_with_retry client-v2 wrangler.client-front.toml stb-client-front
+          deploy_with_retry admin-v2  wrangler.admin-front.toml  stb-admin-front
