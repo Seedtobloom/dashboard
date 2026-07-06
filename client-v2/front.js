@@ -2420,7 +2420,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
   function partFmtH(min){ min = min || 0; var h = Math.floor(min/60), m = min%60; return m ? (h+'h'+String(m).padStart(2,'0')) : (h+' h'); }
   // Historique client : tâches terminées/archivées groupées par mois.
-  function cliPartHistoryHtml(allTasks, mkOpen, mkReopen) {
+  function cliPartHistoryHtml(allTasks, mkOpen, mkReopen, only) {
     var arr = allTasks || [];
     var archT = arr.filter(function(t){ return t.archived; });
     var doneT = arr.filter(function(t){ return t.status==='done' && !t.archived; });
@@ -2453,7 +2453,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">'+title+'</summary>' +
         '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+bodyFor(list, isArch)+'</div></details>';
     }
-    // Les archives sont dépliées par défaut pour être retrouvées facilement.
+    // only='archived' → onglet Archivées (déplié) ; only='done' → historique
+    // du Tableau ; sinon les deux (archives dépliées par défaut).
+    if (only === 'archived') return section(archT, true, true);
+    if (only === 'done') return section(doneT, false, false);
     return section(archT, true, true) + section(doneT, false, false);
   }
   var PART_URG_CP_ICONS = { tranquille:'M2 22 16 8M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14', normal:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', urgent:'M13 2 3 14h9l-1 8 10-12h-9z', critique:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z' };
@@ -2643,9 +2646,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px">' +
       '<div style="display:flex;gap:0">' +
-        [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['liv','Livrables']].map(function(t){
-          return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
-        }).join('') +
+        (function(){
+          var nArch = tasks.filter(function(t){ return t.archived; }).length;
+          return [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['liv','Livrables'],['archives','Archivées'+(nArch?' ('+nArch+')':'')]].map(function(t){
+            return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
+          }).join('');
+        })() +
       '</div>' +
       '' +
     '</div>';
@@ -2655,7 +2661,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (tab === 'forfait') return summaryBar + tabs + buildPartForfait(pid, tasks, project);
     if (tab === 'msg')     return summaryBar + tabs + stbChat(pid);
     if (tab === 'liv')     return summaryBar + tabs + stbDeliverables(pid);
+    if (tab === 'archives') return summaryBar + tabs + buildPartArchives(pid, tasks);
     return summaryBar + tabs;
+  }
+  // Onglet dédié aux tâches archivées.
+  function buildPartArchives(pid, tasks) {
+    var archived = (tasks||[]).filter(function(t){ return t.archived; });
+    var head = '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:4px">Tâches archivées</div>' +
+      '<div style="font-family:var(--font-ui);font-size:13px;color:var(--terre-600);margin-bottom:18px">Les tâches mises de côté. Cliquez sur « Voir » pour rouvrir le détail d\'une tâche.</div>';
+    if (!archived.length) {
+      return head + '<div style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:34px;text-align:center;color:var(--terre-400);font-family:var(--font-ui);font-size:14px">Aucune tâche archivée pour le moment.</div>';
+    }
+    var hist = cliPartHistoryHtml(tasks,
+      function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
+      function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; },
+      'archived');
+    return head + hist;
   }
 
   // ── Espace Maintenance, TicketsView design ──────────────────────────────
@@ -3186,7 +3207,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
     var historyCard = cliPartHistoryHtml(tasks,
       function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
-      function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; });
+      function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; },
+      'done');
 
     return '<div style="display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start">' +
       '<div>' +
