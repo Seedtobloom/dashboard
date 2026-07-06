@@ -1133,6 +1133,7 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
     estMinutes: Math.max(0, parseInt(b.estMinutes, 10) || 0),
     timeSpentSeconds: 0,
     dueDate: b.dueDate || null,
+    doDate: b.doDate || null,
     status: 'todo',
     tags: Array.isArray(b.tags) ? b.tags.slice(0, 8).map((x: unknown) => String(x == null ? '' : x).trim().slice(0, 24)).filter((x: string) => !!x) : [],
     clientKey: b.clientKey ? String(b.clientKey).slice(0, 80) : '',
@@ -1145,7 +1146,7 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
   await saveMyTasks(env, tasks);
   return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'status', 'archived', 'clientKey', 'clientName'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'doDate', 'status', 'archived', 'clientKey', 'clientName'];
 function nextRecurDate(dateStr: string | null, rec: string): string {
   const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
   if (rec === 'daily') base.setUTCDate(base.getUTCDate() + 1);

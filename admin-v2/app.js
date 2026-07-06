@@ -833,7 +833,8 @@
     var td = new Date(); td.setHours(0, 0, 0, 0);
     var overdue = !dn && t.dueDate && new Date(t.dueDate) < td;
     var dueLbl = t.dueDate ? ((overdue ? 'en retard · ' : 'échéance ') + fmtDate(t.dueDate)) : '';
-    var meta = [est, dueLbl].filter(Boolean).join(' · ');
+    var doLbl = t.doDate ? ('à faire le ' + fmtDate(t.doDate)) : '';
+    var meta = [est, doLbl, dueLbl].filter(Boolean).join(' · ');
     var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
     var subN = subs.filter(function (s) { return s.done; }).length;
     var subsHtml = subs.length ? '<div style="margin-top:10px">' +
@@ -1020,8 +1021,10 @@
       '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
         '<input class="inp" id="mte-title" value="' + esc(t.title || '') + '" placeholder="Titre">' +
         '<div class="row" style="gap:8px"><select class="inp" id="mte-prio" style="flex:1">' + prioOpts + '</select>' +
-          '<input class="inp" id="mte-est" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" style="width:90px" title="Durée estimée en minutes">' +
-          '<input class="inp" id="mte-due" type="date" value="' + esc(t.dueDate || '') + '" style="width:auto"></div>' +
+          '<input class="inp" id="mte-est" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" style="width:90px" title="Durée estimée en minutes"></div>' +
+        '<div class="row" style="gap:8px">' +
+          '<label class="micro" style="flex:1;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Le jour où tu comptes t\'en occuper">À faire le <input class="inp" id="mte-do" type="date" value="' + esc(t.doDate || '') + '" style="flex:1"></label>' +
+          '<label class="micro" style="flex:1;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Date limite">Échéance <input class="inp" id="mte-due" type="date" value="' + esc(t.dueDate || '') + '" style="flex:1"></label></div>' +
         '<div class="row" style="gap:8px"><select class="inp" id="mte-client" style="flex:1">' + cliOpts + '</select>' +
           '<select class="inp" id="mte-recur" style="flex:1">' + recOpts + '</select></div>' +
         '<input class="inp" id="mte-tags" value="' + esc(tagsVal) + '" placeholder="Étiquettes séparées par des virgules">' +
@@ -1038,7 +1041,7 @@
       var title = (el('mte-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
       var tags = (el('mte-tags').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
       var ck = el('mte-client').value, cn = ''; for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } }
-      var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || '') };
+      var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, doDate: el('mte-do').value || null, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || '') };
       var tm = parseInt(el('mte-time').value, 10);
       if (!isNaN(tm) && tm >= 0 && tm * 60 !== (t.timeSpentSeconds || 0)) { body.timeSpentSeconds = tm * 60; body.forceTime = true; }
       jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { close(); toast('Tâche modifiée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
@@ -1061,7 +1064,7 @@
     return '<div class="prow">' +
       '<span class="pdot" style="background:' + pcol + ';align-self:center"></span>' +
       '<div class="prow__main"><div class="prow__el" style="' + (dn ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + esc(t.title) + '</div>' +
-        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div>' +
+        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.doDate ? ' · à faire le ' + fmtDate(t.doDate) : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div>' +
         '<div id="mt-note-' + t.id + '" style="margin-top:4px">' + mtNoteInner(t) + '</div></div>' +
       '<div class="prow__act">' + timecode + timerBtn +
         (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
@@ -1133,7 +1136,8 @@
         '<div class="row"><input class="inp" id="mt-title" placeholder="Que dois-tu faire ?" style="flex:2;min-width:160px">' +
           '<select class="inp" id="mt-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select>' +
           '<input class="inp" id="mt-est" type="number" min="0" step="15" placeholder="min" style="width:80px" title="Durée estimée en minutes">' +
-          '<input class="inp" id="mt-due" type="date" style="width:auto">' +
+          '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Le jour où tu comptes t\'en occuper">À faire le <input class="inp" id="mt-do" type="date" style="width:auto"></label>' +
+          '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Date limite">Échéance <input class="inp" id="mt-due" type="date" style="width:auto"></label>' +
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">Ajouter</button></div>' +
         '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel), https://… , détails…" style="width:100%;box-sizing:border-box">' +
         '<input class="inp mt" id="mt-tags" placeholder="Étiquettes séparées par des virgules (ex. Créa, Admin, Perso)" style="width:100%;box-sizing:border-box">' +
@@ -1194,7 +1198,7 @@
     var tags = (el('mt-tags') ? el('mt-tags').value : '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
     var ck = el('mt-client') ? el('mt-client').value : '';
     var cn = ''; if (ck) { for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } } }
-    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '' }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { MT_ADDOPEN = false; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
+    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, doDate: el('mt-do').value || null, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '' }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { MT_ADDOPEN = false; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
   function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) mtApplyLocal(task); }).catch(function () { toast('Erreur'); }); }
   function myTaskDel(id) {
