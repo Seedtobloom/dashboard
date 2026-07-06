@@ -741,7 +741,10 @@
         return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
           '<div class="prow__date">' + (refDate ? '<strong>' + fmtDate(refDate) + '</strong>' : '<strong>—</strong>') + '<span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div>' + linkLine + '</div>' +
-          '<div class="prow__act">' + (isReview ? prioTimer(x, false) : '') + badgeHtml + linkBtn + '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
+          '<div class="prow__act">' + (isReview ? prioTimer(x, false) : '') + badgeHtml + linkBtn +
+            (isReview ? '<button class="pbtn" title="Ajouter/déposer le livrable de cette tâche" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
+            (isReview ? '<button class="pbtn pbtn--ok" title="Valider toi-même et marquer terminé" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Valider</button>' : '') +
+            '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
       }
       var waitHtml = waitAll.map(waitRow).join('');
 
@@ -1534,7 +1537,13 @@
 
   function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : '/steps/') + id; }
   function prioDone(key, project, kind, id) {
-    jpost(prioUrl(key, kind, id), { projectId: project, status: 'done' }, 'PATCH').then(function (r) { if (r.ok) { toast('Marqué fait ✓'); renderPriorities(); } else toast('Erreur'); });
+    jpost(prioUrl(key, kind, id), { projectId: project, status: 'done' }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Marqué fait ✓');
+      // MAJ optimiste : une tâche terminée quitte les listes (KV peut être en retard).
+      if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { PRIO_D.deadlines = PRIO_D.deadlines.filter(function (x) { return !(x.id === id && x.key === key); }); renderPrioBody(PRIO_D); }
+      else renderPriorities();
+    });
   }
   function prioAddDlv(key, id) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
