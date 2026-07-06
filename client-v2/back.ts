@@ -824,9 +824,19 @@ async function handleTaskComment(request: Request, env: Env, masterKey: string, 
   // Marqueur persistant côté admin + notification e-mail : un commentaire du
   // client ne doit pas passer inaperçu.
   found.task.clientCommentNotif = true;
+  // Une tâche « à valider » (review) ne doit pas rester bloquée si le client
+  // répond par un commentaire au lieu de cliquer « J'ai fait mes retours ».
+  // Le commentaire vaut réponse : la tâche revient à Cindy, marquée à traiter.
+  const wasReview = found.task.status === 'review';
+  if (wasReview) {
+    found.task.status = 'in_progress';
+    found.task.clientFeedbackAt = nowIso();
+    found.task.needsRework = true;
+  }
   await save(env, masterKey, data);
   await notifyAdmin(env, `Commentaire · ${clientFullName(data)}`,
-    `<p><strong>${escHtml(clientFullName(data))}</strong> a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong> :</p>` +
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>` +
+    (wasReview ? ` (en réponse à votre demande de révision)` : ``) + ` :</p>` +
     `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(text)}</p>`);
   return json(comment, 201);
 }
