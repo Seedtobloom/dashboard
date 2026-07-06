@@ -807,7 +807,12 @@ async function handleTaskComment(request, env, masterKey, data, taskId) {
     if (!Array.isArray(found.task.comments))
         found.task.comments = [];
     found.task.comments.push(comment);
+    // Marqueur persistant côté admin + notification e-mail : un commentaire du
+    // client ne doit pas passer inaperçu.
+    found.task.clientCommentNotif = true;
     await save(env, masterKey, data);
+    await notifyAdmin(env, `Commentaire · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong> :</p>` +
+        `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(text)}</p>`);
     return json(comment, 201);
 }
 function findTask(espace, taskId, projectId) {
