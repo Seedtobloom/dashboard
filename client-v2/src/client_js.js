@@ -4854,7 +4854,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (!el) { el = document.createElement('style'); el.id = 'cp-accent-style'; document.head.appendChild(el); }
       el.textContent = ':root{--glycine:'+tv.mid+';--glycine-50:'+tv.soft+';--glycine-200:'+tv.mid+';--glycine-700:'+tv.deep+';--glycine-900:'+tv.ink+';--btn-primary-bg:'+tv.btnBg+';--btn-primary-fg:'+tv.btnFg+'}';
     }
-    if (!appData.projects.length) { showError(); return; }
+    if (!appData.projects.length) { showEmptySpace(appData.clientName || ''); return; }
     // Restore client-uploaded banners from localStorage
     appData.projects.forEach(function(pd) {
       try {
@@ -5526,6 +5526,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
+  // Espace valide mais sans projet actif encore (client tout juste créé) :
+  // message d'accueil rassurant plutôt qu'une erreur de chargement.
+  function showEmptySpace(name) {
+    var hello = name ? ('Bienvenue ' + esc(name)) : 'Bienvenue';
+    document.getElementById('app').innerHTML =
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
+      '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
+        '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
+        '<p style="color:#8090a8;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
+        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
+        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a>.</p>' +
+      '</div></div>';
+  }
   function showError(kind) {
     // Par défaut : erreur de chargement (réseau, serveur) avec bouton
     // Réessayer. « Lien expiré » réservé aux vrais refus d'accès (403).
