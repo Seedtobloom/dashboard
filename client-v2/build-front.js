@@ -50,11 +50,8 @@ js = js.replace(catchSrc, ".catch(function(e){ if (e && e.message === 'revoked')
 
 // ── Chat par projet (onglet "Messages") ──
 // 1) onglet supplémentaire dans la vue partenaire
-must(js.indexOf("[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes']].map(function(t){") !== -1, 'partner tabs');
-js = js.replace(
-  "[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes']].map(function(t){",
-  "[['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['liv','Livrables']].map(function(t){"
-);
+must(js.indexOf("['notes','Notes']") !== -1, 'partner tabs');
+js = js.replace("['notes','Notes']", "['liv','Livrables']");
 // 2) dispatch de l'onglet partenaire (Notes retiré, Messages + Livrables ajoutés)
 must(js.indexOf("    if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);") !== -1, 'partner dispatch');
 js = js.replace(
