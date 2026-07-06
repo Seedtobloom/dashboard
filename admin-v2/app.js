@@ -1552,10 +1552,12 @@
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
+      var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+      var cname = cd ? cd.client : 'le client';
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable ajouté · tâche « à valider »'); renderPriorities(); } else toast((res.d && res.d.error) || 'Erreur'); })
-        .catch(function () { cleanup(); toast('Erreur'); });
+        .then(function (res) { cleanup(); if (res.ok) { toast('✓ Livrable envoyé à ' + cname + ' · prévenu·e par e-mail'); PRIO_TAB = 'waiting'; renderPriorities(); } else toast((res.d && res.d.error) || 'Erreur'); })
+        .catch(function () { cleanup(); toast('Erreur — livrable non envoyé, réessaie'); });
     };
     inp.click();
   }
@@ -1971,10 +1973,25 @@
       var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
       var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">échéance ' + fmtDate(t.dueDate) + '</span>' : '';
       // en-tête : titre + statut/échéance à gauche, actions à droite
+      // Badge « livrable » : catégorise la tâche selon l'état de son dernier
+      // livrable envoyé (envoyé/à valider, validé, révision demandée).
+      var tls = (d.content.livrables || []).filter(function (l) { return l.taskId === t.id; }).slice()
+        .sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
+      var lastDlv = tls[tls.length - 1];
+      var dlvBadge = '';
+      if (lastDlv) {
+        var dm = {
+          a_valider: ['📦 Livrable envoyé' + (lastDlv.createdAt ? ' le ' + fmtDate(lastDlv.createdAt) : '') + ' · en attente de validation', '#8a6f2e', '#fbf0d8'],
+          valide: ['📦 Livrable validé' + (lastDlv.validatedAt ? ' le ' + fmtDate(lastDlv.validatedAt) : '') + ' ✓', '#3f6b3a', '#e7f0e3'],
+          refuse: ['📦 Révision demandée', '#9b3a2e', '#fbeae5'],
+          revision: ['📦 Révision demandée', '#9b3a2e', '#fbeae5']
+        }[lastDlv.status || 'a_valider'] || null;
+        if (dm) dlvBadge = '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + dm[1] + ';background:' + dm[2] + ';padding:4px 11px;border-radius:999px">' + dm[0] + (tls.length > 1 ? ' · V' + tls.length : '') + '</span>';
+      }
       var header = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">' +
         '<div style="min-width:0">' +
           '<div style="font-size:18px;font-weight:600;color:var(--terre);line-height:1.25">' + esc(t.title) + '</div>' +
-          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + dueTag + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + dueTag + dlvBadge + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:7px;flex-shrink:0">' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn +
@@ -2123,10 +2140,11 @@
   function uploadTaskDlv(id) {
     var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisis un fichier'); return; }
     var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
+    var cname = (CUR && CUR.client && (CUR.client.prenom || CUR.client.nom)) || 'le client';
     toast('Envoi du livrable…');
     api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) { if (res.ok) { toast('Livrable ajouté · tâche passée « à valider »'); loadClient(); } else toast(res.d.error || 'Erreur'); })
-      .catch(function () { toast('Erreur'); });
+      .then(function (res) { if (res.ok) { toast('✓ Livrable envoyé à ' + cname + ' · prévenu·e par e-mail'); loadClient(); } else toast(res.d.error || 'Erreur'); })
+      .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
   }
   function commentsBlock(pid, t) {
     var list = (t.comments || []);
