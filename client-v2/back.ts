@@ -651,8 +651,9 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
   }
   await save(env, masterKey, data);
   const who = clientFullName(data);
+  const doneLine = decision === 'valide' && liv.taskId ? ` La tâche est maintenant marquée <strong>terminée</strong> ✓.` : ``;
   await notifyAdmin(env, `Livrable ${decision === 'valide' ? 'validé' : 'à revoir'} · ${who}`,
-    `<p><strong>${escHtml(who)}</strong> ${decision === 'valide' ? 'a validé' : 'a demandé une révision sur'} le livrable <em>${escHtml(liv.name || '')}</em>.</p>` +
+    `<p><strong>${escHtml(who)}</strong> ${decision === 'valide' ? 'a validé' : 'a demandé une révision sur'} le livrable <em>${escHtml(liv.name || '')}</em>.${doneLine}</p>` +
     (liv.clientComment ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(liv.clientComment)}</p>` : ''));
   return json({ deliverable: mapDeliverables([liv])[0] });
 }
