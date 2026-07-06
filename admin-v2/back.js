@@ -751,7 +751,7 @@ function findTask(esp, projectId, taskId) {
     const task = container.taches.find((t) => t.id === taskId);
     return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif'];
 async function handleTaskPatch(request, env, key, data, taskId) {
     const body = await readJson(request);
     const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -832,6 +832,8 @@ async function handleTaskComment(request, env, key, data, taskId) {
     if (!Array.isArray(found.task.comments))
         found.task.comments = [];
     found.task.comments.push(comment);
+    // Répondre lève le marqueur « commentaire client non lu ».
+    found.task.clientCommentNotif = false;
     await saveClient(env, key, data);
     await notifyClient(env, data, `Commentaire · ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`);
     return json(comment, 201);
@@ -1117,6 +1119,7 @@ async function handleDashboard(env) {
     const revisions = [];
     const newTasks = [];
     const reworkTasks = [];
+    const commentTasks = [];
     for (const ci of idx) {
         const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' }));
         if (!data)
@@ -1165,6 +1168,12 @@ async function handleDashboard(env) {
                 // Notification persistante : le client a fait ses retours, à retravailler.
                 if (t.needsRework && !t.archived)
                     reworkTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, dueDate: t.dueDate || '', reviewLink: t.reviewLink || '', at: t.clientFeedbackAt || '' });
+                // Notification persistante : commentaire du client non lu.
+                if (t.clientCommentNotif && !t.archived) {
+                    const cc = Array.isArray(t.comments) ? t.comments.filter((c) => c.author === 'client') : [];
+                    const last = cc.length ? cc[cc.length - 1] : null;
+                    commentTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, text: last ? (last.text || '') : '', at: last ? (last.createdAt || '') : '' });
+                }
             });
         }
         collectLiv(pc, 'Partenaire créative', 'partner');
@@ -1194,7 +1203,8 @@ async function handleDashboard(env) {
     revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
     newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     reworkTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-    return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, clientCount: idx.length });
+    commentTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, clientCount: idx.length });
 }
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
 async function handleDone(env) {

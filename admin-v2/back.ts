@@ -678,7 +678,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   const task = container.taches.find((t: AnyObj) => t.id === taskId);
   return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif'];
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -743,6 +743,8 @@ async function handleTaskComment(request: Request, env: Env, key: string, data: 
   const comment = { id: genId(), author: 'cindy', text, createdAt: nowIso() };
   if (!Array.isArray(found.task.comments)) found.task.comments = [];
   found.task.comments.push(comment);
+  // Répondre lève le marqueur « commentaire client non lu ».
+  found.task.clientCommentNotif = false;
   await saveClient(env, key, data);
   await notifyClient(env, data, `Commentaire · ${escHtml(found.task.title || '')}`, `<p>Cindy a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>.</p>`);
   return json(comment, 201);
@@ -976,6 +978,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const revisions: AnyObj[] = [];
   const newTasks: AnyObj[] = [];
   const reworkTasks: AnyObj[] = [];
+  const commentTasks: AnyObj[] = [];
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
@@ -1016,6 +1019,12 @@ async function handleDashboard(env: Env): Promise<Response> {
         if (t.clientNotif && !t.archived) newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, createdAt: t.createdAt || '' });
         // Notification persistante : le client a fait ses retours, à retravailler.
         if (t.needsRework && !t.archived) reworkTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, dueDate: t.dueDate || '', reviewLink: t.reviewLink || '', at: t.clientFeedbackAt || '' });
+        // Notification persistante : commentaire du client non lu.
+        if (t.clientCommentNotif && !t.archived) {
+          const cc = Array.isArray(t.comments) ? t.comments.filter((c: AnyObj) => c.author === 'client') : [];
+          const last = cc.length ? cc[cc.length - 1] : null;
+          commentTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, text: last ? (last.text || '') : '', at: last ? (last.createdAt || '') : '' });
+        }
       });
     }
     collectLiv(pc, 'Partenaire créative', 'partner');
@@ -1038,7 +1047,8 @@ async function handleDashboard(env: Env): Promise<Response> {
   revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   reworkTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, clientCount: idx.length });
+  commentTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, clientCount: idx.length });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

@@ -220,8 +220,8 @@
   }
   // Notifications persistantes : tâches créées par les clients, tant qu'elles ne
   // sont pas traitées (bouton « Vu » ou tâche passée au-delà de « à faire »).
-  var NEW_TASKS = [], REWORK_TASKS = [], NOTIF_OPEN = false;
-  function notifCount() { return NEW_TASKS.length + REWORK_TASKS.length; }
+  var NEW_TASKS = [], REWORK_TASKS = [], COMMENT_TASKS = [], NOTIF_OPEN = false;
+  function notifCount() { return NEW_TASKS.length + REWORK_TASKS.length + COMMENT_TASKS.length; }
   function bell() { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>'; }
   function paintNotif() {
     var fab = el('notif-fab'), panel = el('notif-panel');
@@ -236,6 +236,21 @@
     else panel.style.display = 'none';
   }
   function notifPanelHtml() {
+    var commentRows = COMMENT_TASKS.map(function (t) {
+      var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+      var txt = (t.text || '').trim();
+      return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d);background:#f4f1fa">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
+          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
+          (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
+        '</div>' +
+        '<div class="micro" style="color:#6c4ea4;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">💬 Nouveau commentaire de ' + esc(t.client) + '</div>' +
+        (txt ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(txt) + ' »</div>' : '') +
+        '<div style="display:flex;gap:7px;margin-top:9px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.notifAckComment(\'' + t.key + '\',\'' + t.id + '\')">Vu</button>' +
+        '</div></div>';
+    }).join('');
     var reworkRows = REWORK_TASKS.map(function (t) {
       var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d);background:#f3f6f0">' +
@@ -270,7 +285,7 @@
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border-bottom:1px solid var(--bone-d)">' +
       '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">À traiter</strong>' +
       '<button onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">×</button></div>' +
-      '<div style="max-height:60vh;overflow-y:auto">' + reworkRows + rows + '</div>';
+      '<div style="max-height:60vh;overflow-y:auto">' + commentRows + reworkRows + rows + '</div>';
   }
   function notifToggle() { NOTIF_OPEN = !NOTIF_OPEN; paintNotif(); }
   function notifOpen(key, id) { NOTIF_OPEN = false; paintNotif(); openClient(key); }
@@ -283,6 +298,11 @@
     REWORK_TASKS = REWORK_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
     paintNotif();
     api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', needsRework: false }) }).catch(function () {});
+  }
+  function notifAckComment(key, id) {
+    COMMENT_TASKS = COMMENT_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
+    paintNotif();
+    api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', clientCommentNotif: false }) }).catch(function () {});
   }
   function navTimerHtml() {
     var run = MT_TIMER || PT_TIMER;
@@ -325,6 +345,7 @@
       if (b) b.innerHTML = BADGE_CACHE.priorities;
       NEW_TASKS = d.newTasks || [];
       REWORK_TASKS = d.reworkTasks || [];
+      COMMENT_TASKS = d.commentTasks || [];
       paintNotif();
       refreshTabTitle();
     }).catch(function () {});
@@ -1999,10 +2020,12 @@
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:#5a7050">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
         '</div>' : '';
-      return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework ? ';box-shadow:var(--shadow-2)' : '') + '">' +
+      return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework || t.clientCommentNotif ? ';box-shadow:var(--shadow-2)' : '') + '">' +
         reworkBanner + header + brief + atts + work + review +
         '<div style="' + hair + '"></div>' +
         taskDlvBlock(d, t) +
+        '<div style="' + hair + '"></div>' +
+        commentsBlock('partner', t) +
         '<div style="' + hair + '"></div>' +
         '<details><summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:2px 0">Plus d\'options</summary>' +
           '<div class="row mt" style="align-items:center;gap:10px"><span class="micro">Temps passé</span><input class="inp" type="number" style="width:80px" value="' + (t.timeSpentMinutes || 0) + '" title="ajuster les minutes" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></div>' +
@@ -2012,7 +2035,6 @@
             '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">V1 <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.v1Date || '') + '" onchange="ADM.taskMilestone(\'' + t.id + '\',\'v1Date\',this.value)"></label>' +
             '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">V2 <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.v2Date || '') + '" onchange="ADM.taskMilestone(\'' + t.id + '\',\'v2Date\',this.value)"></label>' +
           '</div>' +
-          commentsBlock('partner', t) +
         '</details>' +
         '</div>';
     }
@@ -2098,8 +2120,20 @@
       .catch(function () { toast('Erreur'); });
   }
   function commentsBlock(pid, t) {
-    var cs = (t.comments || []).map(function (c) { return '<div class="micro" style="margin:2px 0"><strong>' + (c.author === 'cindy' ? 'Vous' : 'Client') + '</strong> · ' + esc(c.text) + '</div>'; }).join('');
-    return '<div class="mt">' + cs + '<div class="row mt"><input class="inp" id="cm-' + t.id + '" placeholder="Répondre / noter l\'avancement…"><button class="btn btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
+    var list = (t.comments || []);
+    var cs = list.length ? list.map(function (c) {
+      var mine = c.author === 'cindy';
+      var bg = mine ? 'var(--surface-2)' : '#f4f1fa';
+      var who = mine ? 'Vous' : 'Client';
+      return '<div style="display:flex;flex-direction:column;align-items:' + (mine ? 'flex-end' : 'flex-start') + ';margin-bottom:7px">' +
+        '<div style="max-width:88%;background:' + bg + ';border-radius:12px;padding:8px 12px">' +
+          '<div class="micro" style="text-transform:none;letter-spacing:0;color:' + (mine ? 'var(--muted)' : '#6c4ea4') + ';font-weight:700;margin-bottom:2px">' + who + (c.createdAt ? ' · ' + fmtDate(c.createdAt) : '') + '</div>' +
+          '<div style="font-size:13.5px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
+        '</div></div>';
+    }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
+    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6c4ea4;background:#efe6fb;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
+    return '<div><div class="micro" style="margin-bottom:9px">Échanges sur la tâche' + flag + '</div>' + cs +
+      '<div class="row mt" style="gap:8px"><input class="inp" style="flex:1" id="cm-' + t.id + '" placeholder="Répondre au client…" onkeydown="if(event.key===\'Enter\')ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')"><button class="btn btn--dark btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
   /* bilan de fin de collaboration + suivi des bénéfices */
   function bilanStars(n) { var h = ''; for (var i = 1; i <= 5; i++) { h += '<span style="font-size:20px;color:' + ((n >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((n >= i) ? '★' : '☆') + '</span>'; } return h; }
@@ -2452,7 +2486,7 @@
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
-    notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework,
+    notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
