@@ -2421,32 +2421,40 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function partFmtH(min){ min = min || 0; var h = Math.floor(min/60), m = min%60; return m ? (h+'h'+String(m).padStart(2,'0')) : (h+' h'); }
   // Historique client : tâches terminées/archivées groupées par mois.
   function cliPartHistoryHtml(allTasks, mkOpen, mkReopen) {
-    var hist = (allTasks||[]).filter(function(t){ return t.status==='done' || t.archived; })
-      .sort(function(a,b){ return (b.completedAt||b.dueDate||b.createdAt||'').localeCompare(a.completedAt||a.dueDate||a.createdAt||''); });
-    if (!hist.length) return '';
-    var groups = {}, order = [];
-    hist.forEach(function(t){
-      var k = (t.completedAt||t.dueDate||t.createdAt||'').slice(0,7);
-      if (!groups[k]) { groups[k]=[]; order.push(k); }
-      groups[k].push(t);
-    });
-    var body = order.map(function(k){
-      var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
-      label = label.charAt(0).toUpperCase()+label.slice(1);
-      var rows = groups[k].map(function(t){
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
-          '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
-          '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#412F21);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title)+'</span>' +
-          (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
-          (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
-          '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>' +
-        '</div>';
+    var arr = allTasks || [];
+    var archT = arr.filter(function(t){ return t.archived; });
+    var doneT = arr.filter(function(t){ return t.status==='done' && !t.archived; });
+    if (!archT.length && !doneT.length) return '';
+    function bodyFor(list, isArch){
+      var groups = {}, order = [];
+      list.slice().sort(function(a,b){ return (b.completedAt||b.dueDate||b.createdAt||'').localeCompare(a.completedAt||a.dueDate||a.createdAt||''); })
+        .forEach(function(t){ var k=(t.completedAt||t.dueDate||t.createdAt||'').slice(0,7); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(t); });
+      return order.map(function(k){
+        var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
+        label = label.charAt(0).toUpperCase()+label.slice(1);
+        var rows = groups[k].map(function(t){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<span style="color:'+(isArch?'#8a6f54':'#7a9a5a')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
+            '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#412F21);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
+            (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
+            (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
+            (isArch
+              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Voir</button>'
+              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
+          '</div>';
+        }).join('');
+        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
       }).join('');
-      return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
-    }).join('');
-    return '<details style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-      '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">📁 Historique, '+hist.length+' tâche'+(hist.length>1?'s':'')+' terminée'+(hist.length>1?'s':'')+'</summary>' +
-      '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+body+'</div></details>';
+    }
+    function section(list, isArch, opened){
+      if (!list.length) return '';
+      var title = isArch ? '🗄 Archivées · '+list.length+' tâche'+(list.length>1?'s':'') : '📁 Terminées · '+list.length+' tâche'+(list.length>1?'s':'');
+      return '<details' + (opened?' open':'') + ' style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
+        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">'+title+'</summary>' +
+        '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+bodyFor(list, isArch)+'</div></details>';
+    }
+    // Les archives sont dépliées par défaut pour être retrouvées facilement.
+    return section(archT, true, true) + section(doneT, false, false);
   }
   var PART_URG_CP_ICONS = { tranquille:'M2 22 16 8M3.34 14a10.5 10.5 0 0 0 17.29-4.08 10 10 0 0 1-5.24-4.14A10.5 10.5 0 0 0 3.06 17.79 10 10 0 0 1 3.34 14', normal:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', urgent:'M13 2 3 14h9l-1 8 10-12h-9z', critique:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z' };
   function cliUrgIcon(u, size) {
