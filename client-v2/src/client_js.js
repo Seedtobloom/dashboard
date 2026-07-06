@@ -2022,8 +2022,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">'+title+'</summary>' +
         '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+bodyFor(list, isArch)+'</div></details>';
     }
-    // only='archived' → onglet Archivées (déplié) ; only='done' → historique
-    // du Tableau ; sinon les deux (archives dépliées par défaut).
+    // only='merged' → une seule liste (terminées + archivées), pour l'onglet
+    // Archivées (le client considère « archivé » = « terminé »).
+    if (only === 'merged') {
+      // archT et doneT sont disjoints (doneT exclut déjà les archivées).
+      var all = archT.concat(doneT);
+      if (!all.length) return '';
+      return section(all, false, true);
+    }
     if (only === 'archived') return section(archT, true, true);
     if (only === 'done') return section(doneT, false, false);
     return section(archT, true, true) + section(doneT, false, false);
@@ -2216,8 +2222,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
       '<div style="display:flex;gap:0">' +
         (function(){
-          var nArch = tasks.filter(function(t){ return t.archived; }).length;
-          return [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes'],['archives','Archivées'+(nArch?' ('+nArch+')':'')]].map(function(t){
+          var nFin = tasks.filter(function(t){ return t.archived || t.status==='done'; }).length;
+          return [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['notes','Notes'],['archives','Terminées'+(nFin?' ('+nFin+')':'')]].map(function(t){
             return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
           }).join('');
         })() +
@@ -2232,18 +2238,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (tab === 'archives') return summaryBar + tabs + buildPartArchives(pid, tasks);
     return summaryBar + tabs;
   }
-  // Onglet dédié aux tâches archivées.
+  // Onglet dédié aux tâches archivées (= terminées + archivées).
   function buildPartArchives(pid, tasks) {
-    var archived = (tasks||[]).filter(function(t){ return t.archived; });
-    var head = '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:4px">Tâches archivées</div>' +
-      '<div style="font-family:var(--font-ui);font-size:13px;color:var(--terre-600);margin-bottom:18px">Les tâches mises de côté. Cliquez sur « Voir » pour rouvrir le détail d\'une tâche.</div>';
-    if (!archived.length) {
-      return head + '<div style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:34px;text-align:center;color:var(--terre-400);font-family:var(--font-ui);font-size:14px">Aucune tâche archivée pour le moment.</div>';
+    var finished = (tasks||[]).filter(function(t){ return t.archived || t.status==='done'; });
+    var head = '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin-bottom:4px">Tâches terminées</div>' +
+      '<div style="font-family:var(--font-ui);font-size:13px;color:var(--terre-600);margin-bottom:18px">Vos tâches finies, classées par mois. Cliquez sur « Rouvrir » pour en réactiver une.</div>';
+    if (!finished.length) {
+      return head + '<div style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:34px;text-align:center;color:var(--terre-400);font-family:var(--font-ui);font-size:14px">Aucune tâche terminée pour le moment.</div>';
     }
     var hist = cliPartHistoryHtml(tasks,
       function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
       function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; },
-      'archived');
+      'merged');
     return head + hist;
   }
 
@@ -2771,10 +2777,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
 
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
-    var historyCard = cliPartHistoryHtml(tasks,
-      function(id){ return 'cliOpenTaskDrawer(\''+pid+'\',\''+id+'\')'; },
-      function(id){ return 'cliPatchTask(\''+pid+'\',\''+id+'\',{status:\'todo\',archived:false})'; },
-      'done');
+    // L'historique des tâches finies a désormais son propre onglet « Terminées ».
+    var historyCard = '';
 
     return '<div style="display:grid;grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start">' +
       '<div>' +
