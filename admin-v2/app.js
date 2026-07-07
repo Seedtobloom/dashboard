@@ -270,13 +270,18 @@
       var content = (t.content || '').trim();
       var preview = content ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + esc(content) + '</div>' : '<div style="font-size:12px;font-style:italic;color:var(--muted);margin-top:5px">Sans description.</div>';
       var att = t.attCount ? '<span style="font-size:11px;color:var(--muted);margin-left:8px">📎 ' + t.attCount + '</span>' : '';
+      var attDl = (Array.isArray(t.attachments) && t.attachments.length)
+        ? '<div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px">' + t.attachments.map(function (a) {
+            return '<a href="/api/clients/' + t.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+          }).join('') + '</div>'
+        : '';
       return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d)">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
           '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + att + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
         '<div class="micro" style="color:var(--glycine-900);text-transform:none;letter-spacing:0;margin-top:2px">' + esc(t.client) + '</div>' +
-        preview +
+        preview + attDl +
         '<div style="display:flex;gap:7px;margin-top:9px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.notifAck(\'' + t.key + '\',\'' + t.id + '\')">Vu</button>' +
@@ -602,7 +607,12 @@
         var body = c
           ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
           : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>';
-        var att = x.attCount ? '<div style="margin-top:7px;font-size:12px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + ' — ouvrir la fiche client pour le' + (x.attCount > 1 ? 's' : '') + ' télécharger</div>' : '';
+        var atts = Array.isArray(x.attachments) ? x.attachments : [];
+        var att = atts.length
+          ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
+              return '<a href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid ' + (dark ? 'rgba(242,229,194,0.25)' : 'var(--bone-d)') + ';color:' + (dark ? 'rgba(242,229,194,0.9)' : 'var(--glycine-900)') + ';text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+            }).join('') + '</div>'
+          : (x.attCount ? '<div style="margin-top:7px;font-size:12px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + '</div>' : '');
         return '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:' + sumCol + '">Voir la demande</summary>' + body + att + '</details>';
       }
       // Chrono par tâche partenaire, utilisable directement depuis Priorités
