@@ -1160,11 +1160,12 @@ async function handleDashboard(env) {
                 // remonte même sans échéance, avec le lien et la date d'envoi.
                 if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
                     const hist = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
-                    deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: (t.attachments || []).length, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, needsRework: !!t.needsRework });
+                    const atts = (t.attachments || []).map((a) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a) => a.key);
+                    deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: atts.length, attachments: atts, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, needsRework: !!t.needsRework });
                 }
                 // Notification persistante : tâche créée par le client et pas encore traitée.
                 if (t.clientNotif && !t.archived)
-                    newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, createdAt: t.createdAt || '' });
+                    newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, attachments: (t.attachments || []).map((a) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a) => a.key), createdAt: t.createdAt || '' });
                 // Notification persistante : le client a fait ses retours, à retravailler.
                 if (t.needsRework && !t.archived)
                     reworkTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, dueDate: t.dueDate || '', reviewLink: t.reviewLink || '', at: t.clientFeedbackAt || '' });
