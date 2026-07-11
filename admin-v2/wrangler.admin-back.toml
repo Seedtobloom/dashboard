@@ -27,9 +27,10 @@ ENVIRONMENT = "production"
 #   RESEND_API_KEY    (notifications client)
 #   RESEND_FROM_EMAIL (expéditeur vérifié)
 
-# Sauvegarde automatique hebdomadaire (dimanche 03h17 UTC) : instantané complet
+# Sauvegarde automatique hebdomadaire (lundi 03h17 UTC) : instantané complet
 # des données KV vers R2 (_backups/), instantanés de plus de 2 semaines supprimés.
+# NB : Cloudflare exige day-of-week en 1-7 (0 est refusé).
 [triggers]
-crons = ["17 3 * * 0"]
+crons = ["17 3 * * 1"]
 
 # redeploy: relance du déploiement après échec réseau transitoire (2026-07-06)
