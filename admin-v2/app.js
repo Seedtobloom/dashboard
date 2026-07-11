@@ -488,7 +488,7 @@
           '<button class="btn btn--outline btn--sm" onclick="ADM.backupRestoreOpen(\'' + esc(x.name) + '\')">Restaurer…</button></div>';
       }).join('');
       b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Sauvegardes</h3>' +
-        '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Une sauvegarde complète (espaces clients, tes tâches, planning, réglages) est créée automatiquement chaque nuit et conservée 30 jours. Les fichiers déposés vivent déjà dans un stockage durable et ne sont pas dupliqués. Tu peux aussi créer une sauvegarde à la demande, la télécharger sur ton ordinateur, ou restaurer un client depuis un instantané.</div>' +
+        '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Une sauvegarde complète (espaces clients, tes tâches, planning, réglages) est créée automatiquement chaque semaine et conservée 2 semaines. Les fichiers déposés vivent déjà dans un stockage durable et ne sont pas dupliqués. Tu peux aussi créer une sauvegarde à la demande, la télécharger sur ton ordinateur, ou restaurer un client depuis un instantané.</div>' +
         '<div class="row mb"><button class="btn btn--dark btn--sm" onclick="ADM.backupRun()">Créer une sauvegarde maintenant</button></div>' +
         (rows || '<div class="empty">Aucune sauvegarde pour le moment. La première se créera cette nuit, ou clique ci-dessus.</div>') + '</div>';
     }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
@@ -829,7 +829,7 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'board', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40;
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'list', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40;
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#f2ebff', '#5e3fa0'], ['#eaf1fb', '#35608f'], ['#f6ecd5', '#9c6f18'], ['#eaf1e6', '#4f6a46'], ['#f7ece7', '#a23c28'], ['#efe7d7', '#6b533b']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
@@ -906,6 +906,55 @@
     jpost('/api/admin/tasks', { title: text, priority: prio, tags: tags, doDate: doDate }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { inp.value = ''; if (doEl) doEl.value = ''; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
   function mtToggleAdd() { MT_ADDOPEN = !MT_ADDOPEN; renderMyTasks(); }
+  // Ajout en masse : une tâche par ligne (« vider son cerveau »).
+  function mtBulkAddOpen() {
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:540px;text-align:left">' +
+      '<div class="admconfirm__title">Vider ton cerveau · ajouter une liste</div>' +
+      '<div class="admconfirm__msg">Écris (ou colle) <b>une tâche par ligne</b>. Tu peux ajouter <b>#étiquette</b> et un <b>!</b> pour la priorité haute.</div>' +
+      '<textarea class="inp" id="mt-bulk" style="width:100%;box-sizing:border-box;min-height:200px;resize:vertical" placeholder="Terminer mon site internet\nFaire le site de Sienna\nMettre à jour le CRM"></textarea>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Tout ajouter</button></div>' +
+    '</div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var ta = el('mt-bulk');
+      var lines = ((ta && ta.value) || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+      if (!lines.length) { toast('Ajoute au moins une ligne'); return; }
+      close();
+      toast('Ajout de ' + lines.length + ' tâche' + (lines.length > 1 ? 's' : '') + '…');
+      var reqs = lines.map(function (raw) {
+        var tags = [];
+        var text = raw.replace(/#([\p{L}0-9_-]+)/gu, function (_m, w) { tags.push(w); return ' '; });
+        var prio = 'normale';
+        if (/!+/.test(text)) { prio = 'haute'; text = text.replace(/!+/g, ' '); }
+        text = text.replace(/\s+/g, ' ').trim();
+        if (!text) return Promise.resolve(null);
+        return jpost('/api/admin/tasks', { title: text, priority: prio, tags: tags }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+      });
+      Promise.all(reqs).then(function (tasks) {
+        var n = tasks.filter(Boolean).length;
+        toast(n + ' tâche' + (n > 1 ? 's' : '') + ' ajoutée' + (n > 1 ? 's' : '') + ' ✓');
+        renderMyTasks();
+      });
+    };
+    document.body.appendChild(ov);
+    var f = el('mt-bulk'); if (f) f.focus();
+  }
+  // Ligne de checklist (vue Liste) : coche pour terminer.
+  function mtListRow(t) {
+    var pc = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority || 'normale'];
+    return '<label style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--bone-d);cursor:pointer">' +
+      '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
+      '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
+      '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0">' + esc(t.title) + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
+      (t.doDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">à faire le ' + fmtDate(t.doDate) + '</span>' : '') +
+      '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="event.preventDefault();ADM.mtEditOpen(\'' + t.id + '\')">Détails</button>' +
+    '</label>';
+  }
   function mtSaveSubs(id, subs) { jpost('/api/admin/tasks/' + id, { subtasks: subs }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function mtSubAdd(id) { var inp = el('mtsub-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var t = MT_TASKS.filter(function (x) { return x.id === id; })[0]; if (!t) return; var subs = Array.isArray(t.subtasks) ? t.subtasks.slice() : []; subs.push({ id: 'st' + Date.now(), text: v, done: false }); mtSaveSubs(id, subs); }
   function mtSubToggle(id, subId) { var t = MT_TASKS.filter(function (x) { return x.id === id; })[0]; if (!t || !Array.isArray(t.subtasks)) return; mtSaveSubs(id, t.subtasks.map(function (s) { return s.id === subId ? { id: s.id, text: s.text, done: !s.done } : s; })); }
@@ -1173,7 +1222,8 @@
         : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
       var archSorted = archived.slice().sort(function (a, b) { return String(b.completedAt || b.dueDate || '').localeCompare(String(a.completedAt || a.dueDate || '')); });
       var archView = archived.length ? archSorted.map(mtCard).join('') : '<div class="empty">Aucune tâche archivée. Archivez une tâche terminée pour la ranger ici.</div>';
-      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">À faire · ' + todo.length + '</button>' +
+      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">Liste · ' + todo.length + '</button>' +
+        '<button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">Tableau · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
       var boardHint = todo.length ? '<div class="micro" style="margin:-6px 0 14px">Glisse une tâche d\'une colonne à l\'autre pour changer sa priorité.</div>' : '';
@@ -1201,7 +1251,16 @@
         '<button class="btn btn--dark" onclick="ADM.mtQuickAdd()">Ajouter</button></div>' +
         '<div class="micro" style="margin-top:6px">Astuce : ajoutez <b>#étiquette</b> pour classer, un <b>!</b> pour la priorité haute, et une date <b>« À faire le »</b> si tu veux la planifier. « + Nouvelle tâche » ouvre le détail (client, échéance, récurrence…).</div></div>';
       var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus.</div>') : '';
-      var content = MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent);
+      // Vue Liste (checklist) : tout à faire, à cocher, avec ajout en masse.
+      var prank2 = { haute: 0, normale: 1, basse: 2 };
+      var listSorted = todo.slice().sort(function (a, b) {
+        var pa = prank2[a.priority] == null ? 1 : prank2[a.priority], pb = prank2[b.priority] == null ? 1 : prank2[b.priority];
+        if (pa !== pb) return pa - pb;
+        return String(a.doDate || a.dueDate || '9999').localeCompare(String(b.doDate || b.dueDate || '9999'));
+      });
+      var bulkBtn = '<div style="margin-bottom:12px"><button class="btn btn--outline btn--sm" onclick="ADM.mtBulkAddOpen()">🧠 Vider ton cerveau · coller une liste</button></div>';
+      var listView = quickBar + bulkBtn + (todo.length ? '<div class="card" style="padding:4px 0">' + listSorted.map(mtListRow).join('') + '</div>' : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus, ou colle une liste.</div>');
+      var content = MT_VIEW === 'list' ? listView : (MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent));
       var addBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">' + (MT_ADDOPEN ? 'Fermer' : '+ Nouvelle tâche') + '</button>';
       setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
   }
@@ -1301,8 +1360,9 @@
         var pcol = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority] || '#6c4ea4';
         var lbg = { haute: '#f5c3b2', normale: '#d6c2f1', basse: '#e6dac2' }[t.priority] || '#d6c2f1';
         var ptx = { haute: '#7a2615', normale: '#42316b', basse: '#5d4c36' }[t.priority] || '#42316b';
-        items += '<div onclick="ADM.planDone(\'' + t.id + '\')" title="' + esc(t.title) + ', clic pour marquer fait" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.18);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box;cursor:pointer">' +
-          '<div style="display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:700;color:' + ptx + ';line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.title) + '</span></div>' +
+        items += '<div title="' + esc(t.title) + '" style="position:absolute;left:3px;right:3px;top:' + top + 'px;height:' + (bh - 2) + 'px;background:' + lbg + ';border:1px solid rgba(65,47,33,0.18);border-radius:7px;padding:4px 7px;overflow:hidden;box-sizing:border-box">' +
+          '<div style="display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:' + pcol + ';flex-shrink:0"></span><span style="font-size:11px;font-weight:700;color:' + ptx + ';line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">' + esc(t.title) + '</span>' +
+            '<button onclick="event.stopPropagation();ADM.planDone(\'' + t.id + '\')" title="Marquer fait" style="flex-shrink:0;background:rgba(255,255,255,0.65);border:none;border-radius:5px;cursor:pointer;font-size:10px;line-height:1;padding:2px 5px;color:' + ptx + '">✓</button></div>' +
           (bh > 34 ? '<div style="font-size:9px;color:' + ptx + ';opacity:0.75;margin-top:1px">' + hrs + '</div>' : '') + '</div>';
       }
     });
@@ -2530,7 +2590,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
