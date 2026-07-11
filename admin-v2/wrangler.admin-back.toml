@@ -27,9 +27,9 @@ ENVIRONMENT = "production"
 #   RESEND_API_KEY    (notifications client)
 #   RESEND_FROM_EMAIL (expéditeur vérifié)
 
-# Sauvegarde automatique quotidienne (03h17 UTC) : instantané complet des
-# données KV vers R2 (_backups/), 30 jours conservés.
+# Sauvegarde automatique hebdomadaire (dimanche 03h17 UTC) : instantané complet
+# des données KV vers R2 (_backups/), instantanés de plus de 2 semaines supprimés.
 [triggers]
-crons = ["17 3 * * *"]
+crons = ["17 3 * * 0"]
 
 # redeploy: relance du déploiement après échec réseau transitoire (2026-07-06)

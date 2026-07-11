@@ -1436,7 +1436,16 @@ async function handleBookingLinkSave(request: Request, env: Env): Promise<Respon
  * Les fichiers eux-mêmes vivent déjà dans R2 et ne sont pas dupliqués.
  */
 const BACKUP_PREFIX = '_backups/';
-const BACKUP_KEEP = 30;
+// Sauvegarde hebdomadaire ; on supprime les instantanés de plus de 2 semaines.
+const BACKUP_MAX_AGE_DAYS = 14;
+// Date d'un instantané, depuis R2 (uploaded) sinon depuis son nom
+// (_backups/AAAA-MM-JJTHHhMM.json).
+function backupTime(o: { key: string; uploaded?: Date }): number {
+  if (o.uploaded && !isNaN(o.uploaded.getTime())) return o.uploaded.getTime();
+  const m = o.key.slice(BACKUP_PREFIX.length).replace('.json', '').replace('h', ':');
+  const t = Date.parse(m);
+  return isNaN(t) ? 0 : t;
+}
 async function backupSnapshot(env: Env): Promise<{ name: string; size: number; clients: number }> {
   const idx = await getIndex(env);
   const clients: Record<string, AnyObj | null> = {};
@@ -1457,11 +1466,13 @@ async function backupSnapshot(env: Env): Promise<{ name: string; size: number; c
   const body = JSON.stringify(snapshot);
   const name = BACKUP_PREFIX + nowIso().slice(0, 16).replace(':', 'h') + '.json';
   await env.R2_FILES.put(name, body, { httpMetadata: { contentType: 'application/json' } });
-  // Rotation : on garde les BACKUP_KEEP plus récents
+  // Rotation par ancienneté : on supprime les instantanés de plus de 2 semaines
+  // (on garde toujours le plus récent, celui qu'on vient de créer).
   const listed = await env.R2_FILES.list({ prefix: BACKUP_PREFIX });
-  const names = listed.objects.map((o) => o.key).sort();
-  for (const k of names.slice(0, Math.max(0, names.length - BACKUP_KEEP))) {
-    await env.R2_FILES.delete(k);
+  const cutoff = Date.parse(snapshot.at) - BACKUP_MAX_AGE_DAYS * 86400 * 1000;
+  const withTime = listed.objects.map((o) => ({ key: o.key, t: backupTime(o) })).sort((a, b) => b.t - a.t);
+  for (let i = 1; i < withTime.length; i++) {
+    if (withTime[i].t && withTime[i].t < cutoff) await env.R2_FILES.delete(withTime[i].key);
   }
   return { name, size: body.length, clients: idx.length };
 }
