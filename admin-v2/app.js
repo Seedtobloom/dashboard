@@ -447,7 +447,7 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['backups', 'Sauvegardes']];
+    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['backups', 'Sauvegardes']];
     return '<div class="subtabs">' + items.map(function (it) {
       return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
     }).join('') + '</div>';
@@ -462,6 +462,11 @@
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else if (REGL_TAB === 'backups') {
       renderBackups();
+    } else if (REGL_TAB === 'conges') {
+      api('/api/holidays').then(function (r) { return r.json(); }).then(function (d) {
+        HOLIDAYS = Array.isArray(d.holidays) ? d.holidays : [];
+        renderCongesBody();
+      }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else if (REGL_TAB === 'rdv') {
       api('/api/booking-link').then(function (r) { return r.json(); }).then(function (d) {
         var b = el('regl-body'); if (!b) return;
@@ -534,6 +539,39 @@
   function bookingSave() {
     jpost('/api/booking-link', { link: (el('bk-link').value || '').trim() }, 'PUT').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) { if (res.ok) toast(res.d.link ? 'Lien enregistré — bouton visible chez tes clients ✓' : 'Lien retiré, bouton masqué'); else toast((res.d && res.d.error) || 'Erreur'); })
+      .catch(function () { toast('Erreur'); });
+  }
+  /* ── Congés du studio ── */
+  var HOLIDAYS = [];
+  function congesReadInputs() {
+    return HOLIDAYS.map(function (_, i) {
+      return { id: HOLIDAYS[i] && HOLIDAYS[i].id || '', from: (el('cg-from-' + i) || {}).value || '', to: (el('cg-to-' + i) || {}).value || '', message: (el('cg-msg-' + i) || {}).value || '' };
+    });
+  }
+  function renderCongesBody() {
+    var b = el('regl-body'); if (!b) return;
+    var rows = HOLIDAYS.map(function (h, i) {
+      return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
+        '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
+          '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">Du <input class="inp" type="date" id="cg-from-' + i + '" value="' + esc(h.from || '') + '" style="width:auto"></label>' +
+          '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">au <input class="inp" type="date" id="cg-to-' + i + '" value="' + esc(h.to || '') + '" style="width:auto"></label>' +
+          '<button class="btn btn--danger btn--sm" style="margin-left:auto" onclick="ADM.congesDel(' + i + ')" title="Retirer">✕</button>' +
+        '</div>' +
+        '<input class="inp mt" id="cg-msg-' + i + '" value="' + esc(h.message || '') + '" placeholder="Message affiché au client (ex. Je serai en congés, réponses à mon retour)" style="width:100%;box-sizing:border-box">' +
+      '</div>';
+    }).join('');
+    b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Congés du studio</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ajoute tes périodes de congés. Un bandeau s\'affiche en haut de l\'espace de <b>tous tes clients</b> pendant la période (et jusqu\'à 30 jours avant, en « À venir »). Laisse le message vide pour un texte par défaut.</div>' +
+      (rows || '<div class="empty">Aucun congé programmé.</div>') +
+      '<div class="row mt" style="gap:8px"><button class="btn btn--outline btn--sm" onclick="ADM.congesAdd()">+ Ajouter une période</button>' +
+        '<button class="btn btn--dark btn--sm" style="margin-left:auto" onclick="ADM.congesSave()">Enregistrer</button></div></div>';
+  }
+  function congesAdd() { HOLIDAYS = congesReadInputs(); HOLIDAYS.push({ id: '', from: '', to: '', message: '' }); renderCongesBody(); }
+  function congesDel(i) { HOLIDAYS = congesReadInputs(); HOLIDAYS.splice(i, 1); renderCongesBody(); }
+  function congesSave() {
+    var list = congesReadInputs().filter(function (h) { return h.from; });
+    jpost('/api/holidays', { holidays: list }, 'PUT').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) { if (res.ok) { HOLIDAYS = res.d.holidays || []; toast('Congés enregistrés ✓'); renderCongesBody(); } else toast((res.d && res.d.error) || 'Erreur'); })
       .catch(function () { toast('Erreur'); });
   }
   function missionReadInputs() { return MISSION_LIST.map(function (_, i) { var e = el('mt-type-' + i); return e ? e.value : MISSION_LIST[i]; }); }
@@ -2020,10 +2058,42 @@
   /* partner: forfait + tâches (sous-onglets séparés) */
   function partnerForfait(d) {
     var f = d.forfait || {};
+    WORKSLOTS = (d.content && Array.isArray(d.content.workSlots)) ? d.content.workSlots.slice() : [];
     return '<div class="card"><div class="between"><h3>Forfait</h3>' +
       '<div class="row"><input id="pf-h" class="inp" type="number" style="width:90px" value="' + (f.base || 0) + '"><span class="micro">h/mois</span>' +
       '<button class="btn btn--sm" onclick="ADM.saveForfait()">OK</button></div></div>' +
-      (f.configured ? '<div class="micro mt">' + (f.used || 0) + ' h consommées ce mois · reste ' + (f.remaining) + ' h</div>' : '') + '</div>';
+      (f.configured ? '<div class="micro mt">' + (f.used || 0) + ' h consommées ce mois · reste ' + (f.remaining) + ' h</div>' : '') + '</div>' +
+      '<div class="card"><h3>Créneaux réservés</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Les moments où tu travailles pour ce client. Ils s\'affichent sur son espace pour qu\'il sache quand tu es sur son projet.</div>' +
+      '<div id="ws-card">' + workSlotsCard() + '</div></div>';
+  }
+  var WORKSLOTS = [];
+  var WS_DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  function wsReadInputs() {
+    return WORKSLOTS.map(function (_, i) {
+      return { day: (el('ws-day-' + i) || {}).value || '', from: (el('ws-from-' + i) || {}).value || '', to: (el('ws-to-' + i) || {}).value || '' };
+    });
+  }
+  function workSlotsCard() {
+    var rows = WORKSLOTS.map(function (s, i) {
+      var opts = WS_DAYS.map(function (dn) { return '<option value="' + dn + '"' + (s.day === dn ? ' selected' : '') + '>' + dn + '</option>'; }).join('');
+      return '<div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">' +
+        '<select class="inp" id="ws-day-' + i + '" style="width:auto">' + opts + '</select>' +
+        '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">de <input class="inp" type="time" id="ws-from-' + i + '" value="' + esc(s.from || '') + '" style="width:auto"></label>' +
+        '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">à <input class="inp" type="time" id="ws-to-' + i + '" value="' + esc(s.to || '') + '" style="width:auto"></label>' +
+        '<button class="btn btn--danger btn--sm" style="margin-left:auto" onclick="ADM.wsDel(' + i + ')" title="Retirer">✕</button>' +
+      '</div>';
+    }).join('');
+    return (rows || '<div class="micro" style="color:var(--muted);margin-bottom:8px">Aucun créneau défini.</div>') +
+      '<div class="row mt" style="gap:8px"><button class="btn btn--outline btn--sm" onclick="ADM.wsAdd()">+ Ajouter un créneau</button>' +
+      '<button class="btn btn--dark btn--sm" style="margin-left:auto" onclick="ADM.wsSave()">Enregistrer</button></div>';
+  }
+  function wsRepaint() { var c = el('ws-card'); if (c) c.innerHTML = workSlotsCard(); }
+  function wsAdd() { WORKSLOTS = wsReadInputs(); WORKSLOTS.push({ day: 'Lundi', from: '09:00', to: '12:00' }); wsRepaint(); }
+  function wsDel(i) { WORKSLOTS = wsReadInputs(); WORKSLOTS.splice(i, 1); wsRepaint(); }
+  function wsSave() {
+    var list = wsReadInputs().filter(function (s) { return s.day && s.from; });
+    jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', workSlots: list }, 'PATCH').then(function (r) { if (r.ok) { toast('Créneaux enregistrés ✓'); WORKSLOTS = list; wsRepaint(); } else toast('Erreur'); });
   }
   function partnerTasks(d) {
     var all = Array.isArray(d.content.taches) ? d.content.taches : [];
@@ -2586,7 +2656,7 @@
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
-    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
+    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,

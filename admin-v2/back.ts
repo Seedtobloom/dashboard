@@ -94,6 +94,10 @@ export default {
         if (method === 'GET') return handleMissionTypesGet(env);
         if (method === 'PUT') return handleMissionTypesSave(request, env);
       }
+      if (pathname === '/api/holidays') {
+        if (method === 'GET') return handleHolidaysGet(env);
+        if (method === 'PUT') return handleHolidaysSave(request, env);
+      }
 
       // Sauvegardes : instantanés complets des données (KV) stockés dans R2
       if (method === 'GET' && pathname === '/api/backups') return handleBackupList(env);
@@ -413,6 +417,14 @@ async function handleClientApi(
     if (!container) return json({ error: 'Projet introuvable' }, 404);
     if (body.monthlyHours !== undefined) container.monthlyHours = Number(body.monthlyHours) || 0;
     if (body.forfaitOverrides && typeof body.forfaitOverrides === 'object') container.forfaitOverrides = body.forfaitOverrides;
+    // Créneaux réservés : quand Cindy travaille pour ce client (récurrent).
+    if (Array.isArray(body.workSlots)) {
+      container.workSlots = body.workSlots.map((s: AnyObj) => ({
+        day: (s && s.day ? String(s.day) : '').slice(0, 12),
+        from: (s && s.from ? String(s.from) : '').slice(0, 5),
+        to: (s && s.to ? String(s.to) : '').slice(0, 5),
+      })).filter((s: AnyObj) => s.day && s.from).slice(0, 20);
+    }
     await saveClient(env, key, data);
     return json({ ok: true });
   }
@@ -1428,6 +1440,24 @@ async function handleBookingLinkSave(request: Request, env: Env): Promise<Respon
   if (link && !/^https?:\/\//i.test(link) && !/^[a-z0-9.-]+\.[a-z]{2,}/i.test(link)) return json({ error: 'Lien invalide' }, 400);
   await env.KV_CLIENT.put('global:bookingLink', link);
   return json({ ok: true, link });
+}
+
+/* ── Congés du studio (globaux, affichés en haut des espaces clients) ── */
+async function handleHolidaysGet(env: Env): Promise<Response> {
+  const stored = (await env.KV_CLIENT.get('global:studioHolidays', { type: 'json' })) as AnyObj[] | null;
+  return json({ holidays: Array.isArray(stored) ? stored : [] });
+}
+async function handleHolidaysSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const arr = Array.isArray(body.holidays) ? body.holidays : [];
+  const clean = arr.map((h: AnyObj) => ({
+    id: (h && h.id ? String(h.id) : genId()).slice(0, 40),
+    from: (h && h.from ? String(h.from) : '').slice(0, 10),
+    to: (h && h.to ? String(h.to) : '').slice(0, 10),
+    message: (h && h.message ? String(h.message) : '').slice(0, 300),
+  })).filter((h: AnyObj) => h.from).slice(0, 50);
+  await env.KV_CLIENT.put('global:studioHolidays', JSON.stringify(clean));
+  return json({ ok: true, holidays: clean });
 }
 
 /* ── Sauvegardes ──
