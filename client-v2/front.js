@@ -2648,6 +2648,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+' </div>' +
       '</div>' +
     '</div>';
+    // Créneaux réservés : quand Cindy travaille sur ce projet (réglé côté studio).
+    var _slots = Array.isArray(project.workSlots) ? project.workSlots : [];
+    if (_slots.length) {
+      summaryBar = '<div style="background:var(--glycine-50,#f7efff);border:1px solid var(--glycine-200,#E4D1FE);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        cpIcon('calendar',16,'color:var(--glycine-900,#6c4ea4)') +
+        '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#6c4ea4)">Cindy travaille pour vous</span>' +
+        '<span style="font-size:13.5px;color:var(--navy,#1C1205)">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join(' · ') + '</span>' +
+      '</div>' + summaryBar;
+    }
 
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px">' +

@@ -420,6 +420,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         tasks: Array.isArray(pc.taches) ? pc.taches : [],
         propertySchema: withMissionTypes(Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA),
         monthlyHours: pc.monthlyHours || 0,
+        workSlots: Array.isArray(pc.workSlots) ? pc.workSlots : [],
         rolloverCapHours: pc.rolloverCapHours,
         overageRate: pc.overageRate,
         forfaitOverrides: pc.forfaitOverrides || {},
@@ -527,7 +528,10 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   }
 
   const conversation = mapChatToMessages(espace.conversation || []);
-  const studioHolidays = espace.studioHolidays || [];
+  // Congés du studio : réglés globalement côté admin (repli sur l'ancien
+  // stockage par espace pour compatibilité).
+  const globalHolidays = (await env.KV_CLIENT.get('global:studioHolidays', { type: 'json' })) as AnyObj[] | null;
+  const studioHolidays = Array.isArray(globalHolidays) ? globalHolidays : (espace.studioHolidays || []);
   const bilan = pc && pc.bilan && typeof pc.bilan === 'object' ? pc.bilan : null;
 
   // Lien de visioconférence (créé côté studio, ex. kMeet Infomaniak) : commun au client
