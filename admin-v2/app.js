@@ -277,7 +277,7 @@
         : '';
       return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d)">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
-          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + att + '</div>' +
+          '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + (t.kind === 'ticket' ? '<span title="Ticket de maintenance">🎫 </span>' : '') + esc(t.title || 'Sans titre') + att + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
         '<div class="micro" style="color:var(--glycine-900);text-transform:none;letter-spacing:0;margin-top:2px">' + esc(t.client) + '</div>' +
@@ -295,9 +295,11 @@
   function notifToggle() { NOTIF_OPEN = !NOTIF_OPEN; paintNotif(); }
   function notifOpen(key, id) { NOTIF_OPEN = false; paintNotif(); openClient(key); }
   function notifAck(key, id) {
+    var it = NEW_TASKS.filter(function (t) { return t.key === key && t.id === id; })[0];
     NEW_TASKS = NEW_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
     paintNotif();
-    api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', clientNotif: false }) }).catch(function () {});
+    if (it && it.kind === 'ticket') api('/api/clients/' + key + '/tickets/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'maintenance' }) }).catch(function () {});
+    else api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', clientNotif: false }) }).catch(function () {});
   }
   function notifAckRework(key, id) {
     REWORK_TASKS = REWORK_TASKS.filter(function (t) { return !(t.key === key && t.id === id); });
@@ -680,9 +682,11 @@
         var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow">' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') + '</div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
+            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#35608f;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + prioBrief(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
+            (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
@@ -729,6 +733,7 @@
         prioChip('all', PRIO_FILTER, 'Tout', 'ADM.prioSetFilter(\'all\')') +
         prioChip('tâche', PRIO_FILTER, 'Tâches', 'ADM.prioSetFilter(\'tâche\')') +
         prioChip('étape', PRIO_FILTER, 'Étapes', 'ADM.prioSetFilter(\'étape\')') +
+        prioChip('ticket', PRIO_FILTER, 'Tickets', 'ADM.prioSetFilter(\'ticket\')') +
         '</div>';
       var mineHtml = prioControls + (mineBody || '<div class="empty">' + (mine.length ? 'Rien ici avec ce filtre.' : 'Rien à traiter, tout est à jour.') + '</div>');
 
@@ -1659,7 +1664,14 @@
     }).catch(showError);
   }
 
-  function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : '/steps/') + id; }
+  function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : kind === 'ticket' ? '/tickets/' : '/steps/') + id; }
+  function prioTicketStart(key, id) {
+    jpost('/api/clients/' + key + '/tickets/' + id, { projectId: 'maintenance', status: 'in_progress' }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Ticket en cours');
+      if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.status = 'in_progress'; renderPrioBody(PRIO_D); } else renderPriorities();
+    });
+  }
   function prioDone(key, project, kind, id) {
     jpost(prioUrl(key, kind, id), { projectId: project, status: 'done' }, 'PATCH').then(function (r) {
       if (!r.ok) { toast('Erreur'); return; }
@@ -1791,7 +1803,7 @@
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
     inp.onchange = function () {
       var v = inp.value; cleanup(); if (!v) return;
-      var body = { projectId: project }; if (kind === 'tâche') body.dueDate = v; else body.date = v;
+      var body = { projectId: project }; if (kind === 'tâche' || kind === 'ticket') body.dueDate = v; else body.date = v;
       jpost(prioUrl(key, kind, id), body, 'PATCH').then(function (r) { if (r.ok) { toast('Reporté au ' + fmtDate(v)); renderPriorities(); } else toast('Erreur'); });
     };
     inp.onblur = function () { setTimeout(cleanup, 200); };
@@ -2117,6 +2129,13 @@
       if (okMsg) toast(okMsg); renderClient();
     }).catch(function () { toast('Erreur'); });
   }
+  function ticketForfait(hours) {
+    var d = findDomain('maintenance'); if (!d) return;
+    var n = Math.max(0, parseFloat(hours) || 0);
+    jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'maintenance', monthlyHours: n }, 'PATCH').then(function (r) {
+      if (r.ok) { d.content.monthlyHours = n; toast('Forfait enregistré ✓'); renderClient(); } else toast('Erreur');
+    });
+  }
   function ticketStatus(id, status) { ticketUpdate(id, { status: status }, status === 'done' ? 'Ticket marqué comme fait ✓' : 'Statut mis à jour'); }
   function ticketDue(id, date) { ticketUpdate(id, { dueDate: date || null }); }
   function ticketTime(id, mins) { var n = Math.max(0, parseInt(mins, 10) || 0); ticketUpdate(id, { timeSpentMinutes: n }); }
@@ -2226,8 +2245,21 @@
       ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
         '<div style="display:grid;gap:14px;margin-top:12px">' + doneT.map(card).join('') + '</div></details>'
       : '';
-    return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait ». Elle est prévenue à chaque changement.</div></div>' +
+    var mh = parseFloat(d.content.monthlyHours) || 0;
+    var usedMin = all.reduce(function (n, t) { return n + (t.timeSpentMinutes || 0); }, 0);
+    var now = new Date(); var mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    var usedThisMonth = all.reduce(function (n, t) { var ref = String(t.resolvedAt || t.createdAt || '').slice(0, 7); return n + (ref === mk ? (t.timeSpentMinutes || 0) : 0); }, 0);
+    function fmtMin(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), mm = m % 60; return h ? h + 'h' + (mm ? String(mm).padStart(2, '0') : '') : m + ' min'; }
+    var forfaitCard = '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px">' +
+      '<h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Forfait mensuel</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Nombre d\'heures inclus chaque mois. À 0, la cliente voit un espace tickets tout simple ; au-delà, elle voit sa consommation et son suivi mensuel.</div>' +
+      '<div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:8px">Heures / mois <input class="inp" type="number" min="0" step="0.5" style="width:90px" value="' + mh + '" onchange="ADM.ticketForfait(this.value)"></label>' +
+        (mh ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Consommé ce mois : <strong>' + fmtMin(usedThisMonth) + '</strong> / ' + fmtMin(mh * 60) + '</span>' : '') +
+      '</div></div>';
+    return forfaitCard +
+      '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait» et note le temps passé. Elle est prévenue à chaque changement.</div></div>' +
       list + histBlock;
   }
   function partnerTasks(d) {
@@ -2822,12 +2854,12 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete,
+    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
