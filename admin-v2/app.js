@@ -2117,6 +2117,13 @@
       if (okMsg) toast(okMsg); renderClient();
     }).catch(function () { toast('Erreur'); });
   }
+  function ticketForfait(hours) {
+    var d = findDomain('maintenance'); if (!d) return;
+    var n = Math.max(0, parseFloat(hours) || 0);
+    jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'maintenance', monthlyHours: n }, 'PATCH').then(function (r) {
+      if (r.ok) { d.content.monthlyHours = n; toast('Forfait enregistré ✓'); renderClient(); } else toast('Erreur');
+    });
+  }
   function ticketStatus(id, status) { ticketUpdate(id, { status: status }, status === 'done' ? 'Ticket marqué comme fait ✓' : 'Statut mis à jour'); }
   function ticketDue(id, date) { ticketUpdate(id, { dueDate: date || null }); }
   function ticketTime(id, mins) { var n = Math.max(0, parseInt(mins, 10) || 0); ticketUpdate(id, { timeSpentMinutes: n }); }
@@ -2226,8 +2233,21 @@
       ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
         '<div style="display:grid;gap:14px;margin-top:12px">' + doneT.map(card).join('') + '</div></details>'
       : '';
-    return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait ». Elle est prévenue à chaque changement.</div></div>' +
+    var mh = parseFloat(d.content.monthlyHours) || 0;
+    var usedMin = all.reduce(function (n, t) { return n + (t.timeSpentMinutes || 0); }, 0);
+    var now = new Date(); var mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    var usedThisMonth = all.reduce(function (n, t) { var ref = String(t.resolvedAt || t.createdAt || '').slice(0, 7); return n + (ref === mk ? (t.timeSpentMinutes || 0) : 0); }, 0);
+    function fmtMin(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), mm = m % 60; return h ? h + 'h' + (mm ? String(mm).padStart(2, '0') : '') : m + ' min'; }
+    var forfaitCard = '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px">' +
+      '<h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Forfait mensuel</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Nombre d\'heures inclus chaque mois. À 0, la cliente voit un espace tickets tout simple ; au-delà, elle voit sa consommation et son suivi mensuel.</div>' +
+      '<div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:8px">Heures / mois <input class="inp" type="number" min="0" step="0.5" style="width:90px" value="' + mh + '" onchange="ADM.ticketForfait(this.value)"></label>' +
+        (mh ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Consommé ce mois : <strong>' + fmtMin(usedThisMonth) + '</strong> / ' + fmtMin(mh * 60) + '</span>' : '') +
+      '</div></div>';
+    return forfaitCard +
+      '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait» et note le temps passé. Elle est prévenue à chaque changement.</div></div>' +
       list + histBlock;
   }
   function partnerTasks(d) {
@@ -2822,7 +2842,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete,
+    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,

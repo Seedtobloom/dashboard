@@ -4029,7 +4029,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="margin-bottom:18px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
         '<div id="_maint-t-files" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>' +
-        '<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#8a6f54">+ Ajouter un fichier<input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
+        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#8a6f54;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#8a6f54')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
@@ -4057,8 +4057,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }
     renderFiles();
 
-    ov.querySelector('#_maint-t-fileinput').onchange = function() {
-      var files = Array.prototype.slice.call(this.files||[]); this.value='';
+    function uploadFiles(files) {
+      files = Array.prototype.slice.call(files || []).filter(Boolean);
       if (!files.length) return;
       var box = ov.querySelector('#_maint-t-files');
       box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#8a6f54">Envoi en cours…</div>');
@@ -4066,7 +4066,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         res.forEach(function(f){ pending.push(f); });
         renderFiles();
       }).catch(function(){ toast('Erreur upload fichier', true); var u=document.getElementById('_maint-t-uploading'); if(u)u.remove(); });
-    };
+    }
+    ov.querySelector('#_maint-t-fileinput').onchange = function() { var f = this.files; this.value=''; uploadFiles(f); };
+    // Glisser-déposer des fichiers sur la zone (et sur toute la fenêtre du modal)
+    var dropL = ov.querySelector('#_maint-t-droplabel');
+    function dropOn(){ if(dropL){ dropL.style.background='#f7f3ed'; dropL.style.borderColor='#c9b89a'; } }
+    function dropOff(){ if(dropL){ dropL.style.background=''; dropL.style.borderColor='#e2dbd0'; } }
+    ['dragenter','dragover'].forEach(function(ev){ ov.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); dropOn(); }); });
+    ['dragleave','dragend'].forEach(function(ev){ ov.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); if(e.target===ov||e.target===dropL) dropOff(); }); });
+    ov.addEventListener('drop', function(e){ e.preventDefault(); e.stopPropagation(); dropOff(); if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); });
 
     ov.querySelector('#_maint-t-ok').onclick = function() {
       var title = titleInp.value.trim();
