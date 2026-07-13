@@ -184,22 +184,22 @@
         '<div style="padding:0 44px 44px">'+
           title +
           reviewCallout +
-          // Propriétés en haut (avancement, échéance, priorité, statut brief…).
+          // 1) Propriétés / suivi (avancement, échéance, priorité, statut brief…).
           '<div style="margin:14px 0 4px">'+propertiesHtml+'</div>'+
           '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
           sep +
-          // Puis le livrable et les échanges.
+          // 2) Livrable.
           stbTaskDeliverables(pid, project, t, sep) +
           sep +
+          // 3) Échanges.
           commentsBlock +
           reviewHistHtml +
           sep +
-          // Le tableau de travail.
-          stbTaskTable(pid, t) +
-          sep +
-          // En bas : le brief (la demande et les fichiers joints).
-          attachBlock +
+          // 4) Le brief : la demande, le tableau et les fichiers joints
+          //    (tout ce qui concerne le brief est regroupé ici).
           stbBlocks(pid, t) +
+          stbTaskTable(pid, t) +
+          attachBlock +
           sep +
           actions +
         '</div>'+
