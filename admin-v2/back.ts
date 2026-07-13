@@ -1144,6 +1144,14 @@ async function handleDashboard(env: Env): Promise<Response> {
       if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
       collectLiv(o, supportLabel(pid), 'support-' + pid);
     }
+    // Tickets de maintenance ouverts : à retrouver dans les Priorités
+    const ms = getDomainObj(esp, 'maintenanceSite');
+    if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((t: AnyObj) => {
+      if (t.status === 'done' || t.status === 'closed') return;
+      const atts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || '' })).filter((a: AnyObj) => a.key);
+      deadlines.push({ key: ci.key, client: who, project: 'maintenance', projectLabel: 'Espace tickets', kind: 'ticket', id: t.id, title: t.title || 'Sans titre', dueDate: t.dueDate || '', status: t.status || 'open', content: t.description || '', priority: t.priority || 'moyenne', attCount: atts.length, attachments: atts, timeSpentMinutes: t.timeSpentMinutes || 0, seenByAdmin: t.seenByAdmin !== false });
+      if (t.seenByAdmin === false) newTasks.push({ key: ci.key, client: who, id: t.id, kind: 'ticket', title: t.title || 'Sans titre', content: t.description || '', dueDate: t.dueDate || '', attCount: atts.length, attachments: atts, createdAt: t.createdAt || '' });
+    });
   }
   deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
   pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));

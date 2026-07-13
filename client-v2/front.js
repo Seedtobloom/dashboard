@@ -2821,12 +2821,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               cpDeadlinePill(t.dueDate||t.deadline, !isOpen, true) +
             '</div>' +
           '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:0 0 auto">' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:0 0 auto">' +
             cpStatusPill(t.status) +
-            (isOpen ? '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Marquer comme fait</button>' : '') +
-            (isOpen ? '<div style="display:flex;gap:5px">' +
-              '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Modifier</button>' +
-              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid #f0d0cc;background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:#c44">Suppr.</button>' +
+            (isOpen ? '<div style="display:flex;gap:8px">' +
+              '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid var(--bone-d);background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--terre)">'+cpIcon('edit',14,'color:var(--terre-600)')+'Modifier</button>' +
+              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #f0d0cc;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#c0533b">'+cpIcon('trash',14,'color:#c0533b')+'Supprimer</button>' +
             '</div>' : '') +
           '</div>' +
         '</div>';
