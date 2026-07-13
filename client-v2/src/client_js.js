@@ -4644,12 +4644,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var vTag = it.version > 0 ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:6px;background:var(--surface-2,#f0ece3);color:var(--terre-600);margin-left:8px;vertical-align:2px">V' + it.version + '</span>' : '';
       var action = it.dlUrl
         ? '<a href="' + esc(it.dlUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--terre);color:var(--paille);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('download', 14, 'color:var(--paille)') + ' Télécharger</a>'
-        : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
-      var decide = (it.status === 'a_valider' && it.id)
-        ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+        : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
+      // Livrable-lien : on doit d'abord ouvrir le lien pour pouvoir décider.
+      var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
+      var decideBtns = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="padding:9px 18px;border:none;border-radius:999px;background:#3f6b3a;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Valider ce livrable</button>' +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="padding:9px 18px;border:1px solid var(--bone-d);border-radius:999px;background:var(--card);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Demander une révision</button>' +
-          '</div>'
+          '</div>';
+      var decide = (it.status === 'a_valider' && it.id)
+        ? (needConsult
+            ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:13px;color:var(--terre-600);background:#fbf3d9;border:1px solid #f0e2b0;border-radius:10px;padding:10px 14px">👀 Ouvrez d\'abord le livrable via « Voir » ci-dessus pour pouvoir le valider ou demander une révision.</div>'
+            : decideBtns)
         : '';
       var comment = (it.status === 'refuse' && it.clientComment)
         ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8a3a2c;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
@@ -5015,6 +5020,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     renderShell({ resetScroll: true });
   };
   var cpLivrFilter = 'all';
+  // Livrables-liens consultés : on n'active « Valider / Demander une révision »
+  // qu'après avoir ouvert le lien au moins une fois.
+  var cpConsulted = {};
+  window.cpMarkConsulted = function(id) { if (id) { cpConsulted[id] = true; renderShell(); } };
   window.cpGoLivrables = function() {
     currentView = 'livrables';
     renderShell({ resetScroll: true });
