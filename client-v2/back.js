@@ -733,7 +733,7 @@ async function handleTaskCreate(request, env, masterKey, data) {
         (task.content ? `<br><span style="color:#412F21">${escHtml(task.content)}</span>` : '') + `</p>`);
     return json(task, 201);
 }
-const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments'];
+const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments', 'table'];
 const TASK_STATUSES = ['todo', 'in_progress', 'review', 'done'];
 async function handleTaskUpdate(request, env, masterKey, data, taskId, editor) {
     const body = await readJson(request);
@@ -752,6 +752,18 @@ async function handleTaskUpdate(request, env, masterKey, data, taskId, editor) {
         body.attachments = Array.isArray(body.attachments)
             ? body.attachments.slice(0, 10).map((a) => ({ name: String((a && a.name) || '').slice(0, 120), fileKey: String((a && a.fileKey) || '').slice(0, 300) })).filter((a) => a.fileKey)
             : [];
+    }
+    // Tableau (façon Notion) : on borne la taille pour éviter les abus.
+    if ('table' in body) {
+        const tb = body.table;
+        if (tb && Array.isArray(tb.cols) && tb.cols.length) {
+            const cols = tb.cols.slice(0, 12).map((c) => String(c == null ? '' : c).slice(0, 120));
+            const rows = (Array.isArray(tb.rows) ? tb.rows : []).slice(0, 200).map((r) => (Array.isArray(r) ? r : []).slice(0, 12).map((v) => String(v == null ? '' : v).slice(0, 1000)));
+            body.table = { cols, rows };
+        }
+        else {
+            body.table = null;
+        }
     }
     TASK_ALLOWED.forEach((k) => { if (k in body)
         task[k] = body[k]; });

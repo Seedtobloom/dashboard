@@ -184,6 +184,7 @@
           '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
           attachBlock +
           reviewHistHtml +
+          stbTaskTable(pid, t) +
           stbBlocks(pid, t) +
           sep +
           stbTaskDeliverables(pid, project, t, sep) +
@@ -193,6 +194,49 @@
         '</div>'+
       '</div>';
   }
+
+  // ── Tableau façon Notion dans la tâche (créé/édité par le client) ──────────
+  function stbTaskTable(pid, t){
+    var tb = t.table;
+    var has = tb && Array.isArray(tb.cols) && tb.cols.length;
+    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Tableau</div>';
+    if (!has) {
+      return '<div style="margin-top:16px">'+lbl+
+        '<button onclick="cliTableCreate(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;padding:9px 15px;border:1px solid #e2dbd0;border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',15)+'Ajouter un tableau</button></div>';
+    }
+    var cols = tb.cols, rows = Array.isArray(tb.rows) ? tb.rows : [];
+    var cellCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';
+    var bd = '1px solid #e7e0d4';
+    var head = '<tr>'+cols.map(function(c,ci){
+      return '<th style="border:'+bd+';background:#f7f2ea;padding:0;min-width:110px"><div style="display:flex;align-items:center">'+
+        '<input value="'+esc(c)+'" placeholder="Colonne" onchange="cliTableCol(\''+pid+'\',\''+t.id+'\','+ci+',this.value)" style="'+cellCss+';font-weight:700">'+
+        '<button onclick="cliTableDelCol(\''+pid+'\',\''+t.id+'\','+ci+')" title="Supprimer la colonne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:0 6px;flex-shrink:0">✕</button></div></th>';
+    }).join('')+'<th style="border:none;width:26px"></th></tr>';
+    var body = rows.map(function(row,ri){
+      return '<tr>'+cols.map(function(c,ci){
+        var val = (row && row[ci]!=null) ? row[ci] : '';
+        return '<td style="border:'+bd+';padding:0"><input value="'+esc(val)+'" onchange="cliTableCell(\''+pid+'\',\''+t.id+'\','+ri+','+ci+',this.value)" style="'+cellCss+'"></td>';
+      }).join('')+'<td style="border:none;text-align:center"><button onclick="cliTableDelRow(\''+pid+'\',\''+t.id+'\','+ri+')" title="Supprimer la ligne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:4px">✕</button></td></tr>';
+    }).join('');
+    return '<div style="margin-top:16px">'+lbl+
+      '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%">'+head+body+'</table></div>'+
+      '<div style="display:flex;gap:8px;margin-top:9px">'+
+        '<button onclick="cliTableAddRow(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Ligne</button>'+
+        '<button onclick="cliTableAddCol(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Colonne</button>'+
+      '</div></div>';
+  }
+  function _cliTbTask(pid, taskId){ var pd = getPD(pid); return pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; }); }
+  function _cliTbSave(pid, t, rerender){
+    fetch(API_BASE + '/tasks/' + t.id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, table: t.table }) }).catch(function(){});
+    if (rerender) renderShell();
+  }
+  window.cliTableCreate = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t) return; t.table = { cols:['Colonne 1','Colonne 2'], rows:[['',''],['','']] }; _cliTbSave(pid, t, true); };
+  window.cliTableCol = function(pid, taskId, ci, v){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols[ci] = v; _cliTbSave(pid, t, false); };
+  window.cliTableCell = function(pid, taskId, ri, ci, v){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; if (!t.table.rows[ri]) t.table.rows[ri] = []; t.table.rows[ri][ci] = v; _cliTbSave(pid, t, false); };
+  window.cliTableAddRow = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.push(t.table.cols.map(function(){ return ''; })); _cliTbSave(pid, t, true); };
+  window.cliTableAddCol = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols.push('Colonne ' + (t.table.cols.length+1)); t.table.rows.forEach(function(r){ r.push(''); }); _cliTbSave(pid, t, true); };
+  window.cliTableDelRow = function(pid, taskId, ri){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.splice(ri,1); _cliTbSave(pid, t, true); };
+  window.cliTableDelCol = function(pid, taskId, ci){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols.splice(ci,1); t.table.rows.forEach(function(r){ r.splice(ci,1); }); if (!t.table.cols.length) t.table = null; _cliTbSave(pid, t, true); };
 
   window.cliRemoveTaskAttachment = function(pid, taskId, fileKey){
     var pd = getPD(pid);
