@@ -6841,6 +6841,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var backdrop = '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>';
     var cover = '<div style="height:104px;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
     var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
+    // Bouton agrandir / réduire le tiroir (pratique pour éditer un tableau).
+    var big = !!window.cliTaskBig;
+    var expandBtn = '<button onclick="cliToggleTaskBig()" title="'+(big?'Réduire':'Agrandir')+'" style="position:absolute;top:16px;right:58px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#412F21;line-height:1">'+(big?'⤡':'⤢')+'</button>';
     var icon = '<div style="margin:-32px 0 0 44px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
     var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
 
@@ -6875,8 +6878,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       : '';
 
     return backdrop +
-      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
-        closeBtn + cover + icon +
+      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:'+(big?'min(1180px,99vw)':'min(780px,96vw)')+';overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
+        closeBtn + expandBtn + cover + icon +
         '<div style="padding:0 44px 44px">'+
           title +
           reviewCallout +
@@ -6895,6 +6898,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>';
   }
 
+  window.cliToggleTaskBig = function(){ window.cliTaskBig = !window.cliTaskBig; renderShell(); };
+
   // ── Tableau façon Notion dans la tâche (créé/édité par le client) ──────────
   function stbTaskTable(pid, t){
     var tb = t.table;
@@ -6905,18 +6910,24 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<button onclick="cliTableCreate(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;padding:9px 15px;border:1px solid #e2dbd0;border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',15)+'Ajouter un tableau</button></div>';
     }
     var cols = tb.cols, rows = Array.isArray(tb.rows) ? tb.rows : [];
-    var cellCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';
     var bd = '1px solid #e7e0d4';
+    var hCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';
+    // Cellules multi-lignes qui s'agrandissent avec le contenu (lisible pour du
+    // texte long, type script). L'auto-agrandissement se fait à la saisie.
+    var taCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;line-height:1.55;color:var(--navy,#1C1205);padding:9px 10px;box-sizing:border-box;outline:none;resize:none;overflow:hidden;display:block;white-space:pre-wrap;min-height:42px';
+    var grow = 'this.style.height=\'auto\';this.style.height=(this.scrollHeight+2)+\'px\'';
     var head = '<tr>'+cols.map(function(c,ci){
-      return '<th style="border:'+bd+';background:#f7f2ea;padding:0;min-width:110px"><div style="display:flex;align-items:center">'+
-        '<input value="'+esc(c)+'" placeholder="Colonne" onchange="cliTableCol(\''+pid+'\',\''+t.id+'\','+ci+',this.value)" style="'+cellCss+';font-weight:700">'+
-        '<button onclick="cliTableDelCol(\''+pid+'\',\''+t.id+'\','+ci+')" title="Supprimer la colonne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:0 6px;flex-shrink:0">✕</button></div></th>';
+      return '<th style="border:'+bd+';background:#f7f2ea;padding:0;min-width:180px;vertical-align:top"><div style="display:flex;align-items:flex-start">'+
+        '<input value="'+esc(c)+'" placeholder="Titre colonne" onchange="cliTableCol(\''+pid+'\',\''+t.id+'\','+ci+',this.value)" style="'+hCss+'">'+
+        '<button onclick="cliTableDelCol(\''+pid+'\',\''+t.id+'\','+ci+')" title="Supprimer la colonne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:8px 6px;flex-shrink:0">✕</button></div></th>';
     }).join('')+'<th style="border:none;width:26px"></th></tr>';
     var body = rows.map(function(row,ri){
       return '<tr>'+cols.map(function(c,ci){
-        var val = (row && row[ci]!=null) ? row[ci] : '';
-        return '<td style="border:'+bd+';padding:0"><input value="'+esc(val)+'" onchange="cliTableCell(\''+pid+'\',\''+t.id+'\','+ri+','+ci+',this.value)" style="'+cellCss+'"></td>';
-      }).join('')+'<td style="border:none;text-align:center"><button onclick="cliTableDelRow(\''+pid+'\',\''+t.id+'\','+ri+')" title="Supprimer la ligne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:4px">✕</button></td></tr>';
+        var val = (row && row[ci]!=null) ? String(row[ci]) : '';
+        var nl = (val.match(/\n/g)||[]).length;
+        var guess = Math.max(2, nl+1, Math.min(14, Math.ceil((val.length||1)/34)));
+        return '<td style="border:'+bd+';padding:0;vertical-align:top;min-width:180px"><textarea rows="'+guess+'" onchange="cliTableCell(\''+pid+'\',\''+t.id+'\','+ri+','+ci+',this.value)" oninput="'+grow+'" style="'+taCss+'">'+esc(val)+'</textarea></td>';
+      }).join('')+'<td style="border:none;text-align:center;vertical-align:top"><button onclick="cliTableDelRow(\''+pid+'\',\''+t.id+'\','+ri+')" title="Supprimer la ligne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:8px 4px">✕</button></td></tr>';
     }).join('');
     return '<div style="margin-top:16px">'+lbl+
       '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%">'+head+body+'</table></div>'+

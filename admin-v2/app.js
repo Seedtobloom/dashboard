@@ -638,10 +638,12 @@
       // pour consulter « ce qu'il y a dedans » sans quitter la page Priorités.
       function prioBrief(x, dark) {
         var c = (x.content || '').trim();
-        if (!c && !x.attCount) return '';
+        var clink = (x.clientLink || '').trim();
+        if (!c && !x.attCount && !clink) return '';
         var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
         var sumCol = dark ? 'rgba(242,229,194,0.7)' : 'var(--glycine-900)';
+        var linkHtml = clink ? '<div style="margin-top:8px"><a href="' + esc(/^https?:\/\//i.test(clink) ? clink : 'https://' + clink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:5px 11px;border-radius:8px;border:1px solid ' + (dark ? 'rgba(242,229,194,0.25)' : 'var(--bone-d)') + ';color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';text-decoration:none">🔗 ' + esc(clink.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>' : '';
         var body = c
           ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
           : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>';
@@ -2162,8 +2164,8 @@
       var tableHtml = (t.table && Array.isArray(t.table.cols) && t.table.cols.length) ? (function () {
         var cols = t.table.cols, rows = Array.isArray(t.table.rows) ? t.table.rows : [];
         var bd = '1px solid var(--bone-d)';
-        var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:7px 10px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600)">' + esc(c) + '</th>'; }).join('') + '</tr>';
-        var bodyR = rows.map(function (row) { return '<tr>' + cols.map(function (c, ci) { return '<td style="border:' + bd + ';padding:7px 10px;font-size:13px;color:var(--terre)">' + esc((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
+        var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:8px 11px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);min-width:180px;vertical-align:top">' + esc(c) + '</th>'; }).join('') + '</tr>';
+        var bodyR = rows.map(function (row) { return '<tr>' + cols.map(function (c, ci) { return '<td style="border:' + bd + ';padding:8px 11px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:180px;max-width:460px">' + esc((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
         return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;max-width:100%">' + head + bodyR + '</table></div></div>';
       })() : '';
       // bloc « suivi » : statut + chrono, dans un encart doux
