@@ -636,14 +636,19 @@
 
       // Aperçu dépliable du contenu de la tâche (demande du client + pièces jointes),
       // pour consulter « ce qu'il y a dedans » sans quitter la page Priorités.
+      // Lien déposé par le client sur sa tâche, affiché en clair dans la ligne.
+      function prioClientLink(x, dark) {
+        var l = (x.clientLink || '').trim();
+        if (!l) return '';
+        var u = /^https?:\/\//i.test(l) ? l : 'https://' + l;
+        return '<div style="margin-top:4px;font-size:12.5px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Lien déposé par le client">' + esc(l.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>';
+      }
       function prioBrief(x, dark) {
         var c = (x.content || '').trim();
-        var clink = (x.clientLink || '').trim();
-        if (!c && !x.attCount && !clink) return '';
+        if (!c && !x.attCount) return '';
         var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
         var sumCol = dark ? 'rgba(242,229,194,0.7)' : 'var(--glycine-900)';
-        var linkHtml = clink ? '<div style="margin-top:8px"><a href="' + esc(/^https?:\/\//i.test(clink) ? clink : 'https://' + clink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:5px 11px;border-radius:8px;border:1px solid ' + (dark ? 'rgba(242,229,194,0.25)' : 'var(--bone-d)') + ';color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';text-decoration:none">🔗 ' + esc(clink.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>' : '';
         var body = c
           ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
           : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>';
@@ -676,7 +681,7 @@
         return '<div class="prow">' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') + '</div>' +
-            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioBrief(x, false) + '</div>' +
+            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + prioBrief(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
@@ -734,7 +739,7 @@
         var whenLight = overdue ? '#efb2a2' : (x._d === 0 ? '#eccd93' : 'rgba(242,229,194,0.62)');
         return '<div class="focusrow">' +
           '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#dff0d5;background:rgba(63,90,55,0.55);padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus</span>' : '') + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioBrief(x, true) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioClientLink(x, true) + prioBrief(x, true) + '</div>' +
           (x.id ? '<div class="prow__act" style="flex-shrink:0">' + prioTimer(x, true) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +

@@ -4608,8 +4608,19 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var label = proj.projectTitle || 'Projet';
       var pid = proj.id || '';
       var seen = {};
+      // On ne garde que le DERNIER livrable par tâche, et on masque ceux dont
+      // une révision a été demandée (refuse/revision) : ils ne sont pas bons.
+      var latestByTask = {}, noTask = [];
       (proj.deliverables || []).forEach(function(d) {
         if (!d.fileKey && !d.reviewLink) return;
+        if (d.taskId) {
+          var cur = latestByTask[d.taskId];
+          if (!cur || String(d.createdAt||'') >= String(cur.createdAt||'')) latestByTask[d.taskId] = d;
+        } else { noTask.push(d); }
+      });
+      var chosen = noTask.concat(Object.keys(latestByTask).map(function(k){ return latestByTask[k]; }))
+        .filter(function(d){ return d.status !== 'refuse' && d.status !== 'revision'; });
+      chosen.forEach(function(d) {
         if (d.fileKey) seen[d.fileKey] = true;
         items.push({ id: d.id || '', name: d.name || 'Livrable', pid: pid, projLabel: label, taskTitle: d.taskTitle || '',
           status: d.status || 'a_valider', date: d.validatedAt || d.createdAt || null,
