@@ -11,7 +11,7 @@
   var SUBTAB = {};           // sous-onglet actif par domaine
   var CHAT = { key: null, project: null }; // vue chat globale
 
-  var DOMAIN_LABELS = { partner: 'Partenaire créative', website: 'Site web', branding: 'Identité visuelle' };
+  var DOMAIN_LABELS = { partner: 'Partenaire créative', website: 'Site web', branding: 'Identité visuelle', maintenance: 'Espace tickets' };
   var DA_BANNER = [['#412F21', 'Terre'], ['#1C1205', 'Nuit'], ['#8B6F52', 'Argile'], ['#E4D1FE', 'Glycine'], ['#F2E5C2', 'Paille'], ['#F0E8FF', 'Brume']];
   var ADM_ICONS = {
     priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
@@ -1965,7 +1965,8 @@
       return '<button class="subtab' + (cur === x[0] ? ' active' : '') + '" onclick="ADM.subtab(\'' + d.id + '\',\'' + x[0] + '\')">' + esc(x[1]) + (x[2] > 0 ? ' ' + badge(x[2]) : '') + '</button>';
     }).join('') + '</div>';
     var content = '';
-    if (cur === 'forfait') content = partnerForfait(d);
+    if (cur === 'tickets') content = maintTickets(d);
+    else if (cur === 'forfait') content = partnerForfait(d);
     else if (cur === 'taches') content = partnerTasks(d);
     else if (cur === 'bilan') content = bilanCard(d);
     else if (cur === 'suivi') content = suiviCard(d);
@@ -1974,9 +1975,20 @@
     body.innerHTML = subnav + content;
     var box = el('chat-' + d.id); if (box) box.scrollTop = box.scrollHeight;
     if (cur === 'msg' && d.unread > 0) { jpost('/api/clients/' + CURKEY + '/message/read', { projectId: d.id }, 'POST'); d.unread = 0; renderClient(); }
+    if (cur === 'tickets' && Array.isArray(d.content.tickets) && d.content.tickets.some(function (t) { return t.seenByAdmin === false; })) {
+      jpost('/api/clients/' + CURKEY + '/tickets/seen', { projectId: d.id }, 'POST');
+      d.content.tickets.forEach(function (t) { t.seenByAdmin = true; });
+    }
   }
   function sectionsFor(d) {
     var s = [];
+    if (d.id === 'maintenance') {
+      var tks = Array.isArray(d.content.tickets) ? d.content.tickets : [];
+      var unseen = tks.filter(function (t) { return t.seenByAdmin === false; }).length;
+      s.push(['tickets', 'Tickets', unseen]);
+      s.push(['msg', 'Messages', d.unread || 0]);
+      return s;
+    }
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
     if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables)) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
@@ -2010,8 +2022,18 @@
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
     return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
       '<div>' + coord + supportsCard() + '</div>' +
-      '<div>' + offersCard() + '</div>' +
+      '<div>' + offersCard() + ticketsSpaceCard() + '</div>' +
       '</div>' + danger;
+  }
+  function ticketsSpaceCard() {
+    var dm = (CUR.domains || []).filter(function (x) { return x.id === 'maintenance'; })[0];
+    var on = !!(dm && dm.isActive !== false);
+    var nTk = dm && dm.content && Array.isArray(dm.content.tickets) ? dm.content.tickets.length : 0;
+    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#9c6f18"></span>Espace tickets</h3>' +
+      '<div class="micro mb">Un espace simple où la cliente ouvre des tickets (bug, modification, ajout de contenu…), indique pour quand elle le souhaite et suit leur avancement. Idéal pour la maintenance d\'un site.</div>' +
+      '<label class="checkbox infocard__act' + (on ? ' is-on' : '') + '"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="ADM.toggleTicketsSpace(this.checked)"> ' + (on ? 'espace tickets activé' : 'espace tickets désactivé') + '</label>' +
+      (on ? '<div class="micro mt" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + nTk + ' ticket' + (nTk > 1 ? 's' : '') + ' · gère-les dans l\'onglet « Espace tickets » ci-dessus.</div>' : '') +
+      '</div>';
   }
   function deleteClient() {
     var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || CUR.client.email || CUR.key;
@@ -2081,6 +2103,31 @@
       if (r.ok) { toast(on ? 'Offre activée' : 'Offre désactivée'); loadClient(); } else toast('Erreur');
     });
   }
+  function toggleTicketsSpace(on) {
+    jpost('/api/clients/' + CURKEY + '/tickets-space', { enabled: on }, 'PATCH').then(function (r) {
+      if (r.ok) { toast(on ? 'Espace tickets activé' : 'Espace tickets désactivé'); loadClient(); } else toast('Erreur');
+    });
+  }
+  function ticketUpdate(id, patch, okMsg) {
+    var d = findDomain('maintenance'); if (!d) return;
+    jpost('/api/clients/' + CURKEY + '/tickets/' + id, Object.assign({ projectId: 'maintenance' }, patch), 'PATCH').then(function (r) {
+      return r.ok ? r.json() : Promise.reject();
+    }).then(function (tk) {
+      if (Array.isArray(d.content.tickets)) { var i = d.content.tickets.findIndex(function (t) { return t.id === id; }); if (i !== -1) d.content.tickets[i] = tk; }
+      if (okMsg) toast(okMsg); renderClient();
+    }).catch(function () { toast('Erreur'); });
+  }
+  function ticketStatus(id, status) { ticketUpdate(id, { status: status }, status === 'done' ? 'Ticket marqué comme fait ✓' : 'Statut mis à jour'); }
+  function ticketDue(id, date) { ticketUpdate(id, { dueDate: date || null }); }
+  function ticketTime(id, mins) { var n = Math.max(0, parseInt(mins, 10) || 0); ticketUpdate(id, { timeSpentMinutes: n }); }
+  function ticketDelete(id) {
+    admConfirm({ title: 'Supprimer ce ticket ?', message: 'Il sera définitivement supprimé.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () {
+      var d = findDomain('maintenance');
+      api('/api/clients/' + CURKEY + '/tickets/' + id + '?projectId=maintenance', { method: 'DELETE' }).then(function (r) {
+        if (r.ok) { if (d && Array.isArray(d.content.tickets)) d.content.tickets = d.content.tickets.filter(function (t) { return t.id !== id; }); toast('Ticket supprimé'); renderClient(); } else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    });
+  }
   function fld(id, label, val) { return '<div class="field"><label>' + esc(label) + '</label><input id="' + id + '" class="inp" value="' + esc(val || '') + '"></div>'; }
   function saveInfos() {
     var body = {
@@ -2131,6 +2178,57 @@
   function wsSave() {
     var list = wsReadInputs().filter(function (s) { return s.day && s.from; });
     jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', workSlots: list }, 'PATCH').then(function (r) { if (r.ok) { toast('Créneaux enregistrés ✓'); WORKSLOTS = list; wsRepaint(); } else toast('Erreur'); });
+  }
+  var TICKET_STATUS = [['open', 'À faire'], ['in_progress', 'En cours'], ['done', 'Fait']];
+  function maintTickets(d) {
+    var all = Array.isArray(d.content.tickets) ? d.content.tickets : [];
+    var PRIO = { haute: 0, moyenne: 1, basse: 2 };
+    var openT = all.filter(function (t) { return t.status !== 'done' && t.status !== 'closed'; })
+      .sort(function (a, b) {
+        var da = a.dueDate || '', db = b.dueDate || '';
+        if (da && !db) return -1; if (!da && db) return 1; if (da !== db) return da < db ? -1 : 1;
+        return (PRIO[a.priority] != null ? PRIO[a.priority] : 9) - (PRIO[b.priority] != null ? PRIO[b.priority] : 9);
+      });
+    var doneT = all.filter(function (t) { return t.status === 'done' || t.status === 'closed'; })
+      .sort(function (a, b) { return String(b.resolvedAt || b.createdAt || '').localeCompare(String(a.resolvedAt || a.createdAt || '')); });
+    var prioMap = { haute: ['Urgent', '#9b3a2e', '#fbeae5'], moyenne: ['Normal', '#8a6f2e', '#fbf0d8'], basse: ['Faible', '#3f6b3a', '#e7f0e3'] };
+    function card(t) {
+      var done = t.status === 'done' || t.status === 'closed';
+      var opts = TICKET_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
+      var pm = prioMap[t.priority] || prioMap.moyenne;
+      var prioPill = '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;color:' + pm[1] + ';background:' + pm[2] + ';padding:4px 11px;border-radius:999px">' + pm[0] + '</span>';
+      var catPill = t.category ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + esc(t.category) + '</span>' : '';
+      var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">souhaité pour ' + fmtDate(t.dueDate) + '</span>' : '';
+      var newDot = t.seenByAdmin === false ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c46a1a;margin-right:7px" title="Nouveau"></span>' : '';
+      var atts = (Array.isArray(t.attachments) && t.attachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
+      var work = done
+        ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">résolu' + (t.resolvedAt ? ' le ' + fmtDate(t.resolvedAt) : '') + '</span></div>'
+        : '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px"><div class="micro" style="margin-bottom:9px">Où en est ce ticket ?</div>' +
+            '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+              '<select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
+              '<label class="micro" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0">pour le <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.dueDate || '') + '" onchange="ADM.ticketDue(\'' + t.id + '\',this.value)"></label>' +
+              '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span><input class="inp" type="number" min="0" style="width:74px" value="' + (t.timeSpentMinutes || 0) + '" onchange="ADM.ticketTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></span>' +
+            '</div></div>';
+      return '<div class="card" style="background:var(--card);padding:20px 22px' + (t.seenByAdmin === false ? ';box-shadow:var(--shadow-2)' : '') + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">' +
+          '<div style="min-width:0"><div style="font-size:17px;font-weight:600;color:var(--terre);line-height:1.25">' + newDot + esc(t.title || 'Sans titre') + '</div>' +
+            '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + prioPill + catPill + dueTag + '</div></div>' +
+          '<button class="btn btn--danger btn--sm" style="flex-shrink:0" onclick="ADM.ticketDelete(\'' + t.id + '\')">Suppr.</button>' +
+        '</div>' +
+        (t.description ? '<div style="margin-top:13px;font-size:14px;white-space:pre-wrap;line-height:1.6;color:var(--terre-600)">' + esc(t.description) + '</div>' : '') +
+        atts + work +
+      '</div>';
+    }
+    var list = openT.length
+      ? '<div style="display:grid;gap:14px">' + openT.map(card).join('') + '</div>'
+      : '<div class="empty">Aucun ticket en cours. La cliente ouvre ses tickets depuis son espace.</div>';
+    var histBlock = doneT.length
+      ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tickets terminés · ' + doneT.length + '</summary>' +
+        '<div style="display:grid;gap:14px;margin-top:12px">' + doneT.map(card).join('') + '</div></details>'
+      : '';
+    return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait ». Elle est prévenue à chaque changement.</div></div>' +
+      list + histBlock;
   }
   function partnerTasks(d) {
     var all = Array.isArray(d.content.taches) ? d.content.taches : [];
@@ -2724,6 +2822,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
+    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
