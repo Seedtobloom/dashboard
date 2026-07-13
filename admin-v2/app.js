@@ -886,7 +886,7 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'list', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40;
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'list', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {};
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#f2ebff', '#5e3fa0'], ['#eaf1fb', '#35608f'], ['#f6ecd5', '#9c6f18'], ['#eaf1e6', '#4f6a46'], ['#f7ece7', '#a23c28'], ['#efe7d7', '#6b533b']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
@@ -1004,13 +1004,43 @@
   // Ligne de checklist (vue Liste) : coche pour terminer.
   function mtListRow(t) {
     var pc = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority || 'normale'];
-    return '<label style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--bone-d);cursor:pointer">' +
-      '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
-      '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
-      '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0">' + esc(t.title) + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
-      (t.doDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">à faire le ' + fmtDate(t.doDate) + '</span>' : '') +
-      '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="event.preventDefault();ADM.mtEditOpen(\'' + t.id + '\')">Détails</button>' +
-    '</label>';
+    var hasNote = !!(t.notes && String(t.notes).trim());
+    var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
+    var noteMark = (hasNote || subs.length)
+      ? '<span title="Cette tâche a des détails" style="flex-shrink:0;color:var(--muted);font-size:12px">📝' + (subs.length ? ' <span style="font-size:11px">' + subs.filter(function (s) { return s.done; }).length + '/' + subs.length + '</span>' : '') + '</span>'
+      : '';
+    // Ligne dépliable : cliquer le titre (ou « Détails ») ouvre les détails
+    // (note, lien, sous-tâches) directement sous la tâche, sans quitter la liste.
+    return '<div style="border-bottom:1px solid var(--bone-d)">' +
+      '<div style="display:flex;align-items:center;gap:12px;padding:11px 16px">' +
+        '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
+        '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
+        '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
+        noteMark +
+        (t.doDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">à faire le ' + fmtDate(t.doDate) + '</span>' : '') +
+        '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="event.preventDefault();ADM.mtToggleRow(\'' + t.id + '\')">Détails</button>' +
+      '</div>' +
+      '<div id="mt-exp-' + t.id + '" style="display:' + (MT_EXP[t.id] ? 'block' : 'none') + ';padding:2px 16px 14px 46px">' +
+        '<div id="mt-note-' + t.id + '">' + mtNoteInner(t) + '</div>' +
+        mtSubList(t) +
+        '<button class="pbtn" style="margin-top:8px" onclick="ADM.mtEditOpen(\'' + t.id + '\')">Tout modifier (date, priorité…)</button>' +
+      '</div>' +
+    '</div>';
+  }
+  function mtToggleRow(id) { MT_EXP[id] = !MT_EXP[id]; var e = el('mt-exp-' + id); if (e) e.style.display = (MT_EXP[id] ? 'block' : 'none'); }
+  // Sous-tâches compactes, éditables inline (consultation + ajout rapides).
+  function mtSubList(t) {
+    var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
+    var rows = subs.map(function (s) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
+        '<input type="checkbox"' + (s.done ? ' checked' : '') + ' onchange="ADM.mtSubToggle(\'' + t.id + '\',\'' + s.id + '\')" style="width:15px;height:15px;cursor:pointer">' +
+        '<span style="flex:1;font-size:13px;color:var(--terre-600)' + (s.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' + esc(s.text) + '</span>' +
+        '<button onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button>' +
+      '</div>';
+    }).join('');
+    return '<div style="margin-top:8px">' + rows +
+      '<div class="row" style="gap:6px;margin-top:4px"><input class="inp" id="mtsub-' + t.id + '" placeholder="+ Ajouter une sous-tâche" style="flex:1;min-width:120px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtSubAdd(\'' + t.id + '\');}"><button class="pbtn" onclick="ADM.mtSubAdd(\'' + t.id + '\')">Ajouter</button></div>' +
+    '</div>';
   }
   function mtSaveSubs(id, subs) { jpost('/api/admin/tasks/' + id, { subtasks: subs }, 'PATCH').then(function (r) { if (r.ok) renderMyTasks(); else toast('Erreur'); }); }
   function mtSubAdd(id) { var inp = el('mtsub-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var t = MT_TASKS.filter(function (x) { return x.id === id; })[0]; if (!t) return; var subs = Array.isArray(t.subtasks) ? t.subtasks.slice() : []; subs.push({ id: 'st' + Date.now(), text: v, done: false }); mtSaveSubs(id, subs); }
@@ -2901,7 +2931,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
