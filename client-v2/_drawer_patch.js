@@ -184,15 +184,20 @@
         '<div style="padding:0 44px 44px">'+
           title +
           reviewCallout +
-          '<div style="margin:18px 0 4px">'+propertiesHtml+'</div>'+
-          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
-          attachBlock +
-          reviewHistHtml +
-          stbTaskTable(pid, t) +
-          stbBlocks(pid, t) +
-          sep +
+          // En haut : le livrable et les échanges (ce qu'on consulte le plus).
           stbTaskDeliverables(pid, project, t, sep) +
+          sep +
           commentsBlock +
+          reviewHistHtml +
+          sep +
+          // Au milieu : infos de la tâche + le tableau de travail.
+          '<div style="margin:14px 0 4px">'+propertiesHtml+'</div>'+
+          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
+          stbTaskTable(pid, t) +
+          sep +
+          // En bas : le brief (la demande et les fichiers joints).
+          attachBlock +
+          stbBlocks(pid, t) +
           sep +
           actions +
         '</div>'+
