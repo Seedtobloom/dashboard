@@ -2871,6 +2871,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var prio = t.priority || t.urgency;
         var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#9b3a2e;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
         var catBadge = t.category ? '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--radius-2);background:var(--brume-50);color:var(--brume-900);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.03em">'+esc(t.category)+'</span>' : '';
+        var proposeBanner = t.proposedDueDate
+          ? '<div style="margin-bottom:11px;padding:12px 14px;border-radius:10px;background:#eef4ea;border:1px solid #cfe0c6">'+
+              '<div style="font-size:12.5px;color:var(--terre,#412F21);line-height:1.5;margin-bottom:9px">📅 Cindy propose plutôt le <strong>'+esc(String(t.proposedDueDate).split('-').reverse().join('/'))+'</strong> pour cette demande. Est-ce que cela vous convient ?</div>'+
+              '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
+                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',true)" style="padding:8px 14px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Accepter cette date</button>'+
+                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',false)" style="padding:8px 14px;border:1px solid #d9d2c6;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Refuser</button>'+
+              '</div>'+
+            '</div>'
+          : '';
         return '<div style="padding:15px 18px;display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3)">' +
           '<div style="flex:1;min-width:0">' +
             '<div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap">' +
@@ -2879,6 +2888,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             '</div>' +
             (t.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin-bottom:11px">'+esc(t.description)+'</p>' : '') +
             (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#faf7f1);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
+            proposeBanner +
             '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
               catBadge +
               cpDeadlinePill(t.dueDate||t.deadline, !isOpen, true) +
@@ -4173,6 +4183,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     };
   };
 
+  // Report de date proposé par Cindy sur un ticket : la cliente accepte ou refuse.
+  window.cliRespondTicketDate = function(pid, ticketId, accept) {
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tickets||[]).find(function(x){ return x.id===ticketId; });
+    if (!t || !t.proposedDueDate) return;
+    var newDate = t.proposedDueDate;
+    fetch(API_BASE + '/tickets/' + ticketId + '/propose-date', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, accept: !!accept }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(){
+        if (accept) t.dueDate = newDate;
+        t.proposedDueDate = null; t.proposedAt = null;
+        toast(accept ? 'Nouvelle date acceptée ✓' : 'Report refusé, Cindy est prévenue');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  };
   window.cliMaintReopenTicket = function(pid, ticketId) { window.cliMaintSetStatus(pid, ticketId, 'open'); };
   window.cliMaintSetStatus = function(pid, ticketId, status) {
     fetch(API_BASE + '/tickets/' + ticketId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: status }) })

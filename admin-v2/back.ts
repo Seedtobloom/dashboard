@@ -529,8 +529,23 @@ async function handleClientApi(
     if (typeof body.timeSpentMinutes === 'number' && body.timeSpentMinutes >= 0) tk.timeSpentMinutes = Math.round(body.timeSpentMinutes);
     if (body.status === 'done' || body.status === 'closed') { if (!tk.resolvedAt) tk.resolvedAt = nowIso(); }
     else if ('status' in body) { tk.resolvedAt = null; }
+    // Report d'échéance PROPOSÉ : la cliente a choisi une date, Cindy en
+    // propose une autre (ex. congés) ; la cliente devra l'accepter.
+    let ticketProposeNotify = false;
+    if ('proposedDueDate' in body) {
+      const pdd = (body.proposedDueDate || '').toString().slice(0, 10);
+      tk.proposedDueDate = pdd || null;
+      tk.proposedAt = pdd ? nowIso() : null;
+      ticketProposeNotify = !!pdd;
+    }
     tk.seenByAdmin = true;
     await saveClient(env, key, data);
+    if (ticketProposeNotify) {
+      const frd = (tk.proposedDueDate || '').split('-').reverse().join('/');
+      await notifyClient(env, data, `Report de date proposé · ${escHtml(tk.title || '')}`,
+        `<p>Pour votre demande <strong>${escHtml(tk.title || '')}</strong>, Cindy propose plutôt la date du <strong>${escHtml(frd)}</strong>.</p>` +
+        `<p>Connectez-vous à votre espace pour accepter cette nouvelle date.</p>`);
+    }
     return json(tk);
   }
   if (m && method === 'DELETE') {
