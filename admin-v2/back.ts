@@ -533,6 +533,8 @@ async function handleClientApi(
     return json({ ok: true, locked: body.locked === true });
   }
 
+  // Livrable sous forme de lien (au lieu d'un fichier)
+  if (method === 'POST' && sub === '/deliverables') return handleDeliverableLink(request, env, key, data);
   // Livrables : changer le statut
   m = sub.match(/^\/deliverables\/([a-zA-Z0-9_-]+)$/);
   if (m && method === 'PATCH') return handleDeliverablePatch(request, env, key, data, m[1]);
@@ -918,6 +920,28 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
     }
   }
   return json({ key: r2key, name: fileName, type: file.type || guessType(fileName), size: file.size, category: asDeliverable ? 'deliverable' : 'document', deliverable }, 201);
+}
+// Déposer un livrable sous forme de LIEN (au lieu d'un fichier).
+async function handleDeliverableLink(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const { container } = resolveProject(getEspace(data), (body.projectId || 'partner').toString());
+  if (!container) return json({ error: 'Projet introuvable' }, 404);
+  const link = (body.link || '').toString().trim().slice(0, 1000);
+  if (!link) return json({ error: 'Lien requis' }, 400);
+  const url = /^https?:\/\//i.test(link) ? link : 'https://' + link;
+  const name = (body.name || '').toString().trim().slice(0, 200) || 'Lien du livrable';
+  const taskId = (body.taskId || '').toString() || null;
+  if (!Array.isArray(container.livrables)) container.livrables = [];
+  const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1) : 0;
+  const deliverable: AnyObj = { id: genId(), name, fileKey: '', status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId, taskTitle: '', reviewLink: url, version };
+  if (taskId && Array.isArray(container.taches)) {
+    const tk = container.taches.find((t: AnyObj) => t.id === taskId);
+    if (tk) { deliverable.taskTitle = tk.title || ''; tk.status = 'review'; }
+  }
+  container.livrables.push(deliverable);
+  await saveClient(env, key, data);
+  await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+  return json({ deliverable }, 201);
 }
 async function handleDownload(env: Env, key: string, r2key: string): Promise<Response> {
   if (!r2key || r2key.includes('..') || !r2key.startsWith(key + '/')) return json({ error: 'Requête invalide' }, 400);
