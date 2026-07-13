@@ -142,6 +142,7 @@
     var cover = '<div style="height:104px;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
     var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
     // Bouton agrandir / réduire le tiroir (pratique pour éditer un tableau).
+    if (window.cliTaskBig === undefined) window.cliTaskBig = true;
     var big = !!window.cliTaskBig;
     var expandBtn = '<button onclick="cliToggleTaskBig()" title="'+(big?'Réduire':'Agrandir')+'" style="position:absolute;top:16px;right:58px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#412F21;line-height:1">'+(big?'⤡':'⤢')+'</button>';
     var icon = '<div style="margin:-32px 0 0 44px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
