@@ -2282,13 +2282,24 @@
         (l.createdAt ? ' <span class="micro" style="letter-spacing:0.02em">' + fmtDate(l.createdAt) + '</span>' : '') +
         (l.clientComment ? '<div class="muted" style="font-size:13px;font-style:italic;margin-top:2px">« ' + esc(l.clientComment) + ' »</div>' : '') + '</span>' +
         (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
+        (l.reviewLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) + '" target="_blank" rel="noopener">🔗 Ouvrir</a>' : '') +
         '<button class="btn btn--danger btn--sm" onclick="ADM.delDeliverable(\'' + l.id + '\')">Retirer</button></div>';
     }).join('');
+    var vlabel = ls.length ? '+ Nouvelle version' : '+ Livrable';
     return '<div>' +
       '<div class="micro" style="margin-bottom:10px">Versions du livrable' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
       (rows ? '<div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div>' : '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 4px">Aucun livrable déposé pour l\'instant.</div>') +
-      '<div class="row" style="margin-top:12px;gap:8px"><input class="inp" type="file" id="tdf-' + t.id + '" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + (ls.length ? '+ Nouvelle version' : '+ Livrable') + '</button></div>' +
+      '<div class="row" style="margin-top:12px;gap:8px"><input class="inp" type="file" id="tdf-' + t.id + '" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + vlabel + ' (fichier)</button></div>' +
+      '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><input class="inp" id="tdl-name-' + t.id + '" placeholder="Nom (optionnel)" style="width:150px"><input class="inp" type="url" id="tdl-url-' + t.id + '" placeholder="https://… (Figma, Drive…)" style="flex:1;min-width:160px"><button class="btn btn--outline btn--sm" onclick="ADM.addDlvLink(\'' + t.id + '\')">' + vlabel + ' (lien)</button></div>' +
       '</div>';
+  }
+  function addDlvLink(id) {
+    var url = (el('tdl-url-' + id).value || '').trim();
+    if (!url) { toast('Colle un lien'); return; }
+    var name = (el('tdl-name-' + id).value || '').trim();
+    jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name }).then(function (r) { return r.json().then(function (dd) { return { ok: r.ok, d: dd }; }); })
+      .then(function (res) { if (res.ok) { toast('Livrable (lien) envoyé au client ✓'); loadClient(); } else toast((res.d && res.d.error) || 'Erreur'); })
+      .catch(function () { toast('Erreur'); });
   }
   function delDeliverable(id) {
     admConfirm({ title: 'Retirer ce livrable ?', message: 'Le fichier livrable sera retiré de l\'espace du client. Cette action est définitive.', danger: true, yes: 'Oui, retirer', no: 'Non' }, function () {
@@ -2678,7 +2689,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
