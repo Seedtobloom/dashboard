@@ -750,7 +750,7 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   return json(task, 201);
 }
 
-const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments'];
+const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments', 'table'];
 
 const TASK_STATUSES = ['todo', 'in_progress', 'review', 'done'];
 async function handleTaskUpdate(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string, editor: boolean): Promise<Response> {
@@ -768,6 +768,18 @@ async function handleTaskUpdate(request: Request, env: Env, masterKey: string, d
     body.attachments = Array.isArray(body.attachments)
       ? body.attachments.slice(0, 10).map((a: AnyObj) => ({ name: String((a && a.name) || '').slice(0, 120), fileKey: String((a && a.fileKey) || '').slice(0, 300) })).filter((a: AnyObj) => a.fileKey)
       : [];
+  }
+  // Tableau (façon Notion) : on borne la taille pour éviter les abus.
+  if ('table' in body) {
+    const tb = body.table;
+    if (tb && Array.isArray(tb.cols) && tb.cols.length) {
+      const cols = tb.cols.slice(0, 12).map((c: unknown) => String(c == null ? '' : c).slice(0, 120));
+      const rows = (Array.isArray(tb.rows) ? tb.rows : []).slice(0, 200).map((r: unknown[]) =>
+        (Array.isArray(r) ? r : []).slice(0, 12).map((v: unknown) => String(v == null ? '' : v).slice(0, 1000)));
+      body.table = { cols, rows };
+    } else {
+      body.table = null;
+    }
   }
   TASK_ALLOWED.forEach((k) => { if (k in body) task[k] = body[k]; });
   if (body.properties && typeof body.properties === 'object') {

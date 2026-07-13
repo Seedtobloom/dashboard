@@ -2151,6 +2151,21 @@
           (long ? '<button id="ptc-btn-' + t.id + '" onclick="ADM.ptToggleContent(\'' + t.id + '\')" style="background:none;border:none;color:var(--glycine-900);font-size:12px;cursor:pointer;padding:6px 0 0;text-decoration:underline">Tout afficher</button>' : '') + '</div>';
       })() : '';
       var atts = (Array.isArray(t.attachments) && t.attachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
+      // Lien & fichiers ajoutés par le client dans sa tâche (propriété p_elements).
+      var be = ptBriefElements(t);
+      var beHtml = (be.link || be.files.length) ? '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Lien & fichiers du client</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:7px">' +
+        (be.link ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(be.link) ? be.link : 'https://' + be.link) + '" target="_blank" rel="noopener">🔗 ' + esc(be.link.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a>' : '') +
+        be.files.map(function (f) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">📎 ' + esc(f.name || 'fichier') + '</a>'; }).join('') +
+        '</div></div>' : '';
+      // Tableau rempli par le client (lecture seule côté admin).
+      var tableHtml = (t.table && Array.isArray(t.table.cols) && t.table.cols.length) ? (function () {
+        var cols = t.table.cols, rows = Array.isArray(t.table.rows) ? t.table.rows : [];
+        var bd = '1px solid var(--bone-d)';
+        var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:7px 10px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600)">' + esc(c) + '</th>'; }).join('') + '</tr>';
+        var bodyR = rows.map(function (row) { return '<tr>' + cols.map(function (c, ci) { return '<td style="border:' + bd + ';padding:7px 10px;font-size:13px;color:var(--terre)">' + esc((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
+        return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;max-width:100%">' + head + bodyR + '</table></div></div>';
+      })() : '';
       // bloc « suivi » : statut + chrono, dans un encart doux
       var work = '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px">' +
         '<div class="micro" style="margin-bottom:9px">Où en est cette tâche ?</div>' +
@@ -2193,7 +2208,7 @@
         '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
         '</div>' : '';
       return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework || t.clientCommentNotif ? ';box-shadow:var(--shadow-2)' : '') + '">' +
-        reworkBanner + header + brief + atts + work + review +
+        reworkBanner + header + brief + atts + beHtml + tableHtml + work + review +
         '<div style="' + hair + '"></div>' +
         taskDlvBlock(d, t) +
         '<div style="' + hair + '"></div>' +
@@ -2213,6 +2228,13 @@
     var grid = active.length ? '<div style="display:flex;flex-direction:column;gap:16px;max-width:760px">' + active.map(ptCard).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
     var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
     return grid + archHtml;
+  }
+  // Décode la propriété composite p_elements du client (« Lien & fichiers »).
+  function ptBriefElements(t) {
+    var v = t && t.properties && t.properties.p_elements;
+    if (!v) return { link: '', files: [] };
+    try { var o = typeof v === 'string' ? JSON.parse(v) : v; return { link: (o && o.link) || '', files: (o && Array.isArray(o.files)) ? o.files : [] }; }
+    catch (e) { return { link: '', files: [] }; }
   }
   function ptToggleContent(id) {
     var c = el('ptc-' + id), b = el('ptc-btn-' + id); if (!c || !b) return;
