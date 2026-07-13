@@ -691,8 +691,8 @@
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
             '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
-            (x.kind === 'tâche'
-              ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\')">Proposer report</button>'
+            (x.kind === 'tâche' || x.kind === 'ticket'
+              ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
               : '<button class="pbtn" title="Reporter à une autre date" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>') +
           '</div>' : '<div>' + pill(x.status, SL[x.status] || x.status) + '</div>') +
         '</div>';
@@ -752,8 +752,8 @@
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
             '<button class="pbtn pbtn--ok" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
-            (x.kind === 'tâche'
-              ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\')">Proposer report</button>'
+            (x.kind === 'tâche' || x.kind === 'ticket'
+              ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
               : '<button class="pbtn" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>') +
           '</div>' : '') +
         '</div>';
@@ -1800,14 +1800,17 @@
     document.body.appendChild(ov);
     var i = el('prio-th'); if (i) i.focus();
   }
-  function prioProposeDate(key, id, cur) {
+  function prioProposeDate(key, id, cur, kind) {
+    var isTicket = kind === 'ticket';
     var inp = document.createElement('input'); inp.type = 'date'; if (cur) inp.value = cur;
     inp.style.cssText = 'position:fixed;left:-9999px;top:0';
     document.body.appendChild(inp);
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
     inp.onchange = function () {
       var v = inp.value; cleanup(); if (!v) return;
-      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', proposedDueDate: v }, 'PATCH').then(function (r) {
+      var url = isTicket ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
+      var body = isTicket ? { projectId: 'maintenance', proposedDueDate: v } : { projectId: 'partner', proposedDueDate: v };
+      jpost(url, body, 'PATCH').then(function (r) {
         if (r.ok) { toast('Report proposé à la cliente ✓'); if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.proposedDueDate = v; renderPrioBody(PRIO_D); } else renderPriorities(); } else toast('Erreur');
       });
     };
@@ -2156,6 +2159,7 @@
     });
   }
   function ticketStatus(id, status) { ticketUpdate(id, { status: status }, status === 'done' ? 'Ticket marqué comme fait ✓' : 'Statut mis à jour'); }
+  function ticketProposeDate(id, date) { ticketUpdate(id, { proposedDueDate: date || '' }, date ? 'Report proposé à la cliente ✓' : 'Proposition annulée'); }
   function ticketDue(id, date) { ticketUpdate(id, { dueDate: date || null }); }
   function ticketTime(id, mins) { var n = Math.max(0, parseInt(mins, 10) || 0); ticketUpdate(id, { timeSpentMinutes: n }); }
   function ticketDelete(id) {
@@ -2244,8 +2248,14 @@
         : '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px"><div class="micro" style="margin-bottom:9px">Où en est ce ticket ?</div>' +
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               '<select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
-              '<label class="micro" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0">pour le <input class="inp" type="date" style="width:auto;padding:5px 8px" value="' + esc(t.dueDate || '') + '" onchange="ADM.ticketDue(\'' + t.id + '\',this.value)"></label>' +
               '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span><input class="inp" type="number" min="0" style="width:74px" value="' + (t.timeSpentMinutes || 0) + '" onchange="ADM.ticketTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></span>' +
+            '</div>' +
+            // Report de date : la cliente a choisi une date, Cindy peut en proposer une autre.
+            '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+              (t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Souhaité pour ' + fmtDate(t.dueDate) + '</span>' : '') +
+              (t.proposedDueDate
+                ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente</span><button class="btn btn--outline btn--sm" onclick="ADM.ticketProposeDate(\'' + t.id + '\',\'\')">Annuler</button>'
+                : '<label class="micro" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0">Proposer une autre date <input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.dueDate ? ' value="' + esc(t.dueDate) + '"' : '') + ' onchange="ADM.ticketProposeDate(\'' + t.id + '\',this.value)"></label>') +
             '</div></div>';
       return '<div class="card" style="background:var(--card);padding:20px 22px' + (t.seenByAdmin === false ? ';box-shadow:var(--shadow-2)' : '') + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">' +
@@ -2884,7 +2894,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
-    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait,
+    toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,

@@ -207,6 +207,8 @@ async function handleClientApi(
 
   // Tickets (maintenance)
   if (method === 'POST' && sub === '/tickets') return handleTicketCreate(request, env, masterKey, data);
+  t = sub.match(/^\/tickets\/([a-f0-9]+)\/propose-date$/);
+  if (t && method === 'POST') return handleTicketProposeDate(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tickets\/([a-f0-9]+)$/);
   if (t && method === 'PATCH') return handleTicketUpdate(request, env, masterKey, data, t[1]);
   if (t && method === 'DELETE') return handleTicketDelete(request, env, masterKey, data, t[1], url);
@@ -1141,6 +1143,25 @@ async function handleTicketUpdate(request: Request, env: Env, masterKey: string,
   if (Array.isArray(body.attachments)) tk.attachments = body.attachments;
   if (body.status === 'done' || body.status === 'closed') tk.resolvedAt = nowIso();
   await save(env, masterKey, data);
+  return json(tk);
+}
+
+async function handleTicketProposeDate(request: Request, env: Env, masterKey: string, data: AnyObj, ticketId: string): Promise<Response> {
+  const body = await readJson(request);
+  const { container } = resolveProject(getEspace(data), (body.projectId || 'maintenance').toString());
+  if (!container) return json({ error: 'Project not found' }, 404);
+  const tk = ticketsOf(container).find((t) => t.id === ticketId);
+  if (!tk) return json({ error: 'Ticket not found' }, 404);
+  if (!tk.proposedDueDate) return json({ error: 'Aucun report proposé' }, 400);
+  const accepted = body.accept === true;
+  const proposed = tk.proposedDueDate;
+  if (accepted) tk.dueDate = proposed;
+  tk.proposedDueDate = null;
+  tk.proposedAt = null;
+  await save(env, masterKey, data);
+  const frd = (proposed || '').split('-').reverse().join('/');
+  await notifyAdmin(env, `${accepted ? 'Date de ticket acceptée' : 'Date de ticket refusée'} · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a ${accepted ? 'accepté' : 'refusé'} la date proposée pour le ticket <strong>${escHtml(tk.title || '')}</strong>${accepted ? ` (${escHtml(frd)})` : ''}.</p>`);
   return json(tk);
 }
 
