@@ -5042,8 +5042,19 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var label = proj.projectTitle || 'Projet';
       var pid = proj.id || '';
       var seen = {};
+      // On ne garde que le DERNIER livrable par tâche, et on masque ceux dont
+      // une révision a été demandée (refuse/revision) : ils ne sont pas bons.
+      var latestByTask = {}, noTask = [];
       (proj.deliverables || []).forEach(function(d) {
         if (!d.fileKey && !d.reviewLink) return;
+        if (d.taskId) {
+          var cur = latestByTask[d.taskId];
+          if (!cur || String(d.createdAt||'') >= String(cur.createdAt||'')) latestByTask[d.taskId] = d;
+        } else { noTask.push(d); }
+      });
+      var chosen = noTask.concat(Object.keys(latestByTask).map(function(k){ return latestByTask[k]; }))
+        .filter(function(d){ return d.status !== 'refuse' && d.status !== 'revision'; });
+      chosen.forEach(function(d) {
         if (d.fileKey) seen[d.fileKey] = true;
         items.push({ id: d.id || '', name: d.name || 'Livrable', pid: pid, projLabel: label, taskTitle: d.taskTitle || '',
           status: d.status || 'a_valider', date: d.validatedAt || d.createdAt || null,
@@ -6424,7 +6435,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
  * Ni backtick ni séquence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbTaskDeliverables(pid, project, t, sep){
-    var dlv = ((project && project.deliverables) || []).filter(function(d){ return d.taskId === t.id; });
+    var dlvAll = ((project && project.deliverables) || []).filter(function(d){ return d.taskId === t.id; })
+      .slice().sort(function(a,b){ return String(a.createdAt||'').localeCompare(String(b.createdAt||'')); });
+    // On ne montre que le DERNIER livrable ; les versions précédentes sont
+    // repliées en historique (inutile de garder l'ancien quand il y a une révision).
+    var dlv = dlvAll.length ? [dlvAll[dlvAll.length - 1]] : [];
+    var prevDlv = dlvAll.slice(0, Math.max(0, dlvAll.length - 1));
     var rl = t.reviewLink || '';
     var lab = { a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' };
     var col = { a_valider:'#c9952f', valide:'#3f8f5b', refuse:'#c0533b' };
@@ -6450,7 +6466,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         (!done ? decideRow : '')+
       '</div>';
     }).join('');
-    var body = rlHtml + rows;
+    // Versions précédentes (repliées, lecture seule) : simple historique.
+    var prevHtml = prevDlv.length
+      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,#8090a8);padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
+        prevDlv.slice().reverse().map(function(l){
+          var u = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink)?l.reviewLink:'https://'+l.reviewLink) : (l.fileKey ? (API_BASE+'/files/'+encodeURIComponent(l.fileKey)+'/download') : '');
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#faf7f0;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,#8090a8)">'+
+            '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+' · '+(lab[l.status]||l.status)+'</span>'+
+            (u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#7a6030);text-decoration:none;flex-shrink:0">Ouvrir</a>' : '')+
+          '</div>';
+        }).join('')+'</details>'
+      : '';
+    var body = rlHtml + rows + prevHtml;
     if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,#8090a8);padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
     return hd + '<div style="margin-bottom:4px">' + body + '</div>' + sep;
   }
