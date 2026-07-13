@@ -1026,7 +1026,16 @@ async function handleDashboard(env: Env): Promise<Response> {
         if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
           const hist = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
           const atts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
-          deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: atts.length, attachments: atts, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, needsRework: !!t.needsRework });
+          // Lien & fichiers saisis par le client dans sa tâche (propriété p_elements).
+          let clientLink = '';
+          const beFiles: AnyObj[] = [];
+          try {
+            const pe = t.properties && t.properties.p_elements;
+            const o = typeof pe === 'string' ? JSON.parse(pe) : pe;
+            if (o && o.link) clientLink = String(o.link).slice(0, 500);
+            if (o && Array.isArray(o.files)) o.files.forEach((f: AnyObj) => { if (f && f.key) beFiles.push({ name: String(f.name || 'fichier').slice(0, 120), key: String(f.key).slice(0, 300) }); });
+          } catch (e) { /* ignore */ }
+          deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', status: t.status, content: t.content || '', attCount: atts.length, attachments: atts.concat(beFiles), clientLink, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, needsRework: !!t.needsRework });
         }
         // Notification persistante : tâche créée par le client et pas encore traitée.
         if (t.clientNotif && !t.archived) newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, attachments: (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key), createdAt: t.createdAt || '' });
