@@ -928,6 +928,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:'+(p.bannerTextColor||'#fff')+';max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div></div>' +
           '</div>' +
+          cpOnboarding(pd) +
           '<div class="cp-ph__cols">' +
             '<div class="cp-ph__left">' +
               '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ouvrez un ticket pour toute demande, suivez son avancement et échangez avec le studio, le tout au même endroit.</p>' +
@@ -1168,6 +1169,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '</div>' +
           uploadZoneHtml +
         '</div>' +
+        cpOnboarding(pd) +
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
@@ -1730,6 +1732,66 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
+  // Guide « Premiers pas » : checklist en haut de l'espace, adaptée à l'offre,
+  // qui se coche automatiquement quand la cliente fait l'action. Se masque une
+  // fois toutes les étapes faites, ou via la croix (mémorisé en localStorage).
+  function cpOnboarding(pd) {
+    if (!pd || !pd.project) return '';
+    var project = pd.project, pid = project.id;
+    try { if (localStorage.getItem('cp-onb-' + pid) === '1') return ''; } catch(e){}
+    var hasMsg = ((pd.messages||[]).some(function(m){ return m.author==='client'; })) ||
+      ((typeof convData!=='undefined' && Array.isArray(convData)) ? convData.some(function(m){ return m.author==='client' || m.from==='client'; }) : false);
+    var tickets = Array.isArray(project.tickets) ? project.tickets : [];
+    var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    var stepsA = Array.isArray(project.steps) ? project.steps : [];
+    var dlvs = Array.isArray(project.deliverables) ? project.deliverables : [];
+    var steps;
+    if (project.type === 'maintenance') {
+      steps = [
+        { l:'Ouvrir votre premier ticket', d:'Décrivez votre besoin (bug, modification, ajout de contenu), sa priorité et pour quand vous le souhaitez.', done: tickets.length>0, cta:['Ouvrir un ticket', "cliOpenSubmitTicket('"+pid+"')"] },
+        { l:'Suivre l\'avancement', d:'Chaque demande passe par À faire, En cours puis Fait. Vous êtes prévenu à chaque changement.', done: tickets.some(function(t){ return t.status && t.status!=='open'; }) },
+        { l:'Écrire au studio', d:'Une question rapide qui ne mérite pas un ticket ? Passez par la messagerie.', done: hasMsg, cta:['Ouvrir la messagerie','cpOpenMessages()'] },
+      ];
+    } else if (project.type === 'partenaire') {
+      steps = [
+        { l:'Parcourir vos tâches', d:'Vos demandes et leur avancement sont réunis dans le tableau ci-dessous.', done: tasks.length>0 },
+        { l:'Écrire au studio', d:'Posez vos questions directement dans la messagerie, sans e-mail.', done: hasMsg, cta:['Ouvrir la messagerie','cpOpenMessages()'] },
+        { l:'Récupérer vos livrables', d:'Vos livrables validés se retrouvent directement sur la tâche concernée.', done: dlvs.some(function(x){ return x.status==='valide'; }) },
+      ];
+    } else {
+      steps = [
+        { l:'Découvrir les étapes de votre projet', d:'Suivez l\'avancement de votre projet, étape par étape.', done: stepsA.length>0 },
+        { l:'Écrire au studio', d:'Une question ? La messagerie vous relie directement au studio.', done: hasMsg, cta:['Ouvrir la messagerie','cpOpenMessages()'] },
+      ];
+    }
+    var total = steps.length;
+    var doneN = steps.filter(function(s){ return s.done; }).length;
+    if (doneN >= total) return ''; // tout est fait : on masque le guide
+    var pct = Math.round(doneN/total*100);
+    var rows = steps.map(function(s, i){
+      var circle = s.done
+        ? '<span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--terre);display:grid;place-items:center">'+cpIcon('check',15,'color:var(--paille)')+'</span>'
+        : '<span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bone-d);display:grid;place-items:center;font-family:var(--font-micro);font-size:12px;font-weight:700;color:var(--terre-400)">'+(i+1)+'</span>';
+      var cta = (!s.done && s.cta) ? '<button onclick="'+s.cta[1]+'" style="margin-top:9px;display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:none;border-radius:9px;background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer">'+esc(s.cta[0])+' '+cpIcon('arrow',13,'color:var(--paille)')+'</button>' : '';
+      return '<div style="display:flex;gap:13px;align-items:flex-start;padding:13px 0'+(i<total-1?';border-bottom:1px solid var(--bone-d)':'')+'">'+
+        circle+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-family:var(--font-ui);font-size:14.5px;font-weight:600;color:'+(s.done?'var(--terre-400)':'var(--terre)')+';'+(s.done?'text-decoration:line-through':'')+'">'+esc(s.l)+'</div>'+
+          '<div style="font-size:13px;color:var(--terre-600);line-height:1.5;margin-top:2px">'+esc(s.d)+'</div>'+
+          cta+
+        '</div>'+
+      '</div>';
+    }).join('');
+    return '<div style="background:var(--card);border:1.5px solid var(--bone-d);border-radius:var(--radius-3);padding:20px 22px;margin-bottom:22px;position:relative">'+
+      '<button onclick="cpOnboardDismiss(\''+pid+'\')" title="Masquer ce guide" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;color:var(--terre-400);font-size:20px;line-height:1">×</button>'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+cpIcon('flower',18,'color:var(--terre)')+'<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">Par où commencer ?</span></div>'+
+      '<div style="font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">'+doneN+' / '+total+' étape'+(total>1?'s':'')+' · vous y êtes presque</div>'+
+      '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+pct+'%;background:var(--terre);border-radius:999px;transition:width .4s ease"></div></div>'+
+      rows+
+    '</div>';
+  }
+  window.cpOnboardDismiss = function(pid){ try{ localStorage.setItem('cp-onb-'+pid,'1'); }catch(e){} renderShell(); };
+
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
@@ -1774,6 +1836,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>' +
     '</div>';
 
+    var onboarding = cpOnboarding(pd);
     var banner = '';
     if (actionStep) {
       banner = '<div class="cp-action">' +
@@ -1937,7 +2000,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Espace partenaire
     if (project.type === 'partenaire') {
       return header +
-        '<div class="cp-content">' + banner + buildClientPartenaire(pd) +
+        '<div class="cp-content">' + banner + onboarding + buildClientPartenaire(pd) +
           (sideTabs.length ? '<div style="margin-top:14px">' + tabs + filesPanel + pracPanel + meetPanel + '</div>' : '') +
           helpCard +
         '</div>';
@@ -1945,7 +2008,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     // Espace maintenance
     if (project.type === 'maintenance') {
-      return header + '<div class="cp-content">' + banner + buildClientMaintenance(pd) + helpCard + '</div>';
+      return header + '<div class="cp-content">' + banner + onboarding + buildClientMaintenance(pd) + helpCard + '</div>';
     }
 
     var questionnaireCard = '';
@@ -2080,7 +2143,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
       return header +
         '<div class="cp-content cp-content--wide">' +
-          banner + clientCardsHtml + questionnaireCard +
+          banner + onboarding + clientCardsHtml + questionnaireCard +
           '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
             '<div>' + phasesView + '</div>' +
             '<div>' + sideCol + '</div>' +
