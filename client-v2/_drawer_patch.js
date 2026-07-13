@@ -164,6 +164,21 @@
         })()
       : '';
 
+    // Report d'échéance proposé par Cindy : la cliente l'accepte ou le refuse.
+    var proposeCallout = t.proposedDueDate
+      ? (function(){
+          var frd = String(t.proposedDueDate).split('-').reverse().join('/');
+          return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#eef4ea;border:1px solid #cfe0c6">'+
+            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#3f5a37;margin-bottom:6px">Nouvelle date proposée</div>'+
+            '<div style="font-size:14px;color:var(--navy,#1C1205);line-height:1.5;margin-bottom:12px">Cindy propose de reporter l\'échéance de cette tâche au <strong>'+esc(frd)+'</strong>. Est-ce que cela vous convient ?</div>'+
+            '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
+              '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',true)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#3f8f5b;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' Accepter le report</button>'+
+              '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',false)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid #d9d2c6;color:var(--navy,#1C1205);cursor:pointer;font-size:13px;font-weight:600">Refuser</button>'+
+            '</div>'+
+          '</div>';
+        })()
+      : '';
+
     // Historique des révisions envoyées par Cindy (liens datés).
     var revHist = Array.isArray(t.reviewHistory) ? t.reviewHistory.slice().reverse() : [];
     var reviewHistHtml = revHist.length
@@ -184,6 +199,7 @@
         '<div style="padding:0 44px 44px">'+
           title +
           reviewCallout +
+          proposeCallout +
           // 1) Propriétés / suivi (avancement, échéance, priorité, statut brief…).
           '<div style="margin:14px 0 4px">'+propertiesHtml+'</div>'+
           '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
@@ -290,6 +306,24 @@
         .then(function(updated){ if (updated && updated.status) t.status = updated.status; toast('Cindy est prévenue ✓'); renderShell(); })
         .catch(function(){ toast('Erreur, réessayez.'); });
     }, { title: 'Confirmer vos retours ?', okLabel: 'Oui, prévenir Cindy' });
+  };
+
+  // Report d'échéance proposé par Cindy : la cliente accepte (la date s'applique)
+  // ou refuse (la proposition disparaît). Cindy est prévenue dans les deux cas.
+  window.cliRespondProposedDate = function(pid, taskId, accept){
+    var pd = getPD(pid);
+    var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; });
+    if (!t || !t.proposedDueDate) return;
+    var newDate = t.proposedDueDate;
+    fetch(API_BASE + '/tasks/' + taskId + '/propose-date', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, accept: !!accept }) })
+      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(){
+        if (accept) t.dueDate = newDate;
+        t.proposedDueDate = null; t.proposedAt = null;
+        toast(accept ? 'Nouvelle date acceptée ✓' : 'Report refusé, Cindy est prévenue');
+        renderShell();
+      })
+      .catch(function(){ toast('Erreur, réessayez.'); });
   };
 
   window.cliEditPartTask = function(pid, taskId){

@@ -772,6 +772,15 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     if (t.sessions.length > 100) t.sessions = t.sessions.slice(-100);
   }
   if (body.properties && typeof body.properties === 'object') t.properties = Object.assign({}, t.properties || {}, body.properties);
+  // Report d'échéance PROPOSÉ : la nouvelle date n'est pas appliquée tout de
+  // suite ; la cliente la voit dans son espace et doit l'accepter.
+  let proposedNotify = false;
+  if ('proposedDueDate' in body) {
+    const pdd = (body.proposedDueDate || '').toString().slice(0, 10);
+    t.proposedDueDate = pdd || null;
+    t.proposedAt = pdd ? nowIso() : null;
+    proposedNotify = !!pdd;
+  }
   if (body.status === 'done' && !t.completedAt) t.completedAt = nowIso();
   if (body.status && body.status !== 'done') t.completedAt = null;
   // Traiter la tâche (la faire avancer au-delà de « à faire ») lève sa
@@ -802,6 +811,12 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
         `<p style="color:#8a6f54;font-size:13px">Retrouvez aussi ce lien et vos boutons de validation dans votre espace, sur la tâche concernée.</p>`;
     }
     await notifyClient(env, data, `Tâche ${label} · ${escHtml(t.title || '')}`, bodyHtml);
+  }
+  if (proposedNotify) {
+    const frd = (t.proposedDueDate || '').split('-').reverse().join('/');
+    await notifyClient(env, data, `Report d'échéance proposé · ${escHtml(t.title || '')}`,
+      `<p>Cindy propose de reporter l'échéance de votre tâche <strong>${escHtml(t.title || '')}</strong> au <strong>${escHtml(frd)}</strong>.</p>` +
+      `<p>Connectez-vous à votre espace pour accepter cette nouvelle date.</p>`);
   }
   return json(t);
 }

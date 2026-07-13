@@ -188,6 +188,8 @@ async function handleClientApi(
   if (t && method === 'POST') return handleTaskComplete(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/feedback$/);
   if (t && method === 'POST') return handleTaskFeedback(request, env, masterKey, data, t[1]);
+  t = sub.match(/^\/tasks\/([a-f0-9]+)\/propose-date$/);
+  if (t && method === 'POST') return handleTaskProposeDate(request, env, masterKey, data, t[1]);
   t = sub.match(/^\/tasks\/([a-f0-9]+)\/comments$/);
   if (t && method === 'POST') return handleTaskComment(request, env, masterKey, data, t[1]);
 
@@ -854,6 +856,24 @@ async function handleTaskFeedback(_request: Request, env: Env, masterKey: string
   await notifyAdmin(env, `Retours faits · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a fait ses retours sur la tâche <strong>${escHtml(found.task.title || '')}</strong>. La balle est dans votre camp.</p>`);
   return json(found.task);
+}
+
+async function handleTaskProposeDate(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
+  const body = await readJson(request);
+  const found = findTask(getEspace(data), taskId, (body.projectId || '').toString());
+  if (!found) return json({ error: 'Task not found' }, 404);
+  const t = found.task;
+  if (!t.proposedDueDate) return json({ error: 'Aucun report proposé' }, 400);
+  const accepted = body.accept === true;
+  const proposed = t.proposedDueDate;
+  if (accepted) t.dueDate = proposed;
+  t.proposedDueDate = null;
+  t.proposedAt = null;
+  await save(env, masterKey, data);
+  const frd = (proposed || '').split('-').reverse().join('/');
+  await notifyAdmin(env, `${accepted ? 'Report accepté' : 'Report refusé'} · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a ${accepted ? 'accepté' : 'refusé'} le report de la tâche <strong>${escHtml(t.title || '')}</strong>${accepted ? ` au <strong>${escHtml(frd)}</strong>` : ''}.</p>`);
+  return json(t);
 }
 
 async function handleTaskComment(request: Request, env: Env, masterKey: string, data: AnyObj, taskId: string): Promise<Response> {
