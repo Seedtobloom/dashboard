@@ -5939,6 +5939,43 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
     }, 30000);
+    wireReturnRefresh();
+  }
+
+  // Rafraîchissement quand la cliente REVIENT sur l'onglet (retour au dashboard),
+  // et non à chaque navigation interne (trop gourmand). Recharge tout l'espace et
+  // re-rend la vue courante, sans réinitialiser la navigation. Throttlé.
+  var _lastReturnRefresh = 0, _returnWired = false;
+  function refreshOnReturn() {
+    if (!API_BASE || !appData || _isAdminEdit) return;
+    var now = Date.now();
+    if (now - _lastReturnRefresh < 12000) return;
+    _lastReturnRefresh = now;
+    var headers = {};
+    try { var sc = sessionStorage.getItem('_sc'); if (sc) headers['x-space-code'] = sc; } catch(e) {}
+    fetch(API_BASE, { headers: headers })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        if (!data || data.wrongCode || data.locked) return;
+        var norm;
+        if (!data.type) { if (!data.project) return; norm = { type:'project', clientName:data.project.clientName, projects:[{ project:data.project, messages:data.messages, files:data.files }] }; }
+        else { norm = data; }
+        var h = data.home || {};
+        norm.home = { intro:(typeof h.intro==='string'?h.intro:null), blocks:Array.isArray(h.blocks)?h.blocks:[], hidden:(h.hidden&&typeof h.hidden==='object')?h.hidden:{}, banner:(h.banner&&typeof h.banner==='object')?h.banner:{} };
+        appData = norm;
+        convData = Array.isArray(data.conversation) ? data.conversation : convData;
+        cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : cpHolidays;
+        var ids = (appData.projects||[]).map(function(p){ return p.project.id; });
+        if (ids.indexOf(currentId) === -1 && ids.length) currentId = ids[0];
+        renderShell();
+      })
+      .catch(function(){});
+  }
+  function wireReturnRefresh() {
+    if (_returnWired || typeof document === 'undefined') return;
+    _returnWired = true;
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') refreshOnReturn(); });
+    if (typeof window !== 'undefined') window.addEventListener('focus', function(){ refreshOnReturn(); });
   }
 
   function buildClientFileExchange(pid, files) {
@@ -6884,15 +6921,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div style="padding:0 44px 44px">'+
           title +
           reviewCallout +
-          // En haut : le livrable et les échanges (ce qu'on consulte le plus).
+          // Propriétés en haut (avancement, échéance, priorité, statut brief…).
+          '<div style="margin:14px 0 4px">'+propertiesHtml+'</div>'+
+          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
+          sep +
+          // Puis le livrable et les échanges.
           stbTaskDeliverables(pid, project, t, sep) +
           sep +
           commentsBlock +
           reviewHistHtml +
           sep +
-          // Au milieu : infos de la tâche + le tableau de travail.
-          '<div style="margin:14px 0 4px">'+propertiesHtml+'</div>'+
-          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
+          // Le tableau de travail.
           stbTaskTable(pid, t) +
           sep +
           // En bas : le brief (la demande et les fichiers joints).
