@@ -3865,6 +3865,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); if(!Array.isArray(pd.files)) pd.files=[]; attachments.forEach(function(a){ pd.files.push({ key:a.key, name:a.name, type:a.type, category:'document', source:'client' }); }); }
           if (dueDate) cliCalSelected[pid] = dueDate;
           toast('Demande ajoutee');
+          // Ouvre directement le panneau de la tâche créée (vue Tableau).
+          if (task && task.id) { cliSelTask[pid] = task.id; cliPartTab[pid] = 'board'; }
           try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
         });
     }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'reessayez')); });
@@ -3882,6 +3884,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
         if (body.dueDate) cliCalSelected[pid] = body.dueDate;
         toast('Tâche ajoutée ✓');
+        // Ouvre directement le panneau de la tâche créée (vue Tableau).
+        if (task && task.id) { cliSelTask[pid] = task.id; cliPartTab[pid] = 'board'; }
         try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
       }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'réessayez')); });
   }
