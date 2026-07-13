@@ -54,6 +54,7 @@ const DOMAINS: Record<string, { internal: string; folder: string; label: string 
   partner: { internal: 'partenaireCreative', folder: 'partenaireCreative', label: 'Partenaire créative' },
   website: { internal: 'siteWeb', folder: 'siteWeb', label: 'Site web' },
   branding: { internal: 'identiteVisuelle', folder: 'identiteVisuelle', label: 'Identité visuelle' },
+  maintenance: { internal: 'maintenanceSite', folder: 'maintenanceSite', label: 'Espace tickets' },
 };
 
 export default {
@@ -335,6 +336,9 @@ async function handleClientCreate(request: Request, env: Env): Promise<Response>
   if (domains.includes('supports')) {
     espace.supportsDeCom = [{ '001': [{ isActive: false, chat: [], questionnaire: [], suivi: [], livrables: [] }] }];
   }
+  if (domains.includes('maintenance')) {
+    espace.maintenanceSite = [{ isActive: false, chat: [], tickets: [], counsels: [], feedbacks: [], monthlyHours: 0, maintReguls: {} }];
+  }
   espace.documents = [{ partenaireCreative: [], siteWeb: [], identiteVisuelle: [], supportsDeCom: [] }];
 
   const data: AnyObj = {
@@ -483,6 +487,59 @@ async function handleClientApi(
     container.bannerColor = /^#[0-9a-fA-F]{6}$/.test(col) ? col : null;
     await saveClient(env, key, data);
     return json({ ok: true, bannerColor: container.bannerColor });
+  }
+
+  // Espace tickets / maintenance : activer (créer si absent) ou désactiver
+  if (method === 'PATCH' && sub === '/tickets-space') {
+    const body = await readJson(request);
+    const on = body.enabled === true;
+    let obj = getDomainObj(esp, 'maintenanceSite');
+    if (on) {
+      if (!obj) {
+        esp.maintenanceSite = [{ isActive: true, chat: [], tickets: [], counsels: [], feedbacks: [], monthlyHours: 0, maintReguls: {} }];
+        if (Array.isArray(esp.documents) && esp.documents[0] && !esp.documents[0].maintenanceSite) esp.documents[0].maintenanceSite = [];
+      } else {
+        obj.isActive = true;
+      }
+    } else if (obj) {
+      obj.isActive = false;
+    }
+    await saveClient(env, key, data);
+    return json({ ok: true, enabled: on });
+  }
+  // Tickets : marquer tous comme vus côté admin
+  if (method === 'POST' && sub === '/tickets/seen') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (container && Array.isArray(container.tickets)) {
+      container.tickets.forEach((t: AnyObj) => { t.seenByAdmin = true; });
+      await saveClient(env, key, data);
+    }
+    return json({ ok: true });
+  }
+  // Tickets : mise à jour (statut, priorité, échéance, temps passé) côté admin
+  m = sub.match(/^\/tickets\/([a-f0-9]+)$/);
+  if (m && method === 'PATCH') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container || !Array.isArray(container.tickets)) return json({ error: 'Projet introuvable' }, 404);
+    const tk = container.tickets.find((t: AnyObj) => t.id === m![1]);
+    if (!tk) return json({ error: 'Ticket introuvable' }, 404);
+    ['title', 'description', 'priority', 'category', 'status', 'dueDate'].forEach((k) => { if (k in body) tk[k] = body[k]; });
+    if (typeof body.timeSpentMinutes === 'number' && body.timeSpentMinutes >= 0) tk.timeSpentMinutes = Math.round(body.timeSpentMinutes);
+    if (body.status === 'done' || body.status === 'closed') { if (!tk.resolvedAt) tk.resolvedAt = nowIso(); }
+    else if ('status' in body) { tk.resolvedAt = null; }
+    tk.seenByAdmin = true;
+    await saveClient(env, key, data);
+    return json(tk);
+  }
+  if (m && method === 'DELETE') {
+    const { container } = resolveProject(esp, (url.searchParams.get('projectId') || 'maintenance').toString());
+    if (container && Array.isArray(container.tickets)) {
+      container.tickets = container.tickets.filter((t: AnyObj) => t.id !== m![1]);
+      await saveClient(env, key, data);
+    }
+    return json({ ok: true });
   }
 
   // Bilan de fin de collaboration : inviter le client à le remplir

@@ -280,6 +280,7 @@ function resolveProject(esp: AnyObj, projectId: string): { container: AnyObj | n
   if (projectId === 'partner') return { container: getDomainObj(esp, 'partenaireCreative'), folder: 'partenaireCreative' };
   if (projectId === 'website') return { container: getDomainObj(esp, 'siteWeb'), folder: 'siteWeb' };
   if (projectId === 'branding') return { container: getDomainObj(esp, 'identiteVisuelle'), folder: 'identiteVisuelle' };
+  if (projectId === 'maintenance') return { container: getDomainObj(esp, 'maintenanceSite'), folder: 'maintenanceSite' };
   const sm = projectId.match(/^support-(\d{3})$/);
   if (sm) return { container: getSupportObj(esp, sm[1]), folder: `supportsDeCom/${sm[1]}` };
   return { container: null, folder: '' };
@@ -525,6 +526,32 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         files,
       });
     }
+  }
+
+  // Espace tickets / maintenance (offre allégée : la cliente ouvre des tickets)
+  const ms = getDomainObj(espace, 'maintenanceSite');
+  if (ms && ms.isActive !== false) {
+    const files = markLocked(await listFiles(env, `${masterKey}/maintenanceSite/`), ms);
+    projects.push({
+      project: {
+        id: 'maintenance',
+        type: 'maintenance',
+        projectTitle: (ms.name && String(ms.name).trim()) || 'Tickets & maintenance',
+        clientName: name,
+        status: ms.maintenance ? 'maintenance' : 'in_progress',
+        tickets: Array.isArray(ms.tickets) ? ms.tickets : [],
+        counsels: Array.isArray(ms.counsels) ? ms.counsels : [],
+        feedbacks: Array.isArray(ms.feedbacks) ? ms.feedbacks : [],
+        maintReguls: ms.maintReguls && typeof ms.maintReguls === 'object' ? ms.maintReguls : {},
+        monthlyHours: ms.monthlyHours || 0,
+        deliverables: mapDeliverables(ms.livrables),
+        bannerColor: ms.bannerColor || null,
+        folders: foldersFor(ms, files),
+        practicalInfo: { sections: [] },
+      },
+      messages: mapChatToMessages(ms.chat || []),
+      files,
+    });
   }
 
   const conversation = mapChatToMessages(espace.conversation || []);
@@ -1070,8 +1097,10 @@ async function handleTicketCreate(request: Request, env: Env, masterKey: string,
     description: (body.description || '').toString().trim(),
     priority: body.priority || 'moyenne',
     category: body.category || '',
+    dueDate: (body.dueDate || '').toString().trim() || null,
     status: 'open',
     attachments: Array.isArray(body.attachments) ? body.attachments : [],
+    seenByAdmin: false,
     createdAt: nowIso(),
   };
   ticketsOf(container).unshift(ticket);
@@ -1088,7 +1117,7 @@ async function handleTicketUpdate(request: Request, env: Env, masterKey: string,
   if (!container) return json({ error: 'Project not found' }, 404);
   const tk = ticketsOf(container).find((t) => t.id === ticketId);
   if (!tk) return json({ error: 'Ticket not found' }, 404);
-  ['title', 'description', 'priority', 'category', 'status'].forEach((k) => { if (k in body) tk[k] = body[k]; });
+  ['title', 'description', 'priority', 'category', 'status', 'dueDate'].forEach((k) => { if (k in body) tk[k] = body[k]; });
   if (Array.isArray(body.attachments)) tk.attachments = body.attachments;
   if (body.status === 'done' || body.status === 'closed') tk.resolvedAt = nowIso();
   await save(env, masterKey, data);

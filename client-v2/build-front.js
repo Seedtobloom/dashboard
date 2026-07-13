@@ -172,8 +172,8 @@ css = css.replace(
 
 // ── Messagerie : on garde l'onglet (sidebar) mais cpOpenMessages ouvre désormais
 //    la messagerie générale CATÉGORISÉE par projet (greffe _inbox_patch.js) ──
-must(js.indexOf("              mForfaitCard + mMsgCard +") !== -1, 'home mMsgCard');
-js = js.replace("              mForfaitCard + mMsgCard +", "              mForfaitCard +");
+must(js.indexOf("              (mQuotaMin ? mForfaitCard : '') + mMsgCard +") !== -1, 'home mMsgCard');
+js = js.replace("              (mQuotaMin ? mForfaitCard : '') + mMsgCard +", "              (mQuotaMin ? mForfaitCard : '') +");
 must(js.indexOf("            msgCard +") !== -1, 'home msgCard');
 js = js.replace("            msgCard +", "            '' +");
 // ── Lisibilité des pastilles du calendrier (titre sur 2 lignes + meilleur contraste) ──

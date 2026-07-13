@@ -162,8 +162,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   var STATUS_LABELS = { discovery:'Decouverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En revision', delivered:'Livre', archived:'Archive' };
   var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
-  var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)' };
-  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'À venir', todo:'À faire', review:'En révision' };
+  var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)', open:'var(--st-todo)', closed:'#ccc' };
+  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'À venir', todo:'À faire', review:'En révision', open:'À faire', closed:'Fermé' };
   function cpStatusPill(status) {
     var col = STEP_STATUS_COLORS[status] || 'var(--bone-d)';
     var label = STEP_STATUS_LABELS[status] || status;
@@ -503,14 +503,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</div>' +
           '<div class="cp-ph__cols">' +
             '<div class="cp-ph__left">' +
-              '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ici vous suivez vos tickets, votre quota d\'heures et échangez avec le studio en temps réel.</p>' +
+              '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ouvrez un ticket pour toute demande, suivez son avancement et échangez avec le studio, le tout au même endroit.</p>' +
               '<button onclick="cliOpenSubmitTicket(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:400px;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
                 cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
               '</button>' +
               mTicketsCard +
             '</div>' +
             '<div class="cp-ph__right">' +
-              mForfaitCard + mMsgCard +
+              (mQuotaMin ? mForfaitCard : '') + mMsgCard +
             '</div>' +
           '</div>' +
         '</div></div>';
@@ -913,7 +913,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var mainNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label">Votre espace</div>' +
       (portal ? navBtn('home','home','Accueil','cpGoHome()','') : '') +
-      (appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Interventions','cpOpenInterventions()','') : '') +
+      (appData.projects.length === 1 && clientType === 'maintenance' ? navBtn('interventions','settings','Tickets','cpOpenInterventions()','') : '') +
       (appData.projects.length === 1 && clientType === 'partenaire' ? navBtn('project','tasks','Mon espace','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
       (appData.projects.length === 1 && clientType !== 'maintenance' && clientType !== 'partenaire' ? navBtn('project','tasks','Suivi','cpSel(\''+esc(firstProj.id)+'\')', '') : '') +
     '</div>';
@@ -1031,7 +1031,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     pills.push(mPill('Fichiers', 'cpGoFichiers()', currentView === 'fichiers', 0));
     if (portalTb) pills.push(mPill('Ressources', 'cpGoHub()', currentView === 'hub', 0));
     var mobilePills = '<div class="cp-pills">' + pills.join('') + '</div>';
-    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Interventions', cal:'Calendrier partage', stats:'Statistiques' };
+    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Tickets', cal:'Calendrier partage', stats:'Statistiques' };
     var pageTitle = pageTitles[currentView] || 'Espace client';
     if (currentView === 'project' && currentId) {
       var pd = getPD(currentId);
@@ -2274,6 +2274,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var usedMin  = tickets.reduce(function(n,t){ return n + (t.timeSpentMinutes||0); }, 0);
     var remaining = quotaMin - usedMin;
     var over = remaining < 0;
+    // Mode allégé : sans forfait d'heures, l'espace se résume aux tickets
+    // (pas de bloc forfait, pas d'onglets de catégorie) — le plus simple possible.
+    var showForfait = quotaMin > 0;
 
     // Quota strip
     var quotaBarPct = quotaMin ? Math.min(100, Math.round(usedMin / quotaMin * 100)) : 0;
@@ -2283,7 +2286,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var barColor = over ? '#9b3a2e' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
     var borderColor = over ? '#e7c6bd' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
     var quotaStrip = '<div style="margin-bottom:28px">' +
-      // Forfait card first
+      // Forfait card first (masqué s'il n'y a pas de forfait d'heures)
+      (showForfait ? (
       '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
           cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
@@ -2303,7 +2307,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '</div>'
           : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré.</p>'
         ) +
-      '</div>' +
+      '</div>' ) : '') +
       // Big CTA button below the forfait
       '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
         cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
@@ -2313,6 +2317,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Category tabs
     var counsels = Array.isArray(project.counsels) ? project.counsels : [];
     var feedbacks = Array.isArray(project.feedbacks) ? project.feedbacks : [];
+    // En mode allégé (pas de forfait, pas de conseils/retours) on n'affiche que
+    // la liste des tickets : pas d'onglets de catégorie.
+    var showCats = showForfait || counsels.length || feedbacks.length;
+    if (!showCats) cat = 'demandes';
     var MAINT_CATS = [
       ['demandes', 'Demandes', tickets.length, 'settings'],
       ['suivi', 'Suivi mensuel', null, 'chart'],
@@ -2332,7 +2340,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function buildTicketsList() {
       // Status filter tabs
       var MAINT_ST_KEYS = ['all','open','in_progress','done','closed'];
-      var MAINT_ST_LABELS = { all:'Tout', open:'Ouvert', in_progress:'En cours', done:'Résolu', closed:'Fermé' };
+      var MAINT_ST_LABELS = { all:'Tout', open:'À faire', in_progress:'En cours', done:'Fait', closed:'Fermé' };
       var MAINT_ST_COLORS = { open:'#e8a87c', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
       var presentSt = MAINT_ST_KEYS.filter(function(sk){ return sk==='all'||tickets.some(function(t){ return t.status===sk; }); });
       var stTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
@@ -2383,7 +2391,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</div>' +
           '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:0 0 auto">' +
             cpStatusPill(t.status) +
-            (isOpen ? '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Marquer resolu</button>' : '') +
+            (isOpen ? '<button onclick="cliMaintCloseTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Marquer comme fait</button>' : '') +
             (isOpen ? '<div style="display:flex;gap:5px">' +
               '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid var(--bone-d);background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:var(--terre-600)">Modifier</button>' +
               '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="padding:3px 7px;border:1px solid #f0d0cc;background:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-micro);font-size:9.5px;color:#c44">Suppr.</button>' +
@@ -2436,7 +2444,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#c44;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
     }
 
-    return quotaStrip + catTabsHtml + mainContent;
+    return quotaStrip + (showCats ? catTabsHtml : '') + mainContent;
   }
 
   // ── Suivi mensuel maintenance — cote CLIENT (lecture seule) ─────────────────
@@ -3580,6 +3588,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</select>' +
         '</div>' +
       '</div>' +
+      '<div style="margin-bottom:14px">' +
+        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#b0a89a">(optionnel)</span></label>' +
+        '<input id="_maint-t-due" type="date" value="'+esc(edit&&edit.dueDate||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
+      '</div>' +
       '<div style="margin-bottom:18px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
         '<div id="_maint-t-files" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>' +
@@ -3628,9 +3640,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var desc  = ov.querySelector('#_maint-t-desc').value.trim();
       var prio  = ov.querySelector('#_maint-t-prio').value;
       var cat   = ov.querySelector('#_maint-t-cat').value;
+      var due   = ov.querySelector('#_maint-t-due').value || '';
       close();
       if (edit) {
-        var body = { projectId: pid, title: title, description: desc, priority: prio, category: cat || '', attachments: pending };
+        var body = { projectId: pid, title: title, description: desc, priority: prio, category: cat || '', dueDate: due, attachments: pending };
         fetch(API_BASE + '/tickets/' + edit.id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
           .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
           .then(function(ticket) {
@@ -3643,7 +3656,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           })
           .catch(function(){ toast('Erreur lors de la mise à jour.'); });
       } else {
-        var body2 = { projectId: pid, title: title, description: desc, priority: prio, category: cat || undefined, status: 'open', attachments: pending, createdAt: new Date().toISOString() };
+        var body2 = { projectId: pid, title: title, description: desc, priority: prio, category: cat || undefined, dueDate: due, status: 'open', attachments: pending, createdAt: new Date().toISOString() };
         fetch(API_BASE + '/tickets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body2) })
           .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
           .then(function(ticket) {
@@ -5243,13 +5256,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via le bouton « Guide » en haut à droite. En cas de question, écrivez-moi dans la Messagerie, je réponds vite.' },
       ],
       maintenance: [
-        { icon:'flower', title:'Votre espace maintenance', text:'Bienvenue ! Cet espace est dédié au suivi de votre contrat de maintenance. Ouvrez des tickets, suivez leur avancement et consultez votre quota d\'heures.' },
-        { icon:'tasks', title:'Ouvrir un ticket', nav:'interventions', text:'Cliquez sur « Nouvelle demande » pour décrire votre besoin : correction de bug, mise à jour de contenu, question technique… Choisissez la catégorie la plus proche.' },
-        { icon:'clock', title:'Votre quota d\'heures', nav:'interventions', text:'Chaque mois, votre contrat inclut un quota d\'heures. La barre en haut de page indique ce qui a déjà été utilisé. Les heures non utilisées ne sont pas reportées.' },
-        { icon:'calendar', title:'Suivi mensuel', nav:'interventions', text:'L\'onglet Suivi mensuel vous donne une vue d\'ensemble des interventions du mois : temps passé, tickets traités, solde d\'heures restantes.' },
-        { icon:'check', title:'Statuts des tickets', nav:'interventions', text:'Un ticket peut être : Ouvert (reçu), En cours (traitement en cours), Résolu (fini, en attente de validation) ou Fermé. Vous êtes notifié à chaque changement.' },
-        { icon:'chat', title:'Messagerie', nav:'messages', text:'Pour toute question qui ne nécessite pas un ticket formel, la Messagerie est là. Échangez directement avec le studio en temps réel.' },
-        { icon:'folder', title:'Fichiers et ressources', nav:'hub', text:'Retrouvez ici les accès, les guides techniques et les documents partagés par le studio pour la gestion de votre site.' },
+        { icon:'flower', title:'Votre espace tickets', text:'Bienvenue ! Cet espace vous permet de faire vos demandes en toute simplicité : ouvrez un ticket, indiquez pour quand vous le souhaitez, et suivez son avancement.' },
+        { icon:'tasks', title:'Ouvrir un ticket', nav:'interventions', text:'Cliquez sur « Ouvrir un ticket » pour décrire votre besoin : correction de bug, mise à jour de contenu, ajout, question technique… Vous pouvez joindre une capture d\'écran ou un lien, choisir une priorité et une date souhaitée.' },
+        { icon:'check', title:'Suivre l\'avancement', nav:'interventions', text:'Chaque ticket passe par trois étapes : À faire (reçu), En cours (je m\'en occupe) et Fait (terminé). Vous êtes prévenu à chaque changement.' },
+        { icon:'chat', title:'Messagerie', nav:'messages', text:'Pour toute question qui ne nécessite pas un ticket, la Messagerie est là. Échangez directement avec le studio.' },
         { icon:'flower', title:'C\'est parti !', text:'Ce guide reste accessible via « Guide » en haut à droite. Pour toute urgence, utilisez la Messagerie, je reviens vers vous vite.' },
       ],
       identite: [
