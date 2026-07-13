@@ -5078,12 +5078,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var vTag = it.version > 0 ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:6px;background:var(--surface-2,#f0ece3);color:var(--terre-600);margin-left:8px;vertical-align:2px">V' + it.version + '</span>' : '';
       var action = it.dlUrl
         ? '<a href="' + esc(it.dlUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--terre);color:var(--paille);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('download', 14, 'color:var(--paille)') + ' Télécharger</a>'
-        : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
-      var decide = (it.status === 'a_valider' && it.id)
-        ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+        : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
+      // Livrable-lien : on doit d'abord ouvrir le lien pour pouvoir décider.
+      var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
+      var decideBtns = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="padding:9px 18px;border:none;border-radius:999px;background:#3f6b3a;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Valider ce livrable</button>' +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="padding:9px 18px;border:1px solid var(--bone-d);border-radius:999px;background:var(--card);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Demander une révision</button>' +
-          '</div>'
+          '</div>';
+      var decide = (it.status === 'a_valider' && it.id)
+        ? (needConsult
+            ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:13px;color:var(--terre-600);background:#fbf3d9;border:1px solid #f0e2b0;border-radius:10px;padding:10px 14px">👀 Ouvrez d\'abord le livrable via « Voir » ci-dessus pour pouvoir le valider ou demander une révision.</div>'
+            : decideBtns)
         : '';
       var comment = (it.status === 'refuse' && it.clientComment)
         ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8a3a2c;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
@@ -5449,6 +5454,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     renderShell({ resetScroll: true });
   };
   var cpLivrFilter = 'all';
+  // Livrables-liens consultés : on n'active « Valider / Demander une révision »
+  // qu'après avoir ouvert le lien au moins une fois.
+  var cpConsulted = {};
+  window.cpMarkConsulted = function(id) { if (id) { cpConsulted[id] = true; renderShell(); } };
   window.cpGoLivrables = function() {
     currentView = 'livrables';
     renderShell({ resetScroll: true });
@@ -6423,13 +6432,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #ecd9ad;background:#fbf3e1;border-radius:10px;color:#7a5a14;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser vos retours</span></a>' : '';
     var rows = dlv.map(function(l){
       var dl = l.fileKey ? (API_BASE + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
+      var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
       var done = l.status === 'valide' || l.status === 'refuse';
+      // Livrable-lien : la cliente doit ouvrir le lien avant de pouvoir décider.
+      var needConsult = !!(lnk && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
+      var openBtn = dl
+        ? '<div style="font-size:12px;color:#5d7a52;margin-top:8px">Votre livrable est prêt, vous pouvez le récupérer ici.</div><a href="'+dl+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:#3f8f5b;color:#fff;text-decoration:none">'+cpIcon('download',15)+'<span>Télécharger votre livrable</span></a>'
+        : (lnk ? '<div style="font-size:12px;color:#5d7a52;margin-top:8px">Votre livrable est disponible via ce lien.</div><a href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:var(--terre,#412F21);color:#fff;text-decoration:none">'+cpIcon('external',15)+'<span>Ouvrir le livrable</span></a>' : '');
+      var decideRow = needConsult
+        ? '<div style="margin-top:8px;font-size:12px;color:#7a5a14;background:#fbf3d9;border:1px solid #f0e2b0;border-radius:8px;padding:8px 10px">👀 Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
+        : '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:9px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:9px;border:1px solid #e2dbd0;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Demander une révision</button></div>';
       return '<div style="border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:12px 13px;margin-bottom:8px;background:#fffdf8">'+
-        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#1C1205);overflow:hidden">'+cpIcon('file-text',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
+        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#1C1205);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
         '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(col[l.status]||'#999')+';color:#fff;white-space:nowrap">'+(lab[l.status]||l.status)+'</span></div>'+
-        (dl ? '<div style="font-size:12px;color:#5d7a52;margin-top:8px">Votre livrable est prêt, vous pouvez le récupérer ici.</div><a href="'+dl+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:11px;border:none;border-radius:9px;background:#3f8f5b;color:#fff;text-decoration:none">'+cpIcon('download',15)+'<span>Télécharger votre livrable</span></a>' : '')+
+        openBtn +
         (l.clientComment ? '<div style="font-size:11px;color:var(--muted,#8090a8);font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
-        (!done ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:8px;border:1px solid #e2dbd0;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Demander une révision</button></div>' : '')+
+        (!done ? decideRow : '')+
       '</div>';
     }).join('');
     var body = rlHtml + rows;
