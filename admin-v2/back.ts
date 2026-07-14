@@ -1593,6 +1593,17 @@ async function handleHolidaysSave(request: Request, env: Env): Promise<Response>
 }
 
 /* ── Visios : préparation des rendez-vous (trames + questions), stockage admin ── */
+// Trame en texte enrichi (contenteditable) : on retire le potentiellement
+// dangereux (scripts, gestionnaires d'événements) avant de stocker.
+function sanitizeRich(s: any): string {
+  return String(s || '')
+    .replace(/<\/?(?:script|iframe|object|embed|style|link|meta)[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/javascript:/gi, '')
+    .slice(0, 40000);
+}
 function cleanVisioQuestions(arr: any): AnyObj[] {
   return (Array.isArray(arr) ? arr : []).map((q: AnyObj) => ({
     id: (q && q.id ? String(q.id) : genId()).slice(0, 40),
@@ -1604,9 +1615,10 @@ function cleanVisioCards(arr: any): AnyObj[] {
   return (Array.isArray(arr) ? arr : []).map((c: AnyObj) => ({
     id: (c && c.id ? String(c.id) : genId()).slice(0, 40),
     client: (c && c.client ? String(c.client) : '').slice(0, 160),
+    clientKey: (c && c.clientKey ? String(c.clientKey) : '').slice(0, 64),
     category: c && c.category === 'suivi' ? 'suivi' : 'nouveau',
     date: (c && c.date ? String(c.date) : '').slice(0, 30),
-    trame: (c && c.trame ? String(c.trame) : '').slice(0, 20000),
+    trame: sanitizeRich(c && c.trame),
     questions: cleanVisioQuestions(c && c.questions),
     notes: (c && c.notes ? String(c.notes) : '').slice(0, 10000),
     done: c && c.done === true,
@@ -1617,7 +1629,7 @@ function cleanVisioTemplates(arr: any): AnyObj[] {
   return (Array.isArray(arr) ? arr : []).map((t: AnyObj) => ({
     id: (t && t.id ? String(t.id) : genId()).slice(0, 40),
     name: (t && t.name ? String(t.name) : '').slice(0, 160),
-    trame: (t && t.trame ? String(t.trame) : '').slice(0, 20000),
+    trame: sanitizeRich(t && t.trame),
     questions: cleanVisioQuestions(t && t.questions),
   })).slice(0, 100);
 }
