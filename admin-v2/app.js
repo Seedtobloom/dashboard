@@ -1307,6 +1307,7 @@
       (c.done ? '<span title="Visio faite" style="color:#4f6a46;font-size:16px">✓</span>' : '') +
       nameField +
       '<input class="inp" type="datetime-local" value="' + esc(c.date || '') + '" style="width:auto" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)" title="Date et heure de la visio">' +
+      (((c.trame && c.trame.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) || (c.questions || []).length) ? '<button class="btn btn--dark btn--sm" onclick="ADM.visPresent(\'' + c.id + '\')" title="Dérouler la trame étape par étape">▶ Dérouler</button>' : '') +
       '<button class="btn btn--outline btn--sm" onclick="ADM.visToggle(\'' + c.id + '\')">' + (open ? 'Replier' : 'Préparer') + '</button>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.visDel(\'' + c.id + '\')">Suppr.</button>' +
     '</div>';
@@ -1337,6 +1338,47 @@
     '</div>';
   }
   function visToggle(id) { VIS_EXP[id] = !VIS_EXP[id]; renderVisiosBody(); }
+  // Mode déroulé : on parcourt la trame section par section (délimitées par les
+  // séparateurs « — Séparateur »), puis les questions à poser, avec « Suite ».
+  function visPresent(id) {
+    var c = visCard(id); if (!c) return;
+    var parts = (c.trame || '').split(/<hr\s*\/?>/i).map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() || /<img/i.test(s); });
+    var qs = Array.isArray(c.questions) ? c.questions : [];
+    var steps = parts.map(function (h) { return { html: h }; });
+    if (qs.length) steps.push({ questions: qs });
+    if (!steps.length) { toast('Ajoute d\'abord une trame ou des questions'); return; }
+    var i = 0;
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.62);z-index:9600;display:flex;align-items:center;justify-content:center;padding:24px';
+    function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+    function onKey(e) { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (i < steps.length - 1) { i++; render(); } } else if (e.key === 'ArrowLeft') { if (i > 0) { i--; render(); } } }
+    function render() {
+      var st = steps[i];
+      var content = st.questions
+        ? '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border-bottom:1px solid var(--bone-d)"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
+        : '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>';
+      ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 22px 66px rgba(28,18,5,0.4)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bone-d)">' +
+          '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
+          '<button id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">×</button>' +
+        '</div>' +
+        '<div style="height:4px;background:var(--bone-d)"><div style="height:100%;width:' + Math.round((i + 1) / steps.length * 100) + '%;background:var(--terre);transition:width .25s"></div></div>' +
+        '<div style="padding:30px 34px;overflow-y:auto;flex:1">' + content + '</div>' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;padding:16px 24px;border-top:1px solid var(--bone-d)">' +
+          '<button id="vp-prev" class="btn btn--outline"' + (i === 0 ? ' disabled style="opacity:0.4"' : '') + '>← Précédent</button>' +
+          '<button id="vp-next" class="btn btn--dark">' + (i >= steps.length - 1 ? 'Terminer' : 'Suite →') + '</button>' +
+        '</div>' +
+      '</div>';
+      ov.querySelector('#vp-close').onclick = close;
+      var pv = ov.querySelector('#vp-prev'); if (pv && i > 0) pv.onclick = function () { i--; render(); };
+      ov.querySelector('#vp-next').onclick = function () { if (i >= steps.length - 1) close(); else { i++; render(); } };
+    }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    render();
+  }
   function visAdd(cat) {
     var c = { id: 'v' + Date.now().toString(36), client: '', category: cat === 'suivi' ? 'suivi' : 'nouveau', date: '', trame: '', questions: [], notes: '', done: false, createdAt: new Date().toISOString() };
     VISIOS.cards.unshift(c); VIS_EXP[c.id] = true; VIS_TAB = 'cards'; visSave(); renderVisiosBody();
@@ -1358,7 +1400,7 @@
       swatches + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:22px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée">' + div +
       b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur') +
     '</div>';
-    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-radius:10px;padding:12px 14px;min-height:130px;font-size:13.5px;line-height:1.65;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
+    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-radius:10px;padding:14px 16px;min-height:140px;font-size:16px;line-height:1.7;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
     return tb + ed;
   }
   // On mémorise l'éditeur actif et sa sélection : le clic sur la barre d'outils
@@ -3083,7 +3125,7 @@
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
+    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visPresent: visPresent, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
