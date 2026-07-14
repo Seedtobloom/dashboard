@@ -1260,6 +1260,8 @@
   function renderVisios() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'suivi\')">+ Client suivi</button><button class="btn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau client</button>';
     setMain(topbar('Visios', right, 'Prépare tes rendez-vous : trames à suivre et questions à poser') + '<div class="wrap" id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    // S'assurer d'avoir la liste des clientes (pour les cartes « client suivi »).
+    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
   }
@@ -1288,16 +1290,29 @@
     var open = !!VIS_EXP[c.id];
     var qs = Array.isArray(c.questions) ? c.questions : [];
     var qDone = qs.filter(function (q) { return q.done; }).length;
+    // Client suivi : on choisit dans les clientes qui ont un espace.
+    // Nouveau client (prospect) : nom en texte libre.
+    var nameField;
+    if (c.category === 'suivi') {
+      var picked = c.clientKey && NAV_CLIENTS.filter(function (k) { return k.key === c.clientKey; })[0];
+      var opts = '<option value="">— Choisir une cliente —</option>' +
+        NAV_CLIENTS.map(function (k) { return '<option value="' + esc(k.key) + '"' + (c.clientKey === k.key ? ' selected' : '') + '>' + esc(clientName(k)) + '</option>'; }).join('') +
+        (c.clientKey && !picked ? '<option value="' + esc(c.clientKey) + '" selected>' + esc(c.client || 'Cliente') + '</option>' : '');
+      nameField = '<select class="inp" style="flex:1;min-width:150px;font-weight:600" onchange="ADM.visSetClient(\'' + c.id + '\',this.value)">' + opts + '</select>' +
+        (c.clientKey ? '<button class="btn btn--outline btn--sm" onclick="ADM.openClient(\'' + c.clientKey + '\')" title="Ouvrir la fiche de la cliente">Fiche</button>' : '');
+    } else {
+      nameField = '<input class="inp" value="' + esc(c.client || '') + '" placeholder="Nom du prospect" style="flex:1;min-width:150px;font-weight:600" onchange="ADM.visSet(\'' + c.id + '\',\'client\',this.value)">';
+    }
     var header = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
       (c.done ? '<span title="Visio faite" style="color:#4f6a46;font-size:16px">✓</span>' : '') +
-      '<input class="inp" value="' + esc(c.client || '') + '" placeholder="Nom du client / prospect" style="flex:1;min-width:150px;font-weight:600" onchange="ADM.visSet(\'' + c.id + '\',\'client\',this.value)">' +
+      nameField +
       '<input class="inp" type="datetime-local" value="' + esc(c.date || '') + '" style="width:auto" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)" title="Date et heure de la visio">' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.visToggle(\'' + c.id + '\')">' + (open ? 'Replier' : 'Préparer') + '</button>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.visDel(\'' + c.id + '\')">Suppr.</button>' +
     '</div>';
     var meta = '<div class="micro" style="margin-top:7px;text-transform:none;letter-spacing:0;color:var(--muted)">' +
       (qs.length ? '❓ ' + qDone + '/' + qs.length + ' question' + (qs.length > 1 ? 's' : '') : 'Aucune question') +
-      ((c.trame && c.trame.trim()) ? ' · 📝 trame prête' : '') +
+      ((c.trame && c.trame.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) ? ' · 📝 trame prête' : '') +
       (c.date ? ' · 🗓️ ' + fmtDT(c.date) : '') + '</div>';
     return '<div class="card" style="background:var(--card);padding:16px 18px;margin-bottom:12px' + (c.done ? ';opacity:0.72' : '') + '">' + header + meta + (open ? visCardBody(c) : '') + '</div>';
   }
@@ -1313,7 +1328,7 @@
     return '<div style="margin-top:14px;border-top:1px solid var(--bone-d);padding-top:14px">' +
       tplOpts +
       '<div class="micro" style="margin-bottom:5px">Trame à suivre</div>' +
-      '<textarea class="inp" style="width:100%;box-sizing:border-box;min-height:130px;resize:vertical" placeholder="Le déroulé du rendez-vous, ce que tu veux dire, les points à aborder…" onchange="ADM.visSet(\'' + c.id + '\',\'trame\',this.value)">' + esc(c.trame || '') + '</textarea>' +
+      visRichEditor('vis-tr-' + c.id, c.trame || '', "ADM.visTrameBlur(this,'" + c.id + "')") +
       '<div class="micro" style="margin:16px 0 5px">Questions à poser</div>' + qsHtml +
       '<div class="row" style="gap:6px;margin-top:6px"><input class="inp" id="vis-q-' + c.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visQAdd(\'' + c.id + '\');}"><button class="pbtn" onclick="ADM.visQAdd(\'' + c.id + '\')">Ajouter</button></div>' +
       '<div class="micro" style="margin:16px 0 5px">Notes (pendant / après la visio)</div>' +
@@ -1327,6 +1342,27 @@
     VISIOS.cards.unshift(c); VIS_EXP[c.id] = true; VIS_TAB = 'cards'; visSave(); renderVisiosBody();
   }
   function visSet(id, field, val) { var c = visCard(id); if (!c) return; c[field] = val; visSave(); if (field === 'done' || field === 'client' || field === 'date') renderVisiosBody(); }
+  function visSetClient(id, key) { var c = visCard(id); if (!c) return; c.clientKey = key || ''; var k = NAV_CLIENTS.filter(function (x) { return x.key === key; })[0]; c.client = k ? clientName(k) : (key ? (c.client || '') : ''); visSave(); renderVisiosBody(); }
+  // Éditeur de trame en texte enrichi (gras, taille, couleur, séparateur).
+  function visRichEditor(domId, html, blurCall) {
+    var tbCss = 'padding:4px 9px;border:1px solid var(--bone-d);border-radius:7px;background:#fff;cursor:pointer;font-size:12px;color:var(--terre);line-height:1';
+    function b(cmd, label, title, val) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault();ADM.visFmt(\'' + cmd + '\'' + (val ? ',\'' + val + '\'' : '') + ')" style="' + tbCss + '">' + label + '</button>'; }
+    var swatches = ['#412F21', '#c0533b', '#4f6a46', '#6c4ea4', '#c9952f'].map(function (col) {
+      return '<button type="button" title="Couleur" onmousedown="event.preventDefault();ADM.visFmt(\'foreColor\',\'' + col + '\')" style="width:20px;height:20px;border-radius:5px;border:1px solid var(--bone-d);background:' + col + ';cursor:pointer"></button>';
+    }).join('');
+    var div = '<span style="width:1px;height:18px;background:var(--bone-d);margin:0 3px;display:inline-block"></span>';
+    var tb = '<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px">' +
+      b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + div +
+      b('fontSize', 'Grand', 'Grand texte', '5') + b('fontSize', 'Normal', 'Texte normal', '3') + b('fontSize', 'Petit', 'Petit texte', '2') + div +
+      swatches + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:22px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée">' + div +
+      b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur') +
+    '</div>';
+    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" style="border:1.5px solid var(--bone-d);border-radius:10px;padding:12px 14px;min-height:130px;font-size:13.5px;line-height:1.65;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
+    return tb + ed;
+  }
+  function visFmt(cmd, val) { try { document.execCommand(cmd, false, val || null); } catch (e) {} }
+  function visTrameBlur(elm, id) { var c = visCard(id); if (c) { c.trame = elm.innerHTML; visSave(); } }
+  function visTplTrameBlur(elm, id) { var t = visTpl(id); if (t) { t.trame = elm.innerHTML; visSave(); } }
   function visDel(id) { admConfirm({ title: 'Supprimer cette visio ?', message: 'Sa trame et ses questions seront supprimées.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () { VISIOS.cards = VISIOS.cards.filter(function (c) { return c.id !== id; }); delete VIS_EXP[id]; visSave(); renderVisiosBody(); }); }
   function visQAdd(id) { var inp = el('vis-q-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var c = visCard(id); if (!c) return; if (!Array.isArray(c.questions)) c.questions = []; c.questions.push({ id: 'q' + Date.now().toString(36), text: v, done: false }); visSave(); renderVisiosBody(); }
   function visQToggle(id, qid) { var c = visCard(id); if (!c) return; (c.questions || []).forEach(function (q) { if (q.id === qid) q.done = !q.done; }); visSave(); renderVisiosBody(); }
@@ -1345,7 +1381,7 @@
     return '<div class="card" style="background:var(--card);padding:16px 18px;margin-bottom:12px">' +
       '<div class="row" style="gap:8px;align-items:center"><input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du modèle (ex. Appel découverte)" style="flex:1;font-weight:600" onchange="ADM.visTplSet(\'' + t.id + '\',\'name\',this.value)"><button class="btn btn--danger btn--sm" onclick="ADM.visTplDel(\'' + t.id + '\')">Suppr.</button></div>' +
       '<div class="micro" style="margin:14px 0 5px">Trame</div>' +
-      '<textarea class="inp" style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical" placeholder="Le déroulé type de ce rendez-vous…" onchange="ADM.visTplSet(\'' + t.id + '\',\'trame\',this.value)">' + esc(t.trame || '') + '</textarea>' +
+      visRichEditor('vis-ttr-' + t.id, t.trame || '', "ADM.visTplTrameBlur(this,'" + t.id + "')") +
       '<div class="micro" style="margin:14px 0 5px">Questions</div>' + qs +
       '<div class="row" style="gap:6px;margin-top:6px"><input class="inp" id="vis-tq-' + t.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visTplQAdd(\'' + t.id + '\');}"><button class="pbtn" onclick="ADM.visTplQAdd(\'' + t.id + '\')">Ajouter</button></div>' +
     '</div>';
@@ -3036,7 +3072,7 @@
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, visAdd: visAdd, visSet: visSet, visToggle: visToggle, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel,
+    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
