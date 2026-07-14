@@ -1354,13 +1354,24 @@
     var tb = '<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px">' +
       b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + div +
       b('fontSize', 'Grand', 'Grand texte', '5') + b('fontSize', 'Normal', 'Texte normal', '3') + b('fontSize', 'Petit', 'Petit texte', '2') + div +
+      b('insertUnorderedList', '• Liste', 'Liste à puces') + b('insertOrderedList', '1. Liste', 'Liste numérotée') + div +
       swatches + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:22px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée">' + div +
       b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur') +
     '</div>';
-    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" style="border:1.5px solid var(--bone-d);border-radius:10px;padding:12px 14px;min-height:130px;font-size:13.5px;line-height:1.65;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
+    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-radius:10px;padding:12px 14px;min-height:130px;font-size:13.5px;line-height:1.65;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
     return tb + ed;
   }
-  function visFmt(cmd, val) { try { document.execCommand(cmd, false, val || null); } catch (e) {} }
+  // On mémorise l'éditeur actif et sa sélection : le clic sur la barre d'outils
+  // ne fait alors jamais perdre le formatage (gras, couleur, taille…).
+  var VIS_ED = null, VIS_RANGE = null;
+  function visEdActive(elm) { VIS_ED = elm; var s = window.getSelection && window.getSelection(); if (s && s.rangeCount && elm.contains(s.anchorNode)) VIS_RANGE = s.getRangeAt(0); }
+  function visFmt(cmd, val) {
+    if (VIS_ED) { VIS_ED.focus(); if (VIS_RANGE) { try { var s = window.getSelection(); s.removeAllRanges(); s.addRange(VIS_RANGE); } catch (e) {} } }
+    try { document.execCommand('styleWithCSS', false, cmd === 'fontSize' || cmd === 'foreColor'); } catch (e) {}
+    try { document.execCommand(cmd, false, val == null ? null : val); } catch (e) {}
+    var s2 = window.getSelection && window.getSelection(); if (s2 && s2.rangeCount) VIS_RANGE = s2.getRangeAt(0);
+    if (VIS_ED) { var c = visCard((VIS_ED.id || '').replace('vis-tr-', '')); if (c && VIS_ED.id.indexOf('vis-tr-') === 0) { c.trame = VIS_ED.innerHTML; visSave(); } var t = visTpl((VIS_ED.id || '').replace('vis-ttr-', '')); if (t && VIS_ED.id.indexOf('vis-ttr-') === 0) { t.trame = VIS_ED.innerHTML; visSave(); } }
+  }
   function visTrameBlur(elm, id) { var c = visCard(id); if (c) { c.trame = elm.innerHTML; visSave(); } }
   function visTplTrameBlur(elm, id) { var t = visTpl(id); if (t) { t.trame = elm.innerHTML; visSave(); } }
   function visDel(id) { admConfirm({ title: 'Supprimer cette visio ?', message: 'Sa trame et ses questions seront supprimées.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () { VISIOS.cards = VISIOS.cards.filter(function (c) { return c.id !== id; }); delete VIS_EXP[id]; visSave(); renderVisiosBody(); }); }
@@ -3072,7 +3083,7 @@
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
+    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
