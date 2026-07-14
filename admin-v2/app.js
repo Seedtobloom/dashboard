@@ -1365,7 +1365,11 @@
         '</div>' +
         '<div style="height:4px;background:var(--bone-d)"><div style="height:100%;width:' + Math.round((i + 1) / steps.length * 100) + '%;background:var(--terre);transition:width .25s"></div></div>' +
         '<div style="padding:30px 34px;overflow-y:auto;flex:1">' + content + '</div>' +
-        '<div style="display:flex;justify-content:space-between;gap:10px;padding:16px 24px;border-top:1px solid var(--bone-d)">' +
+        '<div style="padding:10px 24px 6px;border-top:1px solid var(--bone-d)">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">📝 Vos notes</div>' +
+          '<textarea id="vp-notes" onchange="ADM.visNoteSave(\'' + id + '\',this.value)" placeholder="Notez ce qui se dit pendant l\'appel…" style="width:100%;box-sizing:border-box;min-height:54px;resize:vertical;font-size:15px;line-height:1.5;border:1px solid var(--bone-d);border-radius:8px;padding:8px 10px;font-family:inherit;color:var(--terre)">' + esc(c.notes || '') + '</textarea>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;padding:14px 24px 16px;border-top:1px solid var(--bone-d)">' +
           '<button id="vp-prev" class="btn btn--outline"' + (i === 0 ? ' disabled style="opacity:0.4"' : '') + '>← Précédent</button>' +
           '<button id="vp-next" class="btn btn--dark">' + (i >= steps.length - 1 ? 'Terminer' : 'Suite →') + '</button>' +
         '</div>' +
@@ -1384,29 +1388,58 @@
     VISIOS.cards.unshift(c); VIS_EXP[c.id] = true; VIS_TAB = 'cards'; visSave(); renderVisiosBody();
   }
   function visSet(id, field, val) { var c = visCard(id); if (!c) return; c[field] = val; visSave(); if (field === 'done' || field === 'client' || field === 'date') renderVisiosBody(); }
+  function visNoteSave(id, val) { var c = visCard(id); if (!c) return; c.notes = val; visSave(); }
   function visSetClient(id, key) { var c = visCard(id); if (!c) return; c.clientKey = key || ''; var k = NAV_CLIENTS.filter(function (x) { return x.key === key; })[0]; c.client = k ? clientName(k) : (key ? (c.client || '') : ''); visSave(); renderVisiosBody(); }
   // Éditeur de trame en texte enrichi (gras, taille, couleur, séparateur).
-  function visRichEditor(domId, html, blurCall) {
-    var tbCss = 'padding:4px 9px;border:1px solid var(--bone-d);border-radius:7px;background:#fff;cursor:pointer;font-size:12px;color:var(--terre);line-height:1';
-    function b(cmd, label, title, val) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault();ADM.visFmt(\'' + cmd + '\'' + (val ? ',\'' + val + '\'' : '') + ')" style="' + tbCss + '">' + label + '</button>'; }
-    var swatches = ['#412F21', '#c0533b', '#4f6a46', '#6c4ea4', '#c9952f'].map(function (col) {
-      return '<button type="button" title="Couleur" onmousedown="event.preventDefault();ADM.visFmt(\'foreColor\',\'' + col + '\')" style="width:20px;height:20px;border-radius:5px;border:1px solid var(--bone-d);background:' + col + ';cursor:pointer"></button>';
-    }).join('');
-    var div = '<span style="width:1px;height:18px;background:var(--bone-d);margin:0 3px;display:inline-block"></span>';
-    var tb = '<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px">' +
-      b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + div +
-      b('fontSize', 'Grand', 'Grand texte', '5') + b('fontSize', 'Normal', 'Texte normal', '3') + b('fontSize', 'Petit', 'Petit texte', '2') + div +
-      b('insertUnorderedList', '• Liste', 'Liste à puces') + b('insertOrderedList', '1. Liste', 'Liste numérotée') + div +
-      swatches + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:22px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée">' + div +
-      b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur') +
-    '</div>';
-    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-radius:10px;padding:14px 16px;min-height:140px;font-size:16px;line-height:1.7;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
-    return tb + ed;
+  // Boutons de mise en forme, partagés par la barre collante et la bulle flottante.
+  function visBtns(dark) {
+    var col = dark ? '#F2E5C2' : 'var(--terre)';
+    var bd = dark ? 'rgba(242,229,194,0.28)' : 'var(--bone-d)';
+    var bg = dark ? 'rgba(255,255,255,0.08)' : '#fff';
+    var css = 'padding:5px 9px;border:1px solid ' + bd + ';border-radius:7px;background:' + bg + ';cursor:pointer;font-size:13px;color:' + col + ';line-height:1;font-family:inherit';
+    function b(cmd, label, title, val) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault();ADM.visFmt(\'' + cmd + '\'' + (val ? ',\'' + val + '\'' : '') + ')" style="' + css + '">' + label + '</button>'; }
+    var sw = ['#412F21', '#c0533b', '#4f6a46', '#6c4ea4', '#c9952f'].map(function (c) { return '<button type="button" title="Couleur du texte" onmousedown="event.preventDefault();ADM.visFmt(\'foreColor\',\'' + c + '\')" style="width:19px;height:19px;border-radius:5px;border:1px solid ' + bd + ';background:' + c + ';cursor:pointer"></button>'; }).join('');
+    var sep = '<span style="width:1px;height:16px;background:' + bd + ';margin:0 2px;display:inline-block"></span>';
+    return b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + sep +
+      b('fontSize', 'A<span style="font-size:9px;vertical-align:super">+</span>', 'Grand texte', '5') + b('fontSize', 'A', 'Texte normal', '3') + b('fontSize', '<span style="font-size:10px">a</span>', 'Petit texte', '2') + sep +
+      b('insertUnorderedList', '• Liste', 'Liste à puces') + b('insertOrderedList', '1. Liste', 'Liste numérotée') + sep +
+      sw + sep + b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur');
   }
-  // On mémorise l'éditeur actif et sa sélection : le clic sur la barre d'outils
-  // ne fait alors jamais perdre le formatage (gras, couleur, taille…).
-  var VIS_ED = null, VIS_RANGE = null;
-  function visEdActive(elm) { VIS_ED = elm; var s = window.getSelection && window.getSelection(); if (s && s.rangeCount && elm.contains(s.anchorNode)) VIS_RANGE = s.getRangeAt(0); }
+  function visRichEditor(domId, html, blurCall) {
+    var tb = '<div style="position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px;background:var(--surface-2,#f3ede1);border:1.5px solid var(--bone-d);border-bottom:none;border-radius:10px 10px 0 0">' + visBtns(false) + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:24px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée"></div>';
+    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-top:none;border-radius:0 0 10px 10px;padding:14px 16px;min-height:150px;font-size:16px;line-height:1.7;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
+    return '<div>' + tb + ed + '</div>';
+  }
+  // On mémorise l'éditeur actif et sa sélection : le clic sur un bouton
+  // n'entraîne jamais de perte de formatage. Une bulle flottante s'affiche
+  // dès qu'on sélectionne du texte, pour formater sans remonter en haut.
+  var VIS_ED = null, VIS_RANGE = null, VIS_POP = null, VIS_POP_WIRED = false;
+  function visPop() {
+    if (VIS_POP) return VIS_POP;
+    var d = document.createElement('div');
+    d.id = 'vis-pop';
+    d.style.cssText = 'position:fixed;z-index:9550;display:none;flex-wrap:wrap;gap:3px;align-items:center;background:var(--nuit,#2a1f16);border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,0.35);max-width:92vw';
+    d.innerHTML = visBtns(true);
+    d.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    document.body.appendChild(d);
+    VIS_POP = d;
+    if (!VIS_POP_WIRED) { VIS_POP_WIRED = true; document.addEventListener('scroll', visHidePop, true); document.addEventListener('mousedown', function (e) { if (VIS_POP && VIS_POP.style.display !== 'none' && !VIS_POP.contains(e.target) && !(VIS_ED && VIS_ED.contains(e.target))) visHidePop(); }); }
+    return d;
+  }
+  function visHidePop() { if (VIS_POP) VIS_POP.style.display = 'none'; }
+  function visShowPop(range) {
+    var r = range.getBoundingClientRect(); if (!r || (!r.width && !r.height)) { visHidePop(); return; }
+    var p = visPop(); p.style.display = 'flex';
+    var top = r.top - p.offsetHeight - 8; if (top < 8) top = r.bottom + 8;
+    var left = r.left + r.width / 2 - p.offsetWidth / 2; left = Math.max(8, Math.min(left, window.innerWidth - p.offsetWidth - 8));
+    p.style.top = Math.round(top) + 'px'; p.style.left = Math.round(left) + 'px';
+  }
+  function visEdActive(elm) {
+    VIS_ED = elm;
+    var s = window.getSelection && window.getSelection();
+    if (s && s.rangeCount && elm.contains(s.anchorNode)) { VIS_RANGE = s.getRangeAt(0); if (!s.isCollapsed) visShowPop(VIS_RANGE); else visHidePop(); }
+    else visHidePop();
+  }
   function visFmt(cmd, val) {
     if (VIS_ED) { VIS_ED.focus(); if (VIS_RANGE) { try { var s = window.getSelection(); s.removeAllRanges(); s.addRange(VIS_RANGE); } catch (e) {} } }
     try { document.execCommand('styleWithCSS', false, cmd === 'fontSize' || cmd === 'foreColor'); } catch (e) {}
@@ -3125,7 +3158,7 @@
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visPresent: visPresent, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
+    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
