@@ -99,6 +99,10 @@ export default {
         if (method === 'GET') return handleHolidaysGet(env);
         if (method === 'PUT') return handleHolidaysSave(request, env);
       }
+      if (pathname === '/api/visios') {
+        if (method === 'GET') return handleVisiosGet(env);
+        if (method === 'PATCH') return handleVisiosSave(request, env);
+      }
 
       // Sauvegardes : instantanés complets des données (KV) stockés dans R2
       if (method === 'GET' && pathname === '/api/backups') return handleBackupList(env);
@@ -1588,6 +1592,56 @@ async function handleHolidaysSave(request: Request, env: Env): Promise<Response>
   return json({ ok: true, holidays: clean });
 }
 
+/* ── Visios : préparation des rendez-vous (trames + questions), stockage admin ── */
+function cleanVisioQuestions(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((q: AnyObj) => ({
+    id: (q && q.id ? String(q.id) : genId()).slice(0, 40),
+    text: (q && q.text ? String(q.text) : '').slice(0, 500),
+    done: q && q.done === true,
+  })).filter((q: AnyObj) => q.text).slice(0, 100);
+}
+function cleanVisioCards(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((c: AnyObj) => ({
+    id: (c && c.id ? String(c.id) : genId()).slice(0, 40),
+    client: (c && c.client ? String(c.client) : '').slice(0, 160),
+    category: c && c.category === 'suivi' ? 'suivi' : 'nouveau',
+    date: (c && c.date ? String(c.date) : '').slice(0, 30),
+    trame: (c && c.trame ? String(c.trame) : '').slice(0, 20000),
+    questions: cleanVisioQuestions(c && c.questions),
+    notes: (c && c.notes ? String(c.notes) : '').slice(0, 10000),
+    done: c && c.done === true,
+    createdAt: (c && c.createdAt ? String(c.createdAt) : nowIso()).slice(0, 30),
+  })).slice(0, 300);
+}
+function cleanVisioTemplates(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((t: AnyObj) => ({
+    id: (t && t.id ? String(t.id) : genId()).slice(0, 40),
+    name: (t && t.name ? String(t.name) : '').slice(0, 160),
+    trame: (t && t.trame ? String(t.trame) : '').slice(0, 20000),
+    questions: cleanVisioQuestions(t && t.questions),
+  })).slice(0, 100);
+}
+async function getVisios(env: Env): Promise<AnyObj> {
+  const v = (await env.KV_ADMIN.get('admin:visios', { type: 'json' })) as AnyObj | null;
+  return {
+    cards: Array.isArray(v && v.cards) ? v!.cards : [],
+    templates: Array.isArray(v && v.templates) ? v!.templates : [],
+  };
+}
+async function handleVisiosGet(env: Env): Promise<Response> {
+  return json(await getVisios(env));
+}
+async function handleVisiosSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const cur = await getVisios(env);
+  const next = {
+    cards: 'cards' in body ? cleanVisioCards(body.cards) : cur.cards,
+    templates: 'templates' in body ? cleanVisioTemplates(body.templates) : cur.templates,
+  };
+  await env.KV_ADMIN.put('admin:visios', JSON.stringify(next));
+  return json(next);
+}
+
 /* ── Sauvegardes ──
  * Un instantané = un JSON dans R2 (_backups/AAAA-MM-JJTHHMM.json) contenant
  * tous les espaces clients + les données admin (tâches, planning, réglages).
@@ -1616,6 +1670,7 @@ async function backupSnapshot(env: Env): Promise<{ name: string; size: number; c
     clientsIndex: idx,
     clients,
     adminTasks: await env.KV_ADMIN.get('admin:tasks', { type: 'json' }),
+    adminVisios: await env.KV_ADMIN.get('admin:visios', { type: 'json' }),
     adminPlanning: await env.KV_ADMIN.get('admin:planning', { type: 'json' }),
     emailTemplates: await env.KV_ADMIN.get('email_templates', { type: 'json' }),
     missionTypes: await env.KV_CLIENT.get('global:missionTypes', { type: 'json' }),
