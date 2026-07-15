@@ -1794,19 +1794,62 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   // Carte « Questionnaire de démarrage » : cliquable, ouvre le questionnaire.
   // Utilisée sur la vue projet ET sur la page d'accueil des espaces mono-offre.
+  function cpQAnswered(ans) {
+    if (ans == null) return false;
+    if (typeof ans === 'string') return !!ans.trim();
+    if (Array.isArray(ans)) return ans.length > 0;
+    if (typeof ans === 'object') return Object.keys(ans).some(function(k) { return ans[k] != null && String(ans[k]).trim(); });
+    return !!ans;
+  }
+  // Rendu d'un champ de questionnaire selon son type (partagé modale + preview).
+  function cpQFieldHtml(q, ans) {
+    if (q.type === 'section') {
+      return '<div style="margin:22px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border)">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy);font-weight:600">' + esc(q.label) + '</div>' +
+        (q.help ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') +
+      '</div>';
+    }
+    var lab = '<label style="display:block;font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:6px">' + esc(q.label) + '</label>' +
+      (q.help ? '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '');
+    var opts = Array.isArray(q.options) ? q.options : [];
+    var input;
+    if (q.type === 'short') {
+      input = '<input type="text" data-qid="' + q.id + '" value="' + esc(typeof ans === 'string' ? ans : '') + '" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;box-sizing:border-box;background:var(--bg)">';
+    } else if (q.type === 'choice') {
+      input = '<div data-qgroup="' + q.id + '" data-qtype="choice">' + opts.map(function(o) {
+        var on = ans === o;
+        return '<label style="display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid ' + (on ? 'var(--navy)' : 'var(--border)') + ';border-radius:10px;margin-bottom:7px;cursor:pointer;font-size:13.5px;color:var(--navy)"><input type="radio" name="cpq_' + q.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:16px;height:16px;flex-shrink:0">' + esc(o) + '</label>';
+      }).join('') + '</div>';
+    } else if (q.type === 'multi') {
+      var arr = Array.isArray(ans) ? ans : [];
+      input = '<div data-qgroup="' + q.id + '" data-qtype="multi">' + opts.map(function(o) {
+        var on = arr.indexOf(o) !== -1;
+        return '<label style="display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid ' + (on ? 'var(--navy)' : 'var(--border)') + ';border-radius:10px;margin-bottom:7px;cursor:pointer;font-size:13.5px;color:var(--navy)"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:16px;height:16px;flex-shrink:0">' + esc(o) + '</label>';
+      }).join('') + '</div>';
+    } else if (q.type === 'rank') {
+      var ro = (ans && typeof ans === 'object' && !Array.isArray(ans)) ? ans : {};
+      input = '<div data-qgroup="' + q.id + '" data-qtype="rank">' + opts.map(function(o) {
+        return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0"><input type="number" min="1" max="' + opts.length + '" data-opt="' + esc(o) + '" value="' + esc(ro[o] != null ? ro[o] : '') + '" style="width:56px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:center"><span style="font-size:13.5px;color:var(--navy)">' + esc(o) + '</span></div>';
+      }).join('') + '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">Classez de 1 à ' + opts.length + ' (1 = votre priorité).</div></div>';
+    } else {
+      input = '<textarea data-qid="' + q.id + '" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--bg)">' + esc(typeof ans === 'string' ? ans : '') + '</textarea>';
+    }
+    return '<div style="margin-bottom:18px">' + lab + input + '</div>';
+  }
   function cpQuestionnaireCard(project) {
     if (!project) return '';
     var qQuestions = project.questionnaireQuestions || [];
     var qRealQ = qQuestions.filter(function(q) { return q.type !== 'section'; });
-    if (!qRealQ.length) return '';
+    if (!qRealQ.length || !project.questionnaireReady) return '';
+    var qTitle = (project.questionnaireTitle || '').trim() || 'Parlez-moi de votre projet';
     var qAnswers = project.questionnaireAnswers || {};
-    var allAnswered = qRealQ.every(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); });
-    var answered = qRealQ.filter(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); }).length;
+    var allAnswered = qRealQ.every(function(q) { return cpQAnswered(qAnswers[q.id]); });
+    var answered = qRealQ.filter(function(q) { return cpQAnswered(qAnswers[q.id]); }).length;
     var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
     return '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);margin-bottom:14px;display:block">' +
         '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
-          '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-          '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-moi de votre projet</div>' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire' + (allAnswered ? '' : ' · à compléter') + '</div>' +
+          '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(qTitle) + '</div>' +
           (allAnswered
             ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
             : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
@@ -5930,27 +5973,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
 
     var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
-    var fields = questions.map(function(q) {
-      if (q.type === 'section') {
-        return '<div style="margin:22px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border)">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy);font-weight:600">' + esc(q.label) + '</div>' +
-          (q.help ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') +
-        '</div>';
-      }
-      var ans = answers[q.id] || '';
-      var rows = q.type === 'short' ? 1 : 3;
-      return '<div style="margin-bottom:18px">' +
-        '<label style="display:block;font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:6px">' + esc(q.label) + '</label>' +
-        (q.help ? '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') +
-        '<textarea data-qid="' + q.id + '" rows="' + rows + '" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--bg)">' + esc(ans) + '</textarea>' +
-      '</div>';
-    }).join('');
+    var fields = questions.map(function(q) { return cpQFieldHtml(q, answers[q.id]); }).join('');
 
     ov.innerHTML =
       '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(28,18,5,0.2)">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
-          '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(project.projectTitle) + '</div>' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire</div>' +
+          '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc((project.questionnaireTitle || '').trim() || project.projectTitle) + '</div>' +
           '<button onclick="document.getElementById(\'cp-q-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
         '<div style="padding:24px 28px">' +
@@ -5977,15 +6006,31 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   window.cpSaveQuestionnaire = async function(projectId) {
     var overlay = document.getElementById('cp-q-overlay');
-    var form = overlay ? overlay.querySelector('#cp-q-fields') : document.getElementById('cp-questionnaire-form');
-    if (!form) return;
+    var scope = overlay || document;
+    var pd = getPD(projectId);
+    var project = pd ? pd.project : null; if (!project) return;
+    var questions = project.questionnaireQuestions || [];
     var answers = {};
-    form.querySelectorAll('textarea[data-qid]').forEach(function(ta) {
-      answers[ta.dataset.qid] = ta.value.trim();
+    questions.forEach(function(q) {
+      if (q.type === 'section') return;
+      if (q.type === 'choice') {
+        var g = scope.querySelector('[data-qgroup="' + q.id + '"]');
+        var sel = g ? g.querySelector('input:checked') : null;
+        answers[q.id] = sel ? sel.value : '';
+      } else if (q.type === 'multi') {
+        var g2 = scope.querySelector('[data-qgroup="' + q.id + '"]'); var vals = [];
+        if (g2) g2.querySelectorAll('input:checked').forEach(function(c) { vals.push(c.value); });
+        answers[q.id] = vals;
+      } else if (q.type === 'rank') {
+        var g3 = scope.querySelector('[data-qgroup="' + q.id + '"]'); var obj = {};
+        if (g3) g3.querySelectorAll('input[data-opt]').forEach(function(n) { var v = (n.value || '').trim(); if (v) obj[n.getAttribute('data-opt')] = parseInt(v, 10) || v; });
+        answers[q.id] = obj;
+      } else {
+        var e = scope.querySelector('[data-qid="' + q.id + '"]');
+        answers[q.id] = e ? (e.value || '').trim() : '';
+      }
     });
-    var pd = appData.projects.find(function(x) { return x.project.id === projectId; });
-    var body = { questionnaireAnswers: answers };
-    body.projectId = projectId;
+    var body = { questionnaireAnswers: answers, projectId: projectId };
     var res = await fetch(API_BASE + '/notes', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (res.ok) {
       if (pd) pd.project.questionnaireAnswers = answers;

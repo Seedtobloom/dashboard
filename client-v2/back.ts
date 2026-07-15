@@ -412,12 +412,16 @@ function questionnaireOf(o: AnyObj): AnyObj {
     questionnaireQuestions: (Array.isArray(o.questionnaire) ? o.questionnaire : [])
       .map((q: AnyObj) => ({
         id: (q && q.id) || genId(),
-        type: q && (q.type === 'section' || q.type === 'short') ? q.type : 'long',
+        type: q && ['section', 'short', 'long', 'choice', 'multi', 'rank'].indexOf(q.type) !== -1 ? q.type : 'long',
         label: String((q && (q.label || q.question)) || ''),
         help: String((q && q.help) || ''),
+        options: Array.isArray(q && q.options) ? q.options.map((o: unknown) => String(o == null ? '' : o)) : [],
       }))
       .filter((q: AnyObj) => q.label),
     questionnaireAnswers: o.questionnaireAnswers && typeof o.questionnaireAnswers === 'object' ? o.questionnaireAnswers : {},
+    questionnaireTitle: String(o.questionnaireTitle || ''),
+    // Visible par la cliente seulement quand le studio l'a publié.
+    questionnaireReady: o.questionnaireReady === true,
   };
 }
 

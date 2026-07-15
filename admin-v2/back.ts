@@ -486,16 +486,33 @@ async function handleClientApi(
   // Questionnaire d'un projet : les questions posées à la cliente.
   if (method === 'PATCH' && sub === '/questionnaire') {
     const body = await readJson(request);
-    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    const { container, label } = resolveProject(esp, (body.projectId || '').toString());
     if (!container) return json({ error: 'Projet introuvable' }, 404);
-    container.questionnaire = (Array.isArray(body.questions) ? body.questions : []).map((q: AnyObj) => ({
-      id: (q && q.id ? String(q.id) : genId()).slice(0, 40),
-      type: q && (q.type === 'section' || q.type === 'short') ? q.type : 'long',
-      label: (q && (q.label || q.question) ? String(q.label || q.question) : '').slice(0, 500),
-      help: (q && q.help ? String(q.help) : '').slice(0, 2000),
-    })).filter((q: AnyObj) => q.label).slice(0, 120);
+    if ('questions' in body) {
+      const QN_TYPES = ['section', 'short', 'long', 'choice', 'multi', 'rank'];
+      container.questionnaire = (Array.isArray(body.questions) ? body.questions : []).map((q: AnyObj) => ({
+        id: (q && q.id ? String(q.id) : genId()).slice(0, 40),
+        type: q && QN_TYPES.indexOf(q.type) !== -1 ? q.type : 'long',
+        label: (q && (q.label || q.question) ? String(q.label || q.question) : '').slice(0, 500),
+        help: (q && q.help ? String(q.help) : '').slice(0, 2000),
+        options: Array.isArray(q && q.options) ? q.options.map((o: unknown) => String(o == null ? '' : o).slice(0, 200)).filter((o: string) => o.trim()).slice(0, 40) : [],
+      })).filter((q: AnyObj) => q.label).slice(0, 120);
+    }
+    if ('title' in body) container.questionnaireTitle = String(body.title || '').slice(0, 200);
+    let publishNotify = false;
+    if ('ready' in body) {
+      const wasReady = container.questionnaireReady === true;
+      container.questionnaireReady = body.ready === true;
+      publishNotify = !wasReady && container.questionnaireReady === true;
+    }
     await saveClient(env, key, data);
-    return json({ ok: true, questionnaire: container.questionnaire });
+    if (publishNotify) {
+      const qt = (container.questionnaireTitle || '').toString().trim() || 'Un questionnaire';
+      await notifyClient(env, data, `Un questionnaire vous attend${label ? ' · ' + label : ''}`,
+        `<p>Bonjour ${escHtml(getClient(data).prenom || '')},</p>` +
+        `<p><strong>${escHtml(qt.charAt(0).toUpperCase() + qt.slice(1))}</strong> vous attend dans votre espace. Prenez un moment pour le remplir quand vous le souhaitez — vos réponses m'aident à avancer.</p>`);
+    }
+    return json({ ok: true, questionnaire: container.questionnaire || [], questionnaireTitle: container.questionnaireTitle || '', questionnaireReady: container.questionnaireReady === true });
   }
   if (method === 'PATCH' && sub === '/banner') {
     const body = await readJson(request);
