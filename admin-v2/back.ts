@@ -111,6 +111,12 @@ export default {
         if (method === 'GET') return handleQuickRepliesGet(env);
         if (method === 'PATCH') return handleQuickRepliesSave(request, env);
       }
+      if (pathname === '/api/capacity' && method === 'PATCH') {
+        const b = await readJson(request);
+        const n = Math.max(0, Math.round((Number(b.weeklyHours) || 0) * 10) / 10);
+        await env.KV_ADMIN.put('admin:capacity', JSON.stringify({ weeklyHours: n }));
+        return json({ weeklyHours: n });
+      }
 
       // Sauvegardes : instantanés complets des données (KV) stockés dans R2
       if (method === 'GET' && pathname === '/api/backups') return handleBackupList(env);
@@ -1294,7 +1300,9 @@ async function handleDashboard(env: Env): Promise<Response> {
   newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   reworkTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   commentTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, clientCount: idx.length });
+  const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
+  const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, clientCount: idx.length, weeklyCapacity });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
@@ -1897,6 +1905,7 @@ async function backupSnapshot(env: Env): Promise<{ name: string; size: number; c
     adminVisios: await env.KV_ADMIN.get('admin:visios', { type: 'json' }),
     adminQuestionnaires: await env.KV_ADMIN.get('admin:questionnaires', { type: 'json' }),
     adminQuickReplies: await env.KV_ADMIN.get('admin:quickReplies', { type: 'json' }),
+    adminCapacity: await env.KV_ADMIN.get('admin:capacity', { type: 'json' }),
     adminPlanning: await env.KV_ADMIN.get('admin:planning', { type: 'json' }),
     emailTemplates: await env.KV_ADMIN.get('email_templates', { type: 'json' }),
     missionTypes: await env.KV_CLIENT.get('global:missionTypes', { type: 'json' }),
