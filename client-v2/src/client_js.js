@@ -3915,7 +3915,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<input type="hidden" id="_ptask-urgency" value="normal">' +
         '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) *</label>' +
           '<input id="_ptask-startDate" type="hidden">' +
-          '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" style="'+S+'"></div>' +
+          '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" onchange="if(this.value&&window.cpHolidayFor&&window.cpHolidayFor(this.value)){toast(\'Cindy est en congés à cette date, choisissez un autre jour.\');this.value=\'\';}" style="'+S+'"></div>' +
         '<div style="margin-bottom:14px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#1C1205);display:block;margin-bottom:6px">Votre brief</label>' +
           '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
           '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge."></textarea></div>' +
@@ -3964,6 +3964,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (links.trim()) content = (content.trim() ? content.trim() + '\n\n' : '') + 'Liens et références\n' + links.trim();
     var dueDate   = (document.getElementById('_ptask-dueDate')||{}).value || undefined;
     if (!dueDate) { var eld = document.getElementById('_ptask-dueDate'); if(eld){eld.style.borderColor='red';eld.focus();} toast('Indiquez une échéance souhaitée'); return; }
+    if (cpHolidayFor(dueDate)) { var eldh = document.getElementById('_ptask-dueDate'); if(eldh){eldh.style.borderColor='red';eldh.focus();} toast('Cindy est en congés à cette date, choisissez un autre jour.'); return; }
     var startDate = (document.getElementById('_ptask-startDate')||{}).value || undefined;
     var urgency   = (document.getElementById('_ptask-urgency')||{}).value || 'normal';
     var poleEl    = document.getElementById('_ptask-pole');

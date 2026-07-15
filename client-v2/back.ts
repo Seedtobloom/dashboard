@@ -260,6 +260,22 @@ async function save(env: Env, masterKey: string, data: AnyObj): Promise<void> {
   await env.KV_CLIENT.put(masterKey, JSON.stringify(data));
 }
 
+// Congés du studio : une date qui tombe pendant un congé est refusée (les
+// clients ne peuvent pas planifier une tâche ou un ticket ces jours-là).
+async function isStudioHoliday(env: Env, dateStr: string): Promise<boolean> {
+  const d = (dateStr || '').slice(0, 10);
+  if (!d) return false;
+  const list = (await env.KV_CLIENT.get('global:studioHolidays', { type: 'json' })) as AnyObj[] | null;
+  if (!Array.isArray(list)) return false;
+  return list.some((h) => {
+    const from = String((h && h.from) || '').slice(0, 10);
+    if (!from) return false;
+    const to = String((h && h.to) || from).slice(0, 10);
+    return d >= from && d <= to;
+  });
+}
+const HOLIDAY_MSG = 'Cindy est en congés à cette date, merci de choisir un autre jour.';
+
 /* ── Accès structure imbriquée (arrays-wrappers conservés) ── */
 function getClient(data: AnyObj): AnyObj { return (data.client && data.client[0]) || {}; }
 function getEntreprise(c: AnyObj): AnyObj { return (c.entreprise && c.entreprise[0]) || {}; }
@@ -747,6 +763,7 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
   if (!container) return json({ error: 'Project not found' }, 404);
   if (!body.title || !body.title.toString().trim()) return json({ error: 'title is required' }, 400);
+  if (body.dueDate && (await isStudioHoliday(env, body.dueDate.toString()))) return json({ error: HOLIDAY_MSG }, 409);
 
   const task: AnyObj = {
     id: genId(),
@@ -793,6 +810,8 @@ async function handleTaskUpdate(request: Request, env: Env, masterKey: string, d
   const task = found.task;
 
   if ('status' in body && TASK_STATUSES.indexOf(body.status) === -1) return json({ error: 'Statut invalide' }, 400);
+  // Échéance sur un jour de congé : refusée (sauf en mode édition studio).
+  if (!editor && 'dueDate' in body && body.dueDate && (await isStudioHoliday(env, body.dueDate.toString()))) return json({ error: HOLIDAY_MSG }, 409);
   // Le temps passé est une donnée du studio : modifiable seulement en mode édition.
   if (!editor) delete body.timeSpentMinutes;
   if ('attachments' in body) {
@@ -1113,6 +1132,7 @@ async function handleTicketCreate(request: Request, env: Env, masterKey: string,
   const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
   if (!container) return json({ error: 'Project not found' }, 404);
   if (!body.title || !body.title.toString().trim()) return json({ error: 'title is required' }, 400);
+  if (body.dueDate && (await isStudioHoliday(env, body.dueDate.toString()))) return json({ error: HOLIDAY_MSG }, 409);
   const ticket = {
     id: genId(),
     title: body.title.toString().trim(),
@@ -1139,6 +1159,7 @@ async function handleTicketUpdate(request: Request, env: Env, masterKey: string,
   if (!container) return json({ error: 'Project not found' }, 404);
   const tk = ticketsOf(container).find((t) => t.id === ticketId);
   if (!tk) return json({ error: 'Ticket not found' }, 404);
+  if ('dueDate' in body && body.dueDate && (await isStudioHoliday(env, body.dueDate.toString()))) return json({ error: HOLIDAY_MSG }, 409);
   ['title', 'description', 'priority', 'category', 'status', 'dueDate'].forEach((k) => { if (k in body) tk[k] = body[k]; });
   if (Array.isArray(body.attachments)) tk.attachments = body.attachments;
   if (body.status === 'done' || body.status === 'closed') tk.resolvedAt = nowIso();
