@@ -3479,7 +3479,10 @@
   function qnrBlockLabel(type) { for (var i = 0; i < QNR_BLOCKS.length; i++) if (QNR_BLOCKS[i][0] === type) return QNR_BLOCKS[i][1]; return type; }
   function qnrHasOptions(type) { return type === 'single' || type === 'multi' || type === 'dropdown'; }
   function qnrIsStatic(type) { return type === 'title' || type === 'paragraph'; }
-  function qnrId(p) { return (p || 'q') + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
+  var QNR_SEQ = 0;
+  // Identifiant garanti unique dans la session (un compteur évite les collisions
+  // quand on crée beaucoup de blocs d'un coup, ex. import d'un long texte).
+  function qnrId(p) { QNR_SEQ++; return (p || 'q') + Date.now().toString(36) + QNR_SEQ.toString(36); }
   function qnrTpl(id) { for (var i = 0; i < QNR.length; i++) if (QNR[i].id === id) return QNR[i]; return null; }
   function qnrCountBlocks(t) { var n = 0; (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type)) n++; }); }); return n; }
 
@@ -3606,8 +3609,12 @@
   }
   function qnrBlockHtml(t, s, b, idx, total) {
     var isStat = qnrIsStatic(b.type);
+    // Sélecteur de type : permet de changer la fonction d'une question à tout
+    // moment (ex. passer d'un choix unique à un choix multiple, ou à une réponse courte).
+    var typeSel = '<select class="inp" title="Changer le type de cette question" style="width:auto;font-size:11.5px;padding:3px 6px;font-family:var(--font-micro);color:#fff;background:var(--terre);border-color:var(--terre)" onchange="ADM.qnrBlockChangeType(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',this.value)">' +
+      QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '"' + (b.type === bt[0] ? ' selected' : '') + '>' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
     var head = '<div class="row" style="gap:6px;align-items:center;margin-bottom:7px">' +
-      '<span style="font-family:var(--font-micro);font-size:10px;color:#fff;background:var(--terre);padding:2px 7px;border-radius:6px;flex-shrink:0">' + esc(qnrBlockLabel(b.type)) + '</span>' +
+      typeSel +
       '<span style="margin-left:auto"></span>' +
       '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',-1)">↑</button>' +
       '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',1)">↓</button>' +
@@ -3634,6 +3641,17 @@
   function qnrStepOf(t, sid) { var r = null; (t.steps || []).forEach(function (s) { if (s.id === sid) r = s; }); return r; }
   function qnrBlockAdd(id, sid, type) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; if (!Array.isArray(s.blocks)) s.blocks = []; s.blocks.push({ id: qnrId('b'), type: type, label: '', help: '', placeholder: '', required: false, options: qnrHasOptions(type) ? ['Option 1', 'Option 2'] : [], max: type === 'rating' ? 5 : (type === 'slider' ? 10 : 0) }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
   function qnrBlockSet(id, sid, bid, field, val) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; (s.blocks || []).forEach(function (b) { if (b.id === bid) b[field] = val; }); qnrSave(); if (field === 'required' || field === 'max') { } else renderQnrBody(); }
+  // Changer le type d'une question existante, en conservant son intitulé et ses
+  // options. On amorce des valeurs par défaut quand le nouveau type en a besoin.
+  function qnrBlockChangeType(id, sid, bid, type) {
+    if (QNR_BLOCKS.map(function (x) { return x[0]; }).indexOf(type) === -1) return;
+    var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return;
+    var b = (s.blocks || []).filter(function (x) { return x.id === bid; })[0]; if (!b) return;
+    b.type = type;
+    if (qnrHasOptions(type) && (!Array.isArray(b.options) || !b.options.length)) b.options = ['Option 1', 'Option 2'];
+    if ((type === 'rating' || type === 'slider') && !b.max) b.max = type === 'rating' ? 5 : 10;
+    qnrSave(); renderQnrDrawer(); renderQnrBody();
+  }
   function qnrBlockOptions(id, sid, bid, val) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; var opts = String(val || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); (s.blocks || []).forEach(function (b) { if (b.id === bid) b.options = opts; }); qnrSave(); }
   function qnrBlockDel(id, sid, bid) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; s.blocks = (s.blocks || []).filter(function (b) { return b.id !== bid; }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
   function qnrBlockMove(id, sid, bid, dir) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; var a = s.blocks || []; var i = a.findIndex(function (b) { return b.id === bid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; qnrSave(); renderQnrDrawer(); }
@@ -3664,8 +3682,10 @@
       // Ligne d'option (puce ou a) / 1.) rattachée à la question précédente
       var om = line.match(/^([-*•·▪◦–]|\(?[a-zA-Z][\)\.]|\(?\d+[\)\.])\s+(.+)$/);
       if (om && curBlock && !qnrIsStatic(curBlock.type)) {
-        if (curBlock.type === 'short' || curBlock.type === 'long') curBlock.type = curBlock._multi ? 'multi' : 'single';
-        if (qnrHasOptions(curBlock.type)) { curBlock.options.push(om[2].trim()); return; }
+        // Une puce juste après une question la transforme en question à choix.
+        if (!qnrHasOptions(curBlock.type)) curBlock.type = curBlock._multi ? 'multi' : 'single';
+        curBlock.options.push(om[2].trim());
+        return;
       }
       var isQuestion = /\?\s*$/.test(line);
       var headingLike = !isQuestion && line.length <= 64 && (
@@ -3813,7 +3833,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
   };
