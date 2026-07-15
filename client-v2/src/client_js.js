@@ -1085,18 +1085,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var hasPartner = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
     // Nombre de livrables en attente de validation (toutes offres confondues)
-    var dlvToValidate = 0;
-    (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidate++; }); });
+    var dlvToValidate = 0, hasDeliverables = false;
+    (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if (d.fileKey || d.reviewLink) hasDeliverables = true; if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidate++; }); });
 
     // Questionnaires assignés (plateforme) : badge = nombre non complétés
     var qnrList = (appData.questionnaires || []);
     var qnrPending = qnrList.filter(function(q){ return q.status !== 'completed'; }).length;
 
-    // Echanges group
+    // Echanges group — on masque « Livrables » tant qu'il n'y en a aucun (idée 13).
     var exchangeNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
-      navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') +
+      (hasDeliverables ? navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') : '') +
       (qnrList.length ? navBtn('questionnaires','tasks','Questionnaires','cpOpenQuestionnaires()', qnrPending > 0 ? String(qnrPending) : '') : '') +
       (hasPartner ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
       navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
@@ -1177,8 +1177,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var portalTb = appData.type === 'client';
     var hasPartnerTb = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
     var unreadAll = totalUnread();
-    var dlvToValidateTb = 0;
-    (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidateTb++; }); });
+    var dlvToValidateTb = 0, hasDeliverablesTb = false;
+    (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if (d.fileKey || d.reviewLink) hasDeliverablesTb = true; if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidateTb++; }); });
     function mPill(label, fn, active, badgeN) {
       return '<button class="cp-pill' + (active ? ' active' : '') + '" onclick="' + fn + '">' + label +
         (badgeN > 0 ? ' <span style="background:var(--glycine);color:var(--terre);font-size:10px;padding:1px 5px;border-radius:999px">' + badgeN + '</span>' : '') +
@@ -1196,7 +1196,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       pills.push(mPill('Projet', 'cpSel(\'' + appData.projects[0].project.id + '\')', currentView === 'project', 0));
     }
     pills.push(mPill('Messages', 'cpOpenMessages()', currentView === 'messages', unreadAll));
-    pills.push(mPill('Livrables', 'cpGoLivrables()', currentView === 'livrables', dlvToValidateTb));
+    if (hasDeliverablesTb) pills.push(mPill('Livrables', 'cpGoLivrables()', currentView === 'livrables', dlvToValidateTb));
     var qnrListTb = (appData.questionnaires || []);
     var qnrPendingTb = qnrListTb.filter(function(q){ return q.status !== 'completed'; }).length;
     if (qnrListTb.length) pills.push(mPill('Questionnaires', 'cpOpenQuestionnaires()', currentView === 'questionnaires', qnrPendingTb));
@@ -5371,7 +5371,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
       '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
     '</div>';
-    return wrap(progress +
+    // « Pourquoi ce questionnaire ? » (idée 9) — rassure sur la 1re étape.
+    var whyTxt = (inst.description || '').trim() || 'Tes réponses aident Cindy à bien comprendre ton projet avant de se lancer. Tu gagnes du temps, et le résultat sera beaucoup plus juste.';
+    var why = cpQnrStep === 0 ? '<div style="background:' + hexToRgba(col, 0.08) + ';border:1px solid ' + hexToRgba(col, 0.22) + ';border-radius:12px;padding:14px 16px;margin-bottom:20px">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:5px">Pourquoi ce questionnaire ?</div>' +
+      '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);line-height:1.55">' + esc(whyTxt) + '</div>' +
+    '</div>' : '';
+    return wrap(progress + why +
       '<div id="cp-qnr-step" oninput="cpQnrTouch()" onchange="cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
       nav +
       '<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">Vos réponses sont enregistrées automatiquement.</div>');
