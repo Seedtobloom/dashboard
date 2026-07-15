@@ -369,6 +369,7 @@
     }).catch(function () {});
   }
   function renderMain() {
+    if (VIEW !== 'visios') { var vd = el('vis-drawer'); if (vd) vd.remove(); var vb = el('vis-drawer-bk'); if (vb) vb.remove(); VIS_SEL = null; }
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'mytasks') return renderMyTasks();
@@ -1255,16 +1256,23 @@
     if (!silent && VIEW === 'mytasks') renderMyTasksBody();
     jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total, sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
-  // ── Visios : préparation des rendez-vous (trames + questions à poser) ──
-  var VISIOS = { cards: [], templates: [] }, VISIOS_LOADED = false, VIS_EXP = {}, VIS_TAB = 'cards';
+  // ── Visios : préparation des rendez-vous — cards + panneau + déroulé ──
+  var VISIOS = { cards: [], templates: [] }, VISIOS_LOADED = false, VIS_TAB = 'cards', VIS_SEL = null;
   function renderVisios() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'suivi\')">+ Client suivi</button><button class="btn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau client</button>';
-    setMain(topbar('Visios', right, 'Prépare tes rendez-vous : trames à suivre et questions à poser') + '<div class="wrap" id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    // S'assurer d'avoir la liste des clientes (pour les cartes « client suivi »).
+    setMain(topbar('Visios', right, 'Prépare tes rendez-vous : un déroulé étape par étape et tes questions') + '<div class="wrap" id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
-    api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
+    api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
   }
+  // Migration douce : les anciennes visios (trame unique) deviennent un déroulé
+  // d'étapes (découpé sur les séparateurs). Sauvegardé à la première modif.
+  function trameToSteps(trame) {
+    var parts = String(trame || '').split(/<hr\s*\/?>/i).map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() || /<img/i.test(s); });
+    return parts.map(function (h, i) { return { id: 's' + Date.now().toString(36) + i, title: '', html: h }; });
+  }
+  function visMigrate() { VISIOS.cards.forEach(function (c) { if (!Array.isArray(c.steps)) c.steps = trameToSteps(c.trame); }); }
   function visSave() { jpost('/api/visios', { cards: VISIOS.cards, templates: VISIOS.templates }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement'); }).catch(function () { toast('Erreur'); }); }
   function visCard(id) { return VISIOS.cards.filter(function (c) { return c.id === id; })[0]; }
   function visTpl(id) { return VISIOS.templates.filter(function (t) { return t.id === id; })[0]; }
@@ -1272,7 +1280,7 @@
     var body = el('vis-body'); if (!body) return;
     var tabs = '<div class="subtabs" style="margin-bottom:18px">' +
       '<button class="subtab' + (VIS_TAB === 'cards' ? ' active' : '') + '" onclick="ADM.visTab(\'cards\')">Rendez-vous · ' + VISIOS.cards.length + '</button>' +
-      '<button class="subtab' + (VIS_TAB === 'templates' ? ' active' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles de trame · ' + VISIOS.templates.length + '</button>' +
+      '<button class="subtab' + (VIS_TAB === 'templates' ? ' active' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles · ' + VISIOS.templates.length + '</button>' +
     '</div>';
     body.innerHTML = tabs + (VIS_TAB === 'cards' ? visCardsHtml() : visTemplatesHtml());
   }
@@ -1281,44 +1289,56 @@
     function section(cat, label, col) {
       var cards = VISIOS.cards.filter(function (c) { return (c.category || 'nouveau') === cat; })
         .sort(function (a, b) { var ad = a.done ? 1 : 0, bd = b.done ? 1 : 0; if (ad !== bd) return ad - bd; return String(a.date || '9999').localeCompare(String(b.date || '9999')); });
-      var rows = cards.length ? cards.map(visCardHtml).join('') : '<div class="empty">Aucune visio ici pour le moment.</div>';
-      return '<div style="margin-bottom:28px"><div class="between mb"><h3 style="margin:0"><span class="infocard__dot" style="background:' + col + '"></span>' + label + ' · ' + cards.length + '</h3><button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'' + cat + '\')">+ Ajouter</button></div>' + rows + '</div>';
+      var grid = cards.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px">' + cards.map(visCardTile).join('') + '</div>' : '<div class="empty">Aucune visio ici pour le moment.</div>';
+      return '<div style="margin-bottom:28px"><div class="between mb"><h3 style="margin:0"><span class="infocard__dot" style="background:' + col + '"></span>' + label + ' · ' + cards.length + '</h3><button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'' + cat + '\')">+ Ajouter</button></div>' + grid + '</div>';
     }
     return section('nouveau', 'Nouveaux clients', '#9c6f18') + section('suivi', 'Clients suivis', '#4f6a46');
   }
-  function visCardHtml(c) {
-    var open = !!VIS_EXP[c.id];
-    var qs = Array.isArray(c.questions) ? c.questions : [];
-    var qDone = qs.filter(function (q) { return q.done; }).length;
-    // Client suivi : on choisit dans les clientes qui ont un espace.
-    // Nouveau client (prospect) : nom en texte libre.
-    var nameField;
+  function visCardTile(c) {
+    var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
+    var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
+    var pill = function (txt) { return '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;color:var(--terre-600);background:var(--surface-2,#f3ede1);padding:3px 9px;border-radius:999px">' + txt + '</span>'; };
+    return '<div onclick="ADM.visOpen(\'' + c.id + '\')" style="cursor:pointer;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:9px' + (c.done ? ';opacity:0.66' : '') + '" onmouseover="this.style.boxShadow=\'var(--shadow-2)\'" onmouseout="this.style.boxShadow=\'none\'">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+        '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.2">' + esc(name) + '</div>' +
+        (c.done ? '<span title="Fait" style="color:#4f6a46;flex-shrink:0">✓</span>' : '') +
+      '</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + (c.date ? '🗓️ ' + fmtDT(c.date) : 'Sans date') + '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' + pill(nSteps + ' étape' + (nSteps > 1 ? 's' : '')) + (nQ ? pill(nQ + ' question' + (nQ > 1 ? 's' : '')) : '') + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:4px">' +
+        ((nSteps || nQ) ? '<button onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')" class="btn btn--dark btn--sm" style="flex:1">▶ Lancer</button>' : '') +
+        '<button onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')" class="btn btn--outline btn--sm" style="flex:1">Ouvrir</button>' +
+      '</div>' +
+    '</div>';
+  }
+  // Champ « nom » : sélecteur de cliente (suivi) ou texte libre (prospect).
+  function visNameField(c) {
     if (c.category === 'suivi') {
       var picked = c.clientKey && NAV_CLIENTS.filter(function (k) { return k.key === c.clientKey; })[0];
       var opts = '<option value="">— Choisir une cliente —</option>' +
         NAV_CLIENTS.map(function (k) { return '<option value="' + esc(k.key) + '"' + (c.clientKey === k.key ? ' selected' : '') + '>' + esc(clientName(k)) + '</option>'; }).join('') +
         (c.clientKey && !picked ? '<option value="' + esc(c.clientKey) + '" selected>' + esc(c.client || 'Cliente') + '</option>' : '');
-      nameField = '<select class="inp" style="flex:1;min-width:150px;font-weight:600" onchange="ADM.visSetClient(\'' + c.id + '\',this.value)">' + opts + '</select>' +
-        (c.clientKey ? '<button class="btn btn--outline btn--sm" onclick="ADM.openClient(\'' + c.clientKey + '\')" title="Ouvrir la fiche de la cliente">Fiche</button>' : '');
-    } else {
-      nameField = '<input class="inp" value="' + esc(c.client || '') + '" placeholder="Nom du prospect" style="flex:1;min-width:150px;font-weight:600" onchange="ADM.visSet(\'' + c.id + '\',\'client\',this.value)">';
+      return '<select class="inp" style="flex:1;min-width:160px;font-weight:600" onchange="ADM.visSetClient(\'' + c.id + '\',this.value)">' + opts + '</select>' +
+        (c.clientKey ? '<button class="btn btn--outline btn--sm" onclick="ADM.openClient(\'' + c.clientKey + '\')" title="Ouvrir la fiche">Fiche</button>' : '');
     }
-    var header = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-      (c.done ? '<span title="Visio faite" style="color:#4f6a46;font-size:16px">✓</span>' : '') +
-      nameField +
-      '<input class="inp" type="datetime-local" value="' + esc(c.date || '') + '" style="width:auto" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)" title="Date et heure de la visio">' +
-      (((c.trame && c.trame.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) || (c.questions || []).length) ? '<button class="btn btn--dark btn--sm" onclick="ADM.visPresent(\'' + c.id + '\')" title="Dérouler la trame étape par étape">▶ Dérouler</button>' : '') +
-      '<button class="btn btn--outline btn--sm" onclick="ADM.visToggle(\'' + c.id + '\')">' + (open ? 'Replier' : 'Préparer') + '</button>' +
-      '<button class="btn btn--danger btn--sm" onclick="ADM.visDel(\'' + c.id + '\')">Suppr.</button>' +
-    '</div>';
-    var meta = '<div class="micro" style="margin-top:7px;text-transform:none;letter-spacing:0;color:var(--muted)">' +
-      (qs.length ? '❓ ' + qDone + '/' + qs.length + ' question' + (qs.length > 1 ? 's' : '') : 'Aucune question') +
-      ((c.trame && c.trame.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) ? ' · 📝 trame prête' : '') +
-      (c.date ? ' · 🗓️ ' + fmtDT(c.date) : '') + '</div>';
-    return '<div class="card" style="background:var(--card);padding:16px 18px;margin-bottom:12px' + (c.done ? ';opacity:0.72' : '') + '">' + header + meta + (open ? visCardBody(c) : '') + '</div>';
+    return '<input class="inp" value="' + esc(c.client || '') + '" placeholder="Nom du prospect" style="flex:1;min-width:160px;font-weight:600" onchange="ADM.visSet(\'' + c.id + '\',\'client\',this.value)">';
   }
-  function visCardBody(c) {
-    var tplOpts = VISIOS.templates.length ? '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px"><span class="micro" style="text-transform:none;letter-spacing:0">Partir d\'un modèle</span><select class="inp" style="width:auto" onchange="if(this.value){ADM.visApplyTpl(\'' + c.id + '\',this.value);this.value=\'\';}"><option value="">— choisir —</option>' + VISIOS.templates.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name || 'Modèle') + '</option>'; }).join('') + '</select></div>' : '';
+  // ── Panneau de droite (drawer) : édition complète d'une visio ──
+  function visOpen(id) { VIS_SEL = id; renderVisDrawer(); }
+  function visCloseDrawer() { VIS_SEL = null; var d = el('vis-drawer'); if (d) d.remove(); var b = el('vis-drawer-bk'); if (b) b.remove(); }
+  function renderVisDrawer() {
+    var ex = el('vis-drawer'); if (ex) ex.remove(); var exb = el('vis-drawer-bk'); if (exb) exb.remove();
+    var c = visCard(VIS_SEL); if (!c) return;
+    var bk = document.createElement('div'); bk.id = 'vis-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = visCloseDrawer; document.body.appendChild(bk);
+    var d = document.createElement('div'); d.id = 'vis-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(720px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
+    d.innerHTML = visDrawerHtml(c); document.body.appendChild(d);
+  }
+  function visDrawerHtml(c) {
+    var steps = Array.isArray(c.steps) ? c.steps : [];
+    var hasContent = steps.length || (c.questions || []).length;
+    var catSel = '<select class="inp" style="width:auto" onchange="ADM.visSet(\'' + c.id + '\',\'category\',this.value)"><option value="nouveau"' + (c.category !== 'suivi' ? ' selected' : '') + '>Nouveau client</option><option value="suivi"' + (c.category === 'suivi' ? ' selected' : '') + '>Client suivi</option></select>';
+    var tplOpts = VISIOS.templates.length ? '<div class="row" style="gap:8px;align-items:center;margin-bottom:16px"><span class="micro" style="text-transform:none;letter-spacing:0">Partir d\'un modèle</span><select class="inp" style="width:auto" onchange="if(this.value){ADM.visApplyTpl(\'' + c.id + '\',this.value);this.value=\'\';}"><option value="">— choisir —</option>' + VISIOS.templates.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name || 'Modèle') + '</option>'; }).join('') + '</select></div>' : '';
+    var stepsHtml = steps.map(function (s, idx) { return visStepHtml(c, s, idx, steps.length); }).join('');
     var qsHtml = (c.questions || []).map(function (q) {
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
         '<input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + c.id + '\',\'' + q.id + '\')" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">' +
@@ -1326,28 +1346,55 @@
         '<button onclick="ADM.visQDel(\'' + c.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
-    return '<div style="margin-top:14px;border-top:1px solid var(--bone-d);padding-top:14px">' +
-      tplOpts +
-      '<div class="micro" style="margin-bottom:5px">Trame à suivre</div>' +
-      visRichEditor('vis-tr-' + c.id, c.trame || '', "ADM.visTrameBlur(this,'" + c.id + "')") +
-      '<div class="micro" style="margin:16px 0 5px">Questions à poser</div>' + qsHtml +
-      '<div class="row" style="gap:6px;margin-top:6px"><input class="inp" id="vis-q-' + c.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visQAdd(\'' + c.id + '\');}"><button class="pbtn" onclick="ADM.visQAdd(\'' + c.id + '\')">Ajouter</button></div>' +
-      '<div class="micro" style="margin:16px 0 5px">Notes (pendant / après la visio)</div>' +
-      '<textarea class="inp" style="width:100%;box-sizing:border-box;min-height:70px;resize:vertical" placeholder="Ce qui s\'est dit, les prochaines étapes…" onchange="ADM.visSet(\'' + c.id + '\',\'notes\',this.value)">' + esc(c.notes || '') + '</textarea>' +
-      '<label class="checkbox" style="margin-top:12px"><input type="checkbox"' + (c.done ? ' checked' : '') + ' onchange="ADM.visSet(\'' + c.id + '\',\'done\',this.checked)"> Visio faite</label>' +
+    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<button onclick="ADM.visCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
+        (hasContent ? '<button onclick="ADM.visPresent(\'' + c.id + '\')" class="btn btn--dark btn--sm">▶ Lancer le déroulé</button>' : '') +
+        '<span style="margin-left:auto"></span>' +
+        '<label class="checkbox"><input type="checkbox"' + (c.done ? ' checked' : '') + ' onchange="ADM.visSet(\'' + c.id + '\',\'done\',this.checked)"> Fait</label>' +
+        '<button onclick="ADM.visDel(\'' + c.id + '\')" class="btn btn--danger btn--sm">Suppr.</button>' +
+      '</div>' +
+      '<div style="padding:20px 24px 70px;max-width:690px">' +
+        '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">' + catSel + visNameField(c) + '</div>' +
+        '<div class="row" style="gap:8px;align-items:center;margin-bottom:20px"><span class="micro">Date & heure</span><input class="inp" type="datetime-local" style="width:auto" value="' + esc(c.date || '') + '" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)"></div>' +
+        tplOpts +
+        '<div class="between" style="margin-bottom:10px"><h3 style="margin:0">Déroulé</h3><button class="btn btn--outline btn--sm" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Étape</button></div>' +
+        (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute des étapes pour construire ton déroulé (accueil, besoins, présentation…).</div>') +
+        '<button class="btn btn--outline btn--sm" style="margin:2px 0 26px" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Ajouter une étape</button>' +
+        '<h3 style="margin:0 0 10px">Questions à poser</h3>' + qsHtml +
+        '<div class="row" style="gap:6px;margin:6px 0 26px"><input class="inp" id="vis-q-' + c.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visQAdd(\'' + c.id + '\');}"><button class="pbtn" onclick="ADM.visQAdd(\'' + c.id + '\')">Ajouter</button></div>' +
+        '<h3 style="margin:0 0 8px">Mes retours / notes</h3>' +
+        '<textarea class="inp" style="width:100%;box-sizing:border-box;min-height:120px;resize:vertical;font-size:15px;line-height:1.6" placeholder="Annote tes retours : ce qui s\'est dit, les prochaines étapes, ton ressenti…" onchange="ADM.visNoteSave(\'' + c.id + '\',this.value)">' + esc(c.notes || '') + '</textarea>' +
+      '</div>';
+  }
+  function visStepHtml(c, s, idx, total) {
+    return '<div class="card" style="background:var(--card);padding:12px 14px;margin-bottom:10px">' +
+      '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
+        '<span style="font-family:var(--font-micro);font-size:11px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
+        '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Accueil, Besoins…)" style="flex:1;font-weight:600" onchange="ADM.visStepSet(\'' + c.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
+        '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',-1)">↑</button>' +
+        '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',1)">↓</button>' +
+        '<button class="pbtn" style="color:#c44" title="Supprimer l\'étape" onclick="ADM.visStepDel(\'' + c.id + '\',\'' + s.id + '\')">×</button>' +
+      '</div>' +
+      visRichEditor('visstep__' + c.id + '__' + s.id, s.html || '', "ADM.visSaveEditor(this)", 120) +
     '</div>';
   }
-  function visToggle(id) { VIS_EXP[id] = !VIS_EXP[id]; renderVisiosBody(); }
-  // Mode déroulé : on parcourt la trame section par section (délimitées par les
-  // séparateurs « — Séparateur »), puis les questions à poser, avec « Suite ».
+  function visStepAdd(id) { var c = visCard(id); if (!c) return; if (!Array.isArray(c.steps)) c.steps = []; c.steps.push({ id: 's' + Date.now().toString(36), title: '', html: '' }); visSave(); renderVisDrawer(); renderVisiosBody(); }
+  function visStepSet(id, sid, field, val) { var c = visCard(id); if (!c) return; (c.steps || []).forEach(function (s) { if (s.id === sid) s[field] = val; }); visSave(); }
+  function visStepDel(id, sid) { var c = visCard(id); if (!c) return; c.steps = (c.steps || []).filter(function (s) { return s.id !== sid; }); visSave(); renderVisDrawer(); renderVisiosBody(); }
+  function visStepMove(id, sid, dir) { var c = visCard(id); if (!c) return; var a = c.steps || []; var i = a.findIndex(function (s) { return s.id === sid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var t = a[i]; a[i] = a[j]; a[j] = t; visSave(); renderVisDrawer(); }
+  // Sauvegarde unifiée d'un éditeur riche (étape de visio ou de modèle).
+  function visSaveEditor(elm) {
+    if (!elm) return; var id = elm.id || '', html = elm.innerHTML, p;
+    if (id.indexOf('visstep__') === 0) { p = id.split('__'); var c = visCard(p[1]); if (c) { (c.steps || []).forEach(function (s) { if (s.id === p[2]) s.html = html; }); visSave(); } }
+    else if (id.indexOf('vistplstep__') === 0) { p = id.split('__'); var t = visTpl(p[1]); if (t) { (t.steps || []).forEach(function (s) { if (s.id === p[2]) s.html = html; }); visSave(); } }
+  }
   function visPresent(id) {
     var c = visCard(id); if (!c) return;
-    var parts = (c.trame || '').split(/<hr\s*\/?>/i).map(function (s) { return s.trim(); })
-      .filter(function (s) { return s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() || /<img/i.test(s); });
+    var steps = (Array.isArray(c.steps) ? c.steps : []).filter(function (s) { return (s.title && s.title.trim()) || (s.html && s.html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) || /<img/i.test(s.html || ''); })
+      .map(function (s) { return { title: s.title, html: s.html }; });
     var qs = Array.isArray(c.questions) ? c.questions : [];
-    var steps = parts.map(function (h) { return { html: h }; });
     if (qs.length) steps.push({ questions: qs });
-    if (!steps.length) { toast('Ajoute d\'abord une trame ou des questions'); return; }
+    if (!steps.length) { toast('Ajoute d\'abord une étape ou des questions'); return; }
     var i = 0;
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.62);z-index:9600;display:flex;align-items:center;justify-content:center;padding:24px';
@@ -1357,7 +1404,7 @@
       var st = steps[i];
       var content = st.questions
         ? '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border-bottom:1px solid var(--bone-d)"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
-        : '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>';
+        : ((st.title ? '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
       ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 22px 66px rgba(28,18,5,0.4)">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bone-d)">' +
           '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
@@ -1384,12 +1431,12 @@
     render();
   }
   function visAdd(cat) {
-    var c = { id: 'v' + Date.now().toString(36), client: '', category: cat === 'suivi' ? 'suivi' : 'nouveau', date: '', trame: '', questions: [], notes: '', done: false, createdAt: new Date().toISOString() };
-    VISIOS.cards.unshift(c); VIS_EXP[c.id] = true; VIS_TAB = 'cards'; visSave(); renderVisiosBody();
+    var c = { id: 'v' + Date.now().toString(36), client: '', clientKey: '', category: cat === 'suivi' ? 'suivi' : 'nouveau', date: '', steps: [], questions: [], notes: '', done: false, createdAt: new Date().toISOString() };
+    VISIOS.cards.unshift(c); VIS_TAB = 'cards'; visSave(); renderVisiosBody(); visOpen(c.id);
   }
-  function visSet(id, field, val) { var c = visCard(id); if (!c) return; c[field] = val; visSave(); if (field === 'done' || field === 'client' || field === 'date') renderVisiosBody(); }
+  function visSet(id, field, val) { var c = visCard(id); if (!c) return; c[field] = val; visSave(); renderVisiosBody(); if (field === 'category') renderVisDrawer(); }
   function visNoteSave(id, val) { var c = visCard(id); if (!c) return; c.notes = val; visSave(); }
-  function visSetClient(id, key) { var c = visCard(id); if (!c) return; c.clientKey = key || ''; var k = NAV_CLIENTS.filter(function (x) { return x.key === key; })[0]; c.client = k ? clientName(k) : (key ? (c.client || '') : ''); visSave(); renderVisiosBody(); }
+  function visSetClient(id, key) { var c = visCard(id); if (!c) return; c.clientKey = key || ''; var k = NAV_CLIENTS.filter(function (x) { return x.key === key; })[0]; c.client = k ? clientName(k) : (key ? (c.client || '') : ''); visSave(); renderVisiosBody(); renderVisDrawer(); }
   // Éditeur de trame en texte enrichi (gras, taille, couleur, séparateur).
   // Boutons de mise en forme, partagés par la barre collante et la bulle flottante.
   function visBtns(dark) {
@@ -1405,9 +1452,9 @@
       b('insertUnorderedList', '• Liste', 'Liste à puces') + b('insertOrderedList', '1. Liste', 'Liste numérotée') + sep +
       sw + sep + b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur');
   }
-  function visRichEditor(domId, html, blurCall) {
+  function visRichEditor(domId, html, blurCall, minH) {
     var tb = '<div style="position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px;background:var(--surface-2,#f3ede1);border:1.5px solid var(--bone-d);border-bottom:none;border-radius:10px 10px 0 0">' + visBtns(false) + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:24px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée"></div>';
-    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-top:none;border-radius:0 0 10px 10px;padding:14px 16px;min-height:150px;font-size:16px;line-height:1.7;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
+    var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-top:none;border-radius:0 0 10px 10px;padding:14px 16px;min-height:' + (minH || 150) + 'px;font-size:16px;line-height:1.7;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
     return '<div>' + tb + ed + '</div>';
   }
   // On mémorise l'éditeur actif et sa sélection : le clic sur un bouton
@@ -1445,36 +1492,51 @@
     try { document.execCommand('styleWithCSS', false, cmd === 'fontSize' || cmd === 'foreColor'); } catch (e) {}
     try { document.execCommand(cmd, false, val == null ? null : val); } catch (e) {}
     var s2 = window.getSelection && window.getSelection(); if (s2 && s2.rangeCount) VIS_RANGE = s2.getRangeAt(0);
-    if (VIS_ED) { var c = visCard((VIS_ED.id || '').replace('vis-tr-', '')); if (c && VIS_ED.id.indexOf('vis-tr-') === 0) { c.trame = VIS_ED.innerHTML; visSave(); } var t = visTpl((VIS_ED.id || '').replace('vis-ttr-', '')); if (t && VIS_ED.id.indexOf('vis-ttr-') === 0) { t.trame = VIS_ED.innerHTML; visSave(); } }
+    visSaveEditor(VIS_ED);
   }
-  function visTrameBlur(elm, id) { var c = visCard(id); if (c) { c.trame = elm.innerHTML; visSave(); } }
-  function visTplTrameBlur(elm, id) { var t = visTpl(id); if (t) { t.trame = elm.innerHTML; visSave(); } }
-  function visDel(id) { admConfirm({ title: 'Supprimer cette visio ?', message: 'Sa trame et ses questions seront supprimées.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () { VISIOS.cards = VISIOS.cards.filter(function (c) { return c.id !== id; }); delete VIS_EXP[id]; visSave(); renderVisiosBody(); }); }
-  function visQAdd(id) { var inp = el('vis-q-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var c = visCard(id); if (!c) return; if (!Array.isArray(c.questions)) c.questions = []; c.questions.push({ id: 'q' + Date.now().toString(36), text: v, done: false }); visSave(); renderVisiosBody(); }
-  function visQToggle(id, qid) { var c = visCard(id); if (!c) return; (c.questions || []).forEach(function (q) { if (q.id === qid) q.done = !q.done; }); visSave(); renderVisiosBody(); }
+  function visDel(id) { admConfirm({ title: 'Supprimer cette visio ?', message: 'Son déroulé et ses questions seront supprimés.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () { VISIOS.cards = VISIOS.cards.filter(function (c) { return c.id !== id; }); visCloseDrawer(); visSave(); renderVisiosBody(); }); }
+  function visQAdd(id) { var inp = el('vis-q-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var c = visCard(id); if (!c) return; if (!Array.isArray(c.questions)) c.questions = []; c.questions.push({ id: 'q' + Date.now().toString(36), text: v, done: false }); visSave(); renderVisiosBody(); renderVisDrawer(); }
+  function visQToggle(id, qid) { var c = visCard(id); if (!c) return; (c.questions || []).forEach(function (q) { if (q.id === qid) q.done = !q.done; }); visSave(); }
   function visQSet(id, qid, val) { var c = visCard(id); if (!c) return; (c.questions || []).forEach(function (q) { if (q.id === qid) q.text = val; }); visSave(); }
-  function visQDel(id, qid) { var c = visCard(id); if (!c) return; c.questions = (c.questions || []).filter(function (q) { return q.id !== qid; }); visSave(); renderVisiosBody(); }
-  function visApplyTpl(id, tplId) { var c = visCard(id), t = visTpl(tplId); if (!c || !t) return; if (t.trame && t.trame.trim()) c.trame = (c.trame && c.trame.trim() ? c.trame + '\n\n' : '') + t.trame; if (!Array.isArray(c.questions)) c.questions = []; (t.questions || []).forEach(function (q, i) { c.questions.push({ id: 'q' + Date.now().toString(36) + '-' + i, text: q.text, done: false }); }); visSave(); renderVisiosBody(); }
+  function visQDel(id, qid) { var c = visCard(id); if (!c) return; c.questions = (c.questions || []).filter(function (q) { return q.id !== qid; }); visSave(); renderVisiosBody(); renderVisDrawer(); }
+  function visApplyTpl(id, tplId) { var c = visCard(id), t = visTpl(tplId); if (!c || !t) return; if (!Array.isArray(c.steps)) c.steps = []; if (!Array.isArray(c.questions)) c.questions = []; (t.steps || []).forEach(function (s, i) { c.steps.push({ id: 's' + Date.now().toString(36) + i, title: s.title || '', html: s.html || '' }); }); (t.questions || []).forEach(function (q, i) { c.questions.push({ id: 'q' + Date.now().toString(36) + i, text: q.text, done: false }); }); visSave(); renderVisiosBody(); renderVisDrawer(); }
+  // ── Modèles : un déroulé réutilisable (mêmes étapes) ──
   function visTemplatesHtml() {
     var add = '<div class="row row--end mb"><button class="btn btn--dark btn--sm" onclick="ADM.visTplAdd()">+ Nouveau modèle</button></div>';
-    var list = VISIOS.templates.length ? VISIOS.templates.map(visTplHtml).join('') : '<div class="empty">Aucun modèle. Crée une trame réutilisable (ex. « Appel découverte ») que tu appliqueras ensuite à tes visios.</div>';
+    var list = VISIOS.templates.length ? VISIOS.templates.map(visTplHtml).join('') : '<div class="empty">Aucun modèle. Crée un déroulé réutilisable (ex. « Appel découverte ») que tu appliqueras ensuite à tes visios.</div>';
     return add + list;
   }
   function visTplHtml(t) {
+    var steps = Array.isArray(t.steps) ? t.steps : [];
+    var stepsHtml = steps.map(function (s, idx) {
+      return '<div style="border:1px solid var(--bone-d);border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
+        '<div class="row" style="gap:8px;align-items:center;margin-bottom:6px">' +
+          '<span style="font-family:var(--font-micro);font-size:11px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
+          '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape" style="flex:1;font-weight:600" onchange="ADM.visTplStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
+          '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
+          '<button class="pbtn" title="Descendre"' + (idx === steps.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
+          '<button class="pbtn" style="color:#c44" onclick="ADM.visTplStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
+        '</div>' +
+        visRichEditor('vistplstep__' + t.id + '__' + s.id, s.html || '', "ADM.visSaveEditor(this)", 110) +
+      '</div>';
+    }).join('');
     var qs = (t.questions || []).map(function (q) {
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><input class="inp" value="' + esc(q.text) + '" onchange="ADM.visTplQSet(\'' + t.id + '\',\'' + q.id + '\',this.value)" style="flex:1"><button onclick="ADM.visTplQDel(\'' + t.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button></div>';
     }).join('');
     return '<div class="card" style="background:var(--card);padding:16px 18px;margin-bottom:12px">' +
       '<div class="row" style="gap:8px;align-items:center"><input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du modèle (ex. Appel découverte)" style="flex:1;font-weight:600" onchange="ADM.visTplSet(\'' + t.id + '\',\'name\',this.value)"><button class="btn btn--danger btn--sm" onclick="ADM.visTplDel(\'' + t.id + '\')">Suppr.</button></div>' +
-      '<div class="micro" style="margin:14px 0 5px">Trame</div>' +
-      visRichEditor('vis-ttr-' + t.id, t.trame || '', "ADM.visTplTrameBlur(this,'" + t.id + "')") +
+      '<div class="between" style="margin:14px 0 8px"><span class="micro">Déroulé</span><button class="btn btn--outline btn--sm" onclick="ADM.visTplStepAdd(\'' + t.id + '\')">+ Étape</button></div>' + stepsHtml +
       '<div class="micro" style="margin:14px 0 5px">Questions</div>' + qs +
       '<div class="row" style="gap:6px;margin-top:6px"><input class="inp" id="vis-tq-' + t.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visTplQAdd(\'' + t.id + '\');}"><button class="pbtn" onclick="ADM.visTplQAdd(\'' + t.id + '\')">Ajouter</button></div>' +
     '</div>';
   }
-  function visTplAdd() { VISIOS.templates.unshift({ id: 't' + Date.now().toString(36), name: '', trame: '', questions: [] }); visSave(); renderVisiosBody(); }
+  function visTplAdd() { VISIOS.templates.unshift({ id: 't' + Date.now().toString(36), name: '', steps: [], questions: [] }); visSave(); renderVisiosBody(); }
   function visTplSet(id, f, v) { var t = visTpl(id); if (!t) return; t[f] = v; visSave(); }
   function visTplDel(id) { admConfirm({ title: 'Supprimer ce modèle ?', message: 'Il ne sera plus proposé pour tes visios.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () { VISIOS.templates = VISIOS.templates.filter(function (t) { return t.id !== id; }); visSave(); renderVisiosBody(); }); }
+  function visTplStepAdd(id) { var t = visTpl(id); if (!t) return; if (!Array.isArray(t.steps)) t.steps = []; t.steps.push({ id: 's' + Date.now().toString(36), title: '', html: '' }); visSave(); renderVisiosBody(); }
+  function visTplStepSet(id, sid, f, v) { var t = visTpl(id); if (!t) return; (t.steps || []).forEach(function (s) { if (s.id === sid) s[f] = v; }); visSave(); }
+  function visTplStepDel(id, sid) { var t = visTpl(id); if (!t) return; t.steps = (t.steps || []).filter(function (s) { return s.id !== sid; }); visSave(); renderVisiosBody(); }
+  function visTplStepMove(id, sid, dir) { var t = visTpl(id); if (!t) return; var a = t.steps || []; var i = a.findIndex(function (s) { return s.id === sid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; visSave(); renderVisiosBody(); }
   function visTplQAdd(id) { var inp = el('vis-tq-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) return; var t = visTpl(id); if (!t) return; if (!Array.isArray(t.questions)) t.questions = []; t.questions.push({ id: 'q' + Date.now().toString(36), text: v }); visSave(); renderVisiosBody(); }
   function visTplQSet(id, qid, v) { var t = visTpl(id); if (!t) return; (t.questions || []).forEach(function (q) { if (q.id === qid) q.text = v; }); visSave(); }
   function visTplQDel(id, qid) { var t = visTpl(id); if (!t) return; t.questions = (t.questions || []).filter(function (q) { return q.id !== qid; }); visSave(); renderVisiosBody(); }
@@ -3160,7 +3222,7 @@
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visToggle: visToggle, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive, visTrameBlur: visTrameBlur, visTplTrameBlur: visTplTrameBlur, visRichEditor: visRichEditor,
+    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,

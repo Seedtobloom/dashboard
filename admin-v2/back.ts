@@ -1611,6 +1611,13 @@ function cleanVisioQuestions(arr: any): AnyObj[] {
     done: q && q.done === true,
   })).filter((q: AnyObj) => q.text).slice(0, 100);
 }
+function cleanVisioSteps(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((s: AnyObj) => ({
+    id: (s && s.id ? String(s.id) : genId()).slice(0, 40),
+    title: (s && s.title ? String(s.title) : '').slice(0, 200),
+    html: sanitizeRich(s && s.html),
+  })).slice(0, 80);
+}
 function cleanVisioCards(arr: any): AnyObj[] {
   return (Array.isArray(arr) ? arr : []).map((c: AnyObj) => ({
     id: (c && c.id ? String(c.id) : genId()).slice(0, 40),
@@ -1618,6 +1625,7 @@ function cleanVisioCards(arr: any): AnyObj[] {
     clientKey: (c && c.clientKey ? String(c.clientKey) : '').slice(0, 64),
     category: c && c.category === 'suivi' ? 'suivi' : 'nouveau',
     date: (c && c.date ? String(c.date) : '').slice(0, 30),
+    steps: cleanVisioSteps(c && c.steps),
     trame: sanitizeRich(c && c.trame),
     questions: cleanVisioQuestions(c && c.questions),
     notes: (c && c.notes ? String(c.notes) : '').slice(0, 10000),
@@ -1629,6 +1637,7 @@ function cleanVisioTemplates(arr: any): AnyObj[] {
   return (Array.isArray(arr) ? arr : []).map((t: AnyObj) => ({
     id: (t && t.id ? String(t.id) : genId()).slice(0, 40),
     name: (t && t.name ? String(t.name) : '').slice(0, 160),
+    steps: cleanVisioSteps(t && t.steps),
     trame: sanitizeRich(t && t.trame),
     questions: cleanVisioQuestions(t && t.questions),
   })).slice(0, 100);
