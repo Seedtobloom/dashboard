@@ -1158,7 +1158,23 @@ async function handleDashboard(env: Env): Promise<Response> {
         if (st === 'a_valider') {
           pendingValidation.push({ key: ci.key, client: who, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskTitle: l.taskTitle || '' });
         } else if (st === 'refuse' || st === 'revision') {
-          revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null });
+          // Fichiers redéposés par la cliente sur la tâche (pièces jointes,
+          // « Lien & fichiers », pièces jointes de ses commentaires) : on les
+          // remonte pour que le studio puisse les consulter depuis la révision.
+          const task = Array.isArray(container.taches) ? container.taches.find((x: AnyObj) => x.id === l.taskId) : null;
+          const files: AnyObj[] = [];
+          let clientLink = '';
+          if (task) {
+            (task.attachments || []).forEach((a: AnyObj) => { const k = a && (a.key || a.fileKey); if (k) files.push({ name: String(a.name || 'fichier').slice(0, 120), key: String(k).slice(0, 300) }); });
+            try {
+              const pe = task.properties && task.properties.p_elements;
+              const o = typeof pe === 'string' ? JSON.parse(pe) : pe;
+              if (o && o.link) clientLink = String(o.link).slice(0, 500);
+              if (o && Array.isArray(o.files)) o.files.forEach((f: AnyObj) => { if (f && f.key) files.push({ name: String(f.name || 'fichier').slice(0, 120), key: String(f.key).slice(0, 300) }); });
+            } catch (e) { /* ignore */ }
+            (task.comments || []).forEach((c: AnyObj) => { (c.attachments || []).forEach((a: AnyObj) => { const k = a && (a.key || a.fileKey); if (k) files.push({ name: String(a.name || 'fichier').slice(0, 120), key: String(k).slice(0, 300) }); }); });
+          }
+          revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null, attachments: files, clientLink, reviewLink: l.reviewLink || '' });
         }
       });
     };

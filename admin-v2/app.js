@@ -772,11 +772,19 @@
       // Révisions demandées par le client : la balle est dans votre camp
       var revs = d.revisions || [];
       function revRow(r) {
+        var atts = Array.isArray(r.attachments) ? r.attachments : [];
+        var filesHtml = (atts.length || r.clientLink)
+          ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Fichiers redéposés par la cliente</div><div style="display:flex;flex-wrap:wrap;gap:7px">' +
+            (r.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(r.clientLink) ? r.clientLink : 'https://' + r.clientLink) + '" target="_blank" rel="noopener">🔗 ' + esc(r.clientLink.replace(/^https?:\/\//i, '').slice(0, 50)) + '</a>' : '') +
+            atts.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + r.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') +
+          '</div></div>'
+          : '';
         return '<div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:13px;margin-bottom:9px;background:rgba(155,58,46,0.06)">' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-weight:600;color:var(--terre);font-size:14.5px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
             (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:13px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
+            filesHtml +
           '</div>' +
           '<div class="prow__act" style="flex-shrink:0">' +
             ((r.project === 'partner' && r.taskId) ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') +
