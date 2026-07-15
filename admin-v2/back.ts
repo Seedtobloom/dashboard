@@ -1203,7 +1203,7 @@ async function handleDashboard(env: Env): Promise<Response> {
         if (l.taskId && latestByTask[l.taskId] !== l) return;
         const st = l.status || 'a_valider';
         if (st === 'a_valider') {
-          pendingValidation.push({ key: ci.key, client: who, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskTitle: l.taskTitle || '' });
+          pendingValidation.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', createdAt: l.createdAt || null, taskId: l.taskId || null, taskTitle: l.taskTitle || '' });
         } else if (st === 'refuse' || st === 'revision') {
           // Fichiers redéposés par la cliente sur la tâche (pièces jointes,
           // « Lien & fichiers », pièces jointes de ses commentaires) : on les
