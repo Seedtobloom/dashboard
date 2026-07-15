@@ -59,6 +59,27 @@
     document.body.appendChild(ov);
     var y = ov.querySelector('[data-yes]'); if (y) y.focus();
   }
+  // Popup « Prévenir la cliente ? » : renvoie cb(notify) — par défaut « envoyer
+  // sans prévenir » (bouton principal). Cliquer à l'extérieur annule.
+  function notifyConfirm(message, cb) {
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box">' +
+      '<div class="admconfirm__title">Prévenir la cliente ?</div>' +
+      '<div class="admconfirm__msg">' + esc(message || 'Souhaites-tu que la cliente soit prévenue par e-mail ?') + '</div>' +
+      '<div class="admconfirm__row" style="flex-wrap:wrap;gap:8px">' +
+        '<button class="btn btn--outline btn--sm" data-cancel>Annuler</button>' +
+        '<button class="btn btn--outline btn--sm" data-notify>Oui, prévenir</button>' +
+        '<button class="btn btn--sm" data-silent style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer sans prévenir</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-cancel]').onclick = close;
+    ov.querySelector('[data-notify]').onclick = function () { close(); cb(true); };
+    ov.querySelector('[data-silent]').onclick = function () { close(); cb(false); };
+    document.body.appendChild(ov);
+    var s = ov.querySelector('[data-silent]'); if (s) s.focus();
+  }
   function pill(status, label) { return '<span class="pill pill--' + esc(status) + '">' + esc(label || status) + '</span>'; }
   function jsq(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
   function remind(key, kind, title, projectLabel) {
@@ -2017,13 +2038,15 @@
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
-      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
       var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
       var cname = cd ? cd.client : 'le client';
+      notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (res) { cleanup(); if (res.ok) { toast('✓ Livrable envoyé à ' + cname + ' · prévenu·e par e-mail'); PRIO_TAB = 'waiting'; renderPriorities(); } else toast((res.d && res.d.error) || 'Erreur'); })
+        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; renderPriorities(); } else toast((res.d && res.d.error) || 'Erreur'); })
         .catch(function () { cleanup(); toast('Erreur — livrable non envoyé, réessaie'); });
+      });
     };
     inp.click();
   }
@@ -2048,11 +2071,13 @@
       var name = (el('prio-dl-name').value || '').trim();
       var mins = Math.max(0, parseInt((el('prio-dl-mins') || {}).value, 10) || 0);
       close();
-      jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name }).then(function (r) {
+      notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
+      jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(function (r) {
         if (r.ok) {
           if (mins) { var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0] : null; var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins; jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH'); }
-          toast(mins ? 'Livrable envoyé ✓ · ' + mins + ' min ajoutées' : 'Livrable (lien) envoyé ✓'); PRIO_TAB = 'waiting'; renderPriorities();
+          toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; renderPriorities();
         } else toast('Erreur');
+      });
       });
     };
     ov.querySelector('[data-yes]').onclick = send;
@@ -2066,7 +2091,7 @@
     ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box">' +
       '<div class="admconfirm__title">Lien de révision</div>' +
-      '<div class="admconfirm__msg">Colle le lien (Figma, proofing, Drive…). Le client sera prévenu par e-mail et la tâche passera en « À valider ».</div>' +
+      '<div class="admconfirm__msg">Colle le lien (Figma, proofing, Drive…). La tâche passera en « À valider ». Tu choisiras ensuite de prévenir la cliente ou non.</div>' +
       '<input id="prio-rl" class="inp" style="width:100%;margin:6px 0 4px" placeholder="https://…" value="' + esc(cur || '') + '">' +
       '<div class="admconfirm__row">' +
         '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
@@ -2079,10 +2104,11 @@
       var link = (el('prio-rl').value || '').trim();
       if (!link) { toast('Ajoute un lien'); return; }
       close();
-      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true }, 'PATCH')
+      notifyConfirm('Envoyer ce lien de révision à la cliente et la prévenir par e-mail ?', function (notify) {
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify }, 'PATCH')
         .then(function (r) {
           if (!r.ok) { toast('Erreur'); return; }
-          toast('Lien envoyé au client ✓');
+          toast('Lien envoyé' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
           // MAJ optimiste locale : KV peut renvoyer l'ancien statut pendant
           // ~1 s, ce qui donnait l'impression que rien ne bougeait. On bascule
           // directement la tâche en « Attente client » sans re-fetch.
@@ -2090,6 +2116,7 @@
           if (it) { it.status = 'review'; it.reviewLink = link; it.reviewSentAt = new Date().toISOString(); PRIO_TAB = 'waiting'; renderPrioBody(PRIO_D); }
           else { PRIO_TAB = 'waiting'; renderPriorities(); }
         });
+      });
     };
     ov.querySelector('[data-yes]').onclick = send;
     document.body.appendChild(ov);
@@ -2139,10 +2166,12 @@
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
     inp.onchange = function () {
       var v = inp.value; cleanup(); if (!v) return;
-      var url = isTicket ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
-      var body = isTicket ? { projectId: 'maintenance', proposedDueDate: v } : { projectId: 'partner', proposedDueDate: v };
-      jpost(url, body, 'PATCH').then(function (r) {
-        if (r.ok) { toast('Report proposé à la cliente ✓'); if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.proposedDueDate = v; renderPrioBody(PRIO_D); } else renderPriorities(); } else toast('Erreur');
+      notifyConfirm('Proposer cette date à la cliente et la prévenir par e-mail ?', function (notify) {
+        var url = isTicket ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
+        var body = isTicket ? { projectId: 'maintenance', proposedDueDate: v, notify: notify } : { projectId: 'partner', proposedDueDate: v, notify: notify };
+        jpost(url, body, 'PATCH').then(function (r) {
+          if (r.ok) { toast('Report proposé' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.proposedDueDate = v; renderPrioBody(PRIO_D); } else renderPriorities(); } else toast('Erreur');
+        });
       });
     };
     inp.onblur = function () { setTimeout(cleanup, 200); };
@@ -2423,7 +2452,12 @@
   function qnDel(domId, qid) { var d = findDomain(domId); if (!d) return; d.content.questionnaire = qnList(d).filter(function (q) { return q.id !== qid; }); qnSaveAll(domId); renderTab(); }
   function qnSetOptions(domId, qid, text) { var d = findDomain(domId); if (!d) return; var opts = String(text || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean); qnList(d).forEach(function (q) { if (q.id === qid) q.options = opts; }); qnSaveAll(domId); }
   function qnSetTitle(domId, val) { var d = findDomain(domId); if (!d) return; d.content.questionnaireTitle = val; jpost('/api/clients/' + CURKEY + '/questionnaire', { projectId: domId, title: val }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur'); }); }
-  function qnSetReady(domId, on) { var d = findDomain(domId); if (!d) return; d.content.questionnaireReady = !!on; jpost('/api/clients/' + CURKEY + '/questionnaire', { projectId: domId, ready: !!on }, 'PATCH').then(function (r) { if (r.ok) { toast(on ? 'Questionnaire publié · cliente prévenue ✓' : 'Questionnaire masqué'); renderTab(); } else toast('Erreur'); }); }
+  function qnSetReady(domId, on) {
+    var d = findDomain(domId); if (!d) return;
+    function apply(notify) { d.content.questionnaireReady = !!on; jpost('/api/clients/' + CURKEY + '/questionnaire', { projectId: domId, ready: !!on, notify: notify }, 'PATCH').then(function (r) { if (r.ok) { toast(on ? ('Questionnaire publié' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')) : 'Questionnaire masqué'); renderTab(); } else toast('Erreur'); }); }
+    if (on) { notifyConfirm('Publier le questionnaire et prévenir la cliente par e-mail ?', apply); }
+    else { apply(false); }
+  }
   function qnPreview(domId) {
     var d = findDomain(domId); if (!d) return; var items = qnList(d);
     var title = (d.content.questionnaireTitle || '').trim() || 'Questionnaire';
@@ -2610,7 +2644,12 @@
     });
   }
   function ticketStatus(id, status) { ticketUpdate(id, { status: status }, status === 'done' ? 'Ticket marqué comme fait ✓' : 'Statut mis à jour'); }
-  function ticketProposeDate(id, date) { ticketUpdate(id, { proposedDueDate: date || '' }, date ? 'Report proposé à la cliente ✓' : 'Proposition annulée'); }
+  function ticketProposeDate(id, date) {
+    if (!date) { ticketUpdate(id, { proposedDueDate: '' }, 'Proposition annulée'); return; }
+    notifyConfirm('Proposer cette date à la cliente et la prévenir par e-mail ?', function (notify) {
+      ticketUpdate(id, { proposedDueDate: date, notify: notify }, 'Report proposé' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
+    });
+  }
   function ticketDue(id, date) { ticketUpdate(id, { dueDate: date || null }); }
   function ticketTime(id, mins) { var n = Math.max(0, parseInt(mins, 10) || 0); ticketUpdate(id, { timeSpentMinutes: n }); }
   function ticketDelete(id) {
@@ -2900,8 +2939,11 @@
   function taskArchive(id, val) { if (val && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', archived: !!val }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Tâche archivée' : 'Tâche restaurée'); loadClient(); } else toast('Erreur'); }); }
   function taskMilestone(id, field, val) { var body = { projectId: 'partner' }; body[field] = val || null; jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Jalon enregistré' : 'Jalon retiré'); loadClient(); } else toast('Erreur'); }); }
   function taskProposeDate(id, date) {
-    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', proposedDueDate: date || '' }, 'PATCH').then(function (r) {
-      if (r.ok) { toast(date ? 'Report proposé à la cliente ✓' : 'Proposition annulée'); loadClient(); } else toast('Erreur'); });
+    if (!date) { jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', proposedDueDate: '' }, 'PATCH').then(function (r) { if (r.ok) { toast('Proposition annulée'); loadClient(); } else toast('Erreur'); }); return; }
+    notifyConfirm('Proposer cette date à la cliente et la prévenir par e-mail ?', function (notify) {
+      jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', proposedDueDate: date, notify: notify }, 'PATCH').then(function (r) {
+        if (r.ok) { toast('Report proposé' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast('Erreur'); });
+    });
   }
   function taskFind(id) { var found = null; (CUR.domains || []).forEach(function (dn) { ((dn.content && dn.content.taches) || []).forEach(function (x) { if (x.id === id) found = x; }); }); (CUR.supports || []).forEach(function (s) { ((s.content && s.content.taches) || []).forEach(function (x) { if (x.id === id) found = x; }); }); return found; }
   function taskEditOpen(id) {
@@ -2964,9 +3006,11 @@
     if (!url) { toast('Colle un lien'); return; }
     var name = (el('tdl-name-' + id).value || '').trim();
     var mins = dlvTimeFor(id);
-    jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name }).then(function (r) { return r.json().then(function (dd) { return { ok: r.ok, d: dd }; }); })
-      .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast(mins ? 'Livrable envoyé ✓ · ' + mins + ' min ajoutées' : 'Livrable (lien) envoyé au client ✓'); loadClient(); } else toast((res.d && res.d.error) || 'Erreur'); })
-      .catch(function () { toast('Erreur'); });
+    notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
+      jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(function (r) { return r.json().then(function (dd) { return { ok: r.ok, d: dd }; }); })
+        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast((mins ? 'Livrable envoyé · ' + mins + ' min ajoutées' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast((res.d && res.d.error) || 'Erreur'); })
+        .catch(function () { toast('Erreur'); });
+    });
   }
   function delDeliverable(id) {
     admConfirm({ title: 'Retirer ce livrable ?', message: 'Le fichier livrable sera retiré de l\'espace du client. Cette action est définitive.', danger: true, yes: 'Oui, retirer', no: 'Non' }, function () {
@@ -2981,19 +3025,23 @@
   function taskSendReview(id) {
     var link = (el('trl-' + id).value || '').trim();
     if (!link) { toast('Ajoute d\'abord un lien de révision'); return; }
-    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true }, 'PATCH').then(function (r) {
-      if (r.ok) { toast('Lien envoyé au client — la tâche passe en « À valider » ✓'); loadClient(); } else toast('Erreur');
+    notifyConfirm('Envoyer ce lien de révision à la cliente et la prévenir par e-mail ?', function (notify) {
+      jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify }, 'PATCH').then(function (r) {
+        if (r.ok) { toast('Lien envoyé — tâche en « À valider »' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast('Erreur');
+      });
     });
   }
   function uploadTaskDlv(id) {
     var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisis un fichier'); return; }
-    var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
     var cname = (CUR && CUR.client && (CUR.client.prenom || CUR.client.nom)) || 'le client';
     var mins = dlvTimeFor(id);
-    toast('Envoi du livrable…');
-    api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('✓ Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min ajoutées' : '') + ' · prévenu·e par e-mail'); loadClient(); } else toast(res.d.error || 'Erreur'); })
-      .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
+    notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
+      toast('Envoi du livrable…');
+      api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); loadClient(); } else toast(res.d.error || 'Erreur'); })
+        .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
+    });
   }
   function commentsBlock(pid, t) {
     var list = (t.comments || []);
