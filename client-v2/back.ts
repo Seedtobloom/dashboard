@@ -213,6 +213,10 @@ async function handleClientApi(
   if (t && method === 'PATCH') return handleTicketUpdate(request, env, masterKey, data, t[1]);
   if (t && method === 'DELETE') return handleTicketDelete(request, env, masterKey, data, t[1], url);
 
+  // Questionnaires (plateforme) : autosave des réponses + soumission
+  t = sub.match(/^\/questionnaires\/([A-Za-z0-9_-]+)$/);
+  if (t && method === 'PATCH') return handleQuestionnaireAnswer(request, env, masterKey, data, t[1]);
+
   // Bilan de fin de collaboration
   if (sub === '/bilan' && method === 'POST') return handleBilanSubmit(request, env, masterKey, data);
 
@@ -425,6 +429,42 @@ function questionnaireOf(o: AnyObj): AnyObj {
   };
 }
 
+// Plateforme Questionnaires : instances assignées à la cliente (esp.questionnaires).
+// On expose la structure complète (étapes + blocs) pour l'affichage côté cliente,
+// plus ses réponses en cours pour la reprise.
+function mapClientQuestionnaires(espace: AnyObj): AnyObj[] {
+  const list = Array.isArray(espace.questionnaires) ? espace.questionnaires : [];
+  return list.map((q: AnyObj) => ({
+    id: String(q.id || ''),
+    name: String(q.name || ''),
+    description: String(q.description || ''),
+    category: String(q.category || 'autre'),
+    color: String(q.color || '#5e3fa0'),
+    steps: (Array.isArray(q.steps) ? q.steps : []).map((s: AnyObj) => ({
+      id: String(s.id || ''),
+      title: String(s.title || ''),
+      help: String(s.help || ''),
+      blocks: (Array.isArray(s.blocks) ? s.blocks : []).map((b: AnyObj) => ({
+        id: String(b.id || ''),
+        type: String(b.type || 'short'),
+        label: String(b.label || ''),
+        help: String(b.help || ''),
+        placeholder: String(b.placeholder || ''),
+        required: b.required === true,
+        options: Array.isArray(b.options) ? b.options.map((o: unknown) => String(o == null ? '' : o)) : [],
+        max: typeof b.max === 'number' ? b.max : 0,
+      })),
+    })),
+    status: ['assigned', 'in_progress', 'completed', 'to_review'].indexOf(q.status) !== -1 ? q.status : 'assigned',
+    answers: q.answers && typeof q.answers === 'object' ? q.answers : {},
+    dueDate: q.dueDate || '',
+    assignedAt: q.assignedAt || null,
+    startedAt: q.startedAt || null,
+    completedAt: q.completedAt || null,
+    updatedAt: q.updatedAt || null,
+  }));
+}
+
 function mapChatToMessages(chat: any[]): AnyObj[] {
   return (chat || []).map((m) => ({
     id: m.id || genId(),
@@ -615,6 +655,8 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
 
   // Une seule offre active -> atterrissage direct sur sa page riche (forme V1
   // "single-project", sans type:'client') au lieu d'une grille à une carte.
+  const questionnaires = mapClientQuestionnaires(espace);
+
   if (projects.length === 1) {
     const only = projects[0];
     return {
@@ -626,6 +668,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
       studioHolidays,
       bilan,
       bookingLink,
+      questionnaires,
       home: espace.home || null,
     };
   }
@@ -639,6 +682,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     studioHolidays,
     bilan,
     bookingLink,
+    questionnaires,
   };
 }
 
@@ -768,6 +812,56 @@ async function handleNotes(request: Request, env: Env, masterKey: string, data: 
       `<p><strong>${escHtml(clientFullName(data))}</strong> a répondu au questionnaire de son espace. Retrouvez ses réponses dans l'onglet Questionnaire du projet.</p>`);
   }
   return json({ notes: container.notes, resources: container.resources || [] });
+}
+
+// Plateforme Questionnaires : la cliente enregistre ses réponses (autosave) ou
+// soumet le questionnaire complet. On stocke dans l'instance esp.questionnaires.
+function sanitizeQnrAnswers(raw: AnyObj): AnyObj {
+  const out: AnyObj = {};
+  if (!raw || typeof raw !== 'object') return out;
+  const keys = Object.keys(raw).slice(0, 400);
+  for (const k of keys) {
+    const v = raw[k];
+    if (Array.isArray(v)) {
+      out[String(k).slice(0, 60)] = v.slice(0, 100).map((x) => String(x == null ? '' : x).slice(0, 4000));
+    } else if (typeof v === 'number') {
+      out[String(k).slice(0, 60)] = v;
+    } else {
+      out[String(k).slice(0, 60)] = String(v == null ? '' : v).slice(0, 20000);
+    }
+  }
+  return out;
+}
+async function handleQuestionnaireAnswer(request: Request, env: Env, masterKey: string, data: AnyObj, qnrId: string): Promise<Response> {
+  const body = await readJson(request);
+  const espace = getEspace(data);
+  if (!Array.isArray(espace.questionnaires)) espace.questionnaires = [];
+  const inst = espace.questionnaires.find((q: AnyObj) => q.id === qnrId);
+  if (!inst) return json({ error: 'Questionnaire introuvable' }, 404);
+  if (inst.status === 'completed' && body.submit !== true && !body.reopen) {
+    // déjà complété : on autorise quand même la mise à jour des réponses
+  }
+  if (body.answers && typeof body.answers === 'object') {
+    inst.answers = Object.assign({}, inst.answers || {}, sanitizeQnrAnswers(body.answers));
+  }
+  if (!inst.startedAt) inst.startedAt = nowIso();
+  const wasCompleted = inst.status === 'completed';
+  if (body.submit === true) {
+    inst.status = 'completed';
+    inst.completedAt = nowIso();
+  } else if (inst.status !== 'completed') {
+    inst.status = 'in_progress';
+  }
+  inst.updatedAt = nowIso();
+  await save(env, masterKey, data);
+  if (body.submit === true && !wasCompleted) {
+    await notifyAdmin(env, `Questionnaire complété · ${escHtml(clientFullName(data))}`,
+      `<p><strong>${escHtml(clientFullName(data))}</strong> a complété le questionnaire <strong>${escHtml(inst.name || '')}</strong>. Retrouvez ses réponses dans l'espace Questionnaires.</p>`);
+  }
+  return json({
+    id: inst.id, status: inst.status, answers: inst.answers || {},
+    startedAt: inst.startedAt || null, completedAt: inst.completedAt || null, updatedAt: inst.updatedAt || null,
+  });
 }
 
 async function handleForfait(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {

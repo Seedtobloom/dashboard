@@ -709,6 +709,7 @@ function buildClientDetail(_env: Env, key: string, data: AnyObj): AnyObj {
     spaceFeedback: esp.spaceFeedback || [],
     domains,
     supports,
+    questionnaires: Array.isArray(esp.questionnaires) ? esp.questionnaires : [],
   };
 }
 
@@ -1868,6 +1869,7 @@ async function backupSnapshot(env: Env): Promise<{ name: string; size: number; c
     clients,
     adminTasks: await env.KV_ADMIN.get('admin:tasks', { type: 'json' }),
     adminVisios: await env.KV_ADMIN.get('admin:visios', { type: 'json' }),
+    adminQuestionnaires: await env.KV_ADMIN.get('admin:questionnaires', { type: 'json' }),
     adminPlanning: await env.KV_ADMIN.get('admin:planning', { type: 'json' }),
     emailTemplates: await env.KV_ADMIN.get('email_templates', { type: 'json' }),
     missionTypes: await env.KV_CLIENT.get('global:missionTypes', { type: 'json' }),

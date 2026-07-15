@@ -179,7 +179,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cpConvThread = '_general'; // fil sélectionné dans la messagerie (général ou support)
   var cpNewTaskFiles = []; // fichiers ajoutés un à un dans le formulaire de nouvelle tâche
   var currentId = null;
-  var currentView = 'home'; // 'home' | 'project' | 'messages'
+  var currentView = 'home'; // 'home' | 'project' | 'messages' | 'questionnaires'
+  // Plateforme Questionnaires (côté cliente)
+  var cpQnrOpenId = null;   // id de l'instance ouverte dans le remplisseur
+  var cpQnrStep = 0;        // étape courante du remplisseur
+  var cpQnrReview = false;  // écran de vérification avant envoi
+  var cpQnrAnswers = {};    // réponses en cours (copie locale, autosave)
+  var cpQnrSaveTimer = null;
   var convoId = null; // projet sélectionné dans la messagerie
   var cpStepsViewMode = (function(){ try{ return localStorage.getItem('cp-steps-view')||'list'; }catch(e){ return 'list'; } })();
   var cpStepsStatusFilter = 'all';
@@ -501,7 +507,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:'+(p.bannerTextColor||'#fff')+';max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div></div>' +
           '</div>' +
-          cpOnboarding(pd) + cpQuestionnaireCard(p) +
+          cpOnboarding(pd) +
           '<div class="cp-ph__cols">' +
             '<div class="cp-ph__left">' +
               '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ouvrez un ticket pour toute demande, suivez son avancement et échangez avec le studio, le tout au même endroit.</p>' +
@@ -742,7 +748,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '</div>' +
           uploadZoneHtml +
         '</div>' +
-        cpOnboarding(pd) + cpQuestionnaireCard(p) +
+        cpOnboarding(pd) +
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
@@ -925,11 +931,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var dlvToValidate = 0;
     (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidate++; }); });
 
+    // Questionnaires assignés (plateforme) : badge = nombre non complétés
+    var qnrList = (appData.questionnaires || []);
+    var qnrPending = qnrList.filter(function(q){ return q.status !== 'completed'; }).length;
+
     // Echanges group
     var exchangeNav = '<div class="cp-nav">' +
       '<div class="cp-nav__label" style="padding-top:16px">Échanges</div>' +
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
       navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') +
+      (qnrList.length ? navBtn('questionnaires','tasks','Questionnaires','cpOpenQuestionnaires()', qnrPending > 0 ? String(qnrPending) : '') : '') +
       (hasPartner ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
       navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
       (portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +
@@ -1029,11 +1040,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     pills.push(mPill('Messages', 'cpOpenMessages()', currentView === 'messages', unreadAll));
     pills.push(mPill('Livrables', 'cpGoLivrables()', currentView === 'livrables', dlvToValidateTb));
+    var qnrListTb = (appData.questionnaires || []);
+    var qnrPendingTb = qnrListTb.filter(function(q){ return q.status !== 'completed'; }).length;
+    if (qnrListTb.length) pills.push(mPill('Questionnaires', 'cpOpenQuestionnaires()', currentView === 'questionnaires', qnrPendingTb));
     if (hasPartnerTb) pills.push(mPill('Temps passé', 'cpOpenStats()', currentView === 'stats', 0));
     pills.push(mPill('Fichiers', 'cpGoFichiers()', currentView === 'fichiers', 0));
     if (portalTb) pills.push(mPill('Ressources', 'cpGoHub()', currentView === 'hub', 0));
     var mobilePills = '<div class="cp-pills">' + pills.join('') + '</div>';
-    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Tickets', cal:'Calendrier partage', stats:'Statistiques' };
+    var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Tickets', cal:'Calendrier partage', stats:'Statistiques', questionnaires:'Questionnaires' };
     var pageTitle = pageTitles[currentView] || 'Espace client';
     if (currentView === 'project' && currentId) {
       var pd = getPD(currentId);
@@ -4890,6 +4904,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
     if (currentView === 'livrables') return '<div class="cp-portal-main">' + buildLivrablesView() + '</div>';
+    if (currentView === 'questionnaires') return '<div class="cp-portal-main">' + buildQuestionnairesView() + '</div>';
     if (currentView === 'interventions') {
       var pd0 = getPD(currentId);
       return pd0 ? '<div class="cp-content" style="padding:36px 52px 80px">' + buildClientMaintenance(pd0) + '</div>' : buildHome();
@@ -4908,6 +4923,249 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     return buildHome();
   }
+
+  /* ────────────────────────────────────────────────────────────────────────
+   * Questionnaires (côté cliente) — liste + remplisseur premium étape par étape
+   * avec autosave et écran de vérification avant envoi.
+   * ──────────────────────────────────────────────────────────────────────── */
+  var CP_QNR_STATUS = {
+    assigned:    ['À remplir',  '#8a6f2e', '#fbf0d8'],
+    in_progress: ['En cours',   '#35608f', '#e3edfb'],
+    to_review:   ['À revoir',   '#8a4a0e', '#fdf3e8'],
+    completed:   ['Complété ✓', '#3f6b3a', '#e7f0e3'],
+  };
+  function cpQnrInstance() { return (appData.questionnaires || []).filter(function(q){ return q.id === cpQnrOpenId; })[0] || null; }
+  function cpQnrIsStatic(t) { return t === 'title' || t === 'paragraph'; }
+  function cpQnrRealBlocks(inst) { var arr = []; (inst.steps || []).forEach(function(s){ (s.blocks || []).forEach(function(b){ if (!cpQnrIsStatic(b.type)) arr.push(b); }); }); return arr; }
+  function cpQnrProgress(inst) {
+    var real = cpQnrRealBlocks(inst); var ans = inst.answers || {};
+    var done = real.filter(function(b){ return cpQAnswered(ans[b.id]); }).length;
+    return { done: done, total: real.length };
+  }
+
+  function buildQuestionnairesView() {
+    if (cpQnrOpenId && cpQnrInstance()) return buildQnrFiller(cpQnrInstance());
+    return buildQnrList();
+  }
+  function buildQnrList() {
+    var list = (appData.questionnaires || []);
+    if (!list.length) return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:640px;margin:0 auto"><h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:8px">Questionnaires</h1><p style="color:var(--muted)">Aucun questionnaire pour l\'instant. Cindy vous en enverra ici quand elle aura besoin de vos réponses.</p></div></div>';
+    var cards = list.map(function(inst){
+      var st = CP_QNR_STATUS[inst.status] || CP_QNR_STATUS.assigned;
+      var col = inst.color || '#5e3fa0';
+      var pr = cpQnrProgress(inst);
+      var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
+      var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
+      var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
+      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:none;background:#fff;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:0 2px 14px rgba(28,18,5,0.09);margin-bottom:16px;display:block">' +
+        '<div style="height:7px;background:' + esc(col) + '"></div>' +
+        '<div style="padding:18px 22px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
+            '<div style="min-width:0">' +
+              '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--nuit);line-height:1.2">' + esc(inst.name || 'Questionnaire') + '</div>' +
+              (inst.description ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:5px">' + esc(inst.description) + '</div>' : '') +
+              due +
+            '</div>' +
+            '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + st[1] + ';background:' + st[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(st[0]) + '</span>' +
+          '</div>' +
+          '<div style="margin-top:14px;display:flex;align-items:center;gap:12px">' +
+            '<div style="flex:1;height:7px;background:var(--brume,#eee);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + '"></div></div>' +
+            '<span style="font-size:12.5px;color:var(--muted);white-space:nowrap">' + pr.done + ' / ' + pr.total + '</span>' +
+            '<span style="font-size:13px;font-weight:600;color:' + esc(col) + ';white-space:nowrap">' + cta + ' →</span>' +
+          '</div>' +
+        '</div>' +
+      '</button>';
+    }).join('');
+    return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:680px;margin:0 auto">' +
+      '<h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:6px">Questionnaires</h1>' +
+      '<p style="color:var(--muted);margin-bottom:24px">Prenez le temps d\'y répondre, vos réponses sont enregistrées automatiquement.</p>' +
+      cards +
+    '</div></div>';
+  }
+
+  // Rendu d'un bloc dans le remplisseur.
+  function cpQnrField(b, ans) {
+    var col = 'var(--nuit)';
+    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:23px;margin:26px 0 6px;color:' + col + '">' + esc(b.label || '') + '</h2>';
+    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:8px 0 4px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
+    var lab = '<label style="display:block;font-size:15px;font-weight:600;color:var(--nuit);margin-bottom:5px">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</label>' +
+      (b.help ? '<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:9px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
+    var opts = Array.isArray(b.options) ? b.options : [];
+    var box = 'width:100%;padding:12px 15px;border:1.5px solid var(--border,#e2d9c8);border-radius:12px;font-size:15px;font-family:inherit;box-sizing:border-box;background:#fff';
+    var input;
+    if (b.type === 'long' || b.type === 'address') {
+      input = '<textarea data-qid="' + b.id + '" rows="' + (b.type === 'address' ? 3 : 4) + '" style="' + box + ';resize:vertical" placeholder="' + esc(b.placeholder || '') + '">' + esc(typeof ans === 'string' ? ans : '') + '</textarea>';
+    } else if (b.type === 'single' || b.type === 'dropdown') {
+      if (b.type === 'dropdown') {
+        input = '<select data-qid="' + b.id + '" style="' + box + '"><option value="">— choisir —</option>' + opts.map(function(o){ return '<option' + (ans === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      } else {
+        input = '<div data-qgroup="' + b.id + '" data-qtype="single">' + opts.map(function(o){
+          var on = ans === o;
+          return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;background:' + (on ? 'rgba(28,18,5,0.03)' : '#fff') + '"><input type="radio" name="cpqn_' + b.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
+        }).join('') + '</div>';
+      }
+    } else if (b.type === 'multi') {
+      var arr = Array.isArray(ans) ? ans : [];
+      input = '<div data-qgroup="' + b.id + '" data-qtype="multi">' + opts.map(function(o){
+        var on = arr.indexOf(o) !== -1;
+        return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;background:' + (on ? 'rgba(28,18,5,0.03)' : '#fff') + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
+      }).join('') + '</div>';
+    } else if (b.type === 'rating') {
+      var mx = b.max || 5; var cur = typeof ans === 'number' ? ans : parseInt(ans, 10) || 0;
+      var stars = '';
+      for (var i = 1; i <= mx; i++) stars += '<label style="cursor:pointer"><input type="radio" name="cpqn_' + b.id + '" value="' + i + '"' + (cur === i ? ' checked' : '') + ' style="position:absolute;opacity:0;width:0;height:0"><span style="font-size:30px;color:' + (cur >= i ? '#e0b83e' : '#d8cfbf') + ';padding:0 2px">★</span></label>';
+      input = '<div data-qgroup="' + b.id + '" data-qtype="rating" style="display:flex;align-items:center;gap:2px">' + stars + '</div>';
+    } else if (b.type === 'slider') {
+      var smx = b.max || 10; var sv = typeof ans === 'number' ? ans : (parseInt(ans, 10) || 0);
+      input = '<div style="display:flex;align-items:center;gap:14px"><input type="range" data-qid="' + b.id + '" min="0" max="' + smx + '" value="' + sv + '" oninput="var o=this.parentNode.querySelector(\'[data-slv]\');if(o)o.textContent=this.value" style="flex:1"><span data-slv style="font-size:16px;font-weight:600;min-width:32px;text-align:right">' + sv + '</span></div>';
+    } else if (b.type === 'file') {
+      input = '<input type="text" data-qid="' + b.id + '" value="' + esc(typeof ans === 'string' ? ans : '') + '" style="' + box + '" placeholder="Collez un lien vers le fichier, ou déposez-le dans l\'onglet Fichiers">';
+    } else {
+      var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : (b.type === 'phone' ? 'tel' : (b.type === 'url' ? 'url' : 'text')))));
+      input = '<input type="' + it + '" data-qid="' + b.id + '" value="' + esc(typeof ans === 'string' ? ans : (typeof ans === 'number' ? String(ans) : '')) + '" style="' + box + '" placeholder="' + esc(b.placeholder || '') + '">';
+    }
+    return '<div style="margin-bottom:22px">' + lab + input + '</div>';
+  }
+
+  function buildQnrFiller(inst) {
+    var col = inst.color || '#5e3fa0';
+    var steps = inst.steps || [];
+    var back = '<button onclick="cpQnrClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13.5px;margin-bottom:16px">← Tous les questionnaires</button>';
+    var wrap = function(inner){ return '<div class="cp-content" style="padding:32px 52px 90px"><div style="max-width:660px;margin:0 auto">' + back + inner + '</div></div>'; };
+
+    // Écran de vérification / résumé (aussi utilisé pour les questionnaires complétés)
+    if (cpQnrReview || inst.status === 'completed') {
+      var isDone = inst.status === 'completed';
+      var rows = steps.map(function(s, si){
+        var blocks = (s.blocks || []).filter(function(b){ return !cpQnrIsStatic(b.type); });
+        if (!blocks.length) return '';
+        var qs = blocks.map(function(b){
+          var a = cpQnrAnswers[b.id];
+          var disp = Array.isArray(a) ? a.join(', ') : (a == null || a === '' ? '—' : String(a));
+          return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5a4a3a)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+        }).join('');
+        return '<div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(28,18,5,0.07);padding:18px 20px;margin-bottom:14px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
+          (isDone ? '' : '<button onclick="cpQnrGoStep(' + si + ')" style="background:none;border:none;color:' + esc(col) + ';cursor:pointer;font-size:13px;font-weight:600">Modifier</button>') + '</div>' +
+          qs +
+        '</div>';
+      }).join('');
+      var header = '<div style="height:7px;background:' + esc(col) + ';border-radius:999px;margin-bottom:18px"></div>' +
+        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
+      if (isDone) {
+        return wrap(header +
+          '<p style="color:#3f6b3a;font-weight:600;margin-bottom:20px">Complété ✓' + (inst.completedAt ? ' le ' + esc(String(inst.completedAt).slice(0,10).split('-').reverse().join('/')) : '') + '. Merci !</p>' +
+          rows +
+          '<button onclick="cpQnrReopen()" style="margin-top:6px;padding:12px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:14px;font-weight:600">Modifier mes réponses</button>');
+      }
+      return wrap(header +
+        '<p style="color:var(--muted);margin-bottom:20px">Vérifiez vos réponses avant de les envoyer à Cindy.</p>' +
+        rows +
+        '<div style="display:flex;gap:10px;margin-top:8px">' +
+          '<button onclick="cpQnrGoStep(' + Math.max(0, steps.length - 1) + ')" style="padding:12px 20px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:14px;font-weight:600">← Retour</button>' +
+          '<button onclick="cpQnrSubmit()" style="flex:1;padding:13px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">Envoyer mes réponses</button>' +
+        '</div>');
+    }
+
+    // Étape courante
+    if (cpQnrStep >= steps.length) cpQnrStep = Math.max(0, steps.length - 1);
+    var s = steps[cpQnrStep] || { blocks: [] };
+    var pct = steps.length ? Math.round((cpQnrStep) / steps.length * 100) : 0;
+    var fields = (s.blocks || []).map(function(b){ return cpQnrField(b, cpQnrAnswers[b.id]); }).join('');
+    var isLast = cpQnrStep === steps.length - 1;
+    var progress = '<div style="margin-bottom:22px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (cpQnrStep + 1) + ' sur ' + steps.length + '</span><span>' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%</span></div>' +
+      '<div style="height:7px;background:var(--brume,#eee);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%;background:' + esc(col) + ';transition:width 220ms"></div></div>' +
+    '</div>';
+    var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin-bottom:' + (s.help ? '4px' : '18px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
+      (s.help ? '<p style="color:var(--muted);line-height:1.55;margin-bottom:20px">' + esc(s.help) + '</p>' : '');
+    var nav = '<div style="display:flex;gap:10px;margin-top:10px">' +
+      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
+      '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
+    '</div>';
+    return wrap(progress +
+      '<div id="cp-qnr-step" oninput="cpQnrTouch()" onchange="cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
+      nav +
+      '<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">Vos réponses sont enregistrées automatiquement.</div>');
+  }
+
+  // Lecture des réponses de l'étape affichée depuis le DOM.
+  function cpQnrCollectStep() {
+    var root = document.getElementById('cp-qnr-step');
+    if (!root) return;
+    root.querySelectorAll('[data-qid]').forEach(function(el){
+      var id = el.getAttribute('data-qid');
+      var v = el.value;
+      if (el.type === 'range') { cpQnrAnswers[id] = parseInt(v, 10) || 0; }
+      else cpQnrAnswers[id] = v;
+    });
+    root.querySelectorAll('[data-qgroup]').forEach(function(g){
+      var id = g.getAttribute('data-qgroup'); var type = g.getAttribute('data-qtype');
+      if (type === 'multi') {
+        var arr = [];
+        g.querySelectorAll('input[type=checkbox]:checked').forEach(function(c){ arr.push(c.value); });
+        cpQnrAnswers[id] = arr;
+      } else if (type === 'rating') {
+        var r = g.querySelector('input[type=radio]:checked');
+        cpQnrAnswers[id] = r ? (parseInt(r.value, 10) || 0) : 0;
+      } else {
+        var r2 = g.querySelector('input[type=radio]:checked');
+        cpQnrAnswers[id] = r2 ? r2.value : '';
+      }
+    });
+  }
+  function cpQnrSaveAnswers(submit, cb) {
+    if (!API_BASE || !cpQnrOpenId) return;
+    fetch(API_BASE + '/questionnaires/' + cpQnrOpenId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ answers: cpQnrAnswers, submit: !!submit }) })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        var inst = cpQnrInstance();
+        if (inst && d) { inst.answers = d.answers || cpQnrAnswers; inst.status = d.status || inst.status; inst.completedAt = d.completedAt || inst.completedAt; }
+        if (cb) cb(d);
+      })
+      .catch(function(){ if (cb) cb(null); });
+  }
+  function cpQnrTouch() {
+    if (cpQnrSaveTimer) clearTimeout(cpQnrSaveTimer);
+    cpQnrSaveTimer = setTimeout(function(){ cpQnrCollectStep(); cpQnrSaveAnswers(false); }, 900);
+  }
+  function cpQnrStepInvalid(stepIdx) {
+    var inst = cpQnrInstance(); if (!inst) return false;
+    var s = (inst.steps || [])[stepIdx]; if (!s) return false;
+    return (s.blocks || []).some(function(b){ return !cpQnrIsStatic(b.type) && b.required && !cpQAnswered(cpQnrAnswers[b.id]); });
+  }
+  window.cpOpenQuestionnaires = function(){ cpQnrOpenId = null; cpQnrReview = false; currentView = 'questionnaires'; renderShell({ resetScroll: true }); };
+  window.cpQnrFill = function(id){
+    cpQnrOpenId = id; cpQnrStep = 0; cpQnrReview = false;
+    var inst = cpQnrInstance();
+    cpQnrAnswers = inst ? JSON.parse(JSON.stringify(inst.answers || {})) : {};
+    currentView = 'questionnaires'; renderShell({ resetScroll: true });
+  };
+  window.cpQnrClose = function(){ if (cpQnrSaveTimer) { clearTimeout(cpQnrSaveTimer); } cpQnrCollectStep(); cpQnrSaveAnswers(false); cpQnrOpenId = null; cpQnrReview = false; renderShell({ resetScroll: true }); };
+  window.cpQnrNext = function(){
+    cpQnrCollectStep();
+    if (cpQnrStepInvalid(cpQnrStep)) { toast('Merci de répondre aux questions obligatoires (*) avant de continuer.'); return; }
+    cpQnrSaveAnswers(false);
+    var inst = cpQnrInstance(); var n = inst ? (inst.steps || []).length : 0;
+    if (cpQnrStep >= n - 1) { cpQnrReview = true; } else { cpQnrStep++; }
+    renderShell({ resetScroll: true });
+  };
+  window.cpQnrPrev = function(){ cpQnrCollectStep(); cpQnrSaveAnswers(false); if (cpQnrStep > 0) cpQnrStep--; renderShell({ resetScroll: true }); };
+  window.cpQnrGoStep = function(i){ cpQnrCollectStep(); cpQnrSaveAnswers(false); cpQnrReview = false; cpQnrStep = i; renderShell({ resetScroll: true }); };
+  window.cpQnrSubmit = function(){
+    cpQnrCollectStep();
+    var inst = cpQnrInstance(); if (!inst) return;
+    var steps = inst.steps || [];
+    for (var i = 0; i < steps.length; i++) {
+      if (cpQnrStepInvalid(i)) { cpQnrReview = false; cpQnrStep = i; renderShell({ resetScroll: true }); toast('Il reste des questions obligatoires (*) à l\'étape ' + (i + 1) + '.'); return; }
+    }
+    cpQnrSaveAnswers(true, function(d){
+      if (d) { toast('Merci ! Vos réponses ont bien été envoyées.'); }
+      else { toast('Envoi impossible, réessayez.'); }
+      renderShell({ resetScroll: true });
+    });
+  };
+  window.cpQnrReopen = function(){ var inst = cpQnrInstance(); if (inst) inst.status = 'in_progress'; cpQnrReview = false; cpQnrStep = 0; renderShell({ resetScroll: true }); };
 
   function buildCongesBanner() {
     if (!cpHolidays || !cpHolidays.length) return '';

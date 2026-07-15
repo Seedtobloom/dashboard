@@ -25,6 +25,7 @@
     emails: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 7l-10 6L2 7',
     video: 'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
     visios: 'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
+    questionnaires: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9M8 7h6M8 11h3',
     reglages: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
@@ -165,7 +166,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
+      ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
@@ -391,10 +392,12 @@
   }
   function renderMain() {
     if (VIEW !== 'visios') { var vd = el('vis-drawer'); if (vd) vd.remove(); var vb = el('vis-drawer-bk'); if (vb) vb.remove(); VIS_SEL = null; }
+    if (VIEW !== 'questionnaires') { var qd = el('qnr-drawer'); if (qd) qd.remove(); var qb = el('qnr-drawer-bk'); if (qb) qb.remove(); QNR_SEL = null; }
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'mytasks') return renderMyTasks();
     if (VIEW === 'visios') return renderVisios();
+    if (VIEW === 'questionnaires') return renderQuestionnaires();
     if (VIEW === 'kpi') return renderKpi();
     if (VIEW === 'planning') return renderPlanning();
     if (VIEW === 'clients') return renderClients();
@@ -3451,6 +3454,266 @@
     setMain(topbar('Avis', '', 'Les retours et bilans remplis par tes clients') + '<div class="wrap">' + hero + tabBar + '<div id="avisbody">' + body + '</div></div>');
   }
 
+  /* ────────────────────────────────────────────────────────────────────────
+   * Questionnaires — plateforme générique (bibliothèque + éditeur par blocs +
+   * assignation aux clientes). Les modèles sont réutilisables ; on en envoie un
+   * instantané à chaque cliente (ses réponses ne cassent pas si on édite après).
+   * ──────────────────────────────────────────────────────────────────────── */
+  var QNR = [], QNR_LOADED = false, QNR_SEL = null, QNR_SHOW_ARCH = false;
+  var QNR_CATS = [
+    ['demarrage', 'Démarrage', '#5e3fa0'], ['strategie', 'Stratégie', '#2f6b8a'],
+    ['seo', 'SEO', '#3f8a5e'], ['ux', 'UX / UI', '#8a5e2f'], ['branding', 'Branding', '#a03f7a'],
+    ['copywriting', 'Copywriting', '#8a2f4a'], ['projet', 'Projet', '#3f5aa0'],
+    ['livraison', 'Livraison', '#2f8a8a'], ['support', 'Support', '#6b6b2f'], ['autre', 'Autre', '#6b5e4a'],
+  ];
+  // Types de blocs proposés dans l'éditeur (alignés sur le back).
+  var QNR_BLOCKS = [
+    ['title', 'Titre de section', '¶'], ['paragraph', 'Texte / consigne', '≡'],
+    ['short', 'Réponse courte', '—'], ['long', 'Réponse longue', '☰'],
+    ['single', 'Choix unique', '◉'], ['multi', 'Choix multiple', '☑'], ['dropdown', 'Liste déroulante', '▾'],
+    ['number', 'Nombre', '#'], ['email', 'E-mail', '@'], ['phone', 'Téléphone', '☎'],
+    ['date', 'Date', '📅'], ['time', 'Heure', '⏱'], ['address', 'Adresse', '⌂'],
+    ['rating', 'Note (étoiles)', '★'], ['slider', 'Curseur', '⇔'], ['url', 'Lien / URL', '🔗'], ['file', 'Fichier', '📎'],
+  ];
+  function qnrCatMeta(cat) { for (var i = 0; i < QNR_CATS.length; i++) if (QNR_CATS[i][0] === cat) return QNR_CATS[i]; return QNR_CATS[QNR_CATS.length - 1]; }
+  function qnrBlockLabel(type) { for (var i = 0; i < QNR_BLOCKS.length; i++) if (QNR_BLOCKS[i][0] === type) return QNR_BLOCKS[i][1]; return type; }
+  function qnrHasOptions(type) { return type === 'single' || type === 'multi' || type === 'dropdown'; }
+  function qnrIsStatic(type) { return type === 'title' || type === 'paragraph'; }
+  function qnrId(p) { return (p || 'q') + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
+  function qnrTpl(id) { for (var i = 0; i < QNR.length; i++) if (QNR[i].id === id) return QNR[i]; return null; }
+  function qnrCountBlocks(t) { var n = 0; (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type)) n++; }); }); return n; }
+
+  function renderQuestionnaires() {
+    var right = '<button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau questionnaire</button>';
+    setMain(topbar('Questionnaires', right, 'Crée des questionnaires réutilisables et envoie-les à tes clientes') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
+    if (QNR_LOADED) { renderQnrBody(); return; }
+    api('/api/questionnaires').then(function (r) { return r.json(); }).then(function (d) { QNR = (d && d.questionnaires) || []; QNR_LOADED = true; renderQnrBody(); }).catch(showError);
+  }
+  function qnrSave() { jpost('/api/questionnaires', { questionnaires: QNR }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement'); }).catch(function () { toast('Erreur'); }); }
+
+  function renderQnrBody() {
+    var body = el('qnr-body'); if (!body) return;
+    var active = QNR.filter(function (t) { return !t.archived; });
+    var archived = QNR.filter(function (t) { return t.archived; });
+    var grid = active.length
+      ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">' + active.map(qnrTplCardHtml).join('') + '</div>'
+      : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
+    var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:22px" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
+    var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:14px;opacity:0.75">' + archived.map(qnrTplCardHtml).join('') + '</div>' : '';
+    body.innerHTML = grid + archBtn + archGrid;
+  }
+  function qnrTplCardHtml(t) {
+    var cm = qnrCatMeta(t.category || 'autre');
+    var col = t.color || cm[2];
+    var nQ = qnrCountBlocks(t), nS = (t.steps || []).length;
+    return '<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--bone-d);border-radius:14px;display:flex;flex-direction:column">' +
+      '<div style="height:6px;background:' + esc(col) + '"></div>' +
+      '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
+        '<div class="between" style="align-items:flex-start;gap:8px">' +
+          '<strong style="font-size:15.5px;line-height:1.3;cursor:pointer" onclick="ADM.qnrOpen(\'' + t.id + '\')">' + esc(t.name || 'Sans titre') + '</strong>' +
+          '<span style="font-family:var(--font-micro);font-size:9.5px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(cm[1]) + '</span>' +
+        '</div>' +
+        (t.description ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);line-height:1.45">' + esc(t.description) + '</div>' : '') +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;padding:9px 12px;border-top:1px solid var(--bone-d);flex-wrap:wrap">' +
+        '<button class="pbtn" onclick="ADM.qnrOpen(\'' + t.id + '\')">Éditer</button>' +
+        '<button class="pbtn" onclick="ADM.qnrPreview(\'' + t.id + '\')">Aperçu</button>' +
+        '<button class="pbtn pbtn--ok" onclick="ADM.qnrAssignOpen(\'' + t.id + '\')">Envoyer</button>' +
+        '<span style="margin-left:auto;display:flex;gap:4px">' +
+          '<button class="pbtn" title="Dupliquer" onclick="ADM.qnrDup(\'' + t.id + '\')">⧉</button>' +
+          '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.qnrArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
+          '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.qnrDel(\'' + t.id + '\')">×</button>' +
+        '</span>' +
+      '</div>' +
+    '</div>';
+  }
+  function qnrToggleArch() { QNR_SHOW_ARCH = !QNR_SHOW_ARCH; renderQnrBody(); }
+  function qnrAdd() {
+    var t = { id: qnrId('t'), name: '', description: '', category: 'demarrage', color: qnrCatMeta('demarrage')[2], archived: false, steps: [{ id: qnrId('s'), title: '', help: '', blocks: [] }] };
+    QNR.unshift(t); qnrSave(); renderQnrBody(); qnrOpen(t.id);
+  }
+  function qnrDup(id) {
+    var t = qnrTpl(id); if (!t) return;
+    var copy = JSON.parse(JSON.stringify(t));
+    copy.id = qnrId('t'); copy.name = (t.name || 'Sans titre') + ' (copie)'; copy.archived = false;
+    (copy.steps || []).forEach(function (s) { s.id = qnrId('s'); (s.blocks || []).forEach(function (b) { b.id = qnrId('b'); }); });
+    QNR.unshift(copy); qnrSave(); renderQnrBody(); toast('Questionnaire dupliqué');
+  }
+  function qnrArchive(id) { var t = qnrTpl(id); if (!t) return; t.archived = !t.archived; qnrSave(); renderQnrBody(); }
+  function qnrDel(id) {
+    admConfirm({ title: 'Supprimer ce questionnaire ?', message: 'Le modèle sera supprimé. Les questionnaires déjà envoyés aux clientes restent intacts.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () {
+      QNR = QNR.filter(function (t) { return t.id !== id; }); if (QNR_SEL === id) qnrCloseDrawer(); qnrSave(); renderQnrBody();
+    });
+  }
+  function qnrSet(id, field, val) { var t = qnrTpl(id); if (!t) return; t[field] = val; if (field === 'category') t.color = qnrCatMeta(val)[2]; qnrSave(); renderQnrBody(); if (field === 'category' || field === 'color') renderQnrDrawer(); }
+
+  // ── Éditeur (drawer droite) ──
+  function qnrOpen(id) { QNR_SEL = id; renderQnrDrawer(); }
+  function qnrCloseDrawer() { QNR_SEL = null; var d = el('qnr-drawer'); if (d) d.remove(); var b = el('qnr-drawer-bk'); if (b) b.remove(); }
+  function renderQnrDrawer() {
+    var ex = el('qnr-drawer'); if (ex) ex.remove(); var exb = el('qnr-drawer-bk'); if (exb) exb.remove();
+    var t = qnrTpl(QNR_SEL); if (!t) return;
+    var bk = document.createElement('div'); bk.id = 'qnr-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = qnrCloseDrawer; document.body.appendChild(bk);
+    var d = document.createElement('div'); d.id = 'qnr-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(760px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
+    d.innerHTML = qnrDrawerHtml(t); document.body.appendChild(d);
+  }
+  function qnrDrawerHtml(t) {
+    var cm = qnrCatMeta(t.category || 'autre');
+    var catSel = '<select class="inp" style="width:auto" onchange="ADM.qnrSet(\'' + t.id + '\',\'category\',this.value)">' +
+      QNR_CATS.map(function (c) { return '<option value="' + c[0] + '"' + (t.category === c[0] ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select>';
+    var swatches = QNR_CATS.map(function (c) { return c[2]; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var colorDots = swatches.map(function (col) { return '<button title="' + esc(col) + '" onclick="ADM.qnrSet(\'' + t.id + '\',\'color\',\'' + col + '\')" style="width:22px;height:22px;border-radius:50%;background:' + col + ';border:2px solid ' + ((t.color || cm[2]) === col ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
+    var stepsHtml = (t.steps || []).map(function (s, i) { return qnrStepHtml(t, s, i, (t.steps || []).length); }).join('');
+    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<button onclick="ADM.qnrCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
+        '<button onclick="ADM.qnrPreview(\'' + t.id + '\')" class="btn btn--sm">👁 Aperçu</button>' +
+        '<button onclick="ADM.qnrAssignOpen(\'' + t.id + '\')" class="btn btn--dark btn--sm">Envoyer à une cliente</button>' +
+        '<span style="margin-left:auto"></span>' +
+        '<button onclick="ADM.qnrDel(\'' + t.id + '\')" class="btn btn--danger btn--sm">Suppr.</button>' +
+      '</div>' +
+      '<div style="padding:20px 24px 90px;max-width:720px">' +
+        '<input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du questionnaire (ex. Questions de démarrage)" style="width:100%;box-sizing:border-box;font-size:20px;font-weight:600;margin-bottom:10px" onchange="ADM.qnrSet(\'' + t.id + '\',\'name\',this.value)">' +
+        '<textarea class="inp" placeholder="Description courte (optionnel) — visible par la cliente en haut du questionnaire" style="width:100%;box-sizing:border-box;min-height:56px;resize:vertical;font-size:14px;line-height:1.5;margin-bottom:14px" onchange="ADM.qnrSet(\'' + t.id + '\',\'description\',this.value)">' + esc(t.description || '') + '</textarea>' +
+        '<div class="row" style="gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:22px">' +
+          '<span class="row" style="gap:8px;align-items:center"><span class="micro">Catégorie</span>' + catSel + '</span>' +
+          '<span class="row" style="gap:6px;align-items:center"><span class="micro">Couleur</span>' + colorDots + '</span>' +
+        '</div>' +
+        '<div class="between" style="margin-bottom:12px"><h3 style="margin:0">Étapes & questions</h3><button class="btn btn--outline btn--sm" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Étape</button></div>' +
+        (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute une étape, puis des questions à l\'intérieur.</div>') +
+        '<button class="btn btn--outline btn--sm" style="margin-top:6px" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Ajouter une étape</button>' +
+      '</div>';
+  }
+  function qnrStepHtml(t, s, idx, total) {
+    var blocks = Array.isArray(s.blocks) ? s.blocks : [];
+    var blocksHtml = blocks.map(function (b, i) { return qnrBlockHtml(t, s, b, i, blocks.length); }).join('');
+    var addSel = '<select class="inp" style="width:auto" onchange="if(this.value){ADM.qnrBlockAdd(\'' + t.id + '\',\'' + s.id + '\',this.value);this.value=\'\';}"><option value="">+ Ajouter une question…</option>' +
+      QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '">' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
+    return '<div class="card" style="background:var(--card);padding:14px 15px;margin-bottom:14px;border:1px solid var(--bone-d);border-radius:12px">' +
+      '<div class="row" style="gap:8px;align-items:center;margin-bottom:10px">' +
+        '<span style="font-family:var(--font-micro);font-size:10px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
+        '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Votre projet)" style="flex:1;font-weight:600" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
+        '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
+        '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
+        '<button class="pbtn" style="color:#c44" title="Supprimer l\'étape" onclick="ADM.qnrStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
+      '</div>' +
+      '<input class="inp" value="' + esc(s.help || '') + '" placeholder="Sous-titre / consigne de l\'étape (optionnel)" style="width:100%;box-sizing:border-box;font-size:13px;margin-bottom:12px" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'help\',this.value)">' +
+      (blocksHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 10px">Aucune question dans cette étape.</div>') +
+      '<div style="margin-top:6px">' + addSel + '</div>' +
+    '</div>';
+  }
+  function qnrBlockHtml(t, s, b, idx, total) {
+    var isStat = qnrIsStatic(b.type);
+    var head = '<div class="row" style="gap:6px;align-items:center;margin-bottom:7px">' +
+      '<span style="font-family:var(--font-micro);font-size:10px;color:#fff;background:var(--terre);padding:2px 7px;border-radius:6px;flex-shrink:0">' + esc(qnrBlockLabel(b.type)) + '</span>' +
+      '<span style="margin-left:auto"></span>' +
+      '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',-1)">↑</button>' +
+      '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',1)">↓</button>' +
+      '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.qnrBlockDel(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\')">×</button>' +
+    '</div>';
+    var labelField = '<input class="inp" value="' + esc(b.label || '') + '" placeholder="' + (isStat ? (b.type === 'title' ? 'Titre de la section' : 'Votre texte / consigne') : 'Intitulé de la question') + '" style="width:100%;box-sizing:border-box;font-weight:' + (isStat ? '600' : '500') + '" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'label\',this.value)">';
+    var extra = '';
+    if (!isStat) {
+      extra += '<input class="inp" value="' + esc(b.help || '') + '" placeholder="Aide / précision (optionnel)" style="width:100%;box-sizing:border-box;font-size:12.5px;margin-top:6px" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'help\',this.value)">';
+      if (qnrHasOptions(b.type)) {
+        extra += '<textarea class="inp" placeholder="Une option par ligne" style="width:100%;box-sizing:border-box;min-height:70px;resize:vertical;font-size:13px;margin-top:6px" onchange="ADM.qnrBlockOptions(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',this.value)">' + esc((b.options || []).join('\n')) + '</textarea>';
+      }
+      if (b.type === 'rating' || b.type === 'slider') {
+        extra += '<div class="row" style="gap:8px;align-items:center;margin-top:6px"><span class="micro">Maximum</span><input class="inp" type="number" min="2" max="' + (b.type === 'slider' ? '100' : '10') + '" value="' + (b.max || (b.type === 'slider' ? 10 : 5)) + '" style="width:80px" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'max\',parseInt(this.value,10)||0)"></div>';
+      }
+      extra += '<label class="checkbox" style="margin-top:8px;font-size:13px"><input type="checkbox"' + (b.required ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'required\',this.checked)"> Réponse obligatoire</label>';
+    }
+    return '<div style="background:var(--bg,#faf7f1);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:9px">' + head + labelField + extra + '</div>';
+  }
+  function qnrStepAdd(id) { var t = qnrTpl(id); if (!t) return; if (!Array.isArray(t.steps)) t.steps = []; t.steps.push({ id: qnrId('s'), title: '', help: '', blocks: [] }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
+  function qnrStepSet(id, sid, field, val) { var t = qnrTpl(id); if (!t) return; (t.steps || []).forEach(function (s) { if (s.id === sid) s[field] = val; }); qnrSave(); }
+  function qnrStepDel(id, sid) { var t = qnrTpl(id); if (!t) return; t.steps = (t.steps || []).filter(function (s) { return s.id !== sid; }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
+  function qnrStepMove(id, sid, dir) { var t = qnrTpl(id); if (!t) return; var a = t.steps || []; var i = a.findIndex(function (s) { return s.id === sid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; qnrSave(); renderQnrDrawer(); }
+  function qnrStepOf(t, sid) { var r = null; (t.steps || []).forEach(function (s) { if (s.id === sid) r = s; }); return r; }
+  function qnrBlockAdd(id, sid, type) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; if (!Array.isArray(s.blocks)) s.blocks = []; s.blocks.push({ id: qnrId('b'), type: type, label: '', help: '', placeholder: '', required: false, options: qnrHasOptions(type) ? ['Option 1', 'Option 2'] : [], max: type === 'rating' ? 5 : (type === 'slider' ? 10 : 0) }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
+  function qnrBlockSet(id, sid, bid, field, val) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; (s.blocks || []).forEach(function (b) { if (b.id === bid) b[field] = val; }); qnrSave(); if (field === 'required' || field === 'max') { } else renderQnrBody(); }
+  function qnrBlockOptions(id, sid, bid, val) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; var opts = String(val || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); (s.blocks || []).forEach(function (b) { if (b.id === bid) b.options = opts; }); qnrSave(); }
+  function qnrBlockDel(id, sid, bid) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; s.blocks = (s.blocks || []).filter(function (b) { return b.id !== bid; }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
+  function qnrBlockMove(id, sid, bid, dir) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; var a = s.blocks || []; var i = a.findIndex(function (b) { return b.id === bid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; qnrSave(); renderQnrDrawer(); }
+
+  // ── Aperçu (rendu lecture seule tel que la cliente le verra) ──
+  function qnrFieldPreview(b) {
+    if (b.type === 'title') return '<h3 style="margin:16px 0 4px">' + esc(b.label || 'Titre de section') + '</h3>';
+    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0">' + esc(b.label || '') + '</p>';
+    var lab = '<div style="font-weight:600;margin:14px 0 5px">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:6px">' + esc(b.help) + '</div>' : '');
+    var f = '';
+    if (b.type === 'long') f = '<textarea class="inp" disabled style="width:100%;box-sizing:border-box;min-height:70px"></textarea>';
+    else if (b.type === 'single' || b.type === 'multi') f = (b.options || []).map(function (o) { return '<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="' + (b.type === 'single' ? 'radio' : 'checkbox') + '" disabled> ' + esc(o) + '</label>'; }).join('');
+    else if (b.type === 'dropdown') f = '<select class="inp" disabled><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
+    else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
+    else if (b.type === 'slider') f = '<input type="range" disabled min="0" max="' + (b.max || 10) + '" style="width:100%">';
+    else if (b.type === 'file') f = '<button class="btn btn--outline btn--sm" disabled>📎 Joindre un fichier</button>';
+    else { var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : 'text'))); f = '<input class="inp" disabled type="' + it + '" style="width:100%;box-sizing:border-box" placeholder="' + esc(b.placeholder || '') + '">'; }
+    return lab + f;
+  }
+  function qnrPreview(id) {
+    var t = qnrTpl(id); if (!t) return;
+    var steps = t.steps || [];
+    var body = steps.map(function (s, i) {
+      return '<div style="margin-bottom:22px">' +
+        '<div class="micro" style="color:var(--muted)">Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
+        (s.title ? '<h2 style="margin:2px 0 2px">' + esc(s.title) + '</h2>' : '') +
+        (s.help ? '<div style="color:var(--muted);margin-bottom:8px">' + esc(s.help) + '</div>' : '') +
+        (s.blocks || []).map(qnrFieldPreview).join('') +
+      '</div>';
+    }).join('');
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:640px;max-height:88vh;overflow-y:auto;text-align:left">' +
+      '<div class="between" style="margin-bottom:8px"><div class="admconfirm__title" style="margin:0">' + esc(t.name || 'Aperçu') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>' +
+      (t.description ? '<p style="color:var(--muted);margin:0 0 14px">' + esc(t.description) + '</p>' : '') +
+      body +
+    '</div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    document.body.appendChild(ov);
+  }
+
+  // ── Envoi / assignation à une ou plusieurs clientes ──
+  function qnrAssignOpen(id) {
+    var t = qnrTpl(id); if (!t) return;
+    if (!t.name || !t.name.trim()) { toast('Donne d\'abord un nom au questionnaire'); qnrOpen(id); return; }
+    var doOpen = function () {
+      var clientRows = NAV_CLIENTS.length
+        ? NAV_CLIENTS.map(function (c) { return '<label style="display:flex;gap:9px;align-items:center;padding:6px 2px;cursor:pointer"><input type="checkbox" class="qnr-asg" value="' + c.key + '" style="width:16px;height:16px"> <span>' + esc(clientName(c)) + '</span></label>'; }).join('')
+        : '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune cliente avec un espace.</div>';
+      var ov = document.createElement('div'); ov.className = 'admconfirm';
+      ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
+        '<div class="admconfirm__title">Envoyer « ' + esc(t.name) + ' »</div>' +
+        '<div class="admconfirm__msg">Choisis la ou les clientes qui recevront ce questionnaire dans leur espace.</div>' +
+        '<div style="max-height:230px;overflow-y:auto;border:1px solid var(--bone-d);border-radius:10px;padding:6px 10px;margin:6px 0 12px">' + clientRows + '</div>' +
+        '<div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="micro">Échéance (optionnel)</span><input class="inp" id="qnr-asg-due" type="date" style="width:auto"></div>' +
+        '<label class="checkbox" style="font-size:13px"><input type="checkbox" id="qnr-asg-notify" checked> Prévenir la cliente par e-mail</label>' +
+        '<div class="admconfirm__row" style="margin-top:14px">' +
+          '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+          '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer</button>' +
+        '</div></div>';
+      function close() { ov.remove(); }
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('[data-no]').onclick = close;
+      ov.querySelector('[data-yes]').onclick = function () {
+        var keys = Array.prototype.slice.call(ov.querySelectorAll('.qnr-asg:checked')).map(function (x) { return x.value; });
+        if (!keys.length) { toast('Sélectionne au moins une cliente'); return; }
+        var notify = ov.querySelector('#qnr-asg-notify').checked;
+        var due = ov.querySelector('#qnr-asg-due').value || '';
+        close();
+        toast('Envoi en cours…');
+        var payload = { template: t, notify: notify, dueDate: due };
+        Promise.all(keys.map(function (k) { return jpost('/api/clients/' + k + '/questionnaires', payload, 'POST').then(function (r) { return r.ok; }).catch(function () { return false; }); }))
+          .then(function (res) { var ok = res.filter(Boolean).length; toast(ok + ' envoi' + (ok > 1 ? 's' : '') + ' effectué' + (ok > 1 ? 's' : '') + (notify ? ' · clientes prévenues ✓' : ' (sans e-mail)')); });
+      };
+      document.body.appendChild(ov);
+    };
+    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; doOpen(); }).catch(function () { doOpen(); }); }
+    else doOpen();
+  }
+
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
@@ -3467,6 +3730,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
   };
