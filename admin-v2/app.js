@@ -2858,7 +2858,8 @@
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           '<select class="inp" style="width:auto" onchange="ADM.taskStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
           chBtn +
-          '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span>' + chrono + '</span>' +
+          '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span>' + chrono +
+            '<input class="inp" type="number" min="0" step="15" value="' + (t.timeSpentMinutes || 0) + '"' + (prun ? ' disabled title="Mets le chrono en pause pour saisir"' : ' title="Saisir le temps passé (minutes)"') + ' style="width:78px" onchange="ADM.taskTime(\'' + t.id + '\',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">min</span></span>' +
         '</div>' +
         // Report d'échéance : proposé à la cliente, qui doit l'accepter.
         '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
