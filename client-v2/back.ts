@@ -405,6 +405,22 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
   }));
 }
 
+// Questionnaire d'un projet : questions posées par le studio + réponses du client.
+// Chaque item : { id, type:'section'|'short'|'long', label, help }.
+function questionnaireOf(o: AnyObj): AnyObj {
+  return {
+    questionnaireQuestions: (Array.isArray(o.questionnaire) ? o.questionnaire : [])
+      .map((q: AnyObj) => ({
+        id: (q && q.id) || genId(),
+        type: q && (q.type === 'section' || q.type === 'short') ? q.type : 'long',
+        label: String((q && (q.label || q.question)) || ''),
+        help: String((q && q.help) || ''),
+      }))
+      .filter((q: AnyObj) => q.label),
+    questionnaireAnswers: o.questionnaireAnswers && typeof o.questionnaireAnswers === 'object' ? o.questionnaireAnswers : {},
+  };
+}
+
 function mapChatToMessages(chat: any[]): AnyObj[] {
   return (chat || []).map((m) => ({
     id: m.id || genId(),
@@ -448,6 +464,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         notes: pc.notes || '',
         resources: Array.isArray(pc.resources) ? pc.resources : [],
         deliverables: mapDeliverables(pc.livrables),
+        ...questionnaireOf(pc),
         bannerColor: pc.bannerColor || null,
         folders: foldersFor(pc, files),
         steps: [],
@@ -481,6 +498,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: sw.maintenance ? 'maintenance' : 'in_progress',
         steps,
         deliverables: mapDeliverables(sw.livrables),
+        ...questionnaireOf(sw),
         bannerColor: sw.bannerColor || null,
         folders: foldersFor(sw, files),
         practicalInfo: { sections: [] },
@@ -503,6 +521,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: iv.maintenance ? 'maintenance' : 'in_progress',
         steps: [],
         deliverables: mapDeliverables(iv.livrables),
+        ...questionnaireOf(iv),
         bannerColor: iv.bannerColor || null,
         folders: foldersFor(iv, files),
         practicalInfo: { sections: [] },
@@ -538,6 +557,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
           status: obj.maintenance ? 'maintenance' : 'in_progress',
           steps,
           deliverables: mapDeliverables(obj.livrables),
+          ...questionnaireOf(obj),
         bannerColor: obj.bannerColor || null,
           folders: foldersFor(obj, files),
           practicalInfo: { sections: [] },
@@ -565,6 +585,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         maintReguls: ms.maintReguls && typeof ms.maintReguls === 'object' ? ms.maintReguls : {},
         monthlyHours: ms.monthlyHours || 0,
         deliverables: mapDeliverables(ms.livrables),
+        ...questionnaireOf(ms),
         bannerColor: ms.bannerColor || null,
         folders: foldersFor(ms, files),
         practicalInfo: { sections: [] },
@@ -732,10 +753,16 @@ async function handleNotes(request: Request, env: Env, masterKey: string, data: 
   if (!container) return json({ error: 'Project not found' }, 404);
   if (typeof body.notes === 'string') container.notes = body.notes;
   if (Array.isArray(body.resources)) container.resources = body.resources;
+  let qnSubmitted = false;
   if (body.questionnaireAnswers && typeof body.questionnaireAnswers === 'object') {
     container.questionnaireAnswers = body.questionnaireAnswers;
+    qnSubmitted = Object.keys(body.questionnaireAnswers).some((k) => String(body.questionnaireAnswers[k] || '').trim());
   }
   await save(env, masterKey, data);
+  if (qnSubmitted) {
+    await notifyAdmin(env, `Questionnaire rempli · ${clientFullName(data)}`,
+      `<p><strong>${escHtml(clientFullName(data))}</strong> a répondu au questionnaire de son espace. Retrouvez ses réponses dans l'onglet Questionnaire du projet.</p>`);
+  }
   return json({ notes: container.notes, resources: container.resources || [] });
 }
 

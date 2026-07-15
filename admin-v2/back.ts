@@ -483,6 +483,20 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true, maintenance: container.maintenance });
   }
+  // Questionnaire d'un projet : les questions posées à la cliente.
+  if (method === 'PATCH' && sub === '/questionnaire') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    container.questionnaire = (Array.isArray(body.questions) ? body.questions : []).map((q: AnyObj) => ({
+      id: (q && q.id ? String(q.id) : genId()).slice(0, 40),
+      type: q && (q.type === 'section' || q.type === 'short') ? q.type : 'long',
+      label: (q && (q.label || q.question) ? String(q.label || q.question) : '').slice(0, 500),
+      help: (q && q.help ? String(q.help) : '').slice(0, 2000),
+    })).filter((q: AnyObj) => q.label).slice(0, 120);
+    await saveClient(env, key, data);
+    return json({ ok: true, questionnaire: container.questionnaire });
+  }
   if (method === 'PATCH' && sub === '/banner') {
     const body = await readJson(request);
     const { container } = resolveProject(esp, (body.projectId || '').toString());

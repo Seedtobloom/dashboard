@@ -928,7 +928,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               '<h1 style="font-family:var(--font-display);font-size:clamp(30px,4vw,44px);line-height:1.05;color:'+(p.bannerTextColor||'#fff')+';max-width:640px;margin:0">'+esc(p.projectTitle)+'</h1>' +
             '</div></div>' +
           '</div>' +
-          cpOnboarding(pd) +
+          cpOnboarding(pd) + cpQuestionnaireCard(p) +
           '<div class="cp-ph__cols">' +
             '<div class="cp-ph__left">' +
               '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ouvrez un ticket pour toute demande, suivez son avancement et échangez avec le studio, le tout au même endroit.</p>' +
@@ -1169,7 +1169,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '</div>' +
           uploadZoneHtml +
         '</div>' +
-        cpOnboarding(pd) +
+        cpOnboarding(pd) + cpQuestionnaireCard(p) +
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
@@ -1792,6 +1792,34 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   window.cpOnboardDismiss = function(pid){ try{ localStorage.setItem('cp-onb-'+pid,'1'); }catch(e){} renderShell(); };
 
+  // Carte « Questionnaire de démarrage » : cliquable, ouvre le questionnaire.
+  // Utilisée sur la vue projet ET sur la page d'accueil des espaces mono-offre.
+  function cpQuestionnaireCard(project) {
+    if (!project) return '';
+    var qQuestions = project.questionnaireQuestions || [];
+    var qRealQ = qQuestions.filter(function(q) { return q.type !== 'section'; });
+    if (!qRealQ.length) return '';
+    var qAnswers = project.questionnaireAnswers || {};
+    var allAnswered = qRealQ.every(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); });
+    var answered = qRealQ.filter(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); }).length;
+    var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
+    return '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);margin-bottom:14px;display:block">' +
+        '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
+          '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-moi de votre projet</div>' +
+          (allAnswered
+            ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
+            : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
+        '</div>' +
+        '<div style="background:#fff;padding:14px 20px;border:1.5px solid rgba(28,18,5,0.08);border-top:none;border-radius:0 0 14px 14px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:13px;color:var(--muted)">' + answered + ' / ' + qRealQ.length + ' réponse' + (qRealQ.length > 1 ? 's' : '') + '</span>' +
+            '<span style="font-size:13px;color:var(--navy);font-weight:600">' + (allAnswered ? 'Voir mes réponses' : 'Compléter') + ' →</span>' +
+          '</div>' +
+        '</div>' +
+      '</button>';
+  }
+
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
@@ -2008,33 +2036,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     // Espace maintenance
     if (project.type === 'maintenance') {
-      return header + '<div class="cp-content">' + banner + onboarding + buildClientMaintenance(pd) + helpCard + '</div>';
+      return header + '<div class="cp-content">' + banner + onboarding + cpQuestionnaireCard(project) + buildClientMaintenance(pd) + helpCard + '</div>';
     }
 
-    var questionnaireCard = '';
-    var qQuestions = project.questionnaireQuestions || [];
-    if (qQuestions.length) {
-      var qAnswers = project.questionnaireAnswers || {};
-      var allAnswered = qQuestions.every(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); });
-      var answered = qQuestions.filter(function(q) { return qAnswers[q.id] && qAnswers[q.id].trim(); }).length;
-      var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
-      questionnaireCard =
-        '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);margin-bottom:14px;display:block">' +
-          '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
-            '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire de démarrage</div>' +
-            '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">Parlez-moi de votre projet</div>' +
-            (allAnswered
-              ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
-              : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
-          '</div>' +
-          '<div style="background:#fff;padding:14px 20px;border:1.5px solid rgba(28,18,5,0.08);border-top:none;border-radius:0 0 14px 14px">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center">' +
-              '<span style="font-size:13px;color:var(--muted)">' + answered + ' / ' + qQuestions.length + ' réponse' + (qQuestions.length > 1 ? 's' : '') + '</span>' +
-              '<span style="font-size:13px;color:var(--navy);font-weight:600">' + (allAnswered ? 'Voir mes réponses' : 'Compléter') + ' →</span>' +
-            '</div>' +
-          '</div>' +
-        '</button>';
-    }
+    var questionnaireCard = cpQuestionnaireCard(project);
 
     var clientCardsHtml = (project.clientCards && project.clientCards.length)
       ? '<div data-cp-cards="' + project.id + '">' + buildClientCardsSection(project) + '</div>'
@@ -5926,10 +5931,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
     var fields = questions.map(function(q) {
+      if (q.type === 'section') {
+        return '<div style="margin:22px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border)">' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy);font-weight:600">' + esc(q.label) + '</div>' +
+          (q.help ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') +
+        '</div>';
+      }
       var ans = answers[q.id] || '';
+      var rows = q.type === 'short' ? 1 : 3;
       return '<div style="margin-bottom:18px">' +
-        '<label style="display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">' + esc(q.label) + '</label>' +
-        '<textarea data-qid="' + q.id + '" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--bg)">' + esc(ans) + '</textarea>' +
+        '<label style="display:block;font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:6px">' + esc(q.label) + '</label>' +
+        (q.help ? '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px;white-space:pre-wrap">' + esc(q.help) + '</div>' : '') +
+        '<textarea data-qid="' + q.id + '" rows="' + rows + '" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--bg)">' + esc(ans) + '</textarea>' +
       '</div>';
     }).join('');
 

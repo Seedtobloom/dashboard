@@ -2320,6 +2320,7 @@
     if (cur === 'tickets') content = maintTickets(d);
     else if (cur === 'forfait') content = partnerForfait(d);
     else if (cur === 'taches') content = partnerTasks(d);
+    else if (cur === 'questionnaire') content = questionnaireCard(d);
     else if (cur === 'bilan') content = bilanCard(d);
     else if (cur === 'suivi') content = suiviCard(d);
     else if (cur === 'liv') content = livrablesCard(d);
@@ -2334,20 +2335,86 @@
   }
   function sectionsFor(d) {
     var s = [];
+    var qn = (d.content.questionnaire || []).length;
     if (d.id === 'maintenance') {
       var tks = Array.isArray(d.content.tickets) ? d.content.tickets : [];
       var unseen = tks.filter(function (t) { return t.seenByAdmin === false; }).length;
       s.push(['tickets', 'Tickets', unseen]);
+      s.push(['questionnaire', 'Questionnaire', qn]);
       s.push(['msg', 'Messages', d.unread || 0]);
       return s;
     }
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
     if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables)) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
+    s.push(['questionnaire', 'Questionnaire', qn]);
     s.push(['msg', 'Messages', d.unread || 0]);
     return s;
   }
   function subtab(domId, key) { SUBTAB[domId] = key; renderTab(); }
+
+  // ── Questionnaire d'un projet : Cindy crée les questions, la cliente répond ──
+  function questionnaireCard(d) {
+    var items = Array.isArray(d.content.questionnaire) ? d.content.questionnaire : [];
+    var answers = (d.content.questionnaireAnswers && typeof d.content.questionnaireAnswers === 'object') ? d.content.questionnaireAnswers : {};
+    var typeLbl = { section: 'Titre de section', short: 'Réponse courte', long: 'Réponse longue' };
+    function row(q, idx) {
+      var isSec = q.type === 'section';
+      var sel = ['section', 'short', 'long'].map(function (t) { return '<option value="' + t + '"' + ((q.type || 'long') === t ? ' selected' : '') + '>' + typeLbl[t] + '</option>'; }).join('');
+      return '<div class="card" style="background:' + (isSec ? 'var(--surface-2,#f3ede1)' : 'var(--card)') + ';padding:12px 14px;margin-bottom:8px">' +
+        '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
+          '<select class="inp" style="width:auto" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'type\',this.value)">' + sel + '</select>' +
+          '<input class="inp" value="' + esc(q.label || '') + '" placeholder="' + (isSec ? 'Titre de la section (ex. Priorités business)' : 'Votre question') + '" style="flex:1;font-weight:600" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'label\',this.value)">' +
+          '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',-1)">↑</button>' +
+          '<button class="pbtn" title="Descendre"' + (idx === items.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',1)">↓</button>' +
+          '<button class="pbtn" style="color:#c44" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">×</button>' +
+        '</div>' +
+        '<textarea class="inp" placeholder="Aide / précisions (listes, exemples…) — optionnel" style="width:100%;box-sizing:border-box;min-height:42px;resize:vertical;font-size:13px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
+        (!isSec && answers[q.id] ? '<div style="margin-top:8px;background:#eef4ea;border:1px solid #cfe0c6;border-radius:8px;padding:8px 10px;font-size:13px;color:var(--terre);white-space:pre-wrap"><span class="micro" style="text-transform:none;letter-spacing:0;color:#3f5a37;display:block;margin-bottom:3px">Réponse de la cliente</span>' + esc(answers[q.id]) + '</div>' : '') +
+      '</div>';
+    }
+    var list = items.length ? items.map(row).join('') : '<div class="empty">Aucune question. Ajoute-en une, ou colle ton questionnaire en un clic.</div>';
+    var nQ = items.filter(function (q) { return q.type !== 'section'; }).length;
+    var nAns = items.filter(function (q) { return q.type !== 'section' && answers[q.id] && String(answers[q.id]).trim(); }).length;
+    return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:14px"><div class="between"><h3 style="margin:0"><span class="infocard__dot" style="background:#5e3fa0"></span>Questionnaire</h3><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn--outline btn--sm" onclick="ADM.qnBulk(\'' + d.id + '\')">📋 Coller un questionnaire</button><button class="btn btn--outline btn--sm" onclick="ADM.qnAdd(\'' + d.id + '\',\'section\')">+ Section</button><button class="btn btn--dark btn--sm" onclick="ADM.qnAdd(\'' + d.id + '\',\'long\')">+ Question</button></div></div>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente le remplit depuis son espace (carte « Questionnaire de démarrage »). ' + (nQ ? nAns + ' / ' + nQ + ' réponse' + (nQ > 1 ? 's' : '') : '') + '</div></div>' + list;
+  }
+  function qnList(d) { if (!Array.isArray(d.content.questionnaire)) d.content.questionnaire = []; return d.content.questionnaire; }
+  function qnSaveAll(domId) { var d = findDomain(domId); if (!d) return; jpost('/api/clients/' + CURKEY + '/questionnaire', { projectId: domId, questions: d.content.questionnaire }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement'); }); }
+  function qnAdd(domId, type) { var d = findDomain(domId); if (!d) return; qnList(d).push({ id: 'q' + Date.now().toString(36), type: type || 'long', label: '', help: '' }); qnSaveAll(domId); renderTab(); }
+  function qnSet(domId, qid, field, val) { var d = findDomain(domId); if (!d) return; qnList(d).forEach(function (q) { if (q.id === qid) q[field] = val; }); qnSaveAll(domId); if (field === 'type') renderTab(); }
+  function qnDel(domId, qid) { var d = findDomain(domId); if (!d) return; d.content.questionnaire = qnList(d).filter(function (q) { return q.id !== qid; }); qnSaveAll(domId); renderTab(); }
+  function qnMove(domId, qid, dir) { var d = findDomain(domId); if (!d) return; var a = qnList(d); var i = a.findIndex(function (q) { return q.id === qid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var t = a[i]; a[i] = a[j]; a[j] = t; qnSaveAll(domId); renderTab(); }
+  function qnParse(text) {
+    var lines = String(text || '').split('\n'); var items = []; var n = 0;
+    function nid() { n++; return 'q' + Date.now().toString(36) + n; }
+    lines.forEach(function (raw) {
+      var t = raw.trim(); if (!t) return;
+      if (/^\d+[\.\)]\s+/.test(t)) { items.push({ id: nid(), type: 'section', label: t.replace(/^\d+[\.\)]\s+/, ''), help: '' }); return; }
+      if (/\?$/.test(t)) { items.push({ id: nid(), type: 'long', label: t, help: '' }); return; }
+      var last = items[items.length - 1];
+      if (last) { last.help = last.help ? last.help + '\n' + t : t; }
+      else { items.push({ id: nid(), type: 'long', label: t, help: '' }); }
+    });
+    return items;
+  }
+  function qnBulk(domId) {
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:640px;text-align:left">' +
+      '<div class="admconfirm__title">Coller un questionnaire</div>' +
+      '<div class="admconfirm__msg">Colle ton texte. Les lignes « 1. Titre » deviennent des <b>sections</b>, celles qui finissent par « ? » deviennent des <b>questions</b>, le reste devient l\'<b>aide</b> de la question au-dessus. Tu pourras tout ajuster après.</div>' +
+      '<textarea class="inp" id="qn-bulk" style="width:100%;box-sizing:border-box;min-height:260px;resize:vertical" placeholder="1. Priorités business\nParmi ces prestations, lesquelles veux-tu développer ?\nMariage\nChef à domicile…"></textarea>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Importer</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var txt = (el('qn-bulk') || {}).value || ''; var items = qnParse(txt); if (!items.length) { toast('Rien à importer'); return; }
+      var d = findDomain(domId); if (d) { var arr = qnList(d); items.forEach(function (it) { arr.push(it); }); qnSaveAll(domId); }
+      close(); renderTab(); toast(items.length + ' élément' + (items.length > 1 ? 's' : '') + ' importé' + (items.length > 1 ? 's' : ''));
+    };
+    document.body.appendChild(ov); var t = el('qn-bulk'); if (t) t.focus();
+  }
 
   function tabInfos() {
     var c = CUR.client, e = CUR.entreprise;
@@ -3225,6 +3292,7 @@
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
+    qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
   };
