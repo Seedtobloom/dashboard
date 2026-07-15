@@ -3662,7 +3662,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div style="margin-bottom:14px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#b0a89a">(optionnel)</span></label>' +
-        '<input id="_maint-t-due" type="date" value="'+esc(edit&&edit.dueDate||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
+        '<input id="_maint-t-due" type="date" value="'+esc(edit&&edit.dueDate||'')+'" onchange="if(this.value&&window.cpHolidayFor&&window.cpHolidayFor(this.value)){toast(\'Cindy est en congés à cette date, choisissez un autre jour.\');this.value=\'\';}" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
       '</div>' +
       '<div style="margin-bottom:18px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
@@ -3721,6 +3721,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var prio  = ov.querySelector('#_maint-t-prio').value;
       var cat   = ov.querySelector('#_maint-t-cat').value;
       var due   = ov.querySelector('#_maint-t-due').value || '';
+      if (due && cpHolidayFor(due)) { toast('Cindy est en congés à cette date, choisissez un autre jour.'); return; }
       close();
       if (edit) {
         var body = { projectId: pid, title: title, description: desc, priority: prio, category: cat || '', dueDate: due, attachments: pending };
@@ -3747,6 +3748,29 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           .catch(function(){ toast('Erreur lors de l\'envoi.'); });
       }
     };
+  };
+
+  // Congés du studio : une date qui tombe pendant un congé est refusée côté
+  // cliente (elle ne peut pas planifier une tâche/un ticket ces jours-là).
+  function cpHolidayFor(dateStr) {
+    if (!dateStr) return null;
+    var d = String(dateStr).slice(0, 10);
+    var list = Array.isArray(cpHolidays) ? cpHolidays : [];
+    for (var i = 0; i < list.length; i++) {
+      var h = list[i] || {}; var from = String(h.from || '').slice(0, 10);
+      if (!from) continue; var to = String(h.to || from).slice(0, 10);
+      if (d >= from && d <= to) return h;
+    }
+    return null;
+  }
+  window.cpHolidayFor = cpHolidayFor;
+  window.cliSetTaskDue = function(pid, taskId, value, inp) {
+    if (value && cpHolidayFor(value)) {
+      toast('Cindy est en congés à cette date, merci de choisir un autre jour.');
+      if (inp) { var pd = getPD(pid); var t = pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; }); inp.value = (t && t.dueDate) ? String(t.dueDate).slice(0, 10) : ''; }
+      return;
+    }
+    cliEditTaskField(pid, taskId, 'dueDate', value);
   };
 
   // Report de date proposé par Cindy sur un ticket : la cliente accepte ou refuse.
@@ -4371,7 +4395,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
       '<div style="padding:16px 20px;border-top:1px solid var(--bone-d);display:flex;gap:12px;align-items:flex-end;flex-shrink:0">' +
-        '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:160px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:hidden" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
+        '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
         '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
       '</div>' +
     '</div>';
