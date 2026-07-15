@@ -85,7 +85,7 @@
         var lbl = (h>0 ? h+' h'+(m>0?' '+m+' min':'') : m+' min');
         return dRow(cpIcon('clock', 15), 'Temps passé' + MK_L, '<span style="display:inline-block;background:#eef1ea;color:#3f5a37;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Temps investi par Cindy sur cette tâche">'+esc(lbl)+'</span>');
       })() +
-      dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliSetTaskDue(\''+pid+'\',\''+t.id+'\',this.value,this)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
       dRow(cpIcon('zap', 15), 'Priorité' + MK_E, (function(){
         var cur = t.urgency || 'normal';
         var sel = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'urgency\',this.value)" style="'+dPillStyle(PART_URGENCY[cur]||'#F2E5C2')+'">';
@@ -366,6 +366,7 @@
     var title = ((document.getElementById('_etask-title')||{}).value || '').trim();
     if (!title) { toast('Le titre est requis'); return; }
     var due = (document.getElementById('_etask-due')||{}).value || null;
+    if (due && typeof cpHolidayFor !== 'undefined' && cpHolidayFor(due)) { toast('Cindy est en congés à cette date, merci de choisir un autre jour.'); return; }
     var urg = (document.getElementById('_etask-urg')||{}).value || 'normal';
     var ov = document.getElementById('_cp-edit-task-ov');
     if (ov) ov.remove();
