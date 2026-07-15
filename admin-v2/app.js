@@ -476,7 +476,7 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['backups', 'Sauvegardes']];
+    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['backups', 'Sauvegardes']];
     return '<div class="subtabs">' + items.map(function (it) {
       return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
     }).join('') + '</div>';
@@ -489,6 +489,9 @@
         EMAIL_TPLS = d.templates || [];
         var b = el('regl-body'); if (b) b.innerHTML = emailsBody();
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+    } else if (REGL_TAB === 'quick') {
+      if (QREPLIES_LOADED) { renderQuickRepliesBody(); }
+      else api('/api/quick-replies').then(function (r) { return r.json(); }).then(function (d) { QREPLIES = (d && d.replies) || []; QREPLIES_LOADED = true; renderQuickRepliesBody(); }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else if (REGL_TAB === 'backups') {
       renderBackups();
     } else if (REGL_TAB === 'conges') {
@@ -511,6 +514,61 @@
       }).catch(showError);
     }
   }
+  // ── Réponses rapides : modèles de messages réutilisables ──
+  var QREPLIES = [], QREPLIES_LOADED = false;
+  function renderQuickRepliesBody() {
+    var b = el('regl-body'); if (!b) return;
+    var rows = QREPLIES.map(function (r) {
+      return '<div class="card" style="padding:14px 16px;margin-bottom:10px;background:var(--card)">' +
+        '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
+          '<input class="inp" value="' + esc(r.label || '') + '" placeholder="Titre (ex. Relance douce, Accusé de réception…)" style="flex:1;font-weight:600" onchange="ADM.qrSet(\'' + r.id + '\',\'label\',this.value)">' +
+          '<button class="pbtn" style="color:#c44" onclick="ADM.qrDel(\'' + r.id + '\')">Suppr.</button>' +
+        '</div>' +
+        '<textarea class="inp" placeholder="Le texte du message…" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;font-size:14px;line-height:1.5" onchange="ADM.qrSet(\'' + r.id + '\',\'text\',this.value)">' + esc(r.text || '') + '</textarea>' +
+      '</div>';
+    }).join('');
+    b.innerHTML = '<div class="card infocard" style="background:var(--card)"><h3>Réponses rapides</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Tes messages récurrents, prêts à insérer en un clic depuis la messagerie (bouton ⚡). Ils ne sont visibles que par toi.</div>' +
+      (rows || '<div class="empty" style="margin-bottom:10px">Aucune réponse rapide. Crée ton premier modèle (ex. « Accusé de réception », « Relance douce »).</div>') +
+      '<button class="btn btn--outline btn--sm" style="margin-top:4px" onclick="ADM.qrAdd()">+ Ajouter une réponse</button></div>';
+  }
+  function qrSave() { jpost('/api/quick-replies', { replies: QREPLIES }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement'); }).catch(function () { toast('Erreur'); }); }
+  function qrAdd() { QREPLIES.push({ id: 'qr' + Date.now().toString(36), label: '', text: '' }); qrSave(); renderQuickRepliesBody(); }
+  function qrSet(id, field, val) { QREPLIES.forEach(function (r) { if (r.id === id) r[field] = val; }); qrSave(); }
+  function qrDel(id) { QREPLIES = QREPLIES.filter(function (r) { return r.id !== id; }); qrSave(); renderQuickRepliesBody(); }
+  // Sélecteur d'insertion depuis un composeur (msg-<pid> ou gmsg).
+  function qrPick(targetId) {
+    var open = function () {
+      if (!QREPLIES.length) { toast('Aucune réponse rapide — ajoute-en dans Réglages ▸ Réponses rapides.'); return; }
+      var ov = document.createElement('div'); ov.className = 'admconfirm';
+      ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
+        '<div class="admconfirm__title">Insérer une réponse rapide</div>' +
+        '<div style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0">' +
+          QREPLIES.map(function (r, i) {
+            return '<button class="qr-pick" data-i="' + i + '" style="text-align:left;padding:11px 13px;border:1px solid var(--bone-d);border-radius:10px;background:var(--card);cursor:pointer">' +
+              '<div style="font-weight:600;font-size:13.5px;color:var(--terre)">' + esc(r.label || '(sans titre)') + '</div>' +
+              '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">' + esc((r.text || '').slice(0, 90)) + '</div>' +
+            '</button>';
+          }).join('') +
+        '</div>' +
+        '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Fermer</button></div></div>';
+      function close() { ov.remove(); }
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('[data-no]').onclick = close;
+      ov.querySelectorAll('.qr-pick').forEach(function (btn) {
+        btn.onclick = function () {
+          var r = QREPLIES[parseInt(btn.getAttribute('data-i'), 10)];
+          var ta = el(targetId);
+          if (ta && r) { var cur = ta.value || ''; ta.value = cur.trim() ? (cur.replace(/\s*$/, '') + '\n\n' + r.text) : r.text; if (typeof taGrow === 'function') taGrow(ta); ta.focus(); }
+          close();
+        };
+      });
+      document.body.appendChild(ov);
+    };
+    if (QREPLIES_LOADED) open();
+    else api('/api/quick-replies').then(function (r) { return r.json(); }).then(function (d) { QREPLIES = (d && d.replies) || []; QREPLIES_LOADED = true; open(); }).catch(function () { toast('Erreur'); });
+  }
+
   function renderBackups() {
     api('/api/backups').then(function (r) { return r.json(); }).then(function (d) {
       var b = el('regl-body'); if (!b) return;
@@ -3323,7 +3381,7 @@
       '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
       '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, '') + '</div>' +
       '<div class="row"><textarea class="inp" id="msg-' + d.id + '" placeholder="Répondre au client…" style="max-height:300px;overflow-y:auto" oninput="ADM.taGrow(this)"></textarea></div>' +
-      '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
+      '<div class="row row--end mt" style="gap:8px"><button class="btn btn--outline btn--sm" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'msg-' + d.id + '\')">⚡ Réponses</button><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
   }
   function chatCardSearch(domainId, v) { var d = findDomain(domainId); var box = el('chat-' + domainId); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function sendMsg(pid) {
@@ -3428,6 +3486,7 @@
     var chips = el('chatchips'); if (chips) { var bs = chips.querySelectorAll('.subtab'); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('active', bs[i].getAttribute('data-pid') === pid); }
     box.innerHTML = '<div class="chatscroll" id="chatmsgs">' + chatBubbles(d, '') + '</div>' +
       '<div class="chatcompose"><textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)" oninput="ADM.taGrow(this)"></textarea>' +
+      '<button class="btn btn--outline" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'gmsg\')">⚡</button>' +
       '<button class="btn btn--dark" onclick="ADM.gsend()">Envoyer</button></div>';
     var box2 = el('chatmsgs'); if (box2) box2.scrollTop = box2.scrollHeight;
     if (d.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: pid }, 'POST'); d.unread = 0; var self = el('cp-' + CHAT.key); if (self) self.classList.remove('unread'); }
@@ -3872,6 +3931,7 @@
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
+    qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
   };
   boot();
 })();

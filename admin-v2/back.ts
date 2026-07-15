@@ -107,6 +107,10 @@ export default {
         if (method === 'GET') return handleQnrGet(env);
         if (method === 'PATCH') return handleQnrSave(request, env);
       }
+      if (pathname === '/api/quick-replies') {
+        if (method === 'GET') return handleQuickRepliesGet(env);
+        if (method === 'PATCH') return handleQuickRepliesSave(request, env);
+      }
 
       // Sauvegardes : instantanés complets des données (KV) stockés dans R2
       if (method === 'GET' && pathname === '/api/backups') return handleBackupList(env);
@@ -1840,6 +1844,28 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
   return json(inst, 201);
 }
 
+/* ── Réponses rapides : modèles de messages réutilisables (studio) ── */
+function cleanQuickReply(r: AnyObj): AnyObj {
+  return {
+    id: (r && r.id ? String(r.id) : genId()).slice(0, 40),
+    label: String((r && r.label) || '').slice(0, 120),
+    text: String((r && r.text) || '').slice(0, 4000),
+  };
+}
+async function getQuickReplies(env: Env): Promise<AnyObj[]> {
+  const v = (await env.KV_ADMIN.get('admin:quickReplies', { type: 'json' })) as AnyObj[] | null;
+  return Array.isArray(v) ? v : [];
+}
+async function handleQuickRepliesGet(env: Env): Promise<Response> {
+  return json({ replies: await getQuickReplies(env) });
+}
+async function handleQuickRepliesSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const list = (Array.isArray(body.replies) ? body.replies : []).map(cleanQuickReply).filter((r: AnyObj) => r.label || r.text).slice(0, 100);
+  await env.KV_ADMIN.put('admin:quickReplies', JSON.stringify(list));
+  return json({ replies: list });
+}
+
 /* ── Sauvegardes ──
  * Un instantané = un JSON dans R2 (_backups/AAAA-MM-JJTHHMM.json) contenant
  * tous les espaces clients + les données admin (tâches, planning, réglages).
@@ -1870,6 +1896,7 @@ async function backupSnapshot(env: Env): Promise<{ name: string; size: number; c
     adminTasks: await env.KV_ADMIN.get('admin:tasks', { type: 'json' }),
     adminVisios: await env.KV_ADMIN.get('admin:visios', { type: 'json' }),
     adminQuestionnaires: await env.KV_ADMIN.get('admin:questionnaires', { type: 'json' }),
+    adminQuickReplies: await env.KV_ADMIN.get('admin:quickReplies', { type: 'json' }),
     adminPlanning: await env.KV_ADMIN.get('admin:planning', { type: 'json' }),
     emailTemplates: await env.KV_ADMIN.get('email_templates', { type: 'json' }),
     missionTypes: await env.KV_CLIENT.get('global:missionTypes', { type: 'json' }),
