@@ -182,6 +182,7 @@
       var nm = clientName(c);
       var subs = [['infos', 'Infos', 0]];
       (c.sections || []).forEach(function (x) { subs.push([x.id, x.label, x.unread || 0]); });
+      subs.push(['journal', 'Journal', 0]);
       subs.push(['documents', 'Documents', 0]);
       subs.push(['bilanavis', 'Bilan & avis', 0]);
       var pr = presence(c.lastSeen);
@@ -2456,6 +2457,7 @@
     var tabs = [['infos', 'Infos', 0, true]];
     CUR.domains.forEach(function (dn) { tabs.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.unread || 0, dn.isActive !== false]); });
     CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
+    tabs.push(['journal', 'Journal', 0, true]);
     tabs.push(['documents', 'Documents', 0, true]);
     tabs.push(['bilanavis', 'Bilan & avis', 0, true]);
     var tabsHtml = tabs.map(function (t) { return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + (t[3] ? '' : ' title="offre inactive" style="opacity:0.55"') + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>'; }).join('');
@@ -2487,11 +2489,67 @@
   }
   function tab(t) { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }
 
+  // Journal de projet : frise automatique des événements de la cliente, dérivée
+  // des dates déjà présentes (tâches, livrables, étapes, tickets, questionnaires).
+  function journalTab() {
+    var ev = [];
+    function add(at, icon, title, sub, color) { if (!at) return; ev.push({ at: String(at), icon: icon, title: title, sub: sub || '', color: color || '#6b533b' }); }
+    function scan(list) {
+      (list || []).forEach(function (dn) {
+        var c = dn.content || {}; var lbl = DOMAIN_LABELS[dn.id] || dn.label || '';
+        (c.taches || []).forEach(function (t) {
+          add(t.createdAt, '📝', 'Tâche créée · ' + (t.title || ''), lbl, '#35608f');
+          if (t.completedAt) add(t.completedAt, '✅', 'Tâche terminée · ' + (t.title || ''), lbl, '#3f6b3a');
+          (t.reviewHistory || []).forEach(function (h) { add(h.at, '🔗', 'Lien de révision envoyé · ' + (t.title || ''), lbl, '#8a6f2e'); });
+          (t.comments || []).forEach(function (cm) { add(cm.at || cm.date || cm.createdAt, '💬', 'Commentaire' + (cm.author === 'client' ? ' de la cliente' : ''), t.title || '', '#6c4ea4'); });
+          if (t.proposedDueDate && t.proposedAt) add(t.proposedAt, '📅', 'Report de date proposé · ' + (t.title || ''), lbl, '#8a4a0e');
+        });
+        (c.livrables || []).forEach(function (l) {
+          add(l.createdAt, '📦', 'Livrable envoyé · ' + (l.name || ''), lbl, '#5e3fa0');
+          if (l.validatedAt) {
+            if (l.status === 'valide') add(l.validatedAt, '🎉', 'Livrable validé · ' + (l.name || ''), lbl, '#3f6b3a');
+            else if (l.status === 'refuse' || l.status === 'revision') add(l.validatedAt, '↩️', 'Révision demandée · ' + (l.name || ''), l.clientComment || lbl, '#a23c28');
+          }
+        });
+        (c.suivi || []).forEach(function (s) { if (s.completedAt) add(s.completedAt, '✅', 'Étape terminée · ' + (s.title || ''), lbl, '#3f6b3a'); });
+        (c.tickets || []).forEach(function (t) { add(t.createdAt, '🎫', 'Ticket ouvert · ' + (t.title || ''), lbl, '#8a4a0e'); if (t.resolvedAt) add(t.resolvedAt, '✅', 'Ticket résolu · ' + (t.title || ''), lbl, '#3f6b3a'); });
+        if (c.bilan && c.bilan.submittedAt) add(c.bilan.submittedAt, '⭐', 'Bilan de fin rempli', lbl, '#9c6f18');
+      });
+    }
+    scan(CUR.domains); scan(CUR.supports);
+    (CUR.questionnaires || []).forEach(function (q) {
+      add(q.assignedAt, '📋', 'Questionnaire envoyé · ' + (q.name || ''), '', '#5e3fa0');
+      if (q.completedAt) add(q.completedAt, '✨', 'Questionnaire complété · ' + (q.name || ''), '', '#3f6b3a');
+    });
+    ev.sort(function (a, b) { return b.at.localeCompare(a.at); });
+    if (!ev.length) return '<div class="card infocard" style="background:var(--card)"><h3>Journal</h3><div class="empty">Aucun événement pour l\'instant. Les actions (tâches, livrables, questionnaires, tickets…) apparaîtront ici automatiquement.</div></div>';
+    ev = ev.slice(0, 200);
+    // Regroupement par jour
+    var out = '', lastDay = '';
+    ev.forEach(function (e) {
+      var day = e.at.slice(0, 10);
+      if (day !== lastDay) {
+        lastDay = day;
+        out += '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
+      }
+      out += '<div style="display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--bone-d)">' +
+        '<div style="flex-shrink:0;font-size:16px;width:26px;text-align:center;line-height:1.4">' + e.icon + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--terre);font-weight:500;line-height:1.35">' + esc(e.title) + '</div>' +
+          (e.sub ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px">' + esc(e.sub) + '</div>' : '') + '</div>' +
+        '<div style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;color:var(--muted);padding-top:3px">' + esc(fmtDT(e.at).split(' ')[1] || '') + '</div>' +
+      '</div>';
+    });
+    return '<div class="card infocard" style="background:var(--card)"><h3>Journal de projet</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Tout ce qui s\'est passé, du plus récent au plus ancien. Idéal pour reprendre le dossier en quelques secondes.</div>' +
+      out + '</div>';
+  }
+
   function findDomain(id) { var d = CUR.domains.filter(function (x) { return x.id === id; })[0]; if (d) return d; return CUR.supports.filter(function (x) { return x.id === id; })[0]; }
 
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
     if (TAB === 'infos') return body.innerHTML = tabInfos();
+    if (TAB === 'journal') return body.innerHTML = journalTab();
     if (TAB === 'documents') return renderDocuments(body);
     if (TAB === 'bilanavis') return body.innerHTML = bilanAvisTab();
     var d = findDomain(TAB);
