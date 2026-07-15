@@ -32,7 +32,8 @@
           for (var i=0;i<arr.length;i++){ if(arr[i].id===id && res.deliverable){ arr[i]=res.deliverable; } }
         }
         renderShell();
-        toast(decision === 'valide' ? 'Livrable validé, Cindy est prévenue' : 'Révision demandée, Cindy est prévenue');
+        if (decision === 'valide') { cpCelebrate('Livrable validé !', 'Bravo — Cindy est prévenue.'); }
+        else { toast('Révision demandée, Cindy est prévenue'); }
       })
       .catch(function(){ toast('Erreur, réessayez.'); });
   }
