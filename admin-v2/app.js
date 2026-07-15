@@ -836,10 +836,14 @@
         var linkBtn = reviewUrl ? '<a class="pbtn" href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Ouvrir</a>' : '';
         // Lien affiché en clair (cliquable) pour le retrouver d'un coup d'œil.
         var linkLine = reviewUrl ? '<div style="margin-top:4px;font-size:12.5px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.reviewLink) + '</a></div>' : '';
+        // Temps passé : sur les livrables/étapes en attente aussi, on peut
+        // ajouter du temps sur la tâche sous-jacente (pas seulement les révisions).
+        var timeTaskId = w.kind === 'dlv' ? x.taskId : x.id;
+        var timeBtn = (!isReview && timeTaskId) ? '<button class="pbtn" title="Ajouter du temps passé sur cette tâche" onclick="ADM.prioAddTaskTime(\'' + x.key + '\',\'' + timeTaskId + '\')">⏱ Temps</button>' : '';
         return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
           '<div class="prow__date">' + (refDate ? '<strong>' + fmtDate(refDate) + '</strong>' : '<strong>—</strong>') + '<span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div>' + linkLine + '</div>' +
-          '<div class="prow__act">' + (isReview ? prioTimer(x, false) : '') + badgeHtml + linkBtn +
+          '<div class="prow__act">' + (isReview ? prioTimer(x, false) : '') + timeBtn + badgeHtml + linkBtn +
             (isReview ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
             (isReview ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
             (isReview ? '<button class="pbtn pbtn--ok" title="Valider toi-même et marquer terminé" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Valider</button>' : '') +
@@ -2158,6 +2162,45 @@
     document.body.appendChild(ov);
     var i = el('prio-th'); if (i) i.focus();
   }
+  // Ajouter du temps sur une tâche déjà en attente/livrée (Priorités) : on ne
+  // connaît pas forcément son total ici, donc on envoie un delta (addMinutes).
+  function prioAddTaskTime(key, id) {
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box">' +
+      '<div class="admconfirm__title">Ajouter du temps passé</div>' +
+      '<div class="admconfirm__msg">Temps à ajouter au total de cette tâche (elle est déjà en attente ou livrée).</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px">' +
+        '<input id="prio-add-h" class="inp" type="number" min="0" step="1" value="0" style="width:70px"><span class="micro" style="text-transform:none;letter-spacing:0">h</span>' +
+        '<input id="prio-add-m" class="inp" type="number" min="0" max="59" step="5" value="0" style="width:70px"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
+      '</div>' +
+      '<div class="admconfirm__row">' +
+        '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Ajouter</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var h = Math.max(0, parseInt(el('prio-add-h').value, 10) || 0);
+      var m = Math.max(0, parseInt(el('prio-add-m').value, 10) || 0);
+      var add = h * 60 + m;
+      close();
+      if (add <= 0) { toast('Indique un temps à ajouter'); return; }
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', addMinutes: add }, 'PATCH')
+        .then(function (r) {
+          if (r.ok) {
+            toast('Temps ajouté ✓ · +' + (h ? h + 'h' : '') + (m ? m + 'min' : ''));
+            var sec = (r.d && r.d.timeSpentSeconds) || 0;
+            var pit = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+            if (pit && sec) pit.timeSpentSeconds = sec;
+            var local = ptFind(id); if (local && sec) { local.timeSpentSeconds = sec; local.timeSpentMinutes = Math.round(sec / 60); }
+          } else toast((r.d && r.d.error) || 'Erreur');
+        });
+    };
+    document.body.appendChild(ov);
+    var i = el('prio-add-h'); if (i) i.focus();
+  }
   function prioProposeDate(key, id, cur, kind) {
     var isTicket = kind === 'ticket';
     var inp = document.createElement('input'); inp.type = 'date'; if (cur) inp.value = cur;
@@ -3413,7 +3456,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

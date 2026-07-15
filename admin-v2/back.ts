@@ -103,6 +103,10 @@ export default {
         if (method === 'GET') return handleVisiosGet(env);
         if (method === 'PATCH') return handleVisiosSave(request, env);
       }
+      if (pathname === '/api/questionnaires') {
+        if (method === 'GET') return handleQnrGet(env);
+        if (method === 'PATCH') return handleQnrSave(request, env);
+      }
 
       // Sauvegardes : instantanés complets des données (KV) stockés dans R2
       if (method === 'GET' && pathname === '/api/backups') return handleBackupList(env);
@@ -592,6 +596,36 @@ async function handleClientApi(
     return json({ ok: true });
   }
 
+  // Questionnaires : affecter un modèle à la cliente / mettre à jour / retirer
+  if (method === 'POST' && sub === '/questionnaires') return handleQnrAssign(request, env, key, data);
+  m = sub.match(/^\/questionnaires\/([a-z0-9]+)$/i);
+  if (m && method === 'PATCH') {
+    const body = await readJson(request);
+    if (!Array.isArray(esp.questionnaires)) esp.questionnaires = [];
+    const inst = esp.questionnaires.find((q: AnyObj) => q.id === m![1]);
+    if (!inst) return json({ error: 'Questionnaire introuvable' }, 404);
+    if ('status' in body && ['assigned', 'in_progress', 'completed', 'to_review'].indexOf(body.status) !== -1) inst.status = body.status;
+    if ('dueDate' in body) inst.dueDate = (body.dueDate || '').toString().slice(0, 10);
+    if (typeof body.estMinutes === 'number') inst.estMinutes = body.estMinutes;
+    // Réouvrir pour correction : on repasse en cours et on prévient la cliente
+    let reopenNotify = false;
+    if (body.reopen === true) { inst.status = 'to_review'; inst.completedAt = null; reopenNotify = body.notify !== false; }
+    inst.updatedAt = nowIso();
+    await saveClient(env, key, data);
+    if (reopenNotify) {
+      await notifyClient(env, data, `Questionnaire à revoir · ${escHtml(inst.name || '')}`,
+        `<p>Cindy vous invite à compléter ou revoir vos réponses au questionnaire <strong>${escHtml(inst.name || '')}</strong> dans votre espace.</p>`);
+    }
+    return json(inst);
+  }
+  if (m && method === 'DELETE') {
+    if (Array.isArray(esp.questionnaires)) {
+      esp.questionnaires = esp.questionnaires.filter((q: AnyObj) => q.id !== m![1]);
+      await saveClient(env, key, data);
+    }
+    return json({ ok: true });
+  }
+
   // Bilan de fin de collaboration : inviter le client à le remplir
   if (method === 'POST' && sub === '/bilan/request') return handleBilanRequest(env, key, data);
   // Jeton du mode édition de l'espace client (24 h) : à ajouter à l'URL (?edit=1&etk=…)
@@ -813,6 +847,15 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     const nsec = 'timeSpentSeconds' in body ? Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0)) : Math.max(0, Math.round(Number(body.timeSpentMinutes) || 0)) * 60;
     const cur = t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60;
     const finalSec = body.forceTime === true ? nsec : Math.max(nsec, cur);
+    t.timeSpentSeconds = finalSec;
+    t.timeSpentMinutes = Math.round(finalSec / 60);
+  }
+  // Ajout d'un delta de minutes (ex. temps saisi depuis Priorités sur une tâche
+  // déjà en attente/livrée, dont on n'a pas le total sous la main côté client).
+  if ('addMinutes' in body) {
+    const add = Math.round(Number(body.addMinutes) || 0);
+    const cur = t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60;
+    const finalSec = Math.max(0, cur + add * 60);
     t.timeSpentSeconds = finalSec;
     t.timeSpentMinutes = Math.round(finalSec / 60);
   }
@@ -1712,6 +1755,86 @@ async function handleVisiosSave(request: Request, env: Env): Promise<Response> {
   };
   await env.KV_ADMIN.put('admin:visios', JSON.stringify(next));
   return json(next);
+}
+
+/* ── Questionnaires (plateforme générique) : modèles réutilisables assignés aux clientes ── */
+const QNR_BLOCK_TYPES = ['title', 'paragraph', 'short', 'long', 'number', 'email', 'phone', 'date', 'time', 'address', 'dropdown', 'single', 'multi', 'rating', 'slider', 'file', 'link', 'url'];
+const QNR_CATEGORIES = ['demarrage', 'strategie', 'seo', 'ux', 'branding', 'copywriting', 'projet', 'livraison', 'support', 'autre'];
+function cleanQnrBlocks(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((b: AnyObj) => ({
+    id: (b && b.id ? String(b.id) : genId()).slice(0, 40),
+    type: b && QNR_BLOCK_TYPES.indexOf(b.type) !== -1 ? b.type : 'short',
+    label: String((b && b.label) || '').slice(0, 600),
+    help: String((b && b.help) || '').slice(0, 2000),
+    placeholder: String((b && b.placeholder) || '').slice(0, 200),
+    required: b && b.required === true,
+    options: Array.isArray(b && b.options) ? b.options.map((o: unknown) => String(o == null ? '' : o).slice(0, 200)).filter((o: string) => o.trim()).slice(0, 60) : [],
+    max: typeof (b && b.max) === 'number' ? b.max : (b && b.max ? parseInt(String(b.max), 10) || 0 : 0),
+  })).slice(0, 300);
+}
+function cleanQnrSteps(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((s: AnyObj) => ({
+    id: (s && s.id ? String(s.id) : genId()).slice(0, 40),
+    title: String((s && s.title) || '').slice(0, 300),
+    help: String((s && s.help) || '').slice(0, 2000),
+    blocks: cleanQnrBlocks(s && s.blocks),
+  })).slice(0, 60);
+}
+function cleanQnrTemplate(t: AnyObj): AnyObj {
+  return {
+    id: (t && t.id ? String(t.id) : genId()).slice(0, 40),
+    name: String((t && t.name) || '').slice(0, 200),
+    description: String((t && t.description) || '').slice(0, 2000),
+    category: t && QNR_CATEGORIES.indexOf(t.category) !== -1 ? t.category : 'autre',
+    color: /^#[0-9a-fA-F]{6}$/.test(String((t && t.color) || '')) ? t.color : '#5e3fa0',
+    archived: t && t.archived === true,
+    steps: cleanQnrSteps(t && t.steps),
+    createdAt: String((t && t.createdAt) || nowIso()).slice(0, 30),
+    updatedAt: nowIso(),
+  };
+}
+async function getQuestionnaires(env: Env): Promise<AnyObj[]> {
+  const v = (await env.KV_ADMIN.get('admin:questionnaires', { type: 'json' })) as AnyObj[] | null;
+  return Array.isArray(v) ? v : [];
+}
+async function handleQnrGet(env: Env): Promise<Response> {
+  return json({ questionnaires: await getQuestionnaires(env) });
+}
+async function handleQnrSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const list = (Array.isArray(body.questionnaires) ? body.questionnaires : []).map(cleanQnrTemplate).slice(0, 200);
+  await env.KV_ADMIN.put('admin:questionnaires', JSON.stringify(list));
+  return json({ questionnaires: list });
+}
+// Affecter un questionnaire à une cliente : on stocke un instantané (les
+// modifications ultérieures du modèle ne cassent pas les réponses en cours).
+async function handleQnrAssign(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const tpl = cleanQnrTemplate(body.template || {});
+  if (!tpl.name && !(tpl.steps as AnyObj[]).length) return json({ error: 'Modèle vide' }, 400);
+  const esp = getEspace(data);
+  if (!Array.isArray(esp.questionnaires)) esp.questionnaires = [];
+  const inst: AnyObj = {
+    id: genId(),
+    templateId: (body.template && body.template.id) || tpl.id,
+    name: tpl.name, description: tpl.description, category: tpl.category, color: tpl.color,
+    steps: tpl.steps,
+    status: 'assigned',
+    answers: {},
+    files: {},
+    assignedAt: nowIso(), startedAt: null, completedAt: null, updatedAt: nowIso(),
+    timeSpentSeconds: 0,
+    dueDate: (body.dueDate || '').toString().slice(0, 10),
+    estMinutes: typeof body.estMinutes === 'number' ? body.estMinutes : 0,
+  };
+  esp.questionnaires.unshift(inst);
+  await saveClient(env, key, data);
+  if (body.notify !== false) {
+    await notifyClient(env, data, `Un questionnaire vous attend · ${escHtml(tpl.name || '')}`,
+      `<p>Bonjour ${escHtml(getClient(data).prenom || '')},</p>` +
+      `<p><strong>${escHtml(tpl.name || 'Un questionnaire')}</strong> vous attend dans votre espace, onglet « Questionnaires ». Prenez un moment pour le remplir quand vous le souhaitez.</p>`);
+  }
+  return json(inst, 201);
 }
 
 /* ── Sauvegardes ──
