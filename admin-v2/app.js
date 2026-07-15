@@ -986,9 +986,32 @@
         '</div>';
       }
 
+      // ── Engagement clientes : qui a des choses « dans son camp », et depuis quand
+      var engMap = {};
+      function engBump(key, client, sinceDays) {
+        var e = engMap[key] || (engMap[key] = { key: key, client: client, count: 0, oldest: 0 });
+        e.count++; if (sinceDays > e.oldest) e.oldest = sinceDays;
+      }
+      waiting.forEach(function (x) { engBump(x.key, x.client, Math.max(0, -ddiff(x.dueDate))); });
+      reviewWait.forEach(function (x) { var rd = x.reviewSentAt || x.dueDate || ''; engBump(x.key, x.client, rd ? Math.max(0, -ddiff(rd)) : 0); });
+      pv.forEach(function (l) { engBump(l.key, l.client, l.createdAt ? Math.max(0, -ddiff(l.createdAt)) : 0); });
+      var engList = Object.keys(engMap).map(function (k) { return engMap[k]; }).sort(function (a, b) { return b.oldest - a.oldest || b.count - a.count; });
+      var engRelance = engList.filter(function (e) { return e.oldest >= 5; }).length;
+      function engRow(e) {
+        var relance = e.oldest >= 5;
+        var col = e.oldest >= 10 ? '#a23c28' : (relance ? '#b8871f' : 'var(--muted)');
+        var ageLbl = e.oldest > 0 ? ('depuis ' + e.oldest + ' j') : 'tout récent';
+        return '<div class="prow"' + (relance ? ' style="background:' + (e.oldest >= 10 ? '#fbeae5' : '#fbf5e6') + ';border-radius:9px"' : '') + '>' +
+          '<div class="prow__main"><div class="prow__el"><a href="javascript:ADM.openClient(\'' + e.key + '\')">' + esc(e.client) + '</a></div>' +
+            '<div class="prow__meta">' + e.count + ' élément' + (e.count > 1 ? 's' : '') + ' dans son camp · <span style="color:' + col + ';font-weight:600">' + esc(ageLbl) + '</span>' + (relance ? ' · à relancer' : '') + '</div></div>' +
+          '<div class="prow__act"><button class="pbtn" onclick="ADM.openClient(\'' + e.key + '\')">Ouvrir</button></div>' +
+        '</div>';
+      }
+
       // ── Onglets : on segmente la page (plus de long scroll) ──
       var tabDefs = [['todo', 'À faire', mine.length, false], ['waiting', 'Attente client', nWait, false]];
       if (riskItems.length) tabDefs.push(['risks', 'Risques', riskItems.length, nRiskHigh > 0]);
+      if (engList.length) tabDefs.push(['engagement', 'Engagement', engList.length, engRelance > 0]);
       if (revs.length) tabDefs.push(['revisions', 'Révisions', revs.length, true]);
       tabDefs.push(['load', 'Charge & forfaits', null, false]);
       if (!tabDefs.some(function (t) { return t[0] === PRIO_TAB; })) PRIO_TAB = 'todo';
@@ -1002,6 +1025,10 @@
         tabBody = '<div class="card infocard" style="background:var(--card)"><h3>En attente du client</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Trié par ancienneté : ce qui traîne remonte en premier, avec un rappel possible en un clic.</div>' +
           (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>';
+      } else if (PRIO_TAB === 'engagement') {
+        tabBody = '<div class="card infocard" style="background:var(--card)"><h3>Engagement des clientes</h3>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Qui a des éléments « dans son camp » (à valider, à réviser, à renvoyer) et depuis combien de temps. Celles au-delà de 5 jours méritent une relance plus personnelle.</div>' +
+          (engList.map(engRow).join('') || '<div class="empty">Aucune cliente n\'a d\'action en attente — tout est de ton côté.</div>') + '</div>';
       } else if (PRIO_TAB === 'risks') {
         tabBody = '<div class="card"><h3 style="color:#a23c28">Risques · 7 jours</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ce qui menace de glisser : en retard, ou pas encore démarré avec une échéance proche. Anticipe pour éviter le coup de feu.</div>' +
