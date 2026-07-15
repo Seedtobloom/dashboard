@@ -848,6 +848,76 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return '<div style="margin-bottom:' + (blocks.length || _isAdminEdit ? '20' : '0') + 'px">' + blocksHtml + addBtns + '</div>';
   }
 
+  /* ────────────────────────────────────────────────────────────────────────
+   * Accueil intelligent (Lot 2), la carte « Aujourd'hui » : une seule liste
+   * des actions concrètes attendues de la cliente, ou « rien à faire ☕ ».
+   * ──────────────────────────────────────────────────────────────────────── */
+  function cpCollectActions() {
+    var acts = [];
+    (appData.projects || []).forEach(function(pd) {
+      var p = pd.project; if (!p || p.status === 'archived') return;
+      // Réponse à une date proposée (prioritaire)
+      (p.tasks || []).forEach(function(t) {
+        if (t.archived) return;
+        if (t.proposedDueDate) acts.push({ pr: 1, label: 'Confirmer la nouvelle date proposée pour « ' + t.title + ' »', cta: 'Répondre', onclick: "cpSel('" + p.id + "')" });
+        else if (t.status === 'waiting_client' || t.needsRework) acts.push({ pr: 3, label: 'Ton retour est attendu sur « ' + t.title + ' »', cta: 'Voir', onclick: "cliOpenTaskFromHome('" + p.id + "','" + t.id + "')" });
+      });
+      (p.tickets || []).forEach(function(t) {
+        if (t.proposedDueDate) acts.push({ pr: 1, label: 'Confirmer la date proposée pour ton ticket « ' + (t.title || '') + ' »', cta: 'Répondre', onclick: "cpOpenInterventions()" });
+      });
+      // Étapes en attente d'une action cliente
+      (p.steps || []).forEach(function(s) {
+        if (s.status === 'waiting_client') acts.push({ pr: 3, label: s.clientAction ? s.clientAction : ('Ton retour est attendu sur l’étape « ' + s.title + ' »'), cta: 'Voir', onclick: "cpSel('" + p.id + "')" });
+      });
+      // Livrables à valider
+      (p.deliverables || []).forEach(function(dv) {
+        if ((dv.status || 'a_valider') === 'a_valider' && (dv.fileKey || dv.reviewLink)) acts.push({ pr: 2, label: 'Un livrable attend ta validation' + (dv.name || dv.taskTitle ? ' : ' + (dv.name || dv.taskTitle) : ''), cta: 'Valider', onclick: "cpGoLivrables()" });
+      });
+    });
+    // Questionnaires non complétés
+    (appData.questionnaires || []).forEach(function(q) {
+      if (q.status === 'completed') return;
+      var verb = q.status === 'in_progress' ? 'Continuer' : (q.status === 'to_review' ? 'Revoir' : 'Remplir');
+      acts.push({ pr: 2, label: verb.toLowerCase() === 'continuer' ? ('Continuer ton questionnaire « ' + q.name + ' »') : (verb + ' ton questionnaire « ' + q.name + ' »'), cta: verb, onclick: "cpQnrFill('" + q.id + "')" });
+    });
+    acts.sort(function(a, b) { return a.pr - b.pr; });
+    return acts;
+  }
+  function cpTodayCard() {
+    var first = (appData.clientName || '').split(' ')[0];
+    var acts = cpCollectActions();
+    var hour = 12;
+    var greetIcon = '☀️';
+    var head = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+      '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400)">Aujourd’hui</span>' +
+    '</div>';
+    if (!acts.length) {
+      return '<div class="card" style="padding:24px 26px;margin-bottom:24px;border:1px solid var(--bone-d);background:linear-gradient(180deg,var(--glycine-50,#f4eefb),var(--card,#fffdf8))">' +
+        head +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);line-height:1.15">Rien à faire de ton côté, ' + esc(first) + ' ' + greetIcon + '</div>' +
+        '<div style="font-size:14.5px;color:var(--terre-600);line-height:1.55;margin-top:6px">Tout est à jour. Je te préviens dès qu’un élément aura besoin de toi, profite ☕</div>' +
+      '</div>';
+    }
+    var rows = acts.slice(0, 6).map(function(a) {
+      return '<button onclick="' + a.onclick + '" style="width:100%;text-align:left;display:flex;align-items:center;gap:13px;padding:13px 15px;background:#fff;border:1px solid var(--bone-d);border-radius:12px;cursor:pointer;transition:box-shadow 140ms" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
+        '<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--glycine-300,#c9b6e8);display:block"></span>' +
+        '<span style="flex:1;font-size:14.5px;color:var(--terre);line-height:1.4">' + esc(a.label) + '</span>' +
+        '<span style="flex-shrink:0;font-size:13px;font-weight:600;color:var(--glycine-700,#6a4a9c);white-space:nowrap">' + esc(a.cta) + ' →</span>' +
+      '</button>';
+    }).join('');
+    var coach = acts.length
+      ? '<div style="font-size:14.5px;color:var(--terre-600);line-height:1.55;margin:2px 0 14px">Je te conseille de commencer par : <strong style="color:var(--terre)">' + esc(acts[0].label) + '</strong></div>'
+      : '';
+    var more = acts.length > 6 ? '<div style="font-size:12.5px;color:var(--terre-400);margin-top:10px;text-align:center">+ ' + (acts.length - 6) + ' autre' + (acts.length - 6 > 1 ? 's' : '') + '</div>' : '';
+    return '<div class="card" style="padding:24px 26px;margin-bottom:24px;border:1px solid var(--glycine-200,#e0d3f2);background:linear-gradient(180deg,var(--glycine-50,#f4eefb),var(--card,#fffdf8))">' +
+      head +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);line-height:1.15;margin-bottom:6px">Bonjour ' + esc(first) + ' ' + greetIcon + '</div>' +
+      coach +
+      '<div style="display:grid;gap:9px">' + rows + '</div>' +
+      more +
+    '</div>';
+  }
+
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
@@ -935,6 +1005,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             '</div></div>' +
           '</div>' +
           cpOnboarding(pd) +
+          cpTodayCard() +
           '<div class="cp-ph__cols">' +
             '<div class="cp-ph__left">' +
               '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ouvrez un ticket pour toute demande, suivez son avancement et échangez avec le studio, le tout au même endroit.</p>' +
@@ -1176,6 +1247,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           uploadZoneHtml +
         '</div>' +
         cpOnboarding(pd) +
+        cpTodayCard() +
         monthStripHtml +
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
@@ -1314,6 +1386,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       ((_isAdminEdit || hbHasContent) ? homeBannerHtml :
         '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
       ) +
+      cpTodayCard() +
       multiBlocks +
       activeHtml + archivedHtml +
     '</div></div>';
