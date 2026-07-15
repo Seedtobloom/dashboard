@@ -713,6 +713,59 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     t.style.transform = 'translateX(-50%) translateY(0)';
     setTimeout(function() { t.style.transform = 'translateX(-50%) translateY(80px)'; }, 3000);
   }
+  // Micro-célébrations (Lot 3) : confettis + petit encart de félicitations aux
+  // moments clés (livrable validé, questionnaire envoyé). Respecte prefers-reduced-motion.
+  function cpReduceMotion() { try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; } }
+  function cpConfetti(opts) {
+    try {
+      if (cpReduceMotion()) return;
+      var colors = ['#6a4a9c', '#b06438', '#5f7d54', '#d3a83e', '#c9952f', '#8a5aa8'];
+      var cv = document.createElement('canvas');
+      cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999';
+      var dpr = window.devicePixelRatio || 1;
+      cv.width = window.innerWidth * dpr; cv.height = window.innerHeight * dpr;
+      document.body.appendChild(cv);
+      var ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+      var N = 150, parts = [];
+      var cx = (opts && opts.x != null) ? opts.x : window.innerWidth / 2;
+      var cy = (opts && opts.y != null) ? opts.y : window.innerHeight * 0.30;
+      for (var i = 0; i < N; i++) {
+        var a = Math.PI * 2 * (i / N) + (Math.random() - 0.5);
+        var sp = 4 + Math.random() * 7;
+        parts.push({ x: cx, y: cy, vx: Math.cos(a) * sp * (0.6 + Math.random()), vy: Math.sin(a) * sp - (3 + Math.random() * 3), w: 5 + Math.random() * 6, h: 8 + Math.random() * 8, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, col: colors[i % colors.length] });
+      }
+      var start = null, DUR = 1500;
+      function frame(ts) {
+        if (!start) start = ts; var t = ts - start;
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        for (var i = 0; i < parts.length; i++) {
+          var p = parts[i];
+          p.vy += 0.22; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+          ctx.save(); ctx.globalAlpha = Math.max(0, 1 - (t / DUR)); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.fillStyle = p.col; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+        }
+        if (t < DUR) requestAnimationFrame(frame); else cv.remove();
+      }
+      requestAnimationFrame(frame);
+    } catch (e) {}
+  }
+  function cpCelebrate(title, sub) {
+    cpConfetti();
+    try {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none';
+      ov.innerHTML = '<div style="background:var(--card,#fffdf8);border:1px solid var(--bone-d,#e3d9c8);box-shadow:0 20px 60px -18px rgba(28,18,5,0.4);border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
+        '<div style="font-size:44px;line-height:1;margin-bottom:8px">🎉</div>' +
+        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#412f21);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
+        (sub ? '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
+      '</div>';
+      document.body.appendChild(ov);
+      var box = ov.firstChild;
+      requestAnimationFrame(function () { box.style.transform = 'scale(1)'; box.style.opacity = '1'; });
+      setTimeout(function () { box.style.opacity = '0'; box.style.transform = 'scale(0.96)'; setTimeout(function () { ov.remove(); }, 280); }, cpReduceMotion() ? 1400 : 1950);
+    } catch (e) {}
+  }
+  window.cpCelebrate = cpCelebrate;
   function getPD(id) {
     if (!appData) return null;
     return appData.projects.find(function(pd) { return pd.project.id === id; }) || null;
@@ -915,6 +968,36 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       coach +
       '<div style="display:grid;gap:9px">' + rows + '</div>' +
       more +
+    '</div>';
+  }
+
+  // Statistiques qui valorisent le travail accompli (idée 11), cumul « depuis le début ».
+  function cpValueStats() {
+    var mins = 0, dlv = 0, msgs = 0, files = 0;
+    (appData.projects || []).forEach(function(pd) {
+      var p = pd.project || {};
+      (p.tasks || []).forEach(function(t) { mins += (t.timeSpentMinutes || 0); });
+      (p.deliverables || []).forEach(function(d) { if (d.fileKey || d.reviewLink) dlv++; });
+      (pd.messages || []).forEach(function() { msgs++; });
+      (pd.files || []).forEach(function(f) { if (f.source !== 'client') files++; });
+    });
+    msgs += ((appData.conversation || []).length) || 0;
+    var hours = Math.round(mins / 60 * 10) / 10;
+    var stats = [];
+    if (hours > 0) stats.push([cpFmtH ? cpFmtH(hours) : (hours + ' h'), 'investies pour toi']);
+    if (files > 0) stats.push([String(files), 'fichier' + (files > 1 ? 's' : '') + ' produit' + (files > 1 ? 's' : '')]);
+    if (msgs > 0) stats.push([String(msgs), 'échange' + (msgs > 1 ? 's' : '')]);
+    if (dlv > 0) stats.push([String(dlv), 'livrable' + (dlv > 1 ? 's' : '')]);
+    if (stats.length < 2) return '';
+    var tiles = stats.map(function(s, i) {
+      return '<div style="flex:1;min-width:96px;padding:14px 16px' + (i ? ';border-left:1px solid var(--bone-d)' : '') + '">' +
+        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:27px;color:var(--terre);line-height:1">' + esc(s[0]) + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--terre-400);margin-top:4px">' + esc(s[1]) + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="margin-bottom:24px">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">Depuis le début</div>' +
+      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:var(--card,#fffdf8);overflow:hidden">' + tiles + '</div>' +
     '</div>';
   }
 
@@ -1387,6 +1470,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
       ) +
       cpTodayCard() +
+      cpValueStats() +
       multiBlocks +
       activeHtml + archivedHtml +
     '</div></div>';
@@ -5798,9 +5882,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (cpQnrStepInvalid(i)) { cpQnrReview = false; cpQnrStep = i; renderShell({ resetScroll: true }); toast('Il reste des questions obligatoires (*) à l\'étape ' + (i + 1) + '.'); return; }
     }
     cpQnrSaveAnswers(true, function(d){
-      if (d) { toast('Merci ! Vos réponses ont bien été envoyées.'); }
-      else { toast('Envoi impossible, réessayez.'); }
       renderShell({ resetScroll: true });
+      if (d) { cpCelebrate('Merci !', 'Tes réponses ont bien été envoyées à Cindy.'); }
+      else { toast('Envoi impossible, réessayez.'); }
     });
   };
   window.cpQnrReopen = function(){ var inst = cpQnrInstance(); if (inst) inst.status = 'in_progress'; cpQnrReview = false; cpQnrStep = 0; renderShell({ resetScroll: true }); };
@@ -7065,7 +7149,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           for (var i=0;i<arr.length;i++){ if(arr[i].id===id && res.deliverable){ arr[i]=res.deliverable; } }
         }
         renderShell();
-        toast(decision === 'valide' ? 'Livrable validé, Cindy est prévenue' : 'Révision demandée, Cindy est prévenue');
+        if (decision === 'valide') { cpCelebrate('Livrable validé !', 'Bravo, Cindy est prévenue.'); }
+        else { toast('Révision demandée, Cindy est prévenue'); }
       })
       .catch(function(){ toast('Erreur, réessayez.'); });
   }
