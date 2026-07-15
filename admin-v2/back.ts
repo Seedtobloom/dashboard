@@ -503,7 +503,7 @@ async function handleClientApi(
     if ('ready' in body) {
       const wasReady = container.questionnaireReady === true;
       container.questionnaireReady = body.ready === true;
-      publishNotify = !wasReady && container.questionnaireReady === true;
+      publishNotify = !wasReady && container.questionnaireReady === true && body.notify !== false;
     }
     await saveClient(env, key, data);
     if (publishNotify) {
@@ -571,7 +571,7 @@ async function handleClientApi(
       const pdd = (body.proposedDueDate || '').toString().slice(0, 10);
       tk.proposedDueDate = pdd || null;
       tk.proposedAt = pdd ? nowIso() : null;
-      ticketProposeNotify = !!pdd;
+      ticketProposeNotify = !!pdd && body.notify !== false;
     }
     tk.seenByAdmin = true;
     await saveClient(env, key, data);
@@ -829,7 +829,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     const pdd = (body.proposedDueDate || '').toString().slice(0, 10);
     t.proposedDueDate = pdd || null;
     t.proposedAt = pdd ? nowIso() : null;
-    proposedNotify = !!pdd;
+    proposedNotify = !!pdd && body.notify !== false;
   }
   if (body.status === 'done' && !t.completedAt) t.completedAt = nowIso();
   if (body.status && body.status !== 'done') t.completedAt = null;
@@ -849,7 +849,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   await saveClient(env, key, data);
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
-  if (body.status && body.status !== prevStatus && (body.status === 'done' || body.status === 'review')) {
+  if (body.status && body.status !== prevStatus && (body.status === 'done' || body.status === 'review') && body.notify !== false) {
     const label = body.status === 'done' ? 'terminée' : 'à valider';
     let bodyHtml = `<p>Votre tâche <strong>${escHtml(t.title || '')}</strong> est maintenant <strong>${escHtml(label)}</strong>.</p>`;
     // Si un lien de révision est présent, on invite explicitement le client à
@@ -1038,7 +1038,9 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
         if (tk) { deliverable.taskTitle = tk.title || ''; tk.status = 'review'; deliverable.reviewLink = tk.reviewLink || ''; }
       }
       await saveClient(env, key, data);
-      await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+      if ((form.get('notify') as string) !== 'false') {
+        await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+      }
     }
   }
   return json({ key: r2key, name: fileName, type: file.type || guessType(fileName), size: file.size, category: asDeliverable ? 'deliverable' : 'document', deliverable }, 201);
@@ -1062,7 +1064,9 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   }
   container.livrables.push(deliverable);
   await saveClient(env, key, data);
-  await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+  if (body.notify !== false) {
+    await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+  }
   return json({ deliverable }, 201);
 }
 async function handleDownload(env: Env, key: string, r2key: string): Promise<Response> {
