@@ -1877,6 +1877,136 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</button>';
   }
 
+  /* ────────────────────────────────────────────────────────────────────────
+   * Le parcours (Lot 1), transformer la liste d'étapes en voyage : progression
+   * globale, métaphore botanique 🌱→✨, frise, et « ce qui se passe ensuite ».
+   * ──────────────────────────────────────────────────────────────────────── */
+  function hexToRgba(hex, a) {
+    var h = String(hex || '').replace('#', '');
+    if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+    if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return 'rgba(106,74,156,' + a + ')';
+    var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+  function cpRelDate(d) {
+    if (!d) return '';
+    var t = new Date(d); if (isNaN(t)) return '';
+    t.setHours(0, 0, 0, 0); var today = new Date(); today.setHours(0, 0, 0, 0);
+    var diff = Math.round((t - today) / 86400000);
+    if (diff === 0) return "aujourd'hui";
+    if (diff === 1) return 'demain';
+    if (diff === -1) return 'hier';
+    if (diff > 1) return 'dans ' + diff + ' jours';
+    return 'il y a ' + (-diff) + ' jours';
+  }
+  // Phases du voyage selon la progression globale (métaphore botanique fixe).
+  function cpStageMeta(ratio) {
+    if (ratio >= 1) return { emoji: '✨', phrase: "C'est en ligne !" };
+    if (ratio >= 0.75) return { emoji: '🚀', phrase: 'On prépare le lancement' };
+    if (ratio >= 0.5) return { emoji: '🌸', phrase: 'Ton projet prend vie' };
+    if (ratio >= 0.2) return { emoji: '🌿', phrase: 'On construit les fondations' };
+    return { emoji: '🌱', phrase: 'On plante les graines' };
+  }
+  // Emoji d'étape selon sa position dans le parcours.
+  function cpStepEmoji(i, total) {
+    var r = total > 1 ? i / (total - 1) : 0;
+    if (r >= 0.999) return '✨';
+    if (r >= 0.75) return '🚀';
+    if (r >= 0.5) return '🌸';
+    if (r >= 0.25) return '🌿';
+    return '🌱';
+  }
+  function cpJourney(pd) {
+    var project = pd.project;
+    var steps = (project.steps || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    if (steps.length < 2) return ''; // pas de « voyage » pertinent sous 2 étapes
+    var total = steps.length;
+    var done = steps.filter(function (s) { return s.status === 'done'; }).length;
+    var pct = Math.round(done / total * 100);
+    var remaining = total - done;
+    var accent = (project.bannerColor && /^#[0-9a-fA-F]{3,6}$/.test(project.bannerColor.split('|')[0]) ? project.bannerColor.split('|')[0] : '') || '#6a4a9c';
+    var sage = '#5f7d54';
+    var allDone = done >= total;
+    var stage = cpStageMeta(done / total);
+    // Étape « en ce moment » : la première en attente / en cours, sinon la prochaine à venir.
+    var current = steps.filter(function (s) { return s.status === 'waiting_client'; })[0]
+      || steps.filter(function (s) { return s.status === 'in_progress'; })[0]
+      || steps.filter(function (s) { return s.status === 'upcoming'; })[0]
+      || null;
+    var curIdx = current ? steps.indexOf(current) : (allDone ? total - 1 : done);
+    var next = steps[curIdx + 1] || null;
+
+    // Ligne d'encouragement selon l'avancement
+    var headline = allDone
+      ? 'Projet livré, bravo ! ✨'
+      : (remaining === 1 ? 'Plus qu’une étape avant la livraison 🎉' : 'Plus que ' + remaining + ' étapes avant la livraison 🎉');
+
+    // Barre de progression
+    var bar = '<div style="display:flex;align-items:center;gap:12px;margin-top:14px">' +
+      '<div style="flex:1;height:9px;background:rgba(28,18,5,0.09);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(accent) + ';border-radius:999px;transition:width 500ms"></div></div>' +
+      '<span style="font-family:var(--font-micro);font-size:13px;font-weight:600;color:var(--terre);min-width:38px;text-align:right">' + pct + '%</span>' +
+    '</div>';
+
+    // Frise horizontale des étapes
+    var frise = '<div style="display:flex;gap:0;overflow-x:auto;padding:6px 2px 4px;margin-top:20px;-webkit-overflow-scrolling:touch">' +
+      steps.map(function (s, i) {
+        var isDone = s.status === 'done';
+        var isCur = i === curIdx && !allDone;
+        var dotBg = isDone ? sage : (isCur ? esc(accent) : '#fff');
+        var dotBd = isDone ? sage : (isCur ? esc(accent) : 'rgba(28,18,5,0.18)');
+        var dotFg = (isDone || isCur) ? '#fff' : 'var(--terre-400,#8a7d6b)';
+        var mark = isDone ? '✓' : cpStepEmoji(i, total);
+        var lineL = i === 0 ? 'transparent' : (isDone || (isCur && steps[i - 1].status === 'done') ? sage : 'rgba(28,18,5,0.14)');
+        var lineR = i === total - 1 ? 'transparent' : (isDone ? sage : 'rgba(28,18,5,0.14)');
+        return '<button onclick="cpOpenStepModal(\'' + esc(s.id) + '\')" style="flex:1;min-width:82px;background:none;border:none;cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center">' +
+          '<div style="display:flex;align-items:center;width:100%">' +
+            '<div style="flex:1;height:3px;background:' + lineL + '"></div>' +
+            '<div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:' + dotBg + ';border:2px solid ' + dotBd + ';color:' + dotFg + ';font-size:' + (isDone ? '15px' : '15px') + ';font-weight:700' + (isCur ? ';box-shadow:0 0 0 4px ' + hexToRgba(accent, 0.18) : '') + '">' + mark + '</div>' +
+            '<div style="flex:1;height:3px;background:' + lineR + '"></div>' +
+          '</div>' +
+          '<div style="font-size:10.5px;line-height:1.25;margin-top:7px;max-width:90px;text-align:center;color:' + (isCur ? 'var(--terre)' : 'var(--terre-400,#8a7d6b)') + ';font-weight:' + (isCur ? '600' : '400') + ';overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(s.title || ('Étape ' + (i + 1))) + '</div>' +
+        '</button>';
+      }).join('') +
+    '</div>';
+
+    // « En ce moment » + ce qui se passe ensuite
+    var nowBlock = '';
+    if (!allDone && current) {
+      var waiting = current.status === 'waiting_client';
+      var rel = current.dueDate ? cpRelDate(current.dueDate) : '';
+      var ensuite = next ? '<div style="margin-top:10px;font-size:13.5px;color:var(--terre-600,#5a4a3a)"><span style="opacity:0.7">Ensuite :</span> ' + esc(next.title) + '</div>' : '';
+      if (waiting) {
+        nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-left:3px solid ' + esc(accent) + ';border-radius:12px;padding:14px 16px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">🕓 En pause, on a besoin de toi</div>' +
+          '<div style="font-size:15px;color:var(--terre);font-weight:600;margin-bottom:3px">' + esc(current.title) + '</div>' +
+          '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5">' + (current.clientAction ? esc(current.clientAction) : 'Cette étape attend ton retour.') + ' Dès que c’est fait, je reprends le travail.' + (rel ? ' <span style="color:var(--terre-400,#8a7d6b)">(souhaité ' + esc(rel) + ')</span>' : '') + '</div>' +
+          ensuite +
+        '</div>';
+      } else {
+        nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-radius:12px;padding:14px 16px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">👉 En ce moment</div>' +
+          '<div style="font-size:15px;color:var(--terre);font-weight:600">' + esc(current.title) + (rel ? ' <span style="font-weight:400;font-size:12.5px;color:var(--terre-400,#8a7d6b)">· ' + esc(rel) + '</span>' : '') + '</div>' +
+          (current.description ? '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5;margin-top:4px">' + esc(current.description) + '</div>' : '') +
+          ensuite +
+        '</div>';
+      }
+    }
+
+    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#fffdf8);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:0 2px 14px rgba(28,18,5,0.05)">' +
+      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+        '<div style="font-size:34px;line-height:1">' + stage.emoji + '</div>' +
+        '<div style="flex:1;min-width:180px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400,#8a7d6b)">Ton parcours</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);line-height:1.15">' + esc(stage.phrase) + '</div>' +
+        '</div>' +
+        '<div style="font-size:13.5px;font-weight:600;color:' + esc(accent) + ';white-space:nowrap">' + headline + '</div>' +
+      '</div>' +
+      bar +
+      frise +
+      nowBlock +
+    '</div>';
+  }
+
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
@@ -2093,10 +2223,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     // Espace maintenance
     if (project.type === 'maintenance') {
-      return header + '<div class="cp-content">' + banner + onboarding + cpQuestionnaireCard(project) + buildClientMaintenance(pd) + helpCard + '</div>';
+      return header + '<div class="cp-content">' + banner + onboarding + buildClientMaintenance(pd) + helpCard + '</div>';
     }
 
-    var questionnaireCard = cpQuestionnaireCard(project);
+    // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.
+    var questionnaireCard = '';
 
     var clientCardsHtml = (project.clientCards && project.clientCards.length)
       ? '<div data-cp-cards="' + project.id + '">' + buildClientCardsSection(project) + '</div>'
@@ -2205,7 +2336,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
       return header +
         '<div class="cp-content cp-content--wide">' +
-          banner + onboarding + clientCardsHtml + questionnaireCard +
+          cpJourney(pd) + banner + onboarding + clientCardsHtml +
           '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
             '<div>' + phasesView + '</div>' +
             '<div>' + sideCol + '</div>' +
@@ -2216,7 +2347,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     return header +
       '<div class="cp-content cp-content--wide">' +
-        banner + clientCardsHtml + questionnaireCard +
+        cpJourney(pd) + banner + clientCardsHtml +
         '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
           '<div>' + progress + '</div>' +
           '<div>' + sideCol + '</div>' +
