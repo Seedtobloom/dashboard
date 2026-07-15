@@ -2027,7 +2027,8 @@
       '<div class="admconfirm__title">Livrable sous forme de lien</div>' +
       '<div class="admconfirm__msg">Colle le lien du livrable (Figma, Drive, proofing…). Le client pourra le voir puis le valider ou demander une révision.</div>' +
       '<input id="prio-dl-name" class="inp" style="width:100%;margin:6px 0" placeholder="Nom (optionnel)">' +
-      '<input id="prio-dl-url" class="inp" style="width:100%;margin:0 0 4px" placeholder="https://…">' +
+      '<input id="prio-dl-url" class="inp" style="width:100%;margin:0 0 6px" placeholder="https://…">' +
+      '<label class="micro" style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;margin:0 0 4px">Temps passé <input id="prio-dl-mins" class="inp" type="number" min="0" step="15" style="width:90px" placeholder="min"> min (ajouté à la tâche)</label>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer au client</button></div></div>';
     function close() { ov.remove(); }
@@ -2037,9 +2038,13 @@
       var url = (el('prio-dl-url').value || '').trim();
       if (!url) { toast('Colle un lien'); return; }
       var name = (el('prio-dl-name').value || '').trim();
+      var mins = Math.max(0, parseInt((el('prio-dl-mins') || {}).value, 10) || 0);
       close();
       jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name }).then(function (r) {
-        if (r.ok) { toast('Livrable (lien) envoyé ✓'); PRIO_TAB = 'waiting'; renderPriorities(); } else toast('Erreur');
+        if (r.ok) {
+          if (mins) { var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0] : null; var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins; jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH'); }
+          toast(mins ? 'Livrable envoyé ✓ · ' + mins + ' min ajoutées' : 'Livrable (lien) envoyé ✓'); PRIO_TAB = 'waiting'; renderPriorities();
+        } else toast('Erreur');
       });
     };
     ov.querySelector('[data-yes]').onclick = send;
@@ -2879,16 +2884,27 @@
     return '<div>' +
       '<div class="micro" style="margin-bottom:10px">Versions du livrable' + (ls.length ? ' · ' + ls.length : '') + '</div>' +
       (rows ? '<div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div>' : '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 4px">Aucun livrable déposé pour l\'instant.</div>') +
-      '<div class="row" style="margin-top:12px;gap:8px"><input class="inp" type="file" id="tdf-' + t.id + '" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + vlabel + ' (fichier)</button></div>' +
+      '<div class="row" style="margin-top:12px;gap:8px;align-items:center"><span class="micro" style="text-transform:none;letter-spacing:0">Temps passé sur ce livrable</span><input class="inp" id="tdt-' + t.id + '" type="number" min="0" step="15" placeholder="min" style="width:90px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">min · ajouté au temps de la tâche à l\'envoi</span></div>' +
+      '<div class="row" style="margin-top:8px;gap:8px"><input class="inp" type="file" id="tdf-' + t.id + '" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.uploadTaskDlv(\'' + t.id + '\')">' + vlabel + ' (fichier)</button></div>' +
       '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><input class="inp" id="tdl-name-' + t.id + '" placeholder="Nom (optionnel)" style="width:150px"><input class="inp" type="url" id="tdl-url-' + t.id + '" placeholder="https://… (Figma, Drive…)" style="flex:1;min-width:160px"><button class="btn btn--outline btn--sm" onclick="ADM.addDlvLink(\'' + t.id + '\')">' + vlabel + ' (lien)</button></div>' +
       '</div>';
+  }
+  // Temps saisi dans le bloc livrable, ajouté au temps de la tâche à l'envoi.
+  function dlvTimeFor(id) { var e = el('tdt-' + id); return e ? Math.max(0, parseInt(e.value, 10) || 0) : 0; }
+  function dlvApplyTime(id, mins) {
+    if (!mins) return;
+    var t = (typeof taskFind === 'function') ? taskFind(id) : null;
+    var curMin = t ? (t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60)) : 0;
+    var total = curMin + mins;
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH');
   }
   function addDlvLink(id) {
     var url = (el('tdl-url-' + id).value || '').trim();
     if (!url) { toast('Colle un lien'); return; }
     var name = (el('tdl-name-' + id).value || '').trim();
+    var mins = dlvTimeFor(id);
     jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name }).then(function (r) { return r.json().then(function (dd) { return { ok: r.ok, d: dd }; }); })
-      .then(function (res) { if (res.ok) { toast('Livrable (lien) envoyé au client ✓'); loadClient(); } else toast((res.d && res.d.error) || 'Erreur'); })
+      .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast(mins ? 'Livrable envoyé ✓ · ' + mins + ' min ajoutées' : 'Livrable (lien) envoyé au client ✓'); loadClient(); } else toast((res.d && res.d.error) || 'Erreur'); })
       .catch(function () { toast('Erreur'); });
   }
   function delDeliverable(id) {
@@ -2912,9 +2928,10 @@
     var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisis un fichier'); return; }
     var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id);
     var cname = (CUR && CUR.client && (CUR.client.prenom || CUR.client.nom)) || 'le client';
+    var mins = dlvTimeFor(id);
     toast('Envoi du livrable…');
     api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) { if (res.ok) { toast('✓ Livrable envoyé à ' + cname + ' · prévenu·e par e-mail'); loadClient(); } else toast(res.d.error || 'Erreur'); })
+      .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('✓ Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min ajoutées' : '') + ' · prévenu·e par e-mail'); loadClient(); } else toast(res.d.error || 'Erreur'); })
       .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
   }
   function commentsBlock(pid, t) {
