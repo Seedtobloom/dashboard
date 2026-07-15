@@ -859,12 +859,21 @@
       var waitHtml = waitAll.map(waitRow).join('');
 
       var forf = (d.forfaits || []).map(function (f) {
+        var nameLink = '<strong style="font-size:14px"><a href="javascript:ADM.openClient(\'' + f.key + '\')">' + esc(f.client) + '</a></strong>';
+        if (!f.configured) {
+          return '<div class="prow" style="display:block;padding:11px 4px"><div class="between">' + nameLink + '<span class="micro" style="color:var(--muted)">non défini</span></div></div>';
+        }
         var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0;
         var over = f.remaining < 0;
-        return '<div class="prow" style="display:block;padding:11px 4px"><div class="between"><strong style="font-size:14px"><a href="javascript:ADM.openClient(\'' + f.key + '\')">' + esc(f.client) + '</a></strong>' +
-          '<span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + (f.configured ? (f.used + ' / ' + f.base + ' h') : 'non défini') + '</span></div>' +
-          (f.configured ? '<div class="bar' + (over ? ' over' : '') + '" style="margin-top:7px"><span style="width:' + pct + '%"></span></div>' : '') +
-          '</div>';
+        var low = !over && f.remaining <= f.base * 0.2;
+        var restCol = over ? 'var(--red)' : (low ? 'var(--orange)' : 'var(--green)');
+        var restLabel = over ? ('dépassé de ' + Math.abs(f.remaining) + ' h') : ('reste ' + f.remaining + ' h');
+        return '<div class="prow" style="display:block;padding:12px 4px">' +
+          '<div class="between" style="align-items:baseline">' + nameLink +
+            '<span style="font-weight:700;font-size:15px;color:' + restCol + '">' + restLabel + '</span></div>' +
+          '<div class="bar' + (over ? ' over' : '') + '" style="margin-top:7px"><span style="width:' + pct + '%"></span></div>' +
+          '<div class="micro" style="margin-top:5px;color:var(--muted)">' + f.used + ' h consommées sur ' + f.base + ' h · ' + pct + '%</div>' +
+        '</div>';
       }).join('');
 
       // Météo de la semaine : nombre d'échéances par jour (5 prochains jours ouvrés) pour anticiper la charge
