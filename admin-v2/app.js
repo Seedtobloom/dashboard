@@ -905,8 +905,31 @@
         }).join('') +
         '</div></div>';
 
+      // ── Risques (7 j) : ce qui menace de glisser — retards + non démarré à échéance proche
+      var riskItems = [];
+      mine.forEach(function (x) {
+        if (x.status === 'done') return;
+        if (x._d < 0) riskItems.push({ x: x, level: 'high', reason: (-x._d) + ' j de retard' });
+        else if (x._d <= 2 && x.status === 'todo') riskItems.push({ x: x, level: 'high', reason: 'pas commencé · ' + whenLabel(x._d) });
+        else if (x._d <= 6 && x.status === 'todo') riskItems.push({ x: x, level: 'med', reason: 'pas commencé · ' + whenLabel(x._d) });
+        else if (x._d <= 2 && x.status === 'in_progress') riskItems.push({ x: x, level: 'med', reason: 'en cours · ' + whenLabel(x._d) });
+      });
+      riskItems.sort(function (a, b) { return a.x._d - b.x._d; });
+      var nRiskHigh = riskItems.filter(function (r) { return r.level === 'high'; }).length;
+      function riskRow(r) {
+        var x = r.x;
+        var col = r.level === 'high' ? '#a23c28' : '#b8871f';
+        var bg = r.level === 'high' ? '#fbeae5' : '#fbf5e6';
+        return '<div class="prow" style="background:' + bg + ';border-radius:9px">' +
+          '<div class="prow__date"><strong>' + (x.dueDate ? fmtDate(x.dueDate) : '—') + '</strong><span style="color:' + col + ';font-weight:600">' + esc(r.reason) + '</span></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
+          '<div class="prow__act">' + (x.project === 'partner' ? prioTimer(x, false) : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir</button></div>' +
+        '</div>';
+      }
+
       // ── Onglets : on segmente la page (plus de long scroll) ──
       var tabDefs = [['todo', 'À faire', mine.length, false], ['waiting', 'Attente client', nWait, false]];
+      if (riskItems.length) tabDefs.push(['risks', 'Risques', riskItems.length, nRiskHigh > 0]);
       if (revs.length) tabDefs.push(['revisions', 'Révisions', revs.length, true]);
       tabDefs.push(['load', 'Charge & forfaits', null, false]);
       if (!tabDefs.some(function (t) { return t[0] === PRIO_TAB; })) PRIO_TAB = 'todo';
@@ -920,6 +943,10 @@
         tabBody = '<div class="card infocard" style="background:var(--card)"><h3>En attente du client</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Trié par ancienneté : ce qui traîne remonte en premier, avec un rappel possible en un clic.</div>' +
           (waitHtml || '<div class="empty">Rien en attente côté client.</div>') + '</div>';
+      } else if (PRIO_TAB === 'risks') {
+        tabBody = '<div class="card"><h3 style="color:#a23c28">Risques · 7 jours</h3>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ce qui menace de glisser : en retard, ou pas encore démarré avec une échéance proche. Anticipe pour éviter le coup de feu.</div>' +
+          (riskItems.map(riskRow).join('') || '<div class="empty">Aucun risque — tout est sous contrôle.</div>') + '</div>';
       } else if (PRIO_TAB === 'revisions') {
         tabBody = '<div class="card"><h3 style="color:#a23c28">Révisions demandées</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
