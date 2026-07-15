@@ -694,6 +694,13 @@
   function prioSetGroup(v) { PRIO_GROUP = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function prioSetFilter(v) { PRIO_FILTER = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function prioSetTab(v) { PRIO_TAB = v; if (PRIO_D) renderPrioBody(PRIO_D); }
+  function capSave(v) {
+    var n = Math.max(0, parseFloat(v) || 0);
+    jpost('/api/capacity', { weeklyHours: n }, 'PATCH').then(function (r) {
+      if (r.ok) { if (PRIO_D) { PRIO_D.weeklyCapacity = n; renderPrioBody(PRIO_D); } toast('Capacité enregistrée ✓'); }
+      else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
@@ -1038,7 +1045,21 @@
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
           (revs.map(revRow).join('') || '<div class="empty">Aucune révision en attente.</div>') + '</div>';
       } else if (PRIO_TAB === 'load') {
-        tabBody = '<div class="pcols">' + meteo +
+        var engagedMonthly = Math.round((d.forfaits || []).reduce(function (s, f) { return s + (f.configured && f.remaining > 0 ? f.remaining : 0); }, 0) * 10) / 10;
+        var weeklyCap = d.weeklyCapacity || 0;
+        var monthlyCap = Math.round(weeklyCap * 4.33 * 10) / 10;
+        var capPct = monthlyCap > 0 ? Math.min(100, Math.round(engagedMonthly / monthlyCap * 100)) : 0;
+        var capOver = monthlyCap > 0 && engagedMonthly > monthlyCap;
+        var capCard = '<div class="card infocard" style="background:var(--card)"><h3>Ma capacité</h3>' +
+          '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Les heures qu\'il te reste à livrer sur les forfaits ce mois, face à ta capacité.</div>' +
+          '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px"><span class="micro">Ma capacité</span><input class="inp" type="number" min="0" step="1" value="' + weeklyCap + '" style="width:80px" onchange="ADM.capSave(this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">h/semaine' + (monthlyCap ? ' · ~' + monthlyCap + ' h/mois' : '') + '</span></div>' +
+          (monthlyCap > 0
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:' + (capOver ? 'var(--red)' : 'var(--terre)') + '">' + engagedMonthly + ' h</span><span class="micro" style="text-transform:none;letter-spacing:0">engagées sur ~' + monthlyCap + ' h · ' + capPct + '%</span></div>' +
+              '<div class="bar' + (capOver ? ' over' : '') + '"><span style="width:' + capPct + '%"></span></div>' +
+              (capOver ? '<div class="micro" style="color:var(--red);margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité — prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
+            : '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + engagedMonthly + ' h engagées ce mois</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Renseigne ta capacité hebdomadaire pour voir ta marge.</div>') +
+        '</div>';
+        tabBody = '<div class="pcols">' + capCard + meteo +
           '<div class="card infocard" style="background:var(--card)"><h3>Forfaits du mois</h3>' +
             (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div></div>';
       } else {
@@ -4006,7 +4027,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, capSave: capSave, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
