@@ -3568,6 +3568,7 @@
     var stepsHtml = (t.steps || []).map(function (s, i) { return qnrStepHtml(t, s, i, (t.steps || []).length); }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
         '<button onclick="ADM.qnrCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
+        '<button onclick="ADM.qnrSmartImport(\'' + t.id + '\')" class="btn btn--sm" title="Coller un texte et le mettre en forme automatiquement">✨ Mettre en forme un texte</button>' +
         '<button onclick="ADM.qnrPreview(\'' + t.id + '\')" class="btn btn--sm">👁 Aperçu</button>' +
         '<button onclick="ADM.qnrAssignOpen(\'' + t.id + '\')" class="btn btn--dark btn--sm">Envoyer à une cliente</button>' +
         '<span style="margin-left:auto"></span>' +
@@ -3636,6 +3637,88 @@
   function qnrBlockOptions(id, sid, bid, val) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; var opts = String(val || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); (s.blocks || []).forEach(function (b) { if (b.id === bid) b.options = opts; }); qnrSave(); }
   function qnrBlockDel(id, sid, bid) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; s.blocks = (s.blocks || []).filter(function (b) { return b.id !== bid; }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
   function qnrBlockMove(id, sid, bid, dir) { var t = qnrTpl(id); if (!t) return; var s = qnrStepOf(t, sid); if (!s) return; var a = s.blocks || []; var i = a.findIndex(function (b) { return b.id === bid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; qnrSave(); renderQnrDrawer(); }
+
+  // ── Import intelligent : coller un pavé de texte → questionnaire structuré ──
+  function qnrGuessType(l) {
+    var s = l.toLowerCase();
+    if (/e-?mail|courriel|adresse mail/.test(s)) return 'email';
+    if (/t[ée]l[ée]phone|portable|mobile|num[ée]ro de t/.test(s)) return 'phone';
+    if (/\bdate\b|quelle date|quel jour|deadline|[ée]ch[ée]ance/.test(s)) return 'date';
+    if (/\bheure\b|quelle heure|cr[ée]neau horaire/.test(s)) return 'time';
+    if (/\badresse\b|rue|ville|code postal/.test(s)) return 'address';
+    if (/site web|url|lien vers|votre site|instagram|r[ée]seaux/.test(s)) return 'url';
+    if (/note[rz]?\b|[ée]valu|sur 5|1 [àa] 5|sur 10|satisfaction|[ée]toiles/.test(s)) return 'rating';
+    if (/budget|montant|combien|nombre|prix|co[ûu]t|tarif/.test(s)) return 'number';
+    if (/d[ée]criv|expliqu|parlez|pourquoi|comment|racontez|d[ée]taill|pr[ée]cisez|d[ée]finit/.test(s)) return 'long';
+    return l.length > 90 ? 'long' : 'short';
+  }
+  // Analyse un texte libre en étapes + blocs (titres, questions, options).
+  function qnrParseText(text) {
+    var lines = String(text || '').replace(/\r/g, '').split('\n');
+    var steps = [], curStep = null, curBlock = null;
+    function ensureStep(title) { curStep = { id: qnrId('s'), title: title || '', help: '', blocks: [] }; steps.push(curStep); curBlock = null; }
+    function pushBlock(b) { if (!curStep) ensureStep(''); curStep.blocks.push(b); }
+    lines.forEach(function (raw) {
+      var line = raw.trim();
+      if (!line) { curBlock = null; return; }
+      // Ligne d'option (puce ou a) / 1.) rattachée à la question précédente
+      var om = line.match(/^([-*•·▪◦–]|\(?[a-zA-Z][\)\.]|\(?\d+[\)\.])\s+(.+)$/);
+      if (om && curBlock && !qnrIsStatic(curBlock.type)) {
+        if (curBlock.type === 'short' || curBlock.type === 'long') curBlock.type = curBlock._multi ? 'multi' : 'single';
+        if (qnrHasOptions(curBlock.type)) { curBlock.options.push(om[2].trim()); return; }
+      }
+      var isQuestion = /\?\s*$/.test(line);
+      var headingLike = !isQuestion && line.length <= 64 && (
+        /^(#{1,3}\s+|étape|partie|section|chapitre|bloc)\b/i.test(line) ||
+        (/:\s*$/.test(line) && line.length <= 48) ||
+        (line === line.toUpperCase() && /[A-ZÀ-Ÿ]/.test(line) && line.replace(/[^A-Za-zÀ-ÿ]/g, '').length >= 3)
+      );
+      if (headingLike) {
+        var title = line.replace(/^#{1,3}\s+/, '').replace(/^(étape|partie|section|chapitre|bloc)\s*\d*\s*[:\-–]?\s*/i, '').replace(/:\s*$/, '').trim();
+        ensureStep(title || line.replace(/:\s*$/, ''));
+        return;
+      }
+      var type = qnrGuessType(line);
+      var multi = /plusieurs|cochez|s[ée]lection(?:nez)?\s+plusieurs|toutes? les|qui s'appliquent/i.test(line);
+      var b = { id: qnrId('b'), type: type, label: line, help: '', placeholder: '', required: false, options: [], max: type === 'rating' ? 5 : 0, _multi: multi };
+      pushBlock(b); curBlock = b;
+    });
+    steps.forEach(function (s) { s.blocks.forEach(function (b) { if (qnrHasOptions(b.type) && !b.options.length) b.type = b._multi ? 'long' : 'long'; delete b._multi; }); });
+    if (!steps.length) ensureStep('');
+    return steps;
+  }
+  function qnrSmartImport(id) {
+    var t = qnrTpl(id); if (!t) return;
+    var hasContent = (t.steps || []).some(function (s) { return (s.title || '').trim() || (s.blocks || []).length; });
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
+      '<div class="admconfirm__title">✨ Mettre en forme un texte</div>' +
+      '<div class="admconfirm__msg">Colle ton texte brut, je le transforme en questionnaire structuré. Astuce : un titre en MAJUSCULES ou finissant par « : » crée une étape ; une ligne finissant par « ? » devient une question ; des lignes à puces (- ou •) juste en dessous deviennent ses options.</div>' +
+      '<textarea id="qnr-import-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:13.5px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="VOTRE PROJET&#10;Quel est le nom de votre entreprise ?&#10;Décrivez votre activité en quelques mots ?&#10;&#10;VOS PRÉFÉRENCES&#10;Quels styles vous attirent ? (plusieurs réponses)&#10;- Épuré&#10;- Chaleureux&#10;- Audacieux&#10;Votre budget ?&#10;Votre adresse e-mail ?"></textarea>' +
+      (hasContent ? '<label class="checkbox" style="margin-top:10px;font-size:13px"><input type="checkbox" id="qnr-import-replace"> Remplacer le contenu existant (sinon, ajouté à la fin)</label>' : '') +
+      '<div class="admconfirm__row" style="margin-top:14px">' +
+        '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Analyser &amp; créer</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var txt = ov.querySelector('#qnr-import-txt').value || '';
+      if (!txt.trim()) { toast('Colle d\'abord un texte'); return; }
+      var replaceEl = ov.querySelector('#qnr-import-replace');
+      var replace = !hasContent || (replaceEl && replaceEl.checked);
+      var parsed = qnrParseText(txt);
+      var nQ = 0; parsed.forEach(function (s) { s.blocks.forEach(function (b) { if (!qnrIsStatic(b.type)) nQ++; }); });
+      if (replace) t.steps = parsed;
+      else t.steps = (t.steps || []).concat(parsed);
+      close();
+      qnrSave(); renderQnrDrawer(); renderQnrBody();
+      toast(parsed.length + ' étape' + (parsed.length > 1 ? 's' : '') + ' · ' + nQ + ' question' + (nQ > 1 ? 's' : '') + ' créées — ajuste si besoin');
+    };
+    document.body.appendChild(ov);
+    var ta = ov.querySelector('#qnr-import-txt'); if (ta) ta.focus();
+  }
 
   // ── Aperçu (rendu lecture seule tel que la cliente le verra) ──
   function qnrFieldPreview(b) {
@@ -3730,7 +3813,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
   };
