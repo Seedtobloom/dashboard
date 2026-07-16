@@ -5894,7 +5894,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
               '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--nuit);line-height:1.2">' + esc(inst.name || 'Questionnaire') + '</div>' +
-              (inst.description ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:5px;white-space:pre-wrap">' + esc(inst.description) + '</div>' : '') +
+              (inst.description ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(inst.description.replace(/\s+/g, ' ').trim()) + '</div>' : '') +
               due +
             '</div>' +
             '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + st[1] + ';background:' + st[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(st[0]) + '</span>' +
