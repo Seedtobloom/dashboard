@@ -3836,11 +3836,16 @@
   function qnrOpen(id) { QNR_SEL = id; renderQnrDrawer(); }
   function qnrCloseDrawer() { QNR_SEL = null; var d = el('qnr-drawer'); if (d) d.remove(); var b = el('qnr-drawer-bk'); if (b) b.remove(); }
   function renderQnrDrawer() {
-    var ex = el('qnr-drawer'); if (ex) ex.remove(); var exb = el('qnr-drawer-bk'); if (exb) exb.remove();
+    var ex = el('qnr-drawer');
+    // On garde la position de défilement pour ne pas remonter en haut à chaque
+    // édition (changement de type, ajout de bloc…).
+    var keepScroll = ex ? ex.scrollTop : 0;
+    if (ex) ex.remove(); var exb = el('qnr-drawer-bk'); if (exb) exb.remove();
     var t = qnrTpl(QNR_SEL); if (!t) return;
     var bk = document.createElement('div'); bk.id = 'qnr-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = qnrCloseDrawer; document.body.appendChild(bk);
     var d = document.createElement('div'); d.id = 'qnr-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(760px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
     d.innerHTML = qnrDrawerHtml(t); document.body.appendChild(d);
+    if (keepScroll) d.scrollTop = keepScroll;
   }
   function qnrDrawerHtml(t) {
     var cm = qnrCatMeta(t.category || 'autre');
