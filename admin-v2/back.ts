@@ -637,6 +637,7 @@ async function handleClientApi(
     const inst = esp.questionnaires.find((q: AnyObj) => q.id === m![1]);
     if (!inst) return json({ error: 'Questionnaire introuvable' }, 404);
     if ('status' in body && ['assigned', 'in_progress', 'completed', 'to_review'].indexOf(body.status) !== -1) inst.status = body.status;
+    if (body.seenByAdmin === true) inst.seenByAdmin = true; // « consulté » → sort de Priorités
     if ('dueDate' in body) inst.dueDate = (body.dueDate || '').toString().slice(0, 10);
     if (typeof body.estMinutes === 'number') inst.estMinutes = body.estMinutes;
     // Réouvrir pour correction : on repasse en cours et on prévient la cliente
@@ -1244,6 +1245,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const reworkTasks: AnyObj[] = [];
   const commentTasks: AnyObj[] = [];
   const inbox: AnyObj[] = [];
+  const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
   // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
   const wkStart = new Date(); wkStart.setHours(0, 0, 0, 0);
   wkStart.setDate(wkStart.getDate() - ((wkStart.getDay() + 6) % 7));
@@ -1254,6 +1256,12 @@ async function handleDashboard(env: Env): Promise<Response> {
     if (!data) continue;
     const esp = getEspace(data);
     const who = clientName(data);
+    // Questionnaires complétés par la cliente et pas encore consultés côté studio.
+    (Array.isArray(esp.questionnaires) ? esp.questionnaires : []).forEach((q: AnyObj) => {
+      if ((q.status === 'completed' || q.status === 'to_review') && q.seenByAdmin !== true) {
+        qnrDone.push({ key: ci.key, client: who, id: q.id, name: q.name || 'Questionnaire', completedAt: q.completedAt || null });
+      }
+    });
     // livrables : en attente de validation client, ou révision demandée par le client
     const collectLiv = (container: AnyObj | null, label: string, projectId: string) => {
       if (!container || !Array.isArray(container.livrables)) return;
@@ -1383,7 +1391,8 @@ async function handleDashboard(env: Env): Promise<Response> {
   inbox.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
   const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes) });
+  qnrDone.sort((a, b) => String(b.completedAt || '').localeCompare(String(a.completedAt || '')));
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, qnrDone, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes) });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

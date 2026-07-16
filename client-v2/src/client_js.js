@@ -5445,7 +5445,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!list.length) return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:640px;margin:0 auto"><h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:8px">Questionnaires</h1><p style="color:var(--muted)">Aucun questionnaire pour l\'instant. Cindy vous en enverra ici quand elle aura besoin de vos réponses.</p></div></div>';
     var cards = list.map(function(inst){
       var st = CP_QNR_STATUS[inst.status] || CP_QNR_STATUS.assigned;
-      var col = inst.color || '#5e3fa0';
+      var col = '#8267ab'; // lila (DA glycine) pour tous les questionnaires
       var pr = cpQnrProgress(inst);
       var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
       var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
@@ -5549,7 +5549,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function buildQnrFiller(inst) {
-    var col = inst.color || '#5e3fa0';
+    var col = '#8267ab'; // lila (DA glycine) pour tous les questionnaires
     var steps = inst.steps || [];
     var back = '<button onclick="cpQnrClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13.5px;margin-bottom:16px">← Tous les questionnaires</button>';
     var wrap = function(inner){ return '<div class="cp-content" style="padding:32px 52px 90px"><div style="max-width:660px;margin:0 auto">' + back + inner + '</div></div>'; };
