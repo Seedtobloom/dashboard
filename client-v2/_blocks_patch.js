@@ -43,11 +43,17 @@
     var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || !b.rows[r]) return;
     b.rows[r][c] = value; stbSaveSoon(pid, taskId);
   };
+  // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
+  // contenu : plus aucun texte tronqué, quelle que soit la largeur du panneau.
+  window.stbSizeAll = function(){
+    var els = document.querySelectorAll('[id^="stb-blocks-"] textarea');
+    for (var i = 0; i < els.length; i++){ var el = els[i]; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  };
   // Re-render UNIQUEMENT le conteneur des blocs (pas de renderShell global).
   function stbRenderBlocks(pid, taskId){
     var t = cliTaskById(pid, taskId); if (!t) return;
     var c = document.getElementById('stb-blocks-' + taskId);
-    if (c) c.innerHTML = stbBlocksInner(pid, t);
+    if (c) { c.innerHTML = stbBlocksInner(pid, t); setTimeout(window.stbSizeAll, 0); }
   }
   function stbFocus(blockId){
     setTimeout(function(){
@@ -63,7 +69,7 @@
     var rows = 0;
     txt.split('\n').forEach(function(l){ rows += Math.max(1, Math.ceil((l.length || 1) / 55)); });
     rows = Math.max(2, Math.min(rows + 1, 60));
-    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(txt)+'</textarea>';
+    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\';this.style.background=\'#fff\'" onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">'+esc(txt)+'</textarea>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   function stbLineInput(pid, taskId, b, ph, extra){
