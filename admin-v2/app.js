@@ -4186,10 +4186,11 @@
   }
 
   // ── Aperçu (rendu lecture seule tel que la cliente le verra) ──
-  function qnrFieldPreview(b) {
-    if (b.type === 'title') return '<h3 style="margin:16px 0 4px">' + esc(b.label || 'Titre de section') + '</h3>';
-    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0">' + esc(b.label || '') + '</p>';
-    var lab = '<div style="font-weight:600;margin:14px 0 5px">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:6px">' + esc(b.help) + '</div>' : '');
+  function qnrFieldPreview(b, qnum) {
+    if (b.type === 'title') return '<h3 style="margin:22px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(b.label || 'Titre de section') + '</h3>';
+    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0 12px">' + esc(b.label || '') + '</p>';
+    var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
+    var lab = num + '<div style="font-weight:600;font-size:15.5px;line-height:1.35">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px">' + esc(b.help) + '</div>' : '');
     var f = '';
     if (b.type === 'long') f = '<textarea class="inp" disabled style="width:100%;box-sizing:border-box;min-height:70px"></textarea>';
     else if (b.type === 'single' || b.type === 'multi') { f = (b.options || []).map(function (o) { return '<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="' + (b.type === 'single' ? 'radio' : 'checkbox') + '" disabled> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="display:flex;gap:8px;align-items:center;padding:4px 0;color:var(--muted)"><input type="' + (b.type === 'single' ? 'radio' : 'checkbox') + '" disabled> Autre : <span style="font-style:italic">champ libre</span></label>'; }
@@ -4199,7 +4200,8 @@
     else if (b.type === 'slider') f = '<input type="range" disabled min="0" max="' + (b.max || 10) + '" style="width:100%">';
     else if (b.type === 'file') f = '<button class="btn btn--outline btn--sm" disabled>📎 Joindre un fichier</button>';
     else { var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : 'text'))); f = '<input class="inp" disabled type="' + it + '" style="width:100%;box-sizing:border-box" placeholder="' + esc(b.placeholder || '') + '">'; }
-    return lab + f;
+    // Carte crème = énoncé ; réponse à l'intérieur → même hiérarchie que la cliente.
+    return '<div style="background:var(--surface,#F5F2EC);border:1px solid var(--bone-d);border-radius:14px;padding:16px 18px;margin-bottom:14px">' + lab + '<div style="margin-top:14px">' + f + '</div></div>';
   }
   // Aperçu fidèle : on parcourt le questionnaire étape par étape, comme la cliente.
   var QNR_PREV_ID = null, QNR_PREV_STEP = 0, QNR_PREV_COVER = true;
@@ -4251,7 +4253,8 @@
       var whyBlock = isFirst
         ? '<div style="margin-bottom:16px"><button style="background:none;border:none;cursor:pointer;font-size:13px;padding:0;color:' + esc(col) + '" onclick="ADM.qnrPreviewCover()">↖ Revoir l\'introduction</button></div>'
         : '';
-      var fields = (s.blocks || []).map(qnrFieldPreview).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
+      var _pqn = 0;
+      var fields = (s.blocks || []).map(function (b) { var n = qnrIsStatic(b.type) ? 0 : (++_pqn); return qnrFieldPreview(b, n); }).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
       var nav = '<div style="display:flex;gap:10px;margin-top:18px">' +
         (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
         (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
