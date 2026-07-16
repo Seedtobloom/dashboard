@@ -5347,20 +5347,26 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (b.type === 'long' || b.type === 'address') {
       input = '<textarea data-qid="' + b.id + '" rows="' + (b.type === 'address' ? 3 : 4) + '" style="' + box + ';resize:vertical" placeholder="' + esc(b.placeholder || '') + '">' + esc(typeof ans === 'string' ? ans : '') + '</textarea>';
     } else if (b.type === 'single' || b.type === 'dropdown') {
+      // Valeur « Autre » = réponse enregistrée hors options.
+      var otherVal = (typeof ans === 'string' && ans && opts.indexOf(ans) === -1) ? ans : '';
+      var otherField = b.allowOther ? '<input type="text" data-other="' + b.id + '" value="' + esc(otherVal) + '" placeholder="Précise ta réponse…" oninput="cpQnrPickOther(this)" style="' + box + ';margin-top:2px">' : '';
       if (b.type === 'dropdown') {
-        input = '<select data-qid="' + b.id + '" style="' + box + '"><option value="">— choisir —</option>' + opts.map(function(o){ return '<option' + (ans === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+        var selOther = b.allowOther && otherVal ? ' selected' : '';
+        input = '<select data-qid="' + b.id + '" data-hasother="' + (b.allowOther ? '1' : '') + '" onchange="cpQnrDropOther(this)" style="' + box + '"><option value="">— choisir —</option>' + opts.map(function(o){ return '<option' + (ans === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option value="__other__"' + selOther + '>Autre…</option>' : '') + '</select>' + (b.allowOther ? '<div data-otherwrap="' + b.id + '" style="margin-top:8px' + (otherVal ? '' : ';display:none') + '">' + otherField + '</div>' : '');
       } else {
         input = '<div data-qgroup="' + b.id + '" data-qtype="single">' + opts.map(function(o){
           var on = ans === o;
           return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;background:' + (on ? 'rgba(28,18,5,0.03)' : '#fff') + '"><input type="radio" name="cpqn_' + b.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
-        }).join('') + '</div>';
+        }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherVal ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px"><input type="radio" name="cpqn_' + b.id + '" value="__other__" data-otheropt' + (otherVal ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherField : '') + '</div>';
       }
     } else if (b.type === 'multi') {
       var arr = Array.isArray(ans) ? ans : [];
+      var otherM = arr.filter(function(v){ return opts.indexOf(v) === -1; })[0] || '';
+      var otherFieldM = b.allowOther ? '<input type="text" data-other="' + b.id + '" value="' + esc(otherM) + '" placeholder="Précise ta réponse…" oninput="cpQnrPickOther(this)" style="' + box + ';margin-top:2px">' : '';
       input = '<div data-qgroup="' + b.id + '" data-qtype="multi">' + opts.map(function(o){
         var on = arr.indexOf(o) !== -1;
         return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;background:' + (on ? 'rgba(28,18,5,0.03)' : '#fff') + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
-      }).join('') + '</div>';
+      }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherM ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px"><input type="checkbox" value="__other__" data-otheropt' + (otherM ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherFieldM : '') + '</div>';
     } else if (b.type === 'ranking') {
       var ro = (ans && typeof ans === 'object' && !Array.isArray(ans)) ? ans : {};
       input = '<div data-qgroup="' + b.id + '" data-qtype="ranking">' + opts.map(function(o){
@@ -5462,13 +5468,23 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var id = el.getAttribute('data-qid');
       var v = el.value;
       if (el.type === 'range') { cpQnrAnswers[id] = parseInt(v, 10) || 0; }
+      else if (el.tagName === 'SELECT' && v === '__other__') {
+        var wrap = root.querySelector('[data-otherwrap="' + id + '"]');
+        var ot = wrap ? wrap.querySelector('[data-other]') : null;
+        cpQnrAnswers[id] = ot ? ot.value.trim() : '';
+      }
       else cpQnrAnswers[id] = v;
     });
     root.querySelectorAll('[data-qgroup]').forEach(function(g){
       var id = g.getAttribute('data-qgroup'); var type = g.getAttribute('data-qtype');
+      var otherInp = g.querySelector('[data-other]');
+      var otherTxt = otherInp ? otherInp.value.trim() : '';
       if (type === 'multi') {
         var arr = [];
-        g.querySelectorAll('input[type=checkbox]:checked').forEach(function(c){ arr.push(c.value); });
+        g.querySelectorAll('input[type=checkbox]:checked').forEach(function(c){
+          if (c.value === '__other__') { if (otherTxt) arr.push(otherTxt); }
+          else arr.push(c.value);
+        });
         cpQnrAnswers[id] = arr;
       } else if (type === 'ranking') {
         var rank = {};
@@ -5479,10 +5495,23 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         cpQnrAnswers[id] = r ? (parseInt(r.value, 10) || 0) : 0;
       } else {
         var r2 = g.querySelector('input[type=radio]:checked');
-        cpQnrAnswers[id] = r2 ? r2.value : '';
+        if (r2 && r2.value === '__other__') cpQnrAnswers[id] = otherTxt;
+        else cpQnrAnswers[id] = r2 ? r2.value : '';
       }
     });
   }
+  // Sélectionne l'option « Autre » quand la cliente écrit dans le champ libre.
+  window.cpQnrPickOther = function(inp) {
+    var g = inp.closest('[data-qgroup]');
+    if (g) { var o = g.querySelector('[data-otheropt]'); if (o) o.checked = true; return; }
+    var wrap = inp.closest('[data-otherwrap]');
+    if (wrap) { var sid = wrap.getAttribute('data-otherwrap'); var sel = document.querySelector('select[data-qid="' + sid + '"]'); if (sel) sel.value = '__other__'; }
+  };
+  window.cpQnrDropOther = function(sel) {
+    var id = sel.getAttribute('data-qid');
+    var wrap = document.querySelector('[data-otherwrap="' + id + '"]');
+    if (wrap) wrap.style.display = sel.value === '__other__' ? '' : 'none';
+  };
   function cpQnrSaveAnswers(submit, cb) {
     if (!API_BASE || !cpQnrOpenId) return;
     fetch(API_BASE + '/questionnaires/' + cpQnrOpenId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ answers: cpQnrAnswers, submit: !!submit }) })
