@@ -2728,6 +2728,9 @@
     CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
     tabs.push(['journal', 'Journal', 0, true]);
     tabs.push(['documents', 'Documents', 0, true]);
+    // Questionnaires envoyés à cette cliente + leurs réponses. Badge = nb complétés.
+    var qnrDone = (CUR.questionnaires || []).filter(function (q) { return q.status === 'completed' || q.status === 'to_review'; }).length;
+    tabs.push(['qnranswers', 'Questionnaires', qnrDone, true]);
     // Le bilan ne concerne que la fin de collaboration : la section reste grisée
     // (mais accessible) tant que l'invitation au bilan n'a pas été demandée.
     var _partnerB = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
@@ -2830,6 +2833,7 @@
     if (TAB === 'infos') return body.innerHTML = tabInfos();
     if (TAB === 'journal') return body.innerHTML = journalTab();
     if (TAB === 'documents') return renderDocuments(body);
+    if (TAB === 'qnranswers') return body.innerHTML = qnrAnswersTab();
     if (TAB === 'bilanavis') return body.innerHTML = bilanAvisTab();
     var d = findDomain(TAB);
     if (!d) { body.innerHTML = '<div class="empty">·</div>'; return; }
@@ -3600,6 +3604,47 @@
   }
   /* bilan de fin de collaboration + suivi des bénéfices */
   function bilanStars(n) { var h = ''; for (var i = 1; i <= 5; i++) { h += '<span style="font-size:20px;color:' + ((n >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((n >= i) ? '★' : '☆') + '</span>'; } return h; }
+  // ── Réponses aux questionnaires envoyés à cette cliente (lecture) ──
+  function qnrFmtAnswer(a) {
+    if (a == null || a === '') return '—';
+    if (Array.isArray(a)) return a.length ? a.join(', ') : '—';
+    if (typeof a === 'object') {
+      var keys = Object.keys(a); if (!keys.length) return '—';
+      return keys.map(function (k) { return k + ' : ' + a[k]; })
+        .sort(function (x, y) { return (parseInt(x.split(' : ')[1], 10) || 99) - (parseInt(y.split(' : ')[1], 10) || 99); })
+        .join(' · ');
+    }
+    return String(a);
+  }
+  function qnrAnswersBody(inst) {
+    var ans = inst.answers || {};
+    var rows = (inst.steps || []).map(function (s) {
+      var blocks = (s.blocks || []).filter(function (b) { return b.type !== 'title' && b.type !== 'paragraph'; });
+      if (!blocks.length) return '';
+      var qs = blocks.map(function (b) {
+        var disp = qnrFmtAnswer(ans[b.id]);
+        return '<div style="margin-bottom:12px"><div style="font-weight:600;font-size:13.5px;color:var(--terre)">' + esc(b.label || '') + '</div>' +
+          '<div style="font-size:14px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+      }).join('');
+      return '<div style="margin-top:16px"><div class="micro" style="text-transform:none;letter-spacing:0.04em;color:var(--muted);margin-bottom:8px;font-weight:700">' + esc(s.title || '') + '</div>' + qs + '</div>';
+    }).join('');
+    return rows || '<div class="empty">Ce questionnaire ne contient pas de question.</div>';
+  }
+  function qnrAnswersTab() {
+    var list = CUR.questionnaires || [];
+    if (!list.length) return '<div class="card infocard" style="background:var(--card)"><h3>Questionnaires</h3><div class="empty">Aucun questionnaire envoyé à cette cliente. Envoie-en un depuis « Questionnaires » (menu de gauche).</div></div>';
+    var stMeta = { assigned: ['À remplir', '#8a6f2e', '#fbf0d8'], in_progress: ['En cours', '#35608f', '#e3edfb'], to_review: ['À revoir', '#8a6f2e', '#fbf0d8'], completed: ['Complété ✓', '#3f6b3a', '#e7f0e3'] };
+    return list.map(function (inst) {
+      var sm = stMeta[inst.status] || stMeta.assigned;
+      var when = inst.completedAt ? ' · le ' + fmtDate(inst.completedAt) : '';
+      var hasAns = inst.status === 'completed' || inst.status === 'to_review' || (inst.answers && Object.keys(inst.answers).length);
+      var body = hasAns ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses — la cliente ne l\'a pas encore rempli.</div>';
+      return '<div class="card infocard" style="background:var(--card);max-width:760px">' +
+        '<div class="between" style="align-items:flex-start"><h3 style="margin:0">' + esc(inst.name || 'Questionnaire') + '</h3>' +
+        '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + when + '</span></div>' +
+        body + '</div>';
+    }).join('');
+  }
   function bilanAvisTab() {
     var partner = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
     var bil = partner ? bilanCard(partner) : '<div class="card" style="max-width:680px"><h3>Bilan de collaboration</h3><div class="micro">Le bilan concerne l\'accompagnement Partenaire créative, qui n\'est pas activé pour ce client.</div></div>';

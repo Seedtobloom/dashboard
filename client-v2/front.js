@@ -5889,8 +5889,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
       var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
       return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:none;background:#fff;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:0 2px 14px rgba(28,18,5,0.09);margin-bottom:16px;display:block">' +
-        '<div style="height:7px;background:' + esc(col) + '"></div>' +
-        '<div style="padding:18px 22px">' +
+        '<div style="padding:20px 22px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
               '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--nuit);line-height:1.2">' + esc(inst.name || 'Questionnaire') + '</div>' +
@@ -6000,8 +5999,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var due = inst.dueDate ? '<div style="font-size:13.5px;color:var(--muted);margin-top:14px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
       var desc = (inst.description || '').trim();
       return wrap(
-        '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:26px"></div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:10px">Questionnaire</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
         (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a)">Prends un moment pour y répondre, tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
@@ -6031,7 +6029,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           qs +
         '</div>';
       }).join('');
-      var header = '<div style="height:7px;background:' + esc(col) + ';border-radius:999px;margin-bottom:18px"></div>' +
+      var header = '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:8px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
       if (isDone) {
         return wrap(header +
@@ -6248,7 +6246,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (cpQnrStepInvalid(i)) { cpQnrReview = false; cpQnrStep = i; renderShell({ resetScroll: true }); toast('Il reste des questions obligatoires (*) à l\'étape ' + (i + 1) + '.'); return; }
     }
     cpQnrSaveAnswers(true, function(d){
-      renderShell({ resetScroll: true });
+      // full: true → la barre latérale se reconstruit, la bulle « Questionnaires » disparaît.
+      renderShell({ resetScroll: true, full: true });
       if (d) { cpCelebrate('Merci !', 'Tes réponses ont bien été envoyées à Cindy.'); }
       else { toast('Envoi impossible, réessayez.'); }
     });
