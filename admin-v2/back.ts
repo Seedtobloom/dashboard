@@ -1222,6 +1222,11 @@ async function handleDashboard(env: Env): Promise<Response> {
   const reworkTasks: AnyObj[] = [];
   const commentTasks: AnyObj[] = [];
   const inbox: AnyObj[] = [];
+  // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
+  const wkStart = new Date(); wkStart.setHours(0, 0, 0, 0);
+  wkStart.setDate(wkStart.getDate() - ((wkStart.getDay() + 6) % 7));
+  const wkStartMs = wkStart.getTime();
+  let weekTimeMinutes = 0;
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
@@ -1277,6 +1282,11 @@ async function handleDashboard(env: Env): Promise<Response> {
       const doneWithTime = pcTaches.filter((t: AnyObj) => t.status === 'done' && (t.timeSpentMinutes || 0) > 0);
       const avgMinutes = doneWithTime.length ? Math.round(doneWithTime.reduce((s: number, t: AnyObj) => s + (t.timeSpentMinutes || 0), 0) / doneWithTime.length) : 0;
       (pc.taches || []).forEach((t: AnyObj) => {
+        (t.sessions || []).forEach((s: AnyObj) => {
+          const st = s && s.start ? Date.parse(s.start) : NaN;
+          const en = s && s.end ? Date.parse(s.end) : NaN;
+          if (!isNaN(st) && !isNaN(en) && st >= wkStartMs && en > st) weekTimeMinutes += Math.min((en - st) / 60000, 24 * 60);
+        });
         // Demande en attente d'analyse : elle vit dans la boîte de réception, pas
         // dans le flux des tâches, tant que le studio ne l'a pas triée.
         if (t.stage === 'inbox' && !t.archived) {
@@ -1351,7 +1361,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   inbox.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
   const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, clientCount: idx.length, weeklyCapacity });
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes) });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
