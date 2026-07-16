@@ -184,6 +184,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cpQnrOpenId = null;   // id de l'instance ouverte dans le remplisseur
   var cpQnrStep = 0;        // étape courante du remplisseur
   var cpQnrReview = false;  // écran de vérification avant envoi
+  var cpQnrCover = false;   // page de couverture (intro) à l'ouverture
   var cpQnrAnswers = {};    // réponses en cours (copie locale, autosave)
   var cpQnrSaveTimer = null;
   var convoId = null; // projet sélectionné dans la messagerie
@@ -5458,6 +5459,24 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var back = '<button onclick="cpQnrClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13.5px;margin-bottom:16px">← Tous les questionnaires</button>';
     var wrap = function(inner){ return '<div class="cp-content" style="padding:32px 52px 90px"><div style="max-width:660px;margin:0 auto">' + back + inner + '</div></div>'; };
 
+    // Page de couverture : le mot d'intro de Cindy, avant de commencer.
+    if (cpQnrCover && !cpQnrReview && inst.status !== 'completed') {
+      var nQ = cpQnrRealBlocks(inst).length;
+      var nS = steps.length;
+      var due = inst.dueDate ? '<div style="font-size:13.5px;color:var(--muted);margin-top:14px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
+      var desc = (inst.description || '').trim();
+      return wrap(
+        '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:26px"></div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:10px">Questionnaire</div>' +
+        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
+        (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
+          '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
+        '</div>' + due +
+        '<button onclick="cpQnrStart()" style="margin-top:32px;padding:15px 34px;border-radius:14px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16px;font-weight:600;box-shadow:0 6px 20px -6px ' + hexToRgba(col, 0.5) + '">' + (cpQnrProgress(inst).done > 0 ? 'Reprendre' : 'Commencer') + ' →</button>'
+      );
+    }
+
     // Écran de vérification / résumé (aussi utilisé pour les questionnaires complétés)
     if (cpQnrReview || inst.status === 'completed') {
       var isDone = inst.status === 'completed';
@@ -5512,11 +5531,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
     '</div>';
     // « Pourquoi ce questionnaire ? » (idée 9) — rassure sur la 1re étape.
-    var whyTxt = (inst.description || '').trim() || 'Tes réponses aident Cindy à bien comprendre ton projet avant de se lancer. Tu gagnes du temps, et le résultat sera beaucoup plus juste.';
-    var why = cpQnrStep === 0 ? '<div style="background:' + hexToRgba(col, 0.08) + ';border:1px solid ' + hexToRgba(col, 0.22) + ';border-radius:12px;padding:14px 16px;margin-bottom:20px">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:5px">Pourquoi ce questionnaire ?</div>' +
-      '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);line-height:1.55;white-space:pre-wrap">' + esc(whyTxt) + '</div>' +
-    '</div>' : '';
+    // Le « pourquoi » vit désormais sur la page de couverture ; on met juste un
+    // rappel discret pour revoir l'intro depuis la 1re étape.
+    var why = cpQnrStep === 0 ? '<div style="margin-bottom:16px"><button onclick="cpQnrShowCover()" style="background:none;border:none;color:' + esc(col) + ';cursor:pointer;font-size:13px;padding:0">↖ Revoir l\'introduction</button></div>' : '';
     return wrap(progress + why +
       '<div id="cp-qnr-step" oninput="cpQnrTouch()" onchange="cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
       nav +
@@ -5600,12 +5617,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     cpQnrOpenId = id; cpQnrStep = 0; cpQnrReview = false;
     var inst = cpQnrInstance();
     cpQnrAnswers = inst ? JSON.parse(JSON.stringify(inst.answers || {})) : {};
+    // Page de couverture au démarrage (sauf si déjà complété → résumé direct).
+    cpQnrCover = !!(inst && inst.status !== 'completed');
     currentView = 'questionnaires'; renderShell({ resetScroll: true });
   };
+  window.cpQnrStart = function(){ cpQnrCover = false; renderShell({ resetScroll: true }); };
+  window.cpQnrShowCover = function(){ cpQnrCollectStep(); cpQnrSaveAnswers(false); cpQnrCover = true; cpQnrReview = false; renderShell({ resetScroll: true }); };
   window.cpQnrClose = function(){ if (cpQnrSaveTimer) { clearTimeout(cpQnrSaveTimer); } cpQnrCollectStep(); cpQnrSaveAnswers(false); cpQnrOpenId = null; cpQnrReview = false; renderShell({ resetScroll: true }); };
   window.cpQnrNext = function(){
     cpQnrCollectStep();
-    if (cpQnrStepInvalid(cpQnrStep)) { toast('Merci de répondre aux questions obligatoires (*) avant de continuer.'); return; }
     cpQnrSaveAnswers(false);
     var inst = cpQnrInstance(); var n = inst ? (inst.steps || []).length : 0;
     if (cpQnrStep >= n - 1) { cpQnrReview = true; } else { cpQnrStep++; }
