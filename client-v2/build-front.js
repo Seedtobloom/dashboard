@@ -155,7 +155,7 @@ js = js.replace("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:ce
 must(js.indexOf("var summaryBar = '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'") !== -1, 'summaryBar');
 js = js.replace(
   "var summaryBar = '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'",
-  "var summaryBar = '<button class=\"cp-fab\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\" aria-label=\"Nouvelle tâche\">'+cpIcon('plus',20)+'<span>Nouvelle tâche</span></button>' + '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'"
+  "var summaryBar = '<button class=\"cp-fab\" onclick=\"cliNewDemande(\\''+pid+'\\')\" aria-label=\"Nouvelle demande\">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>' + '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'"
 );
 
 // ── Édition d'une tâche : drawer en OVERLAY glissant (le calendrier garde toute sa largeur) ──

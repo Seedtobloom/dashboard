@@ -899,6 +899,9 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     // Une demande cliente arrive dans la boîte de réception du studio (« en
     // attente d'analyse ») ; elle ne devient une vraie tâche qu'une fois acceptée.
     stage: 'inbox',
+    // 'small' = petite demande incluse au forfait ; 'project' = nouveau projet
+    // (hors forfait, nécessite un devis) — la cliente l'a indiqué à la création.
+    demandeType: body.demandeType === 'project' ? 'project' : 'small',
     briefStatus: body.briefStatus,
     dueDate: body.dueDate,
     startDate: body.startDate,

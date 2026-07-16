@@ -718,13 +718,15 @@
     if (!INBOX.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card)"><div class="empty">Aucune demande à analyser. Les nouvelles demandes de tes clientes arriveront ici.</div></div>'; return; }
     var cards = INBOX.map(function (x) {
       var urg = x.urgency === 'haute' || x.urgency === 'urgent';
+      var isProject = x.demandeType === 'project';
+      var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
       var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
       var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
       var atts = (x.attachments || []).map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
       var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
       return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:14px;border:1px solid var(--bone-d)' + (urg ? ';border-left:3px solid #a23c28' : '') + '">' +
         '<div class="between" style="align-items:flex-start;gap:12px">' +
-          '<div style="min-width:0"><div style="font-size:16.5px;font-weight:650;color:var(--terre)">' + esc(x.title) + (urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + '</div>' +
+          '<div style="min-width:0"><div style="font-size:16.5px;font-weight:650;color:var(--terre)">' + esc(x.title) + (urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + projBadge + '</div>' +
             '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a>' + (x.createdAt ? ' · reçue le ' + fmtDate(x.createdAt) : '') + '</div>' +
           '</div>' +
           '<div class="micro" style="text-align:right;flex-shrink:0;color:' + forfaitCol + ';font-weight:600">' + esc(forfaitTxt) + '</div>' +
