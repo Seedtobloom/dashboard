@@ -614,7 +614,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var cpQnrCover = false;   // page de couverture (intro) à l'ouverture
   var cpQnrAnswers = {};    // réponses en cours (copie locale, autosave)
   var cpQnrSaveTimer = null;
-  var cpRankDragEl = null;  // élément en cours de glisser (classement)
+  var cpRankDrag = null;  // { row, group } en cours de glisser (classement)
   var convoId = null; // projet sélectionné dans la messagerie
   var cpStepsViewMode = (function(){ try{ return localStorage.getItem('cp-steps-view')||'list'; }catch(e){ return 'list'; } })();
   var cpStepsStatusFilter = 'all';
@@ -5944,16 +5944,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var order = opts.slice();
       if (Object.keys(ro).length) order.sort(function(a, x){ return (ro[a] != null ? ro[a] : 999) - (ro[x] != null ? ro[x] : 999); });
       input = '<div data-qgroup="' + b.id + '" data-qtype="ranking" data-rankgroup="' + b.id + '">' + order.map(function(o, i){
-        return '<div data-rankitem draggable="true" data-opt="' + esc(o) + '" ondragstart="cpRankDragStart(event,this)" ondragover="cpRankDragOver(event,this)" ondrop="cpRankDrop(event,this)" ondragend="cpRankDragEnd(event,this)" style="display:flex;align-items:center;gap:12px;padding:11px 13px;border:1.5px solid ' + bd + ';border-radius:12px;margin-bottom:8px;background:#fff;cursor:grab;' + wellShadow + '">' +
+        return '<div data-rankitem data-opt="' + esc(o) + '" onpointerdown="cpRankPointerDown(event,this)" style="display:flex;align-items:center;gap:12px;padding:11px 13px;border:1.5px solid ' + bd + ';border-radius:12px;margin-bottom:8px;background:#fff;user-select:none;' + wellShadow + '">' +
           '<span data-rankn style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--nuit);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;font-family:var(--font-micro)">' + (i + 1) + '</span>' +
           '<span style="flex:1;font-size:15px;color:var(--nuit)">' + esc(o) + '</span>' +
           '<span style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">' +
             '<button type="button" onclick="cpRankMove(this,-1)" aria-label="Monter" style="width:26px;height:20px;display:flex;align-items:center;justify-content:center;border:1px solid ' + bd + ';border-radius:6px;background:#fff;color:var(--nuit);cursor:pointer;padding:0;line-height:1">▲</button>' +
             '<button type="button" onclick="cpRankMove(this,1)" aria-label="Descendre" style="width:26px;height:20px;display:flex;align-items:center;justify-content:center;border:1px solid ' + bd + ';border-radius:6px;background:#fff;color:var(--nuit);cursor:pointer;padding:0;line-height:1">▼</button>' +
           '</span>' +
-          '<span style="flex-shrink:0;color:var(--muted);font-size:16px;cursor:grab" title="Glisser pour classer">⠿</span>' +
+          '<span data-rankhandle style="flex-shrink:0;color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px;line-height:1" title="Glisser pour classer">⠿</span>' +
         '</div>';
-      }).join('') + '<div style="font-size:13px;color:var(--muted);margin-top:6px">Glisse les éléments (ou ▲▼) pour les classer, 1 = ta priorité.</div></div>';
+      }).join('') + '<div style="font-size:13px;color:var(--muted);margin-top:6px">Glisse (poignée ⠿) ou utilise ▲▼ pour classer, 1 = ta priorité.</div></div>';
     } else if (b.type === 'rating') {
       var mx = b.max || 5; var cur = typeof ans === 'number' ? ans : parseInt(ans, 10) || 0;
       var stars = '';
@@ -6118,24 +6118,44 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else { var next = item.nextElementSibling; if (next && next.hasAttribute('data-rankitem')) group.insertBefore(next, item); }
     cpRankRenumber(group);
   };
-  window.cpRankDragStart = function(e, el) {
-    cpRankDragEl = el; el.style.opacity = '0.45';
-    if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', ''); } catch (err) {} }
-  };
-  window.cpRankDragOver = function(e, el) {
+  // Glisser fiable (souris + tactile) via pointer events. Sur tactile, on ne
+  // démarre que depuis la poignée ⠿ pour laisser le défilement fonctionner.
+  function cpRankPointerMove(e) {
+    if (!cpRankDrag) return;
     e.preventDefault();
-    if (!cpRankDragEl || cpRankDragEl === el || !el.hasAttribute('data-rankitem')) return;
-    var group = el.closest('[data-rankgroup]'); if (!group || !group.contains(cpRankDragEl)) return;
-    var r = el.getBoundingClientRect();
-    var after = e.clientY > r.top + r.height / 2;
-    group.insertBefore(cpRankDragEl, after ? el.nextElementSibling : el);
-  };
-  window.cpRankDrop = function(e, el) { e.preventDefault(); };
-  window.cpRankDragEnd = function(e, el) {
-    if (cpRankDragEl) cpRankDragEl.style.opacity = '';
-    var group = el.closest('[data-rankgroup]');
-    cpRankDragEl = null;
-    cpRankRenumber(group);
+    var group = cpRankDrag.group, dragEl = cpRankDrag.row;
+    var items = group.querySelectorAll('[data-rankitem]');
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i]; if (it === dragEl) continue;
+      var r = it.getBoundingClientRect();
+      if (e.clientY >= r.top && e.clientY <= r.bottom) {
+        var after = e.clientY > r.top + r.height / 2;
+        group.insertBefore(dragEl, after ? it.nextElementSibling : it);
+        break;
+      }
+    }
+  }
+  function cpRankPointerUp() {
+    document.removeEventListener('pointermove', cpRankPointerMove);
+    document.removeEventListener('pointerup', cpRankPointerUp);
+    document.removeEventListener('pointercancel', cpRankPointerUp);
+    if (!cpRankDrag) return;
+    var g = cpRankDrag.group;
+    cpRankDrag.row.style.opacity = ''; cpRankDrag.row.style.cursor = '';
+    cpRankDrag = null;
+    cpRankRenumber(g);
+  }
+  window.cpRankPointerDown = function(e, row) {
+    if (e.target && e.target.closest && e.target.closest('button')) return; // laisse les flèches cliquer
+    var isTouch = e.pointerType === 'touch';
+    if (isTouch && !(e.target && e.target.closest && e.target.closest('[data-rankhandle]'))) return;
+    var group = row.closest('[data-rankgroup]'); if (!group) return;
+    e.preventDefault();
+    cpRankDrag = { row: row, group: group };
+    row.style.opacity = '0.55'; row.style.cursor = 'grabbing';
+    document.addEventListener('pointermove', cpRankPointerMove, { passive: false });
+    document.addEventListener('pointerup', cpRankPointerUp);
+    document.addEventListener('pointercancel', cpRankPointerUp);
   };
   // Sélectionne l'option « Autre » quand la cliente écrit dans le champ libre.
   window.cpQnrPickOther = function(inp) {
