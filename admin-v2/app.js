@@ -26,6 +26,7 @@
     video: 'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
     visios: 'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
     questionnaires: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9M8 7h6M8 11h3',
+    inbox: 'M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
     reglages: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
@@ -166,11 +167,11 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
+      ['Mon travail', [['inbox', 'Boîte de réception'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
-      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
+      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks' || it[0] === 'inbox') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }
     // Accès direct : chaque client a son entrée, dépliable en sous-sections.
@@ -211,8 +212,8 @@
       return '<div class="navgroup__label"' + (mt ? ' style="margin-top:14px"' : '') + '>' + g[0] + '</div>' + g[1].map(navItemHtml).join('');
     }
   }
-  var BADGE_CACHE = { chat: '', clients: '', priorities: '', mytasks: '' };
-  function paintBadges() { ['chat', 'clients', 'priorities', 'mytasks'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = BADGE_CACHE[k] || ''; }); }
+  var BADGE_CACHE = { chat: '', clients: '', priorities: '', mytasks: '', inbox: '' };
+  function paintBadges() { ['chat', 'clients', 'priorities', 'mytasks', 'inbox'].forEach(function (k) { var b = el('nav-unread-' + k); if (b) b.innerHTML = BADGE_CACHE[k] || ''; }); }
   function renderNav() { var n = el('side-nav'); if (n) { n.innerHTML = buildNavHtml(); paintBadges(); } }
   function navToggleClient(key) {
     var isCur = VIEW === 'client' && CURKEY === key;
@@ -377,6 +378,9 @@
       NEW_TASKS = d.newTasks || [];
       REWORK_TASKS = d.reworkTasks || [];
       COMMENT_TASKS = d.commentTasks || [];
+      var nInbox = (d.inbox || []).length;
+      BADGE_CACHE.inbox = nInbox > 0 ? badgeAlert(nInbox) : '';
+      var bi = el('nav-unread-inbox'); if (bi) bi.innerHTML = BADGE_CACHE.inbox;
       paintNotif();
       refreshTabTitle();
     }).catch(function () {});
@@ -394,6 +398,7 @@
   function renderMain() {
     if (VIEW !== 'visios') { var vd = el('vis-drawer'); if (vd) vd.remove(); var vb = el('vis-drawer-bk'); if (vb) vb.remove(); VIS_SEL = null; }
     if (VIEW !== 'questionnaires') { var qd = el('qnr-drawer'); if (qd) qd.remove(); var qb = el('qnr-drawer-bk'); if (qb) qb.remove(); QNR_SEL = null; }
+    if (VIEW === 'inbox') return renderInbox();
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'mytasks') return renderMyTasks();
@@ -701,6 +706,62 @@
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
+  /* ── Boîte de réception : les demandes des clientes à trier ── */
+  var INBOX = [];
+  function renderInbox() {
+    setMain(topbar('Boîte de réception', '', 'Les demandes de tes clientes à analyser avant d\'en faire des tâches') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { INBOX = d.inbox || []; renderInboxBody(); }).catch(showError);
+  }
+  function fmtMin(m) { m = Math.round(m || 0); if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + r : ''); }
+  function renderInboxBody() {
+    var b = el('inbox-body'); if (!b) return;
+    if (!INBOX.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card)"><div class="empty">Aucune demande à analyser. Les nouvelles demandes de tes clientes arriveront ici.</div></div>'; return; }
+    var cards = INBOX.map(function (x) {
+      var urg = x.urgency === 'haute' || x.urgency === 'urgent';
+      var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
+      var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
+      var atts = (x.attachments || []).map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
+      var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
+      return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:14px;border:1px solid var(--bone-d)' + (urg ? ';border-left:3px solid #a23c28' : '') + '">' +
+        '<div class="between" style="align-items:flex-start;gap:12px">' +
+          '<div style="min-width:0"><div style="font-size:16.5px;font-weight:650;color:var(--terre)">' + esc(x.title) + (urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + '</div>' +
+            '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a>' + (x.createdAt ? ' · reçue le ' + fmtDate(x.createdAt) : '') + '</div>' +
+          '</div>' +
+          '<div class="micro" style="text-align:right;flex-shrink:0;color:' + forfaitCol + ';font-weight:600">' + esc(forfaitTxt) + '</div>' +
+        '</div>' +
+        (x.content ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + esc(x.content) + '</div>' : '') +
+        '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:11px;color:var(--muted)">' +
+          (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
+          '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
+          (x.avgMinutes ? '<span>⏱ Temps moyen : ' + fmtMin(x.avgMinutes) + '</span>' : '') +
+        '</div>' +
+        ((atts || link) ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">' + atts + link + '</div>' : '') +
+        '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:14px;border-top:1px solid var(--bone-d);padding-top:12px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
+          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#c44" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
+          '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    b.innerHTML = '<div style="max-width:720px">' + cards + '</div>';
+  }
+  function inboxTriage(key, id, action) {
+    var labels = { accept: 'Accepter cette demande et en faire une tâche planifiée ?', hors_forfait: 'Marquer comme hors forfait (la cliente sera prévenue que ça nécessite un devis) ?', refuse: 'Refuser et archiver cette demande ?' };
+    var doIt = function (notify) {
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', triage: action, notify: notify }, 'PATCH').then(function (r) {
+        if (r.ok) {
+          INBOX = INBOX.filter(function (x) { return !(x.key === key && x.id === id); });
+          renderInboxBody();
+          var bi = el('nav-unread-inbox'); BADGE_CACHE.inbox = INBOX.length ? badgeAlert(INBOX.length) : ''; if (bi) bi.innerHTML = BADGE_CACHE.inbox;
+          toast(action === 'accept' ? 'Demande acceptée → tâche' : (action === 'hors_forfait' ? 'Marquée hors forfait' : 'Demande refusée'));
+        } else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    };
+    if (action === 'refuse') { doIt(false); return; }
+    notifyConfirm(labels[action], function (notify) { doIt(notify); });
+  }
+
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
@@ -3032,9 +3093,14 @@
       list + histBlock;
   }
   function partnerTasks(d) {
-    var all = Array.isArray(d.content.taches) ? d.content.taches : [];
+    var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
+    // Les demandes en attente d'analyse vivent dans la Boîte de réception,
+    // pas dans le tableau des tâches.
+    var inboxN = raw.filter(function (t) { return t.stage === 'inbox' && !t.archived; }).length;
+    var all = raw.filter(function (t) { return t.stage !== 'inbox'; });
     var active = all.filter(function (t) { return !t.archived; });
     var archived = all.filter(function (t) { return t.archived; });
+    var inboxBanner = inboxN ? '<div class="card" style="background:#fbf5e6;border-color:#f0e2b0;max-width:760px;margin-bottom:14px"><div class="between"><span class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;font-weight:600">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</span><button class="btn btn--outline btn--sm" onclick="ADM.nav(\'inbox\')">Ouvrir la boîte de réception</button></div></div>' : '';
     function ptCard(t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
@@ -3171,7 +3237,7 @@
     }
     var grid = active.length ? '<div style="display:flex;flex-direction:column;gap:16px;max-width:760px">' + active.map(ptCard).join('') + '</div>' : '<div class="empty">Aucune tâche (le client les crée depuis son espace).</div>';
     var archHtml = archived.length ? '<details style="margin-top:18px"><summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:6px 0">Tâches archivées · ' + archived.length + '</summary><div style="display:flex;flex-direction:column;gap:16px;max-width:760px;margin-top:12px">' + archived.map(ptCard).join('') + '</div></details>' : '';
-    return grid + archHtml;
+    return inboxBanner + grid + archHtml;
   }
   // Décode la propriété composite p_elements du client (« Lien & fichiers »).
   function ptBriefElements(t) {
@@ -4027,7 +4093,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, capSave: capSave, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

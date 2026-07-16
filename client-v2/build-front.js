@@ -146,8 +146,8 @@ css = css.replace(
   ".cp-btn--dark { background: var(--nuit); color: var(--brume); }\n.cp-fab{position:fixed;right:32px;bottom:32px;z-index:60;display:inline-flex;align-items:center;gap:10px;padding:15px 24px;border:none;border-radius:999px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 14px 34px -10px rgba(28,18,5,0.55);transition:transform .18s var(--ease),box-shadow .18s var(--ease)}\n.cp-fab:hover{transform:translateY(-3px);box-shadow:0 20px 42px -12px rgba(28,18,5,0.6)}\n.cp-fab svg{stroke-width:2.4}\n@media(max-width:768px){.cp-fab{right:18px;bottom:18px;padding:0;width:58px;height:58px;justify-content:center}.cp-fab span{display:none}}"
 );
 // retire le bouton de la barre d'onglets…
-must(js.indexOf("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle tâche</button>' +") !== -1, 'btn nouvelle tache');
-js = js.replace("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle tâche</button>' +", "'' +");
+must(js.indexOf("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle demande</button>' +") !== -1, 'btn nouvelle tache');
+js = js.replace("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask(\\''+pid+'\\',\\'\\')\">+ Nouvelle demande</button>' +", "'' +");
 // …les onglets s'alignent à gauche (plus de space-between)
 must(js.indexOf("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">") !== -1, 'tabs justify');
 js = js.replace("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">", "<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px\">");
