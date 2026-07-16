@@ -3252,6 +3252,39 @@
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait» et note le temps passé. Elle est prévenue à chaque changement.</div></div>' +
       list + histBlock;
   }
+  // Rendu lecture seule du contenu par blocs (brief rédigé par la cliente dans
+  // son éditeur type Notion). Affiché en entier côté admin — jamais tronqué —
+  // avec les tableaux visibles.
+  function ptBlocksHtml(t) {
+    var blocks = Array.isArray(t.blocks) ? t.blocks : [];
+    if (!blocks.length) return '';
+    var bd = '1px solid var(--bone-d)';
+    var num = 0;
+    var html = blocks.map(function (b) {
+      if (b.type === 'numbered') num++; else num = 0;
+      if (b.type === 'heading') return '<div style="font-size:17px;font-weight:700;color:var(--terre);margin:14px 0 4px">' + esc(b.text || '') + '</div>';
+      if (b.type === 'subheading') return '<div style="font-size:15px;font-weight:700;color:var(--terre);margin:11px 0 3px">' + esc(b.text || '') + '</div>';
+      if (b.type === 'quote') return '<div style="border-left:3px solid var(--bone-d);padding:3px 0 3px 12px;margin:8px 0;font-style:italic;color:var(--terre-600);white-space:pre-wrap">' + mtLinkify(b.text || '') + '</div>';
+      if (b.type === 'callout') return '<div style="background:#F0E8FF;border-radius:10px;padding:10px 13px;margin:8px 0;color:var(--terre);white-space:pre-wrap">' + mtLinkify(b.text || '') + '</div>';
+      if (b.type === 'todo') return '<div style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><span style="flex-shrink:0">' + (b.done ? '☑' : '☐') + '</span><span style="white-space:pre-wrap;' + (b.done ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + mtLinkify(b.text || '') + '</span></div>';
+      if (b.type === 'list') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">•</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
+      if (b.type === 'numbered') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">' + num + '.</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
+      if (b.type === 'sep') return '<hr style="border:none;border-top:2px dashed var(--bone-d);margin:12px 0">';
+      if (b.type === 'file') { var dl = b.fileKey ? ('/api/clients/' + CURKEY + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#'; return '<div style="margin:6px 0"><a class="btn btn--outline btn--sm" href="' + dl + '" target="_blank">📎 ' + esc(b.name || 'fichier') + '</a></div>'; }
+      if (b.type === 'link') { var lu = b.url || ''; return '<div style="margin:6px 0">' + (b.text ? '<strong>' + esc(b.text) + '</strong> ' : '') + (lu ? '<a href="' + esc(/^https?:\/\//i.test(lu) ? lu : 'https://' + lu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(lu) + '</a>' : '') + '</div>'; }
+      if (b.type === 'embed') { var eu = b.url || ''; return eu ? '<div style="margin:6px 0"><a href="' + esc(eu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">▶ ' + esc(eu) + '</a></div>' : ''; }
+      if (b.type === 'table') {
+        var rows = Array.isArray(b.rows) ? b.rows : [];
+        if (!rows.length) return '';
+        var cols = rows[0] || [];
+        var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:7px 10px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);vertical-align:top;min-width:120px">' + esc(c || '') + '</th>'; }).join('') + '</tr>';
+        var body = rows.slice(1).map(function (row) { return '<tr>' + cols.map(function (_c, ci) { return '<td style="border:' + bd + ';padding:7px 10px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:120px;max-width:420px">' + esc((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
+        return '<div style="margin:10px 0;overflow-x:auto"><table style="border-collapse:collapse;width:100%">' + head + body + '</table></div>';
+      }
+      return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + mtLinkify(b.text || '') + '</div>';
+    }).join('');
+    return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">Le brief du client</div>' + html + '</div>';
+  }
   function partnerTasks(d) {
     var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
     // Les demandes en attente d'analyse vivent dans la Boîte de réception,
@@ -3377,8 +3410,11 @@
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:#5a7050">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
         '</div>' : '';
+      // Contenu du brief : on affiche l'éditeur par blocs (complet) s'il existe,
+      // sinon l'ancien champ texte. Plus jamais tronqué côté admin.
+      var contentHtml = (Array.isArray(t.blocks) && t.blocks.length) ? ptBlocksHtml(t) : brief;
       return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework || t.clientCommentNotif ? ';box-shadow:var(--shadow-2)' : '') + '">' +
-        reworkBanner + header + brief + atts + beHtml + tableHtml + work + review +
+        reworkBanner + header + contentHtml + atts + beHtml + tableHtml + work + review +
         '<div style="' + hair + '"></div>' +
         taskDlvBlock(d, t) +
         '<div style="' + hair + '"></div>' +
