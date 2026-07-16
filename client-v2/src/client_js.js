@@ -5399,12 +5399,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   // Rendu d'un bloc dans le remplisseur.
-  function cpQnrField(b, ans) {
+  function cpQnrField(b, ans, qnum) {
     var col = 'var(--nuit)';
-    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:23px;margin:26px 0 6px;color:' + col + '">' + esc(b.label || '') + '</h2>';
-    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:8px 0 4px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
-    var lab = '<label style="display:block;font-size:15px;font-weight:600;color:var(--nuit);margin-bottom:5px">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</label>' +
-      (b.help ? '<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:9px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
+    // Titres et paragraphes = intertitres de section, hors carte.
+    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:23px;margin:30px 0 4px;color:' + col + '">' + esc(b.label || '') + '</h2>';
+    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:6px 0 12px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
+    // La question (énoncé) est clairement distincte de la zone de réponse.
+    var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Question ' + qnum + '</div>' : '';
+    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</label>' +
+      (b.help ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
     var box = 'width:100%;padding:12px 15px;border:1.5px solid var(--border,#e2d9c8);border-radius:12px;font-size:15px;font-family:inherit;box-sizing:border-box;background:#fff';
     var input;
@@ -5450,7 +5453,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : (b.type === 'phone' ? 'tel' : (b.type === 'url' ? 'url' : 'text')))));
       input = '<input type="' + it + '" data-qid="' + b.id + '" value="' + esc(typeof ans === 'string' ? ans : (typeof ans === 'number' ? String(ans) : '')) + '" style="' + box + '" placeholder="' + esc(b.placeholder || '') + '">';
     }
-    return '<div style="margin-bottom:22px">' + lab + input + '</div>';
+    // Carte crème = l'énoncé ; réponse en blanc à l'intérieur → hiérarchie claire.
+    return '<div style="background:var(--surface,#F5F2EC);border-radius:16px;padding:20px 22px;margin-bottom:16px">' + lab + '<div style="margin-top:16px">' + input + '</div></div>';
   }
 
   function buildQnrFiller(inst) {
@@ -5518,7 +5522,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (cpQnrStep >= steps.length) cpQnrStep = Math.max(0, steps.length - 1);
     var s = steps[cpQnrStep] || { blocks: [] };
     var pct = steps.length ? Math.round((cpQnrStep) / steps.length * 100) : 0;
-    var fields = (s.blocks || []).map(function(b){ return cpQnrField(b, cpQnrAnswers[b.id]); }).join('');
+    var _qn = 0;
+    var fields = (s.blocks || []).map(function(b){ var n = cpQnrIsStatic(b.type) ? 0 : (++_qn); return cpQnrField(b, cpQnrAnswers[b.id], n); }).join('');
     var isLast = cpQnrStep === steps.length - 1;
     var progress = '<div style="margin-bottom:22px">' +
       '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (cpQnrStep + 1) + ' sur ' + steps.length + '</span><span>' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%</span></div>' +
@@ -5594,7 +5599,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
   function cpQnrSaveAnswers(submit, cb) {
     if (!API_BASE || !cpQnrOpenId) return;
-    fetch(API_BASE + '/questionnaires/' + cpQnrOpenId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ answers: cpQnrAnswers, submit: !!submit }) })
+    // keepalive : la sauvegarde aboutit même si la cliente ferme l'onglet juste après.
+    fetch(API_BASE + '/questionnaires/' + cpQnrOpenId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ answers: cpQnrAnswers, submit: !!submit }), keepalive: true })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(d){
         var inst = cpQnrInstance();
@@ -5602,6 +5608,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         if (cb) cb(d);
       })
       .catch(function(){ if (cb) cb(null); });
+  }
+  // Sauvegarde immédiate de l'étape en cours (fermeture d'onglet, appli en arrière-plan, changement de page).
+  function cpQnrFlush() {
+    if (!cpQnrOpenId) return;
+    if (!document.getElementById('cp-qnr-step')) return;
+    if (cpQnrSaveTimer) { clearTimeout(cpQnrSaveTimer); cpQnrSaveTimer = null; }
+    cpQnrCollectStep();
+    cpQnrSaveAnswers(false);
+  }
+  if (!window._cpQnrFlushBound) {
+    window._cpQnrFlushBound = true;
+    window.addEventListener('pagehide', cpQnrFlush);
+    window.addEventListener('beforeunload', cpQnrFlush);
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') cpQnrFlush(); });
   }
   function cpQnrTouch() {
     if (cpQnrSaveTimer) clearTimeout(cpQnrSaveTimer);
@@ -5674,6 +5694,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function renderShell(opts) {
+    // Avant tout re-rendu, on sauve l'étape de questionnaire en cours (nav vers une autre section, etc.).
+    if (typeof cpQnrFlush === 'function') cpQnrFlush();
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
     // Optimisation : ne reconstruire que cp-main si la sidebar est déjà là
     var mainEl = !opts || !opts.full ? document.getElementById('cp-main') : null;
