@@ -453,6 +453,7 @@ function mapClientQuestionnaires(espace: AnyObj): AnyObj[] {
         required: b.required === true,
         options: Array.isArray(b.options) ? b.options.map((o: unknown) => String(o == null ? '' : o)) : [],
         max: typeof b.max === 'number' ? b.max : 0,
+        allowOther: b.allowOther === true,
       })),
     })),
     status: ['assigned', 'in_progress', 'completed', 'to_review'].indexOf(q.status) !== -1 ? q.status : 'assigned',

@@ -1844,6 +1844,8 @@ function cleanQnrBlocks(arr: any): AnyObj[] {
     required: b && b.required === true,
     options: Array.isArray(b && b.options) ? b.options.map((o: unknown) => String(o == null ? '' : o).slice(0, 200)).filter((o: string) => o.trim()).slice(0, 60) : [],
     max: typeof (b && b.max) === 'number' ? b.max : (b && b.max ? parseInt(String(b.max), 10) || 0 : 0),
+    // Autorise une réponse libre « Autre » sur les questions à choix.
+    allowOther: b && b.allowOther === true,
   })).slice(0, 300);
 }
 function cleanQnrSteps(arr: any): AnyObj[] {
