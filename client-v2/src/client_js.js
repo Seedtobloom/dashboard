@@ -5361,6 +5361,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var on = arr.indexOf(o) !== -1;
         return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : 'var(--border,#e2d9c8)') + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;background:' + (on ? 'rgba(28,18,5,0.03)' : '#fff') + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
       }).join('') + '</div>';
+    } else if (b.type === 'ranking') {
+      var ro = (ans && typeof ans === 'object' && !Array.isArray(ans)) ? ans : {};
+      input = '<div data-qgroup="' + b.id + '" data-qtype="ranking">' + opts.map(function(o){
+        return '<div style="display:flex;align-items:center;gap:12px;padding:8px 11px;border:1.5px solid var(--border,#e2d9c8);border-radius:12px;margin-bottom:8px;background:#fff"><input type="number" min="1" max="' + opts.length + '" data-opt="' + esc(o) + '" value="' + esc(ro[o] != null ? ro[o] : '') + '" style="width:58px;padding:9px;border:1.5px solid var(--border,#e2d9c8);border-radius:8px;font-size:15px;text-align:center;box-sizing:border-box"><span style="font-size:15px;color:var(--nuit)">' + esc(o) + '</span></div>';
+      }).join('') + '<div style="font-size:13px;color:var(--muted);margin-top:2px">Classe de 1 à ' + opts.length + ' (1 = ta priorité).</div></div>';
     } else if (b.type === 'rating') {
       var mx = b.max || 5; var cur = typeof ans === 'number' ? ans : parseInt(ans, 10) || 0;
       var stars = '';
@@ -5392,7 +5397,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         if (!blocks.length) return '';
         var qs = blocks.map(function(b){
           var a = cpQnrAnswers[b.id];
-          var disp = Array.isArray(a) ? a.join(', ') : (a == null || a === '' ? '—' : String(a));
+          var disp;
+          if (Array.isArray(a)) disp = a.join(', ');
+          else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = '—'; }
+          else disp = (a == null || a === '' ? '—' : String(a));
           return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5a4a3a)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(28,18,5,0.07);padding:18px 20px;margin-bottom:14px">' +
@@ -5462,6 +5470,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var arr = [];
         g.querySelectorAll('input[type=checkbox]:checked').forEach(function(c){ arr.push(c.value); });
         cpQnrAnswers[id] = arr;
+      } else if (type === 'ranking') {
+        var rank = {};
+        g.querySelectorAll('input[data-opt]').forEach(function(inp){ var v = parseInt(inp.value, 10); if (v > 0) rank[inp.getAttribute('data-opt')] = v; });
+        cpQnrAnswers[id] = rank;
       } else if (type === 'rating') {
         var r = g.querySelector('input[type=radio]:checked');
         cpQnrAnswers[id] = r ? (parseInt(r.value, 10) || 0) : 0;

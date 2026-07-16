@@ -1822,7 +1822,7 @@ async function handleVisiosSave(request: Request, env: Env): Promise<Response> {
 }
 
 /* ── Questionnaires (plateforme générique) : modèles réutilisables assignés aux clientes ── */
-const QNR_BLOCK_TYPES = ['title', 'paragraph', 'short', 'long', 'number', 'email', 'phone', 'date', 'time', 'address', 'dropdown', 'single', 'multi', 'rating', 'slider', 'file', 'link', 'url'];
+const QNR_BLOCK_TYPES = ['title', 'paragraph', 'short', 'long', 'number', 'email', 'phone', 'date', 'time', 'address', 'dropdown', 'single', 'multi', 'ranking', 'rating', 'slider', 'file', 'link', 'url'];
 const QNR_CATEGORIES = ['demarrage', 'strategie', 'seo', 'ux', 'branding', 'copywriting', 'projet', 'livraison', 'support', 'autre'];
 function cleanQnrBlocks(arr: any): AnyObj[] {
   return (Array.isArray(arr) ? arr : []).map((b: AnyObj) => ({

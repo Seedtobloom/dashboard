@@ -3740,13 +3740,14 @@
     ['title', 'Titre de section', '¶'], ['paragraph', 'Texte / consigne', '≡'],
     ['short', 'Réponse courte', '—'], ['long', 'Réponse longue', '☰'],
     ['single', 'Choix unique', '◉'], ['multi', 'Choix multiple', '☑'], ['dropdown', 'Liste déroulante', '▾'],
+    ['ranking', 'Classement (1→N)', '⇅'],
     ['number', 'Nombre', '#'], ['email', 'E-mail', '@'], ['phone', 'Téléphone', '☎'],
     ['date', 'Date', '📅'], ['time', 'Heure', '⏱'], ['address', 'Adresse', '⌂'],
     ['rating', 'Note (étoiles)', '★'], ['slider', 'Curseur', '⇔'], ['url', 'Lien / URL', '🔗'], ['file', 'Fichier', '📎'],
   ];
   function qnrCatMeta(cat) { for (var i = 0; i < QNR_CATS.length; i++) if (QNR_CATS[i][0] === cat) return QNR_CATS[i]; return QNR_CATS[QNR_CATS.length - 1]; }
   function qnrBlockLabel(type) { for (var i = 0; i < QNR_BLOCKS.length; i++) if (QNR_BLOCKS[i][0] === type) return QNR_BLOCKS[i][1]; return type; }
-  function qnrHasOptions(type) { return type === 'single' || type === 'multi' || type === 'dropdown'; }
+  function qnrHasOptions(type) { return type === 'single' || type === 'multi' || type === 'dropdown' || type === 'ranking'; }
   function qnrIsStatic(type) { return type === 'title' || type === 'paragraph'; }
   var QNR_SEQ = 0;
   // Identifiant garanti unique dans la session (un compteur évite les collisions
@@ -4017,6 +4018,7 @@
     var f = '';
     if (b.type === 'long') f = '<textarea class="inp" disabled style="width:100%;box-sizing:border-box;min-height:70px"></textarea>';
     else if (b.type === 'single' || b.type === 'multi') f = (b.options || []).map(function (o) { return '<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="' + (b.type === 'single' ? 'radio' : 'checkbox') + '" disabled> ' + esc(o) + '</label>'; }).join('');
+    else if (b.type === 'ranking') f = (b.options || []).map(function (o) { return '<div style="display:flex;gap:10px;align-items:center;padding:4px 0"><input type="number" min="1" max="' + (b.options || []).length + '" disabled style="width:52px;text-align:center;border:1px solid var(--bone-d);border-radius:8px;padding:6px"> <span>' + esc(o) + '</span></div>'; }).join('') + '<div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Classe de 1 à ' + (b.options || []).length + '.</div>';
     else if (b.type === 'dropdown') f = '<select class="inp" disabled><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
     else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
     else if (b.type === 'slider') f = '<input type="range" disabled min="0" max="' + (b.max || 10) + '" style="width:100%">';
