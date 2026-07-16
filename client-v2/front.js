@@ -5888,7 +5888,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
       var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
       var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
-      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:none;background:#fff;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:0 2px 14px rgba(28,18,5,0.09);margin-bottom:16px;display:block">' +
+      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid var(--bone-d,#e3d9c8);background:var(--surface,#faf7f1);cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:0 6px 20px -8px rgba(28,18,5,0.16);margin-bottom:16px;display:block">' +
         '<div style="padding:20px 22px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
