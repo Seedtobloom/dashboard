@@ -3126,10 +3126,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div style="font-size:13px;color:var(--navy,#1C1205);line-height:1.6">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join('<br>') + '</div>' +
         '</div>'
       : '';
-    var sideCol = '<aside class="cp-part-side">' + statForfait + statToday + statProg + cindyBanner + '</aside>';
+    // Cartes récap côte à côte (rangée qui s'enroule), pas empilées en colonne.
+    var metaRow = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">' +
+      '<div style="flex:1 1 180px;min-width:170px">' + statForfait + '</div>' +
+      '<div style="flex:1 1 150px;min-width:150px">' + statToday + '</div>' +
+      '<div style="flex:1 1 180px;min-width:170px">' + statProg + '</div>' +
+      (cindyBanner ? '<div style="flex:1 1 210px;min-width:200px">' + cindyBanner + '</div>' : '') +
+    '</div>';
 
     // Alerte forfait bientôt épuisé / dépassé, en tête (pleine largeur).
     var forfaitAlert = buildForfaitAlert(pid, project, _pf);
+    var fab = '<button class="cp-fab" onclick="cliNewDemande(\''+pid+'\')" aria-label="Nouvelle demande">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>';
 
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px">' +
@@ -3152,12 +3159,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else if (tab === 'liv')     content = stbDeliverables(pid);
     else if (tab === 'archives') content = buildPartArchives(pid, tasks);
 
-    // Colonne principale (onglets + contenu) à gauche, encart à droite.
-    return forfaitAlert +
-      '<button class="cp-fab" onclick="cliNewDemande(\''+pid+'\')" aria-label="Nouvelle demande">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>' + '<div class="cp-part-layout">' +
-        '<div class="cp-part-main" style="min-width:0">' + tabs + content + '</div>' +
-        sideCol +
-      '</div>';
+    // Récap en rangée, puis onglets + contenu (calendrier) sur toute la largeur.
+    return fab + forfaitAlert + metaRow + tabs + content;
   }
   // Onglet dédié aux tâches archivées (= terminées + archivées).
   function buildPartArchives(pid, tasks) {
