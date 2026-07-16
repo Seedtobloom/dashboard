@@ -185,6 +185,7 @@
       (c.sections || []).forEach(function (x) { subs.push([x.id, x.label, x.unread || 0]); });
       subs.push(['journal', 'Journal', 0]);
       subs.push(['documents', 'Documents', 0]);
+      subs.push(['qnranswers', 'Questionnaires', 0]);
       subs.push(['bilanavis', 'Bilan & avis', 0]);
       var pr = presence(c.lastSeen);
       var av = '<span style="position:relative;flex-shrink:0;width:22px;height:22px">' +
