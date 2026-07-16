@@ -302,6 +302,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 }
 .cp-cal-layout { display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start; }
 @media (max-width:1024px) { .cp-cal-layout { grid-template-columns:1fr; } .cp-task-panel { max-height:none; } }
+/* Espace partenaire : contenu principal à gauche, encart forfait/infos à droite. */
+.cp-part-layout { display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start; }
+.cp-part-side { display:grid;gap:12px; }
+@media (max-width:1040px) { .cp-part-layout { grid-template-columns:1fr; } .cp-part-side { order:-1; } }
 .cp-cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:6px; }
 .cp-cal-day { min-height:110px;border:1.5px solid var(--bone-d);border-radius:var(--radius-2);padding:5px 7px;cursor:pointer;transition:background 0.12s; }
 .cp-cal-day:hover { background:var(--bone-d); }
