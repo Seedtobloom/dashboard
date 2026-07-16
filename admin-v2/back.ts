@@ -108,6 +108,10 @@ export default {
         if (method === 'GET') return handleQnrGet(env);
         if (method === 'PATCH') return handleQnrSave(request, env);
       }
+      if (pathname === '/api/project-templates') {
+        if (method === 'GET') return handleProjTplGet(env);
+        if (method === 'PATCH') return handleProjTplSave(request, env);
+      }
       if (pathname === '/api/quick-replies') {
         if (method === 'GET') return handleQuickRepliesGet(env);
         if (method === 'PATCH') return handleQuickRepliesSave(request, env);
@@ -628,6 +632,9 @@ async function handleClientApi(
     }
     return json({ ok: true });
   }
+
+  // Modèle de projet : instancier un scénario dans l'offre cible de la cliente
+  if (method === 'POST' && sub === '/project-template') return handleProjTplInstantiate(request, env, key, data);
 
   // Questionnaires : affecter un modèle à la cliente / mettre à jour / retirer
   if (method === 'POST' && sub === '/questionnaires') return handleQnrAssign(request, env, key, data);
@@ -1977,6 +1984,109 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
       `<p>Vous le trouverez dans votre espace, onglet « Questionnaires ». ${deadlineLine}</p>`, key);
   }
   return json(inst, 201);
+}
+
+/* ── Modèles de projets (« moteur de projet ») : scénarios réutilisables ──
+ * Un modèle = un scénario rattaché à une offre (site, identité, support…),
+ * composé de Phases → Étapes typées (client / studio / validation) → Livrables
+ * (avec quota de révisions). On l'instancie dans l'offre cible d'une cliente :
+ * on stocke le scénario dans container.projectPlan, qui pilote le dashboard
+ * narratif côté cliente. Même mécanique de stockage que les questionnaires
+ * (liste unique dans KV_ADMIN, instantané au moment de l'affectation). */
+const PROJ_OFFERS = ['website', 'branding', 'supports', 'partner', 'maintenance'];
+const PROJ_STEP_TYPES = ['client', 'studio', 'validation'];
+function cleanProjSteps(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((s: AnyObj) => ({
+    id: (s && s.id ? String(s.id) : genId()).slice(0, 40),
+    title: String((s && s.title) || '').slice(0, 300),
+    type: s && PROJ_STEP_TYPES.indexOf(s.type) !== -1 ? s.type : 'studio',
+    action: String((s && s.action) || '').slice(0, 2000),
+    estMinutes: typeof (s && s.estMinutes) === 'number' ? Math.max(0, Math.round(s.estMinutes)) : 0,
+  })).slice(0, 60);
+}
+function cleanProjDeliverables(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((d: AnyObj) => ({
+    id: (d && d.id ? String(d.id) : genId()).slice(0, 40),
+    name: String((d && d.name) || '').slice(0, 200),
+    revisionsIncluded: typeof (d && d.revisionsIncluded) === 'number' ? Math.max(0, Math.min(20, Math.round(d.revisionsIncluded))) : 0,
+  })).slice(0, 30);
+}
+function cleanProjPhases(arr: any): AnyObj[] {
+  return (Array.isArray(arr) ? arr : []).map((p: AnyObj) => ({
+    id: (p && p.id ? String(p.id) : genId()).slice(0, 40),
+    title: String((p && p.title) || '').slice(0, 200),
+    help: String((p && p.help) || '').slice(0, 2000),
+    steps: cleanProjSteps(p && p.steps),
+    deliverables: cleanProjDeliverables(p && p.deliverables),
+  })).slice(0, 30);
+}
+function cleanProjTemplate(t: AnyObj): AnyObj {
+  return {
+    id: (t && t.id ? String(t.id) : genId()).slice(0, 40),
+    name: String((t && t.name) || '').slice(0, 200),
+    offer: t && PROJ_OFFERS.indexOf(t.offer) !== -1 ? t.offer : 'website',
+    icon: String((t && t.icon) || '').slice(0, 8),
+    color: /^#[0-9a-fA-F]{6}$/.test(String((t && t.color) || '')) ? t.color : '#5e3fa0',
+    totalWeeks: typeof (t && t.totalWeeks) === 'number' ? Math.max(0, Math.min(104, Math.round(t.totalWeeks))) : 0,
+    archived: t && t.archived === true,
+    phases: cleanProjPhases(t && t.phases),
+    createdAt: String((t && t.createdAt) || nowIso()).slice(0, 30),
+    updatedAt: nowIso(),
+  };
+}
+async function getProjectTemplates(env: Env): Promise<AnyObj[]> {
+  const v = (await env.KV_ADMIN.get('admin:projectTemplates', { type: 'json' })) as AnyObj[] | null;
+  return Array.isArray(v) ? v : [];
+}
+async function handleProjTplGet(env: Env): Promise<Response> {
+  return json({ templates: await getProjectTemplates(env) });
+}
+async function handleProjTplSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const list = (Array.isArray(body.templates) ? body.templates : []).map(cleanProjTemplate).slice(0, 100);
+  await env.KV_ADMIN.put('admin:projectTemplates', JSON.stringify(list));
+  return json({ templates: list });
+}
+// Instancie un modèle dans l'offre cible d'une cliente : on construit un
+// instantané « projectPlan » (les modifs ultérieures du modèle ne cassent pas
+// un projet en cours) et on l'attache au conteneur de l'offre.
+async function handleProjTplInstantiate(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const tpl = cleanProjTemplate(body.template || {});
+  if (!tpl.name && !(tpl.phases as AnyObj[]).length) return json({ error: 'Modèle vide' }, 400);
+  const projectId = String(body.projectId || '').trim();
+  const esp = getEspace(data);
+  const { container, label } = resolveProject(esp, projectId);
+  if (!container) return json({ error: 'Offre cible introuvable' }, 404);
+  const plan: AnyObj = {
+    templateId: tpl.id,
+    name: tpl.name,
+    icon: tpl.icon,
+    color: tpl.color,
+    totalWeeks: tpl.totalWeeks,
+    currentPhase: 0,
+    instantiatedAt: nowIso(),
+    updatedAt: nowIso(),
+    phases: (tpl.phases as AnyObj[]).map((p, pi) => ({
+      id: p.id,
+      title: p.title,
+      help: p.help,
+      status: pi === 0 ? 'current' : 'upcoming',
+      steps: (p.steps as AnyObj[]).map((s) => ({
+        id: s.id, title: s.title, type: s.type, action: s.action, estMinutes: s.estMinutes,
+        status: 'todo',
+      })),
+      deliverables: (p.deliverables as AnyObj[]).map((d) => ({
+        id: d.id, name: d.name,
+        revisionsIncluded: d.revisionsIncluded, revisionsUsed: 0,
+        status: 'a_venir', fileKey: '', reviewLink: '', clientComment: '',
+        versions: [], validatedAt: null,
+      })),
+    })),
+  };
+  container.projectPlan = plan;
+  await saveClient(env, key, data);
+  return json({ ok: true, label, plan }, 201);
 }
 
 /* ── Réponses rapides : modèles de messages réutilisables (studio) ── */
