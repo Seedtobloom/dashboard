@@ -4462,7 +4462,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>' +
       '<div style="margin-bottom:14px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#b0a89a">(optionnel)</span></label>' +
-        '<input id="_maint-t-due" type="date" value="'+esc(edit&&edit.dueDate||'')+'" onchange="if(this.value&&window.cpHolidayFor&&window.cpHolidayFor(this.value)){toast(\'Cindy est en congés à cette date, choisissez un autre jour.\');this.value=\'\';}" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
+        '<input id="_maint-t-due" type="text" readonly data-iso="'+esc(edit&&edit.dueDate||'')+'" value="'+((edit&&edit.dueDate)?cpMcFmt(edit.dueDate):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_maint-t-due\')" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;cursor:pointer;background:#fff">' +
       '</div>' +
       '<div style="margin-bottom:18px">' +
         '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
@@ -4520,7 +4520,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var desc  = ov.querySelector('#_maint-t-desc').value.trim();
       var prio  = ov.querySelector('#_maint-t-prio').value;
       var cat   = ov.querySelector('#_maint-t-cat').value;
-      var due   = ov.querySelector('#_maint-t-due').value || '';
+      var due   = (ov.querySelector('#_maint-t-due').getAttribute('data-iso')) || '';
       if (due && cpHolidayFor(due)) { toast('Cindy est en congés à cette date, choisissez un autre jour.'); return; }
       close();
       if (edit) {
@@ -4564,6 +4564,52 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return null;
   }
   window.cpHolidayFor = cpHolidayFor;
+  // Mini-calendrier maison : les jours passés et de congés sont désactivés
+  // (le sélecteur natif ne permet pas de griser des jours précis).
+  var _cpMc = null;
+  function cpMcFmt(iso) { if (!iso) return ''; var p = String(iso).split('-'); return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso; }
+  window.cpDateOpen = function(inputId) {
+    var inp = document.getElementById(inputId); if (!inp) return;
+    var iso = inp.getAttribute('data-iso') || ''; var d = iso ? new Date(iso) : new Date();
+    if (isNaN(d)) d = new Date();
+    _cpMc = { inputId: inputId, y: d.getFullYear(), m: d.getMonth() };
+    cpDateRender();
+  };
+  window.cpDateNav = function(dir) { if (!_cpMc) return; _cpMc.m += dir; if (_cpMc.m < 0) { _cpMc.m = 11; _cpMc.y--; } if (_cpMc.m > 11) { _cpMc.m = 0; _cpMc.y++; } cpDateRender(); };
+  window.cpDatePick = function(ds) { var inp = document.getElementById(_cpMc.inputId); if (inp) { inp.setAttribute('data-iso', ds); inp.value = cpMcFmt(ds); } cpDateClose(); };
+  window.cpDateClose = function() { var e = document.getElementById('_cp-datepick'); if (e) e.remove(); };
+  function cpDateRender() {
+    cpDateClose();
+    var y = _cpMc.y, m = _cpMc.m;
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    function iso(dt) { return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
+    var todayStr = iso(today);
+    var MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    var first = new Date(y, m, 1); var startDow = (first.getDay() + 6) % 7; var ndays = new Date(y, m + 1, 0).getDate();
+    var inp = document.getElementById(_cpMc.inputId); var selIso = inp ? inp.getAttribute('data-iso') : '';
+    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#8a6f54;padding:4px 0">' + x + '</div>'; }).join('');
+    var cells = '';
+    for (var i = 0; i < startDow; i++) cells += '<div></div>';
+    for (var dd = 1; dd <= ndays; dd++) {
+      var ds = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + dd).slice(-2);
+      var past = ds < todayStr, hol = !!cpHolidayFor(ds); var sel = ds === selIso;
+      if (past || hol) {
+        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#c9bda9;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#f4ece1,#f4ece1 4px,#efe4d5 4px,#efe4d5 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
+      } else {
+        cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#412F21)' : 'transparent') + ';color:' + (sel ? '#fff' : '#1C1205') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#f0ece4)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#412F21)' : 'transparent') + '\'">' + dd + '</button>';
+      }
+    }
+    var html = '<div id="_cp-datepick" style="position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cpDateClose()">' +
+      '<div style="background:#fff;border-radius:16px;box-shadow:0 12px 48px rgba(28,18,5,0.25);padding:18px;width:310px;max-width:100%">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a6f54;line-height:1">‹</button>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#1C1205)">' + MONTHS[m] + ' ' + y + '</span>' +
+          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a6f54;line-height:1">›</button></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(5,1fr)">' + dow + cells + '</div>' +
+        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#8a6f54;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
+      '</div>' +
+    '</div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
   window.cliSetTaskDue = function(pid, taskId, value, inp) {
     if (value && cpHolidayFor(value)) {
       toast('Cindy est en congés à cette date, merci de choisir un autre jour.');
@@ -4698,12 +4744,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#1C1205)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
       '<div style="font-size:13.5px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux, je m\'occupe du reste.</div>' +
-      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px;border-left:4px solid #3a6b4a" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-        '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205);margin-bottom:4px">🟢 Une petite demande <span style="font-weight:500;font-size:12.5px;color:#3a6b4a">· incluse dans ton forfait</span></div>' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
+          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#f0ece4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('zap', 18, 'color:var(--terre,#412F21)') + '</span>' +
+          '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205)">Une petite demande <span style="font-weight:500;font-size:12.5px;color:var(--terre-600,#6b5b4a)">· incluse dans ton forfait</span></div>' +
+        '</div>' +
         '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Modifier un texte · créer un visuel Instagram · mettre à jour une page · adapter un flyer · corriger une couleur…</div>' +
       '</button>' +
-      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + ';border-left:4px solid #b06438" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-        '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205);margin-bottom:4px">🟠 Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:#b06438">· nécessite un devis</span></div>' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + '" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
+          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#f0ece4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('folder', 18, 'color:var(--terre,#412F21)') + '</span>' +
+          '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205)">Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:var(--terre,#b06438)">· nécessite un devis</span></div>' +
+        '</div>' +
         '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Refonte complète d\'un site · nouvelle identité visuelle · brochure de 40 pages · nouvelle landing page…</div>' +
       '</button>' +
       '<div style="font-size:12px;color:var(--muted,#8090a8);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid #f0ebe3">Les demandes du forfait concernent des interventions de quelques minutes à quelques heures. Si ton besoin demande plusieurs jours de travail ou une réflexion complète, il sera traité comme un nouveau projet.</div>' +
@@ -4773,7 +4825,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<input type="hidden" id="_ptask-urgency" value="normal">' +
         '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) *</label>' +
           '<input id="_ptask-startDate" type="hidden">' +
-          '<input id="_ptask-dueDate" type="date" value="'+(ds||'')+'" onchange="if(this.value&&window.cpHolidayFor&&window.cpHolidayFor(this.value)){toast(\'Cindy est en congés à cette date, choisissez un autre jour.\');this.value=\'\';}" style="'+S+'"></div>' +
+          '<input id="_ptask-dueDate" type="text" readonly data-iso="'+(ds||'')+'" value="'+(ds?cpMcFmt(ds):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_ptask-dueDate\')" style="'+S+';cursor:pointer;background:#fff"></div>' +
         '<div style="margin-bottom:14px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#1C1205);display:block;margin-bottom:6px">Votre brief</label>' +
           '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
           '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge."></textarea></div>' +
@@ -4820,7 +4872,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var content   = (document.getElementById('_ptask-content')||{}).value || '';
     var links     = (document.getElementById('_ptask-links')||{}).value || '';
     if (links.trim()) content = (content.trim() ? content.trim() + '\n\n' : '') + 'Liens et références\n' + links.trim();
-    var dueDate   = (document.getElementById('_ptask-dueDate')||{}).value || undefined;
+    var _dd = document.getElementById('_ptask-dueDate'); var dueDate = (_dd && _dd.getAttribute('data-iso')) || undefined;
     if (!dueDate) { var eld = document.getElementById('_ptask-dueDate'); if(eld){eld.style.borderColor='red';eld.focus();} toast('Indiquez une échéance souhaitée'); return; }
     if (cpHolidayFor(dueDate)) { var eldh = document.getElementById('_ptask-dueDate'); if(eldh){eldh.style.borderColor='red';eldh.focus();} toast('Cindy est en congés à cette date, choisissez un autre jour.'); return; }
     var startDate = (document.getElementById('_ptask-startDate')||{}).value || undefined;
