@@ -3930,7 +3930,7 @@
           '<span class="row" style="gap:8px;align-items:center"><span class="micro">Catégorie</span>' + catSel + '</span>' +
           '<span class="row" style="gap:6px;align-items:center"><span class="micro">Couleur</span>' + colorDots + '</span>' +
         '</div>' +
-        '<div class="between" style="margin-bottom:12px"><h3 style="margin:0">Étapes & questions</h3><button class="btn btn--outline btn--sm" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Étape</button></div>' +
+        '<div class="between" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Étapes & questions</h3><span class="row" style="gap:8px"><button class="btn btn--sm" title="Rendre toutes les questions obligatoires et activer la réponse Autre" onclick="ADM.qnrBulkRequire(\'' + t.id + '\')">⚡ Tout obligatoire + Autre</button><button class="btn btn--outline btn--sm" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Étape</button></span></div>' +
         (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute une étape, puis des questions à l\'intérieur.</div>') +
         '<button class="btn btn--outline btn--sm" style="margin-top:6px" onclick="ADM.qnrStepAdd(\'' + t.id + '\')">+ Ajouter une étape</button>' +
       '</div>';
@@ -3982,6 +3982,17 @@
     return '<div style="background:var(--bg,#faf7f1);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:9px">' + head + labelField + extra + '</div>';
   }
   function qnrStepAdd(id) { var t = qnrTpl(id); if (!t) return; if (!Array.isArray(t.steps)) t.steps = []; t.steps.push({ id: qnrId('s'), title: '', help: '', blocks: [] }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
+  // Action rapide : toutes les questions obligatoires + réponse « Autre » sur
+  // toutes les questions à choix.
+  function qnrBulkRequire(id) {
+    var t = qnrTpl(id); if (!t) return; var n = 0;
+    (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) {
+      if (!qnrIsStatic(b.type)) { b.required = true; n++; }
+      if (qnrHasOptions(b.type) && b.type !== 'ranking') b.allowOther = true;
+    }); });
+    qnrSave(); renderQnrDrawer(); renderQnrBody();
+    toast(n + ' question' + (n > 1 ? 's' : '') + ' rendue' + (n > 1 ? 's' : '') + ' obligatoire' + (n > 1 ? 's' : '') + ' · « Autre » activé');
+  }
   function qnrStepSet(id, sid, field, val) { var t = qnrTpl(id); if (!t) return; (t.steps || []).forEach(function (s) { if (s.id === sid) s[field] = val; }); qnrSave(); }
   function qnrStepDel(id, sid) { var t = qnrTpl(id); if (!t) return; t.steps = (t.steps || []).filter(function (s) { return s.id !== sid; }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
   function qnrStepMove(id, sid, dir) { var t = qnrTpl(id); if (!t) return; var a = t.steps || []; var i = a.findIndex(function (s) { return s.id === sid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; qnrSave(); renderQnrDrawer(); }
@@ -4103,26 +4114,47 @@
     else { var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : 'text'))); f = '<input class="inp" disabled type="' + it + '" style="width:100%;box-sizing:border-box" placeholder="' + esc(b.placeholder || '') + '">'; }
     return lab + f;
   }
-  function qnrPreview(id) {
-    var t = qnrTpl(id); if (!t) return;
+  // Aperçu fidèle : on parcourt le questionnaire étape par étape, comme la cliente.
+  var QNR_PREV_ID = null, QNR_PREV_STEP = 0;
+  function qnrPreview(id) { QNR_PREV_ID = id; QNR_PREV_STEP = 0; qnrPreviewRender(); }
+  function qnrPreviewNav(d) {
+    var t = qnrTpl(QNR_PREV_ID); if (!t) return;
+    var n = (t.steps || []).length;
+    QNR_PREV_STEP = Math.max(0, Math.min(n - 1, QNR_PREV_STEP + d));
+    qnrPreviewRender();
+  }
+  function qnrPreviewRender() {
+    var ex = el('qnr-preview-ov'); if (ex) ex.remove();
+    var t = qnrTpl(QNR_PREV_ID); if (!t) return;
+    var col = t.color || '#5e3fa0';
     var steps = t.steps || [];
-    var body = steps.map(function (s, i) {
-      return '<div style="margin-bottom:22px">' +
-        '<div class="micro" style="color:var(--muted)">Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
-        (s.title ? '<h2 style="margin:2px 0 2px">' + esc(s.title) + '</h2>' : '') +
-        (s.help ? '<div style="color:var(--muted);margin-bottom:8px">' + esc(s.help) + '</div>' : '') +
-        (s.blocks || []).map(qnrFieldPreview).join('') +
-      '</div>';
-    }).join('');
-    var ov = document.createElement('div'); ov.className = 'admconfirm';
-    ov.innerHTML = '<div class="admconfirm__box" style="max-width:640px;max-height:88vh;overflow-y:auto;text-align:left">' +
-      '<div class="between" style="margin-bottom:8px"><div class="admconfirm__title" style="margin:0">' + esc(t.name || 'Aperçu') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>' +
-      (t.description ? '<p style="color:var(--muted);margin:0 0 14px">' + esc(t.description) + '</p>' : '') +
-      body +
+    if (!steps.length) steps = [{ title: '', help: '', blocks: [] }];
+    if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
+    var s = steps[QNR_PREV_STEP];
+    var isFirst = QNR_PREV_STEP === 0, isLast = QNR_PREV_STEP === steps.length - 1;
+    var pct = Math.round((QNR_PREV_STEP + 1) / steps.length * 100);
+    var progress = '<div style="margin-bottom:18px">' +
+      '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
+      '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + ';transition:width .2s"></div></div></div>';
+    var whyBlock = (QNR_PREV_STEP === 0 && (t.description || '').trim())
+      ? '<div style="background:' + hexA(col, 0.08) + ';border:1px solid ' + hexA(col, 0.22) + ';border-radius:12px;padding:13px 15px;margin-bottom:18px"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:5px">Pourquoi ce questionnaire ?</div><div style="font-size:14px;color:var(--terre-600);line-height:1.55;white-space:pre-wrap">' + esc(t.description) + '</div></div>'
+      : '';
+    var fields = (s.blocks || []).map(qnrFieldPreview).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
+    var nav = '<div style="display:flex;gap:10px;margin-top:18px">' +
+      (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
+      (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
+               : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
+    var ov = document.createElement('div'); ov.id = 'qnr-preview-ov'; ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;max-height:88vh;overflow-y:auto;text-align:left">' +
+      '<div class="between" style="margin-bottom:12px"><div class="micro" style="color:var(--muted)">Aperçu · ' + esc(t.name || '') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>' +
+      progress + whyBlock +
+      (s.title ? '<h2 style="margin:2px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(s.title) + '</h2>' : '') +
+      (s.help ? '<div style="color:var(--muted);margin-bottom:10px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
+      fields + nav +
     '</div>';
     function close() { ov.remove(); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelectorAll('[data-no]').forEach(function (b) { b.onclick = close; });
     document.body.appendChild(ov);
   }
 
@@ -4181,7 +4213,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
