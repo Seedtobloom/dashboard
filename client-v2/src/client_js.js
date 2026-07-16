@@ -2662,38 +2662,39 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var pctDone = tasks.length ? Math.round(doneTasks.length/tasks.length*100) : 0;
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
-    var summaryBar = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
-      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+    // ── Cartes récap (empilées dans la colonne de droite) ──
+    var cardCss = 'background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px';
+    var statForfait = '<div style="' + cardCss + '">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait restant</div>' +
         '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
           (forfaitH ? fmtHours(forfaitLeft) : '—') +
         '</div>' +
         (forfaitH ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-size:11px;color:var(--muted)">Forfait non défini</div>') +
-      '</div>' +
-      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+      '</div>';
+    var statToday = '<div style="' + cardCss + '">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tâches aujourd\'hui</div>' +
         '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+todayTasks.length+'</div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">à réaliser</div>' +
-      '</div>' +
-      '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
+      '</div>';
+    var statProg = '<div style="' + cardCss + '">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Progression</div>' +
         '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+pctDone+'%</div>' +
         '<div style="background:var(--border);border-radius:999px;height:5px;margin-top:6px"><div style="background:var(--sage);height:100%;border-radius:999px;width:'+pctDone+'%"></div></div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+' </div>' +
-      '</div>' +
-    '</div>';
+      '</div>';
     // Créneaux réservés : quand Cindy travaille sur ce projet (réglé côté studio).
     var _slots = Array.isArray(project.workSlots) ? project.workSlots : [];
-    if (_slots.length) {
-      summaryBar = '<div style="background:var(--glycine-50,#f7efff);border:1px solid var(--glycine-200,#E4D1FE);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        cpIcon('calendar',16,'color:var(--glycine-900,#6c4ea4)') +
-        '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#6c4ea4)">Cindy travaille pour vous</span>' +
-        '<span style="font-size:13.5px;color:var(--navy,#1C1205)">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join(' · ') + '</span>' +
-      '</div>' + summaryBar;
-    }
+    var cindyBanner = _slots.length
+      ? '<div style="background:var(--glycine-50,#f7efff);border:1px solid var(--glycine-200,#E4D1FE);border-radius:12px;padding:12px 16px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + cpIcon('calendar',15,'color:var(--glycine-900,#6c4ea4)') +
+          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#6c4ea4)">Cindy travaille pour vous</span></div>' +
+          '<div style="font-size:13px;color:var(--navy,#1C1205);line-height:1.6">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join('<br>') + '</div>' +
+        '</div>'
+      : '';
+    var sideCol = '<aside class="cp-part-side">' + statForfait + statToday + statProg + cindyBanner + '</aside>';
 
-    // Alerte forfait bientôt épuisé / dépassé, en tête de l'espace.
-    summaryBar = buildForfaitAlert(pid, project, _pf) + summaryBar;
+    // Alerte forfait bientôt épuisé / dépassé, en tête (pleine largeur).
+    var forfaitAlert = buildForfaitAlert(pid, project, _pf);
 
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
@@ -2708,12 +2709,19 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Nouvelle demande</button>' +
     '</div>';
 
-    if (tab === 'cal')     return summaryBar + tabs + buildPartCal(pid, tasks, files, project);
-    if (tab === 'board')   return summaryBar + tabs + buildPartBoard(pid, tasks, files);
-    if (tab === 'forfait') return summaryBar + tabs + buildPartForfait(pid, tasks, project);
-    if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);
-    if (tab === 'archives') return summaryBar + tabs + buildPartArchives(pid, tasks);
-    return summaryBar + tabs;
+    var content = '';
+    if (tab === 'cal')      content = buildPartCal(pid, tasks, files, project);
+    else if (tab === 'board')   content = buildPartBoard(pid, tasks, files);
+    else if (tab === 'forfait') content = buildPartForfait(pid, tasks, project);
+    else if (tab === 'notes')   content = buildPartNotes(pid, project);
+    else if (tab === 'archives') content = buildPartArchives(pid, tasks);
+
+    // Colonne principale (onglets + contenu) à gauche, encart à droite.
+    return forfaitAlert +
+      '<div class="cp-part-layout">' +
+        '<div class="cp-part-main" style="min-width:0">' + tabs + content + '</div>' +
+        sideCol +
+      '</div>';
   }
   // Onglet dédié aux tâches archivées (= terminées + archivées).
   function buildPartArchives(pid, tasks) {

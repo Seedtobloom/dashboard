@@ -53,10 +53,10 @@ js = js.replace(catchSrc, ".catch(function(e){ if (e && e.message === 'revoked')
 must(js.indexOf("['notes','Notes']") !== -1, 'partner tabs');
 js = js.replace("['notes','Notes']", "['liv','Livrables']");
 // 2) dispatch de l'onglet partenaire (Notes retiré, Messages + Livrables ajoutés)
-must(js.indexOf("    if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);") !== -1, 'partner dispatch');
+must(js.indexOf("    else if (tab === 'notes')   content = buildPartNotes(pid, project);") !== -1, 'partner dispatch');
 js = js.replace(
-  "    if (tab === 'notes')   return summaryBar + tabs + buildPartNotes(pid, project);",
-  "    if (tab === 'msg')     return summaryBar + tabs + stbChat(pid);\n    if (tab === 'liv')     return summaryBar + tabs + stbDeliverables(pid);"
+  "    else if (tab === 'notes')   content = buildPartNotes(pid, project);",
+  "    else if (tab === 'msg')     content = stbChat(pid);\n    else if (tab === 'liv')     content = stbDeliverables(pid);"
 );
 // 3) onglet "Messages" dans la vue générique (site/identite/support) — placé en premier
 must(js.indexOf('    var sideTabs = [];') !== -1, 'sideTabs init');
@@ -151,11 +151,11 @@ js = js.replace("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask
 // …les onglets s'alignent à gauche (plus de space-between)
 must(js.indexOf("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">") !== -1, 'tabs justify');
 js = js.replace("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">", "<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px\">");
-// …et on ajoute le FAB (présent dans toute la vue partenaire via summaryBar)
-must(js.indexOf("var summaryBar = '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'") !== -1, 'summaryBar');
+// …et on ajoute le FAB (présent dans toute la vue partenaire, avant la mise en page 2 colonnes)
+must(js.indexOf("'<div class=\"cp-part-layout\">'") !== -1, 'part-layout fab');
 js = js.replace(
-  "var summaryBar = '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'",
-  "var summaryBar = '<button class=\"cp-fab\" onclick=\"cliNewDemande(\\''+pid+'\\')\" aria-label=\"Nouvelle demande\">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>' + '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px\">'"
+  "'<div class=\"cp-part-layout\">'",
+  "'<button class=\"cp-fab\" onclick=\"cliNewDemande(\\''+pid+'\\')\" aria-label=\"Nouvelle demande\">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>' + '<div class=\"cp-part-layout\">'"
 );
 
 // ── Édition d'une tâche : drawer en OVERLAY glissant (le calendrier garde toute sa largeur) ──
