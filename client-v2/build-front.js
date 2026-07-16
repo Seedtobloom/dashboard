@@ -151,12 +151,7 @@ js = js.replace("'<button class=\"cp-btn cp-btn--dark\" onclick=\"cliOpenAddTask
 // …les onglets s'alignent à gauche (plus de space-between)
 must(js.indexOf("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">") !== -1, 'tabs justify');
 js = js.replace("<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:16px\">", "<div class=\"cp-part-tabs\" style=\"display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px\">");
-// …et on ajoute le FAB (présent dans toute la vue partenaire, avant la mise en page 2 colonnes)
-must(js.indexOf("'<div class=\"cp-part-layout\">'") !== -1, 'part-layout fab');
-js = js.replace(
-  "'<div class=\"cp-part-layout\">'",
-  "'<button class=\"cp-fab\" onclick=\"cliNewDemande(\\''+pid+'\\')\" aria-label=\"Nouvelle demande\">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>' + '<div class=\"cp-part-layout\">'"
-);
+// Le FAB « Nouvelle demande » est désormais rendu directement dans le SPA source.
 
 // ── Édition d'une tâche : drawer en OVERLAY glissant (le calendrier garde toute sa largeur) ──
 must(css.indexOf(".cp-cal-layout { display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start; }") !== -1, 'css cal-layout');

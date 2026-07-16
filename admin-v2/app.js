@@ -4248,6 +4248,24 @@
   }
 
   // ── Aperçu (rendu lecture seule tel que la cliente le verra) ──
+  // Glisser-classer dans l'aperçu (pointer events, souris + tactile).
+  var admRankDrag = null;
+  function admRankRenumber(group) { if (!group) return; var items = group.querySelectorAll('[data-admrankitem]'); for (var i = 0; i < items.length; i++) { var bn = items[i].querySelector('[data-rankn]'); if (bn) bn.textContent = (i + 1); } }
+  function admRankMove(e) {
+    if (!admRankDrag) return; e.preventDefault();
+    var g = admRankDrag.group, d = admRankDrag.row, items = g.querySelectorAll('[data-admrankitem]');
+    for (var i = 0; i < items.length; i++) { var it = items[i]; if (it === d) continue; var r = it.getBoundingClientRect(); if (e.clientY >= r.top && e.clientY <= r.bottom) { g.insertBefore(d, e.clientY > r.top + r.height / 2 ? it.nextElementSibling : it); break; } }
+  }
+  function admRankUp() {
+    document.removeEventListener('pointermove', admRankMove); document.removeEventListener('pointerup', admRankUp); document.removeEventListener('pointercancel', admRankUp);
+    if (!admRankDrag) return; admRankDrag.row.style.opacity = ''; var g = admRankDrag.group; admRankDrag = null; admRankRenumber(g);
+  }
+  function rankDown(e, row) {
+    if (e.pointerType === 'touch' && !(e.target && e.target.closest && e.target.closest('[data-rankhandle]'))) return;
+    var group = row.closest('[data-admrankgroup]'); if (!group) return;
+    e.preventDefault(); admRankDrag = { row: row, group: group }; row.style.opacity = '0.55';
+    document.addEventListener('pointermove', admRankMove, { passive: false }); document.addEventListener('pointerup', admRankUp); document.addEventListener('pointercancel', admRankUp);
+  }
   function qnrFieldPreview(b, qnum) {
     if (b.type === 'title') return '<h3 style="margin:22px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(b.label || 'Titre de section') + '</h3>';
     if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0 12px">' + esc(b.label || '') + '</p>';
@@ -4259,7 +4277,7 @@
     var chip = 'display:flex;gap:9px;align-items:center;padding:10px 12px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:7px;background:#fff;cursor:pointer';
     if (b.type === 'long') f = '<textarea style="' + inpBox + ';min-height:70px;resize:vertical"></textarea>';
     else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:1px solid var(--bone-d);border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
-    else if (b.type === 'ranking') f = (b.options || []).map(function (o, i) { return '<div style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:1px solid var(--bone-d);border-radius:12px;margin-bottom:8px;background:#fff"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span style="color:var(--muted);font-size:16px">⠿</span></div>'; }).join('') + '<div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser pour classer — 1 = priorité (interactif côté cliente).</div>';
+    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:1px solid var(--bone-d);border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer — 1 = priorité.</div>';
     else if (b.type === 'dropdown') f = '<select style="' + inpBox + '"><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option>Autre…</option>' : '') + '</select>';
     else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
     else if (b.type === 'slider') f = '<input type="range" min="0" max="' + (b.max || 10) + '" style="width:100%">';
@@ -4395,7 +4413,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
