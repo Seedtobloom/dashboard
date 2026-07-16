@@ -6391,8 +6391,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   function renderApp(data) {
     if (!data.type) {
+      // Forme « projet unique » (renvoyée par le serveur quand la cliente n'a
+      // qu'un seul espace : maintenance, partenaire, offre unique). On reconstruit
+      // appData sans perdre les champs de haut niveau (questionnaires, conversation,
+      // lien de réservation, bilan), sinon la nav « Questionnaires » disparaît.
       appData = { type:'project', clientName:data.project.clientName,
-        projects:[{ project:data.project, messages:data.messages, files:data.files }] };
+        projects:[{ project:data.project, messages:data.messages, files:data.files }],
+        questionnaires: data.questionnaires, conversation: data.conversation,
+        bookingLink: data.bookingLink, bilan: data.bilan };
     } else { appData = data; }
     // Personnalisation d'accueil (serveur), partagée par espace client, visible par la cliente.
     var h = data.home || {};
