@@ -28,6 +28,11 @@
     questionnaires: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9M8 7h6M8 11h3',
     inbox: 'M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
     reglages: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+    projtpl: 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+    stepClient: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+    stepStudio: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+    stepValid: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
+    deliv: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
@@ -167,7 +172,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Boîte de réception'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
+      ['Mon travail', [['inbox', 'Boîte de réception'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
@@ -399,12 +404,14 @@
   function renderMain() {
     if (VIEW !== 'visios') { var vd = el('vis-drawer'); if (vd) vd.remove(); var vb = el('vis-drawer-bk'); if (vb) vb.remove(); VIS_SEL = null; }
     if (VIEW !== 'questionnaires') { var qd = el('qnr-drawer'); if (qd) qd.remove(); var qb = el('qnr-drawer-bk'); if (qb) qb.remove(); QNR_SEL = null; }
+    if (VIEW !== 'projtpl') { var pd = el('prj-drawer'); if (pd) pd.remove(); var pb = el('prj-drawer-bk'); if (pb) pb.remove(); PRJ_SEL = null; }
     if (VIEW === 'inbox') return renderInbox();
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'mytasks') return renderMyTasks();
     if (VIEW === 'visios') return renderVisios();
     if (VIEW === 'questionnaires') return renderQuestionnaires();
+    if (VIEW === 'projtpl') return renderProjTpl();
     if (VIEW === 'kpi') return renderKpi();
     if (VIEW === 'planning') return renderPlanning();
     if (VIEW === 'clients') return renderClients();
@@ -4478,6 +4485,256 @@
     else doOpen();
   }
 
+  /* ════════════════ Modèles de projets (« moteur Projet ») ════════════════
+   * Scénarios réutilisables : Phases → Étapes typées (client/studio/validation)
+   * → Livrables (+ quota de révisions). Même mécanique que les questionnaires :
+   * liste unique en KV, instantané au moment de l'instanciation dans un espace. */
+  var PRJ = [], PRJ_LOADED = false, PRJ_SEL = null, PRJ_SHOW_ARCH = false, PRJ_SEQ = 0;
+  var PRJ_OFFERS = [['website', 'Site internet'], ['branding', 'Identité visuelle'], ['supports', 'Support de communication'], ['partner', 'Partenaire créative'], ['maintenance', 'Maintenance']];
+  var PRJ_OFFER_PID = { website: 'website', branding: 'branding', partner: 'partner', maintenance: 'maintenance', supports: 'support-001' };
+  var PRJ_STEP_TYPES = [['client', 'Action cliente', '#8267ab', 'stepClient'], ['studio', 'Travail studio', '#4a6fa5', 'stepStudio'], ['validation', 'Validation', '#3f9a6a', 'stepValid']];
+  function prjId(p) { PRJ_SEQ++; return (p || 'p') + Date.now().toString(36) + PRJ_SEQ.toString(36); }
+  function prjTpl(id) { for (var i = 0; i < PRJ.length; i++) if (PRJ[i].id === id) return PRJ[i]; return null; }
+  function prjOfferLabel(o) { for (var i = 0; i < PRJ_OFFERS.length; i++) if (PRJ_OFFERS[i][0] === o) return PRJ_OFFERS[i][1]; return o; }
+  function prjStepMeta(type) { for (var i = 0; i < PRJ_STEP_TYPES.length; i++) if (PRJ_STEP_TYPES[i][0] === type) return PRJ_STEP_TYPES[i]; return PRJ_STEP_TYPES[1]; }
+  function prjCountSteps(t) { var n = 0; (t.phases || []).forEach(function (p) { n += (p.steps || []).length; }); return n; }
+  function prjCountDeliv(t) { var n = 0; (t.phases || []).forEach(function (p) { n += (p.deliverables || []).length; }); return n; }
+
+  function renderProjTpl() {
+    var right = '<button class="btn btn--dark btn--sm" onclick="ADM.prjAdd()">+ Nouveau modèle</button> <button class="btn btn--outline btn--sm" onclick="ADM.prjSeed()" title="Créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support)">Modèles de départ</button>';
+    setMain(topbar('Modèles de projets', right, 'Un scénario = des phases, des étapes (cliente / studio / validation) et des livrables. Crée-le une fois, instancie-le dans l\'espace d\'une cliente.') + '<div class="wrap" id="prj-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
+    if (PRJ_LOADED) { renderPrjBody(); return; }
+    api('/api/project-templates').then(function (r) { return r.json(); }).then(function (d) { PRJ = (d && d.templates) || []; PRJ_LOADED = true; renderPrjBody(); }).catch(showError);
+  }
+  function prjSave() { jpost('/api/project-templates', { templates: PRJ }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement'); }).catch(function () { toast('Erreur'); }); }
+
+  function renderPrjBody() {
+    var body = el('prj-body'); if (!body) return;
+    var active = PRJ.filter(function (t) { return !t.archived; });
+    var archived = PRJ.filter(function (t) { return t.archived; });
+    var grid = active.length
+      ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">' + active.map(prjCardHtml).join('') + '</div>'
+      : '<div class="empty">Aucun modèle de projet. Clique sur « Modèles de départ » pour créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support), ou crée le tien.</div>';
+    var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:22px" onclick="ADM.prjToggleArch()">' + (PRJ_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
+    var archGrid = (PRJ_SHOW_ARCH && archived.length) ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:14px;opacity:0.75">' + archived.map(prjCardHtml).join('') + '</div>' : '';
+    body.innerHTML = grid + archBtn + archGrid;
+  }
+  function prjCardHtml(t) {
+    var col = t.color || '#5e3fa0';
+    var nP = (t.phases || []).length, nS = prjCountSteps(t), nD = prjCountDeliv(t);
+    var wk = t.totalWeeks ? esc(t.totalWeeks) + ' sem. · ' : '';
+    var head = (t.icon ? '<span style="font-size:18px;line-height:1">' + esc(t.icon) + '</span>' : admIcon('projtpl'));
+    return '<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--bone-d);border-radius:14px;display:flex;flex-direction:column">' +
+      '<div style="height:6px;background:' + esc(col) + '"></div>' +
+      '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
+        '<div class="between" style="align-items:flex-start;gap:8px">' +
+          '<span class="row" style="gap:8px;align-items:center;cursor:pointer" onclick="ADM.prjOpen(\'' + t.id + '\')"><span style="color:' + esc(col) + ';display:flex">' + head + '</span><strong style="font-size:15.5px;line-height:1.3">' + esc(t.name || 'Sans titre') + '</strong></span>' +
+          '<span style="font-family:var(--font-micro);font-size:9.5px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(prjOfferLabel(t.offer)) + '</span>' +
+        '</div>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + wk + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;padding:9px 12px;border-top:1px solid var(--bone-d);flex-wrap:wrap">' +
+        '<button class="pbtn" onclick="ADM.prjOpen(\'' + t.id + '\')">Éditer</button>' +
+        '<button class="pbtn pbtn--ok" onclick="ADM.prjAssignOpen(\'' + t.id + '\')">Instancier</button>' +
+        '<span style="margin-left:auto;display:flex;gap:4px">' +
+          '<button class="pbtn" title="Dupliquer" onclick="ADM.prjDup(\'' + t.id + '\')">⧉</button>' +
+          '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.prjArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
+          '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.prjDel(\'' + t.id + '\')">×</button>' +
+        '</span>' +
+      '</div>' +
+    '</div>';
+  }
+  function prjToggleArch() { PRJ_SHOW_ARCH = !PRJ_SHOW_ARCH; renderPrjBody(); }
+  function prjAdd() {
+    var t = { id: prjId('t'), name: '', offer: 'website', icon: '', color: '#5e3fa0', totalWeeks: 0, archived: false, phases: [{ id: prjId('ph'), title: '', help: '', steps: [], deliverables: [] }] };
+    PRJ.unshift(t); prjSave(); renderPrjBody(); prjOpen(t.id);
+  }
+  function prjDup(id) {
+    var t = prjTpl(id); if (!t) return;
+    var copy = JSON.parse(JSON.stringify(t));
+    copy.id = prjId('t'); copy.name = (t.name || 'Sans titre') + ' (copie)'; copy.archived = false;
+    (copy.phases || []).forEach(function (p) { p.id = prjId('ph'); (p.steps || []).forEach(function (s) { s.id = prjId('st'); }); (p.deliverables || []).forEach(function (d) { d.id = prjId('dl'); }); });
+    PRJ.unshift(copy); prjSave(); renderPrjBody(); toast('Modèle dupliqué');
+  }
+  function prjArchive(id) { var t = prjTpl(id); if (!t) return; t.archived = !t.archived; prjSave(); renderPrjBody(); }
+  function prjDel(id) {
+    admConfirm({ title: 'Supprimer ce modèle ?', message: 'Le modèle sera supprimé. Les projets déjà instanciés dans les espaces clientes restent intacts.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () {
+      PRJ = PRJ.filter(function (t) { return t.id !== id; }); if (PRJ_SEL === id) prjCloseDrawer(); prjSave(); renderPrjBody();
+    });
+  }
+  function prjSet(id, field, val) { var t = prjTpl(id); if (!t) return; if (field === 'totalWeeks') val = parseInt(val, 10) || 0; t[field] = val; prjSave(); renderPrjBody(); if (field === 'offer' || field === 'color') renderPrjDrawer(); }
+
+  // ── Éditeur (drawer droite) ──
+  function prjOpen(id) { PRJ_SEL = id; renderPrjDrawer(); }
+  function prjCloseDrawer() { PRJ_SEL = null; var d = el('prj-drawer'); if (d) d.remove(); var b = el('prj-drawer-bk'); if (b) b.remove(); }
+  function renderPrjDrawer() {
+    var ex = el('prj-drawer'); var keepScroll = ex ? ex.scrollTop : 0;
+    if (ex) ex.remove(); var exb = el('prj-drawer-bk'); if (exb) exb.remove();
+    var t = prjTpl(PRJ_SEL); if (!t) return;
+    var bk = document.createElement('div'); bk.id = 'prj-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = prjCloseDrawer; document.body.appendChild(bk);
+    var d = document.createElement('div'); d.id = 'prj-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(780px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
+    d.innerHTML = prjDrawerHtml(t); document.body.appendChild(d);
+    if (keepScroll) d.scrollTop = keepScroll;
+  }
+  function prjDrawerHtml(t) {
+    var col = t.color || '#5e3fa0';
+    var offSel = '<select class="inp" style="width:auto" onchange="ADM.prjSet(\'' + t.id + '\',\'offer\',this.value)">' +
+      PRJ_OFFERS.map(function (o) { return '<option value="' + o[0] + '"' + (t.offer === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+    var swatches = ['#5e3fa0', '#8267ab', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
+    var colorDots = swatches.map(function (c) { return '<button title="' + esc(c) + '" onclick="ADM.prjSet(\'' + t.id + '\',\'color\',\'' + c + '\')" style="width:22px;height:22px;border-radius:50%;background:' + c + ';border:2px solid ' + (col === c ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
+    var phasesHtml = (t.phases || []).map(function (p, i) { return prjPhaseHtml(t, p, i, (t.phases || []).length); }).join('');
+    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<button onclick="ADM.prjCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
+        '<button onclick="ADM.prjAssignOpen(\'' + t.id + '\')" class="btn btn--dark btn--sm">Instancier dans un espace</button>' +
+        '<span style="margin-left:auto"></span>' +
+        '<button onclick="ADM.prjDel(\'' + t.id + '\')" class="btn btn--danger btn--sm">Suppr.</button>' +
+      '</div>' +
+      '<div style="padding:20px 24px 90px;max-width:740px">' +
+        '<div class="row" style="gap:10px;align-items:center;margin-bottom:10px">' +
+          '<input class="inp" value="' + esc(t.icon || '') + '" placeholder="🌐" title="Emoji (optionnel)" style="width:56px;text-align:center;font-size:18px" onchange="ADM.prjSet(\'' + t.id + '\',\'icon\',this.value)">' +
+          '<input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du modèle (ex. Création de site internet)" style="flex:1;box-sizing:border-box;font-size:20px;font-weight:600" onchange="ADM.prjSet(\'' + t.id + '\',\'name\',this.value)">' +
+        '</div>' +
+        '<div class="row" style="gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:8px">' +
+          '<span class="row" style="gap:8px;align-items:center"><span class="micro">Offre</span>' + offSel + '</span>' +
+          '<span class="row" style="gap:8px;align-items:center"><span class="micro">Durée</span><input class="inp" type="number" min="0" max="104" value="' + esc(t.totalWeeks || 0) + '" style="width:70px" onchange="ADM.prjSet(\'' + t.id + '\',\'totalWeeks\',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">semaines (pour « semaine X sur Y »)</span></span>' +
+        '</div>' +
+        '<div class="row" style="gap:6px;align-items:center;margin-bottom:20px"><span class="micro">Couleur d\'accent</span>' + colorDots + '</div>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:16px;display:flex;gap:14px;flex-wrap:wrap">' +
+          PRJ_STEP_TYPES.map(function (m) { return '<span class="row" style="gap:5px;align-items:center"><span style="color:' + m[2] + ';display:flex">' + admIcon(m[3]) + '</span>' + esc(m[1]) + '</span>'; }).join('') +
+        '</div>' +
+        '<div class="between" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Phases</h3><button class="btn btn--outline btn--sm" onclick="ADM.prjPhaseAdd(\'' + t.id + '\')">+ Phase</button></div>' +
+        (phasesHtml || '<div class="empty" style="margin-bottom:10px">Ajoute une phase (ex. « Stratégie », « Maquette »), puis des étapes et des livrables à l\'intérieur.</div>') +
+      '</div>';
+  }
+  function prjPhaseHtml(t, p, i, total) {
+    var stepsHtml = (p.steps || []).map(function (s) { return prjStepHtml(t, p, s); }).join('');
+    var delivHtml = (p.deliverables || []).map(function (d) { return prjDelivHtml(t, p, d); }).join('');
+    var up = i > 0 ? '<button class="pbtn" title="Monter" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',-1)">↑</button>' : '';
+    var down = i < total - 1 ? '<button class="pbtn" title="Descendre" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',1)">↓</button>' : '';
+    return '<div class="card" style="padding:14px;margin-bottom:14px;border:1px solid var(--bone-d);border-radius:12px;background:var(--card)">' +
+      '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
+        '<span class="micro" style="background:var(--terre);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i + 1) + '</span>' +
+        '<input class="inp" value="' + esc(p.title || '') + '" placeholder="Nom de la phase (ex. Maquette page d\'accueil)" style="flex:1;font-weight:600" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'title\',this.value)">' +
+        up + down +
+        '<button class="pbtn" style="color:#c44" title="Supprimer la phase" onclick="ADM.prjPhaseDel(\'' + t.id + '\',\'' + p.id + '\')">×</button>' +
+      '</div>' +
+      '<input class="inp" value="' + esc(p.help || '') + '" placeholder="Sous-titre / repère de calendrier (optionnel, ex. Sem. 3)" style="width:100%;box-sizing:border-box;font-size:13px;margin-bottom:10px" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'help\',this.value)">' +
+      '<div class="micro" style="margin-bottom:6px">Étapes</div>' +
+      (stepsHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;margin-bottom:6px">Aucune étape.</div>') +
+      '<div class="row" style="gap:5px;flex-wrap:wrap;margin:2px 0 12px">' +
+        PRJ_STEP_TYPES.map(function (m) { return '<button class="pbtn" onclick="ADM.prjStepAdd(\'' + t.id + '\',\'' + p.id + '\',\'' + m[0] + '\')"><span style="color:' + m[2] + '">+</span> ' + esc(m[1]) + '</button>'; }).join('') +
+      '</div>' +
+      '<div class="micro" style="margin-bottom:6px">Livrables</div>' +
+      (delivHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;margin-bottom:6px">Aucun livrable.</div>') +
+      '<button class="pbtn" style="margin-top:2px" onclick="ADM.prjDelivAdd(\'' + t.id + '\',\'' + p.id + '\')">+ Livrable</button>' +
+    '</div>';
+  }
+  function prjStepHtml(t, p, s) {
+    var m = prjStepMeta(s.type);
+    var typeSel = '<select class="inp" style="width:auto;font-size:12px;padding:3px 6px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'type\',this.value)">' +
+      PRJ_STEP_TYPES.map(function (x) { return '<option value="' + x[0] + '"' + (s.type === x[0] ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>';
+    return '<div class="row" style="gap:7px;align-items:center;margin-bottom:6px">' +
+      '<span title="' + esc(m[1]) + '" style="color:' + m[2] + ';display:flex;flex-shrink:0">' + admIcon(m[3]) + '</span>' +
+      '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Intitulé de l\'étape" style="flex:1;font-size:13px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
+      typeSel +
+      '<input class="inp" type="number" min="0" value="' + esc(s.estMinutes || 0) + '" title="Temps estimé (min)" style="width:64px;font-size:12px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'estMinutes\',this.value)">' +
+      '<span class="micro" style="text-transform:none">min</span>' +
+      '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.prjStepDel(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\')">×</button>' +
+    '</div>';
+  }
+  function prjDelivHtml(t, p, d) {
+    return '<div class="row" style="gap:7px;align-items:center;margin-bottom:6px">' +
+      '<span style="color:' + esc(t.color || '#5e3fa0') + ';display:flex;flex-shrink:0">' + admIcon('deliv') + '</span>' +
+      '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:13px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
+      '<span class="micro" style="text-transform:none;letter-spacing:0">révisions</span>' +
+      '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:12px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +
+      '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.prjDelivDel(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\')">×</button>' +
+    '</div>';
+  }
+  function prjPhaseOf(t, pid) { return (t.phases || []).filter(function (p) { return p.id === pid; })[0] || null; }
+  function prjPhaseAdd(id) { var t = prjTpl(id); if (!t) return; if (!Array.isArray(t.phases)) t.phases = []; t.phases.push({ id: prjId('ph'), title: '', help: '', steps: [], deliverables: [] }); prjSave(); renderPrjDrawer(); renderPrjBody(); }
+  function prjPhaseSet(id, pid, field, val) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; p[field] = val; prjSave(); }
+  function prjPhaseDel(id, pid) { var t = prjTpl(id); if (!t) return; t.phases = (t.phases || []).filter(function (p) { return p.id !== pid; }); prjSave(); renderPrjDrawer(); renderPrjBody(); }
+  function prjPhaseMove(id, pid, dir) { var t = prjTpl(id); if (!t) return; var a = t.phases || []; var i = a.findIndex(function (p) { return p.id === pid; }); if (i < 0) return; var j = i + dir; if (j < 0 || j >= a.length) return; var tmp = a[i]; a[i] = a[j]; a[j] = tmp; prjSave(); renderPrjDrawer(); renderPrjBody(); }
+  function prjStepAdd(id, pid, type) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; if (!Array.isArray(p.steps)) p.steps = []; p.steps.push({ id: prjId('st'), title: '', type: type || 'studio', action: '', estMinutes: 0 }); prjSave(); renderPrjDrawer(); renderPrjBody(); }
+  function prjStepSet(id, pid, sid, field, val) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; if (field === 'estMinutes') val = parseInt(val, 10) || 0; (p.steps || []).forEach(function (s) { if (s.id === sid) s[field] = val; }); prjSave(); if (field === 'type') renderPrjDrawer(); }
+  function prjStepDel(id, pid, sid) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; p.steps = (p.steps || []).filter(function (s) { return s.id !== sid; }); prjSave(); renderPrjDrawer(); renderPrjBody(); }
+  function prjDelivAdd(id, pid) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; if (!Array.isArray(p.deliverables)) p.deliverables = []; p.deliverables.push({ id: prjId('dl'), name: '', revisionsIncluded: 0 }); prjSave(); renderPrjDrawer(); renderPrjBody(); }
+  function prjDelivSet(id, pid, did, field, val) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; if (field === 'revisionsIncluded') val = parseInt(val, 10) || 0; (p.deliverables || []).forEach(function (d) { if (d.id === did) d[field] = val; }); prjSave(); if (field === 'revisionsIncluded') renderPrjBody(); }
+  function prjDelivDel(id, pid, did) { var t = prjTpl(id); if (!t) return; var p = prjPhaseOf(t, pid); if (!p) return; p.deliverables = (p.deliverables || []).filter(function (d) { return d.id !== did; }); prjSave(); renderPrjDrawer(); renderPrjBody(); }
+
+  // ── Instancier un modèle dans l'espace d'une cliente ──
+  function prjAssignOpen(id) {
+    var t = prjTpl(id); if (!t) return;
+    if (!t.name || !t.name.trim()) { toast('Donne d\'abord un nom au modèle'); prjOpen(id); return; }
+    var doOpen = function () {
+      var opts = NAV_CLIENTS.length
+        ? NAV_CLIENTS.map(function (c) { return '<option value="' + c.key + '">' + esc(clientName(c)) + '</option>'; }).join('')
+        : '';
+      var ov = document.createElement('div'); ov.className = 'admconfirm';
+      var pid = PRJ_OFFER_PID[t.offer] || t.offer;
+      ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
+        '<div class="admconfirm__title">Instancier « ' + esc(t.name) + ' »</div>' +
+        '<div class="admconfirm__msg">Le scénario sera rattaché à l\'offre <strong>' + esc(prjOfferLabel(t.offer)) + '</strong> de la cliente choisie. Un projet déjà instancié sur cette offre sera remplacé.</div>' +
+        (NAV_CLIENTS.length
+          ? '<div class="row" style="gap:10px;align-items:center;margin:10px 0"><span class="micro">Cliente</span><select class="inp" id="prj-asg-client" style="flex:1">' + opts + '</select></div>'
+          : '<div class="micro muted" style="text-transform:none;letter-spacing:0;margin:10px 0">Aucune cliente avec un espace.</div>') +
+        '<div class="admconfirm__row" style="margin-top:14px">' +
+          '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+          '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Instancier</button>' +
+        '</div></div>';
+      function close() { ov.remove(); }
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('[data-no]').onclick = close;
+      ov.querySelector('[data-yes]').onclick = function () {
+        var sel = ov.querySelector('#prj-asg-client');
+        if (!sel || !sel.value) { toast('Sélectionne une cliente'); return; }
+        var key = sel.value; close(); toast('Instanciation en cours…');
+        jpost('/api/clients/' + key + '/project-template', { template: t, projectId: pid }, 'POST')
+          .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+          .then(function (res) { if (res.ok) toast('Projet instancié ✓ · offre « ' + esc(prjOfferLabel(t.offer)) + ' »'); else toast(res.b && res.b.error ? res.b.error : 'Erreur — l\'offre existe-t-elle pour cette cliente ?'); })
+          .catch(function () { toast('Erreur'); });
+      };
+      document.body.appendChild(ov);
+    };
+    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; doOpen(); }).catch(function () { doOpen(); }); }
+    else doOpen();
+  }
+
+  // ── Modèles de départ (3 scénarios prêts à l'emploi) ──
+  function prjSeed() {
+    admConfirm({ title: 'Créer les modèles de départ ?', message: 'Trois scénarios prêts à l\'emploi seront ajoutés : Création de site internet, Identité visuelle, Support de communication. Tu pourras les modifier ensuite.', yes: 'Créer', no: 'Annuler' }, function () {
+      prjBuildPresets().forEach(function (t) { PRJ.unshift(t); });
+      prjSave(); renderPrjBody(); toast('3 modèles de départ créés');
+    });
+  }
+  function prjMkStep(type, title, min) { return { id: prjId('st'), title: title, type: type, action: '', estMinutes: min || 0 }; }
+  function prjMkDeliv(name, rev) { return { id: prjId('dl'), name: name, revisionsIncluded: rev || 0 }; }
+  function prjMkPhase(title, help, steps, delivs) { return { id: prjId('ph'), title: title, help: help || '', steps: steps || [], deliverables: delivs || [] }; }
+  function prjBuildPresets() {
+    var site = { id: prjId('t'), name: 'Création de site internet', offer: 'website', icon: '🌐', color: '#4a6fa5', totalWeeks: 8, archived: false, phases: [
+      prjMkPhase('Stratégie & contenu', 'Sem. 1–2', [prjMkStep('client', 'Répondre au questionnaire', 30), prjMkStep('studio', 'Atelier stratégie & arborescence', 90), prjMkStep('validation', 'Valider l\'arborescence', 20), prjMkStep('client', 'Livrer les textes + photos', 0)], [prjMkDeliv('Trame de contenu (Google Doc)', 0)]),
+      prjMkPhase('Maquette page d\'accueil', 'Sem. 3', [prjMkStep('studio', 'Créer la maquette Figma (accueil)', 240), prjMkStep('studio', 'Envoyer la vidéo Loom explicative', 20), prjMkStep('validation', 'Valider la maquette', 30)], [prjMkDeliv('Maquette Figma — Accueil', 1)]),
+      prjMkPhase('Développement WordPress', 'Sem. 4–5', [prjMkStep('studio', 'Intégration sur staging', 480), prjMkStep('studio', 'Responsive + SEO + formulaire', 240), prjMkStep('client', 'Retours via Pastel', 0), prjMkStep('validation', 'Valider les corrections', 30)], [prjMkDeliv('Site de test (staging)', 2)]),
+      prjMkPhase('Livraison', 'Sem. 6', [prjMkStep('studio', 'Mise en ligne + vérifications', 120), prjMkStep('studio', 'Formation 1h', 60), prjMkStep('validation', 'Réception', 0)], [prjMkDeliv('Site en ligne', 0), prjMkDeliv('Tutoriel de prise en main', 0)]),
+    ] };
+    var brand = { id: prjId('t'), name: 'Identité visuelle', offer: 'branding', icon: '🎨', color: '#8267ab', totalWeeks: 0, archived: false, phases: [
+      prjMkPhase('Questionnaire & stratégie', '', [prjMkStep('client', 'Répondre au questionnaire', 30), prjMkStep('studio', 'Stratégie de marque', 120), prjMkStep('validation', 'Valider la stratégie', 20)], [prjMkDeliv('Plateforme de marque', 0)]),
+      prjMkPhase('Direction artistique', '', [prjMkStep('studio', 'Moodboard / pistes créatives', 180), prjMkStep('validation', 'Valider la piste créative', 20)], [prjMkDeliv('Direction artistique (moodboard)', 2)]),
+      prjMkPhase('Logo', '', [prjMkStep('studio', 'Création du logo + déclinaisons', 300), prjMkStep('validation', 'Valider le logo', 30)], [prjMkDeliv('Logo + déclinaisons', 2)]),
+      prjMkPhase('Charte graphique', '', [prjMkStep('studio', 'Charte (couleurs, typo, usages)', 180), prjMkStep('validation', 'Valider la charte', 20)], [prjMkDeliv('Charte graphique', 1)]),
+      prjMkPhase('Livraison', '', [prjMkStep('studio', 'Exports (web + print)', 90), prjMkStep('validation', 'Réception', 0)], [prjMkDeliv('Pack de livraison (exports)', 0)]),
+    ] };
+    var supp = { id: prjId('t'), name: 'Support de communication', offer: 'supports', icon: '📄', color: '#c98a2b', totalWeeks: 0, archived: false, phases: [
+      prjMkPhase('Brief', '', [prjMkStep('client', 'Valider le brief / les infos', 0), prjMkStep('studio', 'Préparation', 30)], []),
+      prjMkPhase('Création', '', [prjMkStep('studio', 'Création de la proposition', 180), prjMkStep('validation', 'Donner ton retour', 15)], [prjMkDeliv('Support (ex. Affiche / Flyer)', 5)]),
+      prjMkPhase('Révisions', '', [prjMkStep('client', 'Envoyer tes retours', 0), prjMkStep('studio', 'Corrections', 60)], []),
+      prjMkPhase('Livraison', '', [prjMkStep('studio', 'Fichiers imprimeur / finaux', 30), prjMkStep('validation', 'Réception', 0)], [prjMkDeliv('Fichiers finaux', 0)]),
+    ] };
+    return [supp, brand, site];
+  }
+
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
@@ -4495,6 +4752,7 @@
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
