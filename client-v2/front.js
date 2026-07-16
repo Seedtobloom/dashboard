@@ -6389,17 +6389,28 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     el.textContent = css;
   }
 
+  // Reconstruit appData à partir de la charge serveur. La forme « projet unique »
+  // (sans data.type) est renvoyée quand la cliente n'a qu'un seul espace
+  // (maintenance, partenaire, offre unique) : on repart de TOUTES les données du
+  // serveur puis on ajoute uniquement la forme « projets » attendue par
+  // l'interface. Ainsi aucun champ de haut niveau (questionnaires, conversation,
+  // lien de réservation, bilan… présent OU ajouté plus tard) ne peut être perdu 
+  // c'est ce qui faisait disparaître la nav « Questionnaires ». Renvoie null si la
+  // charge est inexploitable.
+  function normalizeAppData(data) {
+    if (!data) return null;
+    if (data.type) return data;
+    if (!data.project) return null;
+    return Object.assign({}, data, {
+      type: 'project',
+      clientName: data.project.clientName,
+      projects: [{ project: data.project, messages: data.messages, files: data.files }],
+    });
+  }
+
   function renderApp(data) {
-    if (!data.type) {
-      // Forme « projet unique » (renvoyée par le serveur quand la cliente n'a
-      // qu'un seul espace : maintenance, partenaire, offre unique). On reconstruit
-      // appData sans perdre les champs de haut niveau (questionnaires, conversation,
-      // lien de réservation, bilan), sinon la nav « Questionnaires » disparaît.
-      appData = { type:'project', clientName:data.project.clientName,
-        projects:[{ project:data.project, messages:data.messages, files:data.files }],
-        questionnaires: data.questionnaires, conversation: data.conversation,
-        bookingLink: data.bookingLink, bilan: data.bilan };
-    } else { appData = data; }
+    appData = normalizeAppData(data);
+    if (!appData) return;
     // Personnalisation d'accueil (serveur), partagée par espace client, visible par la cliente.
     var h = data.home || {};
     appData.home = { intro: (typeof h.intro === 'string' ? h.intro : null), blocks: Array.isArray(h.blocks) ? h.blocks : [], hidden: (h.hidden && typeof h.hidden === 'object') ? h.hidden : {}, banner: (h.banner && typeof h.banner === 'object') ? h.banner : {} };
@@ -7091,9 +7102,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(data){
         if (!data || data.wrongCode || data.locked) return;
-        var norm;
-        if (!data.type) { if (!data.project) return; norm = { type:'project', clientName:data.project.clientName, projects:[{ project:data.project, messages:data.messages, files:data.files }] }; }
-        else { norm = data; }
+        var norm = normalizeAppData(data);
+        if (!norm) return;
         var h = data.home || {};
         norm.home = { intro:(typeof h.intro==='string'?h.intro:null), blocks:Array.isArray(h.blocks)?h.blocks:[], hidden:(h.hidden&&typeof h.hidden==='object')?h.hidden:{}, banner:(h.banner&&typeof h.banner==='object')?h.banner:{} };
         appData = norm;
