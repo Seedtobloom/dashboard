@@ -3033,6 +3033,45 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }
   };
 
+  // Alerte « forfait bientôt épuisé » (ou dépassé) + solutions proposées.
+  // Reste dans la DA : carte crème/ambrée, icône dans un cercle, pas de barre latérale.
+  function buildForfaitAlert(pid, project, pf) {
+    var forfaitH = project.monthlyHours || 0;
+    if (!forfaitH || !pf) return '';
+    var rem = pf.remaining;
+    var avail = pf.available || forfaitH;
+    var threshold = Math.max(1.5, avail * 0.2); // « bientôt épuisé » : ≤ 20 % ou ≤ 1h30
+    var over = rem < 0;
+    if (!over && rem > threshold) return '';
+    var accent = over ? '#9b3a2e' : '#8a6f2e';
+    var bg = over ? '#fbeae5' : '#fbf5e6';
+    var circle = over ? '#f6d5cc' : '#f0e2b0';
+    var title = over
+      ? 'Forfait dépassé de ' + cpFmtH(-rem) + ' ce mois'
+      : 'Il vous reste ' + cpFmtH(rem) + ' sur votre forfait ce mois';
+    var msg = over
+      ? 'Les demandes au-delà du forfait sont facturées ' + (pf.rate ? pf.rate + ' €/h' : 'en supplément') + '. Voyons ensemble comment ajuster.'
+      : 'Votre forfait touche à sa fin. Quelques options pour la suite :';
+    var sols = '<ul style="margin:10px 0 0;padding-left:18px;font-size:13.5px;color:var(--terre-600);line-height:1.75">' +
+        '<li>Prioriser les demandes essentielles d\'ici la fin du mois</li>' +
+        '<li>Reporter certaines demandes au mois prochain</li>' +
+        '<li>Ajouter des heures ou passer à un forfait supérieur</li>' +
+      '</ul>';
+    var actions = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">' +
+        '<button onclick="cpOpenMessages()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--navy,#1C1205);color:#fff;font-size:13px;font-weight:600;cursor:pointer">En parler à Cindy</button>' +
+        '<button onclick="cliPartSwitch(\'' + pid + '\',\'forfait\')" style="padding:9px 16px;border-radius:10px;border:1.5px solid var(--bone-d,#e8e0d4);background:#fff;color:var(--navy,#1C1205);font-size:13px;font-weight:600;cursor:pointer">Voir mon forfait</button>' +
+      '</div>';
+    return '<div style="background:' + bg + ';border:1px solid ' + circle + ';border-radius:14px;padding:16px 18px;margin-bottom:16px">' +
+      '<div style="display:flex;align-items:flex-start;gap:12px">' +
+        '<span style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:' + circle + ';display:flex;align-items:center;justify-content:center">' + cpIcon('clock', 18, 'color:' + accent) + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + accent + ';margin-bottom:2px">' + esc(title) + '</div>' +
+          '<div style="font-size:13.5px;color:var(--terre-600);line-height:1.5">' + esc(msg) + '</div>' +
+          sols + actions +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
   function buildClientPartenaire(pd) {
     var project = pd.project, files = pd.files;
     var tasks = Array.isArray(project.tasks) ? project.tasks : [];
@@ -3083,6 +3122,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<span style="font-size:13.5px;color:var(--navy,#1C1205)">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join(' · ') + '</span>' +
       '</div>' + summaryBar;
     }
+
+    // Alerte forfait bientôt épuisé / dépassé, en tête de l'espace.
+    summaryBar = buildForfaitAlert(pid, project, _pf) + summaryBar;
 
     // Navigation onglets
     var tabs = '<div class="cp-part-tabs" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:16px">' +
