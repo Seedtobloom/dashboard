@@ -1399,6 +1399,9 @@ async function handleKpi(env: Env): Promise<Response> {
   const byClient: AnyObj[] = [];
   const forfaits: AnyObj[] = [];
   let totalDone = 0, totalMinutes = 0, totalOpen = 0;
+  // Rentabilité : temps estimé vs réel sur les tâches terminées qui ont une estimation.
+  const poleReal: AnyObj = {};
+  let estMin = 0, realMin = 0, estCount = 0, horsForfait = 0, deliverablesSent = 0;
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
@@ -1407,20 +1410,29 @@ async function handleKpi(env: Env): Promise<Response> {
     if (!pc) continue;
     const who = clientName(data);
     const tasks = pc.taches || [];
+    (pc.livrables || []).forEach((l: AnyObj) => { if (l && (l.fileKey || l.reviewLink)) deliverablesSent++; });
     let cDone = 0, cMin = 0, cOpen = 0;
     tasks.forEach((t: AnyObj) => {
+      if (t.stage === 'out_of_scope') horsForfait++;
       if (t.status === 'done') {
         totalDone++; cDone++;
         const min = t.timeSpentMinutes || 0; totalMinutes += min; cMin += min;
         const when = (t.completedAt || t.dueDate || '').slice(0, 7);
         if (when) { tasksByMonth[when] = (tasksByMonth[when] || 0) + 1; minutesByMonth[when] = (minutesByMonth[when] || 0) + min; }
-      } else if (!t.archived) { cOpen++; totalOpen++; }
+        if (t.estMinutes > 0 && min > 0) {
+          estMin += t.estMinutes; realMin += min; estCount++;
+          const pole = (t.pole || 'Autre').toString().slice(0, 40);
+          const p = poleReal[pole] || (poleReal[pole] = { est: 0, real: 0, count: 0 });
+          p.est += t.estMinutes; p.real += min; p.count++;
+        }
+      } else if (!t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope') { cOpen++; totalOpen++; }
     });
     byClient.push({ key: ci.key, client: who, tasksDone: cDone, minutes: cMin, openTasks: cOpen });
     forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
   }
   byClient.sort((a, b) => b.minutes - a.minutes);
-  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length } });
+  const poles = Object.keys(poleReal).map((k) => ({ pole: k, est: poleReal[k].est, real: poleReal[k].real, count: poleReal[k].count })).sort((a, b) => b.real - a.real);
+  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles } });
 }
 
 /* ─────────── Tâches personnelles de l'admin ─────────── */
