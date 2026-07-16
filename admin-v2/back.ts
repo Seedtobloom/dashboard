@@ -1402,15 +1402,30 @@ async function handleKpi(env: Env): Promise<Response> {
   // Rentabilité : temps estimé vs réel sur les tâches terminées qui ont une estimation.
   const poleReal: AnyObj = {};
   let estMin = 0, realMin = 0, estCount = 0, horsForfait = 0, deliverablesSent = 0;
+  // Santé des collaborations : temps avant validation + clientes inactives.
+  let valSum = 0, valCount = 0, activeCount = 0, inactiveCount = 0;
+  const nowMs = Date.now();
+  const lastSeenMs = (v: unknown): number => { if (typeof v === 'number') return v > 1e11 ? v : v * 1000; const p = Date.parse(String(v || '')); return isNaN(p) ? 0 : p; };
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
     const esp = getEspace(data);
+    if (esp.isActive === true) {
+      activeCount++;
+      const ls = lastSeenMs(esp.lastSeen);
+      if (!ls || (nowMs - ls) > 7 * 86400 * 1000) inactiveCount++;
+    }
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (!pc) continue;
     const who = clientName(data);
     const tasks = pc.taches || [];
-    (pc.livrables || []).forEach((l: AnyObj) => { if (l && (l.fileKey || l.reviewLink)) deliverablesSent++; });
+    (pc.livrables || []).forEach((l: AnyObj) => {
+      if (l && (l.fileKey || l.reviewLink)) deliverablesSent++;
+      if (l && l.status === 'valide' && l.createdAt && l.validatedAt) {
+        const dt = Date.parse(l.validatedAt) - Date.parse(l.createdAt);
+        if (dt > 0) { valSum += dt; valCount++; }
+      }
+    });
     let cDone = 0, cMin = 0, cOpen = 0;
     tasks.forEach((t: AnyObj) => {
       if (t.stage === 'out_of_scope') horsForfait++;
@@ -1432,7 +1447,8 @@ async function handleKpi(env: Env): Promise<Response> {
   }
   byClient.sort((a, b) => b.minutes - a.minutes);
   const poles = Object.keys(poleReal).map((k) => ({ pole: k, est: poleReal[k].est, real: poleReal[k].real, count: poleReal[k].count })).sort((a, b) => b.real - a.real);
-  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles } });
+  const avgValidationDays = valCount ? Math.round(valSum / valCount / 86400000 * 10) / 10 : 0;
+  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles }, collaboration: { avgValidationDays, valCount, inactiveCount, activeCount } });
 }
 
 /* ─────────── Tâches personnelles de l'admin ─────────── */

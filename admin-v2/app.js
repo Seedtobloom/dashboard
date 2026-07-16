@@ -2189,6 +2189,37 @@
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' + body + '</div>' +
     '</div>';
   }
+  // Santé des collaborations : qui attend quoi, réactivité.
+  function kpiCollabHtml() {
+    var dash = KPI_DASH || {};
+    var dls = dash.deadlines || [];
+    var waitYou = {}, waitThem = {};
+    dls.forEach(function (x) {
+      if (x.status === 'waiting_client') waitThem[x.key] = 1;
+      else if (x.status !== 'done' && x.status !== 'review') waitYou[x.key] = 1;
+    });
+    (dash.pendingValidation || []).forEach(function (l) { waitThem[l.key] = 1; });
+    (dash.inbox || []).forEach(function (x) { waitYou[x.key] = 1; });
+    var nYou = Object.keys(waitYou).length, nThem = Object.keys(waitThem).length;
+    var col = (KPI_D && KPI_D.collaboration) || {};
+    var valDays = col.avgValidationDays || 0;
+    var inactive = col.inactiveCount || 0;
+    function tile(icon, big, label, danger) {
+      return '<div style="min-width:150px;padding:6px 20px 6px 0">' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? 'var(--red)' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
+      '</div>';
+    }
+    return '<div class="card" style="background:var(--card);border:1px solid var(--bone-d);padding:18px 20px;margin-bottom:18px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--terre)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé des collaborations</span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' +
+        tile('mytasks', nYou, 'en attente de toi', false) +
+        tile('clients', nThem, 'en attente d\'elles', false) +
+        tile('done', (valDays ? valDays + ' j' : '—'), 'avant validation (moy.)', false) +
+        tile('avis', inactive, 'inactives 7 j+', inactive > 0) +
+      '</div>' +
+    '</div>';
+  }
   function kpiRentabiliteHtml() {
     var pr = (KPI_D && KPI_D.profitability) || {};
     var estH = Math.round((pr.estMin || 0) / 60 * 10) / 10, realH = Math.round((pr.realMin || 0) / 60 * 10) / 10;
@@ -2299,7 +2330,7 @@
         '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
         '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div></div>';
     }
-    setMain(topbar('Tableau de bord', '', 'D\'un coup d\'œil : ta semaine, puis le détail') + '<div class="wrap">' + kpiSummaryHtml() + kpiPlaisirHtml() +
+    setMain(topbar('Tableau de bord', '', 'D\'un coup d\'œil : ta semaine, puis le détail') + '<div class="wrap">' + kpiSummaryHtml() + kpiCollabHtml() + kpiPlaisirHtml() +
       '<h3 style="margin:8px 0 12px;font-size:16px">Détail · partenaire créative</h3>' + kpis + tabBar + '<div id="kpibody">' + body + '</div></div>');
   }
 
