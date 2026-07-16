@@ -1336,7 +1336,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
             (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#c46a1a')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#c46a1a;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#c46a1a')+'</div>'; })() : '') +
-            (isPart ? '<button onclick="cliOpenAddTask(\''+p.id+'\',\'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
+            (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
             cpSecWrap(p.id, 'suivi', miniTrack) +
@@ -3046,7 +3046,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var pctDone = tasks.length ? Math.round(doneTasks.length/tasks.length*100) : 0;
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
-    var summaryBar = '<button class="cp-fab" onclick="cliOpenAddTask(\''+pid+'\',\'\')" aria-label="Nouvelle tâche">'+cpIcon('plus',20)+'<span>Nouvelle tâche</span></button>' + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+    var summaryBar = '<button class="cp-fab" onclick="cliNewDemande(\''+pid+'\')" aria-label="Nouvelle demande">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>' + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
       '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">' +
         '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait restant</div>' +
         '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
@@ -4125,7 +4125,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     return '<div class="cp-card">' +
       '<div class="cp-card__hd"><h2 class="cp-card__title">Tableau des missions</h2>' +
-        '<button class="cp-btn cp-btn--dark" onclick="cliOpenAddTask(\''+pid+'\',\'\')">+ Ajouter</button>' +
+        '<button class="cp-btn cp-btn--dark" onclick="cliNewDemande(\''+pid+'\')">+ Nouvelle demande</button>' +
       '</div>' +
       '<div class="cp-bar" style="margin-bottom:14px"><div class="cp-bar__fill" style="width:'+pct+'%"></div></div>' +
       filtersHtml +
@@ -4676,6 +4676,64 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       livrableUrl: (document.getElementById('clt-livrable')||{}).value||undefined,
     };
   }
+
+  // Garde-fou à la création (Phase 2) : petite demande (forfait) vs nouveau
+  // projet (devis). L'espace pose le cadre du forfait à la place du studio.
+  window.cliNewDemande = function(pid) {
+    var ex = document.getElementById('_cp-demande-gate'); if (ex) ex.remove();
+    var ov = document.createElement('div'); ov.id = '_cp-demande-gate';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#e2dbd0);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
+    ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#1C1205)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
+      '<div style="font-size:13.5px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux, je m\'occupe du reste.</div>' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px;border-left:4px solid #3a6b4a" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+        '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205);margin-bottom:4px">🟢 Une petite demande <span style="font-weight:500;font-size:12.5px;color:#3a6b4a">· incluse dans ton forfait</span></div>' +
+        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Modifier un texte · créer un visuel Instagram · mettre à jour une page · adapter un flyer · corriger une couleur…</div>' +
+      '</button>' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + ';border-left:4px solid #b06438" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+        '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205);margin-bottom:4px">🟠 Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:#b06438">· nécessite un devis</span></div>' +
+        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Refonte complète d\'un site · nouvelle identité visuelle · brochure de 40 pages · nouvelle landing page…</div>' +
+      '</button>' +
+      '<div style="font-size:12px;color:var(--muted,#8090a8);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid #f0ebe3">Les demandes du forfait concernent des interventions de quelques minutes à quelques heures. Si ton besoin demande plusieurs jours de travail ou une réflexion complète, il sera traité comme un nouveau projet.</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+  };
+  window.cliOpenProjectRequest = function(pid) {
+    var ex = document.getElementById('_cp-project-req'); if (ex) ex.remove();
+    var ov = document.createElement('div'); ov.id = '_cp-project-req';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
+      '<div style="background:#fdf3e8;border:1px solid #f0d8b0;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#7a3a0a;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
+      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
+        '<input id="_preq-title" type="text" placeholder="Ex, refonte de mon site vitrine" style="' + S + '"></div>' +
+      '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Décris-le</label>' +
+        '<textarea id="_preq-desc" rows="5" placeholder="Objectifs, périmètre, délais souhaités, budget si tu en as une idée…" style="' + S + ';resize:vertical"></textarea></div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+        '<button onclick="document.getElementById(\'_cp-project-req\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
+        '<button onclick="window.cliSendProjectRequest(\'' + pid + '\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
+      '</div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+  };
+  window.cliSendProjectRequest = function(pid) {
+    var title = (document.getElementById('_preq-title')||{}).value || '';
+    if (!title.trim()) { var el0 = document.getElementById('_preq-title'); if (el0) { el0.style.borderColor = 'red'; el0.focus(); } return; }
+    var desc = (document.getElementById('_preq-desc')||{}).value || '';
+    var ov = document.getElementById('_cp-project-req'); if (ov) ov.remove();
+    var body = { projectId: pid, title: '[Projet] ' + title.trim(), content: desc, urgency: 'normal', demandeType: 'project' };
+    fetch(API_BASE + '/tasks', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('save ' + r.status); }); return r.json(); })
+      .then(function(task) {
+        var pd = getPD(pid);
+        if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); }
+        cpCelebrate('C\'est envoyé !', 'Ta demande de projet est bien partie. Je reviens vers toi avec une proposition adaptée.');
+        try { renderShell(); } catch(e){}
+      }).catch(function(err){ toast('Erreur, réessaie'); });
+  };
 
   window.cliOpenAddTask = function(pid, ds) {
     var pd = getPD(pid);
