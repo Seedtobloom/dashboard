@@ -5839,6 +5839,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }
       if (currentView === 'project') attachForm();
       if (currentView === 'messages') attachConvoForm();
+      if (window.stbSizeAll) setTimeout(window.stbSizeAll, 0);
       window.scrollTo(0, scrollY);
       return;
     }
@@ -5859,6 +5860,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' + adminBar + '<div class="cp-toast" id="cp-toast"></div>';
     if (currentView === 'project') attachForm();
     if (currentView === 'messages') attachConvoForm();
+    if (window.stbSizeAll) setTimeout(window.stbSizeAll, 0);
     window.scrollTo(0, scrollY);
   }
 
