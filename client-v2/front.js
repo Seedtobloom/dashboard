@@ -149,7 +149,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 
 /* Home cards view */
 .cp-home { flex: 1; min-height: 100vh; padding: 44px 52px 80px; background: var(--bone); }
-.cp-home__inner { max-width: 1160px; margin: 0 auto; }
+.cp-home__inner { max-width: 1320px; margin: 0 auto; }
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
@@ -184,7 +184,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 }
 .cp-header__title { font-family: var(--font-display); font-size: clamp(22px,2.5vw,34px); font-weight: 400; line-height: 1.25; color: var(--paille); margin-bottom: 6px; font-style: italic; }
 .cp-header__meta { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--paille); opacity: 0.75; letter-spacing: 0.08em; text-transform: uppercase; }
-.cp-content { flex: 1; padding: 36px 52px 80px; max-width: 1160px; margin: 0 auto; width: 100%; }
+.cp-content { flex: 1; padding: 36px 52px 80px; max-width: 1320px; margin: 0 auto; width: 100%; }
 .cp-content--wide { max-width: none; }
 .cp-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 28px; align-items: start; }
 .cp-grid__main, .cp-grid__side { min-width: 0; }
