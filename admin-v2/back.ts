@@ -22,6 +22,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   INTERNAL_SECRET?: string;
+  SPACE_URL?: string;
 }
 
 type AnyObj = Record<string, any>;
@@ -546,7 +547,7 @@ async function handleClientApi(
       const qt = (container.questionnaireTitle || '').toString().trim() || 'Un questionnaire';
       await notifyClient(env, data, `Un questionnaire vous attend${label ? ' · ' + label : ''}`,
         `<p>Bonjour ${escHtml(getClient(data).prenom || '')},</p>` +
-        `<p><strong>${escHtml(qt.charAt(0).toUpperCase() + qt.slice(1))}</strong> vous attend dans votre espace. Prenez un moment pour le remplir quand vous le souhaitez — vos réponses m'aident à avancer.</p>`);
+        `<p><strong>${escHtml(qt.charAt(0).toUpperCase() + qt.slice(1))}</strong> vous attend dans votre espace. Prenez un moment pour le remplir quand vous le souhaitez — vos réponses m'aident à avancer.</p>`, key);
     }
     return json({ ok: true, questionnaire: container.questionnaire || [], questionnaireTitle: container.questionnaireTitle || '', questionnaireReady: container.questionnaireReady === true });
   }
@@ -647,7 +648,7 @@ async function handleClientApi(
     await saveClient(env, key, data);
     if (reopenNotify) {
       await notifyClient(env, data, `Questionnaire à revoir · ${escHtml(inst.name || '')}`,
-        `<p>Cindy vous invite à compléter ou revoir vos réponses au questionnaire <strong>${escHtml(inst.name || '')}</strong> dans votre espace.</p>`);
+        `<p>Cindy vous invite à compléter ou revoir vos réponses au questionnaire <strong>${escHtml(inst.name || '')}</strong> dans votre espace.</p>`, key);
     }
     return json(inst);
   }
@@ -815,7 +816,7 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   const entry = { id: genId(), from: 'cindy', message: content, date: nowIso(), readByClient: false, readByAdmin: true };
   container.chat.push(entry);
   await saveClient(env, key, data);
-  await notifyClient(env, data, `Nouveau message · ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`);
+  await notifyClient(env, data, `Nouveau message · ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`, key);
   return json({ message: mapMsg(entry) }, 201);
 }
 
@@ -883,7 +884,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
       if (t.status !== 'in_progress' && t.status !== 'review' && t.status !== 'done') t.status = 'todo';
       await saveClient(env, key, data);
       if (body.notify !== false) await notifyClient(env, data, `Demande acceptée · ${escHtml(t.title || '')}`,
-        `<p>Votre demande <strong>${escHtml(t.title || '')}</strong> a été acceptée et planifiée. Vous pourrez suivre son avancement dans votre espace.</p>`);
+        `<p>Votre demande <strong>${escHtml(t.title || '')}</strong> a été acceptée et planifiée. Vous pourrez suivre son avancement dans votre espace.</p>`, key);
       return json(t);
     }
     if (tri === 'hors_forfait') {
@@ -1019,7 +1020,7 @@ async function handleStepPatch(request: Request, env: Env, key: string, data: An
   await saveClient(env, key, data);
   if (body.status && body.status !== prev) {
     if (body.status === 'done') await notifyClient(env, data, `Étape validée · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> de votre projet ${escHtml(label)} vient d'être validée ✓.</p>`);
-    else if (body.status === 'waiting_client') await notifyClient(env, data, `Action requise · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> attend une action de votre part.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : ''));
+    else if (body.status === 'waiting_client') await notifyClient(env, data, `Action requise · ${label}`, `<p>L'étape <strong>${escHtml(step.title || '')}</strong> attend une action de votre part.</p>` + (step.clientAction ? `<p>${escHtml(step.clientAction)}</p>` : ''), key);
   }
   return json(step);
 }
@@ -1142,7 +1143,7 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
       }
       await saveClient(env, key, data);
       if ((form.get('notify') as string) !== 'false') {
-        await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+        await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`, key);
       }
     }
   }
@@ -1168,7 +1169,7 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   container.livrables.push(deliverable);
   await saveClient(env, key, data);
   if (body.notify !== false) {
-    await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`);
+    await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(name)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible (lien) dans votre espace. Merci de le valider ou de demander une révision.</p>`, key);
   }
   return json({ deliverable }, 201);
 }
@@ -1967,7 +1968,7 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
   if (body.notify !== false) {
     await notifyClient(env, data, `Un questionnaire vous attend · ${escHtml(tpl.name || '')}`,
       `<p>Bonjour ${escHtml(getClient(data).prenom || '')},</p>` +
-      `<p><strong>${escHtml(tpl.name || 'Un questionnaire')}</strong> vous attend dans votre espace, onglet « Questionnaires ». Prenez un moment pour le remplir quand vous le souhaitez.</p>`);
+      `<p><strong>${escHtml(tpl.name || 'Un questionnaire')}</strong> vous attend dans votre espace, onglet « Questionnaires ». Prenez un moment pour le remplir quand vous le souhaitez.</p>`, key);
   }
   return json(inst, 201);
 }
@@ -2088,9 +2089,30 @@ async function handleBackupRestore(request: Request, env: Env): Promise<Response
   return json({ ok: true, restored: clientName(data) });
 }
 
-async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string): Promise<void> {
+// Lien d'accès direct (1 clic) : un jeton de session longue durée par cliente,
+// réutilisé d'un e-mail à l'autre, qui ouvre son espace sans ressaisir le code.
+async function clientAccessLink(env: Env, masterKey: string, data: AnyObj): Promise<string> {
+  const base = (env.SPACE_URL || 'https://dashboard.seedtobloom.fr').replace(/\/+$/, '');
+  const LONG_TTL = 60 * 60 * 24 * 120; // 120 jours
+  let token = await env.KV_CLIENT.get('maglink:' + masterKey);
+  if (!token) {
+    token = genHex(32); // 64 hex, compatible avec l'auth du SPA
+    const email = getClient(data).email || '';
+    await env.KV_CLIENT.put('session:' + token, JSON.stringify({ masterKey, email, editor: false }), { expirationTtl: LONG_TTL });
+    await env.KV_CLIENT.put('maglink:' + masterKey, token, { expirationTtl: LONG_TTL });
+  }
+  return base + '/?token=' + token;
+}
+async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, spaceKey?: string): Promise<void> {
   const email = getClient(data).email;
   if (!email) return;
-  const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml));
+  let cta = '';
+  if (spaceKey) {
+    try {
+      const link = await clientAccessLink(env, spaceKey, data);
+      cta = `<div style="text-align:center;margin:24px 0 6px"><a href="${escHtml(link)}" style="display:inline-block;background:#1C1205;color:#F2E5C2;text-decoration:none;padding:13px 30px;border-radius:10px;font-size:15px;font-weight:600">Accéder à mon espace →</a></div>`;
+    } catch (e) { /* pas de lien : e-mail sans bouton */ }
+  }
+  const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);
 }
