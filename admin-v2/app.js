@@ -1141,8 +1141,16 @@
           (mineHtml || '<div class="empty">Rien à traiter, tout est à jour.</div>') + '</div>';
       }
 
+      var qd = d.qnrDone || [];
+      var qnrDoneCard = qd.length ? '<div class="card infocard" style="background:var(--card)">' +
+        '<h3><span class="infocard__dot" style="background:#8267ab"></span>Questionnaires reçus · ' + qd.length + '</h3>' +
+        '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ces clientes ont complété un questionnaire — consulte leurs réponses.</div>' +
+        qd.map(function (q) {
+          return '<div class="file" style="gap:10px"><span class="nm">' + esc(q.name) + ' <span class="micro" style="color:var(--muted)">· ' + esc(q.client) + (q.completedAt ? ' · ' + fmtDate(q.completedAt) : '') + '</span></span>' +
+            '<button class="btn btn--dark btn--sm" onclick="ADM.prioConsultQnr(\'' + q.key + '\',\'' + q.id + '\')">Consulter</button></div>';
+        }).join('') + '</div>' : '';
       setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap">' +
-        focusBand + kpis + tabBar + '<div id="priobody">' + tabBody + '</div></div>');
+        focusBand + qnrDoneCard + kpis + tabBar + '<div id="priobody">' + tabBody + '</div></div>');
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
@@ -2834,7 +2842,7 @@
     if (TAB === 'infos') return body.innerHTML = tabInfos();
     if (TAB === 'journal') return body.innerHTML = journalTab();
     if (TAB === 'documents') return renderDocuments(body);
-    if (TAB === 'qnranswers') return body.innerHTML = qnrAnswersTab();
+    if (TAB === 'qnranswers') { qnrMarkSeen(); return body.innerHTML = qnrAnswersTab(); }
     if (TAB === 'bilanavis') return body.innerHTML = bilanAvisTab();
     var d = findDomain(TAB);
     if (!d) { body.innerHTML = '<div class="empty">·</div>'; return; }
@@ -3646,6 +3654,20 @@
         body + '</div>';
     }).join('');
   }
+  // Marque comme « consultés » les questionnaires complétés de la cliente courante.
+  function qnrMarkSeen() {
+    (CUR.questionnaires || []).forEach(function (q) {
+      if ((q.status === 'completed' || q.status === 'to_review') && q.seenByAdmin !== true) {
+        q.seenByAdmin = true;
+        jpost('/api/clients/' + CURKEY + '/questionnaires/' + q.id, { seenByAdmin: true }, 'PATCH').catch(function () {});
+      }
+    });
+  }
+  // Depuis Priorités : marquer consulté puis ouvrir la fiche cliente sur les réponses.
+  function prioConsultQnr(key, id) {
+    jpost('/api/clients/' + key + '/questionnaires/' + id, { seenByAdmin: true }, 'PATCH').catch(function () {});
+    navClientTab(key, 'qnranswers');
+  }
   function bilanAvisTab() {
     var partner = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
     var bil = partner ? bilanCard(partner) : '<div class="card" style="max-width:680px"><h3>Bilan de collaboration</h3><div class="micro">Le bilan concerne l\'accompagnement Partenaire créative, qui n\'est pas activé pour ce client.</div></div>';
@@ -4452,7 +4474,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
