@@ -2173,21 +2173,20 @@
     var deliv = (d.totals && d.totals.deliverablesSent) || 0;
     var hoursY = Math.round(minYear / 60);
     var tiles = [];
-    tiles.push(['✨', doneYear, 'tâches terminées']);
-    if (deliv) tiles.push(['🎨', deliv, 'créations livrées']);
-    tiles.push(['⏱️', hoursY + ' h', 'de travail']);
-    if (testimonials) tiles.push(['❤️', testimonials, 'témoignage' + (testimonials > 1 ? 's' : '')]);
-    if (satis) tiles.push(['😊', (Math.round(satis * 10) / 10) + '/5', 'satisfaction']);
-    var body = tiles.map(function (t, i) {
-      return '<div style="flex:1;min-width:120px;padding:12px 16px' + (i ? ';border-left:1px solid rgba(255,255,255,0.18)' : '') + '">' +
-        '<div style="font-size:20px;line-height:1;margin-bottom:6px">' + t[0] + '</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:#fff;line-height:1">' + t[1] + '</div>' +
-        '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:rgba(255,255,255,0.72);margin-top:4px">' + esc(t[2]) + '</div>' +
+    tiles.push(['done', doneYear, 'tâches terminées']);
+    if (deliv) tiles.push(['visios', deliv, 'créations livrées']);
+    tiles.push(['planning', hoursY + ' h', 'de travail']);
+    if (testimonials) tiles.push(['avis', testimonials, 'témoignage' + (testimonials > 1 ? 's' : '')]);
+    if (satis) tiles.push(['avis', (Math.round(satis * 10) / 10) + '/5', 'satisfaction']);
+    var body = tiles.map(function (t) {
+      return '<div style="min-width:130px;padding:6px 20px 6px 0">' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#5e3fa0);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#5e3fa0)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
       '</div>';
     }).join('');
-    return '<div class="card" style="background:linear-gradient(120deg,#5e3fa0,#8a5aa8);border:none;padding:18px 20px;margin-bottom:18px">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:6px">Depuis le 1er janvier ' + year + '</div>' +
-      '<div style="display:flex;flex-wrap:wrap;align-items:flex-start">' + body + '</div>' +
+    return '<div class="card" style="background:var(--card);border:1px solid var(--bone-d);padding:18px 20px;margin-bottom:18px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#5e3fa0)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' + body + '</div>' +
     '</div>';
   }
   function kpiRentabiliteHtml() {
@@ -2243,20 +2242,20 @@
     var scoreCol = score >= 80 ? '#3a6b4a' : (score >= 55 ? '#b8871f' : '#a23c28');
     var scoreLbl = score >= 80 ? 'Tout est sous contrôle' : (score >= 55 ? 'Quelques points à surveiller' : 'À réorganiser cette semaine');
     var chargeOver = weekCapH && weekMin > weekCapH * 60;
-    function card(dot, big, label, sub, onclick) {
-      return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
-        '<span style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:' + dot + '"></span>' + esc(label) + '</span>' +
+    function card(icon, big, label, sub, onclick) {
+      return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
+        '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
         '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
         (sub ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span>' : '') +
       '</button>';
     }
     var cards =
-      card('#5e3fa0', hL(weekMin) + (weekCapH ? ' <span style="font-size:14px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : ''), 'Charge de la semaine', chargeOver ? 'au-delà de ta capacité' : '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
-      card('#c9952f', inboxN, 'Demandes à analyser', inboxN ? 'dans ta boîte de réception' : 'rien en attente', "ADM.nav('inbox')") +
-      card('#a23c28', overdue, 'Tâches en retard', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('risks')},60)") +
-      card('#6c4ea4', forfSurv + ' cliente' + (forfSurv > 1 ? 's' : ''), 'Forfaits à surveiller', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
-      card('#35608f', visN, 'Visios aujourd\'hui', '', "ADM.nav('visios')") +
-      card('#3a6b4a', hL(chronoWeek), 'Temps chronométré (semaine)', '', "ADM.nav('mytasks')");
+      card('planning', hL(weekMin) + (weekCapH ? ' <span style="font-size:14px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : ''), 'Charge de la semaine', chargeOver ? 'au-delà de ta capacité' : '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
+      card('inbox', inboxN, 'Demandes à analyser', inboxN ? 'dans ta boîte de réception' : 'rien en attente', "ADM.nav('inbox')") +
+      card('priorities', overdue, 'Tâches en retard', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('risks')},60)") +
+      card('kpi', forfSurv + ' cliente' + (forfSurv > 1 ? 's' : ''), 'Forfaits à surveiller', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
+      card('visios', visN, 'Visios aujourd\'hui', '', "ADM.nav('visios')") +
+      card('done', hL(chronoWeek), 'Temps chronométré (semaine)', '', "ADM.nav('mytasks')");
     return '<div class="card" style="background:linear-gradient(135deg,' + hexA(scoreCol, 0.10) + ',var(--card));border-color:' + hexA(scoreCol, 0.3) + ';display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:16px">' +
         '<div style="width:96px;height:96px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(' + scoreCol + ' ' + (score * 3.6) + 'deg, var(--bone-d) 0deg)">' +
           '<div style="width:76px;height:76px;border-radius:50%;background:var(--card);display:grid;place-items:center"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + scoreCol + ';line-height:1">' + score + '</div></div>' +
