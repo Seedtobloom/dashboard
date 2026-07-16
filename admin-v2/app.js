@@ -2728,8 +2728,18 @@
     CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
     tabs.push(['journal', 'Journal', 0, true]);
     tabs.push(['documents', 'Documents', 0, true]);
-    tabs.push(['bilanavis', 'Bilan & avis', 0, true]);
-    var tabsHtml = tabs.map(function (t) { return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + (t[3] ? '' : ' title="offre inactive" style="opacity:0.55"') + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>'; }).join('');
+    // Le bilan ne concerne que la fin de collaboration : la section reste grisée
+    // (mais accessible) tant que l'invitation au bilan n'a pas été demandée.
+    var _partnerB = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
+    var _bil = _partnerB && _partnerB.content && _partnerB.content.bilan;
+    var bilanStarted = !!(_bil && (_bil.requestedAt || _bil.submittedAt));
+    tabs.push(['bilanavis', 'Bilan & avis', 0, true, !bilanStarted]);
+    var tabsHtml = tabs.map(function (t) {
+      var muted = t[4];
+      var st = !t[3] ? ' title="offre inactive" style="opacity:0.55"'
+        : (muted ? ' title="Le bilan s\'active en fin de collaboration" style="opacity:0.5"' : '');
+      return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + st + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>';
+    }).join('');
     var ml = (CUR.meetingLink || '').trim();
     var visioBtn = ml ? '<a class="btn btn--dark btn--sm" href="' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Ouvrir la salle de visioconférence">' + admIcon('video') + ' Rejoindre la visio</a>' : '';
     setMain(topbar(nm, visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>', presence(CUR.lastSeen).label) +
