@@ -1005,34 +1005,44 @@
         '</div>';
       }).join('');
 
-      // Météo de la semaine : nombre d'échéances par jour (5 prochains jours ouvrés) pour anticiper la charge
+      // Charge de la semaine : temps estimé par jour (5 prochains jours ouvrés).
+      // Estimation par tâche : son temps estimé s'il existe, sinon 45 min par défaut.
+      var EST_DEFAULT = 45;
       var weekLoad = [];
       var cursor = new Date(today);
       while (weekLoad.length < 5) {
         var dow = cursor.getDay();
         if (dow !== 0 && dow !== 6) {
           var iso = cursor.getFullYear() + '-' + ('0' + (cursor.getMonth() + 1)).slice(-2) + '-' + ('0' + cursor.getDate()).slice(-2);
-          var cnt = mine.filter(function (x) { return (x.dueDate || '').slice(0, 10) === iso; }).length;
+          var dayTasks = mine.filter(function (x) { return (x.dueDate || '').slice(0, 10) === iso && x.status !== 'done'; });
+          var mins = dayTasks.reduce(function (s, x) { return s + (x.estMinutes > 0 ? x.estMinutes : EST_DEFAULT); }, 0);
           var isToday = weekLoad.length === 0 && cursor.getTime() === today.getTime();
-          weekLoad.push({ count: cnt, label: isToday ? 'Auj.' : cursor.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '') });
+          weekLoad.push({ count: dayTasks.length, mins: mins, label: isToday ? 'Auj.' : cursor.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '') });
         }
         cursor.setDate(cursor.getDate() + 1);
       }
-      var maxLoad = Math.max.apply(null, weekLoad.map(function (w) { return w.count; })) || 1;
-      var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Météo de la semaine</h3>' +
-        '<div class="micro mb">Tes échéances par jour, pour anticiper les journées chargées.</div>' +
-        '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px">' +
+      var weekMinTotal = weekLoad.reduce(function (s, w) { return s + w.mins; }, 0);
+      var weekCapH = d.weeklyCapacity || 0;
+      var dayCapMin = weekCapH ? (weekCapH * 60 / 5) : 0; // seuil « journée pleine »
+      var maxLoad = Math.max.apply(null, weekLoad.map(function (w) { return w.mins; }).concat([dayCapMin, 60])) || 60;
+      function hLabel(m) { m = Math.round(m); if (!m) return '·'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
+      var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Charge de la semaine</h3>' +
+        '<div class="between" style="align-items:baseline;margin-bottom:10px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Temps prévu, estimé par jour</span>' +
+          '<span style="font-weight:700;font-size:15px;color:' + (weekCapH && weekMinTotal > weekCapH * 60 ? 'var(--red)' : 'var(--terre)') + '">' + hLabel(weekMinTotal) + (weekCapH ? ' <span style="font-weight:400;font-size:12px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : '') + '</span></div>' +
+        '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px;min-height:78px">' +
         weekLoad.map(function (w) {
-          var barH = w.count ? Math.max(Math.round(w.count / maxLoad * 60), 8) : 3;
-          var heavy = w.count >= 4;
-          var col = heavy ? '#a23c28' : (w.count ? '#5e3fa0' : 'var(--bone-d)');
+          var barH = w.mins ? Math.max(Math.round(w.mins / maxLoad * 60), 6) : 3;
+          var heavy = dayCapMin ? w.mins > dayCapMin : w.mins >= 240;
+          var col = heavy ? '#a23c28' : (w.mins ? '#5e3fa0' : 'var(--bone-d)');
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">' +
-            '<div style="font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + (heavy ? '#a23c28' : 'var(--terre)') + '">' + (w.count || '·') + '</div>' +
-            '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '"></div>' +
+            '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;color:' + (heavy ? '#a23c28' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
+            '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '" title="' + w.count + ' tâche' + (w.count > 1 ? 's' : '') + '"></div>' +
             '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
           '</div>';
         }).join('') +
-        '</div></div>';
+        '</div>' +
+        (weekCapH ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Barre rouge = journée au-delà de ta capacité (~' + hLabel(dayCapMin) + '/jour). Estimation basée sur le temps estimé des tâches, ou ' + EST_DEFAULT + ' min par défaut.</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Renseigne ta capacité (dans « Ma capacité » ci-dessus) pour repérer les journées trop chargées.</div>') +
+        '</div>';
 
       // ── Risques (7 j) : ce qui menace de glisser — retards + non démarré à échéance proche
       var riskItems = [];
