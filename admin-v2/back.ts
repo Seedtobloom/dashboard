@@ -851,6 +851,32 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if (!found) return json({ error: 'Tâche introuvable' }, 404);
   const t = found.task;
   const prevStatus = t.status;
+  // Tri d'une demande depuis la boîte de réception : accepter (→ vraie tâche),
+  // hors forfait, ou refuser. Chaque décision peut prévenir la cliente.
+  if ('triage' in body) {
+    const tri = String(body.triage || '');
+    if (tri === 'accept') {
+      t.stage = 'task'; t.clientNotif = false;
+      if (t.status !== 'in_progress' && t.status !== 'review' && t.status !== 'done') t.status = 'todo';
+      await saveClient(env, key, data);
+      if (body.notify !== false) await notifyClient(env, data, `Demande acceptée · ${escHtml(t.title || '')}`,
+        `<p>Votre demande <strong>${escHtml(t.title || '')}</strong> a été acceptée et planifiée. Vous pourrez suivre son avancement dans votre espace.</p>`);
+      return json(t);
+    }
+    if (tri === 'hors_forfait') {
+      t.stage = 'out_of_scope';
+      await saveClient(env, key, data);
+      if (body.notify !== false) await notifyClient(env, data, `Votre demande · ${escHtml(t.title || '')}`,
+        `<p>Votre demande <strong>${escHtml(t.title || '')}</strong> sort du cadre de votre forfait Partenaire créative. Je reviens vers vous avec une proposition adaptée.</p>`);
+      return json(t);
+    }
+    if (tri === 'refuse') {
+      t.stage = 'refused'; t.archived = true;
+      await saveClient(env, key, data);
+      return json(t);
+    }
+  }
+  if ('stage' in body && ['inbox', 'task', 'out_of_scope', 'refused'].indexOf(body.stage) !== -1) t.stage = body.stage;
   if ('title' in body) body.title = (body.title || '').toString().slice(0, 300);
   if ('content' in body) body.content = (body.content || '').toString().slice(0, 10000);
   ADMIN_TASK_FIELDS.forEach((k) => { if (k in body) t[k] = body[k]; });
@@ -1195,6 +1221,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const newTasks: AnyObj[] = [];
   const reworkTasks: AnyObj[] = [];
   const commentTasks: AnyObj[] = [];
+  const inbox: AnyObj[] = [];
   for (const ci of idx) {
     const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' })) as AnyObj | null;
     if (!data) continue;
@@ -1241,8 +1268,29 @@ async function handleDashboard(env: Env): Promise<Response> {
     // partenaire : tâches non terminées avec échéance + forfait
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (pc) {
-      forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
+      const fs = forfaitState(pc);
+      forfaits.push({ key: ci.key, client: who, ...fs });
+      // Contexte cliente pour la boîte de réception (nb de demandes ce mois, temps moyen).
+      const nowMonth = nowIso().slice(0, 7);
+      const pcTaches: AnyObj[] = Array.isArray(pc.taches) ? pc.taches : [];
+      const monthCount = pcTaches.filter((t: AnyObj) => String(t.createdAt || '').slice(0, 7) === nowMonth).length;
+      const doneWithTime = pcTaches.filter((t: AnyObj) => t.status === 'done' && (t.timeSpentMinutes || 0) > 0);
+      const avgMinutes = doneWithTime.length ? Math.round(doneWithTime.reduce((s: number, t: AnyObj) => s + (t.timeSpentMinutes || 0), 0) / doneWithTime.length) : 0;
       (pc.taches || []).forEach((t: AnyObj) => {
+        // Demande en attente d'analyse : elle vit dans la boîte de réception, pas
+        // dans le flux des tâches, tant que le studio ne l'a pas triée.
+        if (t.stage === 'inbox' && !t.archived) {
+          const atts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
+          let clientLink = '';
+          try {
+            const pe = t.properties && t.properties.p_elements;
+            const o = typeof pe === 'string' ? JSON.parse(pe) : pe;
+            if (o && o.link) clientLink = String(o.link).slice(0, 500);
+            if (o && Array.isArray(o.files)) o.files.forEach((f: AnyObj) => { if (f && f.key) atts.push({ name: String(f.name || 'fichier').slice(0, 120), key: String(f.key).slice(0, 300) }); });
+          } catch (e) { /* ignore */ }
+          inbox.push({ key: ci.key, client: who, id: t.id, title: t.title || '', content: t.content || '', urgency: t.urgency || 'normal', dueDate: t.dueDate || '', createdAt: t.createdAt || '', demandeType: t.demandeType || '', attachments: atts, clientLink, forfaitRemaining: fs.remaining, forfaitConfigured: fs.configured, monthCount, avgMinutes });
+          return; // ne pas la remonter dans les autres listes
+        }
         // Une tâche « à valider » (review) est en attente du client : on la
         // remonte même sans échéance, avec le lien et la date d'envoi.
         if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
@@ -1300,9 +1348,10 @@ async function handleDashboard(env: Env): Promise<Response> {
   newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   reworkTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   commentTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  inbox.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
   const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, clientCount: idx.length, weeklyCapacity });
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, clientCount: idx.length, weeklyCapacity });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

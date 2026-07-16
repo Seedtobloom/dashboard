@@ -896,6 +896,9 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
     content: body.content || '',
     urgency: body.urgency || 'normal',
     status: 'todo',
+    // Une demande cliente arrive dans la boîte de réception du studio (« en
+    // attente d'analyse ») ; elle ne devient une vraie tâche qu'une fois acceptée.
+    stage: 'inbox',
     briefStatus: body.briefStatus,
     dueDate: body.dueDate,
     startDate: body.startDate,
@@ -914,8 +917,8 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   tasksOf(container).push(task);
   await save(env, masterKey, data);
 
-  await notifyAdmin(env, `Nouvelle tâche · ${clientFullName(data)}`,
-    `<p><strong>${escHtml(clientFullName(data))}</strong> a créé une tâche partenaire créative :</p>` +
+  await notifyAdmin(env, `Nouvelle demande · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a déposé une nouvelle demande (à analyser dans ta boîte de réception) :</p>` +
     `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px"><strong>${escHtml(task.title)}</strong>` +
     (task.dueDate ? `<br><span style="color:#8a6f54">Échéance : ${escHtml(task.dueDate)}</span>` : '') +
     (task.content ? `<br><span style="color:#412F21">${escHtml(task.content)}</span>` : '') + `</p>`);
