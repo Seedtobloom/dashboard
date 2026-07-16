@@ -1630,6 +1630,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (hasPartnerTb) pills.push(mPill('Temps passé', 'cpOpenStats()', currentView === 'stats', 0));
     pills.push(mPill('Fichiers', 'cpGoFichiers()', currentView === 'fichiers', 0));
     if (portalTb) pills.push(mPill('Ressources', 'cpGoHub()', currentView === 'hub', 0));
+    // Réservation de créneau (Cal.com) : lien global, visible partout (le
+    // panneau latéral est masqué sur mobile, on l'ajoute aussi ici).
+    var bkLink = (appData.bookingLink || '').trim();
+    var bkUrl = bkLink ? (bkLink.startsWith('http') ? bkLink : 'https://' + bkLink) : '';
+    if (bkUrl) pills.push('<a class="cp-pill" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" style="text-decoration:none">📅 Réserver</a>');
     var mobilePills = '<div class="cp-pills">' + pills.join('') + '</div>';
     var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Tickets', cal:'Calendrier partage', stats:'Statistiques', questionnaires:'Questionnaires' };
     var pageTitle = pageTitles[currentView] || 'Espace client';
@@ -1653,6 +1658,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
         (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#8a4a0e;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#c46a1a') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
+        (bkUrl ? '<a class="cp-ptopbar__guide" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" title="Réserver un créneau">' + cpIcon('calendar',13) + ' Réserver</a>' : '') +
         '<button class="cp-ptopbar__guide" onclick="cpOpenMessages()" title="Une question ? Écrivez à Cindy">' + cpIcon('question',13) + ' Une question ?</button>' +
         '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('info',13) + ' Guide</button>' +
         (accessCode ? '<span class="cp-ptopbar__code">' + cpIcon('lock',13) + ' ' + esc(accessCode) + '</span>' : '') +
@@ -3593,6 +3599,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var isWeekend = dow >= 5;
       if (isWeekend) continue;
       var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+      var isHol = !!(window.cpHolidayFor && cpHolidayFor(ds));
       var dt = filtered.filter(function(t){
         var due = (t.dueDate||'').slice(0,10);
         var start = (t.startDate||'').slice(0,10);
@@ -3636,10 +3643,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
-      dayCells.push('<div ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+(isWeekend?'#faf7f1':'#fff')+'">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml +
-          '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Ajouter une tâche" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>' +
-        '</div>' + pills +
+      // Jour de congés : grisé, non déposable, avec un repère « congés » à la place du +.
+      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#f4ece1,#f4ece1 7px,#efe4d5 7px,#efe4d5 14px)' : (isWeekend ? '#faf7f1' : '#fff');
+      var addBtn = isHol
+        ? '<span title="Cindy est en congés ce jour-là" style="font-size:13px;opacity:0.65;line-height:1">🌴</span>'
+        : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
+      dayCells.push('<div ' + (isHol ? '' : 'ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" ') + 'data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+cellBg+'">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml + addBtn +
+        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#a8927a;margin-top:2px">Congés</div>' : '') + pills +
       '</div>');
     }
     var allCells = [];

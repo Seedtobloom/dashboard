@@ -2149,14 +2149,69 @@
     toast('Export CSV téléchargé');
   }
   var KPI_D = null;
-  var KPI_DASH = {}, KPI_VIS = {};
+  var KPI_DASH = {}, KPI_VIS = {}, KPI_AVIS = {};
   function renderKpi() {
     setMain(topbar('Tableau de bord') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
       api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; }),
-      api('/api/visios').then(function (r) { return r.json(); }).catch(function () { return {}; })
-    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; KPI_VIS = res[2] || {}; renderKpiBody(KPI_D); }).catch(showError);
+      api('/api/visios').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/avis').then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; KPI_VIS = res[2] || {}; KPI_AVIS = res[3] || {}; renderKpiBody(KPI_D); }).catch(showError);
+  }
+  // KPIs plaisir : le bilan valorisant depuis le 1er janvier.
+  function kpiPlaisirHtml() {
+    var d = KPI_D || {};
+    var year = String(new Date().getFullYear());
+    var doneYear = 0, minYear = 0;
+    Object.keys(d.tasksByMonth || {}).forEach(function (k) { if (k.slice(0, 4) === year) doneYear += d.tasksByMonth[k]; });
+    Object.keys(d.minutesByMonth || {}).forEach(function (k) { if (k.slice(0, 4) === year) minYear += d.minutesByMonth[k]; });
+    var bilans = (KPI_AVIS && KPI_AVIS.bilans) || [];
+    var testimonials = bilans.filter(function (b) { return (b.testimonial || '').trim() && b.allowTestimonial; }).length;
+    var rated = bilans.filter(function (b) { return b.rating > 0; });
+    var satis = rated.length ? (rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length) : 0;
+    var deliv = (d.totals && d.totals.deliverablesSent) || 0;
+    var hoursY = Math.round(minYear / 60);
+    var tiles = [];
+    tiles.push(['✨', doneYear, 'tâches terminées']);
+    if (deliv) tiles.push(['🎨', deliv, 'créations livrées']);
+    tiles.push(['⏱️', hoursY + ' h', 'de travail']);
+    if (testimonials) tiles.push(['❤️', testimonials, 'témoignage' + (testimonials > 1 ? 's' : '')]);
+    if (satis) tiles.push(['😊', (Math.round(satis * 10) / 10) + '/5', 'satisfaction']);
+    var body = tiles.map(function (t, i) {
+      return '<div style="flex:1;min-width:120px;padding:12px 16px' + (i ? ';border-left:1px solid rgba(255,255,255,0.18)' : '') + '">' +
+        '<div style="font-size:20px;line-height:1;margin-bottom:6px">' + t[0] + '</div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:#fff;line-height:1">' + t[1] + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:rgba(255,255,255,0.72);margin-top:4px">' + esc(t[2]) + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="card" style="background:linear-gradient(120deg,#5e3fa0,#8a5aa8);border:none;padding:18px 20px;margin-bottom:18px">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:6px">Depuis le 1er janvier ' + year + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:flex-start">' + body + '</div>' +
+    '</div>';
+  }
+  function kpiRentabiliteHtml() {
+    var pr = (KPI_D && KPI_D.profitability) || {};
+    var estH = Math.round((pr.estMin || 0) / 60 * 10) / 10, realH = Math.round((pr.realMin || 0) / 60 * 10) / 10;
+    var ratio = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) : 0;
+    if (!pr.estCount) return '<div class="card infocard" style="background:var(--card)"><h3>Rentabilité · estimé vs réel</h3><div class="empty">Renseigne un « temps estimé » sur tes tâches (dans le détail d\'une tâche) pour comparer avec le temps réellement passé. Après quelques projets, tu sauras combien te prend vraiment chaque type de travail.</div></div>';
+    function hh(m) { m = Math.round(m); var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
+    var poleRows = (pr.poles || []).map(function (p) {
+      var r = p.est > 0 ? Math.round(p.real / p.est * 100) : 0;
+      var over = r > 110, under = r < 90;
+      var col = over ? 'var(--red)' : (under ? '#3a6b4a' : 'var(--terre)');
+      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(p.pole) + '</strong>' +
+        '<span class="micro" style="color:' + col + ';font-weight:700">réel ' + r + '% de l\'estimé</span></div>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">prévu ' + hh(p.est) + ' · réel ' + hh(p.real) + ' · ' + p.count + ' tâche' + (p.count > 1 ? 's' : '') + '</div></div>';
+    }).join('');
+    return '<div class="card infocard" style="background:var(--card)"><h3>Rentabilité · estimé vs réel</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Sur les ' + pr.estCount + ' tâche' + (pr.estCount > 1 ? 's' : '') + ' terminée' + (pr.estCount > 1 ? 's' : '') + ' avec une estimation.</div>' +
+      '<div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">' +
+        '<div><div class="micro">Prévu</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + estH + ' h</div></div>' +
+        '<div><div class="micro">Réel</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? 'var(--red)' : 'var(--terre)') + '">' + realH + ' h</div></div>' +
+        '<div><div class="micro">Écart</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? 'var(--red)' : (ratio < 90 ? '#3a6b4a' : 'var(--terre)')) + '">' + ratio + '%</div></div>' +
+      '</div>' +
+      '<h4 style="margin:6px 0 8px;font-size:14px">Par pôle</h4>' + (poleRows || '<div class="empty">—</div>') + '</div>';
   }
   // Accueil KPI : les 6 cartes essentielles + le score « Santé du studio ».
   function kpiSummaryHtml() {
@@ -2228,7 +2283,7 @@
       var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
       return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
     }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
-    var tabDefs = [['evol', 'Évolution', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
+    var tabDefs = [['evol', 'Évolution', null], ['rentabilite', 'Rentabilité', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
     if (!tabDefs.some(function (x) { return x[0] === KPI_TAB; })) KPI_TAB = 'evol';
     var tabBar = '<div class="tabs">' + tabDefs.map(function (x) {
       return '<button class="tab' + (KPI_TAB === x[0] ? ' active' : '') + '" onclick="ADM.kpiSetTab(\'' + x[0] + '\')">' + esc(x[1]) + (x[2] != null ? badge(x[2]) : '') + '</button>';
@@ -2238,12 +2293,14 @@
       body = '<div class="card"><div class="between mb"><h3 style="margin:0">Par client</h3><button class="btn btn--outline btn--sm" onclick="ADM.kpiExport()">Exporter en CSV</button></div><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>';
     } else if (KPI_TAB === 'forfaits') {
       body = '<div class="card"><h3>Forfaits du mois</h3>' + forf + '</div>';
+    } else if (KPI_TAB === 'rentabilite') {
+      body = kpiRentabiliteHtml();
     } else {
       body = '<div class="pcols">' +
         '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
         '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div></div>';
     }
-    setMain(topbar('Tableau de bord', '', 'D\'un coup d\'œil : ta semaine, puis le détail') + '<div class="wrap">' + kpiSummaryHtml() +
+    setMain(topbar('Tableau de bord', '', 'D\'un coup d\'œil : ta semaine, puis le détail') + '<div class="wrap">' + kpiSummaryHtml() + kpiPlaisirHtml() +
       '<h3 style="margin:8px 0 12px;font-size:16px">Détail · partenaire créative</h3>' + kpis + tabBar + '<div id="kpibody">' + body + '</div></div>');
   }
 
