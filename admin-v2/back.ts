@@ -2089,29 +2089,17 @@ async function handleBackupRestore(request: Request, env: Env): Promise<Response
   return json({ ok: true, restored: clientName(data) });
 }
 
-// Lien d'accès direct (1 clic) : un jeton de session longue durée par cliente,
-// réutilisé d'un e-mail à l'autre, qui ouvre son espace sans ressaisir le code.
-async function clientAccessLink(env: Env, masterKey: string, data: AnyObj): Promise<string> {
-  const base = (env.SPACE_URL || 'https://dashboard.seedtobloom.fr').replace(/\/+$/, '');
-  const LONG_TTL = 60 * 60 * 24 * 120; // 120 jours
-  let token = await env.KV_CLIENT.get('maglink:' + masterKey);
-  if (!token) {
-    token = genHex(32); // 64 hex, compatible avec l'auth du SPA
-    const email = getClient(data).email || '';
-    await env.KV_CLIENT.put('session:' + token, JSON.stringify({ masterKey, email, editor: false }), { expirationTtl: LONG_TTL });
-    await env.KV_CLIENT.put('maglink:' + masterKey, token, { expirationTtl: LONG_TTL });
-  }
-  return base + '/?token=' + token;
+// Lien vers la page de connexion de l'espace (la cliente saisit son code d'accès).
+function clientSpaceUrl(env: Env): string {
+  return (env.SPACE_URL || 'https://dashboard.seedtobloom.fr').replace(/\/+$/, '') + '/';
 }
-async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, spaceKey?: string): Promise<void> {
+async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: string, withLink?: boolean | string): Promise<void> {
   const email = getClient(data).email;
   if (!email) return;
   let cta = '';
-  if (spaceKey) {
-    try {
-      const link = await clientAccessLink(env, spaceKey, data);
-      cta = `<div style="text-align:center;margin:24px 0 6px"><a href="${escHtml(link)}" style="display:inline-block;background:#1C1205;color:#F2E5C2;text-decoration:none;padding:13px 30px;border-radius:10px;font-size:15px;font-weight:600">Accéder à mon espace →</a></div>`;
-    } catch (e) { /* pas de lien : e-mail sans bouton */ }
+  if (withLink) {
+    const link = clientSpaceUrl(env);
+    cta = `<div style="text-align:center;margin:24px 0 6px"><a href="${escHtml(link)}" style="display:inline-block;background:#1C1205;color:#F2E5C2;text-decoration:none;padding:13px 30px;border-radius:10px;font-size:15px;font-weight:600">Accéder à mon espace →</a><div style="color:#8a6f54;font-size:12px;margin-top:8px">Connectez-vous avec votre code d'accès.</div></div>`;
   }
   const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);
