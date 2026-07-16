@@ -3747,7 +3747,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
 
-    return '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>' + '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
+    return '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>' + '<div class="cp-task-overlay" style="background:#ffffff;border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
       // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +
