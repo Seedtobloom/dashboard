@@ -2737,9 +2737,9 @@
     CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
     tabs.push(['journal', 'Journal', 0, true]);
     tabs.push(['documents', 'Documents', 0, true]);
-    // Questionnaires envoyés à cette cliente + leurs réponses. Badge = nb complétés.
-    var qnrDone = (CUR.questionnaires || []).filter(function (q) { return q.status === 'completed' || q.status === 'to_review'; }).length;
-    tabs.push(['qnranswers', 'Questionnaires', qnrDone, true]);
+    // Questionnaires envoyés à cette cliente. Badge = nb en attente de réponse.
+    var qnrPending = (CUR.questionnaires || []).filter(function (q) { return q.status !== 'completed'; }).length;
+    tabs.push(['qnranswers', 'Questionnaires', qnrPending, true]);
     // Le bilan ne concerne que la fin de collaboration : la section reste grisée
     // (mais accessible) tant que l'invitation au bilan n'a pas été demandée.
     var _partnerB = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
@@ -3643,16 +3643,29 @@
     var list = CUR.questionnaires || [];
     if (!list.length) return '<div class="card infocard" style="background:var(--card)"><h3>Questionnaires</h3><div class="empty">Aucun questionnaire envoyé à cette cliente. Envoie-en un depuis « Questionnaires » (menu de gauche).</div></div>';
     var stMeta = { assigned: ['À remplir', '#8a6f2e', '#fbf0d8'], in_progress: ['En cours', '#35608f', '#e3edfb'], to_review: ['À revoir', '#8a6f2e', '#fbf0d8'], completed: ['Complété ✓', '#3f6b3a', '#e7f0e3'] };
-    return list.map(function (inst) {
+    var pending = list.filter(function (q) { return q.status !== 'completed'; }).length;
+    var doneN = list.filter(function (q) { return q.status === 'completed'; }).length;
+    var summary = '<div class="card infocard" style="background:var(--card);max-width:760px;padding:14px 18px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">' +
+      (pending ? '⏳ ' + pending + ' questionnaire' + (pending > 1 ? 's' : '') + ' en attente de réponse' : '✓ Tous les questionnaires sont complétés') +
+      (doneN ? ' · ' + doneN + ' complété' + (doneN > 1 ? 's' : '') : '') + '</span></div>';
+    var cards = list.map(function (inst) {
       var sm = stMeta[inst.status] || stMeta.assigned;
       var when = inst.completedAt ? ' · le ' + fmtDate(inst.completedAt) : '';
       var hasAns = inst.status === 'completed' || inst.status === 'to_review' || (inst.answers && Object.keys(inst.answers).length);
       var body = hasAns ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses — la cliente ne l\'a pas encore rempli.</div>';
+      var pill = '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + when + '</span>';
+      var del = '<button class="btn btn--danger btn--sm" title="Supprimer ce questionnaire" onclick="ADM.qnrDelete(\'' + inst.id + '\',\'' + esc((inst.name || '').replace(/'/g, "\\'")) + '\')">Suppr.</button>';
       return '<div class="card infocard" style="background:var(--card);max-width:760px">' +
-        '<div class="between" style="align-items:flex-start"><h3 style="margin:0">' + esc(inst.name || 'Questionnaire') + '</h3>' +
-        '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + when + '</span></div>' +
+        '<div class="between" style="align-items:flex-start;gap:10px"><h3 style="margin:0">' + esc(inst.name || 'Questionnaire') + '</h3>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' + pill + del + '</div></div>' +
         body + '</div>';
     }).join('');
+    return summary + cards;
+  }
+  function qnrDelete(id, name) {
+    admConfirm({ title: 'Supprimer ce questionnaire ?', message: '« ' + name + ' » et les réponses de la cliente seront supprimés définitivement.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () {
+      api('/api/clients/' + CURKEY + '/questionnaires/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Questionnaire supprimé'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+    });
   }
   // Marque comme « consultés » les questionnaires complétés de la cliente courante.
   function qnrMarkSeen() {
@@ -4474,7 +4487,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
