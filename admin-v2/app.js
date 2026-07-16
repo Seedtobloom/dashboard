@@ -3088,9 +3088,25 @@
           '<input type="color" value="' + (o[3] || '#8a6f54') + '" onchange="ADM.setBanner(\'' + o[0] + '\',this.value)" style="width:30px;height:22px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer" title="Couleur personnalisée">' +
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
-    }).join('') : '<div class="empty">Aucune offre. Les offres se créent via les domaines de l\'espace.</div>';
+    }).join('') : '<div class="empty">Aucune offre pour ce client. Ajoutez-en une ci-dessous.</div>';
+    // Ajouter une offre à un client existant (les types pas encore créés).
+    var present = {};
+    CUR.domains.forEach(function (dn) { present[dn.id] = true; });
+    var addable = [['partner', 'Partenaire créative'], ['website', 'Site web'], ['branding', 'Identité visuelle'], ['maintenance', 'Maintenance site']]
+      .filter(function (a) { return !present[a[0]]; });
+    var addBtns = addable.map(function (a) { return '<button class="btn btn--outline btn--sm" onclick="ADM.addOffer(\'' + a[0] + '\')">+ ' + a[1] + '</button>'; }).join('');
+    var addSection = '<div class="mt" style="border-top:1px solid var(--bone-d);padding-top:12px">' +
+      '<div class="micro mb">Ajouter une offre</div>' +
+      (addBtns ? '<div class="row" style="gap:8px;flex-wrap:wrap">' + addBtns + '</div>' : '<span class="micro" style="color:var(--muted)">Toutes les offres principales sont déjà créées. Les supports s\'ajoutent dans « Supports de com ».</span>') +
+      '</div>';
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#9c6f18"></span>Offres / espaces</h3>' +
-      '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + '</div>';
+      '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + addSection + '</div>';
+  }
+  function addOffer(type) {
+    jpost('/api/clients/' + CURKEY + '/offers', { type: type }).then(function (r) {
+      if (r.ok) { toast('Offre ajoutée ✓ — activez-la quand le client a signé'); loadClient(); }
+      else r.json().then(function (d) { toast(d.error || 'Erreur'); }).catch(function () { toast('Erreur'); });
+    }).catch(function () { toast('Erreur'); });
   }
   function setBanner(pid, color) {
     jpost('/api/clients/' + CURKEY + '/banner', { projectId: pid, color: color }, 'PATCH').then(function (r) { if (r.ok) { toast(color ? 'Couleur de bannière mise à jour' : 'Bannière en couleur automatique'); loadClient(); } else toast('Erreur'); });
@@ -4366,7 +4382,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,

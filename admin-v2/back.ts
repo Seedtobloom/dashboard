@@ -471,6 +471,28 @@ async function handleClientApi(
   if (m && method === 'DELETE') return handleStepDelete(request, env, key, data, m[1], url);
 
   // Activation d'une offre (visible côté client uniquement si active)
+  // Ajouter une offre (domaine) à un client existant — même structure qu'à la création.
+  if (method === 'POST' && sub === '/offers') {
+    const body = await readJson(request);
+    const type = String(body.type || '');
+    if (type === 'partner' && !esp.partenaireCreative) {
+      esp.partenaireCreative = [{ isActive: false, chat: [], taches: [], monthlyHours: Number(body.monthlyHours) || 0, forfaitOverrides: {}, notes: '', resources: [], propertySchema: DEFAULT_PARTNER_SCHEMA }];
+    } else if (type === 'website' && !esp.siteWeb) {
+      esp.siteWeb = [{ isActive: false, chat: [], suivi: [] }];
+    } else if (type === 'branding' && !esp.identiteVisuelle) {
+      esp.identiteVisuelle = [{ isActive: false, chat: [], strategieDeMarque: [], identiteVisuelle: [], declinaisons: [], livrables: [] }];
+    } else if (type === 'supports' && !esp.supportsDeCom) {
+      esp.supportsDeCom = [{ '001': [{ isActive: false, chat: [], questionnaire: [], suivi: [], livrables: [] }] }];
+    } else if (type === 'maintenance' && !esp.maintenanceSite) {
+      esp.maintenanceSite = [{ isActive: false, chat: [], tickets: [], counsels: [], feedbacks: [], monthlyHours: Number(body.monthlyHours) || 0, maintReguls: {} }];
+    } else if (['partner', 'website', 'branding', 'supports', 'maintenance'].indexOf(type) === -1) {
+      return json({ error: 'Type d\'offre inconnu' }, 400);
+    } else {
+      return json({ error: 'Cette offre existe déjà pour ce client' }, 409);
+    }
+    await saveClient(env, key, data);
+    return json({ ok: true });
+  }
   if (method === 'PATCH' && sub === '/offer') {
     const body = await readJson(request);
     const { container, label } = resolveProject(esp, (body.projectId || '').toString());
