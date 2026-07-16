@@ -4202,8 +4202,15 @@
     return lab + f;
   }
   // Aperçu fidèle : on parcourt le questionnaire étape par étape, comme la cliente.
-  var QNR_PREV_ID = null, QNR_PREV_STEP = 0;
-  function qnrPreview(id) { QNR_PREV_ID = id; QNR_PREV_STEP = 0; qnrPreviewRender(); }
+  var QNR_PREV_ID = null, QNR_PREV_STEP = 0, QNR_PREV_COVER = true;
+  function qnrPreview(id) {
+    var t = qnrTpl(id); QNR_PREV_ID = id; QNR_PREV_STEP = 0;
+    // On démarre sur la page de couverture (comme la cliente).
+    QNR_PREV_COVER = true;
+    qnrPreviewRender();
+  }
+  function qnrPreviewStart() { QNR_PREV_COVER = false; qnrPreviewRender(); }
+  function qnrPreviewCover() { QNR_PREV_COVER = true; qnrPreviewRender(); }
   function qnrPreviewNav(d) {
     var t = qnrTpl(QNR_PREV_ID); if (!t) return;
     var n = (t.steps || []).length;
@@ -4216,28 +4223,47 @@
     var col = t.color || '#5e3fa0';
     var steps = t.steps || [];
     if (!steps.length) steps = [{ title: '', help: '', blocks: [] }];
-    if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
-    var s = steps[QNR_PREV_STEP];
-    var isFirst = QNR_PREV_STEP === 0, isLast = QNR_PREV_STEP === steps.length - 1;
-    var pct = Math.round((QNR_PREV_STEP + 1) / steps.length * 100);
-    var progress = '<div style="margin-bottom:18px">' +
-      '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
-      '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + ';transition:width .2s"></div></div></div>';
-    var whyBlock = (QNR_PREV_STEP === 0 && (t.description || '').trim())
-      ? '<div style="background:' + hexA(col, 0.08) + ';border:1px solid ' + hexA(col, 0.22) + ';border-radius:12px;padding:13px 15px;margin-bottom:18px"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:5px">Pourquoi ce questionnaire ?</div><div style="font-size:14px;color:var(--terre-600);line-height:1.55;white-space:pre-wrap">' + esc(t.description) + '</div></div>'
-      : '';
-    var fields = (s.blocks || []).map(qnrFieldPreview).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
-    var nav = '<div style="display:flex;gap:10px;margin-top:18px">' +
-      (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
-      (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
-               : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
+    var header = '<div class="between" style="margin-bottom:12px"><div class="micro" style="color:var(--muted)">Aperçu · ' + esc(t.name || '') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>';
+    var body;
+    if (QNR_PREV_COVER) {
+      // ── Page de couverture : ce que voit la cliente à l'ouverture ──
+      var nQ = 0; steps.forEach(function (st) { (st.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type)) nQ++; }); });
+      var nS = steps.length;
+      var desc = (t.description || '').trim();
+      body =
+        '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:22px"></div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:10px">Questionnaire</div>' +
+        '<h1 style="font-family:var(--font-display);font-style:italic;font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
+        (desc
+          ? '<div style="font-size:15px;line-height:1.7;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
+          : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
+        '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer →</button>';
+    } else {
+      if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
+      var s = steps[QNR_PREV_STEP];
+      var isFirst = QNR_PREV_STEP === 0, isLast = QNR_PREV_STEP === steps.length - 1;
+      var pct = Math.round((QNR_PREV_STEP + 1) / steps.length * 100);
+      var progress = '<div style="margin-bottom:18px">' +
+        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
+        '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + ';transition:width .2s"></div></div></div>';
+      // Rappel discret pour revoir l'intro depuis la 1re étape (comme la cliente).
+      var whyBlock = isFirst
+        ? '<div style="margin-bottom:16px"><button style="background:none;border:none;cursor:pointer;font-size:13px;padding:0;color:' + esc(col) + '" onclick="ADM.qnrPreviewCover()">↖ Revoir l\'introduction</button></div>'
+        : '';
+      var fields = (s.blocks || []).map(qnrFieldPreview).join('') || '<div class="micro muted" style="text-transform:none;letter-spacing:0">Aucune question dans cette étape.</div>';
+      var nav = '<div style="display:flex;gap:10px;margin-top:18px">' +
+        (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
+        (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
+                 : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
+      body = progress + whyBlock +
+        (s.title ? '<h2 style="margin:2px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(s.title) + '</h2>' : '') +
+        (s.help ? '<div style="color:var(--muted);margin-bottom:10px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
+        fields + nav;
+    }
     var ov = document.createElement('div'); ov.id = 'qnr-preview-ov'; ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;max-height:88vh;overflow-y:auto;text-align:left">' +
-      '<div class="between" style="margin-bottom:12px"><div class="micro" style="color:var(--muted)">Aperçu · ' + esc(t.name || '') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>' +
-      progress + whyBlock +
-      (s.title ? '<h2 style="margin:2px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(s.title) + '</h2>' : '') +
-      (s.help ? '<div style="color:var(--muted);margin-bottom:10px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
-      fields + nav +
+      header + body +
     '</div>';
     function close() { ov.remove(); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
@@ -4300,7 +4326,7 @@
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
