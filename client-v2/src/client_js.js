@@ -3205,7 +3205,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
-            '<span style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
@@ -3322,7 +3322,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
       // Statut (la cliente a-t-elle terminé son brief ?) + Échéance
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
         '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
@@ -3402,9 +3402,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
-  window.cliOpenTaskDrawer = function(pid, taskId) { cliSelTask[pid] = taskId; renderShell(); };
+  window.cliOpenTaskDrawer = function(pid, taskId) { if (typeof cliTaskFlushAll === 'function') cliTaskFlushAll(); cliSelTask[pid] = taskId; renderShell(); };
   window.cliOpenTaskFromHome = function(pid, taskId) { cliSelTask[pid] = taskId; cliPartTab[pid] = 'cal'; cpSel(pid); };
-  window.cliCloseTaskDrawer = function(pid) { delete cliSelTask[pid]; renderShell(); };
+  window.cliCloseTaskDrawer = function(pid) { if (typeof cliTaskFlushAll === 'function') cliTaskFlushAll(); delete cliSelTask[pid]; renderShell(); };
   window.cliCalGoToday = function(pid) { var d=new Date(); d.setDate(1); d.setHours(0,0,0,0); cliCalMonth[pid]=d; renderShell(); };
   function _ptaskRenderFiles() {
     var box = document.getElementById('_ptask-files-list');
@@ -3531,17 +3531,41 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     fetch(API_BASE+'/tasks/'+taskId, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
   };
   // Sauvegarde immédiate d'un champ simple du tiroir (avec confirmation).
-  window.cliEditTaskField = function(pid, taskId, field, value){
+  window.cliEditTaskField = function(pid, taskId, field, value, silent){
     var pd = getPD(pid);
     var t = pd && (pd.project.tasks||[]).find(function(x){return x.id===taskId;});
     if (!t) return;
     if (field === 'startDate' && !value) value = null;
     t[field] = value;
     var body = { projectId: pid }; body[field] = value;
-    fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-      .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); if (field === 'status') renderShell(); })
-      .catch(function(){ toast('Erreur — réessayez'); });
+    // keepalive : la sauvegarde aboutit même si l'onglet se ferme juste après.
+    fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive: true })
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(d){ if (d && Array.isArray(d.contentHistory)) t.contentHistory = d.contentHistory; if (!silent) toast('Enregistré ✓'); if (field === 'status') renderShell(); })
+      .catch(function(){ if (!silent) toast('Erreur — réessayez'); });
   };
+  // Autosave anti-perte : débounce pendant la saisie (titre, détails). Silencieux.
+  var _cliTaskSaveTimers = {};
+  window.cliTaskAutosave = function(pid, taskId, field, value){
+    var k = taskId + ':' + field;
+    if (_cliTaskSaveTimers[k]) clearTimeout(_cliTaskSaveTimers[k].timer);
+    _cliTaskSaveTimers[k] = { timer: setTimeout(function(){ delete _cliTaskSaveTimers[k]; cliEditTaskField(pid, taskId, field, value, true); }, 600), pid: pid, taskId: taskId, field: field, value: value };
+  };
+  function cliTaskFlushAll(){
+    Object.keys(_cliTaskSaveTimers).forEach(function(k){
+      var s = _cliTaskSaveTimers[k]; if (!s) return;
+      clearTimeout(s.timer); delete _cliTaskSaveTimers[k];
+      cliEditTaskField(s.pid, s.taskId, s.field, s.value, true);
+    });
+  }
+  if (!window._cliTaskFlushBound) {
+    window._cliTaskFlushBound = true;
+    window.addEventListener('pagehide', cliTaskFlushAll);
+    window.addEventListener('beforeunload', cliTaskFlushAll);
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') cliTaskFlushAll(); });
+  }
+  // Champ « Détails » qui grandit avec le texte : on voit tout ce qui est écrit.
+  window.cliAutoGrow = function(el){ if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 600) + 'px'; };
   // Sauvegarde immédiate d'une propriété (état du brief, type de mission…).
   window.cliEditTaskProp = function(pid, taskId, propId, value){
     var pd = getPD(pid);

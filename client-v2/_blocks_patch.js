@@ -11,10 +11,38 @@
     var t = cliTaskById(pid, taskId); if (!t) return;
     var body = { projectId: pid, blocks: t.blocks || [] };
     if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
-    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
-      .then(function(r){ if (!r.ok) throw new Error(); })
+    // keepalive : la sauvegarde aboutit même si l'onglet se ferme juste après.
+    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive: true })
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(d){ if (d && Array.isArray(d.blocksHistory)) t.blocksHistory = d.blocksHistory; })
       .catch(function(){ toast('Erreur d enregistrement', true); });
   }
+  // Autosave anti-perte pendant la frappe : on programme une sauvegarde débouncée.
+  var _stbTimer = null, _stbPend = null;
+  function stbSaveSoon(pid, taskId){
+    _stbPend = { pid: pid, taskId: taskId };
+    if (_stbTimer) clearTimeout(_stbTimer);
+    _stbTimer = setTimeout(function(){ _stbTimer = null; var p = _stbPend; _stbPend = null; if (p) stbBlocksSave(p.pid, p.taskId); }, 600);
+  }
+  function stbFlush(){ if (_stbTimer){ clearTimeout(_stbTimer); _stbTimer = null; } if (_stbPend){ var p = _stbPend; _stbPend = null; stbBlocksSave(p.pid, p.taskId); } }
+  if (!window._stbFlushBound){
+    window._stbFlushBound = true;
+    window.addEventListener('pagehide', stbFlush);
+    window.addEventListener('beforeunload', stbFlush);
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') stbFlush(); });
+  }
+  // Nombre de lignes estimé pour une cellule de tableau (sinon le texte est tronqué au rendu).
+  function stbCellRows(txt){ var r = 0; String(txt || '').split('\n').forEach(function(l){ r += Math.max(1, Math.ceil((l.length || 1) / 20)); }); return Math.max(1, Math.min(r, 40)); }
+  // Écriture live (frappe) : met à jour le modèle et programme une sauvegarde.
+  window.stbBlockInput = function(pid, taskId, blockId, value){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
+    var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
+    b.text = value; stbSaveSoon(pid, taskId);
+  };
+  window.stbTableInput = function(pid, taskId, blockId, r, c, value){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || !b.rows[r]) return;
+    b.rows[r][c] = value; stbSaveSoon(pid, taskId);
+  };
   // Re-render UNIQUEMENT le conteneur des blocs (pas de renderShell global).
   function stbRenderBlocks(pid, taskId){
     var t = cliTaskById(pid, taskId); if (!t) return;
@@ -35,11 +63,11 @@
     var rows = 0;
     txt.split('\n').forEach(function(l){ rows += Math.max(1, Math.ceil((l.length || 1) / 55)); });
     rows = Math.max(2, Math.min(rows + 1, 60));
-    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(txt)+'</textarea>';
+    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:#faf7f1;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderColor=\'transparent\'">'+esc(txt)+'</textarea>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   function stbLineInput(pid, taskId, b, ph, extra){
-    return '<input id="stb-f-'+b.id+'" value="'+esc(b.text||'')+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
+    return '<input id="stb-f-'+b.id+'" value="'+esc(b.text||'')+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
     var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#e8e0d4);border-radius:5px;background:#fff;color:#8a6f54;cursor:pointer;font-size:11px;line-height:1;padding:0';
@@ -75,12 +103,12 @@
       if (!Array.isArray(b.rows) || !b.rows.length) b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']];
       var ncol = b.rows[0].length;
       var thead = '<tr>' + b.rows[0].map(function(c, ci){
-        return '<th style="border:1px solid var(--bone-d,#e8e0d4);background:#f4eee2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#1C1205);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
+        return '<th style="border:1px solid var(--bone-d,#e8e0d4);background:#f4eee2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#1C1205);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
       }).join('') + '<th style="border:none;width:20px"></th></tr>';
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
         return '<tr>' + row.map(function(c, ci){
-          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><textarea oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+','+ci+',this.value)" placeholder="…" style="width:100%;border:none;background:none;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;resize:none;box-sizing:border-box;min-height:32px;overflow:hidden;outline:none">'+esc(c)+'</textarea></td>';
+          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><textarea rows="'+stbCellRows(c)+'" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+','+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+','+ci+',this.value)" placeholder="…" style="width:100%;border:none;background:none;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;resize:none;box-sizing:border-box;min-height:32px;overflow:hidden;outline:none">'+esc(c)+'</textarea></td>';
         }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
       }).join('');
       inner = '<div style="flex:1;min-width:0;overflow-x:auto"><table style="border-collapse:collapse;width:100%;background:#fff;border-radius:8px"><tbody>'+thead+tbody+'</tbody></table>'+
@@ -147,8 +175,45 @@
       menu+
     '</div>';
     var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
-    return (rows || empty) + addBar;
+    return (rows || empty) + addBar + stbHistoryHtml(pid, t);
   }
+  // Aperçu court d'une version (pour l'historique).
+  function stbBlocksPreview(blocks){
+    var parts = [];
+    (blocks || []).forEach(function(b){
+      if (b.text) parts.push(b.text);
+      else if (b.type === 'table' && b.rows) parts.push('[tableau]');
+      else if (b.type === 'file') parts.push('[fichier ' + (b.name || '') + ']');
+      else if (b.type === 'link') parts.push('[lien]');
+    });
+    var s = parts.join(' · ').replace(/\s+/g, ' ').trim();
+    return s.length > 110 ? s.slice(0, 110) + '…' : (s || '(vide)');
+  }
+  // Historique des versions précédentes du contenu, avec restauration.
+  function stbHistoryHtml(pid, t){
+    var h = Array.isArray(t.blocksHistory) ? t.blocksHistory : [];
+    if (!h.length) return '';
+    var rows = h.map(function(e, idx){ return { e: e, idx: idx }; }).reverse().map(function(o){
+      var e = o.e; var who = e.by === 'studio' ? 'Studio' : 'Vous'; var when = e.at ? fmtShort(e.at) : '';
+      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;margin-top:6px;background:#fff">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:10px;font-weight:700;color:var(--muted,#8090a8);margin-bottom:3px">'+esc(who)+(when?' · '+esc(when):'')+'</div>'+
+          '<div style="font-size:12px;line-height:1.5;color:#6f5a40;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(stbBlocksPreview(e.blocks))+'</div>'+
+        '</div>'+
+        '<button onclick="window.stbRestore(\''+pid+'\',\''+t.id+'\','+o.idx+')" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">Restaurer</button>'+
+      '</div>';
+    }).join('');
+    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#8090a8);letter-spacing:0.04em">Historique — versions précédentes ('+h.length+')</summary>'+
+      '<div style="margin-top:4px">'+rows+'</div></details>';
+  }
+  window.stbRestore = function(pid, taskId, index){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocksHistory)) return;
+    var snap = t.blocksHistory[index]; if (!snap) return;
+    if (!confirm('Restaurer cette version ? La version actuelle sera ajoutée à l historique.')) return;
+    t.blocks = JSON.parse(JSON.stringify(snap.blocks || []));
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+    toast('Version restaurée');
+  };
   function stbBlocks(pid, t){
     if (!t._blkInit){
       if (!Array.isArray(t.blocks)) t.blocks = [];

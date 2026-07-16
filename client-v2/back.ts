@@ -970,6 +970,33 @@ async function handleTaskUpdate(request: Request, env: Env, masterKey: string, d
       body.table = null;
     }
   }
+  // Historique du champ « Détails & contexte » : on conserve les versions
+  // précédentes à chaque changement pour ne jamais perdre ce qui a été écrit.
+  if ('content' in body) {
+    const prev = String(task.content || '');
+    const next = String(body.content || '');
+    if (prev.trim() && prev !== next) {
+      if (!Array.isArray(task.contentHistory)) task.contentHistory = [];
+      task.contentHistory.push({ content: prev.slice(0, 8000), at: nowIso(), by: editor ? 'studio' : 'client' });
+      if (task.contentHistory.length > 30) task.contentHistory = task.contentHistory.slice(-30);
+    }
+  }
+  // Historique du contenu par blocs (éditeur type Notion). L'autosave se déclenche
+  // souvent : on ne garde qu'un point de restauration toutes les ~2 minutes.
+  if ('blocks' in body) {
+    const prevBlocks = Array.isArray(task.blocks) ? task.blocks : [];
+    const prevStr = JSON.stringify(prevBlocks);
+    const nextStr = JSON.stringify(Array.isArray(body.blocks) ? body.blocks : []);
+    if (prevStr !== nextStr && prevStr !== '[]') {
+      if (!Array.isArray(task.blocksHistory)) task.blocksHistory = [];
+      const last = task.blocksHistory[task.blocksHistory.length - 1] as AnyObj | undefined;
+      const lastAt = last && last.at ? Date.parse(String(last.at)) : 0;
+      if (!last || Date.now() - lastAt > 120000) {
+        task.blocksHistory.push({ blocks: prevBlocks, at: nowIso(), by: editor ? 'studio' : 'client' });
+        if (task.blocksHistory.length > 20) task.blocksHistory = task.blocksHistory.slice(-20);
+      }
+    }
+  }
   TASK_ALLOWED.forEach((k) => { if (k in body) task[k] = body[k]; });
   if (body.properties && typeof body.properties === 'object') {
     task.properties = Object.assign({}, task.properties || {}, body.properties);
