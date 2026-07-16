@@ -5748,7 +5748,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
               '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--nuit);line-height:1.2">' + esc(inst.name || 'Questionnaire') + '</div>' +
-              (inst.description ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:5px">' + esc(inst.description) + '</div>' : '') +
+              (inst.description ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:5px;white-space:pre-wrap">' + esc(inst.description) + '</div>' : '') +
               due +
             '</div>' +
             '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + st[1] + ';background:' + st[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(st[0]) + '</span>' +
@@ -5886,7 +5886,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var whyTxt = (inst.description || '').trim() || 'Tes réponses aident Cindy à bien comprendre ton projet avant de se lancer. Tu gagnes du temps, et le résultat sera beaucoup plus juste.';
     var why = cpQnrStep === 0 ? '<div style="background:' + hexToRgba(col, 0.08) + ';border:1px solid ' + hexToRgba(col, 0.22) + ';border-radius:12px;padding:14px 16px;margin-bottom:20px">' +
       '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:5px">Pourquoi ce questionnaire ?</div>' +
-      '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);line-height:1.55">' + esc(whyTxt) + '</div>' +
+      '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);line-height:1.55;white-space:pre-wrap">' + esc(whyTxt) + '</div>' +
     '</div>' : '';
     return wrap(progress + why +
       '<div id="cp-qnr-step" oninput="cpQnrTouch()" onchange="cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
