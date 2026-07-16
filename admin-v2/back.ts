@@ -1966,9 +1966,15 @@ async function handleQnrAssign(request: Request, env: Env, key: string, data: An
   esp.questionnaires.unshift(inst);
   await saveClient(env, key, data);
   if (body.notify !== false) {
-    await notifyClient(env, data, `Un questionnaire vous attend · ${escHtml(tpl.name || '')}`,
-      `<p>Bonjour ${escHtml(getClient(data).prenom || '')},</p>` +
-      `<p><strong>${escHtml(tpl.name || 'Un questionnaire')}</strong> vous attend dans votre espace, onglet « Questionnaires ». Prenez un moment pour le remplir quand vous le souhaitez.</p>`, key);
+    const prenom = getClient(data).prenom || '';
+    const dueStr = inst.dueDate ? String(inst.dueDate).split('-').reverse().join('/') : '';
+    const deadlineLine = dueStr
+      ? `Merci de le compléter avant le <strong>${escHtml(dueStr)}</strong> afin que nous puissions poursuivre le projet dans les délais prévus.`
+      : `Merci de le compléter afin que nous puissions poursuivre le projet.`;
+    await notifyClient(env, data, `Votre questionnaire est prêt · ${escHtml(tpl.name || '')}`,
+      `<p>Bonjour ${escHtml(prenom)},</p>` +
+      `<p>Votre questionnaire est prêt ! 😊</p>` +
+      `<p>Vous le trouverez dans votre espace, onglet « Questionnaires ». ${deadlineLine}</p>`, key);
   }
   return json(inst, 201);
 }
