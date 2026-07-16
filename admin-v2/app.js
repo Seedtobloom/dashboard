@@ -168,7 +168,7 @@
   function buildNavHtml() {
     var groups = [
       ['Mon travail', [['inbox', 'Boîte de réception'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
-      ['Pilotage', [['kpi', 'KPI'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
+      ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
       var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks' || it[0] === 'inbox') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
@@ -2149,10 +2149,70 @@
     toast('Export CSV téléchargé');
   }
   var KPI_D = null;
+  var KPI_DASH = {}, KPI_VIS = {};
   function renderKpi() {
-    setMain(topbar('KPI partenaire créative') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/kpi').then(function (r) { return r.json(); }).then(function (d) { KPI_D = d; renderKpiBody(d); }).catch(showError);
+    setMain(topbar('Tableau de bord') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    Promise.all([
+      api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/visios').then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; KPI_VIS = res[2] || {}; renderKpiBody(KPI_D); }).catch(showError);
   }
+  // Accueil KPI : les 6 cartes essentielles + le score « Santé du studio ».
+  function kpiSummaryHtml() {
+    var dash = KPI_DASH || {};
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    function dd(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); return Math.round((t - today) / 86400000); }
+    function iso(dt) { return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
+    function hL(m) { m = Math.round(m || 0); if (!m) return '0'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
+    var dls = dash.deadlines || [];
+    var mine = dls.filter(function (x) { return x.status !== 'waiting_client' && x.status !== 'review'; });
+    var overdue = mine.filter(function (x) { return x.dueDate && dd(x.dueDate) < 0 && x.status !== 'done'; }).length;
+    var inboxN = (dash.inbox || []).length;
+    // Charge de la semaine : temps estimé des tâches dues sur 5 jours ouvrés.
+    var weekMin = 0; var cur = new Date(today); var seen = 0;
+    while (seen < 5) { var dow = cur.getDay(); if (dow !== 0 && dow !== 6) { var di = iso(cur); mine.forEach(function (x) { if ((x.dueDate || '').slice(0, 10) === di && x.status !== 'done') weekMin += (x.estMinutes > 0 ? x.estMinutes : 45); }); seen++; } cur.setDate(cur.getDate() + 1); }
+    var weekCapH = dash.weeklyCapacity || 0;
+    var forfSurv = (dash.forfaits || []).filter(function (f) { return f.configured && f.remaining <= f.base * 0.2; }).length;
+    var visN = ((KPI_VIS && KPI_VIS.cards) || []).filter(function (c) { return (c.date || '').slice(0, 10) === iso(today) && !c.done; }).length;
+    var chronoWeek = dash.weekTimeMinutes || 0;
+    var waitClient = (dash.pendingValidation || []).length + dls.filter(function (x) { return x.status === 'waiting_client'; }).length;
+    // Score Santé du studio /100
+    var score = 100;
+    score -= Math.min(overdue * 6, 30);
+    if (weekCapH && weekMin > weekCapH * 60) score -= 15;
+    score -= Math.min(forfSurv * 8, 24);
+    score -= Math.min(Math.max(inboxN - 3, 0) * 3, 15);
+    score -= Math.min(Math.max(waitClient - 3, 0) * 2, 12);
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    var scoreCol = score >= 80 ? '#3a6b4a' : (score >= 55 ? '#b8871f' : '#a23c28');
+    var scoreLbl = score >= 80 ? 'Tout est sous contrôle' : (score >= 55 ? 'Quelques points à surveiller' : 'À réorganiser cette semaine');
+    var chargeOver = weekCapH && weekMin > weekCapH * 60;
+    function card(dot, big, label, sub, onclick) {
+      return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
+        '<span style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:' + dot + '"></span>' + esc(label) + '</span>' +
+        '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
+        (sub ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span>' : '') +
+      '</button>';
+    }
+    var cards =
+      card('#5e3fa0', hL(weekMin) + (weekCapH ? ' <span style="font-size:14px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : ''), 'Charge de la semaine', chargeOver ? 'au-delà de ta capacité' : '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
+      card('#c9952f', inboxN, 'Demandes à analyser', inboxN ? 'dans ta boîte de réception' : 'rien en attente', "ADM.nav('inbox')") +
+      card('#a23c28', overdue, 'Tâches en retard', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('risks')},60)") +
+      card('#6c4ea4', forfSurv + ' cliente' + (forfSurv > 1 ? 's' : ''), 'Forfaits à surveiller', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
+      card('#35608f', visN, 'Visios aujourd\'hui', '', "ADM.nav('visios')") +
+      card('#3a6b4a', hL(chronoWeek), 'Temps chronométré (semaine)', '', "ADM.nav('mytasks')");
+    return '<div class="card" style="background:linear-gradient(135deg,' + hexA(scoreCol, 0.10) + ',var(--card));border-color:' + hexA(scoreCol, 0.3) + ';display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:16px">' +
+        '<div style="width:96px;height:96px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(' + scoreCol + ' ' + (score * 3.6) + 'deg, var(--bone-d) 0deg)">' +
+          '<div style="width:76px;height:76px;border-radius:50%;background:var(--card);display:grid;place-items:center"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + scoreCol + ';line-height:1">' + score + '</div></div>' +
+        '</div>' +
+        '<div style="min-width:0"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé du studio</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre)">' + score + ' / 100</div>' +
+          '<div style="font-size:14px;color:' + scoreCol + ';font-weight:600;margin-top:2px">' + esc(scoreLbl) + '</div></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px">' + cards + '</div>';
+  }
+  function hexA(hex, a) { var h = String(hex || '').replace('#', ''); if (h.length !== 6) return 'rgba(94,63,160,' + a + ')'; return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
   function renderKpiBody(d) {
     var t = d.totals || {};
     function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
@@ -2183,7 +2243,8 @@
         '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
         '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div></div>';
     }
-    setMain(topbar('KPI partenaire créative', '', 'Ton activité de partenaire créative, mois par mois') + '<div class="wrap">' + kpis + tabBar + '<div id="kpibody">' + body + '</div></div>');
+    setMain(topbar('Tableau de bord', '', 'D\'un coup d\'œil : ta semaine, puis le détail') + '<div class="wrap">' + kpiSummaryHtml() +
+      '<h3 style="margin:8px 0 12px;font-size:16px">Détail · partenaire créative</h3>' + kpis + tabBar + '<div id="kpibody">' + body + '</div></div>');
   }
 
   /* ── Réalisé (historique daté) ── */
