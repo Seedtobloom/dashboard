@@ -4191,15 +4191,18 @@
     if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0 12px">' + esc(b.label || '') + '</p>';
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
     var lab = num + '<div style="font-weight:600;font-size:15.5px;line-height:1.35">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px">' + esc(b.help) + '</div>' : '');
+    // Aperçu interactif : tu peux cocher / écrire pour tester (rien n'est enregistré).
     var f = '';
-    if (b.type === 'long') f = '<textarea class="inp" disabled style="width:100%;box-sizing:border-box;min-height:70px"></textarea>';
-    else if (b.type === 'single' || b.type === 'multi') { f = (b.options || []).map(function (o) { return '<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="' + (b.type === 'single' ? 'radio' : 'checkbox') + '" disabled> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="display:flex;gap:8px;align-items:center;padding:4px 0;color:var(--muted)"><input type="' + (b.type === 'single' ? 'radio' : 'checkbox') + '" disabled> Autre : <span style="font-style:italic">champ libre</span></label>'; }
-    else if (b.type === 'ranking') f = (b.options || []).map(function (o, i) { return '<div style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:1px solid var(--bone-d);border-radius:12px;margin-bottom:8px;background:#fff"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span style="color:var(--muted);font-size:16px">⠿</span></div>'; }).join('') + '<div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser pour classer — 1 = priorité.</div>';
-    else if (b.type === 'dropdown') f = '<select class="inp" disabled><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
+    var inpBox = 'width:100%;box-sizing:border-box;background:#fff;border:1.5px solid var(--bone-d);border-radius:10px;padding:10px 12px;font-family:inherit';
+    var chip = 'display:flex;gap:9px;align-items:center;padding:10px 12px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:7px;background:#fff;cursor:pointer';
+    if (b.type === 'long') f = '<textarea style="' + inpBox + ';min-height:70px;resize:vertical"></textarea>';
+    else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:1px solid var(--bone-d);border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
+    else if (b.type === 'ranking') f = (b.options || []).map(function (o, i) { return '<div style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:1px solid var(--bone-d);border-radius:12px;margin-bottom:8px;background:#fff"><span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span style="color:var(--muted);font-size:16px">⠿</span></div>'; }).join('') + '<div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser pour classer — 1 = priorité (interactif côté cliente).</div>';
+    else if (b.type === 'dropdown') f = '<select style="' + inpBox + '"><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option>Autre…</option>' : '') + '</select>';
     else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
-    else if (b.type === 'slider') f = '<input type="range" disabled min="0" max="' + (b.max || 10) + '" style="width:100%">';
-    else if (b.type === 'file') f = '<button class="btn btn--outline btn--sm" disabled>📎 Joindre un fichier</button>';
-    else { var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : 'text'))); f = '<input class="inp" disabled type="' + it + '" style="width:100%;box-sizing:border-box" placeholder="' + esc(b.placeholder || '') + '">'; }
+    else if (b.type === 'slider') f = '<input type="range" min="0" max="' + (b.max || 10) + '" style="width:100%">';
+    else if (b.type === 'file') f = '<button type="button" class="btn btn--outline btn--sm" onclick="return false">📎 Joindre un fichier</button>';
+    else { var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : 'text'))); f = '<input type="' + it + '" style="' + inpBox + '" placeholder="' + esc(b.placeholder || '') + '">'; }
     // Carte crème = énoncé ; réponse à l'intérieur → même hiérarchie que la cliente.
     return '<div style="background:var(--surface,#F5F2EC);border:1px solid var(--bone-d);border-radius:14px;padding:16px 18px;margin-bottom:14px">' + lab + '<div style="margin-top:14px">' + f + '</div></div>';
   }
@@ -4259,7 +4262,8 @@
         (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
         (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
-      body = progress + whyBlock +
+      var testHint = '<div class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;margin-bottom:14px;padding:8px 11px;background:var(--card);border:1px solid var(--bone-d);border-radius:9px">Aperçu interactif — tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
+      body = progress + whyBlock + testHint +
         (s.title ? '<h2 style="margin:2px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(s.title) + '</h2>' : '') +
         (s.help ? '<div style="color:var(--muted);margin-bottom:10px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
         fields + nav;

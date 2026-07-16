@@ -5410,9 +5410,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</label>' +
       (b.help ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
-    // Bordure plus marquée (encre à faible opacité) : les champs blancs restent bien lisibles sur la carte crème.
+    // Bordure encre + ombre légère : la zone de réponse est clairement blanche sur la carte crème.
     var bd = 'rgba(28,18,5,0.22)';
-    var box = 'width:100%;padding:12px 15px;border:1.5px solid ' + bd + ';border-radius:12px;font-size:15px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--nuit)';
+    var wellShadow = 'box-shadow:0 1px 3px rgba(28,18,5,0.07)';
+    var box = 'width:100%;padding:12px 15px;border:1.5px solid ' + bd + ';border-radius:12px;font-size:15px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--nuit);' + wellShadow;
     var input;
     if (b.type === 'long' || b.type === 'address') {
       input = '<textarea data-qid="' + b.id + '" rows="' + (b.type === 'address' ? 3 : 4) + '" style="' + box + ';resize:vertical" placeholder="' + esc(b.placeholder || '') + '">' + esc(typeof ans === 'string' ? ans : '') + '</textarea>';
@@ -5426,7 +5427,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       } else {
         input = '<div data-qgroup="' + b.id + '" data-qtype="single">' + opts.map(function(o){
           var on = ans === o;
-          return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + '"><input type="radio" name="cpqn_' + b.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
+          return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + ';' + (on ? '' : wellShadow) + '"><input type="radio" name="cpqn_' + b.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
         }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherVal ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:#fff"><input type="radio" name="cpqn_' + b.id + '" value="__other__" data-otheropt' + (otherVal ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherField : '') + '</div>';
       }
     } else if (b.type === 'multi') {
@@ -5435,7 +5436,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var otherFieldM = b.allowOther ? '<input type="text" data-other="' + b.id + '" value="' + esc(otherM) + '" placeholder="Précise ta réponse…" oninput="cpQnrPickOther(this)" style="' + box + ';margin-top:2px">' : '';
       input = '<div data-qgroup="' + b.id + '" data-qtype="multi">' + opts.map(function(o){
         var on = arr.indexOf(o) !== -1;
-        return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
+        return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + ';' + (on ? '' : wellShadow) + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
       }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherM ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:#fff"><input type="checkbox" value="__other__" data-otheropt' + (otherM ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherFieldM : '') + '</div>';
     } else if (b.type === 'ranking') {
       var ro = (ans && typeof ans === 'object' && !Array.isArray(ans)) ? ans : {};
@@ -5443,7 +5444,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var order = opts.slice();
       if (Object.keys(ro).length) order.sort(function(a, x){ return (ro[a] != null ? ro[a] : 999) - (ro[x] != null ? ro[x] : 999); });
       input = '<div data-qgroup="' + b.id + '" data-qtype="ranking" data-rankgroup="' + b.id + '">' + order.map(function(o, i){
-        return '<div data-rankitem draggable="true" data-opt="' + esc(o) + '" ondragstart="cpRankDragStart(event,this)" ondragover="cpRankDragOver(event,this)" ondrop="cpRankDrop(event,this)" ondragend="cpRankDragEnd(event,this)" style="display:flex;align-items:center;gap:12px;padding:11px 13px;border:1.5px solid ' + bd + ';border-radius:12px;margin-bottom:8px;background:#fff;cursor:grab">' +
+        return '<div data-rankitem draggable="true" data-opt="' + esc(o) + '" ondragstart="cpRankDragStart(event,this)" ondragover="cpRankDragOver(event,this)" ondrop="cpRankDrop(event,this)" ondragend="cpRankDragEnd(event,this)" style="display:flex;align-items:center;gap:12px;padding:11px 13px;border:1.5px solid ' + bd + ';border-radius:12px;margin-bottom:8px;background:#fff;cursor:grab;' + wellShadow + '">' +
           '<span data-rankn style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--nuit);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;font-family:var(--font-micro)">' + (i + 1) + '</span>' +
           '<span style="flex:1;font-size:15px;color:var(--nuit)">' + esc(o) + '</span>' +
           '<span style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">' +
