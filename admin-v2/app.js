@@ -350,7 +350,7 @@
     api('/api/clients/' + key + '/tasks/' + id, { method: 'PATCH', body: JSON.stringify({ projectId: 'partner', clientCommentNotif: false }) }).catch(function () {});
   }
   function navTimerHtml() {
-    var run = MT_TIMER || PT_TIMER;
+    var run = MT_TIMER || PT_TIMER || TK_TIMER;
     if (!run) return '';
     var sec = run.base + (Date.now() - run.startedAt) / 1000;
     return '<div style="margin:14px 14px 4px;padding:13px 15px;background:rgba(242,229,194,0.12);border-radius:13px">' +
@@ -361,7 +361,7 @@
     '</div>';
   }
   function refreshNavTimer() { var s = el('nav-timer-slot'); if (s) s.innerHTML = navTimerHtml(); }
-  function navTimerPause() { if (MT_TIMER) mtPause(MT_TIMER.id, true); else if (PT_TIMER) ptPause(PT_TIMER.id, true); refreshNavTimer(); renderMain(); }
+  function navTimerPause() { if (MT_TIMER) mtPause(MT_TIMER.id, true); else if (PT_TIMER) ptPause(PT_TIMER.id, true); else if (TK_TIMER) tkPause(TK_TIMER.id, true); refreshNavTimer(); renderMain(); }
   var UNREAD = 0, REV_N = 0, NOTIF_N = 0;
   function refreshTabTitle() { NOTIF_N = UNREAD + REV_N + (typeof notifCount === 'function' ? notifCount() : 0); applyTabTitle(); }
   function refreshUnread() {
@@ -1366,7 +1366,7 @@
   var PT_TIMER = null, PT_INT = null;
   var DOC_BASE_TITLE = '';
   function baseTitle() { if (typeof document === 'undefined') return ''; if (!DOC_BASE_TITLE) DOC_BASE_TITLE = document.title.replace(/^\(\d+\)\s*/, ''); return DOC_BASE_TITLE; }
-  function applyTabTitle() { if (typeof document === 'undefined') return; if (MT_TIMER || PT_TIMER) return; var b = baseTitle(); document.title = NOTIF_N > 0 ? '(' + NOTIF_N + ') ' + b : b; }
+  function applyTabTitle() { if (typeof document === 'undefined') return; if (MT_TIMER || PT_TIMER || TK_TIMER) return; var b = baseTitle(); document.title = NOTIF_N > 0 ? '(' + NOTIF_N + ') ' + b : b; }
   function tabTimerOn(clock, label) { if (typeof document === 'undefined') return; baseTitle(); document.title = '▶ ' + clock + ' · ' + (label || 'tâche en cours'); }
   function tabTimerOff() { applyTabTitle(); }
   function ptBase(t) { return t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60; }
@@ -1419,6 +1419,39 @@
     if (found) return found;
     // Depuis Priorités : la tâche vit dans PRIO_D.deadlines (avec timeSpentSeconds).
     return (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+  }
+  // ── Chrono des tickets (maintenance) : même logique que les tâches partenaire ──
+  var TK_TIMER = null, TK_INT = null;
+  function tkFind(id) { var d = findDomain('maintenance'); var ts = d && d.content && Array.isArray(d.content.tickets) ? d.content.tickets : []; return ts.filter(function (t) { return t.id === id; })[0] || null; }
+  function tkBase(t) { return t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60; }
+  function tkStart(id) {
+    if (PT_TIMER) ptPause(PT_TIMER.id, true);
+    if (MT_TIMER) mtPause(MT_TIMER.id, true);
+    if (TK_TIMER && TK_TIMER.id !== id) tkPause(TK_TIMER.id, true);
+    var t = tkFind(id); if (!t) return;
+    TK_TIMER = { id: id, key: CURKEY, startedAt: Date.now(), base: tkBase(t), title: t.title || 'ticket' };
+    if (TK_INT) clearInterval(TK_INT);
+    tabTimerOn(mtClock(TK_TIMER.base), TK_TIMER.title);
+    refreshNavTimer();
+    TK_INT = setInterval(function () {
+      if (!TK_TIMER) { clearInterval(TK_INT); TK_INT = null; return; }
+      var sec = TK_TIMER.base + (Date.now() - TK_TIMER.startedAt) / 1000;
+      var span = el('tk-timer-' + TK_TIMER.id); if (span) span.textContent = mtClock(sec);
+      var nc = el('nav-timer-clock'); if (nc) nc.textContent = mtClock(sec);
+      tabTimerOn(mtClock(sec), TK_TIMER.title);
+    }, 1000);
+    if (VIEW === 'client') renderClient();
+  }
+  function tkPause(id, silent) {
+    if (!TK_TIMER || TK_TIMER.id !== id) return;
+    var total = Math.round(TK_TIMER.base + (Date.now() - TK_TIMER.startedAt) / 1000);
+    var tkey = TK_TIMER.key || CURKEY;
+    if (TK_INT) { clearInterval(TK_INT); TK_INT = null; }
+    TK_TIMER = null; tabTimerOff(); refreshNavTimer();
+    var d = findDomain('maintenance');
+    if (d && Array.isArray(d.content.tickets)) { var i = d.content.tickets.findIndex(function (t) { return t.id === id; }); if (i !== -1) { d.content.tickets[i].timeSpentSeconds = total; d.content.tickets[i].timeSpentMinutes = Math.round(total / 60); } }
+    if (!silent && VIEW === 'client') renderClient();
+    jpost('/api/clients/' + tkey + '/tickets/' + id, { projectId: 'maintenance', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   function mtFmtSession(x) {
     var a = new Date(x.start), b = new Date(x.end);
@@ -3319,12 +3352,19 @@
       var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">souhaité pour ' + fmtDate(t.dueDate) + '</span>' : '';
       var newDot = t.seenByAdmin === false ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c46a1a;margin-right:7px" title="Nouveau"></span>' : '';
       var atts = (Array.isArray(t.attachments) && t.attachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">' + t.attachments.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
+      var tkRun = TK_TIMER && TK_TIMER.id === t.id;
+      var tkSec = tkRun ? (TK_TIMER.base + (Date.now() - TK_TIMER.startedAt) / 1000) : tkBase(t);
+      var tkClock = '<span id="tk-timer-' + t.id + '" title="Temps passé sur ce ticket" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;color:' + (tkRun ? 'var(--green)' : 'var(--terre)') + ';min-width:74px;text-align:center">' + mtClock(tkSec) + '</span>';
+      var tkBtn = tkRun
+        ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.tkPause(\'' + t.id + '\')">⏸ Pause</button>'
+        : '<button class="btn btn--outline btn--sm" onclick="ADM.tkStart(\'' + t.id + '\')">▶ Démarrer</button>';
       var work = done
-        ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">résolu' + (t.resolvedAt ? ' le ' + fmtDate(t.resolvedAt) : '') + '</span></div>'
+        ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">résolu' + (t.resolvedAt ? ' le ' + fmtDate(t.resolvedAt) : '') + '</span><span style="margin-left:auto" class="micro">' + fmtMin(t.timeSpentMinutes || 0) + ' passées</span></div>'
         : '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px"><div class="micro" style="margin-bottom:9px">Où en est ce ticket ?</div>' +
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               '<select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
-              '<span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps</span><input class="inp" type="number" min="0" style="width:74px" value="' + (t.timeSpentMinutes || 0) + '" onchange="ADM.ticketTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></span>' +
+              tkBtn +
+              '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">' + tkClock + '<input class="inp" type="number" min="0"' + (tkRun ? ' disabled title="Mets le chrono en pause pour saisir"' : ' title="Saisir le temps à la main (minutes)"') + ' style="width:70px" value="' + (t.timeSpentMinutes || 0) + '" onchange="ADM.ticketTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></span>' +
             '</div>' +
             // Report de date : la cliente a choisi une date, Cindy peut en proposer une autre.
             '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
@@ -3351,17 +3391,30 @@
         '<div style="display:grid;gap:14px;margin-top:12px">' + doneT.map(card).join('') + '</div></details>'
       : '';
     var mh = parseFloat(d.content.monthlyHours) || 0;
-    var usedMin = all.reduce(function (n, t) { return n + (t.timeSpentMinutes || 0); }, 0);
     var now = new Date(); var mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    var usedThisMonth = all.reduce(function (n, t) { var ref = String(t.resolvedAt || t.createdAt || '').slice(0, 7); return n + (ref === mk ? (t.timeSpentMinutes || 0) : 0); }, 0);
+    var pdt = new Date(now.getFullYear(), now.getMonth() - 1, 1); var pk = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
+    function usedMinIn(ym) { return all.reduce(function (n, t) { return n + (String(t.resolvedAt || t.createdAt || '').slice(0, 7) === ym ? (t.timeSpentMinutes || 0) : 0); }, 0); }
+    function activeIn(ym) { return all.some(function (t) { return String(t.resolvedAt || t.createdAt || '').slice(0, 7) === ym; }); }
+    var usedThisMonth = usedMinIn(mk);
     function fmtMin(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), mm = m % 60; return h ? h + 'h' + (mm ? String(mm).padStart(2, '0') : '') : m + ' min'; }
+    // Report du dépassement / des heures non utilisées, comme le forfait partenaire.
+    var baseMin = mh * 60, capMin = 2 * 60;
+    var carryMin = 0, billedMin = 0;
+    if (baseMin && activeIn(pk)) {
+      var diff = baseMin - usedMinIn(pk);
+      if (diff >= 0) carryMin = Math.min(capMin, diff);
+      else { var ov = -diff; var ded = Math.min(ov, baseMin); carryMin = -ded; billedMin = ov - ded; }
+    }
+    var availMin = baseMin + carryMin;
     var forfaitCard = '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px">' +
       '<h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Forfait mensuel</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Nombre d\'heures inclus chaque mois. À 0, la cliente voit un espace tickets tout simple ; au-delà, elle voit sa consommation et son suivi mensuel.</div>' +
       '<div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">' +
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:8px">Heures / mois <input class="inp" type="number" min="0" step="0.5" style="width:90px" value="' + mh + '" onchange="ADM.ticketForfait(this.value)"></label>' +
-        (mh ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Consommé ce mois : <strong>' + fmtMin(usedThisMonth) + '</strong> / ' + fmtMin(mh * 60) + '</span>' : '') +
-      '</div></div>';
+        (mh ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Consommé ce mois : <strong>' + fmtMin(usedThisMonth) + '</strong> / ' + fmtMin(availMin) + (carryMin < 0 ? ' (−' + fmtMin(-carryMin) + ' du dépassement)' : (carryMin > 0 ? ' (+' + fmtMin(carryMin) + ' reportées)' : '')) + '</span>' : '') +
+      '</div>' +
+      (carryMin < 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;margin-top:8px">' + fmtMin(-carryMin) + ' de dépassement du mois dernier déduites de ce mois' + (billedMin > 0 ? ' · ' + fmtMin(billedMin) + ' à facturer (au-delà d\'un mois de forfait)' : '') + '.</div>' : '') +
+    '</div>';
     return forfaitCard +
       '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">La cliente ouvre ses tickets depuis son espace. Fais avancer chaque ticket avec le statut « À faire · En cours · Fait» et note le temps passé. Elle est prévenue à chaque changement.</div></div>' +
@@ -4848,7 +4901,7 @@
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,

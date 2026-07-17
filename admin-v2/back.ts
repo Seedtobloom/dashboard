@@ -613,7 +613,13 @@ async function handleClientApi(
     const tk = container.tickets.find((t: AnyObj) => t.id === m![1]);
     if (!tk) return json({ error: 'Ticket introuvable' }, 404);
     ['title', 'description', 'priority', 'category', 'status', 'dueDate'].forEach((k) => { if (k in body) tk[k] = body[k]; });
-    if (typeof body.timeSpentMinutes === 'number' && body.timeSpentMinutes >= 0) tk.timeSpentMinutes = Math.round(body.timeSpentMinutes);
+    if ('timeSpentSeconds' in body) {
+      tk.timeSpentSeconds = Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0));
+      tk.timeSpentMinutes = Math.round(tk.timeSpentSeconds / 60);
+    } else if (typeof body.timeSpentMinutes === 'number' && body.timeSpentMinutes >= 0) {
+      tk.timeSpentMinutes = Math.round(body.timeSpentMinutes);
+      tk.timeSpentSeconds = tk.timeSpentMinutes * 60;
+    }
     if (body.status === 'done' || body.status === 'closed') { if (!tk.resolvedAt) tk.resolvedAt = nowIso(); }
     else if ('status' in body) { tk.resolvedAt = null; }
     // Report d'échéance PROPOSÉ : la cliente a choisi une date, Cindy en

@@ -1076,23 +1076,38 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (isMaint) {
         var mTickets = (p.tickets || []);
         var mOpen = mTickets.filter(function(t){ return t.status!=='done'&&t.status!=='closed'; });
-        var mQuotaMin = (p.monthlyHours||0)*60;
-        var mUsedMin  = mTickets.reduce(function(n,t){ return n+(t.timeSpentMinutes||0); }, 0);
+        // Consommation PAR MOIS + report (dépassement déduit, heures non utilisées
+        // reportées max 2h), même règle que le forfait partenaire.
+        function fmtMn(m){ m=Math.round(Math.abs(m||0)); return m>=60 ? Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0'):'') : m+' min'; }
+        var mNow = new Date();
+        var mCurK = mNow.getFullYear()+'-'+String(mNow.getMonth()+1).padStart(2,'0');
+        var mPd = new Date(mNow.getFullYear(), mNow.getMonth()-1, 1);
+        var mPrevK = mPd.getFullYear()+'-'+String(mPd.getMonth()+1).padStart(2,'0');
+        function mUsedIn(ym){ return mTickets.reduce(function(n,t){ return n+(String(t.resolvedAt||t.createdAt||'').slice(0,7)===ym?(t.timeSpentMinutes||0):0); },0); }
+        function mActiveIn(ym){ return mTickets.some(function(t){ return String(t.resolvedAt||t.createdAt||'').slice(0,7)===ym; }); }
+        var mBaseMin  = (p.monthlyHours||0)*60;
+        var mUsedMin  = mUsedIn(mCurK);
+        var mCarryMin = 0, mBilledMin = 0;
+        if (mBaseMin && mActiveIn(mPrevK)){
+          var mDiff = mBaseMin - mUsedIn(mPrevK);
+          if (mDiff >= 0) mCarryMin = Math.min(120, mDiff);
+          else { var mOv = -mDiff; var mDed = Math.min(mOv, mBaseMin); mCarryMin = -mDed; mBilledMin = Math.round(mOv - mDed); }
+        }
+        var mQuotaMin = mBaseMin + mCarryMin;
         var mRemain   = mQuotaMin - mUsedMin;
         var mOver     = mRemain < 0;
-        var mBarPct   = mQuotaMin ? Math.min(100, Math.round(mUsedMin/mQuotaMin*100)) : 0;
+        var mBarPct   = mQuotaMin>0 ? Math.min(100, Math.round(mUsedMin/mQuotaMin*100)) : (mUsedMin>0?100:0);
         var mBarColor = mOver ? '#9b3a2e' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
-        var mRemH = mQuotaMin ? (Math.abs(mRemain)>=60 ? Math.floor(Math.abs(mRemain)/60)+'h'+(Math.abs(mRemain)%60?String(Math.abs(mRemain)%60).padStart(2,'0'):'') : Math.abs(mRemain)+' min') : '';
-        var mTotH = mQuotaMin ? (mQuotaMin>=60 ? Math.floor(mQuotaMin/60)+'h'+(mQuotaMin%60?String(mQuotaMin%60).padStart(2,'0'):'') : mQuotaMin+' min') : '';
-        var mUsedH= mQuotaMin ? (mUsedMin>=60 ? Math.floor(mUsedMin/60)+'h'+(mUsedMin%60?String(mUsedMin%60).padStart(2,'0'):'') : mUsedMin+' min') : '';
+        var mRemH = fmtMn(mRemain), mTotH = fmtMn(mQuotaMin), mUsedH = fmtMn(mUsedMin);
         var mHomeUnread = totalUnread();
 
         var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#e7c6bd;background:#fbf1ee':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
-          (mQuotaMin
+          (mBaseMin
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#9b3a2e':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
-              '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' total</span></div>'
+              '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' ce mois'+(mCarryMin<0?' (report du dépassement)':(mCarryMin>0?' (report inclus)':''))+'</span></div>' +
+              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a6f2e;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
             : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré, contactez le studio.</p>'
           ) +
         '</div>';
