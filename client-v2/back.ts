@@ -197,6 +197,9 @@ async function handleClientApi(
   t = sub.match(/^\/steps\/([a-f0-9]+)$/);
   if (t && method === 'PATCH') return handleStepPatch(request, env, masterKey, data, t[1]);
 
+  // Remontée d'incident (erreur rencontrée par la cliente) → visible côté admin
+  if (method === 'POST' && sub === '/client-error') return handleClientError(request, env, masterKey, data);
+
   // Fichiers
   if (method === 'POST' && sub === '/files') return handleFileUpload(request, env, masterKey, data);
   if (method === 'DELETE' && sub === '/files') return handleClientFileDelete(request, env, masterKey, data, url);
@@ -1224,6 +1227,30 @@ async function listFiles(env: Env, prefix: string): Promise<AnyObj[]> {
   }
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
+}
+
+// Incident client : stocké dans une liste globale KV (lue par l'admin). On
+// déduplique les erreurs identiques rapprochées pour ne pas inonder la liste.
+async function handleClientError(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const rec: AnyObj = {
+    id: genId(),
+    at: nowIso(),
+    clientKey: masterKey,
+    clientName: clientFullName(data),
+    context: String(body.context || '').slice(0, 200),
+    message: String(body.message || '').slice(0, 600),
+    url: String(body.url || '').slice(0, 300),
+    ua: (request.headers.get('user-agent') || '').slice(0, 200),
+    seen: false,
+  };
+  const KEY = 'global:clientErrors';
+  const list = (await env.KV_CLIENT.get(KEY, { type: 'json' })) as AnyObj[] | null;
+  const arr = Array.isArray(list) ? list : [];
+  const dup = arr.find((e) => e.clientKey === rec.clientKey && e.context === rec.context && e.message === rec.message
+    && (Date.parse(rec.at) - Date.parse(e.at)) < 5 * 60 * 1000);
+  if (!dup) { arr.unshift(rec); await env.KV_CLIENT.put(KEY, JSON.stringify(arr.slice(0, 200))); }
+  return json({ ok: true }, 201);
 }
 
 async function handleFileUpload(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {

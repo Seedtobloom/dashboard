@@ -29,6 +29,7 @@
     inbox: 'M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
     reglages: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
     projtpl: 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+    incidents: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',
     stepClient: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
     stepStudio: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
     stepValid: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
@@ -179,10 +180,10 @@
   function buildNavHtml() {
     var groups = [
       ['Mon travail', [['inbox', 'Boîte de réception'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
-      ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['reglages', 'Réglages']]],
+      ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['incidents', 'Incidents'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
-      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks' || it[0] === 'inbox') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
+      var badgeSpan = (it[0] === 'chat' || it[0] === 'clients' || it[0] === 'priorities' || it[0] === 'mytasks' || it[0] === 'inbox' || it[0] === 'incidents') ? '<span id="nav-unread-' + it[0] + '" style="margin-left:auto"></span>' : '';
       return '<button class="navitem' + ((VIEW === it[0] || (VIEW === 'newclient' && it[0] === 'clients')) ? ' active' : '') + '" onclick="ADM.nav(\'' + it[0] + '\')">' + admIcon(it[0]) + '<span>' + it[1] + '</span>' + badgeSpan + '</button>';
     }
     // Accès direct : chaque client a son entrée, dépliable en sous-sections.
@@ -397,6 +398,9 @@
       var nInbox = (d.inbox || []).length;
       BADGE_CACHE.inbox = nInbox > 0 ? badgeAlert(nInbox) : '';
       var bi = el('nav-unread-inbox'); if (bi) bi.innerHTML = BADGE_CACHE.inbox;
+      var nErr = d.clientErrorsUnseen || 0;
+      BADGE_CACHE.incidents = nErr > 0 ? badgeAlert(nErr) : '';
+      var bx = el('nav-unread-incidents'); if (bx) bx.innerHTML = BADGE_CACHE.incidents;
       paintNotif();
       refreshTabTitle();
     }).catch(function () {});
@@ -422,6 +426,7 @@
     if (VIEW === 'visios') return renderVisios();
     if (VIEW === 'questionnaires') return renderQuestionnaires();
     if (VIEW === 'projtpl') return renderProjTpl();
+    if (VIEW === 'incidents') return renderIncidents();
     if (VIEW === 'kpi') return renderKpi();
     if (VIEW === 'planning') return renderPlanning();
     if (VIEW === 'clients') return renderClients();
@@ -4804,6 +4809,40 @@
     return [supp, brand, site];
   }
 
+  /* ════════════════ Incidents (erreurs remontées par les clientes) ════════════════ */
+  var INC = [];
+  function renderIncidents(){
+    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.incSeenAll()">Tout marquer comme vu</button> <button class="btn btn--danger btn--sm" onclick="ADM.incClear()">Effacer</button>';
+    setMain(topbar('Incidents', right, 'Les erreurs rencontrées par tes clientes (upload, plantage…) remontent ici, pour que tu puisses les corriger.') + '<div class="wrap" id="inc-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    incLoad();
+  }
+  function incLoad(){ api('/api/client-errors').then(function(r){ return r.json(); }).then(function(d){ INC = (d && d.errors) || []; renderIncBody(); }).catch(showError); }
+  function renderIncBody(){
+    var b = el('inc-body'); if (!b) return;
+    if (!INC.length){ b.innerHTML = '<div class="card infocard" style="background:var(--card)"><div class="empty">Aucun incident. 🎉 Tout roule pour tes clientes.</div></div>'; return; }
+    var ctxLbl = { 'upload-ticket':'Upload — ticket', 'upload-brief':'Upload — demande', 'js':'Erreur technique', 'promise':'Erreur technique' };
+    b.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;max-width:820px">' + INC.map(function(e){
+      var isNew = !e.seen;
+      return '<div class="card" style="background:var(--card);padding:16px 18px;border:1px solid '+(isNew?'#e7c6bd':'var(--bone-d)')+'">' +
+        '<div class="between" style="align-items:flex-start;gap:12px">' +
+          '<div style="min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+              (isNew?'<span style="width:8px;height:8px;border-radius:50%;background:#9b3a2e;flex-shrink:0"></span>':'') +
+              '<span style="font-weight:650;color:var(--terre);font-size:14.5px">'+esc(ctxLbl[e.context]||e.context||'Incident')+'</span>' +
+              '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">'+esc(e.clientName||'')+'</span>' +
+            '</div>' +
+            '<div style="font-size:13px;color:var(--terre-600);line-height:1.5;margin-top:6px">'+esc(e.message||'')+'</div>' +
+            (e.url?'<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px;word-break:break-all">'+esc(e.url)+'</div>':'') +
+          '</div>' +
+          '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap;flex-shrink:0">'+fmtDT(e.at)+'</span>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+  function incClearBadge(){ BADGE_CACHE.incidents = ''; var bx = el('nav-unread-incidents'); if (bx) bx.innerHTML = ''; }
+  function incSeenAll(){ jpost('/api/client-errors', {}, 'PATCH').then(function(){ incClearBadge(); incLoad(); toast('Marqué comme vu'); }).catch(function(){ toast('Erreur'); }); }
+  function incClear(){ admConfirm({ title:'Effacer tous les incidents ?', message:'La liste sera vidée définitivement.', yes:'Effacer', no:'Annuler', danger:true }, function(){ jpost('/api/client-errors', {}, 'DELETE').then(function(){ INC = []; incClearBadge(); renderIncBody(); toast('Liste vidée'); }).catch(function(){ toast('Erreur'); }); }); }
+
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
@@ -4822,6 +4861,7 @@
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
+    incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
