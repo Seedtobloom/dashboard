@@ -24,7 +24,13 @@
   }
   function stbSendDecision(pid, id, decision, comment){
     fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment || '' }) })
-      .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
+      .then(function(r){
+        // 409 = livrable déjà traité (souvent un double-clic) : on rafraîchit
+        // l'espace pour montrer l'état à jour, sans message d'erreur alarmant.
+        if (r.status === 409) { toast('Ce livrable a déjà été traité.'); if (typeof refreshOnReturn === 'function') { _lastReturnRefresh = 0; refreshOnReturn(); } var _e = new Error('already-handled'); _e.handled = true; throw _e; }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(function(res){
         var pd = getPD(pid);
         if (pd && pd.project && Array.isArray(pd.project.deliverables)) {
@@ -35,7 +41,11 @@
         if (decision === 'valide') { cpCelebrate('Livrable validé !', 'Bravo — Cindy est prévenue.'); }
         else { toast('Révision demandée, Cindy est prévenue'); }
       })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+      .catch(function(e){
+        if (e && e.handled) return;
+        toast('Erreur, réessayez.');
+        if (window.cliReportError) window.cliReportError('livrable-validation', 'Échec validation livrable (' + decision + ') : ' + ((e && e.message) || 'inconnue'));
+      });
   }
   window.stbValidate = function(pid, id, decision){
     if (decision === 'refuse') {
