@@ -852,7 +852,16 @@
       // (Démarrer/Pause), avec le temps déjà passé. Le temps est aussi visible
       // par le client sur son espace.
       function prioTimer(x, dark) {
-        if (x.project !== 'partner' || !x.id) return '';
+        if (!x.id) return '';
+        // Tickets : saisie manuelle du temps passé (pas de chrono live inter-clients ici).
+        if (x.kind === 'ticket' || x.project === 'maintenance') {
+          var tsec = x.timeSpentSeconds || (x.timeSpentMinutes || 0) * 60;
+          var tcol = dark ? 'rgba(242,229,194,0.85)' : 'var(--terre)';
+          var tclock = '<span title="Temps passé sur ce ticket" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:' + tcol + ';min-width:54px;text-align:right">' + mtClock(tsec) + '</span>';
+          var tedit = '<button class="pbtn" title="Saisir le temps passé sur ce ticket" onclick="ADM.prioSetTime(\'' + x.key + '\',\'' + x.id + '\',' + tsec + ',\'ticket\',\'' + (x.project || 'maintenance') + '\')">✎</button>';
+          return '<span style="display:inline-flex;align-items:center;gap:5px">' + tclock + tedit + '</span>';
+        }
+        if (x.project !== 'partner') return '';
         var run = PT_TIMER && PT_TIMER.id === x.id;
         var sec = run ? (PT_TIMER.base + (Date.now() - PT_TIMER.startedAt) / 1000) : (x.timeSpentSeconds || 0);
         var col = run ? 'var(--green)' : (dark ? 'rgba(242,229,194,0.85)' : 'var(--terre)');
@@ -2616,13 +2625,14 @@
     var i = el('prio-rl'); if (i) { i.focus(); i.onkeydown = function (e) { if (e.key === 'Enter') send(); }; }
   }
   // Saisie manuelle du temps passé (heures + minutes) depuis Priorités.
-  function prioSetTime(key, id, curSec) {
+  function prioSetTime(key, id, curSec, kind, project) {
+    kind = kind || 'tâche'; project = project || 'partner';
     curSec = parseInt(curSec, 10) || 0;
     var h0 = Math.floor(curSec / 3600), m0 = Math.round((curSec % 3600) / 60);
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box">' +
-      '<div class="admconfirm__title">Temps passé sur la tâche</div>' +
+      '<div class="admconfirm__title">Temps passé sur ' + (kind === 'ticket' ? 'ce ticket' : 'la tâche') + '</div>' +
       '<div class="admconfirm__msg">Corrige ou saisis le temps à la main. Il remplace la valeur actuelle et reste visible par le client.</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px">' +
         '<input id="prio-th" class="inp" type="number" min="0" step="1" value="' + h0 + '" style="width:70px"><span class="micro" style="text-transform:none;letter-spacing:0">h</span>' +
@@ -2641,11 +2651,19 @@
       var total = h * 3600 + m * 60;
       close();
       var pit = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
-      if (pit) pit.timeSpentSeconds = total;
-      var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
-      if (PRIO_D) renderPrioBody(PRIO_D);
-      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), forceTime: true }, 'PATCH')
-        .then(function (r) { if (r.ok) toast('Temps enregistré ✓'); else toast('Erreur'); });
+      if (pit) { pit.timeSpentSeconds = total; pit.timeSpentMinutes = Math.round(total / 60); }
+      if (kind === 'ticket') {
+        var dm = findDomain('maintenance');
+        if (dm && Array.isArray(dm.content.tickets)) { var di = dm.content.tickets.findIndex(function (t) { return t.id === id; }); if (di !== -1) { dm.content.tickets[di].timeSpentSeconds = total; dm.content.tickets[di].timeSpentMinutes = Math.round(total / 60); } }
+        if (PRIO_D) renderPrioBody(PRIO_D);
+        jpost('/api/clients/' + key + '/tickets/' + id, { projectId: project, timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60) }, 'PATCH')
+          .then(function (r) { if (r.ok) toast('Temps enregistré ✓'); else toast('Erreur'); });
+      } else {
+        var local = ptFind(id); if (local) { local.timeSpentSeconds = total; local.timeSpentMinutes = Math.round(total / 60); }
+        if (PRIO_D) renderPrioBody(PRIO_D);
+        jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentSeconds: total, timeSpentMinutes: Math.round(total / 60), forceTime: true }, 'PATCH')
+          .then(function (r) { if (r.ok) toast('Temps enregistré ✓'); else toast('Erreur'); });
+      }
     };
     ov.querySelector('[data-yes]').onclick = save;
     document.body.appendChild(ov);
@@ -3359,7 +3377,7 @@
         ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.tkPause(\'' + t.id + '\')">⏸ Pause</button>'
         : '<button class="btn btn--outline btn--sm" onclick="ADM.tkStart(\'' + t.id + '\')">▶ Démarrer</button>';
       var work = done
-        ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">résolu' + (t.resolvedAt ? ' le ' + fmtDate(t.resolvedAt) : '') + '</span><span style="margin-left:auto" class="micro">' + fmtMin(t.timeSpentMinutes || 0) + ' passées</span></div>'
+        ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">résolu' + (t.resolvedAt ? ' le ' + fmtDate(t.resolvedAt) : '') + '</span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="micro" style="text-transform:none;letter-spacing:0">temps passé</span><input class="inp" type="number" min="0" style="width:70px" value="' + (t.timeSpentMinutes || 0) + '" onchange="ADM.ticketTime(\'' + t.id + '\',this.value)"><span class="micro">min</span></span></div>'
         : '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px"><div class="micro" style="margin-bottom:9px">Où en est ce ticket ?</div>' +
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               '<select class="inp" style="width:auto" onchange="ADM.ticketStatus(\'' + t.id + '\',this.value)">' + opts + '</select>' +
