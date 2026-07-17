@@ -1503,6 +1503,9 @@ async function handleKpi(env: Env): Promise<Response> {
   let totalDone = 0, totalMinutes = 0, totalOpen = 0;
   // Rentabilité : temps estimé vs réel sur les tâches terminées qui ont une estimation.
   const poleReal: AnyObj = {};
+  // Temps réel par TYPE de tâche (toutes tâches terminées avec du temps, + tickets),
+  // indépendamment de l'estimation : « où je passe le plus de temps ».
+  const poleTime: AnyObj = {};
   let estMin = 0, realMin = 0, estCount = 0, horsForfait = 0, deliverablesSent = 0;
   // Santé des collaborations : temps avant validation + clientes inactives.
   let valSum = 0, valCount = 0, activeCount = 0, inactiveCount = 0;
@@ -1517,6 +1520,9 @@ async function handleKpi(env: Env): Promise<Response> {
       const ls = lastSeenMs(esp.lastSeen);
       if (!ls || (nowMs - ls) > 7 * 86400 * 1000) inactiveCount++;
     }
+    // Temps sur les tickets de maintenance (compté même sans offre partenaire).
+    const ms = getDomainObj(esp, 'maintenanceSite');
+    if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((tk: AnyObj) => { const m = tk.timeSpentMinutes || 0; if (m > 0) poleTime['Maintenance (tickets)'] = (poleTime['Maintenance (tickets)'] || 0) + m; });
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (!pc) continue;
     const who = clientName(data);
@@ -1536,6 +1542,7 @@ async function handleKpi(env: Env): Promise<Response> {
         const min = t.timeSpentMinutes || 0; totalMinutes += min; cMin += min;
         const when = (t.completedAt || t.dueDate || '').slice(0, 7);
         if (when) { tasksByMonth[when] = (tasksByMonth[when] || 0) + 1; minutesByMonth[when] = (minutesByMonth[when] || 0) + min; }
+        if (min > 0) { const _pl = (t.pole || 'Autre').toString().slice(0, 40); poleTime[_pl] = (poleTime[_pl] || 0) + min; }
         if (t.estMinutes > 0 && min > 0) {
           estMin += t.estMinutes; realMin += min; estCount++;
           const pole = (t.pole || 'Autre').toString().slice(0, 40);
@@ -1549,8 +1556,9 @@ async function handleKpi(env: Env): Promise<Response> {
   }
   byClient.sort((a, b) => b.minutes - a.minutes);
   const poles = Object.keys(poleReal).map((k) => ({ pole: k, est: poleReal[k].est, real: poleReal[k].real, count: poleReal[k].count })).sort((a, b) => b.real - a.real);
+  const timeByType = Object.keys(poleTime).map((k) => ({ type: k, minutes: poleTime[k] })).sort((a, b) => b.minutes - a.minutes);
   const avgValidationDays = valCount ? Math.round(valSum / valCount / 86400000 * 10) / 10 : 0;
-  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles }, collaboration: { avgValidationDays, valCount, inactiveCount, activeCount } });
+  return json({ tasksByMonth, minutesByMonth, byClient, forfaits, totals: { done: totalDone, minutes: totalMinutes, open: totalOpen, clients: byClient.length, deliverablesSent, horsForfait }, profitability: { estMin, realMin, estCount, poles }, timeByType, collaboration: { avgValidationDays, valCount, inactiveCount, activeCount } });
 }
 
 /* ─────────── Tâches personnelles de l'admin ─────────── */
