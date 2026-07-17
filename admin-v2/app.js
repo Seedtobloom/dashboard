@@ -2347,6 +2347,23 @@
       '</div>' +
     '</div>';
   }
+  function kpiTimeByTypeHtml() {
+    var list = (KPI_D && KPI_D.timeByType) || [];
+    if (!list.length) return '<div class="card infocard" style="background:var(--card)"><h3>Temps par type de tâche</h3><div class="empty">Aucun temps enregistré pour l\'instant. Le temps que tu passes sur tes tâches et tes tickets apparaîtra ici, réparti par type — pour voir où tu passes le plus de temps.</div></div>';
+    function hh(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), r = m % 60; return h ? h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : '') : m + ' min'; }
+    var total = list.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    var maxM = list[0].minutes || 1;
+    var rows = list.map(function (x, i) {
+      var pct = Math.round((x.minutes / maxM) * 100);
+      var share = total ? Math.round((x.minutes / total) * 100) : 0;
+      var col = i === 0 ? 'var(--terre)' : 'var(--glycine-700)';
+      return '<div style="margin-bottom:14px"><div class="between" style="margin-bottom:5px"><strong style="font-size:14px;color:var(--terre)">' + esc(x.type) + '</strong><span class="micro" style="color:var(--terre);font-weight:700">' + hh(x.minutes) + ' · ' + share + '%</span></div>' +
+        '<div style="height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:999px"></div></div></div>';
+    }).join('');
+    return '<div class="card infocard" style="background:var(--card)"><h3>Temps par type de tâche</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Où passe ton temps : ' + hh(total) + ' au total sur les tâches terminées et les tickets, réparti par type (pôle). Le plus chronophage en premier.</div>' +
+      rows + '</div>';
+  }
   function kpiRentabiliteHtml() {
     var pr = (KPI_D && KPI_D.profitability) || {};
     var estH = Math.round((pr.estMin || 0) / 60 * 10) / 10, realH = Math.round((pr.realMin || 0) / 60 * 10) / 10;
@@ -2440,7 +2457,7 @@
       var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
       return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
     }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
-    var tabDefs = [['evol', 'Évolution', null], ['rentabilite', 'Rentabilité', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
+    var tabDefs = [['evol', 'Évolution', null], ['temps', 'Temps par type', null], ['rentabilite', 'Rentabilité', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
     if (!tabDefs.some(function (x) { return x[0] === KPI_TAB; })) KPI_TAB = 'evol';
     var tabBar = '<div class="tabs">' + tabDefs.map(function (x) {
       return '<button class="tab' + (KPI_TAB === x[0] ? ' active' : '') + '" onclick="ADM.kpiSetTab(\'' + x[0] + '\')">' + esc(x[1]) + (x[2] != null ? badge(x[2]) : '') + '</button>';
@@ -2450,6 +2467,8 @@
       body = '<div class="card"><div class="between mb"><h3 style="margin:0">Par client</h3><button class="btn btn--outline btn--sm" onclick="ADM.kpiExport()">Exporter en CSV</button></div><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>';
     } else if (KPI_TAB === 'forfaits') {
       body = '<div class="card"><h3>Forfaits du mois</h3>' + forf + '</div>';
+    } else if (KPI_TAB === 'temps') {
+      body = kpiTimeByTypeHtml();
     } else if (KPI_TAB === 'rentabilite') {
       body = kpiRentabiliteHtml();
     } else {
