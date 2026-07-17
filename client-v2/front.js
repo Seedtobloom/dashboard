@@ -4122,7 +4122,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     function next(){
       if (idx >= files.length){ if (added.length) finish(); return; }
       var file = files[idx++];
-      var fd = new FormData(); fd.append('file', file);
+      var fd = new FormData(); fd.append('file', file); if (pid) fd.append('projectId', pid);
       fetch(API_BASE+'/files', { method:'POST', headers:headers, body:fd })
         .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
         .then(function(fileData){
@@ -4488,8 +4488,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.cliRefreshInvoices = function(pid) { delete cliInvoices[pid]; renderShell(); };
 
   // Upload un fichier client vers /files → {key,name,type}
-  function cliUploadFile(file) {
+  function cliUploadFile(file, projectId) {
     var fd = new FormData(); fd.append('file', file);
+    // Sans projectId, le serveur retombe sur « partner », qui n'existe pas
+    // pour un espace maintenance seul → 404. On envoie donc le projet courant.
+    if (projectId) fd.append('projectId', projectId);
     var storedCode = sessionStorage.getItem('_sc') || '';
     var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
     return fetch(API_BASE + '/files', { method:'POST', headers: headers, body: fd })
@@ -4624,7 +4627,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (!files.length) return;
       var box = ov.querySelector('#_maint-t-files');
       box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#8a6f54">Envoi en cours…</div>');
-      Promise.all(files.map(cliUploadFile)).then(function(res){
+      Promise.all(files.map(function(f){ return cliUploadFile(f, pid); })).then(function(res){
         res.forEach(function(f){ pending.push(f); });
         renderFiles();
       }).catch(function(){ toast('Erreur upload fichier', true); var u=document.getElementById('_maint-t-uploading'); if(u)u.remove(); });
