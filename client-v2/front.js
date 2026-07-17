@@ -7780,30 +7780,33 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       sel.removeAllRanges(); var nr = document.createRange(); nr.selectNodeContents(span); sel.addRange(nr);
     } catch(e){}
   }
-  // Enlève le surlignement (fond + padding) des spans de la sélection.
-  function stbClearHighlight(){
+  // Retire une (des) propriété(s) CSS des spans qui touchent la sélection, SANS
+  // détruire la structure (on vide juste la propriété) : la sélection reste
+  // valide. C'est ce qui permet de REMPLACER un style (ex. rapetisser après
+  // avoir grossi) au lieu de l'empiler.
+  var STB_BG_PROPS = ['background-color', 'padding', 'border-radius', 'box-decoration-break', 'webkit-box-decoration-break'];
+  function stbClearProp(props){
     var cell = _stbActiveCell; if (!cell) return;
     var sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
     var range = sel.getRangeAt(0);
     var spans = cell.querySelectorAll('span');
     for (var i = 0; i < spans.length; i++){
-      var s = spans[i];
-      var touches = true; try { touches = range.intersectsNode(s); } catch(e){}
-      if (touches && s.style && (s.style.backgroundColor || s.style.padding)){
-        s.style.backgroundColor = ''; s.style.padding = ''; s.style.borderRadius = '';
-        s.style.boxDecorationBreak = ''; s.style.webkitBoxDecorationBreak = '';
-        if (!s.getAttribute('style')){ var p = s.parentNode; while (s.firstChild) p.insertBefore(s.firstChild, s); p.removeChild(s); }
+      var s = spans[i]; var touches = true; try { touches = range.intersectsNode(s); } catch(e){}
+      if (!touches) continue;
+      for (var j = 0; j < props.length; j++){
+        if (props[j] === 'webkit-box-decoration-break') s.style.webkitBoxDecorationBreak = '';
+        else s.style.setProperty(props[j], '');
       }
     }
   }
   window.stbFmt = function(kind, arg){
     var cell = _stbActiveCell; if (cell && document.activeElement !== cell) cell.focus();
     if (kind === 'bold' || kind === 'italic' || kind === 'underline') document.execCommand(kind, false, null);
-    else if (kind === 'color') stbWrapStyle('color', arg);
-    else if (kind === 'bg') stbWrapStyle('background-color', arg, { padding: '1px 5px', borderRadius: '5px', boxDecorationBreak: 'clone', webkitBoxDecorationBreak: 'clone' });
-    else if (kind === 'nobg') stbClearHighlight();
-    else if (kind === 'big') stbWrapStyle('font-size', '1.35em');
-    else if (kind === 'normal') stbWrapStyle('font-size', '1em');
+    else if (kind === 'color'){ stbClearProp(['color']); stbWrapStyle('color', arg); }
+    else if (kind === 'bg'){ stbClearProp(STB_BG_PROPS); stbWrapStyle('background-color', arg, { padding: '1px 5px', borderRadius: '5px', boxDecorationBreak: 'clone', webkitBoxDecorationBreak: 'clone' }); }
+    else if (kind === 'nobg') stbClearProp(STB_BG_PROPS);
+    else if (kind === 'big'){ stbClearProp(['font-size']); stbWrapStyle('font-size', '1.35em'); }
+    else if (kind === 'normal') stbClearProp(['font-size']); // remet la taille de base
     if (cell) window.stbCellCommit(cell);
     stbPlaceToolbar(); stbUpdateActive();
   };
