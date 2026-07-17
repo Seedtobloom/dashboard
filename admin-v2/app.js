@@ -110,7 +110,13 @@
     }).then(function (d) { if (d) { VIEW = 'priorities'; renderShell(); startPoll(); } }).catch(showError);
   }
   var _poll = null;
-  function startPoll() { if (_poll) return; _poll = setInterval(refreshUnread, 45000); setInterval(refreshOpenChat, 15000); }
+  function startPoll() {
+    if (_poll) return;
+    _poll = setInterval(refreshUnread, 60000); setInterval(refreshOpenChat, 15000);
+    // Rafraîchit à la volée quand on revient sur l'onglet (les intervalles
+    // ne tournent pas quand l'onglet est masqué → on économise le quota KV).
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshUnread(); });
+  }
   // Rafraîchit le fil de discussion ouvert (messagerie globale ou fiche client)
   // sans toucher au champ de saisie : les nouveaux messages arrivent seuls.
   function refreshOpenChat() {
@@ -358,6 +364,10 @@
   var UNREAD = 0, REV_N = 0, NOTIF_N = 0;
   function refreshTabTitle() { NOTIF_N = UNREAD + REV_N + (typeof notifCount === 'function' ? notifCount() : 0); applyTabTitle(); }
   function refreshUnread() {
+    // N'interroge pas le serveur quand l'onglet est masqué : un onglet admin
+    // oublié en arrière-plan scannait tous les espaces toutes les 45 s et
+    // consommait le quota KV pour rien.
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
     api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       BADGE_CACHE.chat = UNREAD > 0 ? badge(UNREAD) : '';
