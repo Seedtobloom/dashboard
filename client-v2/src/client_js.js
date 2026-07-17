@@ -5961,6 +5961,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (cpQnrSaveTimer) clearTimeout(cpQnrSaveTimer);
     cpQnrSaveTimer = setTimeout(function(){ cpQnrCollectStep(); cpQnrSaveAnswers(false); }, 900);
   }
+  window.cpQnrTouch = cpQnrTouch; // appelé depuis un handler inline (portée globale)
   function cpQnrStepInvalid(stepIdx) {
     var inst = cpQnrInstance(); if (!inst) return false;
     var s = (inst.steps || [])[stepIdx]; if (!s) return false;
