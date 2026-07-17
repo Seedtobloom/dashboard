@@ -1522,7 +1522,7 @@ async function handleKpi(env: Env): Promise<Response> {
     }
     // Temps sur les tickets de maintenance (compté même sans offre partenaire).
     const ms = getDomainObj(esp, 'maintenanceSite');
-    if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((tk: AnyObj) => { const m = tk.timeSpentMinutes || 0; if (m > 0) poleTime['Maintenance (tickets)'] = (poleTime['Maintenance (tickets)'] || 0) + m; });
+    if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((tk: AnyObj) => { const m = tk.timeSpentMinutes || Math.round((tk.timeSpentSeconds || 0) / 60) || 0; if (m > 0) poleTime['Maintenance (tickets)'] = (poleTime['Maintenance (tickets)'] || 0) + m; });
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (!pc) continue;
     const who = clientName(data);
