@@ -824,13 +824,17 @@
       }
       function prioBrief(x, dark) {
         var c = (x.content || '').trim();
-        if (!c && !x.attCount) return '';
+        var hasBlocks = Array.isArray(x.blocks) && x.blocks.length;
+        var hasTable = x.table && Array.isArray(x.table.cols) && x.table.cols.length;
+        if (!c && !hasBlocks && !hasTable && !x.attCount) return '';
         var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
         var sumCol = dark ? 'rgba(242,229,194,0.7)' : 'var(--glycine-900)';
-        var body = c
-          ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
-          : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>';
+        var body = (hasBlocks || hasTable)
+          ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:8px 13px;margin-top:8px">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
+          : (c
+            ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
+            : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>');
         var atts = Array.isArray(x.attachments) ? x.attachments : [];
         var att = atts.length
           ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
