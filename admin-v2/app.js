@@ -3843,12 +3843,51 @@
       var body = hasAns ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses — la cliente ne l\'a pas encore rempli.</div>';
       var pill = '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + when + '</span>';
       var del = '<button class="btn btn--danger btn--sm" title="Supprimer ce questionnaire" onclick="ADM.qnrDelete(\'' + inst.id + '\',\'' + esc((inst.name || '').replace(/'/g, "\\'")) + '\')">Suppr.</button>';
+      var pdf = '<button class="btn btn--outline btn--sm" title="Télécharger en PDF (via Imprimer)" onclick="ADM.qnrExportPdf(\'' + inst.id + '\')">PDF</button>';
       return '<div class="card infocard" style="background:var(--card);max-width:760px">' +
         '<div class="between" style="align-items:flex-start;gap:10px"><h3 style="margin:0">' + esc(inst.name || 'Questionnaire') + '</h3>' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' + pill + del + '</div></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' + pill + pdf + del + '</div></div>' +
         body + '</div>';
     }).join('');
     return summary + cards;
+  }
+  // Export PDF d'un questionnaire (questions + réponses de la cliente) : on ouvre
+  // une vue imprimable propre et on déclenche l'impression → « Enregistrer en PDF ».
+  function qnrExportPdf(id) {
+    var inst = (CUR.questionnaires || []).filter(function (q) { return q.id === id; })[0];
+    if (!inst) { toast('Questionnaire introuvable'); return; }
+    var cn = (CUR.client ? ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || CUR.client.email : '') || '';
+    var ans = inst.answers || {};
+    var when = inst.completedAt ? fmtDate(inst.completedAt) : (inst.updatedAt ? fmtDate(inst.updatedAt) : '');
+    var sections = (inst.steps || []).map(function (s) {
+      var inner = (s.blocks || []).map(function (b) {
+        if (b.type === 'title') return '<h3 class="qt">' + esc(b.label || '') + '</h3>';
+        if (b.type === 'paragraph') return '<p class="qp">' + esc(b.label || '') + '</p>';
+        var disp = qnrFmtAnswer(ans[b.id]);
+        return '<div class="q"><div class="ql">' + esc(b.label || '') + '</div><div class="qa' + (disp === '—' ? ' empty' : '') + '">' + esc(disp) + '</div></div>';
+      }).join('');
+      return '<section><div class="sh">' + esc(s.title || '') + '</div>' + inner + '</section>';
+    }).join('');
+    var css = 'body{font-family:Georgia,\'Times New Roman\',serif;color:#2a2018;max-width:720px;margin:0 auto;padding:40px 34px;line-height:1.5}' +
+      'h1{font-size:26px;font-style:italic;margin:0 0 4px;color:#412F21}' +
+      '.meta{font-size:12px;color:#8a7a63;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:26px}' +
+      'section{margin-bottom:22px}' +
+      '.sh{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9c7a3a;border-bottom:1px solid #e8ddc9;padding-bottom:5px;margin:22px 0 12px}' +
+      '.q{margin-bottom:14px}.ql{font-weight:700;font-size:14px;color:#412F21}.qa{font-size:14px;color:#40352a;white-space:pre-wrap;margin-top:2px}' +
+      '.qa.empty{color:#b3a48c;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:13px;color:#6b5b45;margin:0 0 8px}' +
+      'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:11px;color:#9c8a70;text-align:center}' +
+      '@media print{body{padding:0}@page{margin:16mm}}';
+    var doc = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc(inst.name || 'Questionnaire') + (cn ? ' — ' + esc(cn) : '') + '</title><style>' + css + '</style></head><body>' +
+      '<h1>' + esc(inst.name || 'Questionnaire') + '</h1>' +
+      '<div class="meta">' + (cn ? esc(cn) : '') + (cn && when ? ' · ' : '') + (when ? 'Complété le ' + esc(when) : '') + '</div>' +
+      (inst.description ? '<p style="font-size:13.5px;color:#6b5b45;margin:-14px 0 22px">' + esc(inst.description) + '</p>' : '') +
+      sections +
+      '<footer>Seed to Bloom · seedtobloom.fr</footer>' +
+      '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr' + 'ipt>' +
+      '</body></html>';
+    var w = window.open('', '_blank');
+    if (!w) { toast('Autorise les fenêtres pop-up pour l\'export PDF'); return; }
+    w.document.open(); w.document.write(doc); w.document.close();
   }
   function qnrDelete(id, name) {
     admConfirm({ title: 'Supprimer ce questionnaire ?', message: '« ' + name + ' » et les réponses de la cliente seront supprimés définitivement.', yes: 'Supprimer', no: 'Annuler', danger: true }, function () {
@@ -4959,7 +4998,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
