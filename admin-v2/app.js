@@ -1446,7 +1446,7 @@
   // balises de mise en forme autorisées (gras/italique/souligné/span de style)
   // sont conservées. Bloque tout HTML dangereux (script, on*, styles à risque).
   var ADM_RICH_TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', SPAN: 'span', BR: 'br', FONT: 'span', DIV: 'div', P: 'div' };
-  var ADM_STYLE_OK = ['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line'];
+  var ADM_STYLE_OK = ['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'padding', 'border-radius', 'box-decoration-break', '-webkit-box-decoration-break'];
   function admStyleSafe(style) {
     var out = [];
     String(style || '').split(';').forEach(function (decl) {
