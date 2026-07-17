@@ -1136,6 +1136,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
 
     var hasPartner = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
+    var hasMaintenance = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'maintenance'; });
     // Nombre de livrables en attente de validation (toutes offres confondues)
     var dlvToValidate = 0, hasDeliverables = false;
     (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if (d.fileKey || d.reviewLink) hasDeliverables = true; if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidate++; }); });
@@ -1150,7 +1151,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       navBtn('messages','chat','Messagerie','cpOpenMessages()', unread > 0 ? String(unread) : '') +
       (hasDeliverables ? navBtn('livrables','download','Livrables','cpGoLivrables()', dlvToValidate > 0 ? String(dlvToValidate) : '') : '') +
       (qnrList.length ? navBtn('questionnaires','tasks','Questionnaires','cpOpenQuestionnaires()', qnrPending > 0 ? String(qnrPending) : '') : '') +
-      (hasPartner ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
+      (hasPartner || hasMaintenance ? navBtn('stats','chart','Temps passé','cpOpenStats()','') : '') +
       navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +
       (portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +
     '</div>';
@@ -1228,6 +1229,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // projets + Messages, Livrables, Temps passé, Fichiers, Ressources.
     var portalTb = appData.type === 'client';
     var hasPartnerTb = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
+    var hasMaintenanceTb = (appData.projects || []).some(function(pd){ return pd.project && pd.project.type === 'maintenance'; });
     var unreadAll = totalUnread();
     var dlvToValidateTb = 0, hasDeliverablesTb = false;
     (appData.projects || []).forEach(function(pd){ ((pd.project && pd.project.deliverables) || []).forEach(function(d){ if (d.fileKey || d.reviewLink) hasDeliverablesTb = true; if ((d.status || 'a_valider') === 'a_valider' && (d.fileKey || d.reviewLink)) dlvToValidateTb++; }); });
@@ -1252,7 +1254,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var qnrListTb = (appData.questionnaires || []);
     var qnrPendingTb = qnrListTb.filter(function(q){ return q.status !== 'completed'; }).length;
     if (qnrListTb.length) pills.push(mPill('Questionnaires', 'cpOpenQuestionnaires()', currentView === 'questionnaires', qnrPendingTb));
-    if (hasPartnerTb) pills.push(mPill('Temps passé', 'cpOpenStats()', currentView === 'stats', 0));
+    if (hasPartnerTb || hasMaintenanceTb) pills.push(mPill('Temps passé', 'cpOpenStats()', currentView === 'stats', 0));
     pills.push(mPill('Fichiers', 'cpGoFichiers()', currentView === 'fichiers', 0));
     if (portalTb) pills.push(mPill('Ressources', 'cpGoHub()', currentView === 'hub', 0));
     // Réservation de créneau (Cal.com) : lien global, visible partout (le
@@ -3187,6 +3189,108 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
       '<div>' + tilesHtml + chartCard + catCard + archivedHtml + '</div>' +
+      '<div>' + forfaitCard + '</div>' +
+    '</div>';
+  }
+
+  // Stats de l'espace maintenance (tickets) : miroir de buildPartStats, mais
+  // basé sur les tickets et leur temps passé. Report de forfait inclus.
+  function buildMaintStats(pd) {
+    var project = pd.project;
+    var tickets = Array.isArray(project.tickets) ? project.tickets : [];
+    var forfaitH = project.monthlyHours || 0;
+    var curMonthKey = _todayStr().slice(0, 7);
+    function fmtH(h){ return Math.floor(h) + 'h' + (Math.round((h - Math.floor(h)) * 60) || ''); }
+    function tkMin(t){ return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
+    function tkMonth(t){ return String(t.resolvedAt || t.createdAt || '').slice(0, 7); }
+
+    var monthReel = tickets.reduce(function(s, t){ return tkMonth(t) === curMonthKey ? s + tkMin(t) / 60 : s; }, 0);
+    var openT = tickets.filter(function(t){ return t.status !== 'done' && t.status !== 'closed'; });
+    var doneT = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
+
+    var tiles = [
+      { v: fmtH(monthReel), label: 'Heures du mois', icon: 'timer' },
+      { v: openT.length, label: 'Demandes ouvertes', icon: 'tasks' },
+      { v: doneT.length, label: 'Résolues', icon: 'check' },
+      { v: String(tickets.length), label: 'Au total', icon: 'archive' },
+    ];
+    var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
+      tiles.map(function(t){
+        return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
+          '<div style="color:var(--brume-700);margin-bottom:12px">' + cpIcon(t.icon, 20) + '</div>' +
+          '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">' + t.label + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    var now = new Date(); var months = [];
+    for (var i = 4; i >= 0; i--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      var h = tickets.reduce(function(s, t){ return tkMonth(t) === key ? s + tkMin(t) / 60 : s; }, 0);
+      months.push({ key: key, label: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase(), h: h });
+    }
+    var maxH = Math.max.apply(null, months.map(function(m){ return m.h; })) || 1;
+    var barsHtml = '<div style="display:flex;align-items:flex-end;gap:14px;height:140px;margin-top:16px;padding-bottom:24px;border-bottom:1px solid var(--bone-d)">' +
+      months.map(function(m){
+        var pct = Math.round(m.h / maxH * 100); var isCurrent = m.key === curMonthKey;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">' + (m.h ? fmtH(m.h).toUpperCase() : '—') + '</div>' +
+          '<div style="width:100%;height:' + (m.h ? pct : 4) + '%;min-height:4px;border-radius:6px 6px 0 0;background:' + (isCurrent ? 'var(--brume-700)' : 'rgba(228,209,254,0.5)') + '"></div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;color:var(--terre-400)">' + m.label + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+    var chartCard = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
+        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Temps par mois</span>' +
+        '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
+      '</div>' + barsHtml +
+      '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Le temps consacré à vos demandes chaque mois.</p>' +
+    '</div>';
+
+    var catMap = {};
+    tickets.forEach(function(t){ var c = (t.category && String(t.category).trim()) || 'Autre'; if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += tkMin(t); catMap[c].n += 1; });
+    var cats = Object.keys(catMap).map(function(k){ return { name: k, min: catMap[k].min, n: catMap[k].n }; }).filter(function(c){ return c.min > 0; }).sort(function(a, b){ return b.min - a.min; });
+    var catCard = cats.length ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
+        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Par type de demande</span></div>' +
+      cats.map(function(c){
+        return '<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--bone-d)">' +
+          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-body);font-size:15px;color:var(--terre);line-height:1.35">' + esc(c.name) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + c.n + ' demande' + (c.n > 1 ? 's' : '') + '</div></div>' +
+          '<div style="text-align:right;flex-shrink:0"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--brume-900,#6c4ea4);line-height:1">' + partFmtH(c.min) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">au total</div></div>' +
+        '</div>';
+      }).join('') + '</div>' : '';
+
+    // Forfait du mois (report du dépassement / heures non utilisées).
+    var mPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    var prevKey = mPrev.getFullYear() + '-' + String(mPrev.getMonth() + 1).padStart(2, '0');
+    function usedMinIn(ym){ return tickets.reduce(function(n, t){ return tkMonth(t) === ym ? n + tkMin(t) : n; }, 0); }
+    function activeIn(ym){ return tickets.some(function(t){ return tkMonth(t) === ym; }); }
+    var baseMin = forfaitH * 60, carryMin = 0, billedMin = 0;
+    if (baseMin && activeIn(prevKey)) {
+      var diff = baseMin - usedMinIn(prevKey);
+      if (diff >= 0) carryMin = Math.min(120, diff);
+      else { var ov = -diff, ded = Math.min(ov, baseMin); carryMin = -ded; billedMin = Math.round(ov - ded); }
+    }
+    var availMin = baseMin + carryMin, usedMin = usedMinIn(curMonthKey), remMin = availMin - usedMin;
+    var over = remMin < 0, fpct = availMin > 0 ? Math.min(100, Math.round(usedMin / availMin * 100)) : (usedMin > 0 ? 100 : 0);
+    var forfaitCard = forfaitH ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
+      '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px">' +
+        '<span style="font-family:var(--font-display);font-size:28px;font-style:italic;color:' + (over ? '#9b3a2e' : 'var(--terre)') + '">' + (over ? '−' + partFmtH(-remMin) : partFmtH(remMin)) + '</span>' +
+        '<span style="font-size:14px;color:var(--terre-600)">' + (over ? 'de dépassement' : 'restantes') + '</span>' +
+      '</div>' +
+      '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:' + (over ? '#9b3a2e' : 'var(--brume-700)') + ';border-radius:999px;width:' + fpct + '%"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + partFmtH(usedMin) + ' utilisées</span><span>sur ' + partFmtH(availMin) + (carryMin < 0 ? ' (−' + partFmtH(-carryMin) + ' du dépassement)' : (carryMin > 0 ? ' (+' + partFmtH(carryMin) + ' report.)' : '')) + '</span></div>' +
+      (carryMin < 0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a6f2e;margin-top:10px;line-height:1.45">' + partFmtH(-carryMin) + ' de dépassement du mois dernier déduites' + (billedMin > 0 ? ', et ' + partFmtH(billedMin) + ' facturées' : '') + '.</div>' : '') +
+    '</div>' : '';
+
+    return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
+      '<div>' + tilesHtml + chartCard + catCard + '</div>' +
       '<div>' + forfaitCard + '</div>' +
     '</div>';
   }
@@ -5492,7 +5596,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     if (currentView === 'stats') {
       var pd0 = getPD(currentId);
-      return pd0 ? '<div class="cp-portal-main">' + buildPartStats(pd0) + '</div>' : buildHome();
+      if (!pd0) { var _mp = (appData.projects || []).filter(function(pd){ return pd.project && (pd.project.type === 'partenaire' || pd.project.type === 'maintenance'); })[0]; pd0 = _mp || null; }
+      if (!pd0) return buildHome();
+      var _b = pd0.project.type === 'maintenance' ? buildMaintStats(pd0) : buildPartStats(pd0);
+      return '<div class="cp-portal-main">' + _b + '</div>';
     }
     return buildHome();
   }
