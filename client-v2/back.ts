@@ -38,7 +38,7 @@ export interface Env {
 type AnyObj = Record<string, any>;
 
 const SESSION_PREFIX = 'session:';
-const SESSION_TTL = 60 * 60 * 24; // 24h
+const SESSION_TTL = 60 * 60 * 24 * 60; // 60 jours : la cliente reste connectée ~2 mois sans re-saisir son code
 
 // projectId (V1) -> { domaine externe, clé interne KV, dossier R2, pid support }
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
