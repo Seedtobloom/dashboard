@@ -1233,14 +1233,41 @@ async function handleDeliverableDelete(request: Request, env: Env, key: string, 
 
 function forfaitState(pc: AnyObj): AnyObj {
   const base = parseFloat(pc.monthlyHours) || 0;
+  const cap = (pc.rolloverCapHours != null && pc.rolloverCapHours !== '') ? parseFloat(pc.rolloverCapHours) : 2;
+  const rate = (pc.overageRate != null && pc.overageRate !== '') ? parseFloat(pc.overageRate) : 60;
   const tasks: AnyObj[] = Array.isArray(pc.taches) ? pc.taches : [];
   const now = new Date();
   const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  const used = tasks.reduce((s, t) => {
-    const ref = (t.completedAt || t.dueDate || '').slice(0, 7);
-    return ref === cur ? s + (t.timeSpentMinutes || 0) / 60 : s;
-  }, 0);
-  return { base, used: Math.round(used * 10) / 10, remaining: Math.round((base - used) * 10) / 10, configured: base > 0 };
+  const pdt = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prev = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
+  const usedIn = (ym: string) => tasks.reduce((s, t) => ((t.completedAt || t.dueDate || '').slice(0, 7) === ym ? s + (t.timeSpentMinutes || 0) / 60 : s), 0);
+  const activeIn = (ym: string) => tasks.some((t) => (t.completedAt || t.dueDate || '').slice(0, 7) === ym);
+  const used = usedIn(cur);
+  const usedPrev = usedIn(prev);
+  // Report du mois précédent : heures non utilisées reportées (plafond `cap`),
+  // ou dépassement déduit du mois en cours (plafonné à un mois de forfait ;
+  // au-delà, c'est facturé — billedCarry — et non reporté).
+  let carryIn = 0, billedCarry = 0;
+  if (base && activeIn(prev)) {
+    const diffPrev = base - usedPrev;
+    if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
+    else {
+      const overagePrev = -diffPrev;
+      const deduction = Math.min(overagePrev, base);
+      carryIn = -deduction;
+      billedCarry = Math.round((overagePrev - deduction) * 10) / 10;
+    }
+  }
+  const available = base + carryIn;
+  const remaining = available - used;
+  return {
+    base, cap, rate, configured: base > 0,
+    carryIn: Math.round(carryIn * 10) / 10,
+    billedCarry,
+    available: Math.round(available * 10) / 10,
+    used: Math.round(used * 10) / 10,
+    remaining: Math.round(remaining * 10) / 10,
+  };
 }
 
 async function handleDashboard(env: Env): Promise<Response> {

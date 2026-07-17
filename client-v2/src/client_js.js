@@ -369,11 +369,24 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var prev = pdt.getFullYear()+'-'+String(pdt.getMonth()+1).padStart(2,'0');
     var used = usedIn(cur);
     var usedPrev = usedIn(prev);
-    // Report seulement si le mois précédent était un vrai mois de prestation.
-    var carryIn = (base && activeIn(prev)) ? Math.max(0, Math.min(cap, base - usedPrev)) : 0;
+    // Report du mois précédent (seulement si c'était un vrai mois de prestation) :
+    //  - heures NON utilisées : reportées, plafonnées au cap (max 2 h) ;
+    //  - DEPASSEMENT : déduit du mois en cours, plafonné à un mois de forfait ;
+    //    le dépassement au-delà d'un mois est facturé (billedCarry), pas reporté.
+    var carryIn = 0, billedCarry = 0;
+    if (base && activeIn(prev)) {
+      var diffPrev = base - usedPrev;
+      if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
+      else {
+        var overagePrev = -diffPrev;
+        var deduction = Math.min(overagePrev, base);
+        carryIn = -deduction;
+        billedCarry = Math.round((overagePrev - deduction) * 10) / 10;
+      }
+    }
     var available = base + carryIn;
     var remaining = available - used;
-    return { base:base, cap:cap, rate:rate, carryIn:carryIn, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
+    return { base:base, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
   }
   function cpFmtH(h){ var v = Math.round(h*10)/10; return (v % 1 === 0 ? String(v) : v.toFixed(1)) + ' h'; }
 
@@ -814,8 +827,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+fPctUsed+'%;background:'+fBarCol+';border-radius:999px"></div></div>' +
             '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.04em;color:var(--terre-400)">' +
               '<span>'+cpFmtH(f.used)+' utilisées</span>' +
-              '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':'')+'</span>' +
+              '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':(f.carryIn<0?' (−'+cpFmtH(-f.carryIn)+' reportées du dépassement)':''))+'</span>' +
             '</div>' +
+            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#8a6f2e;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
             (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8a3a2c;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
           '</div>';
         }
