@@ -3408,10 +3408,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var filesHtml = bvc.files.map(function(f){
           return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
         }).join('');
+        var _dzId = '_pt-dz-'+t.id;
         var attach = '<div><div style="'+lblS+'">Lien &amp; fichiers</div>' +
           '<input id="_pt-link-'+t.id+'" type="url" value="'+esc(bvc.link)+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="'+inpStyle+';margin-bottom:6px">' +
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
-          '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Ajouter un fichier</button>' +
+          '<div id="'+_dzId+'" ondragover="cliBriefDragOver(event,\''+_dzId+'\')" ondragleave="cliBriefDragLeave(event,\''+_dzId+'\')" ondrop="cliBriefDrop(event,\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+_dzId+'\')" style="border:1.5px dashed var(--border,#e2dbd0);border-radius:10px;padding:12px;text-align:center;transition:background .15s,border-color .15s">' +
+            '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Choisir un fichier</button>' +
+            '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:7px">ou glissez-déposez vos fichiers ici</div>' +
+          '</div>' +
         '</div>';
         // Avancement = statut réel de la tâche. Modifiable par Cindy en mode
         // édition (synchronisé avec l'admin), lecture seule pour le client.
@@ -3648,28 +3652,51 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     cur.files = (cur.files||[]).filter(function(f){ return f.key!==key; });
     window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur)); renderShell();
   };
-  window.cliAddBriefFile = function(pid, taskId, propId){
-    var input = document.createElement('input'); input.type = 'file';
-    input.onchange = function(){
-      var file = input.files[0]; if (!file) return;
+  // Téléverse un OU plusieurs fichiers vers la propriété « Lien & fichiers »
+  // (p_elements) d'une tâche. Utilisé par le bouton ET le glisser-déposer.
+  window.cliUploadBriefFiles = function(pid, taskId, propId, fileList){
+    var files = []; for (var i = 0; i < fileList.length; i++) files.push(fileList[i]);
+    if (!files.length) return;
+    var storedCode = sessionStorage.getItem('_sc') || '';
+    var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
+    toast(files.length > 1 ? ('Envoi de ' + files.length + ' fichiers…') : 'Envoi en cours…');
+    var added = [], idx = 0;
+    function finish(){
+      var t = cliTaskById(pid, taskId); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
+      cur.files = (cur.files || []).concat(added);
+      window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur));
+      toast(added.length > 1 ? (added.length + ' fichiers ajoutés ✓') : 'Fichier ajouté ✓'); renderShell();
+    }
+    function next(){
+      if (idx >= files.length){ if (added.length) finish(); return; }
+      var file = files[idx++];
       var fd = new FormData(); fd.append('file', file);
-      var storedCode = sessionStorage.getItem('_sc') || '';
-      var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
-      toast('Envoi en cours…');
       fetch(API_BASE+'/files', { method:'POST', headers:headers, body:fd })
         .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
         .then(function(fileData){
           if (!fileData || !fileData.key) throw new Error();
           var pd = getPD(pid);
           if (pd){ if(!Array.isArray(pd.project.files)) pd.project.files=[]; pd.project.files.push(fileData); }
-          var t = cliTaskById(pid, taskId); var cur = briefVal(t && t.properties ? t.properties[propId] : '');
-          cur.files = (cur.files||[]).concat([{ key:fileData.key, name:fileData.name||file.name }]);
-          window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify(cur));
-          toast('Fichier ajouté ✓'); renderShell();
+          added.push({ key:fileData.key, name:fileData.name||file.name });
+          next();
         })
-        .catch(function(){ toast('Erreur lors du depot', true); });
-    };
+        .catch(function(){ toast('Erreur lors du depot', true); if (added.length) finish(); });
+    }
+    next();
+  };
+  window.cliAddBriefFile = function(pid, taskId, propId){
+    var input = document.createElement('input'); input.type = 'file'; input.multiple = true;
+    input.onchange = function(){ if (input.files && input.files.length) window.cliUploadBriefFiles(pid, taskId, propId, input.files); };
     input.click();
+  };
+  // Glisser-déposer de fichiers sur la zone « Lien & fichiers ».
+  window.cliBriefDragOver = function(e, dzId){ e.preventDefault(); e.stopPropagation(); var d = document.getElementById(dzId); if (d){ d.style.background = '#f2ecff'; d.style.borderColor = '#8267ab'; } };
+  window.cliBriefDragLeave = function(e, dzId){ if (e) e.preventDefault(); var d = document.getElementById(dzId); if (d){ d.style.background = ''; d.style.borderColor = ''; } };
+  window.cliBriefDrop = function(e, pid, taskId, propId, dzId){
+    e.preventDefault(); e.stopPropagation();
+    var d = document.getElementById(dzId); if (d){ d.style.background = ''; d.style.borderColor = ''; }
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) window.cliUploadBriefFiles(pid, taskId, propId, files);
   };
   window.cliSetTaskPropFile = function(pid, taskId, propId){
     var input = document.createElement('input'); input.type = 'file';
