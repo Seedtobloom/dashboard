@@ -284,6 +284,8 @@
   }
   window.cliCellInput = function(el){ var r = _cliCellApply(el); if (r) _cliTbSaveSoon(r.pid, r.t); };
   window.cliCellBlur = function(el){ if (_cliTbTimer){ clearTimeout(_cliTbTimer); _cliTbTimer = null; _cliTbPend = null; } var r = _cliCellApply(el); if (r) _cliTbSave(r.pid, r.t, false); };
+  // Sauvegarde immédiate après une action de style (barre flottante).
+  window.cliCellCommit = function(el){ if (_cliTbTimer){ clearTimeout(_cliTbTimer); _cliTbTimer = null; _cliTbPend = null; } var r = _cliCellApply(el); if (r) _cliTbSave(r.pid, r.t, false); };
   window.cliTableAddRow = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.push(t.table.cols.map(function(){ return ''; })); _cliTbSave(pid, t, true); };
   window.cliTableAddCol = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols.push('Colonne ' + (t.table.cols.length+1)); t.table.rows.forEach(function(r){ r.push(''); }); _cliTbSave(pid, t, true); };
   window.cliTableDelRow = function(pid, taskId, ri){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.splice(ri,1); _cliTbSave(pid, t, true); };

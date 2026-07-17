@@ -7660,7 +7660,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
    * couleur, surligne, taille). Le contenu est stocké en HTML nettoyé (liste
    * blanche de balises/styles), sûr à réafficher côté admin. */
   var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
-  var STB_STYLE_OK = ['color','background-color','font-size','font-weight','font-style','text-decoration','text-decoration-line'];
+  var STB_STYLE_OK = ['color','background-color','font-size','font-weight','font-style','text-decoration','text-decoration-line','padding','border-radius','box-decoration-break','-webkit-box-decoration-break'];
   function stbStyleSafe(style){
     var out = [];
     String(style || '').split(';').forEach(function(decl){
@@ -7716,20 +7716,33 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (_stbTB) return _stbTB;
     var tb = document.createElement('div');
     tb.id = 'stb-rt-tb';
-    tb.style.cssText = 'position:absolute;z-index:99999;display:none;background:#1C1205;border-radius:10px;box-shadow:0 10px 30px -8px rgba(0,0,0,0.5);padding:5px;align-items:center;gap:2px;white-space:nowrap';
-    function btn(html, act, title){ return '<button type="button" title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;font-size:14px;min-width:28px;height:28px;border-radius:7px;line-height:1;padding:0 4px">'+html+'</button>'; }
-    function sw(color, kind){ return '<button type="button" title="'+(kind==='color'?'Couleur du texte':'Surligner')+'" onmousedown="event.preventDefault()" onclick="window.stbFmt(\''+kind+'\',\''+color+'\')" style="border:'+(kind==='bg'?'1px solid rgba(255,255,255,0.35)':'1px solid rgba(255,255,255,0.15)')+';background:'+color+';cursor:pointer;width:18px;height:18px;border-radius:50%;padding:0;margin:0 1px"></button>'; }
-    var sep = '<span style="display:inline-block;width:1px;height:18px;background:rgba(242,229,194,0.25);margin:0 4px;vertical-align:middle"></span>';
+    tb.style.cssText = 'position:absolute;z-index:99999;display:none;align-items:center;gap:1px;white-space:nowrap;background:#2a1d10;border:1px solid rgba(242,229,194,0.14);border-radius:12px;box-shadow:0 14px 34px -10px rgba(0,0,0,0.55);padding:5px 6px';
+    // b = bouton texte ; id optionnel pour l'état actif (gras/italique/souligné)
+    function btn(html, act, title, id){ return '<button type="button"'+(id?' id="'+id+'"':'')+' title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=this.getAttribute(\'data-on\')===\'1\'?\'rgba(242,229,194,0.22)\':\'none\'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;font-size:14px;min-width:30px;height:30px;border-radius:8px;line-height:1;padding:0 5px;transition:background .12s">'+html+'</button>'; }
+    function sw(color, kind, ring){ return '<button type="button" title="'+(kind==='color'?'Couleur du texte':'Surligner')+'" onmousedown="event.preventDefault()" onclick="window.stbFmt(\''+kind+'\',\''+color+'\')" style="border:1px solid '+(ring||'rgba(255,255,255,0.22)')+';background:'+color+';cursor:pointer;width:19px;height:19px;border-radius:50%;padding:0;margin:0 2px;transition:transform .1s" onmouseover="this.style.transform=\'scale(1.18)\'" onmouseout="this.style.transform=\'none\'"></button>'; }
+    var sep = '<span style="display:inline-block;width:1px;height:19px;background:rgba(242,229,194,0.22);margin:0 5px;vertical-align:middle"></span>';
+    // Bouton « enlever le surlignement » (gomme)
+    var clearBg = '<button type="button" title="Enlever le surlignement" onmousedown="event.preventDefault()" onclick="window.stbFmt(\'nobg\')" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=\'none\'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;height:30px;min-width:30px;border-radius:8px;padding:0 5px;transition:background .12s;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path></svg></button>';
     tb.innerHTML =
-      btn('<b>G</b>', "window.stbFmt('bold')", 'Gras') +
-      btn('<i>I</i>', "window.stbFmt('italic')", 'Italique') +
-      btn('<u>S</u>', "window.stbFmt('underline')", 'Souligné') + sep +
-      btn('A<span style=\'font-size:10px\'>+</span>', "window.stbFmt('big')", 'Agrandir') +
-      btn('A<span style=\'font-size:9px\'>–</span>', "window.stbFmt('normal')", 'Taille normale') + sep +
-      sw('#1C1205','color') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
-      sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg');
+      btn('<b>G</b>', "window.stbFmt('bold')", 'Gras', 'stb-b-b') +
+      btn('<span style=\'font-style:italic;font-family:serif\'>I</span>', "window.stbFmt('italic')", 'Italique', 'stb-b-i') +
+      btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') + sep +
+      btn('A<span style=\'font-size:11px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte') +
+      btn('<span style=\'font-size:12px\'>A</span><span style=\'font-size:9px;vertical-align:1px\'>–</span>', "window.stbFmt('normal')", 'Taille normale') + sep +
+      sw('#1C1205','color','rgba(255,255,255,0.35)') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
+      sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg') + sw('#f6c9d6','bg') + clearBg;
     document.body.appendChild(tb);
     _stbTB = tb; return tb;
+  }
+  // Met à jour l'état actif des boutons Gras/Italique/Souligné selon la sélection.
+  function stbUpdateActive(){
+    if (!_stbTB) return;
+    [['stb-b-b','bold'],['stb-b-i','italic'],['stb-b-u','underline']].forEach(function(p){
+      var el = document.getElementById(p[0]); if (!el) return;
+      var on = false; try { on = document.queryCommandState(p[1]); } catch(e){}
+      el.setAttribute('data-on', on ? '1' : '0');
+      el.style.background = on ? 'rgba(242,229,194,0.22)' : 'none';
+    });
   }
   function stbHideToolbar(){ if (_stbTB) _stbTB.style.display = 'none'; }
   function stbPlaceToolbar(){
@@ -7753,32 +7766,58 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     _stbActiveCell = cell;
     stbBuildToolbar().style.display = 'flex';
     stbPlaceToolbar();
+    stbUpdateActive();
   }
-  function stbWrapStyle(prop, val){
+  // Applique un style à la sélection via un <span> (couleur, taille, surlignage).
+  // extra = styles additionnels (ex. padding du surligneur).
+  function stbWrapStyle(prop, val, extra){
     var sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
     var range = sel.getRangeAt(0); if (range.collapsed) return;
     var span = document.createElement('span'); span.style[prop] = val;
+    if (extra){ for (var k in extra){ if (extra.hasOwnProperty(k)) span.style[k] = extra[k]; } }
     try {
       span.appendChild(range.extractContents()); range.insertNode(span);
       sel.removeAllRanges(); var nr = document.createRange(); nr.selectNodeContents(span); sel.addRange(nr);
     } catch(e){}
   }
+  // Enlève le surlignement (fond + padding) des spans de la sélection.
+  function stbClearHighlight(){
+    var cell = _stbActiveCell; if (!cell) return;
+    var sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    var spans = cell.querySelectorAll('span');
+    for (var i = 0; i < spans.length; i++){
+      var s = spans[i];
+      var touches = true; try { touches = range.intersectsNode(s); } catch(e){}
+      if (touches && s.style && (s.style.backgroundColor || s.style.padding)){
+        s.style.backgroundColor = ''; s.style.padding = ''; s.style.borderRadius = '';
+        s.style.boxDecorationBreak = ''; s.style.webkitBoxDecorationBreak = '';
+        if (!s.getAttribute('style')){ var p = s.parentNode; while (s.firstChild) p.insertBefore(s.firstChild, s); p.removeChild(s); }
+      }
+    }
+  }
   window.stbFmt = function(kind, arg){
-    var cell = _stbActiveCell; if (cell) cell.focus();
+    var cell = _stbActiveCell; if (cell && document.activeElement !== cell) cell.focus();
     if (kind === 'bold' || kind === 'italic' || kind === 'underline') document.execCommand(kind, false, null);
     else if (kind === 'color') stbWrapStyle('color', arg);
-    else if (kind === 'bg') stbWrapStyle('background-color', arg);
-    else if (kind === 'big') stbWrapStyle('font-size', '1.4em');
+    else if (kind === 'bg') stbWrapStyle('background-color', arg, { padding: '1px 5px', borderRadius: '5px', boxDecorationBreak: 'clone', webkitBoxDecorationBreak: 'clone' });
+    else if (kind === 'nobg') stbClearHighlight();
+    else if (kind === 'big') stbWrapStyle('font-size', '1.35em');
     else if (kind === 'normal') stbWrapStyle('font-size', '1em');
-    if (cell){ if (cell.getAttribute('data-stb-src') === 'drawer'){ if (window.cliCellInput) window.cliCellInput(cell); } else window.stbCellInput(cell); }
-    stbPlaceToolbar();
+    if (cell) window.stbCellCommit(cell);
+    stbPlaceToolbar(); stbUpdateActive();
+  };
+  // Sauvegarde immédiate d'une cellule après une action de style (pas de perte).
+  window.stbCellCommit = function(el){
+    if (el.getAttribute('data-stb-src') === 'drawer'){ if (window.cliCellCommit) window.cliCellCommit(el); }
+    else stbCellSave(el, true);
   };
   if (!window._stbRichBound){
     window._stbRichBound = true;
     document.addEventListener('selectionchange', stbToolbarOnSelect);
     window.addEventListener('scroll', function(){ if (_stbTB && _stbTB.style.display !== 'none') stbPlaceToolbar(); }, true);
     var _stbPh = document.createElement('style');
-    _stbPh.textContent = '[data-stb-rich]:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}';
+    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
@@ -8391,6 +8430,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   window.cliCellInput = function(el){ var r = _cliCellApply(el); if (r) _cliTbSaveSoon(r.pid, r.t); };
   window.cliCellBlur = function(el){ if (_cliTbTimer){ clearTimeout(_cliTbTimer); _cliTbTimer = null; _cliTbPend = null; } var r = _cliCellApply(el); if (r) _cliTbSave(r.pid, r.t, false); };
+  // Sauvegarde immédiate après une action de style (barre flottante).
+  window.cliCellCommit = function(el){ if (_cliTbTimer){ clearTimeout(_cliTbTimer); _cliTbTimer = null; _cliTbPend = null; } var r = _cliCellApply(el); if (r) _cliTbSave(r.pid, r.t, false); };
   window.cliTableAddRow = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.push(t.table.cols.map(function(){ return ''; })); _cliTbSave(pid, t, true); };
   window.cliTableAddCol = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols.push('Colonne ' + (t.table.cols.length+1)); t.table.rows.forEach(function(r){ r.push(''); }); _cliTbSave(pid, t, true); };
   window.cliTableDelRow = function(pid, taskId, ri){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.splice(ri,1); _cliTbSave(pid, t, true); };
