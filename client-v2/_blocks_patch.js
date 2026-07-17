@@ -161,7 +161,7 @@
     else if (kind === 'bg') stbWrapStyle('background-color', arg);
     else if (kind === 'big') stbWrapStyle('font-size', '1.4em');
     else if (kind === 'normal') stbWrapStyle('font-size', '1em');
-    if (cell) window.stbCellInput(cell);
+    if (cell){ if (cell.getAttribute('data-stb-src') === 'drawer'){ if (window.cliCellInput) window.cliCellInput(cell); } else window.stbCellInput(cell); }
     stbPlaceToolbar();
   };
   if (!window._stbRichBound){

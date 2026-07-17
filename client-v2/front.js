@@ -7770,7 +7770,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else if (kind === 'bg') stbWrapStyle('background-color', arg);
     else if (kind === 'big') stbWrapStyle('font-size', '1.4em');
     else if (kind === 'normal') stbWrapStyle('font-size', '1em');
-    if (cell) window.stbCellInput(cell);
+    if (cell){ if (cell.getAttribute('data-stb-src') === 'drawer'){ if (window.cliCellInput) window.cliCellInput(cell); } else window.stbCellInput(cell); }
     stbPlaceToolbar();
   };
   if (!window._stbRichBound){
@@ -8343,10 +8343,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var cols = tb.cols, rows = Array.isArray(tb.rows) ? tb.rows : [];
     var bd = '1px solid #e7e0d4';
     var hCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';
-    // Cellules multi-lignes qui s'agrandissent avec le contenu (lisible pour du
-    // texte long, type script). L'auto-agrandissement se fait à la saisie.
-    var taCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;line-height:1.55;color:var(--navy,#1C1205);padding:9px 10px;box-sizing:border-box;outline:none;resize:none;overflow:hidden;display:block;white-space:pre-wrap;min-height:42px';
-    var grow = 'this.style.height=\'auto\';this.style.height=(this.scrollHeight+2)+\'px\'';
+    // Cellules en texte enrichi (contenteditable) : elles grandissent toutes
+    // seules avec le contenu (plus jamais de texte coupé) et acceptent du style
+    // via la barre flottante partagée (stb*). Le contenu est nettoyé (stbSanitizeRich).
+    var ceCss = 'width:100%;font-family:inherit;font-size:13px;line-height:1.55;color:var(--navy,#1C1205);padding:9px 10px;box-sizing:border-box;outline:none;white-space:pre-wrap;word-break:break-word;min-height:42px';
     var head = '<tr>'+cols.map(function(c,ci){
       return '<th style="border:'+bd+';background:#f7f2ea;padding:0;min-width:180px;vertical-align:top"><div style="display:flex;align-items:flex-start">'+
         '<input value="'+esc(c)+'" placeholder="Titre colonne" onchange="cliTableCol(\''+pid+'\',\''+t.id+'\','+ci+',this.value)" style="'+hCss+'">'+
@@ -8355,9 +8355,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var body = rows.map(function(row,ri){
       return '<tr>'+cols.map(function(c,ci){
         var val = (row && row[ci]!=null) ? String(row[ci]) : '';
-        var nl = (val.match(/\n/g)||[]).length;
-        var guess = Math.max(2, nl+1, Math.min(14, Math.ceil((val.length||1)/34)));
-        return '<td style="border:'+bd+';padding:0;vertical-align:top;min-width:180px"><textarea rows="'+guess+'" onchange="cliTableCell(\''+pid+'\',\''+t.id+'\','+ri+','+ci+',this.value)" oninput="'+grow+'" style="'+taCss+'">'+esc(val)+'</textarea></td>';
+        return '<td style="border:'+bd+';padding:0;vertical-align:top;min-width:180px"><div contenteditable="true" data-stb-rich="1" data-stb-src="drawer" data-pid="'+pid+'" data-tid="'+t.id+'" data-r="'+ri+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.cliCellInput(this)" onblur="window.cliCellBlur(this)" style="'+ceCss+'">'+stbCellToHtml(val)+'</div></td>';
       }).join('')+'<td style="border:none;text-align:center;vertical-align:top"><button onclick="cliTableDelRow(\''+pid+'\',\''+t.id+'\','+ri+')" title="Supprimer la ligne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:8px 4px">✕</button></td></tr>';
     }).join('');
     return '<div style="margin-top:16px">'+lbl+
@@ -8375,6 +8373,24 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.cliTableCreate = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t) return; t.table = { cols:['Colonne 1','Colonne 2'], rows:[['',''],['','']] }; _cliTbSave(pid, t, true); };
   window.cliTableCol = function(pid, taskId, ci, v){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols[ci] = v; _cliTbSave(pid, t, false); };
   window.cliTableCell = function(pid, taskId, ri, ci, v){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; if (!t.table.rows[ri]) t.table.rows[ri] = []; t.table.rows[ri][ci] = v; _cliTbSave(pid, t, false); };
+  // Cellules en texte enrichi (contenteditable) : on lit l'HTML nettoyé et on
+  // enregistre (débounce à la frappe, immédiat au blur). Réutilise stbSanitizeRich.
+  var _cliTbTimer = null, _cliTbPend = null;
+  function _cliTbSaveSoon(pid, t){
+    _cliTbPend = { pid: pid, t: t };
+    if (_cliTbTimer) clearTimeout(_cliTbTimer);
+    _cliTbTimer = setTimeout(function(){ _cliTbTimer = null; var p = _cliTbPend; _cliTbPend = null; if (p) _cliTbSave(p.pid, p.t, false); }, 600);
+  }
+  function _cliCellApply(el){
+    var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid');
+    var ri = +el.getAttribute('data-r'), ci = +el.getAttribute('data-c');
+    var t = _cliTbTask(pid, tid); if (!t || !t.table) return null;
+    if (!t.table.rows[ri]) t.table.rows[ri] = [];
+    t.table.rows[ri][ci] = stbSanitizeRich(el.innerHTML);
+    return { pid: pid, t: t };
+  }
+  window.cliCellInput = function(el){ var r = _cliCellApply(el); if (r) _cliTbSaveSoon(r.pid, r.t); };
+  window.cliCellBlur = function(el){ if (_cliTbTimer){ clearTimeout(_cliTbTimer); _cliTbTimer = null; _cliTbPend = null; } var r = _cliCellApply(el); if (r) _cliTbSave(r.pid, r.t, false); };
   window.cliTableAddRow = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.push(t.table.cols.map(function(){ return ''; })); _cliTbSave(pid, t, true); };
   window.cliTableAddCol = function(pid, taskId){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.cols.push('Colonne ' + (t.table.cols.length+1)); t.table.rows.forEach(function(r){ r.push(''); }); _cliTbSave(pid, t, true); };
   window.cliTableDelRow = function(pid, taskId, ri){ var t = _cliTbTask(pid, taskId); if (!t || !t.table) return; t.table.rows.splice(ri,1); _cliTbSave(pid, t, true); };
