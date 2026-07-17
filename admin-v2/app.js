@@ -34,6 +34,7 @@
     stepStudio: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
     stepValid: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
     deliv: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12',
+    maint: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
   };
   function admIcon(name) { var d = ADM_ICONS[name]; return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (d ? '<path d="' + d + '"/>' : '') + '</svg>'; }
   var TASK_STATUS = [['todo', 'À faire'], ['in_progress', 'En cours'], ['review', 'À valider'], ['done', 'Terminé']];
@@ -179,7 +180,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Boîte de réception'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
+      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['incidents', 'Incidents'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
@@ -395,7 +396,7 @@
       NEW_TASKS = d.newTasks || [];
       REWORK_TASKS = d.reworkTasks || [];
       COMMENT_TASKS = d.commentTasks || [];
-      var nInbox = (d.inbox || []).length;
+      var nInbox = inboxUnifiedCount(d);
       BADGE_CACHE.inbox = nInbox > 0 ? badgeAlert(nInbox) : '';
       var bi = el('nav-unread-inbox'); if (bi) bi.innerHTML = BADGE_CACHE.inbox;
       var nErr = d.clientErrorsUnseen || 0;
@@ -729,59 +730,167 @@
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
-  /* ── Boîte de réception : les demandes des clientes à trier ── */
-  var INBOX = [];
+  /* ── Inbox unifiée : tout ce qui arrive des clientes, dans un seul flux ──
+   * Demandes à trier, questionnaires complétés, nouvelles tâches/tickets,
+   * retours reçus, nouveaux commentaires, livrables validés. « Traité → ça
+   * disparaît » : chaque action retire l'élément et libère le badge. */
+  var INBOX_D = null;
+  // Icône (DA) + teintes par type d'événement.
+  var INBOX_TYPES = {
+    demande:   { icon: 'inbox',          label: 'Nouvelle demande',       ic: '#a35a1a', bg: '#fdf3e8' },
+    qnr:       { icon: 'questionnaires',  label: 'Questionnaire complété',  ic: '#3f6a7a', bg: '#edf3f6' },
+    task:      { icon: 'stepClient',      label: 'Nouvelle tâche',         ic: '#8a6f2e', bg: '#fbf5e6' },
+    ticket:    { icon: 'maint',           label: 'Ticket de maintenance',  ic: '#8a6f2e', bg: '#fbf5e6' },
+    rework:    { icon: 'stepStudio',      label: 'Retours reçus',          ic: '#3f5a37', bg: '#f3f6f0' },
+    comment:   { icon: 'chat',            label: 'Nouveau commentaire',    ic: '#6c4ea4', bg: '#f4f1fa' },
+    validated: { icon: 'stepValid',       label: 'Livrable validé',        ic: '#2f8f57', bg: '#edf6ef' }
+  };
   function renderInbox() {
-    setMain(topbar('Boîte de réception', '', 'Les demandes de tes clientes à analyser avant d\'en faire des tâches') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { INBOX = d.inbox || []; renderInboxBody(); }).catch(showError);
+    setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes — traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { INBOX_D = d; renderInboxBody(); }).catch(showError);
   }
   function fmtMin(m) { m = Math.round(m || 0); if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + r : ''); }
+  // Liste unifiée, du plus récent au plus ancien.
+  function inboxItems() {
+    var d = INBOX_D || {}, items = [];
+    (d.inbox || []).forEach(function (x) { items.push({ type: 'demande', at: x.createdAt, x: x }); });
+    (d.qnrDone || []).forEach(function (x) { items.push({ type: 'qnr', at: x.completedAt, x: x }); });
+    (d.newTasks || []).forEach(function (x) { items.push({ type: x.kind === 'ticket' ? 'ticket' : 'task', at: x.createdAt, x: x }); });
+    (d.reworkTasks || []).forEach(function (x) { items.push({ type: 'rework', at: x.at, x: x }); });
+    (d.commentTasks || []).forEach(function (x) { items.push({ type: 'comment', at: x.at, x: x }); });
+    (d.validated || []).forEach(function (x) { items.push({ type: 'validated', at: x.at, x: x }); });
+    items.sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); });
+    return items;
+  }
+  function inboxUnifiedCount(d) {
+    d = d || INBOX_D || {};
+    return (d.inbox || []).length + (d.qnrDone || []).length + (d.newTasks || []).length + (d.reworkTasks || []).length + (d.commentTasks || []).length + (d.validated || []).length;
+  }
   function renderInboxBody() {
     var b = el('inbox-body'); if (!b) return;
-    if (!INBOX.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card)"><div class="empty">Aucune demande à analyser. Les nouvelles demandes de tes clientes arriveront ici.</div></div>'; return; }
-    var cards = INBOX.map(function (x) {
-      var urg = x.urgency === 'haute' || x.urgency === 'urgent';
-      var isProject = x.demandeType === 'project';
-      var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
-      var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
-      var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
-      var atts = (x.attachments || []).map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
-      var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
-      return '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:14px;border:1px solid var(--bone-d)' + (urg ? ';border-left:3px solid #a23c28' : '') + '">' +
-        '<div class="between" style="align-items:flex-start;gap:12px">' +
-          '<div style="min-width:0"><div style="font-size:16.5px;font-weight:650;color:var(--terre)">' + esc(x.title) + (urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + projBadge + '</div>' +
-            '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a>' + (x.createdAt ? ' · reçue le ' + fmtDate(x.createdAt) : '') + '</div>' +
+    var items = inboxItems();
+    if (!items.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card);max-width:720px"><div class="empty" style="padding:34px 20px">🌾 Boîte vide — tout est traité.<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Les demandes, questionnaires, retours, commentaires et validations de tes clientes arriveront ici.</div></div></div>'; return; }
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    function bucket(at) { if (!at) return 'Plus tôt'; var t = new Date(at); if (isNaN(t)) return 'Plus tôt'; t.setHours(0, 0, 0, 0); var diff = Math.round((today - t) / 86400000); if (diff <= 0) return "Aujourd'hui"; if (diff === 1) return 'Hier'; if (diff <= 7) return 'Cette semaine'; return 'Plus tôt'; }
+    var order = ["Aujourd'hui", 'Hier', 'Cette semaine', 'Plus tôt'], groups = {};
+    items.forEach(function (it) { var k = bucket(it.at); (groups[k] = groups[k] || []).push(it); });
+    var html = '';
+    order.forEach(function (g) {
+      if (!groups[g]) return;
+      html += '<div class="micro" style="text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin:18px 2px 8px;font-weight:600">' + g + ' · ' + groups[g].length + '</div>' + groups[g].map(inboxCard).join('');
+    });
+    b.innerHTML = '<div style="max-width:720px">' + html + '</div>';
+  }
+  // Coquille commune : pastille icône + type + cliente + date, puis corps + actions.
+  function inboxChrome(it, bodyHtml, actionsHtml, accent) {
+    var cfg = INBOX_TYPES[it.type] || INBOX_TYPES.task, x = it.x;
+    var w = it.at ? new Date(it.at) : null;
+    var whenTxt = w && !isNaN(w) ? w.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+    var chip = '<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:' + cfg.bg + ';color:' + cfg.ic + ';flex-shrink:0">' + admIcon(cfg.icon) + '</span>';
+    return '<div class="card" style="background:var(--card);padding:15px 17px;margin-bottom:11px;border:1px solid var(--bone-d)' + (accent ? ';border-left:3px solid ' + accent : '') + '">' +
+      '<div style="display:flex;gap:12px;align-items:flex-start">' + chip +
+        '<div style="min-width:0;flex:1">' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">' +
+            '<span class="micro" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:' + cfg.ic + '">' + cfg.label + '</span>' +
+            (whenTxt ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + whenTxt + '</span>' : '') +
           '</div>' +
-          '<div class="micro" style="text-align:right;flex-shrink:0;color:' + forfaitCol + ';font-weight:600">' + esc(forfaitTxt) + '</div>' +
+          '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--glycine-900);margin-top:2px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a></div>' +
+          bodyHtml +
+          (actionsHtml ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px">' + actionsHtml + '</div>' : '') +
         '</div>' +
-        ((Array.isArray(x.blocks) && x.blocks.length)
-          ? ptBlocksHtml(x, x.key, 'La demande du client')
-          : (x.content ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(x.content) + '</div>' : '')) +
-        briefTableHtml(x.table) +
-        '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:11px;color:var(--muted)">' +
-          (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
-          '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
-          (x.avgMinutes ? '<span>⏱ Temps moyen : ' + fmtMin(x.avgMinutes) + '</span>' : '') +
-        '</div>' +
-        ((atts || link) ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">' + atts + link + '</div>' : '') +
-        '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:14px;border-top:1px solid var(--bone-d);padding-top:12px">' +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
-          '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
-          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#c44" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
-          '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    b.innerHTML = '<div style="max-width:720px">' + cards + '</div>';
+      '</div>' +
+    '</div>';
+  }
+  function inboxPreview(content) {
+    var c = (content || '').trim();
+    return c ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + mtLinkify(c) + '</div>' : '';
+  }
+  function inboxAtts(x) {
+    var atts = Array.isArray(x.attachments) ? x.attachments : [];
+    if (!atts.length) return '';
+    return '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
+      return '<a href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+    }).join('') + '</div>';
+  }
+  function inboxCard(it) {
+    if (it.type === 'demande') return inboxDemandeCard(it);
+    var x = it.x;
+    var openBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
+    var seenArgs = '\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\'' + (it.type === 'validated' ? ',\'' + (x.project || 'partner') + '\'' : '');
+    var seenBtn = '<button class="btn btn--outline btn--sm" onclick="ADM.inboxSeen(' + seenArgs + ')">Vu</button>';
+    var body = '';
+    if (it.type === 'qnr') {
+      body = '<div style="font-size:14px;font-weight:600;color:var(--terre);margin-top:6px">' + esc(x.name || 'Questionnaire') + '</div>';
+    } else if (it.type === 'task' || it.type === 'ticket') {
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + inboxPreview(x.content) + inboxAtts(x);
+    } else if (it.type === 'rework') {
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a laissé ses retours · à retravailler de ton côté.</div>';
+    } else if (it.type === 'comment') {
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(x.text) + ' »</div>' : '');
+    } else if (it.type === 'validated') {
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
+    }
+    return inboxChrome(it, body, openBtn + seenBtn);
+  }
+  function inboxDemandeCard(it) {
+    var x = it.x;
+    var urg = x.urgency === 'haute' || x.urgency === 'urgent';
+    var isProject = x.demandeType === 'project';
+    var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
+    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
+    var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
+    var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
+    var atts = (x.attachments || []).map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
+    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
+    var body =
+      '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
+        '<span style="float:right;font-family:var(--font-micro);font-size:11px;font-weight:600;color:' + forfaitCol + '">' + esc(forfaitTxt) + '</span>' +
+      '</div>' +
+      ((Array.isArray(x.blocks) && x.blocks.length)
+        ? ptBlocksHtml(x, x.key, 'La demande du client')
+        : (x.content ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(x.content) + '</div>' : '')) +
+      briefTableHtml(x.table) +
+      '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:11px;color:var(--muted)">' +
+        (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
+        '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
+        (x.avgMinutes ? '<span>⏱ Temps moyen : ' + fmtMin(x.avgMinutes) + '</span>' : '') +
+      '</div>' +
+      ((atts || link) ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">' + atts + link + '</div>' : '');
+    var actions =
+      '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
+      '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#c44" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
+      '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
+    return inboxChrome(it, body, actions, urg ? '#a23c28' : '');
+  }
+  // Retire l'élément de toutes les listes et rafraîchit le badge de nav.
+  function inboxDrop(key, id) {
+    if (!INBOX_D) return;
+    ['inbox', 'qnrDone', 'newTasks', 'reworkTasks', 'commentTasks', 'validated'].forEach(function (k) {
+      if (Array.isArray(INBOX_D[k])) INBOX_D[k] = INBOX_D[k].filter(function (x) { return !(x.key === key && x.id === id); });
+    });
+    renderInboxBody();
+    var n = inboxUnifiedCount(); BADGE_CACHE.inbox = n > 0 ? badgeAlert(n) : '';
+    var bi = el('nav-unread-inbox'); if (bi) bi.innerHTML = BADGE_CACHE.inbox;
+  }
+  function inboxSeen(type, key, id, project) {
+    inboxDrop(key, id);
+    var url, body;
+    if (type === 'qnr') { url = '/api/clients/' + key + '/questionnaires/' + id; body = { seenByAdmin: true }; }
+    else if (type === 'ticket') { url = '/api/clients/' + key + '/tickets/' + id; body = { projectId: 'maintenance' }; }
+    else if (type === 'rework') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', needsRework: false }; }
+    else if (type === 'comment') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientCommentNotif: false }; }
+    else if (type === 'validated') { url = '/api/clients/' + key + '/deliverables/' + id; body = { projectId: project || 'partner', seenByAdmin: true }; }
+    else { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientNotif: false }; }
+    jpost(url, body, 'PATCH').catch(function () {});
+    toast('Traité ✓');
   }
   function inboxTriage(key, id, action) {
     var labels = { accept: 'Accepter cette demande et en faire une tâche planifiée ?', hors_forfait: 'Marquer comme hors forfait (la cliente sera prévenue que ça nécessite un devis) ?', refuse: 'Refuser et archiver cette demande ?' };
     var doIt = function (notify) {
       jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', triage: action, notify: notify }, 'PATCH').then(function (r) {
         if (r.ok) {
-          INBOX = INBOX.filter(function (x) { return !(x.key === key && x.id === id); });
-          renderInboxBody();
-          var bi = el('nav-unread-inbox'); BADGE_CACHE.inbox = INBOX.length ? badgeAlert(INBOX.length) : ''; if (bi) bi.innerHTML = BADGE_CACHE.inbox;
+          inboxDrop(key, id);
           toast(action === 'accept' ? 'Demande acceptée → tâche' : (action === 'hors_forfait' ? 'Marquée hors forfait' : 'Demande refusée'));
         } else toast('Erreur');
       }).catch(function () { toast('Erreur'); });
@@ -2426,7 +2535,7 @@
     }
     var cards =
       card('planning', hL(weekMin) + (weekCapH ? ' <span style="font-size:14px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : ''), 'Charge de la semaine', chargeOver ? 'au-delà de ta capacité' : '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
-      card('inbox', inboxN, 'Demandes à analyser', inboxN ? 'dans ta boîte de réception' : 'rien en attente', "ADM.nav('inbox')") +
+      card('inbox', inboxN, 'Demandes à analyser', inboxN ? 'à trier dans l\'Inbox' : 'rien en attente', "ADM.nav('inbox')") +
       card('priorities', overdue, 'Tâches en retard', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('risks')},60)") +
       card('kpi', forfSurv + ' cliente' + (forfSurv > 1 ? 's' : ''), 'Forfaits à surveiller', '', "ADM.nav('priorities');setTimeout(function(){ADM.prioSetTab('load')},60)") +
       card('visios', visN, 'Visios aujourd\'hui', '', "ADM.nav('visios')") +
@@ -4998,7 +5107,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

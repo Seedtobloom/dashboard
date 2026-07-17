@@ -1242,6 +1242,8 @@ async function handleDeliverablePatch(request: Request, env: Env, key: string, d
     liv.status = body.status;
     liv.validatedAt = body.status === 'a_valider' ? null : nowIso();
   }
+  // « Vu » depuis l'Inbox : le studio a pris connaissance de la validation.
+  if (body.seenByAdmin === true) liv.seenByAdmin = true;
   await saveClient(env, key, data);
   return json(liv);
 }
@@ -1314,6 +1316,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const reworkTasks: AnyObj[] = [];
   const commentTasks: AnyObj[] = [];
   const inbox: AnyObj[] = [];
+  const validated: AnyObj[] = []; // livrables validés par la cliente, pas encore consultés
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
   // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
   const wkStart = new Date(); wkStart.setHours(0, 0, 0, 0);
@@ -1366,6 +1369,10 @@ async function handleDashboard(env: Env): Promise<Response> {
             (task.comments || []).forEach((c: AnyObj) => { (c.attachments || []).forEach((a: AnyObj) => { const k = a && (a.key || a.fileKey); if (k) files.push({ name: String(a.name || 'fichier').slice(0, 120), key: String(k).slice(0, 300) }); }); });
           }
           revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null, attachments: files, clientLink, reviewLink: l.reviewLink || '' });
+        } else if (st === 'valide' && l.seenByAdmin !== true) {
+          // Livrable validé par la cliente : signal positif à afficher dans l'Inbox
+          // jusqu'à ce que le studio l'ait consulté (« traité → disparaît »).
+          validated.push({ key: ci.key, client: who, project: projectId, projectLabel: label, id: l.id, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', at: l.validatedAt || null });
         }
       });
     };
@@ -1461,9 +1468,10 @@ async function handleDashboard(env: Env): Promise<Response> {
   const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
   const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
   qnrDone.sort((a, b) => String(b.completedAt || '').localeCompare(String(a.completedAt || '')));
+  validated.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   const errList = (await env.KV_CLIENT.get('global:clientErrors', { type: 'json' })) as AnyObj[] | null;
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, qnrDone, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
