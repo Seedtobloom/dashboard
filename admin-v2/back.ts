@@ -612,7 +612,14 @@ async function handleClientApi(
     if (!container || !Array.isArray(container.tickets)) return json({ error: 'Projet introuvable' }, 404);
     const tk = container.tickets.find((t: AnyObj) => t.id === m![1]);
     if (!tk) return json({ error: 'Ticket introuvable' }, 404);
+    const prevStatus = tk.status;
     ['title', 'description', 'priority', 'category', 'status', 'dueDate'].forEach((k) => { if (k in body) tk[k] = body[k]; });
+    // Notifications de changement de statut (à la demande : body.notify === true).
+    let ticketDoneNotify = false, ticketStartNotify = false;
+    if ('status' in body && body.notify === true) {
+      if ((body.status === 'done' || body.status === 'closed') && prevStatus !== 'done' && prevStatus !== 'closed') ticketDoneNotify = true;
+      else if (body.status === 'in_progress' && prevStatus !== 'in_progress') ticketStartNotify = true;
+    }
     if ('timeSpentSeconds' in body) {
       tk.timeSpentSeconds = Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0));
       tk.timeSpentMinutes = Math.round(tk.timeSpentSeconds / 60);
@@ -633,6 +640,16 @@ async function handleClientApi(
     }
     tk.seenByAdmin = true;
     await saveClient(env, key, data);
+    if (ticketDoneNotify) {
+      await notifyClient(env, data, `Votre demande est résolue · ${escHtml(tk.title || '')}`,
+        `<p>Bonne nouvelle : votre demande <strong>${escHtml(tk.title || '')}</strong> est résolue ✅.</p>` +
+        `<p>Vous pouvez en retrouver le détail dans votre espace, dans vos tickets.</p>`, key);
+    }
+    if (ticketStartNotify) {
+      await notifyClient(env, data, `Je m'occupe de votre demande · ${escHtml(tk.title || '')}`,
+        `<p>Petit mot pour vous dire que j'ai commencé à travailler sur votre demande <strong>${escHtml(tk.title || '')}</strong>.</p>` +
+        `<p>Je reviens vers vous dès que c'est prêt 😊</p>`, key);
+    }
     if (ticketProposeNotify) {
       const frd = (tk.proposedDueDate || '').split('-').reverse().join('/');
       await notifyClient(env, data, `Report de date proposé · ${escHtml(tk.title || '')}`,

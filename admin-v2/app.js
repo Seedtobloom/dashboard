@@ -2519,20 +2519,26 @@
 
   function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : kind === 'ticket' ? '/tickets/' : '/steps/') + id; }
   function prioTicketStart(key, id) {
-    jpost('/api/clients/' + key + '/tickets/' + id, { projectId: 'maintenance', status: 'in_progress' }, 'PATCH').then(function (r) {
-      if (!r.ok) { toast('Erreur'); return; }
-      toast('Ticket en cours');
-      if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.status = 'in_progress'; renderPrioBody(PRIO_D); } else renderPriorities();
+    notifyConfirm('Prévenir la cliente par e-mail que tu commences à travailler sur sa demande ?', function (notify) {
+      jpost('/api/clients/' + key + '/tickets/' + id, { projectId: 'maintenance', status: 'in_progress', notify: notify }, 'PATCH').then(function (r) {
+        if (!r.ok) { toast('Erreur'); return; }
+        toast('Ticket en cours' + (notify ? ' · cliente prévenue ✓' : ''));
+        if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.status = 'in_progress'; renderPrioBody(PRIO_D); } else renderPriorities();
+      });
     });
   }
   function prioDone(key, project, kind, id) {
-    jpost(prioUrl(key, kind, id), { projectId: project, status: 'done' }, 'PATCH').then(function (r) {
-      if (!r.ok) { toast('Erreur'); return; }
-      toast('Marqué fait ✓');
-      // MAJ optimiste : une tâche terminée quitte les listes (KV peut être en retard).
-      if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { PRIO_D.deadlines = PRIO_D.deadlines.filter(function (x) { return !(x.id === id && x.key === key); }); renderPrioBody(PRIO_D); }
-      else renderPriorities();
-    });
+    var send = function (extra) {
+      jpost(prioUrl(key, kind, id), Object.assign({ projectId: project, status: 'done' }, extra || {}), 'PATCH').then(function (r) {
+        if (!r.ok) { toast('Erreur'); return; }
+        toast('Marqué fait ✓');
+        // MAJ optimiste : une tâche terminée quitte les listes (KV peut être en retard).
+        if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { PRIO_D.deadlines = PRIO_D.deadlines.filter(function (x) { return !(x.id === id && x.key === key); }); renderPrioBody(PRIO_D); }
+        else renderPriorities();
+      });
+    };
+    if (kind === 'ticket') { notifyConfirm('Prévenir la cliente par e-mail que sa demande est résolue ?', function (notify) { send({ notify: notify }); }); return; }
+    send({});
   }
   function prioAddDlv(key, id) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
@@ -3280,7 +3286,18 @@
       if (r.ok) { d.content.monthlyHours = n; toast('Forfait enregistré ✓'); renderClient(); } else toast('Erreur');
     });
   }
-  function ticketStatus(id, status) { ticketUpdate(id, { status: status }, status === 'done' ? 'Ticket marqué comme fait ✓' : 'Statut mis à jour'); }
+  function ticketStatus(id, status) {
+    if (status === 'done' || status === 'in_progress') {
+      var msg = status === 'done'
+        ? 'Prévenir la cliente par e-mail que sa demande est résolue ?'
+        : 'Prévenir la cliente par e-mail que tu as commencé à travailler sur sa demande ?';
+      notifyConfirm(msg, function (notify) {
+        ticketUpdate(id, { status: status, notify: notify }, (status === 'done' ? 'Ticket marqué comme fait' : 'Ticket en cours') + (notify ? ' · cliente prévenue ✓' : ''));
+      });
+      return;
+    }
+    ticketUpdate(id, { status: status }, 'Statut mis à jour');
+  }
   function ticketProposeDate(id, date) {
     if (!date) { ticketUpdate(id, { proposedDueDate: '' }, 'Proposition annulée'); return; }
     notifyConfirm('Proposer cette date à la cliente et la prévenir par e-mail ?', function (notify) {
