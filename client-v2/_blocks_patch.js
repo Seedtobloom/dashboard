@@ -43,6 +43,135 @@
     var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || !b.rows[r]) return;
     b.rows[r][c] = value; stbSaveSoon(pid, taskId);
   };
+
+  /* ── Texte enrichi dans les cellules de tableau ──────────────────────────
+   * Chaque cellule est un <div contenteditable> : il grandit tout seul avec le
+   * contenu (plus jamais de texte coupé) et accepte du style. Une barre
+   * flottante apparaît quand on sélectionne du texte (gras, italique, souligné,
+   * couleur, surligne, taille). Le contenu est stocké en HTML nettoyé (liste
+   * blanche de balises/styles) — sûr à réafficher côté admin. */
+  var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
+  var STB_STYLE_OK = ['color','background-color','font-size','font-weight','font-style','text-decoration','text-decoration-line'];
+  function stbStyleSafe(style){
+    var out = [];
+    String(style || '').split(';').forEach(function(decl){
+      var i = decl.indexOf(':'); if (i < 0) return;
+      var prop = decl.slice(0, i).trim().toLowerCase();
+      var val = decl.slice(i + 1).trim();
+      if (STB_STYLE_OK.indexOf(prop) === -1) return;
+      if (/url\(|expression|javascript:|[<>"@]/i.test(val) || val.length > 40) return;
+      out.push(prop + ':' + val);
+    });
+    return out.join(';');
+  }
+  function stbSerializeSafe(node){
+    var out = '';
+    for (var i = 0; i < node.childNodes.length; i++){
+      var ch = node.childNodes[i];
+      if (ch.nodeType === 3){ out += esc(ch.nodeValue); continue; }
+      if (ch.nodeType !== 1) continue;
+      var tag = STB_RICH_TAGS[ch.tagName];
+      if (!tag){ out += stbSerializeSafe(ch); continue; }
+      if (tag === 'br'){ out += '<br>'; continue; }
+      var st = (tag === 'span' || tag === 'div') ? stbStyleSafe(ch.getAttribute('style') || '') : '';
+      out += '<' + tag + (st ? ' style="' + st + '"' : '') + '>' + stbSerializeSafe(ch) + '</' + tag + '>';
+    }
+    return out;
+  }
+  function stbSanitizeRich(html){
+    var d = document.createElement('div'); d.innerHTML = String(html == null ? '' : html);
+    return stbSerializeSafe(d);
+  }
+  // Valeur de cellule -> HTML pour le contenteditable. Ancien texte simple
+  // (sans balise) : on l'échappe et on convertit les retours ligne en <br>.
+  function stbCellToHtml(v){
+    v = String(v == null ? '' : v);
+    if (/<[a-z!/][\s\S]*>/i.test(v)) return stbSanitizeRich(v);
+    return esc(v).replace(/\n/g, '<br>');
+  }
+  var _stbTB = null, _stbActiveCell = null;
+  function stbCellSave(el, immediate){
+    var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid');
+    var b = stbTableBlock(pid, tid, el.getAttribute('data-bid'));
+    if (b && b.rows){ var r = +el.getAttribute('data-r'), c = +el.getAttribute('data-c'); if (b.rows[r]) b.rows[r][c] = stbSanitizeRich(el.innerHTML); }
+    if (immediate) stbBlocksSave(pid, tid); else stbSaveSoon(pid, tid);
+  }
+  window.stbCellFocus = function(el){ _stbActiveCell = el; };
+  window.stbCellInput = function(el){ stbCellSave(el, false); };
+  window.stbCellBlur = function(el){ stbCellSave(el, true); setTimeout(stbToolbarMaybeHide, 200); };
+  function stbToolbarMaybeHide(){
+    var a = document.activeElement;
+    if (_stbTB && a !== _stbTB && !(_stbTB.contains && _stbTB.contains(a)) && (!a || !a.getAttribute || !a.getAttribute('data-stb-rich'))) stbHideToolbar();
+  }
+  function stbBuildToolbar(){
+    if (_stbTB) return _stbTB;
+    var tb = document.createElement('div');
+    tb.id = 'stb-rt-tb';
+    tb.style.cssText = 'position:absolute;z-index:99999;display:none;background:#1C1205;border-radius:10px;box-shadow:0 10px 30px -8px rgba(0,0,0,0.5);padding:5px;align-items:center;gap:2px;white-space:nowrap';
+    function btn(html, act, title){ return '<button type="button" title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;font-size:14px;min-width:28px;height:28px;border-radius:7px;line-height:1;padding:0 4px">'+html+'</button>'; }
+    function sw(color, kind){ return '<button type="button" title="'+(kind==='color'?'Couleur du texte':'Surligner')+'" onmousedown="event.preventDefault()" onclick="window.stbFmt(\''+kind+'\',\''+color+'\')" style="border:'+(kind==='bg'?'1px solid rgba(255,255,255,0.35)':'1px solid rgba(255,255,255,0.15)')+';background:'+color+';cursor:pointer;width:18px;height:18px;border-radius:50%;padding:0;margin:0 1px"></button>'; }
+    var sep = '<span style="display:inline-block;width:1px;height:18px;background:rgba(242,229,194,0.25);margin:0 4px;vertical-align:middle"></span>';
+    tb.innerHTML =
+      btn('<b>G</b>', "window.stbFmt('bold')", 'Gras') +
+      btn('<i>I</i>', "window.stbFmt('italic')", 'Italique') +
+      btn('<u>S</u>', "window.stbFmt('underline')", 'Souligné') + sep +
+      btn('A<span style=\'font-size:10px\'>+</span>', "window.stbFmt('big')", 'Agrandir') +
+      btn('A<span style=\'font-size:9px\'>–</span>', "window.stbFmt('normal')", 'Taille normale') + sep +
+      sw('#1C1205','color') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
+      sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg');
+    document.body.appendChild(tb);
+    _stbTB = tb; return tb;
+  }
+  function stbHideToolbar(){ if (_stbTB) _stbTB.style.display = 'none'; }
+  function stbPlaceToolbar(){
+    var sel = window.getSelection(); if (!_stbTB || !sel || !sel.rangeCount) return;
+    var rect = sel.getRangeAt(0).getBoundingClientRect();
+    if (!rect || (!rect.width && !rect.height)) return;
+    var tb = _stbTB;
+    var top = rect.top + window.pageYOffset - tb.offsetHeight - 8;
+    if (top < window.pageYOffset + 4) top = rect.bottom + window.pageYOffset + 8;
+    var left = rect.left + window.pageXOffset + rect.width / 2 - tb.offsetWidth / 2;
+    var maxL = window.pageXOffset + document.documentElement.clientWidth - tb.offsetWidth - 8;
+    left = Math.max(window.pageXOffset + 8, Math.min(left, maxL));
+    tb.style.top = top + 'px'; tb.style.left = left + 'px';
+  }
+  function stbToolbarOnSelect(){
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed){ stbHideToolbar(); return; }
+    var n = sel.anchorNode; var e = n && (n.nodeType === 1 ? n : n.parentNode);
+    var cell = e && e.closest ? e.closest('[data-stb-rich]') : null;
+    if (!cell){ stbHideToolbar(); return; }
+    _stbActiveCell = cell;
+    stbBuildToolbar().style.display = 'flex';
+    stbPlaceToolbar();
+  }
+  function stbWrapStyle(prop, val){
+    var sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0); if (range.collapsed) return;
+    var span = document.createElement('span'); span.style[prop] = val;
+    try {
+      span.appendChild(range.extractContents()); range.insertNode(span);
+      sel.removeAllRanges(); var nr = document.createRange(); nr.selectNodeContents(span); sel.addRange(nr);
+    } catch(e){}
+  }
+  window.stbFmt = function(kind, arg){
+    var cell = _stbActiveCell; if (cell) cell.focus();
+    if (kind === 'bold' || kind === 'italic' || kind === 'underline') document.execCommand(kind, false, null);
+    else if (kind === 'color') stbWrapStyle('color', arg);
+    else if (kind === 'bg') stbWrapStyle('background-color', arg);
+    else if (kind === 'big') stbWrapStyle('font-size', '1.4em');
+    else if (kind === 'normal') stbWrapStyle('font-size', '1em');
+    if (cell) window.stbCellInput(cell);
+    stbPlaceToolbar();
+  };
+  if (!window._stbRichBound){
+    window._stbRichBound = true;
+    document.addEventListener('selectionchange', stbToolbarOnSelect);
+    window.addEventListener('scroll', function(){ if (_stbTB && _stbTB.style.display !== 'none') stbPlaceToolbar(); }, true);
+    var _stbPh = document.createElement('style');
+    _stbPh.textContent = '[data-stb-rich]:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}';
+    document.head.appendChild(_stbPh);
+  }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
   // contenu : plus aucun texte tronqué, quelle que soit la largeur du panneau.
   window.stbSizeAll = function(){
@@ -114,7 +243,7 @@
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
         return '<tr>' + row.map(function(c, ci){
-          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><textarea rows="'+stbCellRows(c)+'" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+','+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+','+ci+',this.value)" placeholder="…" style="width:100%;border:none;background:none;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;resize:none;box-sizing:border-box;min-height:32px;overflow:hidden;outline:none">'+esc(c)+'</textarea></td>';
+          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
         }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
       }).join('');
       inner = '<div style="flex:1;min-width:0;overflow-x:auto"><table style="border-collapse:collapse;width:100%;background:#fff;border-radius:8px"><tbody>'+thead+tbody+'</tbody></table>'+
