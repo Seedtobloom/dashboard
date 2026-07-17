@@ -288,6 +288,27 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     t.style.transform = 'translateX(-50%) translateY(0)';
     setTimeout(function() { t.style.transform = 'translateX(-50%) translateY(80px)'; }, 3000);
   }
+  // Remontée d'incident : envoie l'erreur au serveur (visible côté admin dans
+  // « Incidents ») pour que Cindy puisse réagir. Throttlé + plafonné par session.
+  var _cliErrSent = {}, _cliErrCount = 0;
+  window.cliReportError = function(context, message) {
+    try {
+      if (!API_BASE || _cliErrCount > 25) return;
+      var sig = (context || '') + '|' + (message || '');
+      var now = Date.now();
+      if (_cliErrSent[sig] && (now - _cliErrSent[sig]) < 60000) return;
+      _cliErrSent[sig] = now; _cliErrCount++;
+      var sc = ''; try { sc = sessionStorage.getItem('_sc') || ''; } catch(e){}
+      var headers = { 'Content-Type': 'application/json' }; if (sc) headers['x-space-code'] = sc;
+      fetch(API_BASE + '/client-error', { method: 'POST', headers: headers, keepalive: true,
+        body: JSON.stringify({ context: String(context || '').slice(0, 200), message: String(message || '').slice(0, 600), url: (typeof location !== 'undefined' && location.href) || '' }) }).catch(function(){});
+    } catch(e){}
+  };
+  if (!window._cliErrBound) {
+    window._cliErrBound = true;
+    window.addEventListener('error', function(e){ if (e && e.message) window.cliReportError('js', e.message + (e.filename ? (' @ ' + e.filename + ':' + (e.lineno||0)) : '')); });
+    window.addEventListener('unhandledrejection', function(e){ var r = e && e.reason; var m = (r && (r.message || (r.toString && r.toString()))) || 'promesse rejetée'; window.cliReportError('promise', String(m)); });
+  }
   // Micro-célébrations (Lot 3) : confettis + petit encart de félicitations aux
   // moments clés (livrable validé, questionnaire envoyé). Respecte prefers-reduced-motion.
   function cpReduceMotion() { try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; } }
@@ -3694,7 +3715,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           added.push({ key:fileData.key, name:fileData.name||file.name });
           next();
         })
-        .catch(function(){ toast('Erreur lors du depot', true); if (added.length) finish(); });
+        .catch(function(){ toast('Erreur lors du depot', true); window.cliReportError('upload-brief', 'Échec de l\'upload d\'un fichier sur une demande'); if (added.length) finish(); });
     }
     next();
   };
@@ -4192,7 +4213,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       Promise.all(files.map(function(f){ return cliUploadFile(f, pid); })).then(function(res){
         res.forEach(function(f){ pending.push(f); });
         renderFiles();
-      }).catch(function(){ toast('Erreur upload fichier', true); var u=document.getElementById('_maint-t-uploading'); if(u)u.remove(); });
+      }).catch(function(){ toast('Erreur upload fichier', true); window.cliReportError('upload-ticket', 'Échec de l\'upload d\'un fichier sur une demande de ticket'); var u=document.getElementById('_maint-t-uploading'); if(u)u.remove(); });
     }
     ov.querySelector('#_maint-t-fileinput').onchange = function() { var f = this.files; this.value=''; uploadFiles(f); };
     // Glisser-déposer des fichiers sur la zone (et sur toute la fenêtre du modal)

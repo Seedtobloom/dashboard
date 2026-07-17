@@ -112,6 +112,17 @@ export default {
         if (method === 'GET') return handleProjTplGet(env);
         if (method === 'PATCH') return handleProjTplSave(request, env);
       }
+      if (pathname === '/api/client-errors') {
+        const EK = 'global:clientErrors';
+        if (method === 'GET') return json({ errors: (await env.KV_CLIENT.get(EK, { type: 'json' })) || [] });
+        if (method === 'PATCH') { // tout marquer comme vu
+          const l = (await env.KV_CLIENT.get(EK, { type: 'json' })) as AnyObj[] | null;
+          const arr = (Array.isArray(l) ? l : []).map((e) => ({ ...e, seen: true }));
+          await env.KV_CLIENT.put(EK, JSON.stringify(arr));
+          return json({ errors: arr });
+        }
+        if (method === 'DELETE') { await env.KV_CLIENT.put(EK, JSON.stringify([])); return json({ ok: true }); }
+      }
       if (pathname === '/api/quick-replies') {
         if (method === 'GET') return handleQuickRepliesGet(env);
         if (method === 'PATCH') return handleQuickRepliesSave(request, env);
@@ -1427,7 +1438,9 @@ async function handleDashboard(env: Env): Promise<Response> {
   const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
   const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
   qnrDone.sort((a, b) => String(b.completedAt || '').localeCompare(String(a.completedAt || '')));
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, qnrDone, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes) });
+  const errList = (await env.KV_CLIENT.get('global:clientErrors', { type: 'json' })) as AnyObj[] | null;
+  const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, qnrDone, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
