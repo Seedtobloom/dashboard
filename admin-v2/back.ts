@@ -1336,7 +1336,7 @@ async function handleDashboard(env: Env): Promise<Response> {
             if (o && o.link) clientLink = String(o.link).slice(0, 500);
             if (o && Array.isArray(o.files)) o.files.forEach((f: AnyObj) => { if (f && f.key) atts.push({ name: String(f.name || 'fichier').slice(0, 120), key: String(f.key).slice(0, 300) }); });
           } catch (e) { /* ignore */ }
-          inbox.push({ key: ci.key, client: who, id: t.id, title: t.title || '', content: t.content || '', urgency: t.urgency || 'normal', dueDate: t.dueDate || '', createdAt: t.createdAt || '', demandeType: t.demandeType || '', attachments: atts, clientLink, forfaitRemaining: fs.remaining, forfaitConfigured: fs.configured, monthCount, avgMinutes });
+          inbox.push({ key: ci.key, client: who, id: t.id, title: t.title || '', content: t.content || '', blocks: Array.isArray(t.blocks) ? t.blocks : [], table: (t.table && typeof t.table === 'object') ? t.table : null, urgency: t.urgency || 'normal', dueDate: t.dueDate || '', createdAt: t.createdAt || '', demandeType: t.demandeType || '', attachments: atts, clientLink, forfaitRemaining: fs.remaining, forfaitConfigured: fs.configured, monthCount, avgMinutes });
           return; // ne pas la remonter dans les autres listes
         }
         // Une tâche « à valider » (review) est en attente du client : on la

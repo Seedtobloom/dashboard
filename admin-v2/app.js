@@ -749,7 +749,10 @@
           '</div>' +
           '<div class="micro" style="text-align:right;flex-shrink:0;color:' + forfaitCol + ';font-weight:600">' + esc(forfaitTxt) + '</div>' +
         '</div>' +
-        (x.content ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + esc(x.content) + '</div>' : '') +
+        ((Array.isArray(x.blocks) && x.blocks.length)
+          ? ptBlocksHtml(x, x.key, 'La demande du client')
+          : (x.content ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + esc(x.content) + '</div>' : '')) +
+        briefTableHtml(x.table) +
         '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:11px;color:var(--muted)">' +
           (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
           '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
@@ -3311,9 +3314,10 @@
   // Rendu lecture seule du contenu par blocs (brief rédigé par la cliente dans
   // son éditeur type Notion). Affiché en entier côté admin — jamais tronqué —
   // avec les tableaux visibles.
-  function ptBlocksHtml(t) {
+  function ptBlocksHtml(t, keyOverride, label) {
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     if (!blocks.length) return '';
+    var CK = keyOverride || CURKEY;
     var bd = '1px solid var(--bone-d)';
     var num = 0;
     var html = blocks.map(function (b) {
@@ -3326,7 +3330,7 @@
       if (b.type === 'list') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">•</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'numbered') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">' + num + '.</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'sep') return '<hr style="border:none;border-top:2px dashed var(--bone-d);margin:12px 0">';
-      if (b.type === 'file') { var dl = b.fileKey ? ('/api/clients/' + CURKEY + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#'; return '<div style="margin:6px 0"><a class="btn btn--outline btn--sm" href="' + dl + '" target="_blank">📎 ' + esc(b.name || 'fichier') + '</a></div>'; }
+      if (b.type === 'file') { var dl = b.fileKey ? ('/api/clients/' + CK + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#'; return '<div style="margin:6px 0"><a class="btn btn--outline btn--sm" href="' + dl + '" target="_blank">📎 ' + esc(b.name || 'fichier') + '</a></div>'; }
       if (b.type === 'link') { var lu = b.url || ''; return '<div style="margin:6px 0">' + (b.text ? '<strong>' + esc(b.text) + '</strong> ' : '') + (lu ? '<a href="' + esc(/^https?:\/\//i.test(lu) ? lu : 'https://' + lu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(lu) + '</a>' : '') + '</div>'; }
       if (b.type === 'embed') { var eu = b.url || ''; return eu ? '<div style="margin:6px 0"><a href="' + esc(eu) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">▶ ' + esc(eu) + '</a></div>' : ''; }
       if (b.type === 'table') {
@@ -3339,7 +3343,17 @@
       }
       return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + mtLinkify(b.text || '') + '</div>';
     }).join('');
-    return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">Le brief du client</div>' + html + '</div>';
+    return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">' + esc(label || 'Le brief du client') + '</div>' + html + '</div>';
+  }
+  // Tableau « legacy » d'une tâche (t.table) — lecture seule, réutilisable
+  // (fiche client ET boîte de réception).
+  function briefTableHtml(table) {
+    if (!table || !Array.isArray(table.cols) || !table.cols.length) return '';
+    var cols = table.cols, rows = Array.isArray(table.rows) ? table.rows : [];
+    var bd = '1px solid var(--bone-d)';
+    var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:8px 11px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);min-width:180px;vertical-align:top">' + esc(c) + '</th>'; }).join('') + '</tr>';
+    var bodyR = rows.map(function (row) { return '<tr>' + cols.map(function (c, ci) { return '<td style="border:' + bd + ';padding:8px 11px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:180px;max-width:460px">' + esc((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
+    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;max-width:100%">' + head + bodyR + '</table></div></div>';
   }
   function partnerTasks(d) {
     var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
@@ -3410,13 +3424,7 @@
         be.files.map(function (f) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">📎 ' + esc(f.name || 'fichier') + '</a>'; }).join('') +
         '</div></div>' : '';
       // Tableau rempli par le client (lecture seule côté admin).
-      var tableHtml = (t.table && Array.isArray(t.table.cols) && t.table.cols.length) ? (function () {
-        var cols = t.table.cols, rows = Array.isArray(t.table.rows) ? t.table.rows : [];
-        var bd = '1px solid var(--bone-d)';
-        var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:8px 11px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);min-width:180px;vertical-align:top">' + esc(c) + '</th>'; }).join('') + '</tr>';
-        var bodyR = rows.map(function (row) { return '<tr>' + cols.map(function (c, ci) { return '<td style="border:' + bd + ';padding:8px 11px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:180px;max-width:460px">' + esc((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
-        return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;max-width:100%">' + head + bodyR + '</table></div></div>';
-      })() : '';
+      var tableHtml = briefTableHtml(t.table);
       // bloc « suivi » : statut + chrono, dans un encart doux
       var work = '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px">' +
         '<div class="micro" style="margin-bottom:9px">Où en est cette tâche ?</div>' +
