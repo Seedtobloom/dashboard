@@ -861,11 +861,12 @@
       }
       function prow(x) {
         var iso = (x.dueDate || '').slice(0, 10);
-        return '<div class="prow">' +
+        var brief = prioBrief(x, false);
+        return '<div class="prow"' + (brief ? ' style="flex-wrap:wrap"' : '') + '>' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
             (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#35608f;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
-            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + prioBrief(x, false) + '</div>' +
+            '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
@@ -876,6 +877,9 @@
               ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
               : '<button class="pbtn" title="Reporter à une autre date" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>') +
           '</div>' : '<div>' + pill(x.status, SL[x.status] || x.status) + '</div>') +
+          // Le brief (souvent un tableau) prend toute la largeur de la ligne :
+          // sinon il est écrasé dans la colonne étroite entre le titre et les actions.
+          (brief ? '<div style="flex-basis:100%;width:100%;min-width:0;margin-top:8px">' + brief + '</div>' : '') +
         '</div>';
       }
       function group(title, dotCol, items) {
@@ -925,9 +929,10 @@
         var iso = (x.dueDate || '').slice(0, 10);
         var overdue = x._d < 0;
         var whenLight = overdue ? '#efb2a2' : (x._d === 0 ? '#eccd93' : 'rgba(242,229,194,0.62)');
-        return '<div class="focusrow">' +
+        var fBrief = prioBrief(x, true);
+        return '<div class="focusrow"' + (fBrief ? ' style="flex-wrap:wrap"' : '') + '>' +
           '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#dff0d5;background:rgba(63,90,55,0.55);padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus</span>' : '') + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioClientLink(x, true) + prioBrief(x, true) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioClientLink(x, true) + '</div>' +
           (x.id ? '<div class="prow__act" style="flex-shrink:0">' + prioTimer(x, true) +
             (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
             (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
@@ -937,6 +942,7 @@
               ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
               : '<button class="pbtn" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>') +
           '</div>' : '') +
+          (fBrief ? '<div style="flex-basis:100%;width:100%;min-width:0;margin-top:8px">' + fBrief + '</div>' : '') +
         '</div>';
       }
       // Indépendant de la vue (par date / par client) et du filtre : sinon le
