@@ -2962,7 +2962,7 @@
       out + '</div>';
   }
 
-  function findDomain(id) { var d = CUR.domains.filter(function (x) { return x.id === id; })[0]; if (d) return d; return CUR.supports.filter(function (x) { return x.id === id; })[0]; }
+  function findDomain(id) { if (!CUR) return null; var d = (CUR.domains || []).filter(function (x) { return x.id === id; })[0]; if (d) return d; return (CUR.supports || []).filter(function (x) { return x.id === id; })[0] || null; }
 
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
