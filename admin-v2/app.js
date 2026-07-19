@@ -1307,11 +1307,34 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'list', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {};
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'focus', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {};
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#f2ebff', '#5e3fa0'], ['#eaf1fb', '#35608f'], ['#f6ecd5', '#9c6f18'], ['#eaf1e6', '#4f6a46'], ['#f7ece7', '#a23c28'], ['#efe7d7', '#6b533b']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
   function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
+  // ── Refonte « Studio OS » : mode de travail (axe d'organisation) + énergie ──
+  // [clé, libellé, emoji, couleur texte, couleur fond]
+  var MT_MODES = [
+    ['client', 'Client', '👤', '#a35a1a', '#fdf3e8'],
+    ['studio', 'Studio', '🚀', '#35608f', '#eaf1fb'],
+    ['marketing', 'Marketing', '📣', '#6c4ea4', '#f4f1fa'],
+    ['organisation', 'Organisation', '⚙️', '#4f6a46', '#eaf1e6'],
+    ['admin', 'Admin', '💰', '#9c6f18', '#f6ecd5'],
+    ['idee', 'Idée', '💡', '#8a6f2e', '#fbf5e6']
+  ];
+  function mtMode(m) { for (var i = 0; i < MT_MODES.length; i++) if (MT_MODES[i][0] === m) return MT_MODES[i]; return null; }
+  function mtModePill(m) { var x = mtMode(m); if (!x) return ''; return '<span title="' + x[1] + '" style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + x[4] + ';color:' + x[3] + '">' + x[2] + ' ' + x[1] + '</span>'; }
+  // [clé, emoji, libellé, minutes indicatives]
+  var MT_ENERGY = [['quick', '🟢', '10 min', 10], ['short', '🟡', '30 min', 30], ['medium', '🟠', '1 h', 60], ['deep', '🔴', 'Demi-journée', 240]];
+  function mtEnergy(e) { for (var i = 0; i < MT_ENERGY.length; i++) if (MT_ENERGY[i][0] === e) return MT_ENERGY[i]; return null; }
+  function mtEnergyDot(e) { var x = mtEnergy(e); return x ? '<span title="Énergie : ' + x[2] + '" style="font-size:11px">' + x[1] + '</span>' : ''; }
+  function mtImpactLabel(i) { return { faible: 'Impact faible', moyen: 'Impact moyen', fort: 'Impact fort' }[i] || ''; }
+  // Durée retenue pour la charge du jour : estimation explicite, sinon l'énergie.
+  function mtTaskMinutes(t) { if (t.estMinutes) return t.estMinutes; var x = mtEnergy(t.energy); return x ? x[3] : 0; }
+  // Aujourd'hui = tâches que tu as épinglées (doDate == aujourd'hui, en local).
+  function mtIsToday(t) { if (!t.doDate) return false; var d = new Date(t.doDate); if (isNaN(d)) return false; var td = new Date(); return d.getFullYear() === td.getFullYear() && d.getMonth() === td.getMonth() && d.getDate() === td.getDate(); }
+  function mtTodayIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  var MT_TODAY_CAP = 0; // capacité du jour (minutes), depuis le planning
   function mtCard(t) {
     var est = t.estMinutes ? ('estimé ' + (t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
     var dn = t.status === 'done';
@@ -1337,6 +1360,7 @@
     var canDrag = !dn && !t.archived;
     var recLbl = { daily: 'chaque jour', weekly: 'chaque semaine', monthly: 'chaque mois' }[t.recurrence];
     var chips = '';
+    if (t.mode) chips += mtModePill(t.mode);
     if (t.clientName) chips += '<span onclick="ADM.openClient(\'' + esc(t.clientKey) + '\')" title="Ouvrir la fiche client" style="cursor:pointer;font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--terre);color:var(--paille)">' + esc(t.clientName) + '</span>';
     if (recLbl) chips += '<span title="Tâche récurrente" style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--terre-600)">↻ ' + recLbl + '</span>';
     var chipsHtml = (chips || (Array.isArray(t.tags) && t.tags.length)) ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">' + chips + ((Array.isArray(t.tags) && t.tags.length) ? t.tags.map(mtTagPill).join('') : '') + '</div>' : '';
@@ -1436,7 +1460,7 @@
       '<div style="display:flex;align-items:center;gap:12px;padding:11px 16px">' +
         '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
         '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
-        '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
+        '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
         noteMark +
         (t.doDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">à faire le ' + fmtDate(t.doDate) + '</span>' : '') +
         '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="event.preventDefault();ADM.mtToggleRow(\'' + t.id + '\')">Détails</button>' +
@@ -1655,6 +1679,9 @@
     var prioOpts = [['haute', 'Haute'], ['normale', 'Normale'], ['basse', 'Basse']].map(function (o) { return '<option value="' + o[0] + '"' + ((t.priority || 'normale') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
     var recOpts = [['', 'Ne pas répéter'], ['daily', 'Chaque jour'], ['weekly', 'Chaque semaine'], ['monthly', 'Chaque mois']].map(function (o) { return '<option value="' + o[0] + '"' + ((t.recurrence || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
     var cliOpts = '<option value="">Sans client</option>' + MT_CLIENTS.map(function (c) { return '<option value="' + esc(c.key) + '"' + ((t.clientKey || '') === c.key ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
+    var modeOpts = '<option value="">Mode… (à classer)</option>' + MT_MODES.map(function (m) { return '<option value="' + m[0] + '"' + ((t.mode || '') === m[0] ? ' selected' : '') + '>' + m[2] + ' ' + m[1] + '</option>'; }).join('');
+    var enOpts = '<option value="">Énergie…</option>' + MT_ENERGY.map(function (e) { return '<option value="' + e[0] + '"' + ((t.energy || '') === e[0] ? ' selected' : '') + '>' + e[1] + ' ' + e[2] + '</option>'; }).join('');
+    var impOpts = [['', 'Impact…'], ['faible', 'Faible'], ['moyen', 'Moyen'], ['fort', 'Fort']].map(function (o) { return '<option value="' + o[0] + '"' + ((t.impact || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
     var tagsVal = Array.isArray(t.tags) ? t.tags.join(', ') : '';
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
@@ -1669,6 +1696,9 @@
           '<label class="micro" style="flex:1;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Date limite">Échéance <input class="inp" id="mte-due" type="date" value="' + esc(t.dueDate || '') + '" style="flex:1"></label></div>' +
         '<div class="row" style="gap:8px"><select class="inp" id="mte-client" style="flex:1">' + cliOpts + '</select>' +
           '<select class="inp" id="mte-recur" style="flex:1">' + recOpts + '</select></div>' +
+        '<div class="row" style="gap:8px"><select class="inp" id="mte-mode" style="flex:1" title="Mode de travail">' + modeOpts + '</select>' +
+          '<select class="inp" id="mte-energy" style="flex:1" title="Énergie">' + enOpts + '</select>' +
+          '<select class="inp" id="mte-impact" style="flex:1" title="Impact">' + impOpts + '</select></div>' +
         '<input class="inp" id="mte-tags" value="' + esc(tagsVal) + '" placeholder="Étiquettes séparées par des virgules">' +
         '<div class="field"><label>Temps passé (minutes) — corrige le chrono si besoin</label><input class="inp" id="mte-time" type="number" min="0" step="5" value="' + Math.round((t.timeSpentSeconds || 0) / 60) + '" style="width:140px"></div>' +
         '<textarea class="inp" id="mte-notes" style="min-height:64px;resize:vertical" placeholder="Note, lien (https://…), détails…">' + esc(t.notes || '') + '</textarea>' +
@@ -1683,7 +1713,7 @@
       var title = (el('mte-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
       var tags = (el('mte-tags').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
       var ck = el('mte-client').value, cn = ''; for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } }
-      var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, doDate: el('mte-do').value || null, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || '') };
+      var body = { title: title, priority: el('mte-prio').value, estMinutes: parseInt(el('mte-est').value, 10) || 0, doDate: el('mte-do').value || null, dueDate: el('mte-due').value || null, clientKey: ck, clientName: cn, recurrence: el('mte-recur').value, tags: tags, notes: (el('mte-notes').value || ''), mode: el('mte-mode') ? el('mte-mode').value : '', energy: el('mte-energy') ? el('mte-energy').value : '', impact: el('mte-impact') ? el('mte-impact').value : '' };
       var tm = parseInt(el('mte-time').value, 10);
       if (!isNaN(tm) && tm >= 0 && tm * 60 !== (t.timeSpentSeconds || 0)) { body.timeSpentSeconds = tm * 60; body.forceTime = true; }
       jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { close(); toast('Tâche modifiée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
@@ -2037,14 +2067,160 @@
     setMain(topbar('Mes tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/admin/tasks').then(function (r) { return r.json(); }),
-      api('/api/clients').then(function (r) { return r.json(); }).catch(function () { return { clients: [] }; })
+      api('/api/clients').then(function (r) { return r.json(); }).catch(function () { return { clients: [] }; }),
+      api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; })
     ]).then(function (res) {
       var d = res[0];
       MT_CLIENTS = (res[1].clients || []).map(function (c) { return { key: c.key, name: (((c.prenom || '') + ' ' + (c.nom || '')).trim() || c.entreprise || c.email || c.key) }; });
       MT_TASKS = d.tasks || [];
+      var days = (res[2] && res[2].days) || {};
+      var dow = ((new Date().getDay() + 6) % 7) + 1; // 1 = lundi
+      MT_TODAY_CAP = days[dow] || 0;
       renderMyTasksBody();
     }).catch(showError);
   }
+  // ── Vue Focus : organisée par mode de travail, avec « Aujourd'hui » en tête ──
+  function mtToggleToday(id) {
+    var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
+    var nv = mtIsToday(t) ? null : mtTodayIso();
+    jpost('/api/admin/tasks/' + id, { doDate: nv }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { toast(nv ? '📌 Planifiée aujourd\'hui' : 'Retirée d\'aujourd\'hui'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
+  }
+  function mtSetMode(id, mode) { jpost('/api/admin/tasks/' + id, { mode: mode }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) mtApplyLocal(task); }).catch(function () { toast('Erreur'); }); }
+  function mtScrollTo(id) { var e = el(id); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  // Ligne compacte utilisée dans la vue Focus. showMode : afficher la pastille
+  // de mode (utile dans « Aujourd'hui » qui mélange les modes).
+  function mtFocusRow(t, showMode) {
+    var dn = t.status === 'done';
+    var today = mtIsToday(t);
+    var running = MT_TIMER && MT_TIMER.id === t.id;
+    var mins = mtTaskMinutes(t);
+    var td = new Date(); td.setHours(0, 0, 0, 0);
+    var overdue = !dn && t.dueDate && new Date(t.dueDate) < td;
+    var metaBits = [];
+    if (mins) metaBits.push(fmtMin(mins));
+    if (t.dueDate) metaBits.push((overdue ? 'en retard · ' : 'échéance ') + fmtDate(t.dueDate));
+    if (t.impact === 'fort') metaBits.push('⭐ fort');
+    var meta = metaBits.join(' · ');
+    var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
+    var noteMark = ((t.notes && String(t.notes).trim()) || subs.length) ? '📝' + (subs.length ? ' ' + subs.filter(function (s) { return s.done; }).length + '/' + subs.length : '') : '';
+    var timerBtn = running
+      ? '<button class="pbtn" style="color:var(--orange)" onclick="ADM.mtPause(\'' + t.id + '\')" title="Pause">⏸</button>'
+      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')" title="Démarrer le chrono">▶</button>';
+    var toggleBtn = today
+      ? '<button class="pbtn" title="Retirer d\'aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">Retirer</button>'
+      : '<button class="pbtn" title="Planifier pour aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">📌 Aujourd\'hui</button>';
+    return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid var(--bone-d)">' +
+      '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
+      (t.energy ? mtEnergyDot(t.energy) : '') +
+      '<span style="flex:1;min-width:0;cursor:pointer;overflow:hidden" onclick="ADM.mtEditOpen(\'' + t.id + '\')">' +
+        '<span style="font-size:14px;color:var(--terre)">' + esc(t.title) + '</span>' +
+        (showMode && t.mode ? ' ' + mtModePill(t.mode) : '') +
+        (meta ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:' + (overdue ? '#a23c28' : 'var(--muted)') + ';margin-left:8px">' + meta + '</span>' : '') +
+      '</span>' +
+      (t.clientName ? '<span class="micro" title="' + esc(t.clientName) + '" style="flex-shrink:0;text-transform:none;letter-spacing:0;color:var(--glycine-900);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.clientName) + '</span>' : '') +
+      (noteMark ? '<span style="color:var(--muted);font-size:11px;flex-shrink:0">' + noteMark + '</span>' : '') +
+      '<div class="row" style="gap:4px;flex-shrink:0">' + timerBtn + toggleBtn + '</div>' +
+    '</div>';
+  }
+  function mtSectionHead(emoji, label, color, count, hint) {
+    return '<div style="display:flex;align-items:baseline;gap:9px;margin:22px 2px 9px">' +
+      '<span style="font-family:var(--font-display);font-style:italic;font-size:20px;color:' + color + '">' + emoji + ' ' + esc(label) + '</span>' +
+      '<span class="micro" style="color:var(--muted)">' + count + '</span>' +
+      (hint ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-left:auto">' + hint + '</span>' : '') +
+    '</div>';
+  }
+  function mtCapacityBar(todayTasks) {
+    var planned = todayTasks.reduce(function (s, t) { return s + mtTaskMinutes(t); }, 0);
+    var cap = MT_TODAY_CAP;
+    if (!cap) {
+      return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:12px 15px;margin-bottom:6px">' +
+        '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)"><strong style="color:var(--terre)">' + fmtMin(planned) + '</strong> prévues aujourd\'hui · <a href="javascript:ADM.nav(\'planning\')">règle ta capacité</a> pour voir si ta journée est réaliste.</span></div>';
+    }
+    var over = planned > cap;
+    var pct = Math.min(100, Math.round(planned / cap * 100));
+    var barCol = over ? '#a23c28' : (pct >= 80 ? '#c9952f' : '#4f6a46');
+    var free = Math.max(0, cap - planned);
+    return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:13px 15px;margin-bottom:6px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+        '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre)"><strong>' + fmtMin(planned) + '</strong> prévues</span>' +
+        '<span class="micro" style="text-transform:none;letter-spacing:0;color:' + (over ? '#a23c28' : 'var(--muted)') + '">' + (over ? '+' + fmtMin(planned - cap) + ' au-delà de ta capacité' : fmtMin(free) + ' encore dispo') + '</span>' +
+      '</div>' +
+      '<div style="height:9px;background:var(--surface-2);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + barCol + ';border-radius:999px;transition:width .2s"></div></div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Capacité du jour : ' + fmtMin(cap) + '</div>' +
+    '</div>';
+  }
+  function mtStratChip(n, label, target) {
+    return '<button onclick="ADM.mtScrollTo(\'' + target + '\')" style="cursor:pointer;border:1px solid var(--bone-d);background:var(--card);border-radius:12px;padding:10px 14px;text-align:left;min-width:98px;flex:1">' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:' + (n > 0 ? 'var(--terre)' : 'var(--muted)') + ';line-height:1">' + n + '</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px">' + label + '</div></button>';
+  }
+  function mtFocusView(todo) {
+    var today = todo.filter(mtIsToday);
+    var rest = todo.filter(function (t) { return !mtIsToday(t); });
+    // Fin de la semaine courante (dimanche), pour « cette semaine ».
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + ((7 - now.getDay()) % 7)); weekEnd.setHours(23, 59, 59, 999);
+    var weekN = rest.filter(function (t) { if (!t.doDate) return false; var d = new Date(t.doDate); return !isNaN(d) && d > now && d <= weekEnd; }).length;
+    var waitingN = rest.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).length;
+    var idees = rest.filter(function (t) { return t.mode === 'idee'; });
+    var studioN = rest.filter(function (t) { return t.mode === 'studio'; }).length;
+    // Barre stratégique : où mettre ton énergie (pas un simple compteur).
+    var strat = '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px">' +
+      mtStratChip(today.length, 'Aujourd\'hui', 'mt-sec-today') +
+      mtStratChip(weekN, 'Cette semaine', 'mt-sec-today') +
+      mtStratChip(waitingN, 'En attente', 'mt-sec-organisation') +
+      mtStratChip(studioN, 'Projets', 'mt-sec-studio') +
+      mtStratChip(idees.length, 'Idées', 'mt-sec-idee') +
+    '</div>';
+    // 🎯 Aujourd'hui
+    var todaySorted = today.slice().sort(function (a, b) { return mtTaskMinutes(b) - mtTaskMinutes(a); });
+    var todayHtml = '<div id="mt-sec-today">' + mtSectionHead('🎯', 'Aujourd\'hui', 'var(--terre)', today.length + (today.length ? ' tâche' + (today.length > 1 ? 's' : '') : ''), '') +
+      mtCapacityBar(today) +
+      (today.length
+        ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden;margin-top:8px">' + todaySorted.map(function (t) { return mtFocusRow(t, true); }).join('') + '</div>'
+        : '<div style="border:1px dashed var(--bone-d);border-radius:13px;padding:20px;text-align:center;margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Rien de prévu aujourd\'hui. Épingle 3 à 5 tâches depuis les sections ci-dessous avec <strong>📌 Aujourd\'hui</strong>.</div></div>') +
+    '</div>';
+    // Sections par mode (hors aujourd'hui, hors idées)
+    var modesHtml = MT_MODES.filter(function (m) { return m[0] !== 'idee'; }).map(function (m) {
+      var list = rest.filter(function (t) { return t.mode === m[0]; });
+      if (!list.length) return '';
+      list.sort(function (a, b) { return String(a.doDate || a.dueDate || '9999').localeCompare(String(b.doDate || b.dueDate || '9999')); });
+      return '<div id="mt-sec-' + m[0] + '">' + mtSectionHead(m[2], m[1], m[3], list.length, '') +
+        '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden">' + list.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div></div>';
+    }).join('');
+    // À classer (sans mode)
+    var unclassed = rest.filter(function (t) { return !mtMode(t.mode); });
+    var unclassedHtml = unclassed.length ? '<div id="mt-sec-unclassed">' + mtSectionHead('🗂', 'À classer', 'var(--muted)', unclassed.length, 'donne un mode à ces tâches') +
+      '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden">' + unclassed.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div></div>' : '';
+    // 💡 Idées
+    var ideesHtml = '<div id="mt-sec-idee">' + mtSectionHead('💡', 'Idées', '#8a6f2e', idees.length, 'aucune date, aucune pression') +
+      (idees.length
+        ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden">' + idees.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div>'
+        : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:4px 2px">Note ici tout ce qui te passe par la tête — via « + Nouveau » → Idée.</div>') +
+    '</div>';
+    return strat + todayHtml + modesHtml + unclassedHtml + ideesHtml;
+  }
+  // Menu « Que veux-tu créer ? »
+  var MT_CREATE_KIND = 'task';
+  function mtCreatePick() {
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    function opt(kind, emoji, label, sub) {
+      return '<button data-kind="' + kind + '" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:13px 15px;cursor:pointer;margin-bottom:8px">' +
+        '<span style="font-size:22px">' + emoji + '</span><span><span style="display:block;font-weight:600;color:var(--terre)">' + label + '</span><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span></span></button>';
+    }
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:420px;text-align:left"><div class="admconfirm__title">Que veux-tu créer ?</div>' +
+      '<div style="margin-top:14px">' +
+        opt('task', '✅', 'Une tâche', 'Un truc concret à faire, avec un mode et une durée.') +
+        opt('idee', '💡', 'Une idée', 'À garder sous le coude — aucune date, aucune pression.') +
+        opt('routine', '↻', 'Une routine', 'Une tâche qui revient (chaque jour, semaine ou mois).') +
+      '</div><div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-kind]'), function (b) { b.onclick = function () { close(); mtOpenAdd(b.getAttribute('data-kind')); }; });
+    document.body.appendChild(ov);
+  }
+  function mtOpenAdd(kind) { MT_CREATE_KIND = kind || 'task'; MT_ADDOPEN = true; renderMyTasks(); setTimeout(function () { var f = el('mt-title'); if (f) f.focus(); }, 40); }
   // Rendu depuis l'état local (MT_TASKS), sans re-télécharger.
   function renderMyTasksBody() {
       var all = MT_TASKS;
@@ -2059,21 +2235,33 @@
       var doneWeek = done.filter(function (x) { return x.completedAt && new Date(x.completedAt) >= weekAgo; }).length;
       function kc(n, l, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
       var kpis = '<div class="kpis">' + kc(todo.length, 'À faire', 'kpi--week') + kc((estTotal / 60).toFixed(1).replace('.0', '') + ' h', 'Temps estimé', 'kpi--today') + kc((spentTotal / 3600).toFixed(1).replace('.0', '') + ' h', 'Temps passé', 'kpi--wait') + kc(doneWeek, 'Fait (7 j)', 'kpi--done') + '</div>';
-      var form = MT_ADDOPEN ? '<div class="card"><h3>Nouvelle tâche</h3>' +
+      var defMode = MT_CREATE_KIND === 'idee' ? 'idee' : '';
+      var defRecur = MT_CREATE_KIND === 'routine' ? 'weekly' : '';
+      var kindTitle = MT_CREATE_KIND === 'idee' ? 'Nouvelle idée' : (MT_CREATE_KIND === 'routine' ? 'Nouvelle routine' : 'Nouvelle tâche');
+      var modeOpts = '<option value="">Mode… (à classer)</option>' + MT_MODES.map(function (m) { return '<option value="' + m[0] + '"' + (defMode === m[0] ? ' selected' : '') + '>' + m[2] + ' ' + m[1] + '</option>'; }).join('');
+      var enOpts = '<option value="">Énergie…</option>' + MT_ENERGY.map(function (e) { return '<option value="' + e[0] + '">' + e[1] + ' ' + e[2] + '</option>'; }).join('');
+      var impOpts = '<option value="">Impact…</option><option value="faible">Faible</option><option value="moyen">Moyen</option><option value="fort">Fort</option>';
+      var recOptsAdd = [['', 'Ne pas répéter'], ['daily', 'Chaque jour'], ['weekly', 'Chaque semaine'], ['monthly', 'Chaque mois']].map(function (o) { return '<option value="' + o[0] + '"' + (defRecur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+      var form = MT_ADDOPEN ? '<div class="card"><h3>' + kindTitle + '</h3>' +
         '<div class="row"><input class="inp" id="mt-title" placeholder="Que dois-tu faire ?" style="flex:2;min-width:160px">' +
           '<select class="inp" id="mt-prio" style="width:auto"><option value="haute">Haute</option><option value="normale" selected>Normale</option><option value="basse">Basse</option></select>' +
           '<input class="inp" id="mt-est" type="number" min="0" step="15" placeholder="min" style="width:80px" title="Durée estimée en minutes">' +
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Le jour où tu comptes t\'en occuper">À faire le <input class="inp" id="mt-do" type="date" style="width:auto"></label>' +
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Date limite">Échéance <input class="inp" id="mt-due" type="date" style="width:auto"></label>' +
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">Ajouter</button></div>' +
+        '<div class="row mt">' +
+          '<select class="inp" id="mt-mode" style="flex:1;min-width:150px" title="Mode de travail — l\'axe qui organise ta page">' + modeOpts + '</select>' +
+          '<select class="inp" id="mt-energy" style="flex:1;min-width:130px" title="Énergie / durée ressentie">' + enOpts + '</select>' +
+          '<select class="inp" id="mt-impact" style="flex:1;min-width:130px" title="Impact">' + impOpts + '</select>' +
+        '</div>' +
         '<input class="inp mt" id="mt-notes" placeholder="Note ou lien (optionnel), https://… , détails…" style="width:100%;box-sizing:border-box">' +
         '<input class="inp mt" id="mt-tags" placeholder="Étiquettes séparées par des virgules (ex. Créa, Admin, Perso)" style="width:100%;box-sizing:border-box">' +
         '<div class="row mt">' +
           '<select class="inp" id="mt-client" style="flex:1;min-width:160px"><option value="">Sans client</option>' +
             MT_CLIENTS.map(function (c) { return '<option value="' + esc(c.key) + '">' + esc(c.name) + '</option>'; }).join('') + '</select>' +
-          '<select class="inp" id="mt-recur" style="flex:1;min-width:160px" title="Répéter la tâche automatiquement"><option value="">Ne pas répéter</option><option value="daily">Chaque jour</option><option value="weekly">Chaque semaine</option><option value="monthly">Chaque mois</option></select>' +
+          '<select class="inp" id="mt-recur" style="flex:1;min-width:160px" title="Répéter la tâche automatiquement">' + recOptsAdd + '</select>' +
         '</div>' +
-        '<div class="micro mt">Durée estimée en minutes (15, 30, 60…), utile pour le calendrier et les KPI. Reliez la tâche à un client, et répétez la automatiquement une fois terminée.</div></div>' : '';
+        '<div class="micro mt">Le <b>mode</b> range la tâche dans le bon espace de ta page Focus. L\'<b>énergie</b> et la <b>durée</b> servent à savoir si ta journée est réaliste.</div></div>' : '';
       var cols = [['haute', 'Haute', '#b83f29', '#f6f2ea'], ['normale', 'Normale', '#6c4ea4', '#f6f2ea'], ['basse', 'Basse', '#8a7355', '#f6f2ea']];
       var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
@@ -2089,7 +2277,8 @@
         : '<div class="empty">Aucune tâche terminée pour le moment.</div>';
       var archSorted = archived.slice().sort(function (a, b) { return String(b.completedAt || b.dueDate || '').localeCompare(String(a.completedAt || a.dueDate || '')); });
       var archView = archived.length ? archSorted.map(mtCard).join('') : '<div class="empty">Aucune tâche archivée. Archivez une tâche terminée pour la ranger ici.</div>';
-      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">Liste · ' + todo.length + '</button>' +
+      var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'focus' ? ' active' : '') + '" onclick="ADM.mtSetView(\'focus\')">🎯 Focus</button>' +
+        '<button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">Liste · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">Tableau · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
@@ -2127,16 +2316,23 @@
       });
       var bulkBtn = '<div style="margin-bottom:12px"><button class="btn btn--outline btn--sm" onclick="ADM.mtBulkAddOpen()">🧠 Vider ton cerveau · coller une liste</button></div>';
       var listView = quickBar + bulkBtn + (todo.length ? '<div class="card" style="padding:4px 0">' + listSorted.map(mtListRow).join('') + '</div>' : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus, ou colle une liste.</div>');
-      var content = MT_VIEW === 'list' ? listView : (MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent));
-      var addBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">' + (MT_ADDOPEN ? 'Fermer' : '+ Nouvelle tâche') + '</button>';
-      setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap" style="max-width:1200px">' + kpis + form + viewTabs + content + '</div>');
+      var focusContent = MT_VIEW === 'focus' ? mtFocusView(todo) : '';
+      var content = MT_VIEW === 'focus' ? focusContent : (MT_VIEW === 'list' ? listView : (MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent)));
+      var addBtn = MT_ADDOPEN
+        ? '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">Fermer</button>'
+        : '<button class="btn btn--dark btn--sm" onclick="ADM.mtCreatePick()">+ Nouveau</button>';
+      var head = MT_VIEW === 'focus' ? '' : kpis;
+      setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap" style="max-width:1200px">' + head + form + viewTabs + content + '</div>');
   }
   function myTaskAdd() {
     var title = (el('mt-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
     var tags = (el('mt-tags') ? el('mt-tags').value : '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
     var ck = el('mt-client') ? el('mt-client').value : '';
     var cn = ''; if (ck) { for (var i = 0; i < MT_CLIENTS.length; i++) { if (MT_CLIENTS[i].key === ck) { cn = MT_CLIENTS[i].name; break; } } }
-    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, doDate: el('mt-do').value || null, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '' }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { MT_ADDOPEN = false; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
+    var mode = el('mt-mode') ? el('mt-mode').value : '';
+    var energy = el('mt-energy') ? el('mt-energy').value : '';
+    var impact = el('mt-impact') ? el('mt-impact').value : '';
+    jpost('/api/admin/tasks', { title: title, priority: el('mt-prio').value, estMinutes: el('mt-est').value, doDate: el('mt-do').value || null, dueDate: el('mt-due').value || null, notes: (el('mt-notes').value || '').trim(), tags: tags, clientKey: ck, clientName: cn, recurrence: el('mt-recur') ? el('mt-recur').value : '', mode: mode, energy: energy, impact: impact }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { MT_ADDOPEN = false; toast('Ajouté'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
   function myTaskStatus(id, st) { if (st === 'done' && MT_TIMER && MT_TIMER.id === id) mtPause(id, true); jpost('/api/admin/tasks/' + id, { status: st }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) mtApplyLocal(task); }).catch(function () { toast('Erreur'); }); }
   function myTaskDel(id) {
@@ -5109,7 +5305,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
