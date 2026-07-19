@@ -2085,7 +2085,29 @@
     var nv = mtIsToday(t) ? null : mtTodayIso();
     jpost('/api/admin/tasks/' + id, { doDate: nv }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { toast(nv ? '📌 Planifiée aujourd\'hui' : 'Retirée d\'aujourd\'hui'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
-  function mtSetMode(id, mode) { jpost('/api/admin/tasks/' + id, { mode: mode }, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) mtApplyLocal(task); }).catch(function () { toast('Erreur'); }); }
+  function mtSetMode(id, mode) {
+    var body = { mode: mode };
+    if (mode === 'idee') body.doDate = null; // une idée n'a ni date ni pression
+    jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { var m = mtMode(mode); toast(m ? 'Rangée dans ' + m[2] + ' ' + m[1] : 'Mode retiré'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
+  }
+  // Menu « Ranger la tâche » : changer le mode (dont Idée) en un clic depuis la ligne.
+  function mtMovePick(id) {
+    var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    function btn(key, emoji, label) {
+      var on = (t.mode || '') === key;
+      return '<button data-mode="' + key + '" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:' + (on ? 'var(--surface-2)' : 'var(--card)') + ';border:1px solid var(--bone-d);border-radius:10px;padding:11px 13px;cursor:pointer;margin-bottom:7px;font-size:14px;color:var(--terre)"><span style="font-size:18px">' + emoji + '</span><span style="flex:1">' + label + '</span>' + (on ? '<span class="micro" style="color:var(--muted)">actuel</span>' : '') + '</button>';
+    }
+    var opts = MT_MODES.map(function (m) { return btn(m[0], m[2], m[1]); }).join('');
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:400px;text-align:left"><div class="admconfirm__title">Ranger « ' + esc((t.title || '').slice(0, 46)) + ' »</div>' +
+      '<div style="margin-top:14px">' + opts + btn('', '🗂', 'À classer (retirer le mode)') + '</div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-mode]'), function (b) { b.onclick = function () { close(); mtSetMode(id, b.getAttribute('data-mode')); }; });
+    document.body.appendChild(ov);
+  }
   function mtScrollTo(id) { var e = el(id); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   // Ligne compacte utilisée dans la vue Focus. showMode : afficher la pastille
   // de mode (utile dans « Aujourd'hui » qui mélange les modes).
@@ -2109,6 +2131,7 @@
     var toggleBtn = today
       ? '<button class="pbtn" title="Retirer d\'aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">Retirer</button>'
       : '<button class="pbtn" title="Planifier pour aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">📌 Aujourd\'hui</button>';
+    var moveBtn = '<button class="pbtn" title="Ranger (mode / idée)" onclick="ADM.mtMovePick(\'' + t.id + '\')">Ranger</button>';
     return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid var(--bone-d)">' +
       '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
       (t.energy ? mtEnergyDot(t.energy) : '') +
@@ -2119,7 +2142,7 @@
       '</span>' +
       (t.clientName ? '<span class="micro" title="' + esc(t.clientName) + '" style="flex-shrink:0;text-transform:none;letter-spacing:0;color:var(--glycine-900);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.clientName) + '</span>' : '') +
       (noteMark ? '<span style="color:var(--muted);font-size:11px;flex-shrink:0">' + noteMark + '</span>' : '') +
-      '<div class="row" style="gap:4px;flex-shrink:0">' + timerBtn + toggleBtn + '</div>' +
+      '<div class="row" style="gap:4px;flex-shrink:0">' + moveBtn + timerBtn + toggleBtn + '</div>' +
     '</div>';
   }
   function mtSectionHead(emoji, label, color, count, hint) {
@@ -5305,7 +5328,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
