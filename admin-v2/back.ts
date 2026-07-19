@@ -1598,6 +1598,9 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
     clientKey: b.clientKey ? String(b.clientKey).slice(0, 80) : '',
     clientName: b.clientName ? String(b.clientName).slice(0, 80) : '',
     recurrence: ['daily', 'weekly', 'monthly'].indexOf(b.recurrence) !== -1 ? b.recurrence : '',
+    mode: cleanEnum(b.mode, MYTASK_MODES),
+    energy: cleanEnum(b.energy, MYTASK_ENERGY),
+    impact: cleanEnum(b.impact, MYTASK_IMPACT),
     createdAt: nowIso(),
     completedAt: null,
   };
@@ -1606,6 +1609,11 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
   return json(t, 201);
 }
 const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'doDate', 'status', 'archived', 'clientKey', 'clientName'];
+// Refonte « Studio OS » : axe d'organisation par mode de travail + propriétés légères.
+const MYTASK_MODES = ['client', 'studio', 'marketing', 'organisation', 'admin', 'idee'];
+const MYTASK_ENERGY = ['quick', 'short', 'medium', 'deep'];
+const MYTASK_IMPACT = ['faible', 'moyen', 'fort'];
+const cleanEnum = (v: unknown, allowed: string[]): string => (allowed.indexOf(String(v)) !== -1 ? String(v) : '');
 function nextRecurDate(dateStr: string | null, rec: string): string {
   const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
   if (rec === 'daily') base.setUTCDate(base.getUTCDate() + 1);
@@ -1639,6 +1647,9 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
     t.tags = Array.isArray(b.tags) ? b.tags.slice(0, 8).map((x: unknown) => String(x == null ? '' : x).trim().slice(0, 24)).filter((x: string) => !!x) : [];
   }
   if ('recurrence' in b) t.recurrence = ['daily', 'weekly', 'monthly'].indexOf(b.recurrence) !== -1 ? b.recurrence : '';
+  if ('mode' in b) t.mode = cleanEnum(b.mode, MYTASK_MODES);
+  if ('energy' in b) t.energy = cleanEnum(b.energy, MYTASK_ENERGY);
+  if ('impact' in b) t.impact = cleanEnum(b.impact, MYTASK_IMPACT);
   let spawnNext = false;
   if (b.status === 'done' && !t.completedAt) { t.completedAt = nowIso(); if (t.recurrence) spawnNext = true; }
   if (b.status && b.status !== 'done') t.completedAt = null;
@@ -1656,6 +1667,9 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
       clientKey: t.clientKey || '',
       clientName: t.clientName || '',
       recurrence: t.recurrence,
+      mode: t.mode || '',
+      energy: t.energy || '',
+      impact: t.impact || '',
       createdAt: nowIso(),
       completedAt: null,
     });
