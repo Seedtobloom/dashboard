@@ -520,6 +520,7 @@
     var input = document.createElement('input'); input.type = 'file';
     input.onchange = function(){
       var file = input.files[0]; if (!file) return;
+      if (cliTooBig(file)) { toast(cliBigMsg(file), true); return; }
       var fd = new FormData(); fd.append('file', file);
       var sc = sessionStorage.getItem('_sc') || ''; var headers = {}; if (sc) headers['x-space-code'] = sc;
       toast('Envoi en cours…');
