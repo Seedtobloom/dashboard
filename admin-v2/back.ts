@@ -730,6 +730,49 @@ async function handleClientApi(
     if (sd2 && sd2[supm[1]]) { delete sd2[supm[1]]; await saveClient(env, key, data); }
     return json({ ok: true });
   }
+  // Créations d'un support (« Mes créations ») : CRUD léger.
+  const scm = sub.match(/^\/support\/(\d{3})\/creations(?:\/([a-zA-Z0-9_-]+))?$/);
+  if (scm) {
+    const o = getSupportObj(esp, scm[1]);
+    if (!o) return json({ error: 'Support introuvable' }, 404);
+    if (!Array.isArray(o.creations)) o.creations = [];
+    const cid = scm[2];
+    if (method === 'POST') {
+      const body = await readJson(request);
+      const cr: AnyObj = {
+        id: genId(),
+        name: (body.name == null ? '' : String(body.name)).slice(0, 120).trim() || 'Nouvelle création',
+        type: cleanEnum(body.type, CREATION_TYPES) || 'autre',
+        status: cleanEnum(body.status, CREATION_STATUSES) || 'a_preparer',
+        dueDate: body.dueDate ? String(body.dueDate).slice(0, 10) : null,
+        revisionsMax: typeof body.revisionsMax === 'number' ? Math.max(0, Math.min(20, Math.round(body.revisionsMax))) : 3,
+        createdAt: nowIso(),
+      };
+      o.creations.push(cr);
+      await saveClient(env, key, data);
+      return json(cr, 201);
+    }
+    if (method === 'PATCH' && cid) {
+      const body = await readJson(request);
+      const cr = o.creations.find((c: AnyObj) => c.id === cid);
+      if (!cr) return json({ error: 'Création introuvable' }, 404);
+      if ('name' in body) cr.name = String(body.name || '').slice(0, 120).trim() || cr.name;
+      if ('type' in body) cr.type = cleanEnum(body.type, CREATION_TYPES) || cr.type;
+      if ('status' in body) cr.status = cleanEnum(body.status, CREATION_STATUSES) || cr.status;
+      if ('dueDate' in body) cr.dueDate = body.dueDate ? String(body.dueDate).slice(0, 10) : null;
+      if ('revisionsMax' in body) cr.revisionsMax = Math.max(0, Math.min(20, Math.round(Number(body.revisionsMax) || 0)));
+      await saveClient(env, key, data);
+      return json(cr);
+    }
+    if (method === 'DELETE' && cid) {
+      o.creations = o.creations.filter((c: AnyObj) => c.id !== cid);
+      // Les livrables rattachés redeviennent « non classés ».
+      if (Array.isArray(o.livrables)) o.livrables.forEach((l: AnyObj) => { if (l.creationId === cid) l.creationId = null; });
+      await saveClient(env, key, data);
+      return json({ ok: true });
+    }
+    return json({ error: 'Not found' }, 404);
+  }
 
   // Documents R2
   if (method === 'GET' && sub === '/files') return handleFilesList(env, key, url, data);
@@ -1178,7 +1221,8 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
       if (!Array.isArray(container.livrables)) container.livrables = [];
       // Chaque dépôt crée une nouvelle version : on garde l'historique complet des livrables d'une tâche.
       const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1) : 0;
-      deliverable = { id: genId(), name: fileName, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version };
+      const creationId = (form.get('creationId') as string) || null;
+      deliverable = { id: genId(), name: fileName, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version, creationId: creationId };
       container.livrables.push(deliverable);
       // Rattachement à une tâche : on mémorise son titre et on passe la tâche en « à valider ».
       if (taskId && Array.isArray(container.taches)) {
@@ -1205,7 +1249,8 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   const taskId = (body.taskId || '').toString() || null;
   if (!Array.isArray(container.livrables)) container.livrables = [];
   const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1) : 0;
-  const deliverable: AnyObj = { id: genId(), name, fileKey: '', status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId, taskTitle: '', reviewLink: url, version };
+  const creationId = (body.creationId || '').toString() || null;
+  const deliverable: AnyObj = { id: genId(), name, fileKey: '', status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId, taskTitle: '', reviewLink: url, version, creationId };
   if (taskId && Array.isArray(container.taches)) {
     const tk = container.taches.find((t: AnyObj) => t.id === taskId);
     if (tk) { deliverable.taskTitle = tk.title || ''; tk.status = 'review'; }
@@ -1617,6 +1662,9 @@ const MYTASK_MODES = ['client', 'studio', 'marketing', 'organisation', 'admin', 
 const MYTASK_ENERGY = ['quick', 'short', 'medium', 'deep'];
 const MYTASK_IMPACT = ['faible', 'moyen', 'fort'];
 const cleanEnum = (v: unknown, allowed: string[]): string => (allowed.indexOf(String(v)) !== -1 ? String(v) : '');
+// « Mes créations » : chaque support (= projet de com) contient des créations.
+const CREATION_TYPES = ['print', 'digital', 'reseaux', 'evenementiel', 'autre'];
+const CREATION_STATUSES = ['a_preparer', 'en_creation', 'attente_client', 'revision', 'valide', 'archive'];
 function nextRecurDate(dateStr: string | null, rec: string): string {
   const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
   if (rec === 'daily') base.setUTCDate(base.getUTCDate() + 1);
