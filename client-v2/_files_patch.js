@@ -93,6 +93,7 @@
   window.stbFilesUpload = function(pid, files){
     if (!files || !files.length) return;
     var pd = getPD(pid); if (!pd) return;
+    var tooBig = cliAnyTooBig(Array.prototype.slice.call(files)); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
     var folderSel = document.getElementById('cp-files-dropfolder'); var folder = folderSel ? folderSel.value : '';
     var drop = document.getElementById('cp-files-drop'); if (drop) drop.innerHTML = '<div style="color:#9a8a72">Envoi en cours…</div>';
     var arr = Array.prototype.slice.call(files); var done = 0;

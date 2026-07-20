@@ -47,6 +47,16 @@
   function api(path, opts) { return fetch(path, Object.assign({ credentials: 'same-origin' }, opts || {})); }
   function jpost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   function toast(m) { var t = el('toast'); if (!t) return; t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2600); }
+  // ── Uploads : garde-fou de taille + lecture d'erreur robuste ──
+  // La limite Cloudflare coupe la connexion des gros fichiers avant de
+  // répondre en JSON : sans ces garde-fous, l'utilisatrice ne voit qu'un
+  // « Erreur, réessaie » sans comprendre que le fichier est trop lourd.
+  var ADM_MAX_MB = 100;
+  function admTooBig(f) { return (f && typeof f.size === 'number' && f.size > ADM_MAX_MB * 1024 * 1024) ? Math.round(f.size / 1048576) : 0; }
+  function admBigMsg(f) { var mo = admTooBig(f); return mo ? ('Ce fichier fait ' + mo + ' Mo — la limite est ' + ADM_MAX_MB + ' Mo. Pour un fichier volumineux (zip, vidéo…), envoie-le plutôt en lien (WeTransfer, Drive, Figma…).') : ''; }
+  // Ne jette jamais sur une réponse non-JSON (413/500 HTML) : renvoie {ok,status,d}.
+  function admUploadResult(r) { return r.text().then(function (t) { var d = {}; try { d = t ? JSON.parse(t) : {}; } catch (e) { d = {}; } return { ok: r.ok, status: r.status, d: d }; }); }
+  function admUploadErrMsg(status, base) { return status === 413 ? 'Fichier trop lourd (' + ADM_MAX_MB + ' Mo max). Pour un fichier volumineux (zip, vidéo…), dépose-le en lien (WeTransfer, Drive, Figma…).' : (base || 'Erreur — envoi impossible, réessaie'); }
   // Confirmation oui / non stylée pour les boutons importants (envois d'e-mail, suppressions…)
   function admConfirm(opts, onYes) {
     opts = opts || {};
@@ -2893,14 +2903,15 @@
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
+      if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
       var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
       var cname = cd ? cd.client : 'le client';
       notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
-      api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; renderPriorities(); } else toast((res.d && res.d.error) || 'Erreur'); })
-        .catch(function () { cleanup(); toast('Erreur — livrable non envoyé, réessaie'); });
+      api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
+        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; renderPriorities(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+        .catch(function () { cleanup(); toast('Erreur — livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
       });
     };
     inp.click();
@@ -4101,14 +4112,15 @@
   }
   function uploadTaskDlv(id) {
     var inp = el('tdf-' + id); var f = inp && inp.files[0]; if (!f) { toast('Choisis un fichier'); return; }
+    if (admTooBig(f)) { toast(admBigMsg(f)); return; }
     var cname = (CUR && CUR.client && (CUR.client.prenom || CUR.client.nom)) || 'le client';
     var mins = dlvTimeFor(id);
     notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
-      api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); loadClient(); } else toast(res.d.error || 'Erreur'); })
-        .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
+      api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
+        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); loadClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+        .catch(function () { toast('Erreur — livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
     });
   }
   function commentsBlock(pid, t) {
@@ -4450,11 +4462,12 @@
   }
   function upload() {
     var f = el('up-file').files[0]; if (!f) { toast('Choisis un fichier'); return; }
+    if (admTooBig(f)) { toast(admBigMsg(f)); return; }
     var fd = new FormData(); fd.append('file', f); fd.append('projectId', el('up-proj').value); if (el('up-liv').checked) fd.append('deliverable', '1');
     var btn = el('up-btn'); btn.disabled = true; btn.textContent = 'Envoi…';
-    api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) { btn.disabled = false; btn.textContent = 'Uploader'; if (res.ok) { toast('Document déposé'); el('up-file').value = ''; listDocs(); } else toast(res.d.error || 'Erreur'); })
-      .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur'); });
+    api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
+      .then(function (res) { btn.disabled = false; btn.textContent = 'Uploader'; if (res.ok) { toast('Document déposé'); el('up-file').value = ''; listDocs(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+      .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur — envoi impossible (fichier volumineux ? envoie-le en lien).'); });
   }
   function delDoc(k) {
     admConfirm({ title: 'Supprimer ce document ?', message: 'Le fichier sera supprimé pour vous et pour le client.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {

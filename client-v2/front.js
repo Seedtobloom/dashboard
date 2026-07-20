@@ -719,6 +719,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     t.style.transform = 'translateX(-50%) translateY(0)';
     setTimeout(function() { t.style.transform = 'translateX(-50%) translateY(80px)'; }, 3000);
   }
+  // Garde-fou de taille d'upload : la limite serveur (30 Mo) coupe la
+  // connexion des gros fichiers avant de repondre en JSON, d'ou un message
+  // d'erreur obscur. On bloque en amont, avec un message clair.
+  var CLI_MAX_MB = 30;
+  function cliTooBig(file) { return (file && typeof file.size === 'number' && file.size > CLI_MAX_MB * 1024 * 1024) ? Math.round(file.size / 1048576) : 0; }
+  function cliBigMsg(file) { var mo = cliTooBig(file); return mo ? ('Ce fichier fait ' + mo + ' Mo (maximum ' + CLI_MAX_MB + ' Mo). Pour un fichier lourd, partagez plutot un lien (WeTransfer, Drive...).') : ''; }
+  // Vrai si au moins un fichier de la liste depasse la limite (batch refuse).
+  function cliAnyTooBig(list) { for (var i = 0; i < list.length; i++) { if (cliTooBig(list[i])) return list[i]; } return null; }
   // Remontée d'incident : envoie l'erreur au serveur (visible côté admin dans
   // « Incidents ») pour que Cindy puisse réagir. Throttlé + plafonné par session.
   var _cliErrSent = {}, _cliErrCount = 0;
@@ -4249,6 +4257,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.cliUploadBriefFiles = function(pid, taskId, propId, fileList){
     var files = []; for (var i = 0; i < fileList.length; i++) files.push(fileList[i]);
     if (!files.length) return;
+    var tooBig = cliAnyTooBig(files); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
     var storedCode = sessionStorage.getItem('_sc') || '';
     var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
     toast(files.length > 1 ? ('Envoi de ' + files.length + ' fichiers…') : 'Envoi en cours…');
@@ -4294,6 +4303,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var input = document.createElement('input'); input.type = 'file';
     input.onchange = function(){
       var file = input.files[0]; if (!file) return;
+      if (cliTooBig(file)) { toast(cliBigMsg(file), true); return; }
       var fd = new FormData(); fd.append('file', file);
       var storedCode = sessionStorage.getItem('_sc') || '';
       var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
@@ -4765,6 +4775,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     function uploadFiles(files) {
       files = Array.prototype.slice.call(files || []).filter(Boolean);
       if (!files.length) return;
+      var tooBig = cliAnyTooBig(files); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
       var box = ov.querySelector('#_maint-t-files');
       box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#8a6f54">Envoi en cours…</div>');
       Promise.all(files.map(function(f){ return cliUploadFile(f, pid); })).then(function(res){
@@ -5151,6 +5162,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var properties = {};
     schema.forEach(function(def){ var el=document.getElementById('_ptask-prop-'+def.id); if(el&&el.value!=='') properties[def.id]=el.value; });
     var files = cpNewTaskFiles.slice();
+    var tooBig = cliAnyTooBig(files); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };
@@ -5247,6 +5259,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.cliUploadClientFile = function(pid, input) {
     if (!input || !input.files || !input.files[0]) return;
     var file = input.files[0];
+    if (cliTooBig(file)) { toast(cliBigMsg(file), true); input.value = ''; return; }
     var label = input.closest ? input.closest('label') : null;
     if (label) label.textContent = 'Envoi en cours…';
     var fd = new FormData();
@@ -8327,6 +8340,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var input = document.createElement('input'); input.type = 'file';
     input.onchange = function(){
       var file = input.files[0]; if (!file) return;
+      if (cliTooBig(file)) { toast(cliBigMsg(file), true); return; }
       var fd = new FormData(); fd.append('file', file);
       var sc = sessionStorage.getItem('_sc') || ''; var headers = {}; if (sc) headers['x-space-code'] = sc;
       toast('Envoi en cours…');
@@ -8954,6 +8968,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.stbFilesUpload = function(pid, files){
     if (!files || !files.length) return;
     var pd = getPD(pid); if (!pd) return;
+    var tooBig = cliAnyTooBig(Array.prototype.slice.call(files)); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
     var folderSel = document.getElementById('cp-files-dropfolder'); var folder = folderSel ? folderSel.value : '';
     var drop = document.getElementById('cp-files-drop'); if (drop) drop.innerHTML = '<div style="color:#9a8a72">Envoi en cours…</div>';
     var arr = Array.prototype.slice.call(files); var done = 0;
