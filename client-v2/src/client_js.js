@@ -2020,6 +2020,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return header + '<div class="cp-content">' + banner + onboarding + buildClientMaintenance(pd) + helpCard + '</div>';
     }
 
+    // Espace « Mes créations » (support de com) — construit par PROJET et non
+    // par étapes : un support n'a pas de déroulé fixe (flyer, carte, brochure…).
+    // On montre la création, ses versions (à télécharger / valider / réviser)
+    // et les fichiers associés. Refonte inspirée de la vision de Clara.
+    if (project.type === 'support') {
+      var crDl = (project.deliverables || []);
+      var crWaiting = crDl.filter(function(d){ return d.status === 'a_valider'; }).length;
+      var crIntro = '<div style="max-width:640px;margin:2px 0 22px">' +
+        '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin:0">Votre création' + (project.deadline ? ' · à livrer le ' + fmtDate(project.deadline) : '') + '. Retrouvez ci-dessous ses <strong>versions</strong> — à télécharger, valider ou renvoyer en révision — et les fichiers associés.</p>' +
+        (crWaiting ? '<div style="margin-top:14px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#fbf3d9;border:1px solid #f0e2b0;border-radius:12px;font-size:14px;color:#7a5a14">' + cpIcon('arrow',16,'color:#7a5a14;flex-shrink:0') + '<span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
+      '</div>';
+      return header + '<div class="cp-content">' + banner + onboarding + crIntro + stbDeliverables(project.id) + sideCol + '</div>';
+    }
+
     // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.
     var questionnaireCard = '';
 
