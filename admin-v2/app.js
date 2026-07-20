@@ -3570,6 +3570,8 @@
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
   function addSupport() { var name = (el('new-support-name').value || '').trim(); jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) { if (r.ok) { toast('Support ajouté'); loadClient(); } else toast('Erreur'); }); }
+  // Ajout rapide d'un support de com depuis la carte « Offres / espaces ».
+  function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Support de com ajouté ✓ — coche « visible » quand la cliente a signé'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function delSupport(pid) {
     admConfirm({ title: 'Supprimer ce support ?', message: 'Le support et tout son contenu (messages, étapes, livrables) seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
       api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Support supprimé'); loadClient(); } else toast('Erreur'); });
@@ -3599,9 +3601,13 @@
     var addable = [['partner', 'Partenaire créative'], ['website', 'Site web'], ['branding', 'Identité visuelle'], ['maintenance', 'Maintenance site']]
       .filter(function (a) { return !present[a[0]]; });
     var addBtns = addable.map(function (a) { return '<button class="btn btn--outline btn--sm" onclick="ADM.addOffer(\'' + a[0] + '\')">+ ' + a[1] + '</button>'; }).join('');
+    // « Support de com » : offre à part (on peut en avoir plusieurs), ajoutée
+    // ici pour qu'elle soit cochable comme les autres, puis renommable.
+    addBtns += '<button class="btn btn--outline btn--sm" onclick="ADM.addSupportQuick()">+ Support de com</button>';
     var addSection = '<div class="mt" style="border-top:1px solid var(--bone-d);padding-top:12px">' +
       '<div class="micro mb">Ajouter une offre</div>' +
-      (addBtns ? '<div class="row" style="gap:8px;flex-wrap:wrap">' + addBtns + '</div>' : '<span class="micro" style="color:var(--muted)">Toutes les offres principales sont déjà créées. Les supports s\'ajoutent dans « Supports de com ».</span>') +
+      '<div class="row" style="gap:8px;flex-wrap:wrap">' + addBtns + '</div>' +
+      '<div class="micro" style="color:var(--muted);margin-top:7px">Un « support de com » est un projet de support (réseaux sociaux, flyer, brochure…). Tu peux en ajouter plusieurs ; renomme-les ensuite dans la carte « Supports de com ».</div>' +
       '</div>';
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#9c6f18"></span>Offres / espaces</h3>' +
       '<div class="micro mb">Activez une offre quand le client a signé : elle devient visible dans son espace. « En préparation » indique au client que l\'offre est active mais en cours de mise en place. La couleur de bannière personnalise la card côté client.</div>' + rows + addSection + '</div>';
@@ -5333,7 +5339,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, delSupport: delSupport, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
