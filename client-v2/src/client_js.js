@@ -293,7 +293,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // d'erreur obscur. On bloque en amont, avec un message clair.
   var CLI_MAX_MB = 30;
   function cliTooBig(file) { return (file && typeof file.size === 'number' && file.size > CLI_MAX_MB * 1024 * 1024) ? Math.round(file.size / 1048576) : 0; }
-  function cliBigMsg(file) { var mo = cliTooBig(file); return mo ? ('Ce fichier fait ' + mo + ' Mo (maximum ' + CLI_MAX_MB + ' Mo). Pour un fichier lourd, partagez plutot un lien (WeTransfer, Drive...).') : ''; }
+  function cliBigMsg(file) { if (!cliTooBig(file)) return ''; var mo = (file.size / 1048576).toFixed(1); return 'Ce fichier fait ' + mo + ' Mo, au-dela du plafond de ' + CLI_MAX_MB + ' Mo. Pour un fichier lourd, partagez plutot un lien (WeTransfer, Drive...).'; }
   // Vrai si au moins un fichier de la liste depasse la limite (batch refuse).
   function cliAnyTooBig(list) { for (var i = 0; i < list.length; i++) { if (cliTooBig(list[i])) return list[i]; } return null; }
   // Remontée d'incident : envoie l'erreur au serveur (visible côté admin dans
