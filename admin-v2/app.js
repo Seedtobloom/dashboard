@@ -3636,7 +3636,7 @@
       var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
       var col = CR_ST_COL[c.status] || '#8a7d6b';
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:5px 0">Aucune version. Dépose la V1 ci-dessous.</div>';
-      return '<div style="border:1px solid var(--bone-d);border-radius:14px;background:#fff;padding:15px;display:flex;flex-direction:column;gap:11px;box-shadow:0 2px 10px -7px rgba(28,18,5,0.25)">' +
+      return '<div style="border:1px solid var(--bone-d);border-top:3px solid ' + col + ';border-radius:14px;background:#fff;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 6px 22px -12px rgba(28,18,5,0.32)">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
           '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;font-weight:600;border:none;background:transparent;padding:2px 0;font-size:15px" title="Nom de la création">' +
           '<span style="flex-shrink:0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:' + col + '22;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
@@ -3653,12 +3653,12 @@
         '</div>' +
       '</div>';
     }
-    var addCard = '<div style="border:1.5px dashed var(--bone-d);border-radius:14px;background:#faf7f0;padding:16px;display:flex;flex-direction:column;gap:9px;justify-content:center;min-height:120px">' +
+    var addCard = '<div style="border:1.5px dashed var(--bone-d);border-radius:14px;background:#faf7f0;padding:20px;display:flex;flex-direction:column;gap:11px;justify-content:center;min-height:150px">' +
       '<div class="micro" style="color:var(--muted)">Nouvelle création</div>' +
       '<input class="inp" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}">' +
       '<button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">+ Créer</button>' +
     '</div>';
-    var grid = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px">' + creations.map(card).join('') + addCard + '</div>';
+    var grid = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px">' + creations.map(card).join('') + addCard + '</div>';
     var unclassed = livr.filter(function (l) { return !l.creationId; });
     var unclassedHtml = unclassed.length ? '<div class="card" style="background:#faf7f0;margin-top:16px"><div class="micro mb">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Créations</h3>' +
