@@ -2477,15 +2477,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
           var revDots = ''; for (var ri=0; ri<revMax; ri++) revDots += (ri < revUsed ? '●' : '○');
-          return '<div class="cp-card" style="margin:0;padding:22px;border-top:3px solid ' + (st[1] || '#8a7d6b') + ';box-shadow:0 6px 24px -14px rgba(28,18,5,0.3)">' +
-            '<div class="cp-card__hd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-              '<span class="cp-card__title">' + esc(c.name) + '</span>' +
-              (CR_TY[c.type] ? '<span style="font-size:11px;color:var(--terre-400)">' + esc(CR_TY[c.type]) + '</span>' : '') +
-              (st[0] ? '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:' + st[1] + '22;color:' + st[1] + '">' + esc(st[0]) + '</span>' : '') +
+          var crCol = st[1] || '#9a8a72';
+          return '<div class="cp-card" style="margin:0;padding:28px;border:1px solid var(--bone-d,#e8e0d4);box-shadow:0 8px 30px -18px rgba(92,70,51,0.3)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px">' +
+              (CR_TY[c.type] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--terre-400,#9a8a72)">' + esc(CR_TY[c.type]) + '</span>' : '<span></span>') +
+              (st[0] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + crCol + '18;color:' + crCol + '">' + esc(st[0]) + '</span>' : '') +
             '</div>' +
-            (c.dueDate ? '<div class="cp-msg__date">Echeance : ' + fmtDate(c.dueDate) + '</div>' : '') +
-            (revMax ? '<div style="font-size:12.5px;color:var(--terre-600);margin:6px 0 2px"><span style="letter-spacing:3px;color:' + (revUsed >= revMax ? '#c0533b' : 'var(--terre)') + '">' + revDots + '</span> · ' + revUsed + ' / ' + revMax + ' serie' + (revMax > 1 ? 's' : '') + ' de retours' + (revUsed >= revMax ? ' (limite atteinte)' : '') + '</div>' : '') +
-            stbVersionsList(project.id, vs) +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;line-height:1.12;color:var(--terre);margin-bottom:' + ((c.dueDate || revMax) ? '16px' : '20px') + '">' + esc(c.name) + '</div>' +
+            (c.dueDate ? '<div style="font-size:13px;color:var(--muted);margin-bottom:' + (revMax ? '12px' : '20px') + '">À livrer le ' + fmtDate(c.dueDate) + '</div>' : '') +
+            (revMax ? '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:20px"><span style="letter-spacing:5px;font-size:11px;color:' + (revUsed >= revMax ? '#c0533b' : 'var(--terre-400,#9a8a72)') + '">' + revDots + '</span><span>' + revUsed + ' / ' + revMax + ' révision' + (revMax > 1 ? 's' : '') + (revUsed >= revMax ? ' · limite atteinte' : '') + '</span></div>' : '') +
+            '<div style="border-top:1px solid var(--bone-d,#e8e0d4);padding-top:20px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
           '</div>';
         }).join('') + '</div>';
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
