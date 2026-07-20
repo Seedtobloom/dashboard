@@ -264,6 +264,9 @@ js = js.split('"—"').join('""');
 js = js.split('—').join('');
 css = css.split('—').join('');
 
+// NB : le SPA client est INLINE dans le HTML (<script>${CLIENT_JS}</script>) et
+// le HTML n'est pas mis en cache → aucune URL d'asset à versionner ici (au
+// contraire de l'admin, dont le JS est un fichier /admin.js servi à part).
 const handler = [
   'export default {',
   '  async fetch(request, env) {',

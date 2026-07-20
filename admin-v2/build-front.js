@@ -9,9 +9,15 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const dir = __dirname;
+const crypto = require('crypto');
 const css = fs.readFileSync(path.join(dir, 'app.css'), 'utf8');
 const js = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
 const favicon = fs.readFileSync(path.join(dir, 'favicon.svg'), 'utf8');
+// Empreinte du contenu → URL versionnée : chaque déploiement change l'URL de
+// l'asset, donc le navigateur/CDN charge la nouvelle version immédiatement
+// (fini le cache de 5 min qui masquait les déploiements).
+const jsV = crypto.createHash('sha1').update(js).digest('hex').slice(0, 10);
+const cssV = crypto.createHash('sha1').update(css).digest('hex').slice(0, 10);
 
 const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin · Seed to Bloom</title>' +
@@ -19,9 +25,9 @@ const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<link rel="apple-touch-icon" href="/favicon.svg">' +
   '<link rel="preconnect" href="https://fonts.googleapis.com">' +
   '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">' +
-  '<link rel="stylesheet" href="/admin.css"></head><body>' +
+  '<link rel="stylesheet" href="/admin.css?v=' + cssV + '"></head><body>' +
   '<div id="app"><div class="center"><div class="spin"></div></div></div>' +
-  '<div class="toast" id="toast"></div><script src="/admin.js"></script></body></html>';
+  '<div class="toast" id="toast"></div><script src="/admin.js?v=' + jsV + '"></script></body></html>';
 
 const handler = [
   'export default {',
@@ -33,8 +39,8 @@ const handler = [
   '      try { return await env.SERVICE_BACK.fetch(new Request(request, { headers })); }',
   "      catch (e) { return new Response('{\"error\":\"Service indisponible\"}', { status: 502, headers: { 'Content-Type': 'application/json' } }); }",
   '    }',
-  "    if (url.pathname === '/admin.css') return new Response(ADMIN_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
-  "    if (url.pathname === '/admin.js') return new Response(ADMIN_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
+  "    if (url.pathname === '/admin.css') return new Response(ADMIN_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
+  "    if (url.pathname === '/admin.js') return new Response(ADMIN_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/favicon.svg') return new Response(FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
   "    return new Response(HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });",
   '  }',
