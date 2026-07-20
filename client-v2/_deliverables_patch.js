@@ -5,31 +5,36 @@
  * Ni backtick ni la sequence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbLivLabel(s){ return ({ a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' })[s] || s || ''; }
+  // Rendu d'UNE version/livrable (télécharger ou ouvrir le lien, puis valider /
+  // demander une révision). Réutilisé pour la liste projet ET par création.
+  function stbDlvRow(pid, l){
+    var dl = l.fileKey ? ('/api/client/' + TOKEN + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
+    var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
+    var validated = l.status === 'valide' || l.status === 'refuse';
+    var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
+    var openBtn = dl
+      ? '<a class="cp-btn cp-btn--outline" href="'+dl+'">Telecharger</a>'
+      : (lnk ? '<a class="cp-btn cp-btn--outline" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">Ouvrir le livrable</a>' : '');
+    var decideRow = validated ? '' : (needConsult
+      ? '<div class="cp-msg__date">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une revision.</div>'
+      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cp-btn" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">Valider</button>'+
+        '<button class="cp-btn cp-btn--outline" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une revision</button></div>');
+    return '<div class="cp-file" style="flex-direction:column;align-items:stretch;gap:8px">'+
+      '<div style="display:flex;align-items:center;gap:10px"><span class="cp-file__name">'+esc(l.name)+'</span>'+
+      '<span class="cp-step__badge">'+esc(stbLivLabel(l.status))+'</span></div>'+
+      openBtn +
+      (l.clientComment ? '<div class="cp-msg__date">« '+esc(l.clientComment)+' »</div>' : '')+
+      decideRow +
+    '</div>';
+  }
+  // Rendu d'une liste de versions (livrables déjà filtrés).
+  function stbVersionsList(pid, ls){
+    return (ls && ls.length) ? ls.map(function(l){ return stbDlvRow(pid, l); }).join('') : '<div class="cp-empty">Aucune version pour le moment.</div>';
+  }
   function stbDeliverables(pid){
     var pd = getPD(pid);
     var ls = (pd && pd.project && pd.project.deliverables) || [];
-    var rows = ls.length ? ls.map(function(l){
-      var dl = l.fileKey ? ('/api/client/' + TOKEN + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
-      // Livrable-lien : construire l'URL et exiger la consultation avant décision.
-      var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
-      var validated = l.status === 'valide' || l.status === 'refuse';
-      var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
-      var openBtn = dl
-        ? '<a class="cp-btn cp-btn--outline" href="'+dl+'">Telecharger</a>'
-        : (lnk ? '<a class="cp-btn cp-btn--outline" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">Ouvrir le livrable</a>' : '');
-      var decideRow = validated ? '' : (needConsult
-        ? '<div class="cp-msg__date">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une revision.</div>'
-        : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cp-btn" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">Valider</button>'+
-          '<button class="cp-btn cp-btn--outline" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une revision</button></div>');
-      return '<div class="cp-file" style="flex-direction:column;align-items:stretch;gap:8px">'+
-        '<div style="display:flex;align-items:center;gap:10px"><span class="cp-file__name">'+esc(l.name)+'</span>'+
-        '<span class="cp-step__badge">'+esc(stbLivLabel(l.status))+'</span></div>'+
-        openBtn +
-        (l.clientComment ? '<div class="cp-msg__date">« '+esc(l.clientComment)+' »</div>' : '')+
-        decideRow +
-      '</div>';
-    }).join('') : '<div class="cp-empty">Aucun livrable pour le moment.</div>';
-    return '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Livrables</span></div>'+rows+'</div>';
+    return '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Livrables</span></div>'+stbVersionsList(pid, ls)+'</div>';
   }
   function stbSendDecision(pid, id, decision, comment){
     fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment || '' }) })

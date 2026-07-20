@@ -413,6 +413,7 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
     reviewLink: l.reviewLink || '',
     createdAt: l.createdAt || null,
     version: typeof l.version === 'number' ? l.version : 0,
+    creationId: l.creationId || null,
   }));
 }
 
@@ -609,6 +610,10 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
           status: obj.maintenance ? 'maintenance' : 'in_progress',
           steps,
           deliverables: mapDeliverables(obj.livrables),
+          creations: Array.isArray(obj.creations) ? obj.creations.map((c: AnyObj) => ({
+            id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
+            dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3, createdAt: c.createdAt || null,
+          })) : [],
           ...questionnaireOf(obj),
         bannerColor: obj.bannerColor || null,
           folders: foldersFor(obj, files),

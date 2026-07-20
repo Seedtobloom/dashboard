@@ -3571,23 +3571,121 @@
       });
     });
   }
+  var CR_TYPES = [['print', 'Print'], ['digital', 'Digital'], ['reseaux', 'Réseaux sociaux'], ['evenementiel', 'Événementiel'], ['autre', 'Autre']];
+  var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
+  function crOpts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); }
+  function supportCreationsBlock(s) {
+    var pid = s.pid;
+    var creations = (s.content && Array.isArray(s.content.creations)) ? s.content.creations : [];
+    var livr = (s.content && Array.isArray(s.content.livrables)) ? s.content.livrables : [];
+    var crRows = creations.map(function (c) {
+      var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
+      var vHtml = vs.map(function (l, i) {
+        var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
+        return '<div class="file" style="gap:8px;font-size:12.5px"><span class="nm"><strong style="font-family:var(--font-micro);font-size:10px">V' + (i + 1) + '</strong> ' + esc(l.name) + ' ' + pill(l.status, ({ a_valider: 'à valider', valide: 'validé', refuse: 'à revoir', revision: 'à revoir' })[l.status] || l.status) + '</span>' +
+          (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
+          (lnk ? '<a class="btn btn--outline btn--sm" href="' + esc(lnk) + '" target="_blank" rel="noopener">🔗</a>' : '') +
+          '<button class="btn btn--danger btn--sm" onclick="ADM.crDelVersion(\'' + pid + '\',\'' + l.id + '\')">✕</button></div>';
+      }).join('');
+      return '<div style="border:1px solid var(--bone-d);border-radius:10px;padding:11px;margin-top:8px;background:#faf7f0">' +
+        '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
+          '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;min-width:140px" title="Nom de la création">' +
+          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="width:auto" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
+          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" style="width:auto" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
+          '<button class="btn btn--danger btn--sm" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')">Suppr.</button>' +
+        '</div>' +
+        (vHtml ? '<div style="margin-top:8px">' + vHtml + '</div>' : '') +
+        '<div class="row" style="gap:6px;margin-top:8px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">+ Version (fichier)</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">🔗 Version (lien)</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="margin-top:10px">' +
+      '<div class="micro" style="text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">Créations</div>' +
+      (crRows || '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Aucune création. Ajoutez-en une (flyer, carte de visite, brochure…).</div>') +
+      '<div class="row" style="gap:6px;margin-top:8px"><input class="inp" id="cr-new-' + pid + '" placeholder="Nom de la création (ex. Flyer)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">+ Créer</button></div>' +
+    '</div>';
+  }
   function supportsCard() {
     var rows = (CUR.supports || []).map(function (s) {
       var nm = (s.content && s.content.name) || '';
-      return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du support"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
+      return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:13px;margin-bottom:12px;background:#fff">' +
+        '<div class="row" style="gap:10px;align-items:center"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du projet de com"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>' +
+        supportCreationsBlock(s) +
+      '</div>';
     }).join('');
-    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Supports de com</h3>' +
-      '<div class="micro mb">Cette catégorie regroupe tous tes projets de support. Nomme-les pour t\'y retrouver (réseaux sociaux, flyers, brochure…) et ajoutes-en autant que nécessaire.</div>' +
-      (rows || '<div class="empty">Aucun support pour ce client.</div>') +
-      '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du nouveau support (ex. Réseaux sociaux)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Ajouter un support</button></div></div>';
+    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Mes créations (supports de com)</h3>' +
+      '<div class="micro mb">Chaque projet de com regroupe une ou plusieurs <b>créations</b> (flyer, carte, brochure…). Nomme le projet (ex. « Lancement collection »), puis ajoute ses créations et dépose leurs versions.</div>' +
+      (rows || '<div class="empty">Aucun projet de com pour ce client.</div>') +
+      '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du projet de com (ex. Lancement printemps)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Nouveau projet</button></div></div>';
   }
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
   function addSupport() { var name = (el('new-support-name').value || '').trim(); jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) { if (r.ok) { toast('Support ajouté'); loadClient(); } else toast('Erreur'); }); }
   // Ajout rapide d'un support de com depuis la carte « Offres / espaces ».
   function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Support de com ajouté ✓ — coche « visible » quand la cliente a signé'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function delSupport(pid) {
-    admConfirm({ title: 'Supprimer ce support ?', message: 'Le support et tout son contenu (messages, étapes, livrables) seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
-      api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Support supprimé'); loadClient(); } else toast('Erreur'); });
+    admConfirm({ title: 'Supprimer ce projet de com ?', message: 'Le projet et tout son contenu (créations, versions, messages) seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Projet supprimé'); refreshClient(); } else toast('Erreur'); });
+    });
+  }
+  // ── Créations d'un projet de com (« Mes créations ») ──
+  function crAdd(pid) {
+    var v = (el('cr-new-' + pid) ? el('cr-new-' + pid).value : '').trim();
+    jpost('/api/clients/' + CURKEY + '/support/' + pid + '/creations', { name: v }).then(function (r) { if (r.ok) { toast('Création ajoutée'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  function crSet(pid, cid, field, val) {
+    var body = {}; body[field] = val;
+    jpost('/api/clients/' + CURKEY + '/support/' + pid + '/creations/' + cid, body, 'PATCH').then(function (r) { if (r.ok) { refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  function crDel(pid, cid) {
+    admConfirm({ title: 'Supprimer cette création ?', message: 'Les versions rattachées redeviennent « non classées » (non supprimées).', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () {
+      api('/api/clients/' + CURKEY + '/support/' + pid + '/creations/' + cid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Création supprimée'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+    });
+  }
+  function crAddVersion(pid, cid) {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(inp);
+    var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
+      if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
+      notifyConfirm('Envoyer cette version à la cliente et la prévenir par e-mail ?', function (notify) {
+        var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'support-' + pid); fd.append('deliverable', '1'); fd.append('creationId', cid); fd.append('notify', notify ? 'true' : 'false');
+        toast('Envoi de la version…');
+        api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
+          .then(function (res) { cleanup(); if (res.ok) { toast('Version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+          .catch(function () { cleanup(); toast('Erreur — version non envoyée, réessaie'); });
+      });
+    };
+    inp.click();
+  }
+  function crAddVersionLink(pid, cid) {
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box"><div class="admconfirm__title">Version sous forme de lien</div>' +
+      '<div class="admconfirm__msg">Colle le lien de la version (Figma, Drive, proofing…). La cliente pourra l\'ouvrir puis valider ou demander une révision.</div>' +
+      '<input id="cr-dl-name" class="inp" style="width:100%;margin:6px 0" placeholder="Nom (optionnel)">' +
+      '<input id="cr-dl-url" class="inp" style="width:100%;margin:0 0 6px" placeholder="https://…">' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer à la cliente</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var url = (el('cr-dl-url').value || '').trim(); if (!url) { toast('Colle un lien'); return; }
+      var name = (el('cr-dl-name').value || '').trim();
+      close();
+      notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
+        jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'support-' + pid, creationId: cid, link: url, name: name, notify: notify }).then(admUploadResult)
+          .then(function (res) { if (res.ok) { toast('Version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+          .catch(function () { toast('Erreur — version non envoyée, réessaie'); });
+      });
+    };
+    document.body.appendChild(ov);
+    var i = el('cr-dl-url'); if (i) i.focus();
+  }
+  function crDelVersion(pid, id) {
+    admConfirm({ title: 'Retirer cette version ?', message: 'La version sera retirée de l\'espace de la cliente.', danger: true, yes: 'Oui, retirer', no: 'Non' }, function () {
+      api('/api/clients/' + CURKEY + '/deliverables/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: 'support-' + pid }) }).then(function (r) { if (r.ok) { toast('Version retirée'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
     });
   }
   function offersCard() {
@@ -5352,7 +5450,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,

@@ -2460,13 +2460,40 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // On montre la création, ses versions (à télécharger / valider / réviser)
     // et les fichiers associés. Refonte inspirée de la vision de Clara.
     if (project.type === 'support') {
-      var crDl = (project.deliverables || []);
-      var crWaiting = crDl.filter(function(d){ return d.status === 'a_valider'; }).length;
+      var creations = Array.isArray(project.creations) ? project.creations : [];
+      var allDlv = project.deliverables || [];
+      var crWaiting = allDlv.filter(function(d){ return d.status === 'a_valider'; }).length;
       var crIntro = '<div style="max-width:640px;margin:2px 0 22px">' +
-        '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin:0">Votre création' + (project.deadline ? ' · à livrer le ' + fmtDate(project.deadline) : '') + '. Retrouvez ci-dessous ses <strong>versions</strong>, à télécharger, valider ou renvoyer en révision, et les fichiers associés.</p>' +
+        '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin:0">' + (creations.length ? 'Vos créations' : 'Votre création') + (project.deadline ? ' · à livrer le ' + fmtDate(project.deadline) : '') + '. Retrouvez leurs <strong>versions</strong>, à télécharger, valider ou renvoyer en révision, et les fichiers associés.</p>' +
         (crWaiting ? '<div style="margin-top:14px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#fbf3d9;border:1px solid #f0e2b0;border-radius:12px;font-size:14px;color:#7a5a14">' + cpIcon('arrow',16,'color:#7a5a14;flex-shrink:0') + '<span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
       '</div>';
-      return header + '<div class="cp-content">' + banner + onboarding + crIntro + stbDeliverables(project.id) + sideCol + '</div>';
+      var crBody;
+      if (creations.length) {
+        var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#c9952f'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
+        var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
+        crBody = creations.map(function(c){
+          var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
+          var st = CR_ST[c.status] || ['',''];
+          var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
+          var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
+          var revDots = ''; for (var ri=0; ri<revMax; ri++) revDots += (ri < revUsed ? '●' : '○');
+          return '<div class="cp-card" style="margin-bottom:14px">' +
+            '<div class="cp-card__hd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+              '<span class="cp-card__title">' + esc(c.name) + '</span>' +
+              (CR_TY[c.type] ? '<span style="font-size:11px;color:var(--terre-400)">' + esc(CR_TY[c.type]) + '</span>' : '') +
+              (st[0] ? '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:' + st[1] + '22;color:' + st[1] + '">' + esc(st[0]) + '</span>' : '') +
+            '</div>' +
+            (c.dueDate ? '<div class="cp-msg__date">Echeance : ' + fmtDate(c.dueDate) + '</div>' : '') +
+            (revMax ? '<div style="font-size:12.5px;color:var(--terre-600);margin:6px 0 2px"><span style="letter-spacing:3px;color:' + (revUsed >= revMax ? '#c0533b' : 'var(--terre)') + '">' + revDots + '</span> · ' + revUsed + ' / ' + revMax + ' serie' + (revMax > 1 ? 's' : '') + ' de retours' + (revUsed >= revMax ? ' (limite atteinte)' : '') + '</div>' : '') +
+            stbVersionsList(project.id, vs) +
+          '</div>';
+        }).join('');
+        var unclassed = allDlv.filter(function(d){ return !d.creationId; });
+        if (unclassed.length) crBody += '<div class="cp-card" style="margin-bottom:14px"><div class="cp-card__hd"><span class="cp-card__title">Autres livrables</span></div>' + stbVersionsList(project.id, unclassed) + '</div>';
+      } else {
+        crBody = stbDeliverables(project.id);
+      }
+      return header + '<div class="cp-content">' + banner + onboarding + crIntro + crBody + sideCol + '</div>';
     }
 
     // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.
@@ -7722,31 +7749,36 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
  * Ni backtick ni la sequence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbLivLabel(s){ return ({ a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' })[s] || s || ''; }
+  // Rendu d'UNE version/livrable (télécharger ou ouvrir le lien, puis valider /
+  // demander une révision). Réutilisé pour la liste projet ET par création.
+  function stbDlvRow(pid, l){
+    var dl = l.fileKey ? ('/api/client/' + TOKEN + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
+    var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
+    var validated = l.status === 'valide' || l.status === 'refuse';
+    var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
+    var openBtn = dl
+      ? '<a class="cp-btn cp-btn--outline" href="'+dl+'">Telecharger</a>'
+      : (lnk ? '<a class="cp-btn cp-btn--outline" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">Ouvrir le livrable</a>' : '');
+    var decideRow = validated ? '' : (needConsult
+      ? '<div class="cp-msg__date">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une revision.</div>'
+      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cp-btn" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">Valider</button>'+
+        '<button class="cp-btn cp-btn--outline" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une revision</button></div>');
+    return '<div class="cp-file" style="flex-direction:column;align-items:stretch;gap:8px">'+
+      '<div style="display:flex;align-items:center;gap:10px"><span class="cp-file__name">'+esc(l.name)+'</span>'+
+      '<span class="cp-step__badge">'+esc(stbLivLabel(l.status))+'</span></div>'+
+      openBtn +
+      (l.clientComment ? '<div class="cp-msg__date">« '+esc(l.clientComment)+' »</div>' : '')+
+      decideRow +
+    '</div>';
+  }
+  // Rendu d'une liste de versions (livrables déjà filtrés).
+  function stbVersionsList(pid, ls){
+    return (ls && ls.length) ? ls.map(function(l){ return stbDlvRow(pid, l); }).join('') : '<div class="cp-empty">Aucune version pour le moment.</div>';
+  }
   function stbDeliverables(pid){
     var pd = getPD(pid);
     var ls = (pd && pd.project && pd.project.deliverables) || [];
-    var rows = ls.length ? ls.map(function(l){
-      var dl = l.fileKey ? ('/api/client/' + TOKEN + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
-      // Livrable-lien : construire l'URL et exiger la consultation avant décision.
-      var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
-      var validated = l.status === 'valide' || l.status === 'refuse';
-      var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
-      var openBtn = dl
-        ? '<a class="cp-btn cp-btn--outline" href="'+dl+'">Telecharger</a>'
-        : (lnk ? '<a class="cp-btn cp-btn--outline" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">Ouvrir le livrable</a>' : '');
-      var decideRow = validated ? '' : (needConsult
-        ? '<div class="cp-msg__date">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une revision.</div>'
-        : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cp-btn" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">Valider</button>'+
-          '<button class="cp-btn cp-btn--outline" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une revision</button></div>');
-      return '<div class="cp-file" style="flex-direction:column;align-items:stretch;gap:8px">'+
-        '<div style="display:flex;align-items:center;gap:10px"><span class="cp-file__name">'+esc(l.name)+'</span>'+
-        '<span class="cp-step__badge">'+esc(stbLivLabel(l.status))+'</span></div>'+
-        openBtn +
-        (l.clientComment ? '<div class="cp-msg__date">« '+esc(l.clientComment)+' »</div>' : '')+
-        decideRow +
-      '</div>';
-    }).join('') : '<div class="cp-empty">Aucun livrable pour le moment.</div>';
-    return '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Livrables</span></div>'+rows+'</div>';
+    return '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Livrables</span></div>'+stbVersionsList(pid, ls)+'</div>';
   }
   function stbSendDecision(pid, id, decision, comment){
     fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment || '' }) })
