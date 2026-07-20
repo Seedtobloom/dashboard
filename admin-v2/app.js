@@ -3636,17 +3636,17 @@
       var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
       var col = CR_ST_COL[c.status] || '#8a7d6b';
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:5px 0">Aucune version. Dépose la V1 ci-dessous.</div>';
-      return '<div style="border:1px solid var(--bone-d);border-top:3px solid ' + col + ';border-radius:14px;background:#fff;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 6px 22px -12px rgba(28,18,5,0.32)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-          '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;font-weight:600;border:none;background:transparent;padding:2px 0;font-size:15px" title="Nom de la création">' +
-          '<span style="flex-shrink:0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:' + col + '22;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
+      return '<div style="border:1px solid var(--bone-d);border-radius:16px;background:#fff;padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 8px 28px -16px rgba(28,18,5,0.26)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">' +
+          '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;min-width:0;font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);border:none;background:transparent;padding:0" title="Nom de la création">' +
+          '<span style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + col + '18;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
         '</div>' +
-        '<div class="row" style="gap:7px">' +
+        '<div class="row" style="gap:10px">' +
           '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="flex:1" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
           '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" style="flex:1" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
         '</div>' +
-        '<div style="border-top:1px solid var(--bone-d);padding-top:9px"><div class="micro" style="color:var(--muted);margin-bottom:4px">Versions</div>' + vHtml + '</div>' +
-        '<div class="row" style="gap:6px">' +
+        '<div style="border-top:1px solid var(--bone-d);padding-top:16px;display:flex;flex-direction:column;gap:9px"><div class="micro" style="color:var(--muted);letter-spacing:0.08em">Versions</div>' + vHtml + '</div>' +
+        '<div class="row" style="gap:8px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">+ Version</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">🔗 Lien</button>' +
           '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:var(--red)" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">🗑</button>' +
