@@ -53,7 +53,7 @@
   // « Erreur, réessaie » sans comprendre que le fichier est trop lourd.
   var ADM_MAX_MB = 100;
   function admTooBig(f) { return (f && typeof f.size === 'number' && f.size > ADM_MAX_MB * 1024 * 1024) ? Math.round(f.size / 1048576) : 0; }
-  function admBigMsg(f) { var mo = admTooBig(f); return mo ? ('Ce fichier fait ' + mo + ' Mo — la limite est ' + ADM_MAX_MB + ' Mo. Pour un fichier volumineux (zip, vidéo…), envoie-le plutôt en lien (WeTransfer, Drive, Figma…).') : ''; }
+  function admBigMsg(f) { if (!admTooBig(f)) return ''; var mo = (f.size / 1048576).toFixed(1); return 'Ce fichier fait ' + mo + ' Mo, au-delà du plafond de ' + ADM_MAX_MB + ' Mo (limite technique). Pour un livrable lourd (zip, vidéo…), dépose-le en lien via le bouton « Lien » (WeTransfer, Drive, Figma…) — la cliente pourra le valider pareil.'; }
   // Ne jette jamais sur une réponse non-JSON (413/500 HTML) : renvoie {ok,status,d}.
   function admUploadResult(r) { return r.text().then(function (t) { var d = {}; try { d = t ? JSON.parse(t) : {}; } catch (e) { d = {}; } return { ok: r.ok, status: r.status, d: d }; }); }
   function admUploadErrMsg(status, base) { return status === 413 ? 'Fichier trop lourd (' + ADM_MAX_MB + ' Mo max). Pour un fichier volumineux (zip, vidéo…), dépose-le en lien (WeTransfer, Drive, Figma…).' : (base || 'Erreur — envoi impossible, réessaie'); }
@@ -912,6 +912,12 @@
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
+  }
+  // Rafraîchissement « silencieux » après une action réussie (envoi de livrable…) :
+  // ne remplace jamais l'écran par une erreur pleine page si le rechargement
+  // échoue — l'action a réussi, on garde l'écran et on réessaiera au besoin.
+  function refreshPriorities() {
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; if (VIEW === 'priorities') renderPrioBody(d); }).catch(function () { });
   }
   function renderPrioBody(d) {
       var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
@@ -2910,7 +2916,7 @@
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
-        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; renderPriorities(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; refreshPriorities(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
         .catch(function () { cleanup(); toast('Erreur — livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
       });
     };
@@ -2938,12 +2944,14 @@
       var mins = Math.max(0, parseInt((el('prio-dl-mins') || {}).value, 10) || 0);
       close();
       notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(function (r) {
-        if (r.ok) {
-          if (mins) { var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0] : null; var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins; jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH'); }
-          toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; renderPriorities();
-        } else toast('Erreur');
-      });
+      jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
+        .then(function (res) {
+          if (res.ok) {
+            if (mins) { var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0] : null; var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins; jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH'); }
+            toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; refreshPriorities();
+          } else toast(admUploadErrMsg(res.status, res.d && res.d.error));
+        })
+        .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
       });
     };
     ov.querySelector('[data-yes]').onclick = send;
@@ -3219,6 +3227,11 @@
   function openClient(key) { CURKEY = key; VIEW = 'client'; TAB = 'infos'; renderShell(); loadClient(); }
   function loadClient(cb) {
     api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) { CUR = d; if (cb) cb(); else renderClient(); }).catch(showError);
+  }
+  // Rafraîchissement silencieux de la fiche client après une action réussie :
+  // ne blanchit pas l'écran si le rechargement échoue (l'action a réussi).
+  function refreshClient() {
+    api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) { CUR = d; if (VIEW === 'client') renderClient(); }).catch(function () { });
   }
   function renderClient() {
     if (!CUR || CUR.key !== CURKEY) { setMain(topbar('Client') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>'); if (!CUR || CUR.key !== CURKEY) { loadClient(); } return; }
@@ -4092,14 +4105,14 @@
     var name = (el('tdl-name-' + id).value || '').trim();
     var mins = dlvTimeFor(id);
     notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(function (r) { return r.json().then(function (dd) { return { ok: r.ok, d: dd }; }); })
-        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast((mins ? 'Livrable envoyé · ' + mins + ' min ajoutées' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast((res.d && res.d.error) || 'Erreur'); })
-        .catch(function () { toast('Erreur'); });
+      jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
+        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast((mins ? 'Livrable envoyé · ' + mins + ' min ajoutées' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+        .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
     });
   }
   function delDeliverable(id) {
     admConfirm({ title: 'Retirer ce livrable ?', message: 'Le fichier livrable sera retiré de l\'espace du client. Cette action est définitive.', danger: true, yes: 'Oui, retirer', no: 'Non' }, function () {
-      api('/api/clients/' + CURKEY + '/deliverables/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: 'partner' }) }).then(function (r) { if (r.ok) { toast('Livrable retiré'); loadClient(); } else toast('Erreur'); });
+      api('/api/clients/' + CURKEY + '/deliverables/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: 'partner' }) }).then(function (r) { if (r.ok) { toast('Livrable retiré'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
     });
   }
   function taskReview(id) {
@@ -4125,7 +4138,7 @@
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
       api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
-        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); loadClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+        .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
         .catch(function () { toast('Erreur — livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
     });
   }

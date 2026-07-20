@@ -1171,7 +1171,10 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
   let deliverable = null;
   if (asDeliverable) {
     const { container } = resolveProject(getEspace(data), projectId);
-    if (container) {
+    // Symétrie avec le dépôt par lien : si le projet ne résout pas, on ne fait
+    // pas semblant d'avoir réussi (l'ancien code renvoyait 201 sans rien créer).
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    {
       if (!Array.isArray(container.livrables)) container.livrables = [];
       // Chaque dépôt crée une nouvelle version : on garde l'historique complet des livrables d'une tâche.
       const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1) : 0;
@@ -1233,7 +1236,7 @@ async function handleFileDelete(request: Request, env: Env, key: string): Promis
 }
 async function handleDeliverablePatch(request: Request, env: Env, key: string, data: AnyObj, id: string): Promise<Response> {
   const body = await readJson(request);
-  const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
+  const { container } = resolveProject(getEspace(data), (body.projectId || 'partner').toString());
   if (!container || !Array.isArray(container.livrables)) return json({ error: 'Livrable introuvable' }, 404);
   const liv = container.livrables.find((l: AnyObj) => l.id === id);
   if (!liv) return json({ error: 'Livrable introuvable' }, 404);
