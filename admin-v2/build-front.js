@@ -42,7 +42,7 @@ const handler = [
   "    if (url.pathname === '/admin.css') return new Response(ADMIN_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/admin.js') return new Response(ADMIN_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/favicon.svg') return new Response(FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
-  "    return new Response(HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });",
+  "    return new Response(HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, must-revalidate' } });",
   '  }',
   '};',
   '',
