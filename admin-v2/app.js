@@ -3358,6 +3358,7 @@
     }).join('') + '</div>';
     var content = '';
     if (cur === 'tickets') content = maintTickets(d);
+    else if (cur === 'creations') content = creationsGallery(d);
     else if (cur === 'forfait') content = partnerForfait(d);
     else if (cur === 'taches') content = partnerTasks(d);
     else if (cur === 'questionnaire') content = questionnaireCard(d);
@@ -3384,9 +3385,14 @@
       s.push(['msg', 'Messages', d.unread || 0]);
       return s;
     }
+    var isSupport = /^support-/.test(d.id);
+    // Support de com = portfolio de créations : la galerie « Créations » remplace
+    // les « Étapes » (un support n'a pas de déroulé fixe). Les versions vivent
+    // dans les créations, donc pas de sous-onglet « Livrables » séparé non plus.
+    if (isSupport) s.push(['creations', 'Créations', (d.content.creations || []).length]);
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
-    if (d.content.suivi !== undefined) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
-    if (Array.isArray(d.content.livrables)) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
+    if (d.content.suivi !== undefined && !isSupport) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
+    if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['questionnaire', 'Questionnaire', qn]);
     s.push(['msg', 'Messages', d.unread || 0]);
     return s;
@@ -3607,16 +3613,69 @@
       '<div class="row" style="gap:6px;margin-top:8px"><input class="inp" id="cr-new-' + pid + '" placeholder="Nom de la création (ex. Flyer)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">+ Créer</button></div>' +
     '</div>';
   }
+  var CR_ST_COL = { a_preparer: '#8a7d6b', en_creation: '#35608f', attente_client: '#c9952f', revision: '#c0533b', valide: '#3f8f5b', archive: '#8a7d6b' };
+  function crStatusLabel(st) { for (var i = 0; i < CR_STATUSES.length; i++) if (CR_STATUSES[i][0] === st) return CR_STATUSES[i][1]; return st; }
+  // Galerie des créations d'un projet de com (onglet « Support de com »).
+  function creationsGallery(d) {
+    var pid = d.pid;
+    var creations = Array.isArray(d.content.creations) ? d.content.creations : [];
+    var livr = Array.isArray(d.content.livrables) ? d.content.livrables : [];
+    function verRow(l, i) {
+      var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
+      var stl = ({ a_valider: 'à valider', valide: 'validé', refuse: 'à revoir', revision: 'à revoir' })[l.status] || l.status;
+      return '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 0">' +
+        '<strong style="font-family:var(--font-micro);font-size:10px;flex-shrink:0">V' + (i + 1) + '</strong>' +
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(l.name) + '</span>' +
+        pill(l.status, stl) +
+        (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download" title="Télécharger">↓</a>' : '') +
+        (lnk ? '<a class="btn btn--outline btn--sm" href="' + esc(lnk) + '" target="_blank" rel="noopener" title="Ouvrir">🔗</a>' : '') +
+        '<button class="btn btn--danger btn--sm" onclick="ADM.crDelVersion(\'' + pid + '\',\'' + l.id + '\')" title="Retirer">✕</button>' +
+      '</div>';
+    }
+    function card(c) {
+      var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
+      var col = CR_ST_COL[c.status] || '#8a7d6b';
+      var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:5px 0">Aucune version. Dépose la V1 ci-dessous.</div>';
+      return '<div style="border:1px solid var(--bone-d);border-radius:14px;background:#fff;padding:15px;display:flex;flex-direction:column;gap:11px;box-shadow:0 2px 10px -7px rgba(28,18,5,0.25)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+          '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;font-weight:600;border:none;background:transparent;padding:2px 0;font-size:15px" title="Nom de la création">' +
+          '<span style="flex-shrink:0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:' + col + '22;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
+        '</div>' +
+        '<div class="row" style="gap:7px">' +
+          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="flex:1" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
+          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" style="flex:1" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
+        '</div>' +
+        '<div style="border-top:1px solid var(--bone-d);padding-top:9px"><div class="micro" style="color:var(--muted);margin-bottom:4px">Versions</div>' + vHtml + '</div>' +
+        '<div class="row" style="gap:6px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">+ Version</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">🔗 Lien</button>' +
+          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:var(--red)" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">🗑</button>' +
+        '</div>' +
+      '</div>';
+    }
+    var addCard = '<div style="border:1.5px dashed var(--bone-d);border-radius:14px;background:#faf7f0;padding:16px;display:flex;flex-direction:column;gap:9px;justify-content:center;min-height:120px">' +
+      '<div class="micro" style="color:var(--muted)">Nouvelle création</div>' +
+      '<input class="inp" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}">' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">+ Créer</button>' +
+    '</div>';
+    var grid = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px">' + creations.map(card).join('') + addCard + '</div>';
+    var unclassed = livr.filter(function (l) { return !l.creationId; });
+    var unclassedHtml = unclassed.length ? '<div class="card" style="background:#faf7f0;margin-top:16px"><div class="micro mb">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
+    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Créations</h3>' +
+      '<div class="micro mb">Chaque création (flyer, carte, brochure…) a sa catégorie, son statut et ses versions. Dépose une version par fichier ou par lien — la cliente la retrouve dans son espace pour la valider ou demander une révision.</div>' +
+      grid + unclassedHtml + '</div>';
+  }
   function supportsCard() {
     var rows = (CUR.supports || []).map(function (s) {
       var nm = (s.content && s.content.name) || '';
-      return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:13px;margin-bottom:12px;background:#fff">' +
-        '<div class="row" style="gap:10px;align-items:center"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du projet de com"><button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>' +
-        supportCreationsBlock(s) +
-      '</div>';
+      var nCr = (s.content && Array.isArray(s.content.creations)) ? s.content.creations.length : 0;
+      return '<div class="file" style="gap:10px"><input class="inp" value="' + esc(nm) + '" placeholder="' + esc(s.label) + '" onchange="ADM.renameSupport(\'' + s.pid + '\',this.value)" style="flex:1" title="Nom du projet de com">' +
+        '<span class="micro" style="color:var(--muted);white-space:nowrap">' + nCr + ' création' + (nCr > 1 ? 's' : '') + '</span>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.tab(\'' + s.id + '\')">Ouvrir</button>' +
+        '<button class="btn btn--danger btn--sm" onclick="ADM.delSupport(\'' + s.pid + '\')">Suppr.</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Mes créations (supports de com)</h3>' +
-      '<div class="micro mb">Chaque projet de com regroupe une ou plusieurs <b>créations</b> (flyer, carte, brochure…). Nomme le projet (ex. « Lancement collection »), puis ajoute ses créations et dépose leurs versions.</div>' +
+      '<div class="micro mb">Chaque projet de com regroupe une ou plusieurs <b>créations</b>. Crée le projet ici, puis clique <b>Ouvrir</b> pour gérer ses créations et leurs versions dans l\'onglet dédié.</div>' +
       (rows || '<div class="empty">Aucun projet de com pour ce client.</div>') +
       '<div class="row mt"><input class="inp" id="new-support-name" placeholder="Nom du projet de com (ex. Lancement printemps)" style="flex:1"><button class="btn btn--dark btn--sm" onclick="ADM.addSupport()">+ Nouveau projet</button></div></div>';
   }

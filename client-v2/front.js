@@ -2471,13 +2471,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (creations.length) {
         var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#c9952f'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
         var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
-        crBody = creations.map(function(c){
+        crBody = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;align-items:start">' + creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
           var st = CR_ST[c.status] || ['',''];
           var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
           var revDots = ''; for (var ri=0; ri<revMax; ri++) revDots += (ri < revUsed ? '●' : '○');
-          return '<div class="cp-card" style="margin-bottom:14px">' +
+          return '<div class="cp-card" style="margin:0">' +
             '<div class="cp-card__hd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               '<span class="cp-card__title">' + esc(c.name) + '</span>' +
               (CR_TY[c.type] ? '<span style="font-size:11px;color:var(--terre-400)">' + esc(CR_TY[c.type]) + '</span>' : '') +
@@ -2487,9 +2487,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             (revMax ? '<div style="font-size:12.5px;color:var(--terre-600);margin:6px 0 2px"><span style="letter-spacing:3px;color:' + (revUsed >= revMax ? '#c0533b' : 'var(--terre)') + '">' + revDots + '</span> · ' + revUsed + ' / ' + revMax + ' serie' + (revMax > 1 ? 's' : '') + ' de retours' + (revUsed >= revMax ? ' (limite atteinte)' : '') + '</div>' : '') +
             stbVersionsList(project.id, vs) +
           '</div>';
-        }).join('');
+        }).join('') + '</div>';
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
-        if (unclassed.length) crBody += '<div class="cp-card" style="margin-bottom:14px"><div class="cp-card__hd"><span class="cp-card__title">Autres livrables</span></div>' + stbVersionsList(project.id, unclassed) + '</div>';
+        if (unclassed.length) crBody += '<div class="cp-card" style="margin-top:18px"><div class="cp-card__hd"><span class="cp-card__title">Autres livrables</span></div>' + stbVersionsList(project.id, unclassed) + '</div>';
       } else {
         crBody = stbDeliverables(project.id);
       }
