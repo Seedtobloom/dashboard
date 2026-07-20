@@ -2471,13 +2471,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (creations.length) {
         var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#c9952f'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
         var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
-        crBody = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;align-items:start">' + creations.map(function(c){
+        crBody = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;align-items:start">' + creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
-          var st = CR_ST[c.status] || ['',''];
+          var st = CR_ST[c.status] || ['','#8a7d6b'];
           var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
           var revDots = ''; for (var ri=0; ri<revMax; ri++) revDots += (ri < revUsed ? '●' : '○');
-          return '<div class="cp-card" style="margin:0">' +
+          return '<div class="cp-card" style="margin:0;padding:22px;border-top:3px solid ' + (st[1] || '#8a7d6b') + ';box-shadow:0 6px 24px -14px rgba(28,18,5,0.3)">' +
             '<div class="cp-card__hd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               '<span class="cp-card__title">' + esc(c.name) + '</span>' +
               (CR_TY[c.type] ? '<span style="font-size:11px;color:var(--terre-400)">' + esc(CR_TY[c.type]) + '</span>' : '') +
