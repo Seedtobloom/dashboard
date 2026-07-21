@@ -775,15 +775,27 @@ async function handleClientApi(
     }
     return json({ error: 'Not found' }, 404);
   }
-  // Planning éditorial d'un projet de com : jalons datés (date fixe ou durée en cascade).
-  const spm = sub.match(/^\/support\/(\d{3})\/planning(?:\/([a-zA-Z0-9_-]+))?$/);
+  // Planning éditorial d'un projet (tout type) : jalons datés (date fixe ou durée
+  // en cascade). Le projet est identifié par projectId (corps ou query), résolu via
+  // resolveProject — comme les routes suivi / questionnaire.
+  const spm = sub.match(/^\/planning(?:\/([a-zA-Z0-9_-]+))?$/);
   if (spm) {
-    const o = getSupportObj(esp, spm[1]);
-    if (!o) return json({ error: 'Support introuvable' }, 404);
+    const jid = spm[1];
+    // projectId : corps JSON pour POST/PATCH, query pour DELETE.
+    let pidRaw = url.searchParams.get('projectId') || '';
+    let pbody: AnyObj = {};
+    if (method === 'POST' || method === 'PATCH') { pbody = await readJson(request); pidRaw = pbody.projectId || pidRaw; }
+    const o = resolveProject(esp, String(pidRaw)).container;
+    if (!o) return json({ error: 'Projet introuvable' }, 404);
     if (!Array.isArray(o.planning)) o.planning = [];
-    const jid = spm[2];
+    // PATCH sans jid = réglage du départ (T0) du planning.
+    if (method === 'PATCH' && !jid) {
+      if ('planningStart' in pbody) o.planningStart = pbody.planningStart ? String(pbody.planningStart).slice(0, 10) : null;
+      await saveClient(env, key, data);
+      return json({ ok: true, planningStart: o.planningStart || null });
+    }
     if (method === 'POST') {
-      const body = await readJson(request);
+      const body = pbody;
       const j: AnyObj = {
         id: genId(),
         title: (body.title == null ? '' : String(body.title)).slice(0, 160).trim() || 'Étape',
@@ -802,7 +814,7 @@ async function handleClientApi(
       return json(j, 201);
     }
     if (method === 'PATCH' && jid) {
-      const body = await readJson(request);
+      const body = pbody;
       const j = o.planning.find((x: AnyObj) => x.id === jid);
       if (!j) return json({ error: 'Jalon introuvable' }, 404);
       if ('title' in body) j.title = String(body.title || '').slice(0, 160).trim() || j.title;
@@ -821,7 +833,7 @@ async function handleClientApi(
       }
       await saveClient(env, key, data);
       // Notif cliente optionnelle quand une action lui incombe.
-      if (body.notify === true && j.owner === 'cliente') {
+      if (body.notify === true && (j.owner === 'cliente' || j.owner === 'les_deux')) {
         await notifyClient(env, data, 'Votre planning · une action vous attend', `<p>Une étape vous attend dans le planning de votre projet : <strong>${escHtml(j.title)}</strong>.</p><p>Rendez-vous dans votre espace pour la suite.</p>`, key);
       }
       return json(j);
@@ -1726,7 +1738,7 @@ const cleanEnum = (v: unknown, allowed: string[]): string => (allowed.indexOf(St
 const CREATION_TYPES = ['print', 'digital', 'reseaux', 'evenementiel', 'autre'];
 const CREATION_STATUSES = ['a_preparer', 'en_creation', 'attente_client', 'revision', 'valide', 'archive'];
 // Planning éditorial : jalons datés (date fixe ou durée en cascade) + qui agit.
-const PLAN_OWNERS = ['studio', 'cliente'];
+const PLAN_OWNERS = ['studio', 'cliente', 'les_deux'];
 const PLAN_STATUSES = ['a_venir', 'en_cours', 'fait'];
 const PLAN_UNITS = ['jours', 'semaines'];
 function nextRecurDate(dateStr: string | null, rec: string): string {

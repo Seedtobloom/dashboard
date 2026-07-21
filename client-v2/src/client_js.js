@@ -1829,6 +1829,53 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return r;
     });
   }
+  // Frise « Planning éditorial » partagée (studio ⇆ cliente), rendue à l'identique
+  // sur tout projet qui en a un. Renvoie { banner, html } (chaînes vides si aucun jalon).
+  function buildPlanningFrise(project){
+    var planning = Array.isArray(project.planning) ? project.planning : [];
+    if (!planning.length) return { banner:'', html:'' };
+    var prows = planCompute(planning, project.planningStart);
+    var PL_ST = { a_venir:['À venir','#8a7d6b','#f2ede4'], en_cours:['En cours','#c9952f','#fbf3d9'], fait:['Fait','#3f8f5b','#e6f2ea'] };
+    var banner = '';
+    var mine = prows.filter(function(r){ return (r.j.owner === 'cliente' || r.j.owner === 'les_deux') && r.j.status !== 'fait'; });
+    if (mine.length) {
+      var nx = mine[0];
+      banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
+        cpIcon('arrow',18,'color:#6c4ea4;flex-shrink:0;margin-top:1px') +
+        '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
+        '<div style="font-size:13.5px;color:#6c4ea4;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
+    }
+    var html = '<div class="cp-card" style="margin-bottom:44px;padding:28px 30px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="cp-card__title">Planning éditorial</span></div>' +
+      '<p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 22px">Les étapes de ce projet, qui fait quoi et pour quand. Vous êtes prévenue dès qu\'une action vous revient.</p>' +
+      '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
+        var j = r.j;
+        var st = PL_ST[j.status] || PL_ST.a_venir;
+        var ownerChip = j.owner === 'cliente'
+          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f0ebfa;color:#6c4ea4;white-space:nowrap">Vous</span>'
+          : (j.owner === 'les_deux'
+            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef1ec;color:#4f6a46;white-space:nowrap">Vous &amp; Cindy</span>'
+            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e9f0f5;color:#35608f;white-space:nowrap">Cindy</span>');
+        var done = j.status === 'fait';
+        var last = i === prows.length - 1;
+        var dot = '<span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;background:' + (done ? st[1] : '#fff') + ';border:2.5px solid ' + st[1] + ';box-shadow:0 0 0 4px ' + st[2] + '"></span>';
+        return '<div style="display:flex;gap:16px;align-items:stretch">' +
+          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#6f5c44);line-height:1.3">' + esc(r.label || '—') + '</span></div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#e8e0d3);margin:3px 0"></span>') + '</div>' +
+          '<div style="flex:1;padding-bottom:' + (last ? '2px' : '24px') + '">' +
+            '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px">' +
+              (j.jalon ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + st[1] + ';background:' + st[2] + ';padding:3px 9px;border-radius:6px">' + esc(j.jalon) + '</span>' : '') +
+              ownerChip +
+              '<span style="font-size:11px;color:' + st[1] + ';font-weight:600;margin-left:auto">' + st[0] + '</span>' +
+            '</div>' +
+            '<div style="font-size:15px;color:var(--terre);line-height:1.45' + (done ? ';opacity:0.6' : '') + '">' + esc(j.title || '—') + '</div>' +
+            (j.note ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:4px">' + esc(j.note) + '</div>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>' +
+    '</div>';
+    return { banner:banner, html:html };
+  }
   function buildProjectView(pd) {
     if (!pd) return '<div class="cp-empty">Projet introuvable.</div>';
     var project = pd.project, messages = pd.messages, files = pd.files;
@@ -2029,6 +2076,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var fileExchangeCard = buildClientFileExchange(project.id, files);
     var sideCol = (adminSharedFiles.length ? tabs + filesPanel : '') + pracPanel + meetPanel + fileExchangeCard + helpCard;
+    // Planning éditorial partagé (vide si le projet n'en a pas).
+    var _pf = buildPlanningFrise(project);
 
     // Espace partenaire
     if (project.type === 'partenaire') {
@@ -2086,51 +2135,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       } else {
         crBody = stbDeliverables(project.id);
       }
-      // ── Planning éditorial : frise partagée (studio ⇆ cliente) ──────────
-      var planning = Array.isArray(project.planning) ? project.planning : [];
-      var planHtml = '', planBanner = '';
-      if (planning.length) {
-        var prows = planCompute(planning, project.planningStart);
-        var PL_ST = { a_venir:['À venir','#8a7d6b','#f2ede4'], en_cours:['En cours','#c9952f','#fbf3d9'], fait:['Fait','#3f8f5b','#e6f2ea'] };
-        // Bandeau : la prochaine action attendue de la cliente (non faite).
-        var mine = prows.filter(function(r){ return r.j.owner === 'cliente' && r.j.status !== 'fait'; });
-        if (mine.length) {
-          var nx = mine[0];
-          planBanner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
-            cpIcon('arrow',18,'color:#6c4ea4;flex-shrink:0;margin-top:1px') +
-            '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
-            '<div style="font-size:13.5px;color:#6c4ea4;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
-        }
-        planHtml = '<div class="cp-card" style="margin-bottom:44px;padding:28px 30px">' +
-          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="cp-card__title">Planning éditorial</span></div>' +
-          '<p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 22px">Les étapes de ce support, qui fait quoi et pour quand. Vous êtes prévenue dès qu\'une action vous revient.</p>' +
-          '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
-            var j = r.j;
-            var st = PL_ST[j.status] || PL_ST.a_venir;
-            var isCli = j.owner === 'cliente';
-            var ownerChip = isCli
-              ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f0ebfa;color:#6c4ea4;white-space:nowrap">Vous</span>'
-              : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e9f0f5;color:#35608f;white-space:nowrap">Cindy</span>';
-            var done = j.status === 'fait';
-            var last = i === prows.length - 1;
-            var dot = '<span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;background:' + (done ? st[1] : '#fff') + ';border:2.5px solid ' + st[1] + ';box-shadow:0 0 0 4px ' + st[2] + '"></span>';
-            return '<div style="display:flex;gap:16px;align-items:stretch">' +
-              '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#6f5c44);line-height:1.3">' + esc(r.label || '—') + '</span></div>' +
-              '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#e8e0d3);margin:3px 0"></span>') + '</div>' +
-              '<div style="flex:1;padding-bottom:' + (last ? '2px' : '24px') + '">' +
-                '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px">' +
-                  (j.jalon ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + st[1] + ';background:' + st[2] + ';padding:3px 9px;border-radius:6px">' + esc(j.jalon) + '</span>' : '') +
-                  ownerChip +
-                  '<span style="font-size:11px;color:' + st[1] + ';font-weight:600;margin-left:auto">' + st[0] + '</span>' +
-                '</div>' +
-                '<div style="font-size:15px;color:var(--terre);line-height:1.45' + (done ? ';opacity:0.6' : '') + '">' + esc(j.title || '—') + '</div>' +
-                (j.note ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:4px">' + esc(j.note) + '</div>' : '') +
-              '</div>' +
-            '</div>';
-          }).join('') + '</div>' +
-        '</div>';
-      }
-      return header + '<div class="cp-content">' + banner + onboarding + planBanner + crIntro + '<div style="margin-bottom:44px">' + crBody + '</div>' + planHtml + sideCol + '</div>';
+      return header + '<div class="cp-content">' + banner + onboarding + _pf.banner + crIntro + '<div style="margin-bottom:44px">' + crBody + '</div>' + _pf.html + sideCol + '</div>';
     }
 
     // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.
@@ -2243,7 +2248,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
       return header +
         '<div class="cp-content cp-content--wide">' +
-          cpJourney(pd) + banner + onboarding + clientCardsHtml +
+          cpJourney(pd) + banner + _pf.banner + onboarding + clientCardsHtml + _pf.html +
           '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
             '<div>' + phasesView + '</div>' +
             '<div>' + sideCol + '</div>' +
@@ -2254,7 +2259,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     return header +
       '<div class="cp-content cp-content--wide">' +
-        cpJourney(pd) + banner + clientCardsHtml +
+        cpJourney(pd) + banner + _pf.banner + clientCardsHtml + _pf.html +
         '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">' +
           '<div>' + progress + '</div>' +
           '<div>' + sideCol + '</div>' +

@@ -496,6 +496,15 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     if (!Array.isArray(globalMissionTypes) || !globalMissionTypes.length) return schema;
     return (schema || []).map((d) => (d && d.id === 'p_typemission' ? { ...d, options: globalMissionTypes } : d));
   };
+  // Planning éditorial partagé (exposé à l'identique sur chaque projet qui en a un).
+  const planningOf = (obj: AnyObj): AnyObj => ({
+    planningStart: obj.planningStart || null,
+    planning: Array.isArray(obj.planning) ? obj.planning.map((j: AnyObj) => ({
+      id: j.id, title: j.title || '', jalon: j.jalon || '', owner: j.owner || 'studio', status: j.status || 'a_venir',
+      dateMode: j.dateMode === 'fixed' ? 'fixed' : 'duration', date: j.date || null,
+      durationValue: typeof j.durationValue === 'number' ? j.durationValue : 0, durationUnit: j.durationUnit || 'semaines', note: j.note || '',
+    })) : [],
+  });
 
   // Partenaire créative
   const pc = getDomainObj(espace, 'partenaireCreative');
@@ -553,6 +562,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: sw.maintenance ? 'maintenance' : 'in_progress',
         steps,
         deliverables: mapDeliverables(sw.livrables),
+        ...planningOf(sw),
         ...questionnaireOf(sw),
         bannerColor: sw.bannerColor || null,
         folders: foldersFor(sw, files),
@@ -576,6 +586,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         status: iv.maintenance ? 'maintenance' : 'in_progress',
         steps: [],
         deliverables: mapDeliverables(iv.livrables),
+        ...planningOf(iv),
         ...questionnaireOf(iv),
         bannerColor: iv.bannerColor || null,
         folders: foldersFor(iv, files),
@@ -616,12 +627,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
             id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
             dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3, createdAt: c.createdAt || null,
           })) : [],
-          planningStart: obj.planningStart || null,
-          planning: Array.isArray(obj.planning) ? obj.planning.map((j: AnyObj) => ({
-            id: j.id, title: j.title || '', jalon: j.jalon || '', owner: j.owner || 'studio', status: j.status || 'a_venir',
-            dateMode: j.dateMode === 'fixed' ? 'fixed' : 'duration', date: j.date || null,
-            durationValue: typeof j.durationValue === 'number' ? j.durationValue : 0, durationUnit: j.durationUnit || 'semaines', note: j.note || '',
-          })) : [],
+          ...planningOf(obj),
           ...questionnaireOf(obj),
         bannerColor: obj.bannerColor || null,
           folders: foldersFor(obj, files),
