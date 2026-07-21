@@ -640,6 +640,58 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
+  // Mise en forme légère des messages : **gras**, _italique_, [couleur]…[/],
+  // puces « - » et retours à la ligne. On échappe d'abord (anti-injection), puis
+  // on n'introduit que nos propres balises sûres. Partagé avec l'admin (même syntaxe).
+  var MSG_COLORS = { violet:'#6c4ea4', vert:'#4f7a52', bleu:'#35608f', orange:'#b5791f', rouge:'#9b3a2e' };
+  function fmtMsg(s) {
+    s = esc(String(s == null ? '' : s));
+    s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function(m, c, t){ return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
+    s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#6f5c44)">•</span> ');
+    return s;
+  }
+  // Barre d'outils de mise en forme au-dessus d'une zone de saisie (textarea #id).
+  var CP_EMOJIS = ['😊','🙂','🥳','👍','🙏','✨','🎉','❤️','🔥','✅','⚠️','📌','🗓️','⏰','💡','🎨','👀','🙌','💜','🌿'];
+  function cpMsgToolbar(id) {
+    function b(html, title, on) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault()" onclick="' + on + '" style="border:1px solid var(--bone-d);background:#fff;border-radius:8px;min-width:30px;height:30px;padding:0 8px;cursor:pointer;font-size:13px;color:var(--terre);display:inline-flex;align-items:center;justify-content:center">' + html + '</button>'; }
+    function sw(col, nom) { return '<button type="button" title="Couleur ' + nom + '" onmousedown="event.preventDefault()" onclick="window.cpMsgWrap(\'' + id + '\',\'[' + nom + ']\',\'[/]\')" style="width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--bone-d);background:' + col + ';cursor:pointer;padding:0"></button>'; }
+    var sep = '<span style="width:1px;height:20px;background:var(--bone-d);margin:0 3px"></span>';
+    var pal = '<div id="' + id + '-emoji" style="display:none;flex-wrap:wrap;gap:2px;padding:8px;border:1px solid var(--bone-d);border-radius:10px;background:#fff;margin-top:4px;max-width:290px">' +
+      CP_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.cpMsgIns(\'' + id + '\',\'' + e + '\')" style="border:none;background:none;font-size:18px;cursor:pointer;width:30px;height:30px;border-radius:6px">' + e + '</button>'; }).join('') + '</div>';
+    return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">' +
+      b('<strong>B</strong>', 'Gras', 'window.cpMsgWrap(\'' + id + '\',\'**\',\'**\')') +
+      b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') + sep +
+      sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
+      b('•', 'Liste à puces', 'window.cpMsgBullet(\'' + id + '\')') +
+      b('😊', 'Emoji', 'window.cpEmojiToggle(\'' + id + '\')') +
+    '</div>' + pal;
+  }
+  function cpTaFire(ta) { if (ta.dispatchEvent) ta.dispatchEvent(new Event('input')); }
+  window.cpMsgWrap = function(id, before, after) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+    var sel = v.slice(s, e) || 'texte';
+    ta.value = v.slice(0, s) + before + sel + after + v.slice(e);
+    ta.focus(); var p = s + before.length; ta.setSelectionRange(p, p + sel.length); cpTaFire(ta);
+  };
+  window.cpMsgIns = function(id, ch) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+    ta.value = v.slice(0, s) + ch + v.slice(e);
+    ta.focus(); var p = s + ch.length; ta.setSelectionRange(p, p); cpTaFire(ta);
+  };
+  window.cpMsgBullet = function(id) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, v = ta.value;
+    var pre = (s === 0 || v.charAt(s - 1) === '\n') ? '- ' : '\n- ';
+    ta.value = v.slice(0, s) + pre + v.slice(s);
+    ta.focus(); var p = s + pre.length; ta.setSelectionRange(p, p); cpTaFire(ta);
+  };
+  window.cpEmojiToggle = function(id) {
+    var p = document.getElementById(id + '-emoji'); if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
+  };
   function fmtDate(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
@@ -5634,7 +5686,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
       cpAvatar(isC?'Cindy':appData.clientName||'Client', isC?'cindy':'client', 30) +
       '<div>' +
-        '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(m.content) + '</div></div>' +
+        '<div class="cp-msg__bubble"><div class="cp-msg__text">' + fmtMsg(m.content) + '</div></div>' +
         '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + '</div>' +
       '</div>' +
     '</div>';
@@ -5703,7 +5755,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>' +
       '</div>' +
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
-      '<div style="padding:16px 20px 10px;border-top:1px solid var(--bone-d);display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
+      '<div style="padding:12px 20px 10px;border-top:1px solid var(--bone-d);display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
+        cpMsgToolbar('cp-convo-draft') +
         '<div style="display:flex;gap:12px;align-items:flex-end">' +
           '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
           '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
@@ -7327,7 +7380,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var div = document.createElement('div');
           div.className = 'cp-msg cp-msg--client';
           div.innerHTML = '<div class="cp-msg__av cp-msg__av--client">' + clientInitial + '</div>' +
-            '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(d.message.content) + '</div>' +
+            '<div class="cp-msg__bubble"><div class="cp-msg__text">' + fmtMsg(d.message.content) + '</div>' +
             '<div class="cp-msg__date">Vous · maintenant</div></div>';
           if (list) { list.appendChild(div); div.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
           form.content.value = '';
@@ -7354,7 +7407,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var div = document.createElement('div');
         div.className = 'cp-msg cp-msg--cindy';
         div.innerHTML = '<div class="cp-msg__av cp-msg__av--cindy">C</div>' +
-          '<div class="cp-msg__bubble"><div class="cp-msg__text">' + esc(msg.content) + '</div>' +
+          '<div class="cp-msg__bubble"><div class="cp-msg__text">' + fmtMsg(msg.content) + '</div>' +
           '<div class="cp-msg__date">Cindy · maintenant</div></div>';
         el.appendChild(div);
       });

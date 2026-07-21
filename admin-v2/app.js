@@ -41,6 +41,57 @@
   var STEP_STATUS = [['upcoming', 'À venir'], ['in_progress', 'En cours'], ['waiting_client', 'Action client'], ['done', 'Terminé']];
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  // Mise en forme légère des messages (même syntaxe que côté client) : **gras**,
+  // _italique_, [couleur]…[/], puces « - », retours à la ligne. Échappe d'abord.
+  var MSG_COLORS = { violet: '#6c4ea4', vert: '#4f7a52', bleu: '#35608f', orange: '#b5791f', rouge: '#9b3a2e' };
+  function fmtMsg(s) {
+    s = esc(String(s == null ? '' : s));
+    s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function (m, c, t) { return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
+    s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="opacity:0.6">•</span> ');
+    return s;
+  }
+  // Barre d'outils de mise en forme au-dessus d'une zone de saisie (textarea #id).
+  var ADM_EMOJIS = ['😊', '🙂', '🥳', '👍', '🙏', '✨', '🎉', '❤️', '🔥', '✅', '⚠️', '📌', '🗓️', '⏰', '💡', '🎨', '👀', '🙌', '💜', '🌿'];
+  function admMsgToolbar(id) {
+    function b(html, title, on) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault()" onclick="' + on + '" style="border:1px solid var(--bone-d);background:#fff;border-radius:8px;min-width:28px;height:28px;padding:0 7px;cursor:pointer;font-size:13px;color:var(--terre);display:inline-flex;align-items:center;justify-content:center">' + html + '</button>'; }
+    function sw(col, nom) { return '<button type="button" title="Couleur ' + nom + '" onmousedown="event.preventDefault()" onclick="ADM.msgWrap(\'' + id + '\',\'[' + nom + ']\',\'[/]\')" style="width:19px;height:19px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--bone-d);background:' + col + ';cursor:pointer;padding:0"></button>'; }
+    var sep = '<span style="width:1px;height:18px;background:var(--bone-d);margin:0 3px"></span>';
+    var pal = '<div id="' + id + '-emoji" style="display:none;flex-wrap:wrap;gap:2px;padding:7px;border:1px solid var(--bone-d);border-radius:10px;background:#fff;margin-top:4px;max-width:280px">' +
+      ADM_EMOJIS.map(function (e) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgIns(\'' + id + '\',\'' + e + '\')" style="border:none;background:none;font-size:17px;cursor:pointer;width:28px;height:28px;border-radius:6px">' + e + '</button>'; }).join('') + '</div>';
+    return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px">' +
+      b('<strong>B</strong>', 'Gras', 'ADM.msgWrap(\'' + id + '\',\'**\',\'**\')') +
+      b('<em>I</em>', 'Italique', 'ADM.msgWrap(\'' + id + '\',\'_\',\'_\')') + sep +
+      sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
+      b('•', 'Liste à puces', 'ADM.msgBullet(\'' + id + '\')') +
+      b('😊', 'Emoji', 'ADM.emojiToggle(\'' + id + '\')') +
+    '</div>' + pal;
+  }
+  function admTaFire(ta) { if (ta.dispatchEvent) ta.dispatchEvent(new Event('input')); }
+  function admMsgWrap(id, before, after) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+    var sel = v.slice(s, e) || 'texte';
+    ta.value = v.slice(0, s) + before + sel + after + v.slice(e);
+    ta.focus(); var p = s + before.length; ta.setSelectionRange(p, p + sel.length); admTaFire(ta);
+  }
+  function admMsgIns(id, ch) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+    ta.value = v.slice(0, s) + ch + v.slice(e);
+    ta.focus(); var p = s + ch.length; ta.setSelectionRange(p, p); admTaFire(ta);
+  }
+  function admMsgBullet(id) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, v = ta.value;
+    var pre = (s === 0 || v.charAt(s - 1) === '\n') ? '- ' : '\n- ';
+    ta.value = v.slice(0, s) + pre + v.slice(s);
+    ta.focus(); var p = s + pre.length; ta.setSelectionRange(p, p); admTaFire(ta);
+  }
+  function admEmojiToggle(id) {
+    var p = document.getElementById(id + '-emoji'); if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
+  }
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
   function el(id) { return document.getElementById(id); }
@@ -4679,7 +4730,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + hi(m.message, q) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -4696,6 +4747,7 @@
     return '<div class="card"><h3>Messages · ' + esc(DOMAIN_LABELS[d.id] || d.label) + '</h3>' +
       '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
       '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, '') + '</div>' +
+      admMsgToolbar('msg-' + d.id) +
       '<div class="row"><textarea class="inp" id="msg-' + d.id + '" placeholder="Répondre au client…" style="max-height:300px;overflow-y:auto" oninput="ADM.taGrow(this)"></textarea></div>' +
       '<div class="row row--end mt" style="gap:8px"><button class="btn btn--outline btn--sm" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'msg-' + d.id + '\')">⚡ Réponses</button><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
   }
@@ -4802,6 +4854,7 @@
     var box = el('chatthread'); if (!box) return;
     var chips = el('chatchips'); if (chips) { var bs = chips.querySelectorAll('.subtab'); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('active', bs[i].getAttribute('data-pid') === pid); }
     box.innerHTML = '<div class="chatscroll" id="chatmsgs">' + chatBubbles(d, '') + '</div>' +
+      '<div style="padding:0 4px">' + admMsgToolbar('gmsg') + '</div>' +
       '<div class="chatcompose"><textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)" oninput="ADM.taGrow(this)"></textarea>' +
       '<button class="btn btn--outline" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'gmsg\')">⚡</button>' +
       '<button class="btn btn--dark" onclick="ADM.gsend()">Envoyer</button></div>';
@@ -5625,6 +5678,7 @@
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
+    msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
   };
   boot();
