@@ -407,6 +407,8 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
     fileKey: l.fileKey || null,
     status: l.status || 'a_valider',
     clientComment: l.clientComment || '',
+    clientAttachments: Array.isArray(l.clientAttachments) ? l.clientAttachments : [],
+    clientLink: l.clientLink || '',
     validatedAt: l.validatedAt || null,
     taskId: l.taskId || null,
     taskTitle: l.taskTitle || '',
@@ -775,7 +777,12 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
   // (une révision donne lieu à une nouvelle version, donc un nouveau livrable).
   if (liv.status && liv.status !== 'a_valider') return json({ error: 'Ce livrable a déjà été traité' }, 409);
   liv.status = decision;
-  liv.clientComment = (body.comment || '').toString().substring(0, 1000);
+  liv.clientComment = (body.comment || '').toString().substring(0, 2000);
+  // Révision : la cliente peut joindre des fichiers et un lien pour expliquer.
+  liv.clientAttachments = Array.isArray(body.attachments)
+    ? body.attachments.slice(0, 10).map((a: AnyObj) => ({ key: String((a && a.key) || '').slice(0, 300), name: String((a && a.name) || 'fichier').slice(0, 140) })).filter((a: AnyObj) => a.key)
+    : [];
+  liv.clientLink = (body.link || '').toString().slice(0, 500);
   liv.validatedAt = nowIso();
   // Livrable rattaché à une tâche : on reflète la validation sur la tâche.
   if (liv.taskId && Array.isArray(container.taches)) {
@@ -790,7 +797,9 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
   const doneLine = decision === 'valide' && liv.taskId ? ` La tâche est maintenant marquée <strong>terminée</strong> ✓.` : ``;
   await notifyAdmin(env, `Livrable ${decision === 'valide' ? 'validé' : 'à revoir'} · ${who}`,
     `<p><strong>${escHtml(who)}</strong> ${decision === 'valide' ? 'a validé' : 'a demandé une révision sur'} le livrable <em>${escHtml(liv.name || '')}</em>.${doneLine}</p>` +
-    (liv.clientComment ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(liv.clientComment)}</p>` : ''));
+    (liv.clientComment ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(liv.clientComment)}</p>` : '') +
+    ((liv.clientAttachments && liv.clientAttachments.length) ? `<p style="color:#412F21">📎 ${liv.clientAttachments.length} fichier(s) joint(s) — à retrouver dans l'espace.</p>` : '') +
+    (liv.clientLink ? `<p style="color:#412F21">🔗 Lien : ${escHtml(liv.clientLink)}</p>` : ''));
   return json({ deliverable: mapDeliverables([liv])[0] });
 }
 
