@@ -3391,7 +3391,8 @@
     // les « Étapes » (un support n'a pas de déroulé fixe). Les versions vivent
     // dans les créations, donc pas de sous-onglet « Livrables » séparé non plus.
     if (isSupport) s.push(['creations', 'Créations', (d.content.creations || []).length]);
-    if (isSupport) s.push(['planning', 'Planning', (d.content.planning || []).length]);
+    // Planning éditorial : sur les supports de com ET les projets site web / identité.
+    if (isSupport || d.id === 'website' || d.id === 'branding') s.push(['planning', 'Planning', (d.content.planning || []).length]);
     if (d.id === 'partner') { s.push(['forfait', 'Forfait', 0]); s.push(['taches', 'Tâches', (d.content.taches || []).length]); }
     if (d.content.suivi !== undefined && !isSupport) s.push(['suivi', 'Étapes', (d.content.suivi || []).length]);
     if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
@@ -3713,7 +3714,7 @@
     });
   }
   function planningTab(d) {
-    var pid = d.pid;
+    var pid = d.id;
     var planning = Array.isArray(d.content.planning) ? d.content.planning : [];
     var t0 = d.content.planningStart || '';
     var rows = planCompute(planning, t0);
@@ -3721,7 +3722,9 @@
       var j = r.j;
       var ownerChip = j.owner === 'cliente'
         ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f4f1fa;color:#6c4ea4;white-space:nowrap">👤 Cliente</span>'
-        : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#35608f;white-space:nowrap">🎨 Toi</span>';
+        : (j.owner === 'les_deux'
+          ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1ec;color:#4f6a46;white-space:nowrap">🤝 Vous deux</span>'
+          : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#35608f;white-space:nowrap">🎨 Toi</span>');
       var timing = j.dateMode === 'fixed'
         ? '<input class="inp" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value)" style="width:150px" title="Date fixe">'
         : '<span style="display:inline-flex;align-items:center;gap:5px"><input class="inp" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value)" style="width:64px" title="Durée"><select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value)" style="width:auto"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span>';
@@ -3733,7 +3736,7 @@
         '<input class="inp" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value)" placeholder="Ce que tu fais" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
         '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
           '<input class="inp" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value)" placeholder="Jalon (Envoi V1, Retours, Livraison…)" style="flex:1;min-width:150px">' +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value)" style="width:auto"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option></select>' +
+          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value)" style="width:auto"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select>' +
           '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value)" style="width:auto"><option value="duration"' + (j.dateMode !== 'fixed' ? ' selected' : '') + '>Durée</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select>' + timing +
         '</div>' +
         (j.note ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">' + esc(j.note) + '</div>' : '') +
@@ -3752,12 +3755,14 @@
       '<div class="row mt" style="gap:6px"><input class="inp" id="plan-new-' + pid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\');}"><button class="btn btn--dark btn--sm" onclick="ADM.pjAdd(\'' + pid + '\')">+ Ajouter un jalon</button></div>' +
     '</div>';
   }
-  function pjAdd(pid) { var v = (el('plan-new-' + pid) ? el('plan-new-' + pid).value : '').trim(); jpost('/api/clients/' + CURKEY + '/support/' + pid + '/planning', { title: v, durationValue: 1, durationUnit: 'semaines' }).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function pjSet(pid, jid, field, val) { var body = {}; body[field] = val; jpost('/api/clients/' + CURKEY + '/support/' + pid + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function pjMove(pid, jid, dir) { jpost('/api/clients/' + CURKEY + '/support/' + pid + '/planning/' + jid, { move: dir }, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }); }
-  function pjDel(pid, jid) { admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () { api('/api/clients/' + CURKEY + '/support/' + pid + '/planning/' + jid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); refreshClient(); } else toast('Erreur'); }); }); }
-  function pjStart(pid, val) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { planningStart: val || null }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); refreshClient(); } else toast('Erreur'); }); }
-  function pjNotify(pid, jid) { jpost('/api/clients/' + CURKEY + '/support/' + pid + '/planning/' + jid, { notify: true }, 'PATCH').then(function (r) { if (r.ok) toast('Cliente prévenue ✉'); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  // pid = identifiant public du projet (d.id : 'website' / 'branding' / 'support-001'…),
+  // envoyé en projectId à la route générique /planning résolue via resolveProject.
+  function pjAdd(pid) { var v = (el('plan-new-' + pid) ? el('plan-new-' + pid).value : '').trim(); jpost('/api/clients/' + CURKEY + '/planning', { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function pjSet(pid, jid, field, val) { var body = { projectId: pid }; body[field] = val; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function pjMove(pid, jid, dir) { jpost('/api/clients/' + CURKEY + '/planning/' + jid, { projectId: pid, move: dir }, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }); }
+  function pjDel(pid, jid) { admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () { api('/api/clients/' + CURKEY + '/planning/' + jid + '?projectId=' + encodeURIComponent(pid), { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); refreshClient(); } else toast('Erreur'); }); }); }
+  function pjStart(pid, val) { jpost('/api/clients/' + CURKEY + '/planning', { projectId: pid, planningStart: val || null }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); refreshClient(); } else toast('Erreur'); }); }
+  function pjNotify(pid, jid) { jpost('/api/clients/' + CURKEY + '/planning/' + jid, { projectId: pid, notify: true }, 'PATCH').then(function (r) { if (r.ok) toast('Cliente prévenue ✉'); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function supportsCard() {
     var rows = (CUR.supports || []).map(function (s) {
       var nm = (s.content && s.content.name) || '';
