@@ -616,6 +616,12 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
             id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
             dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3, createdAt: c.createdAt || null,
           })) : [],
+          planningStart: obj.planningStart || null,
+          planning: Array.isArray(obj.planning) ? obj.planning.map((j: AnyObj) => ({
+            id: j.id, title: j.title || '', jalon: j.jalon || '', owner: j.owner || 'studio', status: j.status || 'a_venir',
+            dateMode: j.dateMode === 'fixed' ? 'fixed' : 'duration', date: j.date || null,
+            durationValue: typeof j.durationValue === 'number' ? j.durationValue : 0, durationUnit: j.durationUnit || 'semaines', note: j.note || '',
+          })) : [],
           ...questionnaireOf(obj),
         bannerColor: obj.bannerColor || null,
           folders: foldersFor(obj, files),

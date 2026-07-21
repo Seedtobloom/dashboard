@@ -721,7 +721,9 @@ async function handleClientApi(
     const body = await readJson(request);
     const o = getSupportObj(esp, supm[1]);
     if (!o) return json({ error: 'Support introuvable' }, 404);
-    o.name = (body.name == null ? '' : String(body.name)).slice(0, 80).trim();
+    if ('name' in body) o.name = (body.name == null ? '' : String(body.name)).slice(0, 80).trim();
+    // Date de départ (T0) du planning éditorial (optionnelle : sinon dates relatives).
+    if ('planningStart' in body) o.planningStart = body.planningStart ? String(body.planningStart).slice(0, 10) : null;
     await saveClient(env, key, data);
     return json({ ok: true, name: o.name });
   }
@@ -768,6 +770,64 @@ async function handleClientApi(
       o.creations = o.creations.filter((c: AnyObj) => c.id !== cid);
       // Les livrables rattachés redeviennent « non classés ».
       if (Array.isArray(o.livrables)) o.livrables.forEach((l: AnyObj) => { if (l.creationId === cid) l.creationId = null; });
+      await saveClient(env, key, data);
+      return json({ ok: true });
+    }
+    return json({ error: 'Not found' }, 404);
+  }
+  // Planning éditorial d'un projet de com : jalons datés (date fixe ou durée en cascade).
+  const spm = sub.match(/^\/support\/(\d{3})\/planning(?:\/([a-zA-Z0-9_-]+))?$/);
+  if (spm) {
+    const o = getSupportObj(esp, spm[1]);
+    if (!o) return json({ error: 'Support introuvable' }, 404);
+    if (!Array.isArray(o.planning)) o.planning = [];
+    const jid = spm[2];
+    if (method === 'POST') {
+      const body = await readJson(request);
+      const j: AnyObj = {
+        id: genId(),
+        title: (body.title == null ? '' : String(body.title)).slice(0, 160).trim() || 'Étape',
+        jalon: (body.jalon || '').toString().slice(0, 60),
+        owner: cleanEnum(body.owner, PLAN_OWNERS) || 'studio',
+        status: cleanEnum(body.status, PLAN_STATUSES) || 'a_venir',
+        dateMode: body.dateMode === 'fixed' ? 'fixed' : 'duration',
+        date: body.date ? String(body.date).slice(0, 10) : null,
+        durationValue: Math.max(0, Math.min(365, Math.round(Number(body.durationValue) || 0))),
+        durationUnit: cleanEnum(body.durationUnit, PLAN_UNITS) || 'semaines',
+        note: (body.note || '').toString().slice(0, 800),
+        createdAt: nowIso(),
+      };
+      o.planning.push(j);
+      await saveClient(env, key, data);
+      return json(j, 201);
+    }
+    if (method === 'PATCH' && jid) {
+      const body = await readJson(request);
+      const j = o.planning.find((x: AnyObj) => x.id === jid);
+      if (!j) return json({ error: 'Jalon introuvable' }, 404);
+      if ('title' in body) j.title = String(body.title || '').slice(0, 160).trim() || j.title;
+      if ('jalon' in body) j.jalon = String(body.jalon || '').slice(0, 60);
+      if ('owner' in body) j.owner = cleanEnum(body.owner, PLAN_OWNERS) || j.owner;
+      if ('status' in body) j.status = cleanEnum(body.status, PLAN_STATUSES) || j.status;
+      if ('dateMode' in body) j.dateMode = body.dateMode === 'fixed' ? 'fixed' : 'duration';
+      if ('date' in body) j.date = body.date ? String(body.date).slice(0, 10) : null;
+      if ('durationValue' in body) j.durationValue = Math.max(0, Math.min(365, Math.round(Number(body.durationValue) || 0)));
+      if ('durationUnit' in body) j.durationUnit = cleanEnum(body.durationUnit, PLAN_UNITS) || j.durationUnit;
+      if ('note' in body) j.note = String(body.note || '').slice(0, 800);
+      if ('move' in body && (body.move === 'up' || body.move === 'down')) {
+        const idx = o.planning.findIndex((x: AnyObj) => x.id === jid);
+        const swap = body.move === 'up' ? idx - 1 : idx + 1;
+        if (idx !== -1 && swap >= 0 && swap < o.planning.length) { const t = o.planning[idx]; o.planning[idx] = o.planning[swap]; o.planning[swap] = t; }
+      }
+      await saveClient(env, key, data);
+      // Notif cliente optionnelle quand une action lui incombe.
+      if (body.notify === true && j.owner === 'cliente') {
+        await notifyClient(env, data, 'Votre planning · une action vous attend', `<p>Une étape vous attend dans le planning de votre projet : <strong>${escHtml(j.title)}</strong>.</p><p>Rendez-vous dans votre espace pour la suite.</p>`, key);
+      }
+      return json(j);
+    }
+    if (method === 'DELETE' && jid) {
+      o.planning = o.planning.filter((x: AnyObj) => x.id !== jid);
       await saveClient(env, key, data);
       return json({ ok: true });
     }
@@ -1665,6 +1725,10 @@ const cleanEnum = (v: unknown, allowed: string[]): string => (allowed.indexOf(St
 // « Mes créations » : chaque support (= projet de com) contient des créations.
 const CREATION_TYPES = ['print', 'digital', 'reseaux', 'evenementiel', 'autre'];
 const CREATION_STATUSES = ['a_preparer', 'en_creation', 'attente_client', 'revision', 'valide', 'archive'];
+// Planning éditorial : jalons datés (date fixe ou durée en cascade) + qui agit.
+const PLAN_OWNERS = ['studio', 'cliente'];
+const PLAN_STATUSES = ['a_venir', 'en_cours', 'fait'];
+const PLAN_UNITS = ['jours', 'semaines'];
 function nextRecurDate(dateStr: string | null, rec: string): string {
   const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
   if (rec === 'daily') base.setUTCDate(base.getUTCDate() + 1);
