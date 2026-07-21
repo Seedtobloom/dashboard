@@ -3579,6 +3579,8 @@
   }
   var CR_TYPES = [['print', 'Print'], ['digital', 'Digital'], ['reseaux', 'Réseaux sociaux'], ['evenementiel', 'Événementiel'], ['autre', 'Autre']];
   var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
+  // Couleur d'identité par catégorie : [encre, fond teinté] pour différencier les cards.
+  var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#6c4ea4', '#f1ecfa'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#9c6f18', '#f6ecd5'] };
   function crOpts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); }
   function supportCreationsBlock(s) {
     var pid = s.pid;
@@ -3635,11 +3637,12 @@
     function card(c) {
       var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
       var col = CR_ST_COL[c.status] || '#8a7d6b';
+      var ty = CR_TYCOL[c.type] || ['#8a7d6b', '#f7f3ee'];
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:5px 0">Aucune version. Dépose la V1 ci-dessous.</div>';
-      return '<div style="border:1px solid var(--bone-d);border-radius:16px;background:#fff;padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 8px 28px -16px rgba(28,18,5,0.26)">' +
+      return '<div style="border:1px solid ' + ty[0] + '30;border-radius:16px;background:' + ty[1] + ';padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 10px 30px -18px ' + ty[0] + '66">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">' +
           '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;min-width:0;font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);border:none;background:transparent;padding:0" title="Nom de la création">' +
-          '<span style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + col + '18;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
+          '<span style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
         '</div>' +
         '<div class="row" style="gap:10px">' +
           '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="flex:1" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +

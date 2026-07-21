@@ -2036,6 +2036,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (creations.length) {
         var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#c9952f'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
         var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
+        // Couleur d'identité par categorie : [encre, fond teinte] pour differencier les cards.
+        var CR_TYCOL = { print:['#a35a1a','#fbeee0'], digital:['#35608f','#e7eff9'], reseaux:['#6c4ea4','#f1ecfa'], evenementiel:['#4f6a46','#e8f0e3'], autre:['#9c6f18','#f6ecd5'] };
         crBody = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;align-items:start">' + creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
           var st = CR_ST[c.status] || ['','#8a7d6b'];
@@ -2043,15 +2045,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
           var revDots = ''; for (var ri=0; ri<revMax; ri++) revDots += (ri < revUsed ? '●' : '○');
           var crCol = st[1] || '#9a8a72';
-          return '<div class="cp-card" style="margin:0;padding:28px;border:1px solid var(--bone-d,#e8e0d4);box-shadow:0 8px 30px -18px rgba(92,70,51,0.3)">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px">' +
-              (CR_TY[c.type] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--terre-400,#9a8a72)">' + esc(CR_TY[c.type]) + '</span>' : '<span></span>') +
-              (st[0] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + crCol + '18;color:' + crCol + '">' + esc(st[0]) + '</span>' : '') +
+          var ty = CR_TYCOL[c.type] || ['#9a8a72','#f5f0e8'];
+          return '<div class="cp-card" style="margin:0;padding:26px;background:' + ty[1] + ';border:1px solid ' + ty[0] + '2e;box-shadow:0 10px 32px -18px ' + ty[0] + '66">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px">' +
+              (CR_TY[c.type] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#fff;background:' + ty[0] + ';padding:5px 12px;border-radius:999px">' + esc(CR_TY[c.type]) + '</span>' : '<span></span>') +
+              (st[0] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + crCol + ';display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + crCol + ';display:inline-block"></span>' + esc(st[0]) + '</span>' : '') +
             '</div>' +
             '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;line-height:1.12;color:var(--terre);margin-bottom:' + ((c.dueDate || revMax) ? '16px' : '20px') + '">' + esc(c.name) + '</div>' +
-            (c.dueDate ? '<div style="font-size:13px;color:var(--muted);margin-bottom:' + (revMax ? '12px' : '20px') + '">À livrer le ' + fmtDate(c.dueDate) + '</div>' : '') +
-            (revMax ? '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:20px"><span style="letter-spacing:5px;font-size:11px;color:' + (revUsed >= revMax ? '#c0533b' : 'var(--terre-400,#9a8a72)') + '">' + revDots + '</span><span>' + revUsed + ' / ' + revMax + ' révision' + (revMax > 1 ? 's' : '') + (revUsed >= revMax ? ' · limite atteinte' : '') + '</span></div>' : '') +
-            '<div style="border-top:1px solid var(--bone-d,#e8e0d4);padding-top:20px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
+            (c.dueDate ? '<div style="font-size:13px;color:var(--terre-600,#6f5c44);margin-bottom:' + (revMax ? '12px' : '20px') + '">À livrer le ' + fmtDate(c.dueDate) + '</div>' : '') +
+            (revMax ? '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--terre-600,#6f5c44);margin-bottom:20px"><span style="letter-spacing:5px;font-size:11px;color:' + (revUsed >= revMax ? '#c0533b' : ty[0]) + '">' + revDots + '</span><span>' + revUsed + ' / ' + revMax + ' révision' + (revMax > 1 ? 's' : '') + (revUsed >= revMax ? ' · limite atteinte' : '') + '</span></div>' : '') +
+            '<div style="border-top:1px solid ' + ty[0] + '2e;padding-top:20px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
           '</div>';
         }).join('') + '</div>';
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
@@ -2059,7 +2062,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       } else {
         crBody = stbDeliverables(project.id);
       }
-      return header + '<div class="cp-content">' + banner + onboarding + crIntro + crBody + sideCol + '</div>';
+      return header + '<div class="cp-content">' + banner + onboarding + crIntro + '<div style="margin-bottom:44px">' + crBody + '</div>' + sideCol + '</div>';
     }
 
     // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.
