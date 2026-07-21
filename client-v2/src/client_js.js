@@ -5265,9 +5265,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' +
       '</div>' +
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
-      '<div style="padding:16px 20px;border-top:1px solid var(--bone-d);display:flex;gap:12px;align-items:flex-end;flex-shrink:0">' +
-        '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
-        '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
+      '<div style="padding:16px 20px 10px;border-top:1px solid var(--bone-d);display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
+        '<div style="display:flex;gap:12px;align-items:flex-end">' +
+          '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
+          '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
+        '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.04em;color:var(--terre-600);opacity:0.75;padding-left:2px"><strong>Entrée</strong> pour envoyer · <strong>Maj + Entrée</strong> pour un retour à la ligne</div>' +
       '</div>' +
     '</div>';
 
