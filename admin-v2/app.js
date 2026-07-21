@@ -3625,7 +3625,7 @@
     function verRow(l, i) {
       var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
       var stl = ({ a_valider: 'à valider', valide: 'validé', refuse: 'à revoir', revision: 'à revoir' })[l.status] || l.status;
-      return '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 0">' +
+      var row = '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 0">' +
         '<strong style="font-family:var(--font-micro);font-size:10px;flex-shrink:0">V' + (i + 1) + '</strong>' +
         '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(l.name) + '</span>' +
         pill(l.status, stl) +
@@ -3633,6 +3633,19 @@
         (lnk ? '<a class="btn btn--outline btn--sm" href="' + esc(lnk) + '" target="_blank" rel="noopener" title="Ouvrir">🔗</a>' : '') +
         '<button class="btn btn--danger btn--sm" onclick="ADM.crDelVersion(\'' + pid + '\',\'' + l.id + '\')" title="Retirer">✕</button>' +
       '</div>';
+      // Retour de la cliente (demande de révision) : message + fichiers + lien.
+      var fb = '';
+      var atts = Array.isArray(l.clientAttachments) ? l.clientAttachments : [];
+      if ((l.status === 'refuse' || l.status === 'revision') && (l.clientComment || atts.length || l.clientLink)) {
+        var attHtml = atts.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
+        var lkHtml = l.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
+        fb = '<div style="margin:2px 0 6px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
+          '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9b3a2e;margin-bottom:5px">Retour de la cliente</div>' +
+          (l.clientComment ? '<div style="font-size:13px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
+          ((attHtml || lkHtml) ? '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
+        '</div>';
+      }
+      return row + fb;
     }
     function card(c) {
       var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
