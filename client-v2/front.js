@@ -163,6 +163,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: white; }
 .cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #9b3a2e; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-card__body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+.cp-proj-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; }
 .cp-proj-card__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-style: italic; margin-bottom: 8px; line-height: 1.25; font-weight: 400; }
 .cp-proj-card__meta { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-card__ext { color: var(--terre-600); font-weight: 500; font-size: 10px; background: rgba(65,47,33,0.08); padding: 2px 8px; border-radius: var(--radius-pill); }
@@ -1502,7 +1503,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       // Bandeau de couleur DA discret : pas d'image rognée, pas de doré hors-charte.
       var bannerStyle = 'background:' + (p.bannerColor || _band.deep) + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#8a4a0e') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
+      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#59409a;background:#efe9f8;border:1px solid #dcd2f0;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#59409a') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -1514,13 +1515,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var openTasks = partTasks.filter(function(t){ return t.status !== 'done'; });
         var waitingPartStep = steps.find(function(s){ return s.status === 'waiting_client'; });
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-          '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-            '<span class="cp-proj-banner__badge">Accompagnement</span>' +
-            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#8a4a0e">Action requise</span>' : '') +
-          '</div>' +
           '<div class="cp-proj-card__body">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">' +
+              '<span class="cp-proj-pill" style="color:#6b533b;background:#f0ece2">Accompagnement</span>' +
+              (waitingPartStep ? '<span class="cp-proj-pill" style="color:#59409a;background:#efe9f8">Action requise</span>' : '') +
+            '</div>' +
             '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
             '<div class="cp-proj-card__meta">' +
               '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
@@ -1536,14 +1536,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var nextLine = nextStep
         ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine étape : <span style="color:var(--terre);font-style:italic">' + esc(nextStep.title) + '</span></div>'
         : '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">' + (steps.length ? 'Toutes les étapes sont faites ✓' : 'Projet en préparation') + '</div>';
+      var stc = ({ discovery:['#6b533b','#f0ece2'], in_progress:['#6b533b','#f0ece2'], waiting_client:['#59409a','#efe9f8'], review:['#a8432f','#fbeae5'], delivered:['#3f7a4e','#e7f0e3'], archived:['#8a7d6b','#eee9df'] })[p.status] || ['#6b533b','#f0ece2'];
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-        '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
-          (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
-        '</div>' +
         '<div class="cp-proj-card__body">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">' +
+            '<span class="cp-proj-pill" style="color:' + stc[0] + ';background:' + stc[1] + '">' + esc(label) + '</span>' +
+            (urgent ? '<span class="cp-proj-pill" style="color:#a8432f;background:#fbeae5">J-' + days + '</span>' : '') +
+            (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<span class="cp-proj-pill" style="color:#59409a;background:#efe9f8">Action requise</span>' : '') +
+          '</div>' +
           '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
           '<div class="cp-proj-card__meta">' +
             (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
             (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
@@ -1551,7 +1552,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '</div>' +
           nextLine +
           _unreadBadge +
-          '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%;background:var(--terre)"></div></div>' +
           '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
         '</div>' +
       '</button>';
