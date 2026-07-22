@@ -2204,9 +2204,28 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var creations = Array.isArray(project.creations) ? project.creations : [];
       var allDlv = project.deliverables || [];
       var crWaiting = allDlv.filter(function(d){ return d.status === 'a_valider'; }).length;
-      var crIntro = '<div style="max-width:640px;margin:2px 0 22px">' +
-        '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin:0">' + (creations.length ? 'Vos créations' : 'Votre création') + (project.deadline ? ' · à livrer le ' + fmtDate(project.deadline) : '') + '. Retrouvez leurs <strong>versions</strong> — à télécharger, valider ou renvoyer en révision — et les fichiers associés.</p>' +
-        (crWaiting ? '<div style="margin-top:14px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#efe9f8;border:1px solid #dcd2f0;border-radius:12px;font-size:14px;color:#59409a">' + cpIcon('arrow',16,'color:#59409a;flex-shrink:0') + '<span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
+      // ── Brique 2 : haut de l'espace — contexte + progression concrète + action ──
+      var crBy = { valide:0, en_creation:0, a_preparer:0, attente_client:0, revision:0, archive:0 };
+      creations.forEach(function(c){ if (crBy[c.status] !== undefined) crBy[c.status]++; });
+      var nDone = crBy.valide, nWait = crBy.attente_client, nRev = crBy.revision, nWork = crBy.en_creation + crBy.a_preparer;
+      var crCtx;
+      if (nWait > 0) crCtx = 'Aujourd’hui, ' + (nWait > 1 ? nWait + ' créations attendent' : 'une création attend') + ' votre retour.';
+      else if (creations.length && nDone === creations.length) crCtx = 'Toutes vos créations sont validées et livrées.';
+      else if (nRev > 0) crCtx = 'J’intègre vos retours' + (nRev > 1 ? ' sur plusieurs créations' : '') + '.';
+      else if (creations.length) crCtx = 'Vos créations avancent — je vous préviens dès qu’une version est prête.';
+      else crCtx = 'Votre création arrive bientôt ici.';
+      function crDotLbl(color, label){ return '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0"></span>' + label + '</span>'; }
+      var crParts = [];
+      if (nDone) crParts.push(crDotLbl('#3f8f5b', nDone + ' terminée' + (nDone > 1 ? 's' : '')));
+      if (nWork) crParts.push(crDotLbl('#35608f', nWork + ' en création'));
+      if (nWait) crParts.push(crDotLbl('#6c4ea4', nWait + ' en attente de vous'));
+      if (nRev) crParts.push(crDotLbl('#c0533b', nRev + ' en révision'));
+      var crBreakdown = creations.length ? '<div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px;font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600)"><span style="font-weight:700;color:var(--terre)">' + creations.length + ' création' + (creations.length > 1 ? 's' : '') + '</span>' + crParts.join('') + '</div>' : '';
+      var crIntro = '<div style="max-width:680px;margin:2px 0 24px">' +
+        '<p style="font-family:var(--font-display,serif);font-style:italic;font-size:21px;color:var(--terre);line-height:1.32;margin:0 0 8px">' + crCtx + '</p>' +
+        '<p style="font-size:14px;color:var(--terre-600);line-height:1.55;margin:0">Retrouvez vos créations et leurs versions — à télécharger, valider ou renvoyer en révision' + (project.deadline ? '. À livrer le ' + fmtDate(project.deadline) : '') + '.</p>' +
+        crBreakdown +
+        (crWaiting ? '<div style="margin-top:16px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#efe9f8;border:1px solid #dcd2f0;border-radius:12px;font-size:14px;color:#59409a"><span style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#59409a;color:#fff;padding:3px 8px;border-radius:999px;flex-shrink:0">Action</span><span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
       '</div>';
       var crBody;
       if (creations.length) {
