@@ -126,7 +126,7 @@
   }
   // Bouton « joindre » : label + input caché, à placer dans une zone de saisie.
   function admAttachBtn(cid, projectId) {
-    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 12px;border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;color:var(--terre-600);background:#fff">📎<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
+    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:12.5px;font-weight:600;white-space:nowrap">📎 Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
   }
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
