@@ -155,6 +155,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
 .cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.cp-proj-card--static { cursor: default; }
+.cp-proj-card--static:hover { transform: none; box-shadow: var(--shadow-1); }
 .cp-proj-banner { height: 140px; background: var(--terre); background-size: cover; background-position: center; position: relative; border-radius: var(--radius-3) var(--radius-3) 0 0; }
 .cp-proj-banner::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; opacity: 0.12; mix-blend-mode: screen; }
 .cp-proj-banner[data-img]::after { display: none; }
@@ -2659,7 +2661,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var ty = CR_TYCOL[c.type] || ['#9a8a72','#f5f0e8'];
           var revMsg = cliRevMsg(revMax, revUsed);
           var revBlock = revMax ? (
-            '<div style="margin-bottom:18px;padding:14px 16px;background:#ffffff88;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
+            '<div style="margin-bottom:18px;padding:14px 16px;background:#f8f4ee;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
               '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">' +
                 '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.1;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
                 '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600,#6f5c44);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
@@ -2668,15 +2670,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               '<div style="font-size:12px;color:var(--terre-600,#6f5c44);margin-top:10px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
             '</div>'
           ) : '';
-          return '<div class="cp-card" style="margin:0;padding:26px;background:' + ty[1] + ';border:1px solid ' + ty[0] + '2e;box-shadow:0 10px 32px -18px ' + ty[0] + '66">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px">' +
-              (CR_TY[c.type] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#fff;background:' + ty[0] + ';padding:5px 12px;border-radius:999px">' + esc(CR_TY[c.type]) + '</span>' : '<span></span>') +
-              (st[0] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + crCol + ';display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + crCol + ';display:inline-block"></span>' + esc(st[0]) + '</span>' : '') +
+          return '<div class="cp-proj-card cp-proj-card--static">' +
+            '<div class="cp-proj-banner" style="background:' + ty[0] + ';height:96px">' +
+              (CR_TY[c.type] ? '<span class="cp-proj-banner__badge">' + esc(CR_TY[c.type]) + '</span>' : '') +
+              (st[0] ? '<span class="cp-proj-banner__urgent" style="background:rgba(255,255,255,0.92);color:' + crCol + '">' + esc(st[0]) + '</span>' : '') +
             '</div>' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;line-height:1.12;color:var(--terre);margin-bottom:' + ((c.dueDate || revMax) ? '16px' : '20px') + '">' + esc(c.name) + '</div>' +
-            (c.dueDate ? '<div style="font-size:13px;color:var(--terre-600,#6f5c44);margin-bottom:' + (revMax ? '14px' : '20px') + '">À livrer le ' + fmtDate(c.dueDate) + '</div>' : '') +
-            revBlock +
-            '<div style="border-top:1px solid ' + ty[0] + '2e;padding-top:20px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
+            '<div class="cp-proj-card__body">' +
+              '<div class="cp-proj-card__title">' + esc(c.name) + '</div>' +
+              (c.dueDate ? '<div class="cp-proj-card__meta"><span>À livrer le ' + fmtDate(c.dueDate) + '</span></div>' : '') +
+              revBlock +
+              '<div style="border-top:1px solid var(--bone-d);padding-top:18px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
+            '</div>' +
           '</div>';
         }).join('') + '</div>';
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
