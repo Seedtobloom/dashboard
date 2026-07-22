@@ -705,20 +705,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (b < 1048576) return Math.round(b/1024) + ' Ko';
     return (b/1048576).toFixed(1) + ' Mo';
   }
-  // ── Révisions « séries de retours » : fleur de pétales (Seed to Bloom) ──
-  // Pétales pleins = séries restantes, pétales vides = déjà utilisées.
-  function cliPetals(total, used, size, color) {
-    size = size || 60; color = color || 'var(--terre,#412F21)';
-    var cx = size/2, cy = size/2, pr = size*0.17, ring = size*0.27;
-    var s = '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" aria-hidden="true" style="flex-shrink:0">';
+  // Jauge de séries de retours : segments simples et lisibles (pleins = restants).
+  // Pas de métaphore : toujours accompagnée du texte « X sur Y ».
+  function cliRevGauge(total, left, color) {
+    var seg = '';
     for (var i=0;i<total;i++){
-      var ang = (-90 + i*(360/total)) * Math.PI/180;
-      var px = cx + Math.cos(ang)*ring, py = cy + Math.sin(ang)*ring;
-      var open = i < (total-used);
-      s += '<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="'+pr.toFixed(1)+'" fill="'+(open?color:'none')+'" opacity="'+(open?'0.9':'1')+'" stroke="'+(open?'none':'#c7b8a2')+'" stroke-width="1.3"'+(open?'':' stroke-dasharray="2 2"')+'/>';
+      var on = i < left;
+      seg += '<span style="flex:1;height:7px;border-radius:99px;background:' + (on ? color : '#e7ddcd') + ';opacity:' + (on ? '0.9' : '1') + '"></span>';
     }
-    s += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(size*0.1).toFixed(1)+'" fill="#c9952f"/></svg>';
-    return s;
+    return '<div style="display:flex;gap:5px;max-width:220px">' + seg + '</div>';
   }
   // Message d'accompagnement qui évolue selon les séries restantes.
   function cliRevMsg(total, used) {
@@ -2631,12 +2626,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var ty = CR_TYCOL[c.type] || ['#9a8a72','#f5f0e8'];
           var revMsg = cliRevMsg(revMax, revUsed);
           var revBlock = revMax ? (
-            '<div style="display:flex;align-items:center;gap:13px;margin-bottom:18px;padding:13px 15px;background:#ffffff88;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
-              cliPetals(revMax, revUsed, 52, ty[0]) +
-              '<div style="min-width:0">' +
-                '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.15;color:var(--terre)">' + (revLeft > 0 ? 'Il vous reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</div>' +
-                '<div style="font-size:12px;color:var(--terre-600,#6f5c44);margin-top:3px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
+            '<div style="margin-bottom:18px;padding:14px 16px;background:#ffffff88;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
+              '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">' +
+                '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.1;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
+                '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600,#6f5c44);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
               '</div>' +
+              cliRevGauge(revMax, revLeft, ty[0]) +
+              '<div style="font-size:12px;color:var(--terre-600,#6f5c44);margin-top:10px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
             '</div>'
           ) : '';
           return '<div class="cp-card" style="margin:0;padding:26px;background:' + ty[1] + ';border:1px solid ' + ty[0] + '2e;box-shadow:0 10px 32px -18px ' + ty[0] + '66">' +
