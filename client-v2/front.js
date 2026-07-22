@@ -705,6 +705,29 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (b < 1048576) return Math.round(b/1024) + ' Ko';
     return (b/1048576).toFixed(1) + ' Mo';
   }
+  // ── Révisions « séries de retours » : fleur de pétales (Seed to Bloom) ──
+  // Pétales pleins = séries restantes, pétales vides = déjà utilisées.
+  function cliPetals(total, used, size, color) {
+    size = size || 60; color = color || 'var(--terre,#412F21)';
+    var cx = size/2, cy = size/2, pr = size*0.17, ring = size*0.27;
+    var s = '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" aria-hidden="true" style="flex-shrink:0">';
+    for (var i=0;i<total;i++){
+      var ang = (-90 + i*(360/total)) * Math.PI/180;
+      var px = cx + Math.cos(ang)*ring, py = cy + Math.sin(ang)*ring;
+      var open = i < (total-used);
+      s += '<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="'+pr.toFixed(1)+'" fill="'+(open?color:'none')+'" opacity="'+(open?'0.9':'1')+'" stroke="'+(open?'none':'#c7b8a2')+'" stroke-width="1.3"'+(open?'':' stroke-dasharray="2 2"')+'/>';
+    }
+    s += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(size*0.1).toFixed(1)+'" fill="#c9952f"/></svg>';
+    return s;
+  }
+  // Message d'accompagnement qui évolue selon les séries restantes.
+  function cliRevMsg(total, used) {
+    var left = total - used;
+    if (left >= total) return ['Vous disposez de toutes vos séries de retours.', 'Prenez le temps, on ajuste jusqu’à ce que ce soit juste.'];
+    if (left >= 2) return ['Il vous reste ' + left + ' séries de retours.', 'Je vous conseille de regrouper toutes vos remarques en une fois.'];
+    if (left === 1) return ['Dernière série de retours.', 'Prenez le temps de vérifier chaque détail avant de me répondre, je suis là pour vous accompagner.'];
+    return ['Toutes les séries incluses ont été utilisées.', 'Si nécessaire, nous pouvons prévoir une prestation complémentaire, on en parle quand vous voulez.'];
+  }
   function cpShowPrompt(title, label, defaultVal, onOk, opts) {
     opts = opts || {};
     var ov = document.createElement('div');
@@ -2603,17 +2626,27 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var st = CR_ST[c.status] || ['','#8a7d6b'];
           var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
-          var revDots = ''; for (var ri=0; ri<revMax; ri++) revDots += (ri < revUsed ? '●' : '○');
+          var revLeft = Math.max(0, revMax - revUsed);
           var crCol = st[1] || '#9a8a72';
           var ty = CR_TYCOL[c.type] || ['#9a8a72','#f5f0e8'];
+          var revMsg = cliRevMsg(revMax, revUsed);
+          var revBlock = revMax ? (
+            '<div style="display:flex;align-items:center;gap:13px;margin-bottom:18px;padding:13px 15px;background:#ffffff88;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
+              cliPetals(revMax, revUsed, 52, ty[0]) +
+              '<div style="min-width:0">' +
+                '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.15;color:var(--terre)">' + (revLeft > 0 ? 'Il vous reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</div>' +
+                '<div style="font-size:12px;color:var(--terre-600,#6f5c44);margin-top:3px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
+              '</div>' +
+            '</div>'
+          ) : '';
           return '<div class="cp-card" style="margin:0;padding:26px;background:' + ty[1] + ';border:1px solid ' + ty[0] + '2e;box-shadow:0 10px 32px -18px ' + ty[0] + '66">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px">' +
               (CR_TY[c.type] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#fff;background:' + ty[0] + ';padding:5px 12px;border-radius:999px">' + esc(CR_TY[c.type]) + '</span>' : '<span></span>') +
               (st[0] ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + crCol + ';display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + crCol + ';display:inline-block"></span>' + esc(st[0]) + '</span>' : '') +
             '</div>' +
             '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;line-height:1.12;color:var(--terre);margin-bottom:' + ((c.dueDate || revMax) ? '16px' : '20px') + '">' + esc(c.name) + '</div>' +
-            (c.dueDate ? '<div style="font-size:13px;color:var(--terre-600,#6f5c44);margin-bottom:' + (revMax ? '12px' : '20px') + '">À livrer le ' + fmtDate(c.dueDate) + '</div>' : '') +
-            (revMax ? '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--terre-600,#6f5c44);margin-bottom:20px"><span style="letter-spacing:5px;font-size:11px;color:' + (revUsed >= revMax ? '#c0533b' : ty[0]) + '">' + revDots + '</span><span>' + revUsed + ' / ' + revMax + ' révision' + (revMax > 1 ? 's' : '') + (revUsed >= revMax ? ' · limite atteinte' : '') + '</span></div>' : '') +
+            (c.dueDate ? '<div style="font-size:13px;color:var(--terre-600,#6f5c44);margin-bottom:' + (revMax ? '14px' : '20px') + '">À livrer le ' + fmtDate(c.dueDate) + '</div>' : '') +
+            revBlock +
             '<div style="border-top:1px solid ' + ty[0] + '2e;padding-top:20px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
           '</div>';
         }).join('') + '</div>';
