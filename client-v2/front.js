@@ -2608,11 +2608,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var crWaiting = allDlv.filter(function(d){ return d.status === 'a_valider'; }).length;
       var crIntro = '<div style="max-width:640px;margin:2px 0 22px">' +
         '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin:0">' + (creations.length ? 'Vos créations' : 'Votre création') + (project.deadline ? ' · à livrer le ' + fmtDate(project.deadline) : '') + '. Retrouvez leurs <strong>versions</strong>, à télécharger, valider ou renvoyer en révision, et les fichiers associés.</p>' +
-        (crWaiting ? '<div style="margin-top:14px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#fbf3d9;border:1px solid #f0e2b0;border-radius:12px;font-size:14px;color:#7a5a14">' + cpIcon('arrow',16,'color:#7a5a14;flex-shrink:0') + '<span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
+        (crWaiting ? '<div style="margin-top:14px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#efe9f8;border:1px solid #dcd2f0;border-radius:12px;font-size:14px;color:#59409a">' + cpIcon('arrow',16,'color:#59409a;flex-shrink:0') + '<span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
       '</div>';
       var crBody;
       if (creations.length) {
-        var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#c9952f'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
+        var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#6c4ea4'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
         var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
         // Couleur d'identité par categorie : [encre, fond teinte] pour differencier les cards.
         var CR_TYCOL = { print:['#a35a1a','#fbeee0'], digital:['#35608f','#e7eff9'], reseaux:['#6c4ea4','#f1ecfa'], evenementiel:['#4f6a46','#e8f0e3'], autre:['#9c6f18','#f6ecd5'] };
