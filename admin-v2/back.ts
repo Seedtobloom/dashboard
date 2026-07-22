@@ -748,6 +748,7 @@ async function handleClientApi(
         status: cleanEnum(body.status, CREATION_STATUSES) || 'a_preparer',
         dueDate: body.dueDate ? String(body.dueDate).slice(0, 10) : null,
         revisionsMax: typeof body.revisionsMax === 'number' ? Math.max(0, Math.min(20, Math.round(body.revisionsMax))) : 3,
+        bannerColor: cleanBannerColor(body.bannerColor),
         createdAt: nowIso(),
       };
       o.creations.push(cr);
@@ -763,6 +764,7 @@ async function handleClientApi(
       if ('status' in body) cr.status = cleanEnum(body.status, CREATION_STATUSES) || cr.status;
       if ('dueDate' in body) cr.dueDate = body.dueDate ? String(body.dueDate).slice(0, 10) : null;
       if ('revisionsMax' in body) cr.revisionsMax = Math.max(0, Math.min(20, Math.round(Number(body.revisionsMax) || 0)));
+      if ('bannerColor' in body) cr.bannerColor = cleanBannerColor(body.bannerColor);
       await saveClient(env, key, data);
       return json(cr);
     }
@@ -1745,6 +1747,9 @@ const cleanEnum = (v: unknown, allowed: string[]): string => (allowed.indexOf(St
 // « Mes créations » : chaque support (= projet de com) contient des créations.
 const CREATION_TYPES = ['print', 'digital', 'reseaux', 'evenementiel', 'autre'];
 const CREATION_STATUSES = ['a_preparer', 'en_creation', 'attente_client', 'revision', 'valide', 'archive'];
+// Palette de bannière (charte Seed to Bloom, sans jaune) : terre, glycine, bleu, vert, terracotta, prune.
+const CREATION_BANNER_COLORS = ['#6b533b', '#6c4ea4', '#35608f', '#4f6a46', '#a35a1a', '#8a5a6e'];
+function cleanBannerColor(v: any): string | null { return CREATION_BANNER_COLORS.indexOf(String(v)) !== -1 ? String(v) : null; }
 // Planning éditorial : jalons datés (date fixe ou durée en cascade) + qui agit.
 const PLAN_OWNERS = ['studio', 'cliente', 'les_deux'];
 const PLAN_STATUSES = ['a_venir', 'en_cours', 'fait'];

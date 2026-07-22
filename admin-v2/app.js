@@ -3670,7 +3670,18 @@
   var CR_TYPES = [['print', 'Print'], ['digital', 'Digital'], ['reseaux', 'Réseaux sociaux'], ['evenementiel', 'Événementiel'], ['autre', 'Autre']];
   var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
   // Couleur d'identité par catégorie : [encre, fond teinté] pour différencier les cards.
-  var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#6c4ea4', '#f1ecfa'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#9c6f18', '#f6ecd5'] };
+  var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#6c4ea4', '#f1ecfa'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#6b533b', '#efe9e2'] };
+  // Palette de bannière (charte, sans jaune) proposée à Cindy pour personnaliser une création.
+  var CR_BANNERS = ['#6b533b', '#6c4ea4', '#35608f', '#4f6a46', '#a35a1a', '#8a5a6e'];
+  function crBannerRow(pid, c) {
+    var sw = CR_BANNERS.map(function (bc) {
+      var on = (c.bannerColor || '').toLowerCase() === bc;
+      return '<button onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'bannerColor\',\'' + bc + '\')" title="Couleur de bannière" style="width:22px;height:22px;border-radius:50%;background:' + bc + ';border:2px solid ' + (on ? 'var(--terre)' : '#fff') + ';box-shadow:0 0 0 1px var(--bone-d);cursor:pointer;padding:0"></button>';
+    }).join('');
+    var autoOn = !c.bannerColor;
+    var auto = '<button onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'bannerColor\',\'\')" title="Auto (couleur de catégorie)" style="height:22px;padding:0 10px;border-radius:999px;background:#fff;border:2px solid ' + (autoOn ? 'var(--terre)' : '#fff') + ';box-shadow:0 0 0 1px var(--bone-d);cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;color:var(--terre-600)">Auto</button>';
+    return '<div class="row" style="gap:7px;align-items:center;flex-wrap:wrap"><span class="micro" style="color:var(--muted)">Bannière</span>' + auto + sw + '</div>';
+  }
   function crOpts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); }
   function supportCreationsBlock(s) {
     var pid = s.pid;
@@ -3751,6 +3762,7 @@
           '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="flex:1" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
           '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" style="flex:1" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
         '</div>' +
+        crBannerRow(pid, c) +
         '<div style="border-top:1px solid var(--bone-d);padding-top:16px;display:flex;flex-direction:column;gap:9px"><div class="micro" style="color:var(--muted);letter-spacing:0.08em">Versions</div>' + vHtml + '</div>' +
         '<div class="row" style="gap:8px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">+ Version</button>' +

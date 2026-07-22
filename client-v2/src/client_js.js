@@ -2213,7 +2213,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#6c4ea4'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
         var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
         // Couleur d'identité par categorie : [encre, fond teinte] pour differencier les cards.
-        var CR_TYCOL = { print:['#a35a1a','#fbeee0'], digital:['#35608f','#e7eff9'], reseaux:['#6c4ea4','#f1ecfa'], evenementiel:['#4f6a46','#e8f0e3'], autre:['#9c6f18','#f6ecd5'] };
+        var CR_TYCOL = { print:['#a35a1a','#fbeee0'], digital:['#35608f','#e7eff9'], reseaux:['#6c4ea4','#f1ecfa'], evenementiel:['#4f6a46','#e8f0e3'], autre:['#6b533b','#efe9e2'] };
         crBody = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;align-items:start">' + creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
           var st = CR_ST[c.status] || ['','#8a7d6b'];
@@ -2222,6 +2222,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var revLeft = Math.max(0, revMax - revUsed);
           var crCol = st[1] || '#9a8a72';
           var ty = CR_TYCOL[c.type] || ['#9a8a72','#f5f0e8'];
+          // La cliente voit la couleur choisie par le studio si définie, sinon la couleur de catégorie.
+          var band = /^#[0-9a-fA-F]{6}$/.test(c.bannerColor || '') ? c.bannerColor : ty[0];
           var revMsg = cliRevMsg(revMax, revUsed);
           var revBlock = revMax ? (
             '<div style="margin-bottom:18px;padding:14px 16px;background:#f8f4ee;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
@@ -2234,7 +2236,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '</div>'
           ) : '';
           return '<div class="cp-proj-card cp-proj-card--static">' +
-            '<div class="cp-proj-banner" style="background:' + ty[0] + ';height:96px">' +
+            '<div class="cp-proj-banner" style="background:' + band + ';height:96px">' +
               (CR_TY[c.type] ? '<span class="cp-proj-banner__badge">' + esc(CR_TY[c.type]) + '</span>' : '') +
               (st[0] ? '<span class="cp-proj-banner__urgent" style="background:rgba(255,255,255,0.92);color:' + crCol + '">' + esc(st[0]) + '</span>' : '') +
             '</div>' +
