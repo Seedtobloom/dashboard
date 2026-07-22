@@ -476,11 +476,20 @@ function mapClientQuestionnaires(espace: AnyObj): AnyObj[] {
   }));
 }
 
+// Fichiers joints à un message : [{key, name}] (nettoyés, max 10).
+function msgAttachments(raw: any): AnyObj[] {
+  return Array.isArray(raw)
+    ? raw.slice(0, 10)
+        .map((a: AnyObj) => ({ key: String((a && a.key) || '').slice(0, 300), name: String((a && a.name) || 'fichier').slice(0, 140) }))
+        .filter((a: AnyObj) => a.key)
+    : [];
+}
 function mapChatToMessages(chat: any[]): AnyObj[] {
   return (chat || []).map((m) => ({
     id: m.id || genId(),
     author: m.from === 'client' ? 'client' : 'cindy',
     content: m.message != null ? m.message : m.content || '',
+    attachments: Array.isArray(m.attachments) ? m.attachments : [],
     createdAt: m.date || m.createdAt || nowIso(),
     readByClient: m.readByClient !== false,
   }));
@@ -745,14 +754,16 @@ async function handleConversation(
   if (method === 'POST') {
     const body = await readJson(request);
     const content = (body.content || '').toString().trim();
-    if (!content) return json({ error: 'content is required' }, 400);
+    const attachments = msgAttachments(body.attachments);
+    if (!content && !attachments.length) return json({ error: 'content is required' }, 400);
     if (content.length > 4000) return json({ error: 'Message trop long' }, 400);
-    const entry = { id: genId(), from: 'client', message: content, date: nowIso(), readByClient: true, readByAdmin: false };
+    const entry = { id: genId(), from: 'client', message: content, attachments, date: nowIso(), readByClient: true, readByAdmin: false };
     espace.conversation.push(entry);
     await save(env, masterKey, data);
     await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`,
       `<p><strong>${escHtml(clientFullName(data))}</strong> vous a écrit :</p>` +
-      `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>`);
+      (content ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>` : '') +
+      (attachments.length ? `<p style="color:#412F21">📎 ${attachments.length} fichier(s) joint(s) — à retrouver dans l'espace.</p>` : ''));
     return json({ message: mapChatToMessages([entry])[0] }, 201);
   }
   return json({ error: 'Method not allowed' }, 405);
@@ -764,15 +775,17 @@ async function handleMessage(request: Request, env: Env, masterKey: string, data
   const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
   if (!container) return json({ error: 'Project not found' }, 404);
   const content = (body.content || '').toString().trim();
-  if (!content) return json({ error: 'content is required' }, 400);
+  const attachments = msgAttachments(body.attachments);
+  if (!content && !attachments.length) return json({ error: 'content is required' }, 400);
   if (content.length > 4000) return json({ error: 'Message trop long' }, 400);
   if (!Array.isArray(container.chat)) container.chat = [];
-  const entry = { id: genId(), from: 'client', message: content, date: nowIso(), readByClient: true, readByAdmin: false };
+  const entry = { id: genId(), from: 'client', message: content, attachments, date: nowIso(), readByClient: true, readByAdmin: false };
   container.chat.push(entry);
   await save(env, masterKey, data);
   await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> vous a écrit (${escHtml((body.projectId || '').toString())}) :</p>` +
-    `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>`);
+    (content ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>` : '') +
+    (attachments.length ? `<p style="color:#412F21">📎 ${attachments.length} fichier(s) joint(s) — à retrouver dans l'espace.</p>` : ''));
   return json({ message: mapChatToMessages([entry])[0] }, 201);
 }
 

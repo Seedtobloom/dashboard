@@ -92,6 +92,42 @@
   function admEmojiToggle(id) {
     var p = document.getElementById(id + '-emoji'); if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
   }
+  // ── Pièces jointes dans la messagerie (par zone de saisie) ──
+  var ADM_MSG_ATT = {};
+  // Clé du client courant selon le contexte (vue client = CURKEY ; messagerie globale = CHAT.key).
+  function admChatKey() { return (VIEW === 'chat' && CHAT && CHAT.key) ? CHAT.key : CURKEY; }
+  function admMsgAttChips(atts) {
+    if (!atts || !atts.length) return '';
+    var k = admChatKey();
+    return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function (a) {
+      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+    }).join('') + '</div>';
+  }
+  function admMsgAttRender(cid) {
+    var box = el(cid + '-att'); if (!box) return;
+    box.innerHTML = (ADM_MSG_ATT[cid] || []).map(function (a, i) {
+      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:1px solid var(--bone-d);border-radius:8px;padding:4px 9px">📎 ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+    }).join('');
+  }
+  function admMsgAttRemove(cid, i) { if (ADM_MSG_ATT[cid]) { ADM_MSG_ATT[cid].splice(i, 1); admMsgAttRender(cid); } }
+  function admMsgAttPick(input, cid, projectId) {
+    var list = input.files; if (!list || !list.length) return;
+    var arr = Array.prototype.slice.call(list);
+    for (var i = 0; i < arr.length; i++) { if (admTooBig(arr[i])) { toast(admBigMsg(arr[i])); input.value = ''; return; } }
+    if (!ADM_MSG_ATT[cid]) ADM_MSG_ATT[cid] = [];
+    var k = admChatKey();
+    toast('Envoi du fichier…');
+    Promise.all(arr.map(function (f) { var fd = new FormData(); fd.append('file', f); fd.append('projectId', projectId); return api('/api/clients/' + k + '/files', { method: 'POST', body: fd }).then(admUploadResult); })).then(function (res) {
+      var okAny = false;
+      res.forEach(function (r) { if (r.ok && r.d && r.d.key) { ADM_MSG_ATT[cid].push({ key: r.d.key, name: r.d.name }); okAny = true; } });
+      admMsgAttRender(cid); toast(okAny ? 'Fichier ajouté' : 'Erreur, réessaie');
+    }).catch(function () { toast('Erreur, réessaie'); });
+    input.value = '';
+  }
+  // Bouton « joindre » : label + input caché, à placer dans une zone de saisie.
+  function admAttachBtn(cid, projectId) {
+    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 12px;border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;color:var(--terre-600);background:#fff">📎<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
+  }
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
   function el(id) { return document.getElementById(id); }
@@ -4730,7 +4766,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span></div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -4748,13 +4784,16 @@
       '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
       '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, '') + '</div>' +
       admMsgToolbar('msg-' + d.id) +
+      '<div id="msg-' + d.id + '-att" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0"></div>' +
       '<div class="row"><textarea class="inp" id="msg-' + d.id + '" placeholder="Répondre au client…" style="max-height:300px;overflow-y:auto" oninput="ADM.taGrow(this)"></textarea></div>' +
-      '<div class="row row--end mt" style="gap:8px"><button class="btn btn--outline btn--sm" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'msg-' + d.id + '\')">⚡ Réponses</button><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
+      '<div class="row row--end mt" style="gap:8px">' + admAttachBtn('msg-' + d.id, d.id) + '<button class="btn btn--outline btn--sm" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'msg-' + d.id + '\')">⚡ Réponses</button><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
   }
   function chatCardSearch(domainId, v) { var d = findDomain(domainId); var box = el('chat-' + domainId); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function sendMsg(pid) {
-    var i = el('msg-' + pid); var v = (i.value || '').trim(); if (!v) return;
-    jpost('/api/clients/' + CURKEY + '/message', { projectId: pid, content: v }).then(function (r) { if (r.ok) { toast('Message envoyé'); loadClient(); } else toast('Erreur'); });
+    var cid = 'msg-' + pid; var i = el(cid); var v = (i.value || '').trim();
+    var atts = ADM_MSG_ATT[cid] || [];
+    if (!v && !atts.length) return;
+    jpost('/api/clients/' + CURKEY + '/message', { projectId: pid, content: v, attachments: atts }).then(function (r) { if (r.ok) { toast('Message envoyé'); ADM_MSG_ATT[cid] = []; loadClient(); } else toast('Erreur'); });
   }
 
   /* documents */
@@ -4855,7 +4894,8 @@
     var chips = el('chatchips'); if (chips) { var bs = chips.querySelectorAll('.subtab'); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('active', bs[i].getAttribute('data-pid') === pid); }
     box.innerHTML = '<div class="chatscroll" id="chatmsgs">' + chatBubbles(d, '') + '</div>' +
       '<div style="padding:0 4px">' + admMsgToolbar('gmsg') + '</div>' +
-      '<div class="chatcompose"><textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)" oninput="ADM.taGrow(this)"></textarea>' +
+      '<div id="gmsg-att" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 6px"></div>' +
+      '<div class="chatcompose">' + admAttachBtn('gmsg', pid) + '<textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)" oninput="ADM.taGrow(this)"></textarea>' +
       '<button class="btn btn--outline" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'gmsg\')">⚡</button>' +
       '<button class="btn btn--dark" onclick="ADM.gsend()">Envoyer</button></div>';
     var box2 = el('chatmsgs'); if (box2) box2.scrollTop = box2.scrollHeight;
@@ -4866,10 +4906,12 @@
   function chatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); gsend(); } }
   function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v); }
   function gsend() {
-    var i = el('gmsg'); var v = (i.value || '').trim(); if (!v) return;
-    jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v }).then(function (r) {
+    var i = el('gmsg'); var v = (i.value || '').trim();
+    var atts = ADM_MSG_ATT['gmsg'] || [];
+    if (!v && !atts.length) return;
+    jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v, attachments: atts }).then(function (r) {
       if (!r.ok) { toast('Erreur'); return; }
-      i.value = ''; taGrow(i);
+      i.value = ''; taGrow(i); ADM_MSG_ATT['gmsg'] = [];
       api('/api/clients/' + CHAT.key).then(function (r2) { return r2.json(); }).then(function (d) {
         if (CHAT.key !== d.key) return;
         CUR = d; CURKEY = CHAT.key;
@@ -5679,6 +5721,7 @@
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, chatKey: chatKey, taGrow: taGrow,
     msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
+    msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,
   };
   boot();

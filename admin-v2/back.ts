@@ -958,7 +958,14 @@ async function handleClientPatch(request: Request, env: Env, key: string, data: 
 
 /* ── chat ── */
 function mapMsg(m: AnyObj): AnyObj {
-  return { id: m.id, author: m.from === 'client' ? 'client' : 'cindy', content: m.message != null ? m.message : m.content, createdAt: m.date || m.createdAt, readByAdmin: m.readByAdmin !== false };
+  return { id: m.id, author: m.from === 'client' ? 'client' : 'cindy', content: m.message != null ? m.message : m.content, attachments: Array.isArray(m.attachments) ? m.attachments : [], createdAt: m.date || m.createdAt, readByAdmin: m.readByAdmin !== false };
+}
+function msgAttachments(raw: any): AnyObj[] {
+  return Array.isArray(raw)
+    ? raw.slice(0, 10)
+        .map((a: AnyObj) => ({ key: String((a && a.key) || '').slice(0, 300), name: String((a && a.name) || 'fichier').slice(0, 140) }))
+        .filter((a: AnyObj) => a.key)
+    : [];
 }
 async function handleAdminMessage(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
@@ -966,10 +973,11 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   const { container, label } = resolveProject(esp, (body.projectId || '').toString());
   if (!container) return json({ error: 'Projet introuvable' }, 404);
   const content = (body.content || '').toString().trim();
-  if (!content) return json({ error: 'content requis' }, 400);
+  const attachments = msgAttachments(body.attachments);
+  if (!content && !attachments.length) return json({ error: 'content requis' }, 400);
   if (content.length > 4000) return json({ error: 'Message trop long' }, 400);
   if (!Array.isArray(container.chat)) container.chat = [];
-  const entry = { id: genId(), from: 'cindy', message: content, date: nowIso(), readByClient: false, readByAdmin: true };
+  const entry = { id: genId(), from: 'cindy', message: content, attachments, date: nowIso(), readByClient: false, readByAdmin: true };
   container.chat.push(entry);
   await saveClient(env, key, data);
   await notifyClient(env, data, `Nouveau message · ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`, key);

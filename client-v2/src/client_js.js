@@ -177,6 +177,39 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cpHolidays = []; // conges du studio (depuis les reglages)
   var convData = []; // fil de conversation unifié (espace client)
   var cpConvThread = '_general'; // fil sélectionné dans la messagerie (général ou support)
+  var cpConvAtt = []; // fichiers joints en attente d'envoi dans la messagerie
+  // Rendu des fichiers joints d'un message (liens de téléchargement).
+  function cpAttChips(atts) {
+    if (!atts || !atts.length) return '';
+    return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function(a){
+      return '<a href="' + API_BASE + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none">' + cpIcon('paperclip',12) + esc(a.name || 'fichier') + '</a>';
+    }).join('') + '</div>';
+  }
+  // Projet-cible pour stocker un fichier joint (les fichiers sont récupérables par
+  // clé quel que soit le dossier ; pour le fil général on prend le 1er projet actif).
+  function cpConvUploadPid() {
+    if (cpConvThread && cpConvThread !== '_general') return cpConvThread;
+    var ps = (appData && appData.projects) || [];
+    return ps.length ? ps[0].project.id : 'partner';
+  }
+  function cpConvAttRender() {
+    var box = document.getElementById('cp-convo-att'); if (!box) return;
+    box.innerHTML = cpConvAtt.map(function(a, i){
+      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px">' + cpIcon('paperclip',12) + esc(a.name) + '<button onclick="cpConvAttRemove(' + i + ')" title="Retirer" style="border:none;background:none;color:#9b3a2e;cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+    }).join('');
+  }
+  window.cpConvAttRemove = function(i){ cpConvAtt.splice(i, 1); cpConvAttRender(); };
+  window.cpConvAttachPick = function(input){
+    var list = input.files; if (!list || !list.length) return;
+    var arr = Array.prototype.slice.call(list);
+    var tooBig = cliAnyTooBig(arr); if (tooBig){ toast(cliBigMsg(tooBig), true); input.value = ''; return; }
+    toast('Envoi du fichier…');
+    Promise.all(arr.map(function(f){ return cliUploadFile(f, cpConvUploadPid()); })).then(function(res){
+      res.forEach(function(r){ if (r && r.key) cpConvAtt.push({ key: r.key, name: r.name }); });
+      cpConvAttRender(); toast('Fichier ajouté');
+    }).catch(function(){ toast('Erreur lors de l\'envoi du fichier', true); });
+    input.value = '';
+  };
   var cpNewTaskFiles = []; // fichiers ajoutés un à un dans le formulaire de nouvelle tâche
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages' | 'questionnaires'
@@ -5277,7 +5310,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
       cpAvatar(isC?'Cindy':appData.clientName||'Client', isC?'cindy':'client', 30) +
       '<div>' +
-        '<div class="cp-msg__bubble"><div class="cp-msg__text">' + fmtMsg(m.content) + '</div></div>' +
+        '<div class="cp-msg__bubble">' + (m.content ? '<div class="cp-msg__text">' + fmtMsg(m.content) + '</div>' : '') + cpAttChips(m.attachments) + '</div>' +
         '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + '</div>' +
       '</div>' +
     '</div>';
@@ -5300,6 +5333,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   window.cpConvSetThread = function(id) {
     cpConvThread = id;
+    cpConvAtt = []; // les pièces jointes ne suivent pas d'un fil à l'autre
     var threads = convThreads();
     var t = threads.filter(function(x){ return x.id === id; })[0];
     // Marquer lu côté serveur pour un fil support
@@ -5348,7 +5382,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
       '<div style="padding:12px 20px 10px;border-top:1px solid var(--bone-d);display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
         cpMsgToolbar('cp-convo-draft') +
-        '<div style="display:flex;gap:12px;align-items:flex-end">' +
+        '<div id="cp-convo-att" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
+        '<div style="display:flex;gap:10px;align-items:flex-end">' +
+          '<label title="Joindre un fichier" style="height:46px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid var(--bone-d);border-radius:var(--radius-pill);cursor:pointer;color:var(--terre-600)">' + cpIcon('paperclip',17) + '<input type="file" multiple style="display:none" onchange="cpConvAttachPick(this)"></label>' +
           '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
           '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
         '</div>' +
@@ -5363,6 +5399,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // scroll to bottom on load
     var list = document.getElementById('cp-convo-list');
     if (list) list.scrollTop = list.scrollHeight;
+    cpConvAttRender();
   }
 
   window.cpConvoKey = function(e) {
@@ -5373,10 +5410,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ta = document.getElementById('cp-convo-draft');
     if (!ta) return;
     var content = ta.value.trim();
-    if (!content) return;
+    if (!content && !cpConvAtt.length) return;
     var isProject = cpConvThread && cpConvThread !== '_general';
     var url = isProject ? (API_BASE + '/message') : (API_BASE + '/conversation');
-    var payload = isProject ? { projectId: cpConvThread, content: content } : { content: content };
+    var atts = cpConvAtt.slice();
+    var payload = isProject ? { projectId: cpConvThread, content: content, attachments: atts } : { content: content, attachments: atts };
     ta.disabled = true;
     fetch(url, { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ' ' + (t||'').slice(0,120)); }); return r.json(); })
@@ -5392,6 +5430,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var node = div.firstChild;
         if (list && node) { list.appendChild(node); node.scrollIntoView({behavior:'smooth',block:'nearest'}); }
         ta.value = '';
+        cpConvAtt = []; cpConvAttRender();
         toast('Message envoye ✓');
       })
       .catch(function(err){ console.error('envoi message', err); toast('Erreur, réessayez.'); })
@@ -6998,7 +7037,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var div = document.createElement('div');
         div.className = 'cp-msg cp-msg--cindy';
         div.innerHTML = '<div class="cp-msg__av cp-msg__av--cindy">C</div>' +
-          '<div class="cp-msg__bubble"><div class="cp-msg__text">' + fmtMsg(msg.content) + '</div>' +
+          '<div class="cp-msg__bubble">' + (msg.content ? '<div class="cp-msg__text">' + fmtMsg(msg.content) + '</div>' : '') + cpAttChips(msg.attachments) + '</div>' +
           '<div class="cp-msg__date">Cindy · maintenant</div></div>';
         el.appendChild(div);
       });
