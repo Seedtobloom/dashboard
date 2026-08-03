@@ -2257,14 +2257,6 @@
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
   var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [];
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
-  // Accent couleur par jour : pour distinguer les colonnes d'un coup d'œil (au lieu du ton sur ton).
-  var MS_DAY_ACCENT = [
-    { bar: '#a98bd6', tint: '#f7efff', txt: '#6c4ea4' }, // Lun · glycine
-    { bar: '#d0a03f', tint: '#fbf3d8', txt: '#8a6410' }, // Mar · paille / or
-    { bar: '#6f9061', tint: '#eef4ea', txt: '#4f7a52' }, // Mer · vert
-    { bar: '#cf9483', tint: '#f9ece7', txt: '#a25a45' }, // Jeu · terracotta
-    { bar: '#8f9bc4', tint: '#eef0f7', txt: '#5a6494' }  // Ven · bleu ardoise
-  ];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
   function msIso(d) { return d.getFullYear() + '-' + msPad(d.getMonth() + 1) + '-' + msPad(d.getDate()); }
@@ -2323,8 +2315,7 @@
     function taskChip(t, diso) {
       var cn = t.clientName ? '<span style="font-family:var(--font-micro);font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">' + esc(t.clientName) + '</span>' : '';
       var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? '<span title="Échéance dépassée" style="color:var(--red);font-weight:700"> !</span>' : (t.dueDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0"> · échéance ' + msShort(t.dueDate) + '</span>' : '');
-      var srcCol = t._src === 'client' ? 'var(--glycine-700)' : 'var(--terre-200)';
-      return '<div style="background:#fff;border:1px solid var(--bone-d);border-left:3px solid ' + srcCol + ';border-radius:9px;padding:8px 10px;margin-bottom:7px">' +
+      return '<div style="background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:8px 10px;margin-bottom:7px">' +
         '<div style="font-size:12.5px;color:var(--terre);line-height:1.25">' + esc(t.title) + dueWarn + '</div>' + cn +
         '<div class="row" style="gap:5px;align-items:center;margin-top:6px">' +
           '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:64px;font-size:11px;padding:3px 6px">' +
@@ -2332,8 +2323,7 @@
         '</div>' +
       '</div>';
     }
-    var cols = days.map(function (d, i) {
-      var ac = MS_DAY_ACCENT[i] || MS_DAY_ACCENT[0];
+    var cols = days.map(function (d) {
       var diso = msIso(d);
       var dayTasks = active.filter(function (t) { return (t.doDate || '').slice(0, 10) === diso; });
       var planned = dayTasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
@@ -2342,19 +2332,15 @@
       var capCol = dOver ? '#b0761c' : '#4f7a52';
       var isToday = diso === todayIso;
       var head = '<div style="text-align:center;padding-bottom:8px;border-bottom:1px solid var(--bone-d);margin-bottom:10px">' +
-        '<div class="micro" style="color:' + ac.txt + ';font-weight:700">' + MS_DOW[(d.getDay() + 6) % 7] + '</div>' +
+        '<div class="micro" style="color:' + (isToday ? 'var(--terre)' : 'var(--terre-600)') + ';font-weight:700">' + MS_DOW[(d.getDay() + 6) % 7] + '</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:' + (isToday ? 'var(--terre)' : 'var(--terre-400)') + '">' + d.getDate() + '</div>' +
         (planned ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;font-family:var(--font-micro);font-size:10px;color:' + capCol + '"><span style="width:7px;height:7px;border-radius:50%;background:' + capCol + '"></span>' + msDur(planned) + (avail ? ' / ' + msHours(avail) : '') + '</div>' : '<div class="micro" style="margin-top:3px;color:var(--muted)">libre</div>') +
       '</div>';
       var body = dayTasks.length ? dayTasks.map(function (t) { return taskChip(t, diso); }).join('') : '<div class="micro" style="text-align:center;color:var(--muted);padding:10px 0;text-transform:none;letter-spacing:0">Rien de planifié</div>';
       var dayAdd = '<input class="inp" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px 8px;margin-top:6px">';
-      return '<div style="background:' + ac.tint + ';border:1px solid var(--bone-d);border-top:3px solid ' + ac.bar + ';border-radius:12px;padding:12px' + (isToday ? ';box-shadow:0 0 0 2px var(--terre) inset' : '') + '">' + head + body + dayAdd + '</div>';
+      return '<div style="background:#fff;border:1px solid ' + (isToday ? 'var(--terre)' : 'var(--bone-d)') + ';border-radius:12px;padding:12px">' + head + body + dayAdd + '</div>';
     }).join('');
-    var grid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px">' + cols + '</div>' +
-      '<div class="row micro" style="gap:16px;margin-top:10px;color:var(--muted);text-transform:none;letter-spacing:0;flex-wrap:wrap">' +
-        '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:var(--terre-200)"></span>Mes tâches</span>' +
-        '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:var(--glycine-700)"></span>Partenaire créative (clientes)</span>' +
-      '</div>';
+    var grid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px">' + cols + '</div>';
     // À placer
     var toPlace = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
     var placeHtml = '<div class="card" style="background:var(--card);margin-top:16px">' +
@@ -2363,7 +2349,7 @@
       (toPlace.length ? '<div style="display:flex;flex-direction:column;gap:8px">' + toPlace.slice(0, 40).map(function (t) {
         var cn = t.clientName ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0"> · ' + esc(t.clientName) + '</span>' : '';
         var due = t.dueDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;white-space:nowrap">échéance ' + msShort(t.dueDate) + '</span>' : '';
-        return '<div class="row" style="align-items:center;gap:10px;border:1px solid var(--bone-d);border-left:3px solid ' + (t._src === 'client' ? 'var(--glycine-700)' : 'var(--terre-200)') + ';border-radius:10px;padding:9px 12px;background:#fff">' +
+        return '<div class="row" style="align-items:center;gap:10px;border:1px solid var(--bone-d);border-radius:10px;padding:9px 12px;background:#fff">' +
           '<span style="flex:1;min-width:0;font-size:13.5px;color:var(--terre)">' + esc(t.title) + cn + '</span>' + due +
           '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:70px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
@@ -4102,12 +4088,17 @@
       (rows.length ? rows.map(jalonRow).join('') : '<div class="empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
       '<div class="row mt" style="gap:6px"><input class="inp" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="btn btn--dark btn--sm" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">+ Ajouter un jalon</button></div>';
   }
+  // Blocs « planning prévisionnel » ouverts : on mémorise l'état déplié pour
+  // qu'un rafraîchissement (ajout de jalon, édition de date…) ne referme pas le bloc.
+  var PJ_OPEN = {};
+  function pjToggle(id, open) { if (open) PJ_OPEN[id] = 1; else delete PJ_OPEN[id]; }
   // Bloc « planning prévisionnel » propre à une création, replié par défaut.
   // pid = pid brut du support (d.pid) ; la route /planning attend l'id projet complet « support-<pid> ».
   function crPlanBlock(pid, c) {
     var fullPid = 'support-' + pid;
     var n = Array.isArray(c.planning) ? c.planning.length : 0;
-    return '<details style="border-top:1px solid var(--bone-d);padding-top:14px">' +
+    var did = 'crplan-' + fullPid + (c.id ? '-' + c.id : '');
+    return '<details id="' + did + '"' + (PJ_OPEN[did] ? ' open' : '') + ' ontoggle="ADM.pjToggle(\'' + did + '\',this.open)" style="border-top:1px solid var(--bone-d);padding-top:14px">' +
       '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);list-style:none">📅 Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</summary>' +
       '<div style="margin-top:14px">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
     '</details>';
@@ -4121,7 +4112,7 @@
   }
   // pid = identifiant public du projet (d.id : 'website' / 'branding' / 'support-001'…),
   // envoyé en projectId à la route générique /planning résolue via resolveProject.
-  function pjAdd(pid, cid) { var eid = 'plan-new-' + pid + (cid ? '-' + cid : ''); var v = (el(eid) ? el(eid).value : '').trim(); var b = { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }; if (cid) b.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning', b).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function pjAdd(pid, cid) { var eid = 'plan-new-' + pid + (cid ? '-' + cid : ''); var v = (el(eid) ? el(eid).value : '').trim(); var b = { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }; if (cid) b.creationId = cid; PJ_OPEN['crplan-' + pid + (cid ? '-' + cid : '')] = 1; jpost('/api/clients/' + CURKEY + '/planning', b).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); setTimeout(function () { var nb = el(eid); if (nb) nb.focus(); }, 0); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function pjSet(pid, jid, field, val, cid) { var body = { projectId: pid }; body[field] = val; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function pjMove(pid, jid, dir, cid) { var body = { projectId: pid, move: dir }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }); }
   function pjDel(pid, jid, cid) { admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () { api('/api/clients/' + CURKEY + '/planning/' + jid + '?projectId=' + encodeURIComponent(pid) + (cid ? '&creationId=' + encodeURIComponent(cid) : ''), { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); refreshClient(); } else toast('Erreur'); }); }); }
@@ -5999,7 +5990,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msPlace: msPlace, msEst: msEst, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,

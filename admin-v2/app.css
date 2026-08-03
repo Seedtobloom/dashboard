@@ -78,7 +78,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .wrap{padding:14px 40px 90px;max-width:1120px;margin:0 auto}
 
 /* cards / grid */
-.card{background:var(--card);border-radius:var(--radius);padding:26px 28px;margin-bottom:22px;border:1px solid var(--bone-d);box-shadow:var(--shadow-1)}
+.card{background:var(--card);border-radius:var(--radius);padding:26px 28px;margin-bottom:22px;border:1px solid var(--bone-d)}
 .card h3{font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);font-weight:400;margin-bottom:14px}
 .infocard h3{display:flex;align-items:center;gap:0}
 .infocard__dot{display:none}
