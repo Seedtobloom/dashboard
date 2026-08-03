@@ -615,7 +615,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function cpAttChips(atts) {
     if (!atts || !atts.length) return '';
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function(a){
-      return '<a href="' + API_BASE + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none">' + cpIcon('paperclip',12) + esc(a.name || 'fichier') + '</a>';
+      return '<a href="' + API_BASE + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#128206;</span>' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   // Projet-cible pour stocker un fichier joint (les fichiers sont récupérables par
@@ -628,7 +628,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function cpConvAttRender() {
     var box = document.getElementById('cp-convo-att'); if (!box) return;
     box.innerHTML = cpConvAtt.map(function(a, i){
-      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px">' + cpIcon('paperclip',12) + esc(a.name) + '<button onclick="cpConvAttRemove(' + i + ')" title="Retirer" style="border:none;background:none;color:#9b3a2e;cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px"><span style="font-size:12px;line-height:1">&#128206;</span>' + esc(a.name) + '<button onclick="cpConvAttRemove(' + i + ')" title="Retirer" style="border:none;background:none;color:#9b3a2e;cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
     }).join('');
   }
   window.cpConvAttRemove = function(i){ cpConvAtt.splice(i, 1); cpConvAttRender(); };
@@ -5779,13 +5779,24 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var isC = m.author === 'cindy';
     var name = isC ? 'Cindy' : 'Vous';
     var timeStr = fmtShort(m.createdAt);
-    return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + '">' +
+    var pin = m.pinned === true;
+    var pinBadge = pin ? '<div style="display:inline-flex;align-items:center;gap:4px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine);margin-bottom:5px">&#128204; Épinglé par Cindy</div>' : '';
+    var bubbleStyle = pin ? ' style="box-shadow:inset 0 0 0 1.5px var(--glycine);background:var(--glycine-50,#f7efff)"' : '';
+    return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + (pin?' cp-msg--pinned':'') + '">' +
       cpAvatar(isC?'Cindy':appData.clientName||'Client', isC?'cindy':'client', 30) +
       '<div>' +
-        '<div class="cp-msg__bubble">' + (m.content ? '<div class="cp-msg__text">' + fmtMsg(m.content) + '</div>' : '') + cpAttChips(m.attachments) + '</div>' +
+        '<div class="cp-msg__bubble"' + bubbleStyle + '>' + pinBadge + (m.content ? '<div class="cp-msg__text">' + fmtMsg(m.content) + '</div>' : '') + cpAttChips(m.attachments) + '</div>' +
         '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + '</div>' +
       '</div>' +
     '</div>';
+  }
+  // Messages épinglés d'abord, en conservant l'ordre chronologique dans chaque groupe.
+  function convOrder(arr) {
+    if (!Array.isArray(arr)) return [];
+    var pinned = arr.filter(function(m){ return m.pinned === true; });
+    if (!pinned.length) return arr;
+    var rest = arr.filter(function(m){ return m.pinned !== true; });
+    return pinned.concat(rest);
   }
 
   function convThreads() {
@@ -5822,7 +5833,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var multi = threads.length > 1;
     if (!threads.some(function(t){ return t.id === cpConvThread; })) cpConvThread = '_general';
     var cur = threads.filter(function(t){ return t.id === cpConvThread; })[0] || threads[0];
-    var arr = convThreadMsgs(cur);
+    var arr = convOrder(convThreadMsgs(cur));
     var msgs = arr.length
       ? arr.map(convoMsgHtml).join('')
       : '<div style="padding:60px 24px;text-align:center">' +
@@ -5856,7 +5867,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         cpMsgToolbar('cp-convo-draft') +
         '<div id="cp-convo-att" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
         '<div style="display:flex;gap:10px;align-items:flex-end">' +
-          '<label title="Joindre un fichier" style="height:46px;flex-shrink:0;display:inline-flex;align-items:center;gap:7px;padding:0 16px;border:1px solid var(--bone-d);border-radius:var(--radius-pill);cursor:pointer;color:var(--terre);font-family:var(--font-micro);font-size:12px;font-weight:600">' + cpIcon('paperclip',16) + 'Joindre<input type="file" multiple style="display:none" onchange="cpConvAttachPick(this)"></label>' +
+          '<label title="Joindre un fichier" style="height:46px;flex-shrink:0;display:inline-flex;align-items:center;gap:7px;padding:0 16px;border:1px solid var(--bone-d);border-radius:var(--radius-pill);cursor:pointer;color:var(--terre);font-family:var(--font-micro);font-size:12px;font-weight:600"><span style="font-size:15px;line-height:1">&#128206;</span>Joindre<input type="file" multiple style="display:none" onchange="cpConvAttachPick(this)"></label>' +
           '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
           '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
         '</div>' +
@@ -7546,7 +7557,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             if (list) {
               var threads = convThreads();
               var cur = threads.filter(function(t){ return t.id === cpConvThread; })[0] || threads[0];
-              var arr = cur ? convThreadMsgs(cur) : [];
+              var arr = cur ? convOrder(convThreadMsgs(cur)) : [];
               if (arr.length) {
                 var html = arr.map(convoMsgHtml).join('');
                 if (list.innerHTML !== html) {

@@ -493,6 +493,7 @@ function mapChatToMessages(chat: any[]): AnyObj[] {
     attachments: Array.isArray(m.attachments) ? m.attachments : [],
     createdAt: m.date || m.createdAt || nowIso(),
     readByClient: m.readByClient !== false,
+    pinned: m.pinned === true,
   }));
 }
 
