@@ -23,9 +23,9 @@ const CLIENT_CSS = String.raw`/* Client portal  Ecrin Design System  Seed to Blo
   --nuit-900:#0d0803; --nuit:#1C1205; --nuit-700:#2a1d10;
   --nuit-500:#5c4633; --nuit-300:#8a6f54;
   --glycine-50:#f7efff; --glycine-200:#efddff; --glycine:#E4D1FE;
-  --glycine-700:#a98bd6; --glycine-900:#6c4ea4;
+  --glycine-700:#a98bd6; --glycine-900:#573b8a;
   --brume-50:#f7efff; --brume-200:#efddff; --brume:#F0E8FF;
-  --brume-700:#a98bd6; --brume-900:#6c4ea4;
+  --brume-700:#a98bd6; --brume-900:#573b8a;
   --paille-200:#fbf3d8; --paille:#F2E5C2; --paille-700:#c9b585;
   --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb;
   /* legacy aliases for compat */
@@ -38,7 +38,7 @@ const CLIENT_CSS = String.raw`/* Client portal  Ecrin Design System  Seed to Blo
   --bg: #ffffff;
   --white: #FFFFFF;
   --text: #412F21;
-  --muted: #8a6f54;
+  --muted: #6b533b;
   --border: #eae5dc;
   --surface: #f3ede3;
   --sage: #a98bd6;
@@ -227,11 +227,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-step--done .cp-step__name { color: var(--terre-400); text-decoration: line-through; text-decoration-color: var(--bone-d); }
 .cp-step__badge { display: inline-block; font-family: var(--font-micro); font-size: 10px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--bone-d); color: var(--terre-600); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-step--active .cp-step__badge { background: var(--brume-200); color: var(--brume-900); }
-.cp-step--waiting .cp-step__badge { background: rgba(201,149,47,0.12); color: var(--st-review); }
+.cp-step--waiting .cp-step__badge { background: #faf1da; color: #6a4a0b; }
 .cp-step--done .cp-step__badge { background: rgba(92,70,51,0.1); color: var(--st-done); }
 .cp-step__desc { font-size: var(--fs-small); color: var(--terre-600); margin-top: 4px; line-height: 1.6; }
 .cp-step__action { margin-top: 8px; background: rgba(201,149,47,0.06); padding: 10px 14px; border-radius: var(--radius-2); font-size: var(--fs-small); color: var(--terre); line-height: 1.6; }
-.cp-step__action strong { display: block; color: var(--st-review); font-family: var(--font-micro); font-size: 10px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em; }
+.cp-step__action strong { display: block; color: #6a4a0b; font-family: var(--font-micro); font-size: 10px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em; }
 
 /* Tabs */
 .cp-tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
@@ -423,8 +423,8 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 /* deadline pill */
 .cp-dpill { display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600); }
 .cp-dpill.done { color:var(--st-done); }
-.cp-dpill.late { color:#9b3a2e; }
-.cp-dpill.soon { color:var(--st-review); }
+.cp-dpill.late { color:#8d2b21; }
+.cp-dpill.soon { color:#6a4a0b; }
 
 /* fade-up entrance */
 @media (prefers-reduced-motion:no-preference) { .fade-up { animation:fadeUp var(--dur) var(--ease) both; } }
@@ -556,7 +556,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var days = Math.round((d - today) / 86400000);
     var calIcon = cpIcon('calendar', 13);
     if (done) return '<span class="cp-dpill done" style="display:inline-flex;align-items:center;gap:4px">'+cpIcon('check',12)+' Termine</span>';
-    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#9b3a2e">'+calIcon+' retard '+Math.abs(days)+' j</span>';
+    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#8d2b21">'+calIcon+' retard '+Math.abs(days)+' j</span>';
     if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#c9952f">'+calIcon+' dans '+days+' j</span>';
     return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Échéance '+fmtShort(due)+'</span>';
   }
@@ -628,7 +628,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function cpConvAttRender() {
     var box = document.getElementById('cp-convo-att'); if (!box) return;
     box.innerHTML = cpConvAtt.map(function(a, i){
-      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px"><span style="font-size:12px;line-height:1">&#128206;</span>' + esc(a.name) + '<button onclick="cpConvAttRemove(' + i + ')" title="Retirer" style="border:none;background:none;color:#9b3a2e;cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px"><span style="font-size:12px;line-height:1">&#128206;</span>' + esc(a.name) + '<button onclick="cpConvAttRemove(' + i + ')" title="Retirer" style="border:none;background:none;color:#8d2b21;cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
     }).join('');
   }
   window.cpConvAttRemove = function(i){ cpConvAtt.splice(i, 1); cpConvAttRender(); };
@@ -765,10 +765,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var inputType = opts.type || 'text';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:6px">' + title + '</div>' +
-      (label ? '<div style="font-size:13px;color:#8090a8;margin-bottom:12px">' + label + '</div>' : '') +
+      (label ? '<div style="font-size:13px;color:#485670;margin-bottom:12px">' + label + '</div>' : '') +
       '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#412F21" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
+        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
         '<button id="_cpprompt-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
@@ -790,7 +790,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (opts.title ? '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
       '<div style="font-size:13.5px;color:#412F21;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#8a6f54;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
         '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#412F21')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
       '</div></div>';
     document.body.appendChild(ov);
@@ -1220,7 +1220,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#9b3a2e':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
               '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' ce mois'+(mCarryMin<0?' (report du dépassement)':(mCarryMin>0?' (report inclus)':''))+'</span></div>' +
-              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a6f2e;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
+              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
             : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré, contactez le studio.</p>'
           ) +
         '</div>';
@@ -1243,9 +1243,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>';
 
         var mMsgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;'+(mHomeUnread>0?'border-color:#e8a87c;background:#fdf3e8':'')+'" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-          cpIcon('chat',18, mHomeUnread>0?'color:#c46a1a':'color:var(--terre)') +
+          cpIcon('chat',18, mHomeUnread>0?'color:#6a4a0b':'color:var(--terre)') +
           '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:'+(mHomeUnread>0?'#7a3a0a':'var(--terre)')+'">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:'+(mHomeUnread>0?'#c46a1a':'var(--terre-600)')+';margin-top:2px">'+(mHomeUnread>0?mHomeUnread+' message'+(mHomeUnread>1?'s':'')+' non lu'+(mHomeUnread>1?'s':''):'Réponse sous 24 h')+'</div></div>' +
-          cpIcon('arrow',15, mHomeUnread>0?'color:#c46a1a':'color:var(--terre-600)') +
+          cpIcon('arrow',15, mHomeUnread>0?'color:#6a4a0b':'color:var(--terre-600)') +
         '</button>';
 
         return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
@@ -1281,8 +1281,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
           '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
           '<div style="flex:1">' +
-            '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:#c46a1a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:#6a4a0b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:#6a4a0b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
             (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
             (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
@@ -1303,8 +1303,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
             '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
             '<div style="flex:1">' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:#8a4a0e;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
-              '<div style="font-family:var(--font-micro);font-size:9px;color:#c46a1a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:#6a4a0b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+              '<div style="font-family:var(--font-micro);font-size:9px;color:#6a4a0b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
               (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
               (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
@@ -1409,8 +1409,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               '<span>'+cpFmtH(f.used)+' utilisées</span>' +
               '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':(f.carryIn<0?' (−'+cpFmtH(-f.carryIn)+' reportées du dépassement)':''))+'</span>' +
             '</div>' +
-            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#8a6f2e;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
-            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8a3a2c;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
+            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8d2b21;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
           '</div>';
         }
       }
@@ -1439,9 +1439,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
       var homeUnread = totalUnread();
       var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms;' + (homeUnread > 0 ? 'border-color:#e8a87c;background:#fdf3e8' : '') + '" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-        cpIcon('chat',18, homeUnread > 0 ? 'color:#c46a1a' : 'color:var(--terre)') +
+        cpIcon('chat',18, homeUnread > 0 ? 'color:#6a4a0b' : 'color:var(--terre)') +
         '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:' + (homeUnread > 0 ? '#7a3a0a' : 'var(--terre)') + '">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:' + (homeUnread > 0 ? '#c46a1a' : 'var(--terre-600)') + ';margin-top:2px">' + (homeUnread > 0 ? homeUnread+' message'+(homeUnread>1?'s':'')+' non lu'+(homeUnread>1?'s':'') : 'Réponse sous 24 h') + '</div></div>' +
-        cpIcon('arrow',15, homeUnread > 0 ? 'color:#c46a1a' : 'color:var(--terre-600)') +
+        cpIcon('arrow',15, homeUnread > 0 ? 'color:#6a4a0b' : 'color:var(--terre-600)') +
       '</button>';
 
       // ── Barre récap mensuelle (partenaire) ──────────────────────────────────
@@ -1504,7 +1504,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
-            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#c46a1a')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#c46a1a;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#c46a1a')+'</div>'; })() : '') +
+            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#6a4a0b')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#6a4a0b')+'</div>'; })() : '') +
             (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
@@ -1537,7 +1537,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       // Bandeau de couleur DA discret : pas d'image rognée, pas de doré hors-charte.
       var bannerStyle = 'background:' + (p.bannerColor || _band.deep) + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#8a4a0e') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
+      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#6a4a0b') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -1551,11 +1551,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
           '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
             '<span class="cp-proj-banner__badge">Accompagnement</span>' +
-            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#8a4a0e">Action requise</span>' : '') +
+            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#6a4a0b">Action requise</span>' : '') +
           '</div>' +
           '<div class="cp-proj-card__body">' +
             '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#6a4a0b;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
             '<div class="cp-proj-card__meta">' +
               '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
@@ -1578,7 +1578,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>' +
         '<div class="cp-proj-card__body">' +
           '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#8a4a0e;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#6a4a0b;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
           '<div class="cp-proj-card__meta">' +
             (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
             (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
@@ -1828,7 +1828,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       cpIcon('arrow', 12, 'color:var(--terre-400)') +
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
-        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#8a4a0e;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#c46a1a') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
+        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#6a4a0b;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#6a4a0b') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
         (bkUrl ? '<a class="cp-ptopbar__guide" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" title="Réserver un créneau">' + cpIcon('calendar',13) + ' Réserver</a>' : '') +
         '<button class="cp-ptopbar__guide" onclick="cpOpenMessages()" title="Une question ? Écrivez à Cindy">' + cpIcon('question',13) + ' Une question ?</button>' +
         '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('info',13) + ' Guide</button>' +
@@ -2386,19 +2386,19 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (mine.length) {
         var nx = mine[0];
         banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
-          cpIcon('arrow',18,'color:#6c4ea4;flex-shrink:0;margin-top:1px') +
+          cpIcon('arrow',18,'color:#573b8a;flex-shrink:0;margin-top:1px') +
           '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
-          '<div style="font-size:13.5px;color:#6c4ea4;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
+          '<div style="font-size:13.5px;color:#573b8a;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
       }
     }
     var rows = '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
         var j = r.j;
         var st = PL_ST[j.status] || PL_ST.a_venir;
         var ownerChip = j.owner === 'cliente'
-          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f0ebfa;color:#6c4ea4;white-space:nowrap">Vous</span>'
+          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f0ebfa;color:#573b8a;white-space:nowrap">Vous</span>'
           : (j.owner === 'les_deux'
-            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef1ec;color:#4f6a46;white-space:nowrap">Vous &amp; Cindy</span>'
-            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e9f0f5;color:#35608f;white-space:nowrap">Cindy</span>');
+            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef1ec;color:#3f5a37;white-space:nowrap">Vous &amp; Cindy</span>'
+            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e9f0f5;color:#305277;white-space:nowrap">Cindy</span>');
         var done = j.status === 'fait';
         var last = i === prows.length - 1;
         var dot = '<span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;background:' + (done ? st[1] : '#fff') + ';border:2.5px solid ' + st[1] + ';box-shadow:0 0 0 4px ' + st[2] + '"></span>';
@@ -3194,21 +3194,21 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
             '<span style="color:'+(isArch?'#8a6f54':'#7a9a5a')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
             '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#412F21);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
-            (t.pole?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
-            (t.timeSpentMinutes?'<span style="font-size:11px;color:#a89a86;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
+            (t.pole?'<span style="font-size:10px;color:#5e4a2e;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
+            (t.timeSpentMinutes?'<span style="font-size:11px;color:#5e4a2e;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
             (isArch
-              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Voir</button>'
-              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#8a6f54;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
+              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#6b533b;cursor:pointer;flex-shrink:0">Voir</button>'
+              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#6b533b;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
           '</div>';
         }).join('');
-        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5e4a2e;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
       }).join('');
     }
     function section(list, isArch, opened){
       if (!list.length) return '';
       var title = isArch ? '🗄 Archivées · '+list.length+' tâche'+(list.length>1?'s':'') : '📁 Terminées · '+list.length+' tâche'+(list.length>1?'s':'');
       return '<details' + (opened?' open':'') + ' style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a6f54;list-style:none">'+title+'</summary>' +
+        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6b533b;list-style:none">'+title+'</summary>' +
         '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+bodyFor(list, isArch)+'</div></details>';
     }
     // only='merged' → une seule liste (terminées + archivées), pour l'onglet
@@ -3294,14 +3294,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<span style="font-size:14px;color:var(--navy);line-height:1">→</span>' +
         '<div style="display:flex;gap:4px">' +
           '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Modifier</button>' +
-          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#c44">✕</button>' +
+          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#8d2b21">✕</button>' +
         '</div>' +
       '</div>' +
       '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       ((t.v1Date||t.v2Date)?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#6c4ea4;background:#f2ebff;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
-        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#6c4ea4;background:#f2ebff;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
+        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#573b8a;background:#f2ebff;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
+        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#573b8a;background:#f2ebff;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
       '</div>':'') +
       ((Array.isArray(t.attachments)&&t.attachments.length)?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
         t.attachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--navy,#1C1205);background:#f4f0e8;border-radius:8px;padding:4px 9px;text-decoration:none">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+
@@ -3651,7 +3651,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             cpStatusPill(t.status) +
             (isOpen ? '<div style="display:flex;gap:8px">' +
               '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid var(--bone-d);background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--terre)">'+cpIcon('edit',14,'color:var(--terre-600)')+'Modifier</button>' +
-              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #f0d0cc;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#c0533b">'+cpIcon('trash',14,'color:#c0533b')+'Supprimer</button>' +
+              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #f0d0cc;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#8d2b21">'+cpIcon('trash',14,'color:#8d2b21')+'Supprimer</button>' +
             '</div>' : '') +
           '</div>' +
         '</div>';
@@ -3669,13 +3669,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             label = label.charAt(0).toUpperCase()+label.slice(1);
             var rows = groups[k].map(function(t){
               return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px">' +
-                '<span style="color:#7a9a5a;font-size:13px;flex-shrink:0">✓</span>' +
+                '<span style="color:#456039;font-size:13px;flex-shrink:0">✓</span>' +
                 '<span style="flex:1;font-size:12px;color:var(--terre,#412F21);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
-                (t.category?'<span style="font-size:10px;color:#b09b80;flex-shrink:0">'+esc(t.category)+'</span>':'') +
+                (t.category?'<span style="font-size:10px;color:#5e4a2e;flex-shrink:0">'+esc(t.category)+'</span>':'') +
                 '<button onclick="cliMaintReopenTicket(\''+pid+'\',\''+t.id+'\')" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid var(--bone-d);border-radius:6px;background:#fff;color:var(--terre-600);cursor:pointer;flex-shrink:0">Rouvrir</button>' +
               '</div>';
             }).join('');
-            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b09b80;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5e4a2e;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
           }).join('');
           histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
             '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique, '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
@@ -3694,11 +3694,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else if (cat==='suivi')    mainContent = buildMaintSuiviClient(project);
     else if (cat==='conseils') {
       var addC = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddCounsel(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un conseil</button></div>';
-      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#c44;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
+      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#8d2b21;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
     }
     else if (cat==='retours') {
       var addR = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddFeedback(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un retour</button></div>';
-      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#c44;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
+      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#8d2b21;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
     }
 
     return quotaStrip + (showCats ? catTabsHtml : '') + mainContent;
@@ -3889,7 +3889,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>' +
       '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:'+(forfaitLeft<0?'#9b3a2e':'var(--brume-700)')+';border-radius:999px;width:'+forfaitPct2+'%"></div></div>' +
       '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + fmtH(_pf.used) + ' utilisées</span><span>sur ' + cpFmtH(_pf.available) + (_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'') + '</span></div>' +
-      (forfaitLeft<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a3a2c;margin-top:10px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+      (forfaitLeft<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8d2b21;margin-top:10px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
     '</div>' : '';
 
     var archivedHtml = '<div style="margin-top:28px">' +
@@ -4003,7 +4003,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>' +
       '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:' + (over ? '#9b3a2e' : 'var(--brume-700)') + ';border-radius:999px;width:' + fpct + '%"></div></div>' +
       '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + partFmtH(usedMin) + ' utilisées</span><span>sur ' + partFmtH(availMin) + (carryMin < 0 ? ' (−' + partFmtH(-carryMin) + ' du dépassement)' : (carryMin > 0 ? ' (+' + partFmtH(carryMin) + ' report.)' : '')) + '</span></div>' +
-      (carryMin < 0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8a6f2e;margin-top:10px;line-height:1.45">' + partFmtH(-carryMin) + ' de dépassement du mois dernier déduites' + (billedMin > 0 ? ', et ' + partFmtH(billedMin) + ' facturées' : '') + '.</div>' : '') +
+      (carryMin < 0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#6a4a0b;margin-top:10px;line-height:1.45">' + partFmtH(-carryMin) + ' de dépassement du mois dernier déduites' + (billedMin > 0 ? ', et ' + partFmtH(billedMin) + ' facturées' : '') + '.</div>' : '') +
     '</div>' : '';
 
     return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
@@ -4046,9 +4046,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
     var forfaitBar = forfaitH
       ? '<div style="display:flex;align-items:center;gap:14px;padding:14px 22px;background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap">' +
-          cpIcon('timer',16,'color:#8a6f54') +
-          '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#8a6f54;white-space:nowrap">Forfait du mois</span>' +
-          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#412F21)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#8a6f54">/'+forfaitH+' h</span></span>' +
+          cpIcon('timer',16,'color:#6b533b') +
+          '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b533b;white-space:nowrap">Forfait du mois</span>' +
+          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#412F21)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#6b533b">/'+forfaitH+' h</span></span>' +
           '<div style="flex:1;min-width:120px;height:8px;background:#ece4d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#7da2e0;width:'+forfaitPct+'%;border-radius:999px;transition:width .3s"></div></div>' +
           '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#412F21)')+';white-space:nowrap">'+(forfaitLeft>=0?forfaitLeft.toFixed(1)+' H RESTANTES':(-forfaitLeft).toFixed(1)+' H DEPASSEES')+'</span>' +
         '</div>'
@@ -4104,7 +4104,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var isToday = ds===todayStr;
       var numHtml = isToday
         ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#1C1205;color:#ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
-        : '<div style="font-size:13px;font-weight:600;color:#8a6f54">'+dd+'</div>';
+        : '<div style="font-size:13px;font-weight:600;color:#6b533b">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
         var soft = PART_URG_SOFT[t.urgency]||'#f3ede2';
@@ -4133,10 +4133,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             cliUrgIcon(t.urgency, 11) +
             '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
-          (t.dueDate ? '<div style="font-size:10px;color:#a89a86;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
+          (t.dueDate ? '<div style="font-size:10px;color:#5e4a2e;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
-      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#a89a86;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#5e4a2e;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       // Jour de congés : grisé, non déposable, avec un repère « congés » à la place du +.
       var cellBg = isHol ? 'repeating-linear-gradient(135deg,#f4ece1,#f4ece1 7px,#efe4d5 7px,#efe4d5 14px)' : (isWeekend ? '#faf7f1' : '#fff');
       var addBtn = isHol
@@ -4144,7 +4144,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
       dayCells.push('<div ' + (isHol ? '' : 'ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" ') + 'data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+cellBg+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml + addBtn +
-        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#a8927a;margin-top:2px">Congés</div>' : '') + pills +
+        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5e4a2e;margin-top:2px">Congés</div>' : '') + pills +
       '</div>');
     }
     var allCells = [];
@@ -4154,7 +4154,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     var calGrid = '<div style="border:1px solid '+BORD+';border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow-1)">' +
       '<div style="display:grid;grid-template-columns:repeat(5,1fr);background:#faf6ee;border-bottom:1px solid '+BORD+'">' +
-        dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#8a6f54;letter-spacing:0.08em;text-transform:uppercase;'+(idx<4?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
+        dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#6b533b;letter-spacing:0.08em;text-transform:uppercase;'+(idx<4?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(5,1fr)">'+allCells.join('')+'</div>' +
     '</div>';
@@ -4223,8 +4223,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var dueDateStr = (t.dueDate||'').slice(0,10);
     var daysUntilDue = dueDateStr ? Math.ceil((new Date(dueDateStr+'T12:00:00') - new Date()) / 86400000) : null;
     var daysLabel = daysUntilDue !== null
-      ? (daysUntilDue < 0 ? ' <span style="color:#c00;font-size:10px">J'+daysUntilDue+'</span>'
-        : daysUntilDue===0 ? ' <span style="color:#c00;font-size:10px">Aujourd\'hui</span>'
+      ? (daysUntilDue < 0 ? ' <span style="color:#8d2b21;font-size:10px">J'+daysUntilDue+'</span>'
+        : daysUntilDue===0 ? ' <span style="color:#8d2b21;font-size:10px">Aujourd\'hui</span>'
         : ' <span style="font-size:10px;color:var(--muted,#8090a8)">J+'+daysUntilDue+'</span>') : '';
 
     var commentsHtml = comments.map(function(c){
@@ -4243,7 +4243,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +
-          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#fdf8ef;color:#b09668;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
+          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#fdf8ef;color:#6a4a0b;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
         '</div>' +
         '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
@@ -4279,7 +4279,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         }
         var bvc = briefVal(props.p_elements);
         var filesHtml = bvc.files.map(function(f){
-          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
         }).join('');
         var _dzId = '_pt-dz-'+t.id;
         var attach = '<div><div style="'+lblS+'">Lien &amp; fichiers</div>' +
@@ -4327,7 +4327,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="display:flex;gap:8px">' +
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
         '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
-        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>' +
+        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#8d2b21">Supprimer</button>' +
       '</div>' +
     '</div>';
   }
@@ -4343,7 +4343,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:8px;margin-bottom:6px">' +
         cpIcon('paperclip',13,'color:var(--muted,#8090a8);flex-shrink:0') +
         '<span style="flex:1;min-width:0;font-size:12.5px;color:var(--navy,#1C1205);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name) + '</span>' +
-        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#c44;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
+        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#8d2b21;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
       '</div>';
     }).join('');
   }
@@ -4988,22 +4988,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:17px;font-weight:700;color:#1C1205;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
       '<div style="margin-bottom:12px">' +
-        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
+        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
         '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
       '</div>' +
       '<div style="margin-bottom:12px">' +
-        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
+        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
         '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
         '<div>' +
-          '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
+          '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
           '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
             ['basse','moyenne','haute'].map(function(p){ return '<option value="'+p+'"'+(((edit&&edit.priority)||'moyenne')===p?' selected':'')+'>'+(p.charAt(0).toUpperCase()+p.slice(1))+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
         '<div>' +
-          '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
+          '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
           '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
             '<option value="">Catégorie </option>' +
             cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
@@ -5011,16 +5011,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>' +
       '</div>' +
       '<div style="margin-bottom:14px">' +
-        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#b0a89a">(optionnel)</span></label>' +
+        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5e4a2e">(optionnel)</span></label>' +
         '<input id="_maint-t-due" type="text" readonly data-iso="'+esc(edit&&edit.dueDate||'')+'" value="'+((edit&&edit.dueDate)?cpMcFmt(edit.dueDate):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_maint-t-due\')" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;cursor:pointer;background:#fff">' +
       '</div>' +
       '<div style="margin-bottom:18px">' +
-        '<label style="font-size:12px;font-weight:600;color:#8090a8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
+        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
         '<div id="_maint-t-files" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>' +
-        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#8a6f54;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#8a6f54')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
+        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#6b533b;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#6b533b')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
+        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
         '<button id="_maint-t-ok" style="padding:9px 22px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
       '</div>' +
     '</div>';
@@ -5038,9 +5038,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var isImg = (f.type||'').indexOf('image')===0;
         return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7f3ed;border-radius:8px;font-size:13px;color:#1C1205">' +
           '<span>'+(isImg?'🖼️':'📎')+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name||'fichier')+'</span>' +
-          '<button data-rm="'+i+'" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1">×</button>' +
+          '<button data-rm="'+i+'" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1">×</button>' +
         '</div>';
-      }).join('') : '<div style="font-size:12px;color:#b0a89a;font-style:italic">Aucun fichier joint.</div>';
+      }).join('') : '<div style="font-size:12px;color:#5e4a2e;font-style:italic">Aucun fichier joint.</div>';
       box.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(){ pending.splice(parseInt(b.getAttribute('data-rm')),1); renderFiles(); }; });
     }
     renderFiles();
@@ -5050,7 +5050,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (!files.length) return;
       var tooBig = cliAnyTooBig(files); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
       var box = ov.querySelector('#_maint-t-files');
-      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#8a6f54">Envoi en cours…</div>');
+      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#6b533b">Envoi en cours…</div>');
       Promise.all(files.map(function(f){ return cliUploadFile(f, pid); })).then(function(res){
         res.forEach(function(f){ pending.push(f); });
         renderFiles();
@@ -5138,7 +5138,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     var first = new Date(y, m, 1); var startDow = (first.getDay() + 6) % 7; var ndays = new Date(y, m + 1, 0).getDate();
     var inp = document.getElementById(_cpMc.inputId); var selIso = inp ? inp.getAttribute('data-iso') : '';
-    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#8a6f54;padding:4px 0">' + x + '</div>'; }).join('');
+    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#6b533b;padding:4px 0">' + x + '</div>'; }).join('');
     var cells = '';
     for (var i = 0; i < startDow; i++) cells += '<div></div>';
     for (var dd = 1; dd <= ndays; dd++) {
@@ -5152,11 +5152,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }
     var html = '<div id="_cp-datepick" style="position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cpDateClose()">' +
       '<div style="background:#fff;border-radius:16px;box-shadow:0 12px 48px rgba(28,18,5,0.25);padding:18px;width:310px;max-width:100%">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a6f54;line-height:1">‹</button>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">‹</button>' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#1C1205)">' + MONTHS[m] + ' ' + y + '</span>' +
-          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a6f54;line-height:1">›</button></div>' +
+          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">›</button></div>' +
         '<div style="display:grid;grid-template-columns:repeat(5,1fr)">' + dow + cells + '</div>' +
-        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#8a6f54;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
+        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#6b533b;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
       '</div>' +
     '</div>';
     document.body.insertAdjacentHTML('beforeend', html);
@@ -5245,23 +5245,23 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
       '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#1C1205;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
+        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
+        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value=""></option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
+        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value=""></option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8090a8">Annuler</button>' +
+        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#485670">Annuler</button>' +
         '<button id="clt-submit" style="padding:9px 20px;background:#1C1205;color:#E4D1FE;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
       '</div>' +
     '</div>';
@@ -5741,10 +5741,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;margin-bottom:12px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:16px">Ajouter une ressource</div>' +
-      '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
-      '<label style="font-size:12px;color:#8090a8;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
+      '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
+      '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">' +
-        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#8a6f54;font-size:14px">Annuler</button>' +
+        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
         '<button id="_res-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
       '</div></div>';
     document.body.appendChild(ov);
@@ -6311,7 +6311,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             : decideBtns)
         : '';
       var comment = (it.status === 'refuse' && it.clientComment)
-        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8a3a2c;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
+        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8d2b21;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
         : '';
       return '<div style="padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
         '<div style="display:flex;align-items:flex-start;gap:14px">' +
@@ -6436,7 +6436,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:6px 0 12px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
     // La question (énoncé) est clairement distincte de la zone de réponse.
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</label>' +
+    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</label>' +
       (b.help ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
     // Bordure encre + ombre légère : la zone de réponse est clairement blanche sur la carte crème.
@@ -7222,7 +7222,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<p style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-bottom:16px">Vous confirmez avoir complété : <strong>' + esc(stepTitle) + '</strong> ?<br><span style="font-size:12px;opacity:0.8">Cindy sera notifiée et validera l\'étape de son côté.</span></p>' +
       '<textarea id="_cpval-comment" placeholder="Laisser un message à Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#8a6f54;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
         '<button id="_cpval-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:var(--terre);color:var(--paille)">✓ Confirmer</button>' +
       '</div>' +
     '</div>';
@@ -7360,10 +7360,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #eae5dc">' +
             '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#1C1205;color:#E4D1FE">' + cpIcon(s.icon,18) + '</span>' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#8a6f54;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#6b533b;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
               '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#412F21;line-height:1.2">' + esc(s.title) + '</div>' +
             '</div>' +
-            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#ffffff;border-radius:8px;cursor:pointer;color:#8a6f54;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
+            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#ffffff;border-radius:8px;cursor:pointer;color:#6b533b;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
           '</div>' +
           '<div style="padding:18px 20px 20px">' +
             '<p style="font-family:Georgia,serif;font-size:15px;color:#412F21;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
@@ -7676,9 +7676,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
         '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
-        '<p style="color:#8090a8;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
+        '<p style="color:#485670;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
         '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
-        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a>.</p>' +
+        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.</p>' +
       '</div></div>';
   }
   function showError(kind) {
@@ -7687,16 +7687,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var revoked = kind === 'revoked';
     var title = revoked ? 'Ce lien n\'est plus valide' : 'Impossible de charger votre espace';
     var body = revoked
-      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a> pour obtenir un nouveau lien.'
+      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a> pour obtenir un nouveau lien.'
       : 'Le chargement n\'a pas abouti, souvent à cause d\'une connexion instable.<br><br>' +
         '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Réessayer</button><br><br>' +
-        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#6c4ea4">Cindy</a>.';
+        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.';
     document.getElementById('app').innerHTML =
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
         '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
-        '<p style="color:#8090a8;line-height:1.7;font-size:15px">' + body + '</p>' +
+        '<p style="color:#485670;line-height:1.7;font-size:15px">' + body + '</p>' +
       '</div></div>';
   }
 
