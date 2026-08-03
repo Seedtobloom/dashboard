@@ -437,6 +437,18 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true, pinned: msg.pinned });
   }
+  // Suppression d'un message de la conversation (ex. doublon envoyé par erreur).
+  const delm = sub.match(/^\/message\/([a-f0-9]+)$/);
+  if (delm && method === 'DELETE') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container || !Array.isArray(container.chat)) return json({ error: 'Message introuvable' }, 404);
+    const before = container.chat.length;
+    container.chat = container.chat.filter((x: AnyObj) => x.id !== delm[1]);
+    if (container.chat.length === before) return json({ error: 'Message introuvable' }, 404);
+    await saveClient(env, key, data);
+    return json({ ok: true });
+  }
   // Marque lus (côté admin) les messages client d'un projet
   if (method === 'POST' && sub === '/message/read') {
     const body = await readJson(request);
