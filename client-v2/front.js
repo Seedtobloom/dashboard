@@ -4577,7 +4577,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     input.onchange = function(){
       var file = input.files[0]; if (!file) return;
       if (cliTooBig(file)) { toast(cliBigMsg(file), true); return; }
-      var fd = new FormData(); fd.append('file', file);
+      var fd = new FormData(); fd.append('file', file); if (pid) fd.append('projectId', pid);
       var storedCode = sessionStorage.getItem('_sc') || '';
       var headers = {}; if (storedCode) headers['x-space-code'] = storedCode;
       toast('Envoi en cours…');
@@ -5537,6 +5537,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (label) label.textContent = 'Envoi en cours…';
     var fd = new FormData();
     fd.append('file', file);
+    if (pid) fd.append('projectId', pid); // range le dépôt dans le bon projet (sinon « partner », invisible côté admin)
     var storedCode = sessionStorage.getItem('_sc') || '';
     var headers = {};
     if (storedCode) headers['x-space-code'] = storedCode;
@@ -5607,6 +5608,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (zone) zone.innerHTML = 'Envoi en cours…';
     var fd = new FormData();
     fd.append('file', file);
+    if (pid) fd.append('projectId', pid); // évite le rangement par défaut dans « partner »
     var storedCode = sessionStorage.getItem('_sc') || '';
     var headers = {};
     if (storedCode) headers['x-space-code'] = storedCode;
@@ -7123,6 +7125,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var fd = new FormData();
     fd.append('file', file);
     fd.append('category', 'document');
+    fd.append('projectId', pid); // sans ça le serveur range le fichier dans « partner » (invisible côté admin sur le projet)
     toast('Upload en cours…');
     fetch(API_BASE + '/files', { method: 'POST', credentials: 'same-origin', body: fd })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
