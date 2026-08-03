@@ -2195,7 +2195,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {};
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [];
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -2207,10 +2207,12 @@
     setMain(topbar('Ma semaine') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/admin/tasks').then(function (r) { return r.json(); }),
-      api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; })
+      api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; })
     ]).then(function (res) {
       MS_TASKS = res[0].tasks || [];
       MS_DAYS = (res[1] && res[1].days) || {};
+      MS_PARTNER = (res[2] && res[2].weekTasks) || [];
       renderMaSemaineBody();
     }).catch(showError);
   }
@@ -2220,7 +2222,11 @@
     var mon = msMonday(MS_OFFSET);
     var days = []; for (var i = 0; i < 5; i++) { var d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d); }
     var todayIso = msIso(new Date());
-    var active = MS_TASKS.filter(function (t) { return t.status !== 'done' && !t.archived; });
+    // Fusion : tâches perso (admin) + tâches Partenaire créative des clientes.
+    MS_TASKS.forEach(function (t) { t._src = 'perso'; t._key = null; });
+    MS_PARTNER.forEach(function (x) { x._src = 'client'; x._key = x.key; if (!x.clientName) x.clientName = x.client; });
+    MS_ALL = MS_TASKS.concat(MS_PARTNER);
+    var active = MS_ALL.filter(function (t) { return t.status !== 'done' && !t.archived; });
     var w0 = msIso(days[0]), w4 = msIso(days[4]);
     // Résumé capacité de la semaine
     var weekPlanned = active.filter(function (t) { var dd = (t.doDate || '').slice(0, 10); return dd >= w0 && dd <= w4; }).reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
@@ -2309,11 +2315,13 @@
   }
   function msWeek(v) { if (v === 0) MS_OFFSET = 0; else MS_OFFSET += v; renderMaSemaineBody(); }
   function msPatch(id, body) {
-    jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
-      if (!t) { toast('Erreur'); return; }
-      var i = MS_TASKS.findIndex(function (x) { return x.id === id; }); if (i >= 0) MS_TASKS[i] = t;
-      renderMaSemaineBody();
-    }).catch(function () { toast('Erreur'); });
+    var t = MS_ALL.find(function (x) { return x.id === id; }); if (!t) return;
+    var url = t._src === 'client' ? '/api/clients/' + t._key + '/tasks/' + id : '/api/admin/tasks/' + id;
+    var payload = t._src === 'client' ? Object.assign({ projectId: 'partner' }, body) : body;
+    // Optimiste : on met à jour l'objet source (persiste au re-render), puis on sauvegarde.
+    Object.keys(body).forEach(function (k) { t[k] = body[k]; });
+    renderMaSemaineBody();
+    jpost(url, payload, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur'); }).catch(function () { toast('Erreur'); });
   }
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
   function msEst(id, val) { msPatch(id, { estMinutes: parseInt(val, 10) || 0 }); }
