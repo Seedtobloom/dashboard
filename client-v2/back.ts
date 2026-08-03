@@ -147,6 +147,9 @@ async function handleClientApi(
   if (method === 'POST' && sub === '/message/read') {
     return handleMessageRead(request, env, masterKey, data);
   }
+  if (method === 'POST' && sub === '/message/unread') {
+    return handleMessageUnread(request, env, masterKey, data);
+  }
   const dlv = sub.match(/^\/deliverables\/([a-zA-Z0-9_-]+)$/);
   if (method === 'POST' && dlv) {
     return handleDeliverable(request, env, masterKey, data, dlv[1]);
@@ -494,6 +497,7 @@ function mapChatToMessages(chat: any[]): AnyObj[] {
     createdAt: m.date || m.createdAt || nowIso(),
     readByClient: m.readByClient !== false,
     pinned: m.pinned === true,
+    manualUnread: m.manualUnread === true,
   }));
 }
 
@@ -747,7 +751,9 @@ async function handleConversation(
   if (method === 'GET') {
     let changed = false;
     espace.conversation.forEach((m: AnyObj) => {
-      if ((m.from === 'cindy' || m.author === 'cindy') && m.readByClient === false) {
+      // On ne marque pas lus par simple rafraîchissement les messages laissés
+      // en « non lu » manuellement (manualUnread) : ils le restent jusqu'à ouverture explicite.
+      if ((m.from === 'cindy' || m.author === 'cindy') && m.readByClient === false && m.manualUnread !== true) {
         m.readByClient = true;
         changed = true;
       }
@@ -836,16 +842,43 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
   return json({ deliverable: mapDeliverables([liv])[0] });
 }
 
-// Marque lus (côté client) les messages d'un projet : POST /message/read {projectId}
+// Fil-cible d'une action de lecture : le fil « général » (espace.conversation)
+// quand projectId est vide ou '_general', sinon le chat du projet résolu.
+function messageThreadOf(data: AnyObj, projectId: string): AnyObj[] | null {
+  const espace = getEspace(data);
+  if (!projectId || projectId === '_general' || projectId === 'general') {
+    if (!Array.isArray(espace.conversation)) espace.conversation = [];
+    return espace.conversation;
+  }
+  const { container } = resolveProject(espace, projectId);
+  if (!container) return null;
+  if (!Array.isArray(container.chat)) container.chat = [];
+  return container.chat;
+}
+// Marque lus (côté client) les messages d'un fil : POST /message/read {projectId}
+// Une ouverture explicite lève aussi le drapeau « non lu manuel ».
 async function handleMessageRead(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
-  const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
-  if (!container) return json({ error: 'Projet introuvable' }, 404);
+  const chat = messageThreadOf(data, (body.projectId || '').toString());
+  if (!chat) return json({ error: 'Projet introuvable' }, 404);
   let changed = false;
-  (container.chat || []).forEach((m: AnyObj) => {
-    if ((m.from === 'cindy' || m.from === 'studio') && m.readByClient === false) { m.readByClient = true; changed = true; }
+  chat.forEach((m: AnyObj) => {
+    if ((m.from === 'cindy' || m.from === 'studio' || m.author === 'cindy') && (m.readByClient === false || m.manualUnread === true)) { m.readByClient = true; m.manualUnread = false; changed = true; }
   });
   if (changed) await save(env, masterKey, data);
+  return json({ ok: true });
+}
+// Marque un message de Cindy comme « non lu » côté cliente : POST /message/unread {projectId, id}
+async function handleMessageUnread(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const chat = messageThreadOf(data, (body.projectId || '').toString());
+  if (!chat) return json({ error: 'Projet introuvable' }, 404);
+  const id = (body.id || '').toString();
+  const m = chat.find((x: AnyObj) => x.id === id);
+  if (!m) return json({ error: 'Message introuvable' }, 404);
+  if (body.unread === false) { m.readByClient = true; m.manualUnread = false; }
+  else { m.readByClient = false; m.manualUnread = true; }
+  await save(env, masterKey, data);
   return json({ ok: true });
 }
 

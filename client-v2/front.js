@@ -5791,11 +5791,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var pin = m.pinned === true;
     var pinBadge = pin ? '<div style="display:inline-flex;align-items:center;gap:4px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine);margin-bottom:5px">&#128204; Épinglé par Cindy</div>' : '';
     var bubbleStyle = pin ? ' style="box-shadow:inset 0 0 0 1.5px var(--glycine);background:var(--glycine-50,#f7efff)"' : '';
+    // Lien bascule « marquer comme non lu / comme lu » sur les messages de Cindy.
+    var isUnread = m.readByClient === false;
+    var unreadLink = (isC && m.id) ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="cpMsgToggleUnread(\'' + m.id + '\',' + (isUnread ? 'false' : 'true') + ')">' + (isUnread ? 'marquer comme lu' : 'marquer comme non lu') + '</span>' : '';
+    var unreadDot = (isC && isUnread) ? '<span title="Non lu" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--glycine);margin-right:6px;vertical-align:middle"></span>' : '';
     return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + (pin?' cp-msg--pinned':'') + '">' +
       cpAvatar(isC?'Cindy':appData.clientName||'Client', isC?'cindy':'client', 30) +
       '<div>' +
-        '<div class="cp-msg__bubble"' + bubbleStyle + '>' + pinBadge + (m.content ? '<div class="cp-msg__text">' + fmtMsg(m.content) + '</div>' : '') + cpAttChips(m.attachments) + '</div>' +
-        '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + '</div>' +
+        '<div class="cp-msg__bubble"' + bubbleStyle + '>' + pinBadge + (m.content ? '<div class="cp-msg__text">' + unreadDot + fmtMsg(m.content) + '</div>' : '') + cpAttChips(m.attachments) + '</div>' +
+        '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + unreadLink + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -5828,13 +5832,28 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     cpConvAtt = []; // les pièces jointes ne suivent pas d'un fil à l'autre
     var threads = convThreads();
     var t = threads.filter(function(x){ return x.id === id; })[0];
-    // Marquer lu côté serveur pour un fil support
-    if (t && t.kind === 'project') {
-      var pd = getPD(t.id);
-      if (pd && Array.isArray(pd.messages)) pd.messages.forEach(function(m){ if (m.author === 'cindy') m.readByClient = true; });
-      fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: t.id }) }).catch(function(){});
+    // Ouvrir un fil = tout marquer lu (lève aussi le « non lu » manuel), côté support ou général.
+    if (t) {
+      var msgs = convThreadMsgs(t);
+      if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.author === 'cindy') { m.readByClient = true; m.manualUnread = false; } });
+      var projId = t.kind === 'project' ? t.id : '_general';
+      fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: projId }) }).catch(function(){});
     }
     renderShell();
+  };
+  // Cliente : bascule un message de Cindy entre « non lu » et « lu ».
+  window.cpMsgToggleUnread = function(id, makeUnread) {
+    var threadId = cpConvThread || '_general';
+    var projId = (threadId && threadId !== '_general') ? threadId : '_general';
+    // Optimiste : on met à jour l'état localement sans ré-ouvrir le fil.
+    var t = convThreads().filter(function(x){ return x.id === threadId; })[0];
+    var msgs = t ? convThreadMsgs(t) : convData;
+    if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.id === id) { m.readByClient = !makeUnread; m.manualUnread = !!makeUnread; } });
+    fetch(API_BASE + '/message/unread', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: projId, id: id, unread: !!makeUnread }) }).catch(function(){});
+    toast(makeUnread ? 'Message marqué comme non lu' : 'Message marqué comme lu');
+    if (typeof cpRefreshBadge === 'function') cpRefreshBadge();
+    var list = document.getElementById('cp-convo-list');
+    if (list) { var cur = convThreads().filter(function(x){ return x.id === cpConvThread; })[0] || convThreads()[0]; list.innerHTML = convOrder(convThreadMsgs(cur)).map(convoMsgHtml).join(''); }
   };
 
   function buildConversation() {
