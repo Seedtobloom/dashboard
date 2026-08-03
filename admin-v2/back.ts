@@ -1034,7 +1034,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   const task = container.taches.find((t: AnyObj) => t.id === taskId);
   return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif'];
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -1070,6 +1070,7 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if ('title' in body) body.title = (body.title || '').toString().slice(0, 300);
   if ('content' in body) body.content = (body.content || '').toString().slice(0, 10000);
   ADMIN_TASK_FIELDS.forEach((k) => { if (k in body) t[k] = body[k]; });
+  if ('estMinutes' in body) t.estMinutes = Math.max(0, Math.min(100000, Math.round(Number(body.estMinutes) || 0)));
   if ('timeSpentSeconds' in body || 'timeSpentMinutes' in body) {
     const nsec = 'timeSpentSeconds' in body ? Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0)) : Math.max(0, Math.round(Number(body.timeSpentMinutes) || 0)) * 60;
     const cur = t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60;
@@ -1448,6 +1449,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const inbox: AnyObj[] = [];
   const validated: AnyObj[] = []; // livrables validés par la cliente, pas encore consultés
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
+  const weekTasks: AnyObj[] = []; // tâches Partenaire créative actives, à agréger dans « Ma semaine »
   // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
   const wkStart = new Date(); wkStart.setHours(0, 0, 0, 0);
   wkStart.setDate(wkStart.getDate() - ((wkStart.getDay() + 6) % 7));
@@ -1537,6 +1539,10 @@ async function handleDashboard(env: Env): Promise<Response> {
           inbox.push({ key: ci.key, client: who, id: t.id, title: t.title || '', content: t.content || '', blocks: Array.isArray(t.blocks) ? t.blocks : [], table: (t.table && typeof t.table === 'object') ? t.table : null, urgency: t.urgency || 'normal', dueDate: t.dueDate || '', createdAt: t.createdAt || '', demandeType: t.demandeType || '', attachments: atts, clientLink, forfaitRemaining: fs.remaining, forfaitConfigured: fs.configured, monthCount, avgMinutes });
           return; // ne pas la remonter dans les autres listes
         }
+        // Tâche Partenaire créative active → agrégée dans « Ma semaine ».
+        if (!t.archived && t.status !== 'done') {
+          weekTasks.push({ key: ci.key, client: who, id: t.id, title: t.title || '', dueDate: t.dueDate || '', doDate: t.doDate || null, estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, status: t.status || 'todo' });
+        }
         // Une tâche « à valider » (review) est en attente du client : on la
         // remonte même sans échéance, avec le lien et la date d'envoi.
         if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
@@ -1601,7 +1607,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   validated.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   const errList = (await env.KV_CLIENT.get('global:clientErrors', { type: 'json' })) as AnyObj[] | null;
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
