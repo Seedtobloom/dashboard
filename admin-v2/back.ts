@@ -812,8 +812,10 @@ async function handleClientApi(
         jalon: (body.jalon || '').toString().slice(0, 60),
         owner: cleanEnum(body.owner, PLAN_OWNERS) || 'studio',
         status: cleanEnum(body.status, PLAN_STATUSES) || 'a_venir',
-        dateMode: body.dateMode === 'fixed' ? 'fixed' : 'duration',
+        dateMode: (body.dateMode === 'fixed' || body.dateMode === 'range') ? body.dateMode : 'duration',
         date: body.date ? String(body.date).slice(0, 10) : null,
+        dateStart: body.dateStart ? String(body.dateStart).slice(0, 10) : null,
+        dateEnd: body.dateEnd ? String(body.dateEnd).slice(0, 10) : null,
         durationValue: Math.max(0, Math.min(365, Math.round(Number(body.durationValue) || 0))),
         durationUnit: cleanEnum(body.durationUnit, PLAN_UNITS) || 'semaines',
         note: (body.note || '').toString().slice(0, 800),
@@ -831,8 +833,10 @@ async function handleClientApi(
       if ('jalon' in body) j.jalon = String(body.jalon || '').slice(0, 60);
       if ('owner' in body) j.owner = cleanEnum(body.owner, PLAN_OWNERS) || j.owner;
       if ('status' in body) j.status = cleanEnum(body.status, PLAN_STATUSES) || j.status;
-      if ('dateMode' in body) j.dateMode = body.dateMode === 'fixed' ? 'fixed' : 'duration';
+      if ('dateMode' in body) j.dateMode = (body.dateMode === 'fixed' || body.dateMode === 'range') ? body.dateMode : 'duration';
       if ('date' in body) j.date = body.date ? String(body.date).slice(0, 10) : null;
+      if ('dateStart' in body) j.dateStart = body.dateStart ? String(body.dateStart).slice(0, 10) : null;
+      if ('dateEnd' in body) j.dateEnd = body.dateEnd ? String(body.dateEnd).slice(0, 10) : null;
       if ('durationValue' in body) j.durationValue = Math.max(0, Math.min(365, Math.round(Number(body.durationValue) || 0)));
       if ('durationUnit' in body) j.durationUnit = cleanEnum(body.durationUnit, PLAN_UNITS) || j.durationUnit;
       if ('note' in body) j.note = String(body.note || '').slice(0, 800);

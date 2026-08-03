@@ -512,7 +512,8 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
     planningStart: obj.planningStart || null,
     planning: Array.isArray(obj.planning) ? obj.planning.map((j: AnyObj) => ({
       id: j.id, title: j.title || '', jalon: j.jalon || '', owner: j.owner || 'studio', status: j.status || 'a_venir',
-      dateMode: j.dateMode === 'fixed' ? 'fixed' : 'duration', date: j.date || null,
+      dateMode: (j.dateMode === 'fixed' || j.dateMode === 'range') ? j.dateMode : 'duration', date: j.date || null,
+      dateStart: j.dateStart || null, dateEnd: j.dateEnd || null,
       durationValue: typeof j.durationValue === 'number' ? j.durationValue : 0, durationUnit: j.durationUnit || 'semaines', note: j.note || '',
     })) : [],
   });
