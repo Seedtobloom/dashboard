@@ -381,7 +381,7 @@
           '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
-        '<div class="micro" style="color:#6c4ea4;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">💬 Nouveau commentaire de ' + esc(t.client) + '</div>' +
+        '<div class="micro" style="color:#573b8a;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">💬 Nouveau commentaire de ' + esc(t.client) + '</div>' +
         (txt ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(txt) + ' »</div>' : '') +
         '<div style="display:flex;gap:7px;margin-top:9px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
@@ -651,7 +651,7 @@
       return '<div class="card" style="padding:14px 16px;margin-bottom:10px;background:var(--card)">' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
           '<input class="inp" value="' + esc(r.label || '') + '" placeholder="Titre (ex. Relance douce, Accusé de réception…)" style="flex:1;font-weight:600" onchange="ADM.qrSet(\'' + r.id + '\',\'label\',this.value)">' +
-          '<button class="pbtn" style="color:#c44" onclick="ADM.qrDel(\'' + r.id + '\')">Suppr.</button>' +
+          '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qrDel(\'' + r.id + '\')">Suppr.</button>' +
         '</div>' +
         '<textarea class="inp" placeholder="Le texte du message…" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;font-size:14px;line-height:1.5" onchange="ADM.qrSet(\'' + r.id + '\',\'text\',this.value)">' + esc(r.text || '') + '</textarea>' +
       '</div>';
@@ -932,7 +932,7 @@
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
     } else if (it.type === 'revision') {
       var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a></div>' : '';
-      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:12px;font-weight:700;color:#8a4a0e;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
+      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:12px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
         (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
         (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:1px solid #f0c9bd;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
@@ -1001,7 +1001,7 @@
     var urg = x.urgency === 'haute' || x.urgency === 'urgent';
     var isProject = x.demandeType === 'project';
     var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
-    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
+    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8d2b21;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
     var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
     var atts = (x.attachments || []).map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
@@ -1023,7 +1023,7 @@
     var actions =
       '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
-      '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#c44" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
+      '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
       '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
     return inboxChrome(it, body, actions, urg ? '#a23c28' : '');
   }
@@ -1158,7 +1158,7 @@
         return '<div class="prow"' + (brief ? ' style="flex-wrap:wrap"' : '') + '>' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
-            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9b3a2e;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#35608f;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
+            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8d2b21;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
@@ -1261,7 +1261,7 @@
             '<div style="font-weight:600;color:var(--terre);font-size:14.5px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
             (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:13px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
-            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:#8a4a0e;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
+            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
             filesHtml +
           '</div>' +
           '<div class="prow__act" style="flex-shrink:0">' +
@@ -1287,7 +1287,7 @@
         var kindArg = isStep ? 'step' : (isReview ? 'review' : 'deliverable');
         var titleArg = (isStep || isReview) ? jsq(x.title) : jsq(x.name);
         var badgeHtml = isReview
-          ? '<span class="pill" style="background:#fbf0d8;color:#8a6f2e">Révision à faire</span>'
+          ? '<span class="pill" style="background:#fbf0d8;color:#6a4a0b">Révision à faire</span>'
           : pill(isStep ? 'waiting_client' : 'a_valider', isStep ? 'Étape' : 'Livrable');
         var reviewUrl = (isReview && x.reviewLink) ? (/^https?:\/\//i.test(x.reviewLink) ? x.reviewLink : 'https://' + x.reviewLink) : '';
         var linkBtn = reviewUrl ? '<a class="pbtn" href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" title="Ouvrir le lien de révision">Ouvrir</a>' : '';
@@ -1388,7 +1388,7 @@
         var bg = r.level === 'high' ? '#fbeae5' : '#fbf5e6';
         return '<div class="prow" style="background:' + bg + ';border-radius:9px">' +
           '<div class="prow__date"><strong>' + (x.dueDate ? fmtDate(x.dueDate) : '—') + '</strong><span style="color:' + col + ';font-weight:600">' + esc(r.reason) + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
+          '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
           '<div class="prow__act">' + (x.project === 'partner' ? prioTimer(x, false) : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir</button></div>' +
         '</div>';
       }
@@ -1437,11 +1437,11 @@
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Qui a des éléments « dans son camp » (à valider, à réviser, à renvoyer) et depuis combien de temps. Celles au-delà de 5 jours méritent une relance plus personnelle.</div>' +
           (engList.map(engRow).join('') || '<div class="empty">Aucune cliente n\'a d\'action en attente — tout est de ton côté.</div>') + '</div>';
       } else if (PRIO_TAB === 'risks') {
-        tabBody = '<div class="card"><h3 style="color:#a23c28">Risques · 7 jours</h3>' +
+        tabBody = '<div class="card"><h3 style="color:#8d2b21">Risques · 7 jours</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ce qui menace de glisser : en retard, ou pas encore démarré avec une échéance proche. Anticipe pour éviter le coup de feu.</div>' +
           (riskItems.map(riskRow).join('') || '<div class="empty">Aucun risque — tout est sous contrôle.</div>') + '</div>';
       } else if (PRIO_TAB === 'revisions') {
-        tabBody = '<div class="card"><h3 style="color:#a23c28">Révisions demandées</h3>' +
+        tabBody = '<div class="card"><h3 style="color:#8d2b21">Révisions demandées</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
           (revs.map(revRow).join('') || '<div class="empty">Aucune révision en attente.</div>') + '</div>';
       } else if (PRIO_TAB === 'load') {
@@ -1653,7 +1653,7 @@
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
         '<input type="checkbox"' + (s.done ? ' checked' : '') + ' onchange="ADM.mtSubToggle(\'' + t.id + '\',\'' + s.id + '\')" style="width:15px;height:15px;cursor:pointer">' +
         '<span style="flex:1;font-size:13px;color:var(--terre-600)' + (s.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' + esc(s.text) + '</span>' +
-        '<button onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button>' +
+        '<button onclick="ADM.mtSubDel(\'' + t.id + '\',\'' + s.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:14px;line-height:1">×</button>' +
       '</div>';
     }).join('');
     return '<div style="margin-top:8px">' + rows +
@@ -1834,7 +1834,7 @@
   }
   function mtNoteInner(t) {
     var editLink = '<button onclick="ADM.mtEditNote(\'' + t.id + '\')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0;text-decoration:underline">' + (t.notes ? 'Modifier la note' : '+ Ajouter une note ou un lien') + '</button>';
-    return (t.notes ? '<div style="font-size:12.5px;color:#6b5b4a;white-space:pre-wrap;line-height:1.5;margin-bottom:2px">' + mtLinkify(t.notes) + '</div>' : '') + editLink;
+    return (t.notes ? '<div style="font-size:12.5px;color:#5e4a2e;white-space:pre-wrap;line-height:1.5;margin-bottom:2px">' + mtLinkify(t.notes) + '</div>' : '') + editLink;
   }
   function mtEditNote(id) {
     var c = el('mt-note-' + id); if (!c) return;
@@ -1996,7 +1996,7 @@
     return '<div onclick="ADM.visOpen(\'' + c.id + '\')" style="cursor:pointer;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:9px' + (c.done ? ';opacity:0.66' : '') + '" onmouseover="this.style.boxShadow=\'var(--shadow-2)\'" onmouseout="this.style.boxShadow=\'none\'">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
         '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.2">' + esc(name) + '</div>' +
-        (c.done ? '<span title="Fait" style="color:#4f6a46;flex-shrink:0">✓</span>' : '') +
+        (c.done ? '<span title="Fait" style="color:#3f5a37;flex-shrink:0">✓</span>' : '') +
       '</div>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + (c.date ? '🗓️ ' + fmtDT(c.date) : 'Sans date') + '</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' + pill(nSteps + ' étape' + (nSteps > 1 ? 's' : '')) + (nQ ? pill(nQ + ' question' + (nQ > 1 ? 's' : '')) : '') + '</div>' +
@@ -2038,7 +2038,7 @@
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
         '<input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + c.id + '\',\'' + q.id + '\')" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">' +
         '<input class="inp" value="' + esc(q.text) + '" onchange="ADM.visQSet(\'' + c.id + '\',\'' + q.id + '\',this.value)" style="flex:1' + (q.done ? ';text-decoration:line-through;opacity:0.6' : '') + '">' +
-        '<button onclick="ADM.visQDel(\'' + c.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>' +
+        '<button onclick="ADM.visQDel(\'' + c.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
@@ -2068,7 +2068,7 @@
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Accueil, Besoins…)" style="flex:1;font-weight:600" onchange="ADM.visStepSet(\'' + c.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
         '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',-1)">↑</button>' +
         '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visStepMove(\'' + c.id + '\',\'' + s.id + '\',1)">↓</button>' +
-        '<button class="pbtn" style="color:#c44" title="Supprimer l\'étape" onclick="ADM.visStepDel(\'' + c.id + '\',\'' + s.id + '\')">×</button>' +
+        '<button class="pbtn" style="color:#8d2b21" title="Supprimer l\'étape" onclick="ADM.visStepDel(\'' + c.id + '\',\'' + s.id + '\')">×</button>' +
       '</div>' +
       visRichEditor('visstep__' + c.id + '__' + s.id, s.html || '', "ADM.visSaveEditor(this)", 120) +
     '</div>';
@@ -2210,13 +2210,13 @@
           '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape" style="flex:1;font-weight:600" onchange="ADM.visTplStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
           '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
           '<button class="pbtn" title="Descendre"' + (idx === steps.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.visTplStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
-          '<button class="pbtn" style="color:#c44" onclick="ADM.visTplStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
+          '<button class="pbtn" style="color:#8d2b21" onclick="ADM.visTplStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
         '</div>' +
         visRichEditor('vistplstep__' + t.id + '__' + s.id, s.html || '', "ADM.visSaveEditor(this)", 110) +
       '</div>';
     }).join('');
     var qs = (t.questions || []).map(function (q) {
-      return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><input class="inp" value="' + esc(q.text) + '" onchange="ADM.visTplQSet(\'' + t.id + '\',\'' + q.id + '\',this.value)" style="flex:1"><button onclick="ADM.visTplQDel(\'' + t.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button></div>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><input class="inp" value="' + esc(q.text) + '" onchange="ADM.visTplQSet(\'' + t.id + '\',\'' + q.id + '\',this.value)" style="flex:1"><button onclick="ADM.visTplQDel(\'' + t.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button></div>';
     }).join('');
     return '<div class="card" style="background:var(--card);padding:16px 18px;margin-bottom:12px">' +
       '<div class="row" style="gap:8px;align-items:center"><input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du modèle (ex. Appel découverte)" style="flex:1;font-weight:600" onchange="ADM.visTplSet(\'' + t.id + '\',\'name\',this.value)"><button class="btn btn--danger btn--sm" onclick="ADM.visTplDel(\'' + t.id + '\')">Suppr.</button></div>' +
@@ -2743,10 +2743,10 @@
     var ls0 = Math.round(PLAN_LUNCH_START * 60), le0 = Math.round(PLAN_LUNCH_END * 60);
     if (le0 > ls0 && le0 > startMin && ls0 < endMin) {
       var ls = Math.max(startMin, ls0), le = Math.min(endMin, le0);
-      lunchBand = '<div title="Pause déjeuner" style="position:absolute;left:0;right:0;top:' + ((ls - startMin) * PXMIN) + 'px;height:' + ((le - ls) * PXMIN) + 'px;background:#ece6da;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#a89a86;letter-spacing:0.05em">Pause déjeuner</span></div>';
+      lunchBand = '<div title="Pause déjeuner" style="position:absolute;left:0;right:0;top:' + ((ls - startMin) * PXMIN) + 'px;height:' + ((le - ls) * PXMIN) + 'px;background:#ece6da;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#5e4a2e;letter-spacing:0.05em">Pause déjeuner</span></div>';
     }
     var bg = d.cap <= 0 ? '#faf7f1' : (d.today ? '#fbf7ff' : 'var(--card)');
-    if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + lunchBand + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cabfa9;font-size:11px">repos</div></div>'; }
+    if (d.cap <= 0 && !d.fixed.length) { return '<div style="position:relative;height:' + colH + 'px;background:' + bg + '">' + lines + lunchBand + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#675334;font-size:11px">repos</div></div>'; }
     var items = '';
     d.all.forEach(function (it) {
       var top = (it.start - startMin) * PXMIN, bh = Math.max(22, it.duration * PXMIN), hrs = planHM(it.start) + ' à ' + planHM(it.end);
@@ -3588,7 +3588,7 @@
     if (review) chips.push(['Vous', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', '#fbf0d8', '#8a4a0e']);
     if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', '#efe6fb', '#6c4ea4']);
     if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', '#efe6fb', '#6c4ea4']);
-    if (!chips.length) return '<div class="card" style="background:#f0f6ee;border-color:#cfe0c6;max-width:none"><span class="micro" style="color:#5d7a52;font-weight:700;letter-spacing:0.04em">✓ Tout est à jour pour ce client</span></div>';
+    if (!chips.length) return '<div class="card" style="background:#f0f6ee;border-color:#cfe0c6;max-width:none"><span class="micro" style="color:#456039;font-weight:700;letter-spacing:0.04em">✓ Tout est à jour pour ce client</span></div>';
     return '<div class="card" style="max-width:none"><div class="micro mb" style="font-weight:700;color:var(--terre);text-transform:uppercase;letter-spacing:0.05em">Ce qui attend</div><div class="row" style="gap:8px;flex-wrap:wrap">' +
       chips.map(function (ch) { return '<span style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:' + ch[2] + ';color:' + ch[3] + ';font-size:12.5px;font-weight:600"><span style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7">' + ch[0] + '</span>' + esc(ch[1]) + '</span>'; }).join('') + '</div></div>';
   }
@@ -3736,7 +3736,7 @@
           '<input class="inp" value="' + esc(q.label || '') + '" placeholder="' + (isSec ? 'Titre de la section (ex. Priorités business)' : 'Votre question') + '" style="flex:1;font-weight:600" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'label\',this.value)">' +
           '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',-1)">↑</button>' +
           '<button class="pbtn" title="Descendre"' + (idx === items.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',1)">↓</button>' +
-          '<button class="pbtn" style="color:#c44" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">×</button>' +
+          '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">×</button>' +
         '</div>' +
         '<textarea class="inp" placeholder="Aide / précisions (exemples…) — optionnel" style="width:100%;box-sizing:border-box;min-height:40px;resize:vertical;font-size:13px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
         (withOpts ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;margin-bottom:3px">Choix proposés (une ligne = un choix)</div><textarea class="inp" style="width:100%;box-sizing:border-box;min-height:64px;resize:vertical;font-size:13px" placeholder="Mariage\nChef à domicile\nBuffets…" onchange="ADM.qnSetOptions(\'' + d.id + '\',\'' + q.id + '\',this.value)">' + esc((q.options || []).join('\n')) + '</textarea></div>' : '') +
@@ -3853,7 +3853,7 @@
       '<div class="row mt" style="align-items:center;gap:10px"><button class="btn btn--outline btn--sm" onclick="ADM.editToken()">Copier le code du mode édition (24 h)</button>' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">À coller à la fin de l\'adresse de l\'espace client pour activer le mode édition.</span></div></div>';
     var danger = '<div class="card infocard" style="background:#fbf1ee">' +
-      '<h3 style="color:#b5462f"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
+      '<h3 style="color:#8d2b21"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
       '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
     return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
@@ -3964,7 +3964,7 @@
         var attHtml = atts.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
         var lkHtml = l.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
         fb = '<div style="margin:2px 0 6px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
-          '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9b3a2e;margin-bottom:5px">Retour de la cliente</div>' +
+          '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
           (l.clientComment ? '<div style="font-size:13px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
           ((attHtml || lkHtml) ? '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
         '</div>';
@@ -4054,10 +4054,10 @@
     function jalonRow(r) {
       var j = r.j;
       var ownerChip = j.owner === 'cliente'
-        ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f4f1fa;color:#6c4ea4;white-space:nowrap">👤 Cliente</span>'
+        ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f4f1fa;color:#573b8a;white-space:nowrap">👤 Cliente</span>'
         : (j.owner === 'les_deux'
-          ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1ec;color:#4f6a46;white-space:nowrap">🤝 Vous deux</span>'
-          : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#35608f;white-space:nowrap">🎨 Toi</span>');
+          ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1ec;color:#3f5a37;white-space:nowrap">🤝 Vous deux</span>'
+          : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#305277;white-space:nowrap">🎨 Toi</span>');
       var timing = j.dateMode === 'fixed'
         ? '<input class="inp" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')" style="width:150px" title="Date fixe">'
         : (j.dateMode === 'range'
@@ -4392,7 +4392,7 @@
             '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               (t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Souhaité pour ' + fmtDate(t.dueDate) + '</span>' : '') +
               (t.proposedDueDate
-                ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente</span><button class="btn btn--outline btn--sm" onclick="ADM.ticketProposeDate(\'' + t.id + '\',\'\')">Annuler</button>'
+                ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente</span><button class="btn btn--outline btn--sm" onclick="ADM.ticketProposeDate(\'' + t.id + '\',\'\')">Annuler</button>'
                 : '<label class="micro" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0">Proposer une autre date <input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.dueDate ? ' value="' + esc(t.dueDate) + '"' : '') + ' onchange="ADM.ticketProposeDate(\'' + t.id + '\',this.value)"></label>') +
             '</div></div>';
       return '<div class="card" style="background:var(--card);padding:20px 22px' + (t.seenByAdmin === false ? ';box-shadow:var(--shadow-2)' : '') + '">' +
@@ -4435,7 +4435,7 @@
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:8px">Heures / mois <input class="inp" type="number" min="0" step="0.5" style="width:90px" value="' + mh + '" onchange="ADM.ticketForfait(this.value)"></label>' +
         (mh ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Consommé ce mois : <strong>' + fmtMin(usedThisMonth) + '</strong> / ' + fmtMin(availMin) + (carryMin < 0 ? ' (−' + fmtMin(-carryMin) + ' du dépassement)' : (carryMin > 0 ? ' (+' + fmtMin(carryMin) + ' reportées)' : '')) + '</span>' : '') +
       '</div>' +
-      (carryMin < 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;margin-top:8px">' + fmtMin(-carryMin) + ' de dépassement du mois dernier déduites de ce mois' + (billedMin > 0 ? ' · ' + fmtMin(billedMin) + ' à facturer (au-delà d\'un mois de forfait)' : '') + '.</div>' : '') +
+      (carryMin < 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;margin-top:8px">' + fmtMin(-carryMin) + ' de dépassement du mois dernier déduites de ce mois' + (billedMin > 0 ? ' · ' + fmtMin(billedMin) + ' à facturer (au-delà d\'un mois de forfait)' : '') + '.</div>' : '') +
     '</div>';
     return forfaitCard +
       '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:16px"><h3 style="margin:0 0 4px"><span class="infocard__dot" style="background:#9c6f18"></span>Tickets de la cliente</h3>' +
@@ -4494,7 +4494,7 @@
     var all = raw.filter(function (t) { return t.stage !== 'inbox'; });
     var active = all.filter(function (t) { return !t.archived; });
     var archived = all.filter(function (t) { return t.archived; });
-    var inboxBanner = inboxN ? '<div class="card" style="background:#fbf5e6;border-color:#f0e2b0;max-width:760px;margin-bottom:14px"><div class="between"><span class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;font-weight:600">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</span><button class="btn btn--outline btn--sm" onclick="ADM.nav(\'inbox\')">Ouvrir la boîte de réception</button></div></div>' : '';
+    var inboxBanner = inboxN ? '<div class="card" style="background:#fbf5e6;border-color:#f0e2b0;max-width:760px;margin-bottom:14px"><div class="between"><span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;font-weight:600">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</span><button class="btn btn--outline btn--sm" onclick="ADM.nav(\'inbox\')">Ouvrir la boîte de réception</button></div></div>' : '';
     function ptCard(t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
@@ -4568,7 +4568,7 @@
         // Report d'échéance : proposé à la cliente, qui doit l'accepter.
         '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           (t.proposedDueDate
-            ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#8a6f2e;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente de la cliente</span>' +
+            ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente de la cliente</span>' +
               '<button class="btn btn--outline btn--sm" onclick="ADM.taskProposeDate(\'' + t.id + '\',\'\')">Annuler la proposition</button>'
             : '<span class="micro" style="text-transform:none;letter-spacing:0">Proposer un report d\'échéance</span><input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.dueDate ? ' value="' + esc(t.dueDate) + '"' : '') + ' onchange="ADM.taskProposeDate(\'' + t.id + '\',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">la cliente devra l\'accepter</span>') +
         '</div></div>';
@@ -4602,7 +4602,7 @@
       var reworkBanner = t.needsRework ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#eef4ea;border:1px solid #cfe0c6;border-radius:12px;padding:12px 15px;margin-bottom:16px">' +
         '<span style="font-size:18px">↩</span>' +
         '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#3f5a37;font-size:14px">Le client a fait ses retours</div>' +
-        '<div class="micro" style="text-transform:none;letter-spacing:0;color:#5a7050">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:#456039">C\'est à toi de retravailler la tâche' + (t.clientFeedbackAt ? ' · reçu le ' + fmtDate(t.clientFeedbackAt) : '') + '.</div></div>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.taskClearRework(\'' + t.id + '\')">Marquer traité</button>' +
         '</div>' : '';
       // Contenu du brief : on affiche l'éditeur par blocs (complet) s'il existe,
@@ -4764,7 +4764,7 @@
           '<div style="font-size:13.5px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
         '</div></div>';
     }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
-    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6c4ea4;background:#efe6fb;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
+    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#573b8a;background:#efe6fb;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
     return '<div><div class="micro" style="margin-bottom:9px">Échanges sur la tâche' + flag + '</div>' + cs +
       '<div class="row mt" style="gap:8px"><input class="inp" style="flex:1" id="cm-' + t.id + '" placeholder="Répondre au client…" onkeydown="if(event.key===\'Enter\')ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')"><button class="btn btn--dark btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
@@ -4839,17 +4839,17 @@
     }).join('');
     var css = 'body{font-family:Georgia,\'Times New Roman\',serif;color:#2a2018;max-width:720px;margin:0 auto;padding:40px 34px;line-height:1.5}' +
       'h1{font-size:26px;font-style:italic;margin:0 0 4px;color:#412F21}' +
-      '.meta{font-size:12px;color:#8a7a63;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:26px}' +
+      '.meta{font-size:12px;color:#5e4a2e;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:26px}' +
       'section{margin-bottom:22px}' +
-      '.sh{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9c7a3a;border-bottom:1px solid #e8ddc9;padding-bottom:5px;margin:22px 0 12px}' +
+      '.sh{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6a4a0b;border-bottom:1px solid #e8ddc9;padding-bottom:5px;margin:22px 0 12px}' +
       '.q{margin-bottom:14px}.ql{font-weight:700;font-size:14px;color:#412F21}.qa{font-size:14px;color:#40352a;white-space:pre-wrap;margin-top:2px}' +
-      '.qa.empty{color:#b3a48c;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:13px;color:#6b5b45;margin:0 0 8px}' +
-      'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:11px;color:#9c8a70;text-align:center}' +
+      '.qa.empty{color:#5e4a2e;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:13px;color:#5e4a2e;margin:0 0 8px}' +
+      'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:11px;color:#5e4a2e;text-align:center}' +
       '@media print{body{padding:0}@page{margin:16mm}}';
     var doc = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc(inst.name || 'Questionnaire') + (cn ? ' — ' + esc(cn) : '') + '</title><style>' + css + '</style></head><body>' +
       '<h1>' + esc(inst.name || 'Questionnaire') + '</h1>' +
       '<div class="meta">' + (cn ? esc(cn) : '') + (cn && when ? ' · ' : '') + (when ? 'Complété le ' + esc(when) : '') + '</div>' +
-      (inst.description ? '<p style="font-size:13.5px;color:#6b5b45;margin:-14px 0 22px">' + esc(inst.description) + '</p>' : '') +
+      (inst.description ? '<p style="font-size:13.5px;color:#5e4a2e;margin:-14px 0 22px">' + esc(inst.description) + '</p>' : '') +
       sections +
       '<footer>Seed to Bloom · seedtobloom.fr</footer>' +
       '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr' + 'ipt>' +
@@ -5034,7 +5034,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;color:#a07a2a;margin-bottom:3px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span> · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span> · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -5143,7 +5143,7 @@
           '<span class="chatperson__nm">' + esc(nm) + '</span>' +
           (u ? '<span class="pill pill--a_valider">' + u + '</span>' : '') + '</button>';
       }).join('') || '<div class="empty">Aucun client.</div>';
-      var head = '<div class="chathead__t" style="font-size:18px">Conversations</div>' + (waiting ? '<div class="micro" style="color:#b8871f;font-weight:700;margin-top:3px">' + waiting + ' en attente</div>' : '<div class="micro" style="color:#5d7a52;margin-top:3px">Tout est lu ✓</div>');
+      var head = '<div class="chathead__t" style="font-size:18px">Conversations</div>' + (waiting ? '<div class="micro" style="color:#6a4a0b;font-weight:700;margin-top:3px">' + waiting + ' en attente</div>' : '<div class="micro" style="color:#456039;margin-top:3px">Tout est lu ✓</div>');
       setMain(topbar('Messagerie') + '<div class="wrap" style="max-width:1180px">' +
         '<div class="chatwrap">' +
           '<div class="chatlist"><div class="chatlist__head">' + head + '</div><div class="chatlist__scroll">' + list + '</div></div>' +
@@ -5322,7 +5322,7 @@
         '<span style="margin-left:auto;display:flex;gap:4px">' +
           '<button class="pbtn" title="Dupliquer" onclick="ADM.qnrDup(\'' + t.id + '\')">⧉</button>' +
           '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.qnrArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
-          '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.qnrDel(\'' + t.id + '\')">×</button>' +
+          '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.qnrDel(\'' + t.id + '\')">×</button>' +
         '</span>' +
       '</div>' +
     '</div>';
@@ -5400,7 +5400,7 @@
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Votre projet)" style="flex:1;font-weight:600" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
         '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',-1)">↑</button>' +
         '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrStepMove(\'' + t.id + '\',\'' + s.id + '\',1)">↓</button>' +
-        '<button class="pbtn" style="color:#c44" title="Supprimer l\'étape" onclick="ADM.qnrStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
+        '<button class="pbtn" style="color:#8d2b21" title="Supprimer l\'étape" onclick="ADM.qnrStepDel(\'' + t.id + '\',\'' + s.id + '\')">×</button>' +
       '</div>' +
       '<input class="inp" value="' + esc(s.help || '') + '" placeholder="Sous-titre / consigne de l\'étape (optionnel)" style="width:100%;box-sizing:border-box;font-size:13px;margin-bottom:12px" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'help\',this.value)">' +
       (blocksHtml || '<div class="micro muted" style="text-transform:none;letter-spacing:0;padding:2px 0 10px">Aucune question dans cette étape.</div>') +
@@ -5418,7 +5418,7 @@
       '<span style="margin-left:auto"></span>' +
       '<button class="pbtn" title="Monter"' + (idx === 0 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',-1)">↑</button>' +
       '<button class="pbtn" title="Descendre"' + (idx === total - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnrBlockMove(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',1)">↓</button>' +
-      '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.qnrBlockDel(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\')">×</button>' +
+      '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.qnrBlockDel(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\')">×</button>' +
     '</div>';
     var labelField = '<input class="inp" value="' + esc(b.label || '') + '" placeholder="' + (isStat ? (b.type === 'title' ? 'Titre de la section' : 'Votre texte / consigne') : 'Intitulé de la question') + '" style="width:100%;box-sizing:border-box;font-weight:' + (isStat ? '600' : '500') + '" onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'label\',this.value)">';
     var extra = '';
@@ -5575,7 +5575,7 @@
     if (b.type === 'title') return '<h3 style="margin:22px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(b.label || 'Titre de section') + '</h3>';
     if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0 12px">' + esc(b.label || '') + '</p>';
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<div style="font-weight:600;font-size:15.5px;line-height:1.35">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#c44">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px">' + esc(b.help) + '</div>' : '');
+    var lab = num + '<div style="font-weight:600;font-size:15.5px;line-height:1.35">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px">' + esc(b.help) + '</div>' : '');
     // Aperçu interactif : tu peux cocher / écrire pour tester (rien n'est enregistré).
     var f = '';
     var inpBox = 'width:100%;box-sizing:border-box;background:#fff;border:1.5px solid var(--bone-d);border-radius:10px;padding:10px 12px;font-family:inherit';
@@ -5757,7 +5757,7 @@
         '<span style="margin-left:auto;display:flex;gap:4px">' +
           '<button class="pbtn" title="Dupliquer" onclick="ADM.prjDup(\'' + t.id + '\')">⧉</button>' +
           '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.prjArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
-          '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.prjDel(\'' + t.id + '\')">×</button>' +
+          '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjDel(\'' + t.id + '\')">×</button>' +
         '</span>' +
       '</div>' +
     '</div>';
@@ -5834,7 +5834,7 @@
         '<span class="micro" style="background:var(--terre);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i + 1) + '</span>' +
         '<input class="inp" value="' + esc(p.title || '') + '" placeholder="Nom de la phase (ex. Maquette page d\'accueil)" style="flex:1;font-weight:600" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'title\',this.value)">' +
         up + down +
-        '<button class="pbtn" style="color:#c44" title="Supprimer la phase" onclick="ADM.prjPhaseDel(\'' + t.id + '\',\'' + p.id + '\')">×</button>' +
+        '<button class="pbtn" style="color:#8d2b21" title="Supprimer la phase" onclick="ADM.prjPhaseDel(\'' + t.id + '\',\'' + p.id + '\')">×</button>' +
       '</div>' +
       '<input class="inp" value="' + esc(p.help || '') + '" placeholder="Sous-titre / repère de calendrier (optionnel, ex. Sem. 3)" style="width:100%;box-sizing:border-box;font-size:13px;margin-bottom:10px" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'help\',this.value)">' +
       '<div class="micro" style="margin-bottom:6px">Étapes</div>' +
@@ -5857,7 +5857,7 @@
       typeSel +
       '<input class="inp" type="number" min="0" value="' + esc(s.estMinutes || 0) + '" title="Temps estimé (min)" style="width:64px;font-size:12px" onchange="ADM.prjStepSet(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\',\'estMinutes\',this.value)">' +
       '<span class="micro" style="text-transform:none">min</span>' +
-      '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.prjStepDel(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\')">×</button>' +
+      '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjStepDel(\'' + t.id + '\',\'' + p.id + '\',\'' + s.id + '\')">×</button>' +
     '</div>';
   }
   function prjDelivHtml(t, p, d) {
@@ -5866,7 +5866,7 @@
       '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:13px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">révisions</span>' +
       '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:12px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +
-      '<button class="pbtn" style="color:#c44" title="Supprimer" onclick="ADM.prjDelivDel(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\')">×</button>' +
+      '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.prjDelivDel(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\')">×</button>' +
     '</div>';
   }
   function prjPhaseOf(t, pid) { return (t.phases || []).filter(function (p) { return p.id === pid; })[0] || null; }

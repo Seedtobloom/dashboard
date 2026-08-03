@@ -2,12 +2,12 @@
 :root{
   --terre:#412F21; --terre-600:#6b533b; --terre-400:#8a6f54; --terre-200:#c8b29a;
   --nuit:#1C1205; --nuit-700:#2a1d10;
-  --glycine:#E4D1FE; --glycine-50:#f7efff; --glycine-700:#a98bd6; --glycine-900:#6c4ea4;
+  --glycine:#E4D1FE; --glycine-50:#f7efff; --glycine-700:#a98bd6; --glycine-900:#573b8a;
   --brume:#F0E8FF; --paille:#F2E5C2; --paille-200:#fbf3d8;
   --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb; --surface:#efe7d7; --surface-2:#f6f1e7;
   --page:#ffffff;
-  --text:#412F21; --muted:#96805f; --border:#eae5dc;
-  --red:#9b3a2e; --orange:#c9952f; --green:#5d7a52;
+  --text:#412F21; --muted:#675334; --border:#eae5dc;
+  --red:#8d2b21; --orange:#c9952f; --green:#456039;
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
   --font-body:'Alegreya',Georgia,serif;
   --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
@@ -179,15 +179,16 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 .focusrow a{color:var(--paille)}
 
 /* badges / pills */
-.pill{display:inline-block;font-family:var(--font-micro);font-size:10px;padding:3px 10px;border-radius:999px;letter-spacing:0.04em;text-transform:uppercase;background:var(--surface-2);color:var(--muted)}
+/* Pastilles : combinaisons texte/fond contrôlées AAA (≥ 7:1). */
+.pill{display:inline-block;font-family:var(--font-micro);font-size:10px;padding:3px 10px;border-radius:999px;letter-spacing:0.04em;text-transform:uppercase;background:#f4efe5;color:#5e4a2e}
 .pill--todo{background:var(--glycine-50);color:var(--glycine-900)}
 .pill--in_progress{background:var(--glycine-50);color:var(--glycine-900)}
-.pill--review,.pill--waiting_client{background:#f6ead0;color:#a8791c}
-.pill--done{background:rgba(93,122,82,0.15);color:var(--green)}
-.pill--late{background:rgba(155,58,46,0.11);color:var(--red)}
-.pill--a_valider{background:#f6ead0;color:#a8791c}
-.pill--valide{background:rgba(93,122,82,0.15);color:var(--green)}
-.pill--refuse{background:rgba(155,58,46,0.11);color:var(--red)}
+.pill--review,.pill--waiting_client{background:#faf1da;color:#6a4a0b}
+.pill--done{background:#eaf2e6;color:#35502a}
+.pill--late{background:#f4e9e8;color:var(--red)}
+.pill--a_valider{background:#faf1da;color:#6a4a0b}
+.pill--valide{background:#eaf2e6;color:#35502a}
+.pill--refuse{background:#f4e9e8;color:var(--red)}
 
 /* forfait bar */
 .bar{height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin-top:6px}
