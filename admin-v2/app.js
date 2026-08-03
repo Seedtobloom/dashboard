@@ -3936,6 +3936,7 @@
           '<button class="btn btn--outline btn--sm" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">🔗 Lien</button>' +
           '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:var(--red)" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">🗑</button>' +
         '</div>' +
+        crPlanBlock(pid, c) +
       '</div>';
     }
     var addCard = '<div style="border:1.5px dashed var(--bone-d);border-radius:14px;background:#faf7f0;padding:20px;display:flex;flex-direction:column;gap:11px;justify-content:center;min-height:150px">' +
@@ -3979,10 +3980,12 @@
       return r;
     });
   }
-  function planningTab(d) {
-    var pid = d.id;
-    var planning = Array.isArray(d.content.planning) ? d.content.planning : [];
-    var t0 = d.content.planningStart || '';
+  // Éditeur de planning réutilisable. cid vide = planning du projet ; cid = planning d'une création.
+  // Toutes les actions passent cid en dernier argument (undefined pour le projet).
+  function planningEditor(pid, planning, t0, cid) {
+    planning = Array.isArray(planning) ? planning : [];
+    t0 = t0 || '';
+    var cq = cid ? ',\'' + cid + '\'' : '';
     var rows = planCompute(planning, t0);
     function jalonRow(r) {
       var j = r.j;
@@ -3992,43 +3995,56 @@
           ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1ec;color:#4f6a46;white-space:nowrap">🤝 Vous deux</span>'
           : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#35608f;white-space:nowrap">🎨 Toi</span>');
       var timing = j.dateMode === 'fixed'
-        ? '<input class="inp" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value)" style="width:150px" title="Date fixe">'
-        : '<span style="display:inline-flex;align-items:center;gap:5px"><input class="inp" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value)" style="width:64px" title="Durée"><select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value)" style="width:auto"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span>';
+        ? '<input class="inp" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')" style="width:150px" title="Date fixe">'
+        : '<span style="display:inline-flex;align-items:center;gap:5px"><input class="inp" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:64px" title="Durée"><select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')" style="width:auto"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span>';
       return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:15px;margin-bottom:10px;background:#fff">' +
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
           '<span style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre);white-space:nowrap">' + (r.label || '—') + '</span>' + ownerChip +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value)" style="width:auto;margin-left:auto"><option value="a_venir"' + (j.status === 'a_venir' ? ' selected' : '') + '>À venir</option><option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option><option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option></select>' +
+          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')" style="width:auto;margin-left:auto"><option value="a_venir"' + (j.status === 'a_venir' ? ' selected' : '') + '>À venir</option><option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option><option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option></select>' +
         '</div>' +
-        '<input class="inp" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value)" placeholder="Ce que tu fais" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
+        '<input class="inp" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value' + cq + ')" placeholder="Ce que tu fais" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
         '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
-          '<input class="inp" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value)" placeholder="Jalon (Envoi V1, Retours, Livraison…)" style="flex:1;min-width:150px">' +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value)" style="width:auto"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select>' +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value)" style="width:auto"><option value="duration"' + (j.dateMode !== 'fixed' ? ' selected' : '') + '>Durée</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select>' + timing +
+          '<input class="inp" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Jalon (Envoi V1, Retours, Livraison…)" style="flex:1;min-width:150px">' +
+          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')" style="width:auto"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select>' +
+          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')" style="width:auto"><option value="duration"' + (j.dateMode !== 'fixed' ? ' selected' : '') + '>Durée</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select>' + timing +
         '</div>' +
         (j.note ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">' + esc(j.note) + '</div>' : '') +
         '<div class="row" style="gap:6px;margin-top:10px">' +
-          '<button class="pbtn" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'up\')" title="Monter">↑</button>' +
-          '<button class="pbtn" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'down\')" title="Descendre">↓</button>' +
-          (j.owner === 'cliente' ? '<button class="pbtn" onclick="ADM.pjNotify(\'' + pid + '\',\'' + j.id + '\')" title="Prévenir la cliente par e-mail">✉ Prévenir</button>' : '') +
-          '<button class="pbtn" style="margin-left:auto;color:var(--red)" onclick="ADM.pjDel(\'' + pid + '\',\'' + j.id + '\')">Supprimer</button>' +
+          '<button class="pbtn" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'up\'' + cq + ')" title="Monter">↑</button>' +
+          '<button class="pbtn" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'down\'' + cq + ')" title="Descendre">↓</button>' +
+          (j.owner === 'cliente' ? '<button class="pbtn" onclick="ADM.pjNotify(\'' + pid + '\',\'' + j.id + '\'' + cq + ')" title="Prévenir la cliente par e-mail">✉ Prévenir</button>' : '') +
+          '<button class="pbtn" style="margin-left:auto;color:var(--red)" onclick="ADM.pjDel(\'' + pid + '\',\'' + j.id + '\'' + cq + ')">Supprimer</button>' +
         '</div>' +
       '</div>';
     }
+    var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
+    return '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bone-d)"><label class="micro" style="text-transform:none;letter-spacing:0">Départ (T0) :</label><input class="inp" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value' + cq + ')" style="width:auto"><span class="micro" style="color:var(--muted)">' + (t0 ? 'les dates se calculent à partir de là' : 'vide = dates relatives (Sem 1, Sem 3-4…)') + '</span></div>' +
+      (rows.length ? rows.map(jalonRow).join('') : '<div class="empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
+      '<div class="row mt" style="gap:6px"><input class="inp" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="btn btn--dark btn--sm" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">+ Ajouter un jalon</button></div>';
+  }
+  // Bloc « planning prévisionnel » propre à une création, replié par défaut.
+  function crPlanBlock(pid, c) {
+    var n = Array.isArray(c.planning) ? c.planning.length : 0;
+    return '<details style="border-top:1px solid var(--bone-d);padding-top:14px">' +
+      '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);list-style:none">📅 Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</summary>' +
+      '<div style="margin-top:14px">' + planningEditor(pid, c.planning, c.planningStart, c.id) + '</div>' +
+    '</details>';
+  }
+  function planningTab(d) {
+    var pid = d.id;
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Planning éditorial</h3>' +
       '<div class="micro mb">Chaque jalon a une échéance (date fixe ou durée qui s\'enchaîne depuis le précédent) et un responsable (toi / la cliente). La cliente voit ce planning et est prévenue quand une action lui incombe.</div>' +
-      '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bone-d)"><label class="micro" style="text-transform:none;letter-spacing:0">Départ (T0) :</label><input class="inp" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value)" style="width:auto"><span class="micro" style="color:var(--muted)">' + (t0 ? 'les dates se calculent à partir de là' : 'vide = dates relatives (Sem 1, Sem 3-4…)') + '</span></div>' +
-      (rows.length ? rows.map(jalonRow).join('') : '<div class="empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
-      '<div class="row mt" style="gap:6px"><input class="inp" id="plan-new-' + pid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\');}"><button class="btn btn--dark btn--sm" onclick="ADM.pjAdd(\'' + pid + '\')">+ Ajouter un jalon</button></div>' +
+      planningEditor(pid, d.content.planning, d.content.planningStart, '') +
     '</div>';
   }
   // pid = identifiant public du projet (d.id : 'website' / 'branding' / 'support-001'…),
   // envoyé en projectId à la route générique /planning résolue via resolveProject.
-  function pjAdd(pid) { var v = (el('plan-new-' + pid) ? el('plan-new-' + pid).value : '').trim(); jpost('/api/clients/' + CURKEY + '/planning', { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function pjSet(pid, jid, field, val) { var body = { projectId: pid }; body[field] = val; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function pjMove(pid, jid, dir) { jpost('/api/clients/' + CURKEY + '/planning/' + jid, { projectId: pid, move: dir }, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }); }
-  function pjDel(pid, jid) { admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () { api('/api/clients/' + CURKEY + '/planning/' + jid + '?projectId=' + encodeURIComponent(pid), { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); refreshClient(); } else toast('Erreur'); }); }); }
-  function pjStart(pid, val) { jpost('/api/clients/' + CURKEY + '/planning', { projectId: pid, planningStart: val || null }, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); refreshClient(); } else toast('Erreur'); }); }
-  function pjNotify(pid, jid) { jpost('/api/clients/' + CURKEY + '/planning/' + jid, { projectId: pid, notify: true }, 'PATCH').then(function (r) { if (r.ok) toast('Cliente prévenue ✉'); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function pjAdd(pid, cid) { var eid = 'plan-new-' + pid + (cid ? '-' + cid : ''); var v = (el(eid) ? el(eid).value : '').trim(); var b = { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }; if (cid) b.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning', b).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function pjSet(pid, jid, field, val, cid) { var body = { projectId: pid }; body[field] = val; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function pjMove(pid, jid, dir, cid) { var body = { projectId: pid, move: dir }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }); }
+  function pjDel(pid, jid, cid) { admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () { api('/api/clients/' + CURKEY + '/planning/' + jid + '?projectId=' + encodeURIComponent(pid) + (cid ? '&creationId=' + encodeURIComponent(cid) : ''), { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); refreshClient(); } else toast('Erreur'); }); }); }
+  function pjStart(pid, val, cid) { var body = { projectId: pid, planningStart: val || null }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning', body, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); refreshClient(); } else toast('Erreur'); }); }
+  function pjNotify(pid, jid, cid) { var body = { projectId: pid, notify: true }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) toast('Cliente prévenue ✉'); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function supportsCard() {
     var rows = (CUR.supports || []).map(function (s) {
       var nm = (s.content && s.content.name) || '';

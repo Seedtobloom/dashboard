@@ -637,6 +637,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
             id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
             dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3,
             bannerColor: c.bannerColor || null, createdAt: c.createdAt || null,
+            ...planningOf(c),
           })) : [],
           ...planningOf(obj),
           ...questionnaireOf(obj),
