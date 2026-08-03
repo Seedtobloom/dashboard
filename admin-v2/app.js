@@ -2271,7 +2271,8 @@
         (planned ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;font-family:var(--font-micro);font-size:10px;color:' + capCol + '"><span style="width:7px;height:7px;border-radius:50%;background:' + capCol + '"></span>' + msDur(planned) + (avail ? ' / ' + msHours(avail) : '') + '</div>' : '<div class="micro" style="margin-top:3px;color:var(--muted)">libre</div>') +
       '</div>';
       var body = dayTasks.length ? dayTasks.map(function (t) { return taskChip(t, diso); }).join('') : '<div class="micro" style="text-align:center;color:var(--muted);padding:10px 0;text-transform:none;letter-spacing:0">Rien de planifié</div>';
-      return '<div style="background:var(--surface-2);border:1px solid var(--bone-d);border-radius:12px;padding:12px' + (isToday ? ';box-shadow:0 0 0 2px var(--terre) inset' : '') + '">' + head + body + '</div>';
+      var dayAdd = '<input class="inp" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px 8px;margin-top:6px">';
+      return '<div style="background:var(--surface-2);border:1px solid var(--bone-d);border-radius:12px;padding:12px' + (isToday ? ';box-shadow:0 0 0 2px var(--terre) inset' : '') + '">' + head + body + dayAdd + '</div>';
     }).join('');
     var grid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px">' + cols + '</div>';
     // À placer
@@ -2289,9 +2290,15 @@
         '</div>';
       }).join('') + '</div>' : '<div class="empty" style="padding:18px">Tout est placé. 🌿</div>') +
     '</div>';
+    var addBar = '<div class="card" style="background:var(--card)"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<input class="inp" id="ms-add-title" placeholder="Ajouter une tâche…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}">' +
+      '<select class="inp" id="ms-add-day" style="width:auto" title="Jour où tu bosses dessus">' + msDaySelect(days, '') + '</select>' +
+      '<input class="inp" id="ms-add-est" type="number" min="0" step="15" placeholder="min" style="width:82px" title="Temps estimé">' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.msAddTop()">+ Ajouter</button>' +
+    '</div></div>';
     var html = '<div class="wrap">' +
       '<div class="micro mb" style="color:var(--muted)"><strong style="color:var(--terre)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--terre)">Mes tâches</strong> = tout ce que tu as à faire. Même données, deux vues.</div>' +
-      header + grid + placeHtml +
+      header + addBar + grid + placeHtml +
     '</div>';
     setMain(topbar('Ma semaine') + html);
   }
@@ -2310,6 +2317,14 @@
   }
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
   function msEst(id, val) { msPatch(id, { estMinutes: parseInt(val, 10) || 0 }); }
+  function msCreate(title, doDate, est) {
+    title = (title || '').trim(); if (!title) { toast('Titre requis'); return; }
+    jpost('/api/admin/tasks', { title: title, doDate: doDate || null, estMinutes: parseInt(est, 10) || 0 }).then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
+      if (t) { MS_TASKS.push(t); toast('Ajoutée'); renderMaSemaineBody(); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
+  function msAddTop() { var t = el('ms-add-title'); if (!t) return; msCreate(t.value, el('ms-add-day') ? el('ms-add-day').value : '', el('ms-add-est') ? el('ms-add-est').value : ''); }
+  function msAddDay(diso) { var i = el('ms-dayadd-' + diso); if (!i) return; msCreate(i.value, diso, ''); }
   // ── Vue Focus : organisée par mode de travail, avec « Aujourd'hui » en tête ──
   function mtToggleToday(id) {
     var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
@@ -5842,7 +5857,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msPlace: msPlace, msEst: msEst,
+    msWeek: msWeek, msPlace: msPlace, msEst: msEst, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
