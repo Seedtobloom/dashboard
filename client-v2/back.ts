@@ -409,6 +409,7 @@ function mapDeliverables(livrables: any[]): AnyObj[] {
     clientComment: l.clientComment || '',
     clientAttachments: Array.isArray(l.clientAttachments) ? l.clientAttachments : [],
     clientLink: l.clientLink || '',
+    clientWishDate: l.clientWishDate || '',
     validatedAt: l.validatedAt || null,
     taskId: l.taskId || null,
     taskTitle: l.taskTitle || '',
@@ -809,6 +810,8 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
     ? body.attachments.slice(0, 10).map((a: AnyObj) => ({ key: String((a && a.key) || '').slice(0, 300), name: String((a && a.name) || 'fichier').slice(0, 140) })).filter((a: AnyObj) => a.key)
     : [];
   liv.clientLink = (body.link || '').toString().slice(0, 500);
+  // Date souhaitée par la cliente pour la nouvelle version (uniquement sur une révision).
+  liv.clientWishDate = decision === 'refuse' ? (body.wishDate || '').toString().slice(0, 10) : '';
   liv.validatedAt = nowIso();
   // Livrable rattaché à une tâche : on reflète la validation sur la tâche.
   if (liv.taskId && Array.isArray(container.taches)) {
@@ -825,7 +828,8 @@ async function handleDeliverable(request: Request, env: Env, masterKey: string, 
     `<p><strong>${escHtml(who)}</strong> ${decision === 'valide' ? 'a validé' : 'a demandé une révision sur'} le livrable <em>${escHtml(liv.name || '')}</em>.${doneLine}</p>` +
     (liv.clientComment ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(liv.clientComment)}</p>` : '') +
     ((liv.clientAttachments && liv.clientAttachments.length) ? `<p style="color:#412F21">📎 ${liv.clientAttachments.length} fichier(s) joint(s) — à retrouver dans l'espace.</p>` : '') +
-    (liv.clientLink ? `<p style="color:#412F21">🔗 Lien : ${escHtml(liv.clientLink)}</p>` : ''));
+    (liv.clientLink ? `<p style="color:#412F21">🔗 Lien : ${escHtml(liv.clientLink)}</p>` : '') +
+    (liv.clientWishDate ? `<p style="color:#412F21">📅 Nouvelle version souhaitée pour le <strong>${escHtml(liv.clientWishDate.split('-').reverse().join('/'))}</strong>.</p>` : ''));
   return json({ deliverable: mapDeliverables([liv])[0] });
 }
 

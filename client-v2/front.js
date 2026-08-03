@@ -7996,6 +7996,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (l.clientComment ? '<div class="cp-msg__date" style="white-space:pre-wrap;line-height:1.5">« '+esc(l.clientComment)+' »</div>' : '')+
       ((l.clientAttachments && l.clientAttachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:5px">'+l.clientAttachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="font-size:11.5px;color:var(--navy,#1C1205);background:#f4f0e8;border-radius:8px;padding:4px 9px;text-decoration:none;display:inline-flex;align-items:center;gap:5px">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '')+
       (l.clientLink ? '<div style="margin-top:5px;font-size:12px"><a href="'+esc(/^https?:\/\//i.test(l.clientLink)?l.clientLink:'https://'+l.clientLink)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#7a6030)">'+cpIcon('link',12)+' '+esc(l.clientLink.replace(/^https?:\/\//i,'').slice(0,50))+'</a></div>' : '')+
+      (l.clientWishDate ? '<div class="cp-msg__date" style="margin-top:4px">Nouvelle version souhaitee pour le '+esc(l.clientWishDate.split('-').reverse().join('/'))+'</div>' : '')+
       decideRow +
     '</div>';
   }
@@ -8008,8 +8009,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var ls = (pd && pd.project && pd.project.deliverables) || [];
     return '<div class="cp-card"><div class="cp-card__hd"><span class="cp-card__title">Livrables</span></div>'+stbVersionsList(pid, ls)+'</div>';
   }
-  function stbSendDecision(pid, id, decision, comment, attachments, link){
-    fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment || '', attachments: attachments || [], link: link || '' }) })
+  function stbSendDecision(pid, id, decision, comment, attachments, link, wishDate){
+    fetch('/api/client/' + TOKEN + '/deliverables/' + id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, decision: decision, comment: comment || '', attachments: attachments || [], link: link || '', wishDate: wishDate || '' }) })
       .then(function(r){
         // 409 = livrable déjà traité (souvent un double-clic) : on rafraîchit
         // l'espace pour montrer l'état à jour, sans message d'erreur alarmant.
@@ -8060,6 +8061,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="font-size:13px;color:var(--muted,#8a7d6b);line-height:1.5;margin-bottom:16px">Expliquez ce qui doit etre modifie. Vous pouvez joindre des fichiers (visuels annotes, exemples...) et un lien.</div>' +
       '<textarea id="_stbrev-txt" placeholder="Ce qui doit etre revu, le plus precisement possible..." style="width:100%;box-sizing:border-box;min-height:140px;resize:vertical;padding:13px 15px;border:1px solid #e2dbd0;border-radius:11px;font-family:inherit;font-size:14.5px;line-height:1.55;color:var(--navy,#1C1205)"></textarea>' +
       '<input id="_stbrev-link" type="text" placeholder="Lien (Drive, Figma, WeTransfer...)" style="width:100%;box-sizing:border-box;margin-top:11px;padding:12px 15px;border:1px solid #e2dbd0;border-radius:11px;font-size:14px">' +
+      '<label style="display:block;margin-top:11px;font-size:13px;color:var(--terre,#412F21)">Pour quelle date souhaitez-vous la nouvelle version&nbsp;? <span style="color:var(--muted,#8a7d6b)">(optionnel)</span><input id="_stbrev-date" type="date" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px 15px;border:1px solid #e2dbd0;border-radius:11px;font-size:14px;color:var(--navy,#1C1205)"></label>' +
       '<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--terre,#412F21);cursor:pointer;padding:10px 15px;border:1.5px dashed #cbb994;border-radius:11px;margin-top:11px">' + cpIcon('paperclip',15,'flex-shrink:0') + '<span>Joindre des fichiers</span><input id="_stbrev-file" type="file" multiple style="display:none"></label>' +
       '<div id="_stbrev-files" style="margin-top:9px;display:flex;flex-direction:column;gap:6px"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button id="_stbrev-cancel" style="padding:11px 18px;border:1px solid #e2dbd0;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;color:var(--navy,#1C1205)">Annuler</button><button id="_stbrev-ok" style="padding:11px 22px;border:none;border-radius:10px;background:var(--terre,#412F21);color:#fff;cursor:pointer;font-size:14px;font-weight:700">Envoyer la demande</button></div>' +
@@ -8085,8 +8087,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ov.querySelector('#_stbrev-ok').onclick = function(){
       var comment = (ov.querySelector('#_stbrev-txt').value || '').trim();
       var link = (ov.querySelector('#_stbrev-link').value || '').trim();
+      var wish = (ov.querySelector('#_stbrev-date').value || '').trim();
       close();
-      stbSendDecision(pid, id, 'refuse', comment.slice(0, 2000), files, link);
+      stbSendDecision(pid, id, 'refuse', comment.slice(0, 2000), files, link, wish);
     };
     var ta = ov.querySelector('#_stbrev-txt'); if (ta) ta.focus();
   };

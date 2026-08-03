@@ -1500,7 +1500,7 @@ async function handleDashboard(env: Env): Promise<Response> {
             } catch (e) { /* ignore */ }
             (task.comments || []).forEach((c: AnyObj) => { (c.attachments || []).forEach((a: AnyObj) => { const k = a && (a.key || a.fileKey); if (k) files.push({ name: String(a.name || 'fichier').slice(0, 120), key: String(k).slice(0, 300) }); }); });
           }
-          revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, id: l.id, seenByAdmin: l.seenByAdmin === true, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', at: l.validatedAt || null, attachments: files, clientLink, reviewLink: l.reviewLink || '' });
+          revisions.push({ key: ci.key, client: who, project: projectId, projectLabel: label, id: l.id, seenByAdmin: l.seenByAdmin === true, name: l.name || '', taskId: l.taskId || null, taskTitle: l.taskTitle || '', comment: l.clientComment || '', wishDate: l.clientWishDate || '', at: l.validatedAt || null, attachments: files, clientLink, reviewLink: l.reviewLink || '' });
         } else if (st === 'valide' && l.seenByAdmin !== true) {
           // Livrable validé par la cliente : signal positif à afficher dans l'Inbox
           // jusqu'à ce que le studio l'ait consulté (« traité → disparaît »).
