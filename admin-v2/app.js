@@ -932,10 +932,11 @@
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
     } else if (it.type === 'revision') {
       var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a></div>' : '';
+      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:12px;font-weight:700;color:#8a4a0e;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
         (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
         (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:1px solid #f0c9bd;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
-        inboxAtts(x) + rlink;
+        rwish + inboxAtts(x) + rlink;
     }
     return inboxChrome(it, body, openBtn + seenBtn, it.type === 'revision' ? '#a8432f' : '');
   }
@@ -1204,6 +1205,7 @@
             '<div style="font-weight:600;color:var(--terre);font-size:14.5px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
             (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:13px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
+            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:#8a4a0e;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
             filesHtml +
           '</div>' +
           '<div class="prow__act" style="flex-shrink:0">' +
