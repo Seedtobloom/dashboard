@@ -2354,6 +2354,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var wk = 0;
     return (planning||[]).map(function(j){
       var r = { j:j, label:'' };
+      if (j.dateMode==='range'){
+        var rs = j.dateStart ? new Date(j.dateStart+'T00:00:00') : null;
+        var re = j.dateEnd ? new Date(j.dateEnd+'T00:00:00') : null;
+        if (rs||re) r.label = planFmtRange(rs||re, re||rs);
+        if (abs && re) cur = new Date(re);
+        return r;
+      }
       if (abs){
         var s = cur ? new Date(cur) : null, e;
         if (j.dateMode==='fixed' && j.date){ e = new Date(j.date+'T00:00:00'); if(!s) s = new Date(e); }

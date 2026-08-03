@@ -4025,6 +4025,14 @@
     var wk = 0;
     return (planning || []).map(function (j) {
       var r = { j: j, label: '' };
+      if (j.dateMode === 'range') {
+        // Plage début→fin saisie à la main : indépendante du T0 et de la cascade.
+        var rs = j.dateStart ? new Date(j.dateStart + 'T00:00:00') : null;
+        var re = j.dateEnd ? new Date(j.dateEnd + 'T00:00:00') : null;
+        if (rs || re) r.label = planFmtRange(rs || re, re || rs);
+        if (abs && re) cur = new Date(re); // la cascade des jalons suivants reprend après la plage
+        return r;
+      }
       if (abs) {
         var s = cur ? new Date(cur) : null, e;
         if (j.dateMode === 'fixed' && j.date) { e = new Date(j.date + 'T00:00:00'); if (!s) s = new Date(e); }
@@ -4052,7 +4060,9 @@
           : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#35608f;white-space:nowrap">🎨 Toi</span>');
       var timing = j.dateMode === 'fixed'
         ? '<input class="inp" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')" style="width:150px" title="Date fixe">'
-        : '<span style="display:inline-flex;align-items:center;gap:5px"><input class="inp" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:64px" title="Durée"><select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')" style="width:auto"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span>';
+        : (j.dateMode === 'range'
+          ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">du <input class="inp" type="date" value="' + esc(j.dateStart || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateStart\',this.value' + cq + ')" style="width:145px" title="Début"> au <input class="inp" type="date" value="' + esc(j.dateEnd || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateEnd\',this.value' + cq + ')" style="width:145px" title="Fin"></span>'
+          : '<span style="display:inline-flex;align-items:center;gap:5px"><input class="inp" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:64px" title="Durée"><select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')" style="width:auto"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span>');
       return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:15px;margin-bottom:10px;background:#fff">' +
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
           '<span style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre);white-space:nowrap">' + (r.label || '—') + '</span>' + ownerChip +
@@ -4062,7 +4072,7 @@
         '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
           '<input class="inp" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Jalon (Envoi V1, Retours, Livraison…)" style="flex:1;min-width:150px">' +
           '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')" style="width:auto"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select>' +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')" style="width:auto"><option value="duration"' + (j.dateMode !== 'fixed' ? ' selected' : '') + '>Durée</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select>' + timing +
+          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')" style="width:auto"><option value="duration"' + (j.dateMode !== 'fixed' && j.dateMode !== 'range' ? ' selected' : '') + '>Durée</option><option value="range"' + (j.dateMode === 'range' ? ' selected' : '') + '>Plage de dates</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select>' + timing +
         '</div>' +
         (j.note ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">' + esc(j.note) + '</div>' : '') +
         '<div class="row" style="gap:6px;margin-top:10px">' +
