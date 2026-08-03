@@ -842,7 +842,8 @@
     ticket:    { icon: 'maint',           label: 'Ticket de maintenance',  ic: '#8a6f2e', bg: '#fbf5e6' },
     rework:    { icon: 'stepStudio',      label: 'Retours reçus',          ic: '#3f5a37', bg: '#f3f6f0' },
     comment:   { icon: 'chat',            label: 'Nouveau commentaire',    ic: '#6c4ea4', bg: '#f4f1fa' },
-    validated: { icon: 'stepValid',       label: 'Livrable validé',        ic: '#2f8f57', bg: '#edf6ef' }
+    validated: { icon: 'stepValid',       label: 'Livrable validé',        ic: '#2f8f57', bg: '#edf6ef' },
+    revision:  { icon: 'stepStudio',      label: 'Livrable à revoir',      ic: '#a8432f', bg: '#fbeae5' }
   };
   function renderInbox() {
     setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes — traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -858,12 +859,13 @@
     (d.reworkTasks || []).forEach(function (x) { items.push({ type: 'rework', at: x.at, x: x }); });
     (d.commentTasks || []).forEach(function (x) { items.push({ type: 'comment', at: x.at, x: x }); });
     (d.validated || []).forEach(function (x) { items.push({ type: 'validated', at: x.at, x: x }); });
+    (d.revisions || []).forEach(function (x) { if (!x.seenByAdmin) items.push({ type: 'revision', at: x.at, x: x }); });
     items.sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); });
     return items;
   }
   function inboxUnifiedCount(d) {
     d = d || INBOX_D || {};
-    return (d.inbox || []).length + (d.qnrDone || []).length + (d.newTasks || []).length + (d.reworkTasks || []).length + (d.commentTasks || []).length + (d.validated || []).length;
+    return (d.inbox || []).length + (d.qnrDone || []).length + (d.newTasks || []).length + (d.reworkTasks || []).length + (d.commentTasks || []).length + (d.validated || []).length + (d.revisions || []).filter(function (x) { return !x.seenByAdmin; }).length;
   }
   function renderInboxBody() {
     var b = el('inbox-body'); if (!b) return;
@@ -915,7 +917,7 @@
     if (it.type === 'demande') return inboxDemandeCard(it);
     var x = it.x;
     var openBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
-    var seenArgs = '\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\'' + (it.type === 'validated' ? ',\'' + (x.project || 'partner') + '\'' : '');
+    var seenArgs = '\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\'' + ((it.type === 'validated' || it.type === 'revision') ? ',\'' + (x.project || 'partner') + '\'' : '');
     var seenBtn = '<button class="btn btn--outline btn--sm" onclick="ADM.inboxSeen(' + seenArgs + ')">Vu</button>';
     var body = '';
     if (it.type === 'qnr') {
@@ -928,8 +930,14 @@
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(x.text) + ' »</div>' : '');
     } else if (it.type === 'validated') {
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
+    } else if (it.type === 'revision') {
+      var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a></div>' : '';
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
+        (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
+        (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:1px solid #f0c9bd;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
+        inboxAtts(x) + rlink;
     }
-    return inboxChrome(it, body, openBtn + seenBtn);
+    return inboxChrome(it, body, openBtn + seenBtn, it.type === 'revision' ? '#a8432f' : '');
   }
   function inboxDemandeCard(it) {
     var x = it.x;
@@ -965,7 +973,7 @@
   // Retire l'élément de toutes les listes et rafraîchit le badge de nav.
   function inboxDrop(key, id) {
     if (!INBOX_D) return;
-    ['inbox', 'qnrDone', 'newTasks', 'reworkTasks', 'commentTasks', 'validated'].forEach(function (k) {
+    ['inbox', 'qnrDone', 'newTasks', 'reworkTasks', 'commentTasks', 'validated', 'revisions'].forEach(function (k) {
       if (Array.isArray(INBOX_D[k])) INBOX_D[k] = INBOX_D[k].filter(function (x) { return !(x.key === key && x.id === id); });
     });
     renderInboxBody();
@@ -979,7 +987,7 @@
     else if (type === 'ticket') { url = '/api/clients/' + key + '/tickets/' + id; body = { projectId: 'maintenance' }; }
     else if (type === 'rework') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', needsRework: false }; }
     else if (type === 'comment') { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientCommentNotif: false }; }
-    else if (type === 'validated') { url = '/api/clients/' + key + '/deliverables/' + id; body = { projectId: project || 'partner', seenByAdmin: true }; }
+    else if (type === 'validated' || type === 'revision') { url = '/api/clients/' + key + '/deliverables/' + id; body = { projectId: project || 'partner', seenByAdmin: true }; }
     else { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientNotif: false }; }
     jpost(url, body, 'PATCH').catch(function () {});
     toast('Traité ✓');
