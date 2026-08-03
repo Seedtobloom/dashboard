@@ -1934,24 +1934,24 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   // Frise « Planning éditorial » partagée (studio ⇆ cliente), rendue à l'identique
   // sur tout projet qui en a un. Renvoie { banner, html } (chaînes vides si aucun jalon).
-  function buildPlanningFrise(project){
+  function buildPlanningFrise(project, opts){
+    var compact = !!(opts && opts.compact);
     var planning = Array.isArray(project.planning) ? project.planning : [];
     if (!planning.length) return { banner:'', html:'' };
     var prows = planCompute(planning, project.planningStart);
-    var PL_ST = { a_venir:['À venir','#8a7d6b','#f2ede4'], en_cours:['En cours','#c9952f','#fbf3d9'], fait:['Fait','#3f8f5b','#e6f2ea'] };
+    var PL_ST = { a_venir:['À venir','#8a7d6b','#f2ede4'], en_cours:['En cours','#b0761c','#f3ebda'], fait:['Fait','#3f8f5b','#e6f2ea'] };
     var banner = '';
-    var mine = prows.filter(function(r){ return (r.j.owner === 'cliente' || r.j.owner === 'les_deux') && r.j.status !== 'fait'; });
-    if (mine.length) {
-      var nx = mine[0];
-      banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
-        cpIcon('arrow',18,'color:#6c4ea4;flex-shrink:0;margin-top:1px') +
-        '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
-        '<div style="font-size:13.5px;color:#6c4ea4;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
+    if (!compact) {
+      var mine = prows.filter(function(r){ return (r.j.owner === 'cliente' || r.j.owner === 'les_deux') && r.j.status !== 'fait'; });
+      if (mine.length) {
+        var nx = mine[0];
+        banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
+          cpIcon('arrow',18,'color:#6c4ea4;flex-shrink:0;margin-top:1px') +
+          '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
+          '<div style="font-size:13.5px;color:#6c4ea4;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
+      }
     }
-    var html = '<div class="cp-card" style="margin-bottom:44px;padding:28px 30px">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="cp-card__title">Planning éditorial</span></div>' +
-      '<p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 22px">Les étapes de ce projet, qui fait quoi et pour quand. Vous êtes prévenue dès qu\'une action vous revient.</p>' +
-      '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
+    var rows = '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
         var j = r.j;
         var st = PL_ST[j.status] || PL_ST.a_venir;
         var ownerChip = j.owner === 'cliente'
@@ -1975,8 +1975,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             (j.note ? '<div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:4px">' + esc(j.note) + '</div>' : '') +
           '</div>' +
         '</div>';
-      }).join('') + '</div>' +
-    '</div>';
+      }).join('') + '</div>';
+    var html = compact
+      ? '<div style="margin-top:16px;border-top:1px solid var(--bone-d);padding-top:16px">' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:700;margin-bottom:14px">Planning prévisionnel</div>' + rows + '</div>'
+      : '<div class="cp-card" style="margin-bottom:44px;padding:28px 30px">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="cp-card__title">Planning éditorial</span></div>' +
+          '<p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 22px">Les étapes de ce projet, qui fait quoi et pour quand. Vous êtes prévenue dès qu\'une action vous revient.</p>' + rows + '</div>';
     return { banner:banner, html:html };
   }
   function buildProjectView(pd) {
@@ -2263,7 +2268,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<div class="cp-proj-card__title">' + esc(c.name) + '</div>' +
               (c.dueDate ? '<div class="cp-proj-card__meta"><span>À livrer le ' + fmtDate(c.dueDate) + '</span></div>' : '') +
               revBlock +
-              '<div style="border-top:1px solid var(--bone-d);padding-top:18px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
+              buildPlanningFrise(c, { compact: true }).html +
+              '<div style="border-top:1px solid var(--bone-d);padding-top:18px;margin-top:16px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
             '</div>' +
           '</div>';
         }).join('') + '</div>';
@@ -2272,7 +2278,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       } else {
         crBody = stbDeliverables(project.id);
       }
-      return header + '<div class="cp-content">' + banner + onboarding + _pf.banner + crIntro + '<div style="margin-bottom:44px">' + crBody + '</div>' + _pf.html + sideCol + '</div>';
+      // Bloc « Fichiers » retiré du Support de com : les fichiers vivent dans les
+      // créations (versions). On garde seulement infos pratiques + réunion si présentes.
+      var supportSide = pracPanel.replace(' hidden', '') + meetPanel.replace(' hidden', '') + helpCard;
+      return header + '<div class="cp-content">' + banner + onboarding + _pf.banner + crIntro + '<div style="margin-bottom:44px">' + crBody + '</div>' + _pf.html + supportSide + '</div>';
     }
 
     // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.

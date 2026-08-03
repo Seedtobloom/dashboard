@@ -789,12 +789,20 @@ async function handleClientApi(
     if (method === 'POST' || method === 'PATCH') { pbody = await readJson(request); pidRaw = pbody.projectId || pidRaw; }
     const o = resolveProject(esp, String(pidRaw)).container;
     if (!o) return json({ error: 'Projet introuvable' }, 404);
-    if (!Array.isArray(o.planning)) o.planning = [];
+    // Cible du planning : une création précise (creationId) ou le projet lui-même.
+    const creationId = String(pbody.creationId || url.searchParams.get('creationId') || '');
+    let pt: AnyObj = o;
+    if (creationId) {
+      const cr = Array.isArray(o.creations) ? o.creations.find((c: AnyObj) => c.id === creationId) : null;
+      if (!cr) return json({ error: 'Création introuvable' }, 404);
+      pt = cr;
+    }
+    if (!Array.isArray(pt.planning)) pt.planning = [];
     // PATCH sans jid = réglage du départ (T0) du planning.
     if (method === 'PATCH' && !jid) {
-      if ('planningStart' in pbody) o.planningStart = pbody.planningStart ? String(pbody.planningStart).slice(0, 10) : null;
+      if ('planningStart' in pbody) pt.planningStart = pbody.planningStart ? String(pbody.planningStart).slice(0, 10) : null;
       await saveClient(env, key, data);
-      return json({ ok: true, planningStart: o.planningStart || null });
+      return json({ ok: true, planningStart: pt.planningStart || null });
     }
     if (method === 'POST') {
       const body = pbody;
@@ -811,13 +819,13 @@ async function handleClientApi(
         note: (body.note || '').toString().slice(0, 800),
         createdAt: nowIso(),
       };
-      o.planning.push(j);
+      pt.planning.push(j);
       await saveClient(env, key, data);
       return json(j, 201);
     }
     if (method === 'PATCH' && jid) {
       const body = pbody;
-      const j = o.planning.find((x: AnyObj) => x.id === jid);
+      const j = pt.planning.find((x: AnyObj) => x.id === jid);
       if (!j) return json({ error: 'Jalon introuvable' }, 404);
       if ('title' in body) j.title = String(body.title || '').slice(0, 160).trim() || j.title;
       if ('jalon' in body) j.jalon = String(body.jalon || '').slice(0, 60);
@@ -829,9 +837,9 @@ async function handleClientApi(
       if ('durationUnit' in body) j.durationUnit = cleanEnum(body.durationUnit, PLAN_UNITS) || j.durationUnit;
       if ('note' in body) j.note = String(body.note || '').slice(0, 800);
       if ('move' in body && (body.move === 'up' || body.move === 'down')) {
-        const idx = o.planning.findIndex((x: AnyObj) => x.id === jid);
+        const idx = pt.planning.findIndex((x: AnyObj) => x.id === jid);
         const swap = body.move === 'up' ? idx - 1 : idx + 1;
-        if (idx !== -1 && swap >= 0 && swap < o.planning.length) { const t = o.planning[idx]; o.planning[idx] = o.planning[swap]; o.planning[swap] = t; }
+        if (idx !== -1 && swap >= 0 && swap < pt.planning.length) { const t = pt.planning[idx]; pt.planning[idx] = pt.planning[swap]; pt.planning[swap] = t; }
       }
       await saveClient(env, key, data);
       // Notif cliente optionnelle quand une action lui incombe.
@@ -841,7 +849,7 @@ async function handleClientApi(
       return json(j);
     }
     if (method === 'DELETE' && jid) {
-      o.planning = o.planning.filter((x: AnyObj) => x.id !== jid);
+      pt.planning = pt.planning.filter((x: AnyObj) => x.id !== jid);
       await saveClient(env, key, data);
       return json({ ok: true });
     }
