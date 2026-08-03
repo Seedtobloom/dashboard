@@ -438,14 +438,17 @@ async function handleClientApi(
     return json({ ok: true, pinned: msg.pinned });
   }
   // Suppression d'un message de la conversation (ex. doublon envoyé par erreur).
-  const delm = sub.match(/^\/message\/([a-f0-9]+)$/);
+  const delm = sub.match(/^\/message\/([a-zA-Z0-9]+)$/);
   if (delm && method === 'DELETE') {
     const body = await readJson(request);
     const { container } = resolveProject(esp, (body.projectId || '').toString());
     if (!container || !Array.isArray(container.chat)) return json({ error: 'Message introuvable' }, 404);
-    const before = container.chat.length;
-    container.chat = container.chat.filter((x: AnyObj) => x.id !== delm[1]);
-    if (container.chat.length === before) return json({ error: 'Message introuvable' }, 404);
+    const targetId = decodeURIComponent(delm[1]);
+    // D'abord par id ; repli par date (+ expéditeur) pour les anciens messages sans id.
+    let idx = container.chat.findIndex((x: AnyObj) => x.id && x.id === targetId);
+    if (idx === -1 && body.date) idx = container.chat.findIndex((x: AnyObj) => !x.id && x.date === body.date && (body.from == null || x.from === body.from));
+    if (idx === -1) return json({ error: 'Message introuvable' }, 404);
+    container.chat.splice(idx, 1);
     await saveClient(env, key, data);
     return json({ ok: true });
   }
