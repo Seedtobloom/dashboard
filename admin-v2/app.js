@@ -938,7 +938,63 @@
         (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:1px solid #f0c9bd;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
         rwish + inboxAtts(x) + rlink;
     }
-    return inboxChrome(it, body, openBtn + seenBtn, it.type === 'revision' ? '#a8432f' : '');
+    if (it.type === 'revision') {
+      var cidArg = x.creationId ? '\'' + x.creationId + '\'' : 'null';
+      var resendArgs = '\'' + x.key + '\',\'' + (x.project || 'partner') + '\',' + cidArg + ',\'' + x.id + '\'';
+      var resendBtns = '<button class="btn btn--dark btn--sm" onclick="ADM.inboxResend(' + resendArgs + ')">↩ Renvoyer une version (fichier)</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.inboxResendLink(' + resendArgs + ')">🔗 Renvoyer un lien</button>';
+      return inboxChrome(it, body, resendBtns + openBtn + seenBtn, '#a8432f');
+    }
+    return inboxChrome(it, body, openBtn + seenBtn, '');
+  }
+  // Une fois la nouvelle version envoyée depuis l'Inbox : la demande de révision
+  // est traitée → on la retire de l'Inbox et on la marque vue côté serveur.
+  function inboxResendDone(key, project, oldId) {
+    inboxDrop(key, oldId);
+    jpost('/api/clients/' + key + '/deliverables/' + oldId, { projectId: project || 'partner', seenByAdmin: true }, 'PATCH').catch(function () {});
+    if (CURKEY === key) refreshClient();
+  }
+  // Renvoyer une nouvelle version (fichier) en réponse à une demande de révision, depuis l'Inbox.
+  function inboxResend(key, project, cid, oldId) {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(inp);
+    var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
+      if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
+      notifyConfirm('Envoyer cette nouvelle version à la cliente et la prévenir par e-mail ?', function (notify) {
+        var fd = new FormData(); fd.append('file', f); fd.append('projectId', project); fd.append('deliverable', '1'); if (cid) fd.append('creationId', cid); fd.append('notify', notify ? 'true' : 'false');
+        toast('Envoi de la version…');
+        api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
+          .then(function (res) { cleanup(); if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+          .catch(function () { cleanup(); toast('Erreur — version non envoyée, réessaie'); });
+      });
+    };
+    inp.click();
+  }
+  // Renvoyer une nouvelle version (lien) en réponse à une demande de révision, depuis l'Inbox.
+  function inboxResendLink(key, project, cid, oldId) {
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box"><div class="admconfirm__title">Nouvelle version sous forme de lien</div>' +
+      '<div class="admconfirm__msg">Colle le lien de la nouvelle version (Figma, Drive, proofing…). La cliente pourra l\'ouvrir puis valider ou redemander une révision.</div>' +
+      '<input id="ibx-dl-name" class="inp" style="width:100%;margin:6px 0" placeholder="Nom (optionnel)">' +
+      '<input id="ibx-dl-url" class="inp" style="width:100%;margin:0 0 6px" placeholder="https://…">' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer à la cliente</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var url = (el('ibx-dl-url').value || '').trim(); if (!url) { toast('Colle un lien'); return; }
+      var name = (el('ibx-dl-name').value || '').trim();
+      close();
+      notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
+        jpost('/api/clients/' + key + '/deliverables', { projectId: project, creationId: cid || null, link: url, name: name, notify: notify }).then(admUploadResult)
+          .then(function (res) { if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+          .catch(function () { toast('Erreur — version non envoyée, réessaie'); });
+      });
+    };
+    document.body.appendChild(ov);
+    var i = el('ibx-dl-url'); if (i) i.focus();
   }
   function inboxDemandeCard(it) {
     var x = it.x;
@@ -5904,7 +5960,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
