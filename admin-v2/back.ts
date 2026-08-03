@@ -437,6 +437,18 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true, pinned: msg.pinned });
   }
+  // Marquer un message comme « non lu » côté admin (il réapparaît dans les non-lus).
+  const unrm = sub.match(/^\/message\/([a-zA-Z0-9]+)\/unread$/);
+  if (unrm && method === 'PATCH') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container) return json({ error: 'Projet introuvable' }, 404);
+    const msg = (container.chat || []).find((x: AnyObj) => x.id === unrm[1]);
+    if (!msg) return json({ error: 'Message introuvable' }, 404);
+    msg.readByAdmin = false;
+    await saveClient(env, key, data);
+    return json({ ok: true });
+  }
   // Suppression d'un message de la conversation (ex. doublon envoyé par erreur).
   const delm = sub.match(/^\/message\/([a-zA-Z0-9]+)$/);
   if (delm && method === 'DELETE') {
