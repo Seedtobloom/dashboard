@@ -4089,11 +4089,13 @@
       '<div class="row mt" style="gap:6px"><input class="inp" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="btn btn--dark btn--sm" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">+ Ajouter un jalon</button></div>';
   }
   // Bloc « planning prévisionnel » propre à une création, replié par défaut.
+  // pid = pid brut du support (d.pid) ; la route /planning attend l'id projet complet « support-<pid> ».
   function crPlanBlock(pid, c) {
+    var fullPid = 'support-' + pid;
     var n = Array.isArray(c.planning) ? c.planning.length : 0;
     return '<details style="border-top:1px solid var(--bone-d);padding-top:14px">' +
       '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);list-style:none">📅 Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</summary>' +
-      '<div style="margin-top:14px">' + planningEditor(pid, c.planning, c.planningStart, c.id) + '</div>' +
+      '<div style="margin-top:14px">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
     '</details>';
   }
   function planningTab(d) {
