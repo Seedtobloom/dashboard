@@ -16,6 +16,7 @@
   var ADM_ICONS = {
     priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
     mytasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+    semaine: 'M4 4h4v16H4zM10 4h4v16h-4zM16 4h4v16h-4z',
     planning: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
     kpi: 'M3 3v18h18M18 17V9M13 17V5M8 17v-3',
     done: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
@@ -277,7 +278,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
+      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['semaine', 'Ma semaine'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['incidents', 'Incidents'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
@@ -520,6 +521,7 @@
     if (VIEW === 'inbox') return renderInbox();
     if (VIEW === 'priorities') return renderPriorities();
     if (VIEW === 'done') return renderDone();
+    if (VIEW === 'semaine') return renderMaSemaine();
     if (VIEW === 'mytasks') return renderMyTasks();
     if (VIEW === 'visios') return renderVisios();
     if (VIEW === 'questionnaires') return renderQuestionnaires();
@@ -2182,6 +2184,124 @@
       renderMyTasksBody();
     }).catch(showError);
   }
+  // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
+  // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
+  // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {};
+  var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
+  var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function msPad(n) { return (n < 10 ? '0' : '') + n; }
+  function msIso(d) { return d.getFullYear() + '-' + msPad(d.getMonth() + 1) + '-' + msPad(d.getDate()); }
+  function msMonday(offset) { var d = new Date(); var dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow + offset * 7); d.setHours(0, 0, 0, 0); return d; }
+  function msDur(min) { min = min || 0; if (!min) return ''; if (min < 60) return min + ' min'; var h = Math.floor(min / 60), m = min % 60; return h + 'h' + (m ? msPad(m) : ''); }
+  function msHours(min) { return (Math.round((min / 60) * 10) / 10).toString().replace('.0', '') + ' h'; }
+  function renderMaSemaine() {
+    setMain(topbar('Ma semaine') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    Promise.all([
+      api('/api/admin/tasks').then(function (r) { return r.json(); }),
+      api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ]).then(function (res) {
+      MS_TASKS = res[0].tasks || [];
+      MS_DAYS = (res[1] && res[1].days) || {};
+      renderMaSemaineBody();
+    }).catch(showError);
+  }
+  function msAvailMin(d) { var dow = ((d.getDay() + 6) % 7) + 1; return (MS_DAYS[dow] || 0) * 60; }
+  function msShort(iso) { if (!iso) return ''; var s = String(iso).slice(0, 10).split('-'); if (s.length < 3) return iso; return parseInt(s[2], 10) + ' ' + (MS_MONTHS[parseInt(s[1], 10) - 1] || ''); }
+  function renderMaSemaineBody() {
+    var mon = msMonday(MS_OFFSET);
+    var days = []; for (var i = 0; i < 5; i++) { var d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d); }
+    var todayIso = msIso(new Date());
+    var active = MS_TASKS.filter(function (t) { return t.status !== 'done' && !t.archived; });
+    var w0 = msIso(days[0]), w4 = msIso(days[4]);
+    // Résumé capacité de la semaine
+    var weekPlanned = active.filter(function (t) { var dd = (t.doDate || '').slice(0, 10); return dd >= w0 && dd <= w4; }).reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+    var weekAvail = days.reduce(function (s, d) { return s + msAvailMin(d); }, 0);
+    var pct = weekAvail ? Math.round(weekPlanned / weekAvail * 100) : 0;
+    var over = weekAvail && weekPlanned > weekAvail;
+    var barCol = over ? '#b0761c' : 'var(--terre)';
+    var rangeLbl = days[0].getDate() + ' → ' + days[4].getDate() + ' ' + MS_MONTHS[days[4].getMonth()] + ' ' + days[4].getFullYear();
+    var header = '<div class="card" style="background:var(--card)">' +
+      '<div class="row" style="align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<button class="pbtn" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
+        '<button class="pbtn" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
+        '<button class="pbtn" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
+        '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-left:4px">' + rangeLbl + '</span>' +
+      '</div>' +
+      '<div class="row" style="align-items:center;gap:18px;flex-wrap:wrap;margin-top:14px">' +
+        '<div><div class="micro" style="color:var(--muted)">Planifié</div><div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + msHours(weekPlanned) + '</div></div>' +
+        '<div><div class="micro" style="color:var(--muted)">Disponible</div><div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + (weekAvail ? msHours(weekAvail) : '—') + '</div></div>' +
+        '<div style="flex:1;min-width:160px">' +
+          '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:' + barCol + ';width:' + Math.min(100, pct) + '%"></div></div>' +
+          '<div class="micro" style="margin-top:5px;color:' + (over ? '#b0761c' : 'var(--muted)') + '">' + (weekAvail ? pct + '% de ta capacité' + (over ? ' · semaine chargée' : '') : 'Renseigne tes disponibilités dans le Calendrier pour voir ta capacité') + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    // Colonnes par jour
+    function taskChip(t, diso) {
+      var cn = t.clientName ? '<span style="font-family:var(--font-micro);font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">' + esc(t.clientName) + '</span>' : '';
+      var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? '<span title="Échéance dépassée" style="color:var(--red);font-weight:700"> !</span>' : (t.dueDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0"> · échéance ' + msShort(t.dueDate) + '</span>' : '');
+      return '<div style="background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:8px 10px;margin-bottom:7px">' +
+        '<div style="font-size:12.5px;color:var(--terre);line-height:1.25">' + esc(t.title) + dueWarn + '</div>' + cn +
+        '<div class="row" style="gap:5px;align-items:center;margin-top:6px">' +
+          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:64px;font-size:11px;padding:3px 6px">' +
+          '<select class="inp" title="Déplacer" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="font-size:11px;padding:3px 6px;flex:1;min-width:0">' + msDaySelect(days, diso) + '</select>' +
+        '</div>' +
+      '</div>';
+    }
+    var cols = days.map(function (d) {
+      var diso = msIso(d);
+      var dayTasks = active.filter(function (t) { return (t.doDate || '').slice(0, 10) === diso; });
+      var planned = dayTasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+      var avail = msAvailMin(d);
+      var dOver = avail && planned > avail;
+      var capCol = dOver ? '#b0761c' : '#4f7a52';
+      var isToday = diso === todayIso;
+      var head = '<div style="text-align:center;padding-bottom:8px;border-bottom:1px solid var(--bone-d);margin-bottom:10px">' +
+        '<div class="micro" style="color:' + (isToday ? 'var(--terre)' : 'var(--muted)') + ';font-weight:700">' + MS_DOW[(d.getDay() + 6) % 7] + '</div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:' + (isToday ? 'var(--terre)' : 'var(--terre-400)') + '">' + d.getDate() + '</div>' +
+        (planned ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;font-family:var(--font-micro);font-size:10px;color:' + capCol + '"><span style="width:7px;height:7px;border-radius:50%;background:' + capCol + '"></span>' + msDur(planned) + (avail ? ' / ' + msHours(avail) : '') + '</div>' : '<div class="micro" style="margin-top:3px;color:var(--muted)">libre</div>') +
+      '</div>';
+      var body = dayTasks.length ? dayTasks.map(function (t) { return taskChip(t, diso); }).join('') : '<div class="micro" style="text-align:center;color:var(--muted);padding:10px 0;text-transform:none;letter-spacing:0">Rien de planifié</div>';
+      return '<div style="background:var(--surface-2);border:1px solid var(--bone-d);border-radius:12px;padding:12px' + (isToday ? ';box-shadow:0 0 0 2px var(--terre) inset' : '') + '">' + head + body + '</div>';
+    }).join('');
+    var grid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px">' + cols + '</div>';
+    // À placer
+    var toPlace = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
+    var placeHtml = '<div class="card" style="background:var(--card);margin-top:16px">' +
+      '<h3 style="margin-bottom:4px">À placer cette semaine</h3>' +
+      '<div class="micro mb" style="color:var(--muted)">Des tâches à faire, pas encore posées sur un jour. Donne-leur une estimation et glisse-les dans la semaine.</div>' +
+      (toPlace.length ? '<div style="display:flex;flex-direction:column;gap:8px">' + toPlace.slice(0, 40).map(function (t) {
+        var cn = t.clientName ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0"> · ' + esc(t.clientName) + '</span>' : '';
+        var due = t.dueDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;white-space:nowrap">échéance ' + msShort(t.dueDate) + '</span>' : '';
+        return '<div class="row" style="align-items:center;gap:10px;border:1px solid var(--bone-d);border-radius:10px;padding:9px 12px;background:var(--surface-2)">' +
+          '<span style="flex:1;min-width:0;font-size:13.5px;color:var(--terre)">' + esc(t.title) + cn + '</span>' + due +
+          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:70px;font-size:12px">' +
+          '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
+        '</div>';
+      }).join('') + '</div>' : '<div class="empty" style="padding:18px">Tout est placé. 🌿</div>') +
+    '</div>';
+    var html = '<div class="wrap">' +
+      '<div class="micro mb" style="color:var(--muted)"><strong style="color:var(--terre)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--terre)">Mes tâches</strong> = tout ce que tu as à faire. Même données, deux vues.</div>' +
+      header + grid + placeHtml +
+    '</div>';
+    setMain(topbar('Ma semaine') + html);
+  }
+  function msDaySelect(days, cur) {
+    var opts = '<option value=""' + (!cur ? ' selected' : '') + '>— à placer</option>';
+    for (var i = 0; i < days.length; i++) { var diso = msIso(days[i]); opts += '<option value="' + diso + '"' + (diso === cur ? ' selected' : '') + '>' + MS_DOW[(days[i].getDay() + 6) % 7] + ' ' + days[i].getDate() + '</option>'; }
+    return opts;
+  }
+  function msWeek(v) { if (v === 0) MS_OFFSET = 0; else MS_OFFSET += v; renderMaSemaineBody(); }
+  function msPatch(id, body) {
+    jpost('/api/admin/tasks/' + id, body, 'PATCH').then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
+      if (!t) { toast('Erreur'); return; }
+      var i = MS_TASKS.findIndex(function (x) { return x.id === id; }); if (i >= 0) MS_TASKS[i] = t;
+      renderMaSemaineBody();
+    }).catch(function () { toast('Erreur'); });
+  }
+  function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
+  function msEst(id, val) { msPatch(id, { estMinutes: parseInt(val, 10) || 0 }); }
   // ── Vue Focus : organisée par mode de travail, avec « Aujourd'hui » en tête ──
   function mtToggleToday(id) {
     var t = MT_TASKS.find(function (x) { return x.id === id; }); if (!t) return;
@@ -5714,6 +5834,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
+    msWeek: msWeek, msPlace: msPlace, msEst: msEst,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
