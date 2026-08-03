@@ -1289,7 +1289,24 @@ async function handleClientError(request: Request, env: Env, masterKey: string, 
   const arr = Array.isArray(list) ? list : [];
   const dup = arr.find((e) => e.clientKey === rec.clientKey && e.context === rec.context && e.message === rec.message
     && (Date.parse(rec.at) - Date.parse(e.at)) < 5 * 60 * 1000);
-  if (!dup) { arr.unshift(rec); await env.KV_CLIENT.put(KEY, JSON.stringify(arr.slice(0, 200))); }
+  if (!dup) {
+    arr.unshift(rec);
+    await env.KV_CLIENT.put(KEY, JSON.stringify(arr.slice(0, 200)));
+    // Alerte e-mail à Cindy (throttlée à ~1 / 15 min pour éviter le flood si un
+    // déploiement casse quelque chose et que plusieurs clientes le rencontrent).
+    try {
+      const NKEY = 'global:clientErrors:lastNotify';
+      const last = Number((await env.KV_CLIENT.get(NKEY)) || 0);
+      const now = Date.now();
+      if (now - last > 15 * 60 * 1000) {
+        await env.KV_CLIENT.put(NKEY, String(now));
+        await notifyAdmin(env, `⚠️ Erreur technique · ${rec.clientName}`,
+          `<p>Une erreur technique est survenue dans l'espace de <strong>${escHtml(rec.clientName)}</strong>.</p>` +
+          `<p style="background:#fbeae5;border-radius:8px;padding:12px 14px;color:#412F21"><strong>${escHtml(rec.context)}</strong><br>${escHtml(rec.message)}</p>` +
+          `<p style="color:#8a7d6b;font-size:13px">Détail et historique dans ton admin (Pilotage → Incidents).</p>`);
+      }
+    } catch (e) { /* la notification ne doit jamais bloquer l'enregistrement de l'erreur */ }
+  }
   return json({ ok: true }, 201);
 }
 

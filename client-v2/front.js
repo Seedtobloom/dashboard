@@ -6535,7 +6535,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // rappel discret pour revoir l'intro depuis la 1re étape.
     var why = cpQnrStep === 0 ? '<div style="margin-bottom:16px"><button onclick="cpQnrShowCover()" style="background:none;border:none;color:' + esc(col) + ';cursor:pointer;font-size:13px;padding:0">↖ Revoir l\'introduction</button></div>' : '';
     return wrap(progress + why +
-      '<div id="cp-qnr-step" oninput="cpQnrTouch()" onchange="cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
+      '<div id="cp-qnr-step" oninput="window.cpQnrTouch&&window.cpQnrTouch()" onchange="window.cpQnrTouch&&window.cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
       nav +
       '<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">Vos réponses sont enregistrées automatiquement.</div>');
   }
