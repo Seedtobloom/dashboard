@@ -1117,7 +1117,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var more = acts.length > 6 ? '<div style="font-size:12.5px;color:var(--terre-400);margin-top:10px;text-align:center">+ ' + (acts.length - 6) + ' autre' + (acts.length - 6 > 1 ? 's' : '') + '</div>' : '';
     return '<div class="card" style="padding:24px 26px;margin-bottom:24px;border:1px solid var(--glycine-200,#e0d3f2);background:linear-gradient(180deg,var(--glycine-50,#f4eefb),var(--card,#fffdf8))">' +
       head +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);line-height:1.15;margin-bottom:6px">Bonjour ' + esc(first) + ' ' + greetIcon + '</div>' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);line-height:1.15;margin-bottom:6px">Au programme, ' + esc(first) + ' ' + greetIcon + '</div>' +
       coach +
       '<div style="display:grid;gap:9px">' + rows + '</div>' +
       more +
