@@ -330,7 +330,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:6px">' + title + '</div>' +
       (label ? '<div style="font-size:13px;color:#485670;margin-bottom:12px">' + label + '</div>' : '') +
       '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#412F21" placeholder="' + esc(opts.placeholder||'') + '">' +
@@ -353,7 +353,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     opts = opts || {};
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
       (opts.title ? '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
       '<div style="font-size:13.5px;color:#412F21;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
@@ -461,7 +461,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     try {
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none';
-      ov.innerHTML = '<div style="background:var(--card,#fffdf8);border:1px solid var(--bone-d,#e3d9c8);box-shadow:0 20px 60px -18px rgba(28,18,5,0.4);border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
+      ov.innerHTML = '<div style="background:var(--card,#fffdf8);border:1px solid var(--bone-d,#e3d9c8);box-shadow:none;border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
         '<div style="font-size:44px;line-height:1;margin-bottom:8px">🎉</div>' +
         '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#412f21);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
         (sub ? '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
@@ -827,7 +827,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div class="cp-ph__cols">' +
             '<div class="cp-ph__left">' +
               '<p style="font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--terre-600);max-width:560px;margin:0 0 24px">Bienvenue ' + esc(appData.clientName.split(' ')[0]) + '. Ouvrez un ticket pour toute demande, suivez son avancement et échangez avec le studio, le tout au même endroit.</p>' +
-              '<button onclick="cliOpenSubmitTicket(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:400px;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
+              '<button onclick="cliOpenSubmitTicket(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:400px;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
                 cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
               '</button>' +
               mTicketsCard +
@@ -1072,7 +1072,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
             (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#6a4a0b')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#6a4a0b')+'</div>'; })() : '') +
-            (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
+            (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
             cpSecWrap(p.id, 'suivi', miniTrack) +
@@ -1430,7 +1430,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var light = bannerHex && cpHexLum(bannerHex) > 160;
       var badgeTx = light ? '#1C1205' : '#fff';
       var badgeBg = light ? 'rgba(28,18,5,0.12)' : 'rgba(255,255,255,0.22)';
-      return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);display:block;width:100%">' +
+      return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:none;display:block;width:100%">' +
         '<div class="cp-proj-banner" style="background:' + bannerColor + '">' +
           (card.statusLabel ? '<span class="cp-proj-banner__badge" style="background:' + badgeBg + ';color:' + badgeTx + ';backdrop-filter:none">' + esc(card.statusLabel) + '</span>' : '') +
         '</div>' +
@@ -1484,7 +1484,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">Aucune etape pour le moment.</div>';
 
       var bannerColor = card.bannerColor || 'var(--navy)';
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:0 -4px 40px rgba(28,18,5,0.18);max-height:85vh;overflow-y:auto">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;box-shadow:none;max-height:85vh;overflow-y:auto">' +
         '<div style="background:' + bannerColor + ';padding:20px 24px;border-radius:18px 18px 0 0;position:relative">' +
           (card.statusLabel ? '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:4px">' + esc(card.statusLabel) + '</div>' : '') +
           '<div style="font-size:19px;font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#fff">' + esc(card.title) + '</div>' +
@@ -1761,7 +1761,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var allAnswered = qRealQ.every(function(q) { return cpQAnswered(qAnswers[q.id]); });
     var answered = qRealQ.filter(function(q) { return cpQAnswered(qAnswers[q.id]); }).length;
     var bannerCol = project.bannerColor ? project.bannerColor.split('|')[0] : 'var(--navy)';
-    return '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(28,18,5,0.10);margin-bottom:14px;display:block">' +
+    return '<button type="button" onclick="cpOpenQuestionnaire(\'' + esc(project.id) + '\')" style="width:100%;text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:none;margin-bottom:14px;display:block">' +
         '<div style="background:' + bannerCol + ';padding:18px 20px 14px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire' + (allAnswered ? '' : ' · à compléter') + '</div>' +
           '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(qTitle) + '</div>' +
@@ -1893,7 +1893,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }
     }
 
-    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#fffdf8);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:0 2px 14px rgba(28,18,5,0.05)">' +
+    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#fffdf8);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:none">' +
       '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
         '<div style="font-size:34px;line-height:1">' + stage.emoji + '</div>' +
         '<div style="flex:1;min-width:180px">' +
@@ -2889,7 +2889,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.id = '_cp-ticket-ov';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
         '<strong style="font-size:16px;color:var(--navy)">Nouvelle demande</strong>' +
         '<button onclick="document.getElementById(\'_cp-ticket-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted)">✕</button>' +
@@ -3119,7 +3119,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         ) +
       '</div>' ) : '') +
       // Big CTA button below the forfait
-      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(92,70,51,0.22);transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
+      '<button onclick="cliOpenSubmitTicket(\''+pid+'\')" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:16px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'">' +
         cpIcon('plus', 19, 'color:var(--paille)') + ' Ouvrir un ticket de maintenance' +
       '</button>' +
     '</div>';
@@ -3688,7 +3688,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var statusPill = '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:' + sm.color + ';background:' + sm.bg + ';white-space:nowrap">' + esc(sm.label) + '</span>';
         var briefRaw = propVals.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : propVals.p_clientbrief;
         var propChipsHtml = propChip(briefRaw, STATUT_COL) + statusPill;
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:0 3px 14px rgba(92,70,51,0.18)':'')+'">' +
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             cliUrgIcon(t.urgency, 11) +
             '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
@@ -4545,7 +4545,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.id = '_maint-ticket-modal';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var cats = ['Bug','Modification','Ajout de contenu','Performance','Sécurité','Autre'];
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:17px;font-weight:700;color:#1C1205;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
       '<div style="margin-bottom:12px">' +
         '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
@@ -4711,7 +4711,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }
     }
     var html = '<div id="_cp-datepick" style="position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cpDateClose()">' +
-      '<div style="background:#fff;border-radius:16px;box-shadow:0 12px 48px rgba(28,18,5,0.25);padding:18px;width:310px;max-width:100%">' +
+      '<div style="background:#fff;border-radius:16px;box-shadow:none;padding:18px;width:310px;max-width:100%">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">‹</button>' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#1C1205)">' + MONTHS[m] + ' ' + y + '</span>' +
           '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">›</button></div>' +
@@ -4803,7 +4803,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.id = 'cli-add-task-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:none">' +
       '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#1C1205;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
       '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
@@ -4852,7 +4852,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div'); ov.id = '_cp-demande-gate';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#e2dbd0);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
-    ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#1C1205)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
       '<div style="font-size:13.5px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux — je m\'occupe du reste.</div>' +
       '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
@@ -4879,7 +4879,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div'); ov.id = '_cp-project-req';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
     var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
       '<div style="background:#fdf3e8;border:1px solid #f0d8b0;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#7a3a0a;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
       '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
@@ -4925,7 +4925,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var bg = PART_URGENCY[u]; var tx = PART_URGENCY_TX[u];
         return '<button type="button" id="_ptask-urg-'+u+'" onclick="window._ptaskSelUrg(\''+u+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+bg+';background:transparent;color:'+tx+';font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.05em">'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
       }).join('');
-      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18);max-height:90vh;overflow-y:auto">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Nouvelle demande</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
@@ -5299,7 +5299,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;margin-bottom:12px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:16px">Ajouter une ressource</div>' +
       '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
       '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
@@ -5963,7 +5963,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
       var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
       var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
-      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #e6d9f5;background:#F7EFFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:0 6px 20px -8px rgba(94,63,160,0.18);margin-bottom:16px;display:block">' +
+      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #e6d9f5;background:#F7EFFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:none;margin-bottom:16px;display:block">' +
         '<div style="padding:20px 22px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
@@ -6001,7 +6001,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var opts = Array.isArray(b.options) ? b.options : [];
     // Bordure encre + ombre légère : la zone de réponse est clairement blanche sur la carte crème.
     var bd = 'rgba(28,18,5,0.22)';
-    var wellShadow = 'box-shadow:0 1px 3px rgba(28,18,5,0.07)';
+    var wellShadow = 'box-shadow:none';
     var box = 'width:100%;padding:12px 15px;border:1.5px solid ' + bd + ';border-radius:12px;font-size:15px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--nuit);' + wellShadow;
     var input;
     if (b.type === 'long' || b.type === 'address') {
@@ -6080,7 +6080,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
           '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
         '</div>' + due +
-        '<button onclick="cpQnrStart()" style="margin-top:32px;padding:15px 34px;border-radius:14px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16px;font-weight:600;box-shadow:0 6px 20px -6px ' + hexToRgba(col, 0.5) + '">' + (cpQnrProgress(inst).done > 0 ? 'Reprendre' : 'Commencer') + ' →</button>'
+        '<button onclick="cpQnrStart()" style="margin-top:32px;padding:15px 34px;border-radius:14px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16px;font-weight:600;box-shadow:none">' + (cpQnrProgress(inst).done > 0 ? 'Reprendre' : 'Commencer') + ' →</button>'
       );
     }
 
@@ -6098,7 +6098,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           else disp = (a == null || a === '' ? '—' : String(a));
           return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5a4a3a)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
-        return '<div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(28,18,5,0.07);padding:18px 20px;margin-bottom:14px">' +
+        return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
           (isDone ? '' : '<button onclick="cpQnrGoStep(' + si + ')" style="background:none;border:none;color:' + esc(col) + ';cursor:pointer;font-size:13px;font-weight:600">Modifier</button>') + '</div>' +
           qs +
@@ -6389,7 +6389,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     // Rebuild complet (premier chargement, ou opts.full)
     var adminBar = _isAdminEdit
-      ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(28,18,5,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">' +
+      ? '<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9900;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 16px;background:rgba(28,18,5,0.92);backdrop-filter:blur(10px);border-radius:999px;box-shadow:none">' +
           '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5)">Vue client</span>' +
           '<div style="width:1px;height:14px;background:rgba(255,255,255,0.15)"></div>' +
           '<button onclick="window.location.href=\'/admin/projects/' + (appData.projects[0] && appData.projects[0].project ? appData.projects[0].project.id : '') + '\'" style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:999px;color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:background 150ms" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.12)\'">' +
@@ -6571,7 +6571,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     btn.textContent = on ? "✓ Quitter l'édition" : '✎ Mode édition';
     btn.style.cssText = 'position:fixed;bottom:22px;right:22px;z-index:99999;padding:11px 18px;border-radius:999px;border:1px solid ' +
       (on ? '#412F21' : '#E4D1FE') + ';background:' + (on ? '#412F21' : '#fff') + ';color:' + (on ? '#F2E5C2' : '#412F21') +
-      ";font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.02em;cursor:pointer;box-shadow:0 4px 18px rgba(92,70,51,.18)";
+      ";font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.02em;cursor:pointer;box-shadow:none";
   }
 
   // Bannière d'accueil multi-offres (appData.home.banner)
@@ -6777,7 +6777,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpValidateStep = function(pid, stepId, stepTitle) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(28,18,5,0.2);font-family:\'Inter Tight\',sans-serif">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
       '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:8px">Confirmer votre action</div>' +
       '<p style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-bottom:16px">Vous confirmez avoir complété : <strong>' + esc(stepTitle) + '</strong> ?<br><span style="font-size:12px;opacity:0.8">Cindy sera notifiée et validera l\'étape de son côté.</span></p>' +
       '<textarea id="_cpval-comment" placeholder="Laisser un message à Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
@@ -6827,7 +6827,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         ];
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(28,18,5,0.25)">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:36px 32px;max-width:460px;width:100%;box-shadow:none">' +
       '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:8px">Bienvenue dans votre espace ✨</div>' +
       '<p style="font-size:14px;color:var(--terre-600);line-height:1.6;margin-bottom:22px">Voici les points essentiels pour bien démarrer :</p>' +
       '<div style="display:grid;gap:14px;margin-bottom:26px">' +
@@ -6916,7 +6916,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       } else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       el.innerHTML = spotlightHtml +
-        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#fffefb;border:1px solid #eae5dc;border-radius:14px;overflow:hidden;box-shadow:0 28px 64px -28px rgba(28,18,5,0.30)">' +
+        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#fffefb;border:1px solid #eae5dc;border-radius:14px;overflow:hidden;box-shadow:none">' +
           '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #eae5dc">' +
             '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#1C1205;color:#E4D1FE">' + cpIcon(s.icon,18) + '</span>' +
             '<div style="flex:1;min-width:0">' +
@@ -6985,7 +6985,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var fields = questions.map(function(q) { return cpQFieldHtml(q, answers[q.id]); }).join('');
 
     ov.innerHTML =
-      '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 48px rgba(28,18,5,0.2)">' +
+      '<div style="background:#fff;border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:none">' +
         '<div style="background:' + bannerCol + ';padding:24px 28px;position:relative">' +
           '<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px">Questionnaire</div>' +
           '<div style="font-size:20px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc((project.questionnaireTitle || '').trim() || project.projectTitle) + '</div>' +
@@ -7233,7 +7233,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var hello = name ? ('Bienvenue ' + esc(name)) : 'Bienvenue';
     document.getElementById('app').innerHTML =
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
-      '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
+      '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
         '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
         '<p style="color:#485670;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
@@ -7253,7 +7253,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.';
     document.getElementById('app').innerHTML =
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
-      '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(26,39,68,0.08)">' +
+      '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
         '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
         '<p style="color:#485670;line-height:1.7;font-size:15px">' + body + '</p>' +
@@ -7336,7 +7336,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var panel = document.createElement('div');
     panel.id = '_cp-color-panel';
-    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:0 4px 28px rgba(0,0,0,0.18);z-index:9999;border:1px solid #ebebeb;max-height:80vh;overflow-y:auto';
+    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:none;z-index:9999;border:1px solid #ebebeb;max-height:80vh;overflow-y:auto';
 
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';

@@ -29,7 +29,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --sidebar-text: #E4D1FE;
   --orange: #c9952f;
   --radius: 10px;
-  --shadow: 0 1px 0 0 rgba(28,18,5,0.06);
+  --shadow: none;
   --sw: 256px;
   /* status */
   --st-todo:#a98bd6; --st-progress:#a98bd6; --st-review:#c9952f; --st-done:#412F21;
@@ -42,9 +42,9 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
   /* shape */
   --radius-1:2px; --radius-2:6px; --radius-3:10px; --radius-pill:999px;
-  --shadow-1:0 1px 0 0 rgba(28,18,5,0.06);
-  --shadow-2:0 10px 28px -14px rgba(28,18,5,0.20);
-  --shadow-3:0 28px 64px -28px rgba(28,18,5,0.30);
+  --shadow-1:none;
+  --shadow-2:none;
+  --shadow-3:none;
   --ease:cubic-bezier(0.16,1,0.3,1); --dur:240ms;
   /* button tokens */
   --btn-primary-bg:var(--glycine); --btn-primary-fg:var(--terre);
@@ -355,7 +355,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cpb-add-blk { width:100%;margin-top:6px;padding:6px;border:1.5px dashed var(--border);background:none;border-radius:7px;cursor:pointer;font-size:12px;color:var(--muted);font-family:inherit;transition:all 0.12s; }
 .cpb-add-blk:hover { border-color:var(--lavender);color:var(--navy); }
 .cpb-modal { position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px; }
-.cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(28,18,5,0.18); }
+.cpb-modal__box { background:#fff;border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:none; }
 .cpb-modal__title { font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);margin-bottom:16px;font-style:italic; }
 .cpb-modal__row { margin-bottom:12px; }
 .cpb-modal__label { display:block;font-size:12px;color:var(--navy);font-weight:600;margin-bottom:5px; }

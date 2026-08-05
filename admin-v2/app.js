@@ -1537,7 +1537,7 @@
     if (t.clientName) chips += '<span onclick="ADM.openClient(\'' + esc(t.clientKey) + '\')" title="Ouvrir la fiche client" style="cursor:pointer;font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--terre);color:var(--paille)">' + esc(t.clientName) + '</span>';
     if (recLbl) chips += '<span title="Tâche récurrente" style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--terre-600)">↻ ' + recLbl + '</span>';
     var chipsHtml = (chips || (Array.isArray(t.tags) && t.tags.length)) ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">' + chips + ((Array.isArray(t.tags) && t.tags.length) ? t.tags.map(mtTagPill).join('') : '') + '</div>' : '';
-    return '<div' + (canDrag ? ' draggable="true" ondragstart="ADM.mtDragStart(event,\'' + t.id + '\')" ondragend="ADM.mtDragEnd(event)"' : '') + ' style="background:var(--card);border-radius:13px;padding:14px 15px;margin-bottom:10px;box-shadow:0 3px 12px -8px rgba(28,18,5,0.28)' + (canDrag ? ';cursor:grab' : '') + '">' +
+    return '<div' + (canDrag ? ' draggable="true" ondragstart="ADM.mtDragStart(event,\'' + t.id + '\')" ondragend="ADM.mtDragEnd(event)"' : '') + ' style="background:var(--card);border-radius:13px;padding:14px 15px;margin-bottom:10px;box-shadow:none' + (canDrag ? ';cursor:grab' : '') + '">' +
       '<div style="font-size:14.5px;font-weight:500;line-height:1.35;color:' + (dn ? 'var(--muted)' : 'var(--terre)') + (dn ? ';text-decoration:line-through' : '') + '">' + esc(t.title) + '</div>' +
       (meta ? '<div class="micro" style="margin-top:4px;color:' + (overdue ? '#a23c28' : 'var(--muted)') + '">' + meta + '</div>' : '') +
       chipsHtml +
@@ -2025,7 +2025,7 @@
     var ex = el('vis-drawer'); if (ex) ex.remove(); var exb = el('vis-drawer-bk'); if (exb) exb.remove();
     var c = visCard(VIS_SEL); if (!c) return;
     var bk = document.createElement('div'); bk.id = 'vis-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = visCloseDrawer; document.body.appendChild(bk);
-    var d = document.createElement('div'); d.id = 'vis-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(720px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
+    var d = document.createElement('div'); d.id = 'vis-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(720px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:none;overflow-y:auto';
     d.innerHTML = visDrawerHtml(c); document.body.appendChild(d);
   }
   function visDrawerHtml(c) {
@@ -2100,7 +2100,7 @@
       var content = st.questions
         ? '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border-bottom:1px solid var(--bone-d)"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
         : ((st.title ? '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
-      ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 22px 66px rgba(28,18,5,0.4)">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:none">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bone-d)">' +
           '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
           '<button id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">×</button>' +
@@ -2160,7 +2160,7 @@
     if (VIS_POP) return VIS_POP;
     var d = document.createElement('div');
     d.id = 'vis-pop';
-    d.style.cssText = 'position:fixed;z-index:9550;display:none;flex-wrap:wrap;gap:3px;align-items:center;background:var(--nuit,#2a1f16);border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,0.35);max-width:92vw';
+    d.style.cssText = 'position:fixed;z-index:9550;display:none;flex-wrap:wrap;gap:3px;align-items:center;background:var(--nuit,#2a1f16);border-radius:10px;padding:6px;box-shadow:none;max-width:92vw';
     d.innerHTML = visBtns(true);
     d.addEventListener('mousedown', function (e) { e.preventDefault(); });
     document.body.appendChild(d);
@@ -3976,7 +3976,7 @@
       var col = CR_ST_COL[c.status] || '#8a7d6b';
       var ty = CR_TYCOL[c.type] || ['#8a7d6b', '#f7f3ee'];
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:5px 0">Aucune version. Dépose la V1 ci-dessous.</div>';
-      return '<div style="border:1px solid ' + ty[0] + '30;border-radius:16px;background:' + ty[1] + ';padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 10px 30px -18px ' + ty[0] + '66">' +
+      return '<div style="border:1px solid ' + ty[0] + '30;border-radius:16px;background:' + ty[1] + ';padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:none">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">' +
           '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;min-width:0;font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);border:none;background:transparent;padding:0" title="Nom de la création">' +
           '<span style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
@@ -5358,7 +5358,7 @@
     if (ex) ex.remove(); var exb = el('qnr-drawer-bk'); if (exb) exb.remove();
     var t = qnrTpl(QNR_SEL); if (!t) return;
     var bk = document.createElement('div'); bk.id = 'qnr-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = qnrCloseDrawer; document.body.appendChild(bk);
-    var d = document.createElement('div'); d.id = 'qnr-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(760px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
+    var d = document.createElement('div'); d.id = 'qnr-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(760px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:none;overflow-y:auto';
     d.innerHTML = qnrDrawerHtml(t); document.body.appendChild(d);
     if (keepScroll) d.scrollTop = keepScroll;
   }
@@ -5790,7 +5790,7 @@
     if (ex) ex.remove(); var exb = el('prj-drawer-bk'); if (exb) exb.remove();
     var t = prjTpl(PRJ_SEL); if (!t) return;
     var bk = document.createElement('div'); bk.id = 'prj-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = prjCloseDrawer; document.body.appendChild(bk);
-    var d = document.createElement('div'); d.id = 'prj-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(780px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:-20px 0 54px -18px rgba(28,18,5,0.45);overflow-y:auto';
+    var d = document.createElement('div'); d.id = 'prj-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(780px,97vw);background:var(--bg,#faf7f1);z-index:95;box-shadow:none;overflow-y:auto';
     d.innerHTML = prjDrawerHtml(t); document.body.appendChild(d);
     if (keepScroll) d.scrollTop = keepScroll;
   }
