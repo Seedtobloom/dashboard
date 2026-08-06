@@ -1,5 +1,5 @@
 name: Deploy v2 (client + admin)
-# re-trigger: relance du déploiement (login admin refonte)
+# re-trigger: relance du déploiement (login admin refonte) — retry post-incident Actions
 
 # Déploie les 4 workers v2 (client + admin) sur Cloudflare à chaque push.
 # Les backs sont déployés AVANT les fronts (cibles des service bindings).
