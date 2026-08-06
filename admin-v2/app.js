@@ -251,16 +251,34 @@
   }
   function showError() { el('app').innerHTML = '<div class="center"><p class="muted">Erreur. <a href="javascript:location.reload()">Réessayer</a></p></div>'; }
 
+  var EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   function showLogin(err) {
     el('app').innerHTML =
-      '<div class="login"><div class="login__card">' +
-      '<div class="login__logo">' + LOGO_SVG + '</div><div class="login__sub">Administration</div>' +
-      '<div class="field"><label>Clé A</label><input id="lg-a" class="inp" type="password" autocomplete="off" maxlength="32"></div>' +
-      '<div class="field"><label>Clé B</label><input id="lg-b" class="inp" type="password" autocomplete="off" maxlength="32"></div>' +
-      '<div class="err" id="lg-err"' + (err ? ' style="display:block"' : '') + '>' + (err ? esc(err) : '') + '</div>' +
-      '<button class="btn btn--dark btn--block" id="lg-btn" onclick="ADM.login()">Se connecter</button>' +
-      '</div></div>';
+      '<div class="login">' +
+        '<aside class="login__brand">' +
+          '<span class="login__wm">b</span>' +
+          '<div class="login__mark">' + LOGO_SVG + '</div>' +
+          '<div class="login__foot">' +
+            '<p class="login__tag">Votre cockpit,<br>au calme.</p>' +
+            '<p class="login__note">Accès réservé · direction du studio</p>' +
+          '</div>' +
+        '</aside>' +
+        '<div class="login__panel"><div class="login__card">' +
+          '<p class="login__eyebrow">Espace administration</p>' +
+          '<h1 class="login__h">Connexion</h1>' +
+          '<p class="login__s">Entrez vos deux clés d\'accès pour ouvrir le cockpit.</p>' +
+          '<div class="field"><label>Clé A</label><div class="ifield"><input id="lg-a" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-a" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
+          '<div class="field"><label>Clé B</label><div class="ifield"><input id="lg-b" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-b" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
+          '<div class="err" id="lg-err"' + (err ? ' style="display:block"' : '') + '>' + (err ? esc(err) : '') + '</div>' +
+          '<button class="btn btn--dark btn--block" id="lg-btn" onclick="ADM.login()">Se connecter</button>' +
+          '<p class="login__hint">Double clé · accès sécurisé</p>' +
+        '</div></div>' +
+      '</div>';
+    var a = el('lg-a'); if (a) a.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var bb = el('lg-b'); if (bb) bb.focus(); } });
     var b = el('lg-b'); if (b) b.addEventListener('keydown', function (e) { if (e.key === 'Enter') login(); });
+    Array.prototype.forEach.call(document.querySelectorAll('.login__eye'), function (btn) {
+      btn.addEventListener('click', function () { var inp = el(btn.getAttribute('data-t')); if (inp) { inp.type = inp.type === 'password' ? 'text' : 'password'; inp.focus(); } });
+    });
   }
   function login() {
     var a = (el('lg-a').value || '').trim(), b = (el('lg-b').value || '').trim();
