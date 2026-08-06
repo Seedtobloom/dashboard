@@ -15,6 +15,7 @@ on:
   push:
     branches:
       - main
+      - claude/shared-session-zpw6l6
     paths:
       - 'client-v2/**'
       - 'admin-v2/**'
