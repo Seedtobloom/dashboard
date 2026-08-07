@@ -368,5 +368,6 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .panel--nuit .rowacts .pbtn{background:rgba(251,250,255,.12);color:var(--ivoire)}
 .prio2 .panel--nuit .rowacts .pbtn:hover{background:var(--lav);color:var(--nuit)}
 .prio2 .panel--nuit .rowacts .pbtn--ok{background:var(--creme);color:var(--brun)}
-.prio2 .panel--surf .prow{padding:13px 2px}
+.prio2 .panel--surf .prow{padding:15px 16px;margin-bottom:11px;box-shadow:none;border-radius:12px}
+.prio2 .panel--surf .prow:last-child{margin-bottom:0}
 .prio2 .panel--surf .prow__el{font-family:var(--font-display);font-size:19px}
