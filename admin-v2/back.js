@@ -1269,7 +1269,9 @@ async function handleDashboard(env) {
             const ci2 = suivi.indexOf(cur);
             const next = suivi.slice(ci2 + 1).find((s) => s.status !== 'done');
             const dates = suivi.map((s) => s.date).filter(Boolean).sort();
-            activeProjects.push({ key: ci.key, client: who, projectLabel: label, category, pct: Math.round(done / total * 100), currentStep: cur ? (cur.title || '') : '', nextStep: next ? (next.title || '') : '', delivery: dates.length ? dates[dates.length - 1] : '' });
+            // urgence = échéance la plus proche parmi les étapes non terminées (les en retard remontent).
+            const ndDates = notDone.map((s) => s.date).filter(Boolean).sort();
+            activeProjects.push({ key: ci.key, client: who, projectLabel: label, category, pct: Math.round(done / total * 100), currentStep: cur ? (cur.title || '') : '', nextStep: next ? (next.title || '') : '', delivery: dates.length ? dates[dates.length - 1] : '', urgency: ndDates.length ? ndDates[0] : '' });
         };
         if (sw)
             addProj(sw.suivi, 'Site web', 'website');
@@ -1286,11 +1288,13 @@ async function handleDashboard(env) {
             if (dn < tot) {
                 const nd = pc.taches.filter((t) => t.status !== 'done');
                 const cur = nd.find((t) => t.status === 'in_progress' || t.status === 'review') || nd[0];
-                activeProjects.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', category: 'partner', pct: Math.round(dn / tot * 100), currentStep: cur ? (cur.title || '') : '', nextStep: '', delivery: cur && cur.dueDate ? cur.dueDate : '' });
+                const partnerDue = pc.taches.filter((t) => t.status !== 'done').map((t) => t.dueDate).filter(Boolean).sort();
+                activeProjects.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', category: 'partner', pct: Math.round(dn / tot * 100), currentStep: cur ? (cur.title || '') : '', nextStep: '', delivery: cur && cur.dueDate ? cur.dueDate : '', urgency: partnerDue.length ? partnerDue[0] : '' });
             }
         }
     }
-    activeProjects.sort((a, b) => String(a.delivery || '9999').localeCompare(String(b.delivery || '9999')));
+    // Tri par urgence : échéance la plus proche d'abord (en retard en tête), sans date à la fin.
+    activeProjects.sort((a, b) => String(a.urgency || '9999').localeCompare(String(b.urgency || '9999')));
     deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
     pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
