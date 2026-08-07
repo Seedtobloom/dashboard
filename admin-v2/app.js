@@ -2371,7 +2371,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [];
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all';
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -2411,60 +2411,66 @@
     var over = weekAvail && weekPlanned > weekAvail;
     var barCol = over ? '#b0761c' : 'var(--terre)';
     var rangeLbl = days[0].getDate() + ' → ' + days[4].getDate() + ' ' + MS_MONTHS[days[4].getMonth()] + ' ' + days[4].getFullYear();
-    var header = '<div class="spanel">' +
-      '<div class="whead">' +
-        '<button class="snav" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
-        '<button class="snav" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
-        '<button class="snav" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
-        '<span class="wrange">' + rangeLbl + '</span>' +
-      '</div>' +
-      '<div class="wcap">' +
-        '<div><div class="l">Planifié</div><div class="n">' + msHours(weekPlanned) + '</div></div>' +
-        '<div><div class="l">Disponible</div><div class="n">' + (weekAvail ? msHours(weekAvail) : '—') + '</div></div>' +
-        '<div class="capbar">' +
-          '<div class="track"><i style="width:' + Math.min(100, pct) + '%;background:' + (over ? '#b0761c' : 'var(--brun)') + '"></i></div>' +
-          '<div class="capnote"' + (over ? ' style="color:#b0761c;opacity:1"' : '') + '>' + (weekAvail ? pct + '% de ta capacité' + (over ? ' · semaine chargée' : '') : 'Renseigne tes disponibilités dans le Calendrier pour voir ta capacité') + '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-    // Colonnes par jour
-    function taskChip(t, diso) {
-      var cn = t.clientName ? '<div class="wtask__c">' + esc(t.clientName) + '</div>' : '';
-      var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? ' <span title="Échéance dépassée" style="color:#a23c28;font-weight:700">!</span>' : (t.dueDate ? ' <span class="wtask__c" style="display:inline;margin:0">· éch. ' + msShort(t.dueDate) + '</span>' : '');
-      return '<div class="wtask">' +
-        '<div class="wtask__t">' + esc(t.title) + dueWarn + '</div>' + cn +
-        '<div class="row" style="gap:5px;align-items:center;margin-top:8px">' +
-          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:60px;font-size:11px;padding:4px 6px">' +
-          '<select class="inp" title="Déplacer" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="font-size:11px;padding:4px 6px;flex:1;min-width:0">' + msDaySelect(days, diso) + '</select>' +
+    var marge = weekAvail - weekPlanned;
+    var note = !weekAvail ? 'Renseigne tes disponibilités dans le Calendrier pour voir ta marge.'
+      : (over ? 'Semaine chargée — au-delà de ta capacité, lève le pied.'
+        : (marge <= weekAvail * 0.15 ? 'Semaine bien remplie, mais tu tiens le rythme.' : 'La semaine respire, tu as de la marge.'));
+    var whead = '<div class="whead">' +
+      '<button class="snav" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
+      '<button class="snav" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
+      '<button class="snav" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
+      '<span class="wrange">' + rangeLbl + '</span></div>';
+    var charge = '<div class="charge"><div class="charge__row">' +
+      '<div><div class="charge__n tnum">' + (weekAvail ? msHours(weekAvail) : '—') + '</div><div class="charge__l">disponibles</div></div>' +
+      '<div><div class="charge__n tnum">' + msHours(weekPlanned) + '</div><div class="charge__l">planifiées</div></div>' +
+      '<div><div class="charge__n tnum">' + (weekAvail ? msHours(Math.max(0, marge)) : '—') + '</div><div class="charge__l">de marge</div></div>' +
+      '<p class="charge__note">' + note + '</p>' +
+    '</div></div>';
+    var FILTERS = [['all', 'Tout'], ['wt-client', 'Client'], ['wt-crea', 'Création'], ['wt-studio', 'Studio'], ['wt-admin', 'Admin']];
+    var filters = '<div class="filters">' + FILTERS.map(function (f) { return '<button class="filt' + (MS_FILTER === f[0] ? ' is-active' : '') + '" onclick="ADM.msFilter(\'' + f[0] + '\')">' + f[1] + '</button>'; }).join('') + '</div>';
+    // bloc coloré par type de travail, avec estimation + déplacement
+    function wblk(t, diso) {
+      var cls = msWt(t);
+      var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? ' <span title="Échéance dépassée" style="font-weight:700">!</span>' : '';
+      return '<div class="wblk ' + cls + '">' +
+        '<span class="wblk__k">' + msWtLabel(cls) + '</span>' +
+        '<span class="wblk__t">' + esc(t.title) + dueWarn + '</span>' +
+        (t.clientName ? '<span class="wblk__c">' + esc(t.clientName) + '</span>' : '') +
+        '<div class="wblk__ctl">' +
+          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)">' +
+          '<select class="inp" title="Déplacer sur un autre jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)">' + msDaySelect(days, diso) + '</select>' +
         '</div>' +
       '</div>';
     }
     var cols = days.map(function (d) {
       var diso = msIso(d);
-      var dayTasks = active.filter(function (t) { return (t.doDate || '').slice(0, 10) === diso; });
-      var planned = dayTasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+      var allDayTasks = active.filter(function (t) { return (t.doDate || '').slice(0, 10) === diso; });
+      var planned = allDayTasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
       var avail = msAvailMin(d);
       var dOver = avail && planned > avail;
-      var capCol = dOver ? '#b0761c' : '#4f7a52';
       var isToday = diso === todayIso;
-      var head = '<div class="wday__h">' +
-        '<div class="wday__dow">' + MS_DOW[(d.getDay() + 6) % 7] + '</div>' +
-        '<div class="wday__n">' + d.getDate() + '</div>' +
-        (planned ? '<div class="wday__cap" style="color:' + capCol + '">● ' + msDur(planned) + (avail ? ' / ' + msHours(avail) : '') + '</div>' : '<div class="wday__cap" style="color:var(--brun);opacity:.5">libre</div>') +
-      '</div>';
-      var body = dayTasks.length ? dayTasks.map(function (t) { return taskChip(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
-      var dayAdd = '<input class="inp" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}" style="width:100%;box-sizing:border-box;font-size:11px;padding:7px 9px;margin-top:6px">';
-      return '<div class="wday' + (isToday ? ' is-today' : '') + '">' + head + body + dayAdd + '</div>';
+      var shown = MS_FILTER === 'all' ? allDayTasks : allDayTasks.filter(function (t) { return msWt(t) === MS_FILTER; });
+      var capTxt = planned ? (msDur(planned) + (avail ? ' / ' + msHours(avail) : '')) : 'libre';
+      var head = '<div class="wday__h"><span class="wday__d' + (isToday ? ' today' : '') + '">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isToday ? ' · auj.' : '') + '</span><span class="wday__cap' + (dOver ? ' full' : '') + '">' + capTxt + '</span></div>';
+      var body = shown.length ? shown.map(function (t) { return wblk(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
+      var dayAdd = '<input class="wadd" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}">';
+      return '<div>' + head + '<div class="wcol">' + body + dayAdd + '</div></div>';
     }).join('');
     var grid = '<div class="week">' + cols + '</div>';
+    var legend = '<div class="legend">' +
+      '<span class="lg"><i style="background:var(--lav)"></i>Client</span>' +
+      '<span class="lg"><i style="background:var(--brun)"></i>Création</span>' +
+      '<span class="lg"><i style="background:var(--lavc)"></i>Studio</span>' +
+      '<span class="lg"><i style="background:var(--creme)"></i>Admin</span>' +
+    '</div>';
     // À placer
     var toPlace = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
     var placeHtml = '<div class="spanel">' +
       '<h3>À placer cette semaine</h3>' +
       '<div class="intro">Des tâches à faire, pas encore posées sur un jour. Donne-leur une estimation et place-les dans la semaine.</div>' +
       (toPlace.length ? '<div>' + toPlace.slice(0, 40).map(function (t) {
-        var cn = t.clientName ? '<span class="wtask__c" style="display:inline;margin:0"> · ' + esc(t.clientName) + '</span>' : '';
-        var due = t.dueDate ? '<span class="wtask__c" style="display:inline;margin:0;white-space:nowrap">éch. ' + msShort(t.dueDate) + '</span>' : '';
+        var cn = t.clientName ? '<span class="wblk__c" style="opacity:.7"> · ' + esc(t.clientName) + '</span>' : '';
+        var due = t.dueDate ? '<span class="wblk__c" style="opacity:.7;white-space:nowrap">éch. ' + msShort(t.dueDate) + '</span>' : '';
         return '<div class="placerow">' +
           '<span class="t">' + esc(t.title) + cn + '</span>' + due +
           '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:70px;font-size:12px">' +
@@ -2480,7 +2486,7 @@
     '</div></div>';
     var html = '<div class="wrap sem2">' +
       '<div class="intro"><strong style="color:var(--brun)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--brun)">Mes tâches</strong> = tout ce que tu as à faire. Mêmes données, deux vues.</div>' +
-      header + addBar + grid + placeHtml +
+      whead + charge + filters + grid + legend + addBar + placeHtml +
     '</div>';
     setMain(topbar('Ma semaine') + html);
   }
@@ -2490,6 +2496,18 @@
     return opts;
   }
   function msWeek(v) { if (v === 0) MS_OFFSET = 0; else MS_OFFSET += v; renderMaSemaineBody(); }
+  function msFilter(v) { MS_FILTER = v; renderMaSemaineBody(); }
+  // Catégorie (couleur) d'une tâche pour le planning : partenaire = Création,
+  // sinon d'après le « mode » de la tâche perso.
+  function msWt(t) {
+    if (t._src === 'client') return 'wt-crea';
+    var m = t.mode;
+    if (m === 'client') return 'wt-client';
+    if (m === 'studio' || m === 'marketing') return 'wt-studio';
+    if (m === 'admin' || m === 'organisation') return 'wt-admin';
+    return 'wt-crea';
+  }
+  function msWtLabel(cls) { return { 'wt-client': 'Client', 'wt-crea': 'Création', 'wt-studio': 'Studio', 'wt-admin': 'Admin', 'wt-rdv': 'Rendez-vous' }[cls] || ''; }
   function msPatch(id, body) {
     var t = MS_ALL.find(function (x) { return x.id === id; }); if (!t) return;
     var url = t._src === 'client' ? '/api/clients/' + t._key + '/tasks/' + id : '/api/admin/tasks/' + id;
@@ -6105,7 +6123,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msPlace: msPlace, msEst: msEst, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msEst: msEst, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
