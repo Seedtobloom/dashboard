@@ -3721,7 +3721,7 @@
     var ml = (CUR.meetingLink || '').trim();
     var visioBtn = ml ? '<a class="btn btn--dark btn--sm" href="' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Ouvrir la salle de visioconférence">' + admIcon('video') + ' Rejoindre la visio</a>' : '';
     setMain(topbar(nm, visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>', presence(CUR.lastSeen).label) +
-      '<div class="wrap">' + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+      '<div class="wrap cl2">' + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
   function clientAlerts() {
