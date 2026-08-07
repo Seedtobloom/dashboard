@@ -282,7 +282,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
    italiques, panneaux pleins colorés par importance, composition
    asymétrique aérée. Aucune fonctionnalité modifiée.
    ═══════════════════════════════════════════════════════════════ */
-.prio2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13);max-width:1520px}
+.prio2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13);max-width:1380px}
 .prio2 .hello{font-family:var(--font-display);font-style:italic;font-size:clamp(38px,6vw,72px);line-height:.98;letter-spacing:-0.015em;color:var(--brun)}
 .prio2 .hello__s{font-family:var(--font-body);font-size:clamp(16px,2vw,20px);color:var(--terre-600);margin-top:10px;max-width:46ch}
 
