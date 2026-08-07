@@ -1491,6 +1491,15 @@
       else P2_board += (blockLate || '') + (blockWait || '');
       P2_board += blockWeek + '</div>';
 
+      // Accueil + bande de compteurs (repris du prototype)
+      var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';
+      var P2_summary = '<div class="summary">' +
+        '<div class="sm sm--late"><div class="sm__n tnum">' + nLate + '</div><div class="sm__l">En retard</div></div>' +
+        '<div class="sm"><div class="sm__n tnum">' + nToday + '</div><div class="sm__l">Aujourd\'hui</div></div>' +
+        '<div class="sm"><div class="sm__n tnum">' + nWeek + '</div><div class="sm__l">Cette semaine</div></div>' +
+        '<div class="sm"><div class="sm__n tnum">' + nWait + '</div><div class="sm__l">En attente</div></div>' +
+        '</div>';
+
       // ── Onglets analytiques (sous la composition) : Risques / Engagement / Charge ──
       var tabDefs = [];
       if (riskItems.length) tabDefs.push(['risks', 'Risques', riskItems.length, nRiskHigh > 0]);
@@ -1534,7 +1543,7 @@
               (capOver ? '<div class="micro" style="color:var(--red);margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité — prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
             : '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + engagedMonthly + ' h engagées ce mois</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Renseigne ta capacité hebdomadaire pour voir ta marge.</div>') +
         '</div>';
-        tabBody = '<div class="pcols">' + capCard + meteo +
+        tabBody = '<div class="pcols">' + capCard +
           '<div class="card infocard" style="background:var(--card)"><h3>Forfaits du mois</h3>' +
             (forf || '<div class="empty">Aucun forfait partenaire.</div>') + '</div></div>';
       } else {
@@ -1551,8 +1560,10 @@
             '<button class="btn btn--dark btn--sm" onclick="ADM.prioConsultQnr(\'' + q.key + '\',\'' + q.id + '\')">Consulter</button></div>';
         }).join('') + '</div>' : '';
       setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap prio2">' +
-        P2_board + qnrDoneCard +
-        (tabDefs.length ? '<div class="secmark">Pilotage &amp; charge</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>' : '') +
+        P2_hello + P2_summary + P2_board +
+        '<div style="margin-top:clamp(24px,3vw,38px)">' + meteo + '</div>' +
+        qnrDoneCard +
+        (tabDefs.length ? '<div class="secmark">Pilotage &amp; forfaits</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>' : '') +
         '</div>');
   }
 

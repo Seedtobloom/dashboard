@@ -284,7 +284,14 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
    ═══════════════════════════════════════════════════════════════ */
 .prio2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13);max-width:1380px}
 .prio2 .hello{font-family:var(--font-display);font-style:italic;font-size:clamp(38px,6vw,72px);line-height:.98;letter-spacing:-0.015em;color:var(--brun)}
-.prio2 .hello__s{font-family:var(--font-body);font-size:clamp(16px,2vw,20px);color:var(--terre-600);margin-top:10px;max-width:46ch}
+.prio2 .hello__s{font-family:var(--font-micro);font-weight:400;font-size:clamp(14px,1.6vw,16px);color:var(--terre-600);margin-top:12px;max-width:52ch}
+/* bande de compteurs */
+.prio2 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:clamp(20px,2.6vw,30px) 0 2px}
+.prio2 .sm{background:var(--surf);border-radius:16px;padding:18px 20px;text-align:left}
+.prio2 .sm__n{font-family:var(--font-display);font-weight:600;font-size:clamp(30px,3.4vw,42px);line-height:.85;color:var(--brun)}
+.prio2 .sm__l{font-family:var(--font-micro);font-weight:500;font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--brun);opacity:.68;margin-top:10px}
+.prio2 .sm--late .sm__n{color:#a23c28}
+@media(max-width:680px){.prio2 .summary{grid-template-columns:1fr 1fr}}
 
 /* grille éditoriale : héros pleine largeur + rangées zigzag à hauteur égale */
 .prio2 .board{display:flex;flex-direction:column;gap:16px;margin-top:clamp(24px,3.4vw,40px)}
