@@ -2467,26 +2467,26 @@
     var toPlace = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
     var placeHtml = '<div class="spanel">' +
       '<h3>À placer cette semaine</h3>' +
-      '<div class="intro">Des tâches à faire, pas encore posées sur un jour. Donne-leur une estimation et place-les dans la semaine.</div>' +
-      (toPlace.length ? '<div>' + toPlace.slice(0, 40).map(function (t) {
-        var cn = t.clientName ? '<span class="wblk__c" style="opacity:.7"> · ' + esc(t.clientName) + '</span>' : '';
-        var due = t.dueDate ? '<span class="wblk__c" style="opacity:.7;white-space:nowrap">éch. ' + msShort(t.dueDate) + '</span>' : '';
-        return '<div class="placerow">' +
+      '<div class="intro">Des tâches pas encore posées sur un jour. Ajoutes-en, estime-les, puis place-les dans la semaine.</div>' +
+      '<div class="addrow">' +
+        '<input class="inp" id="ms-add-title" placeholder="Ajouter une tâche…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}">' +
+        '<select class="inp" id="ms-add-day" style="width:auto" title="Jour où tu bosses dessus">' + msDaySelect(days, '') + '</select>' +
+        '<input class="inp" id="ms-add-est" type="number" min="0" step="15" placeholder="min" style="width:82px" title="Temps estimé">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.msAddTop()">+ Ajouter</button>' +
+      '</div>' +
+      (toPlace.length ? '<div class="placegrid">' + toPlace.slice(0, 40).map(function (t) {
+        var cn = t.clientName ? '<span class="wblk__c" style="opacity:.65"> · ' + esc(t.clientName) + '</span>' : '';
+        var due = t.dueDate ? '<span class="due">' + msShort(t.dueDate) + '</span>' : '';
+        return '<div class="placerow ' + msWt(t) + '">' +
           '<span class="t">' + esc(t.title) + cn + '</span>' + due +
-          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:70px;font-size:12px">' +
+          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:64px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
         '</div>';
       }).join('') + '</div>' : '<div class="emptyz">Tout est placé. 🌿</div>') +
     '</div>';
-    var addBar = '<div class="spanel"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
-      '<input class="inp" id="ms-add-title" placeholder="Ajouter une tâche…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}">' +
-      '<select class="inp" id="ms-add-day" style="width:auto" title="Jour où tu bosses dessus">' + msDaySelect(days, '') + '</select>' +
-      '<input class="inp" id="ms-add-est" type="number" min="0" step="15" placeholder="min" style="width:82px" title="Temps estimé">' +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.msAddTop()">+ Ajouter</button>' +
-    '</div></div>';
     var html = '<div class="wrap sem2">' +
       '<div class="intro"><strong style="color:var(--brun)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--brun)">Mes tâches</strong> = tout ce que tu as à faire. Mêmes données, deux vues.</div>' +
-      whead + charge + filters + grid + legend + addBar + placeHtml +
+      whead + charge + filters + grid + legend + placeHtml +
     '</div>';
     setMain(topbar('Ma semaine') + html);
   }
