@@ -275,3 +275,98 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 ::-webkit-scrollbar-thumb:hover{background:var(--terre-400)}
 .side ::-webkit-scrollbar-thumb,.side::-webkit-scrollbar-thumb{background:rgba(242,229,194,0.28);background-clip:content-box}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto}}
+
+/* ═══════════════════════════════════════════════════════════════
+   Cockpit Priorités — refonte éditoriale (scopé .prio2 : n'affecte
+   que cette vue). Reprend la direction des maquettes : grandes typos
+   italiques, panneaux pleins colorés par importance, composition
+   asymétrique aérée. Aucune fonctionnalité modifiée.
+   ═══════════════════════════════════════════════════════════════ */
+.prio2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13);max-width:1520px}
+.prio2 .hello{font-family:var(--font-display);font-style:italic;font-size:clamp(38px,6vw,72px);line-height:.98;letter-spacing:-0.015em;color:var(--brun)}
+.prio2 .hello__s{font-family:var(--font-body);font-size:clamp(16px,2vw,20px);color:var(--terre-600);margin-top:10px;max-width:46ch}
+
+/* grille éditoriale : héros pleine largeur + rangées zigzag à hauteur égale */
+.prio2 .board{display:flex;flex-direction:column;gap:16px;margin-top:clamp(24px,3.4vw,40px)}
+.prio2 .row2{display:grid;gap:16px;align-items:stretch}
+.prio2 .row2--a{grid-template-columns:1.55fr 1fr}
+.prio2 .row2--b{grid-template-columns:1fr 1.55fr}
+@media(max-width:900px){.prio2 .row2--a,.prio2 .row2--b{grid-template-columns:1fr}}
+
+/* panneaux pleins */
+.prio2 .panel{border-radius:22px;padding:clamp(22px,3vw,34px);position:relative;overflow:hidden}
+.prio2 .panel__h{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;margin-bottom:12px}
+.prio2 .panel__h h2{font-family:var(--font-display);font-style:italic;font-weight:600;font-size:clamp(22px,2.9vw,32px);line-height:1;color:inherit}
+.prio2 .panel__note{font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;margin-left:auto;opacity:.72}
+.prio2 .tag{font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 12px;border-radius:99px}
+.prio2 .panel--nuit{background:var(--nuit);color:var(--ivoire)}
+.prio2 .panel--nuit .tag{background:#5a2a20;color:#f4c8bb}
+.prio2 .panel--lav{background:var(--lav);color:var(--nuit)}
+.prio2 .panel--lav .tag{background:var(--nuit);color:var(--ivoire)}
+.prio2 .panel--creme{background:var(--creme);color:var(--nuit)}
+.prio2 .panel--creme .tag{background:var(--nuit);color:var(--ivoire)}
+.prio2 .panel--surf{background:var(--surf);color:var(--nuit)}
+.prio2 .panel--surf .tag{background:var(--nuit);color:var(--ivoire)}
+.prio2 .heromk{position:absolute;right:-8px;bottom:-56px;font-family:var(--font-display);font-style:italic;font-size:clamp(160px,20vw,250px);line-height:1;color:rgba(28,18,5,.06);pointer-events:none;user-select:none}
+
+/* actions dans les lignes */
+.prio2 .rowacts{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.prio2 .clk{font-family:var(--font-micro);font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums;opacity:.85}
+.prio2 .lbtn{background:none;border:none;cursor:pointer;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--brun);border-bottom:1px solid var(--line);padding:0 0 3px;transition:color .15s,border-color .15s;white-space:nowrap}
+.prio2 .lbtn:hover{color:var(--nuit);border-color:var(--nuit)}
+.prio2 .lbtn--ok{color:#4f6a46;border-color:rgba(79,106,70,.4)}
+.prio2 .ibtn{background:rgba(28,18,5,.06);border:none;border-radius:9px;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--brun);transition:.15s}
+.prio2 .ibtn:hover{background:var(--lav);color:var(--nuit)}
+.prio2 .ibtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.prio2 .ibtn--ok:hover{background:#7a9466;color:#fff}
+.prio2 .ibtn--play svg{fill:currentColor;stroke:none}
+.prio2 .panel--nuit .lbtn{color:#e9dcc4;border-color:rgba(251,250,255,.3)}
+.prio2 .panel--nuit .lbtn:hover{color:#fff;border-color:#fff}
+.prio2 .panel--nuit .ibtn{background:rgba(251,250,255,.12);color:var(--ivoire)}
+.prio2 .panel--nuit .ibtn:hover{background:var(--lav);color:var(--nuit)}
+
+/* liste numérotée (Aujourd'hui) */
+.prio2 .today .trow{display:grid;grid-template-columns:auto 1fr auto auto;gap:clamp(12px,2vw,22px);align-items:center;padding:16px 0}
+.prio2 .today .trow+.trow{border-top:1px solid rgba(28,18,5,.14)}
+.prio2 .trow__n{font-family:var(--font-display);font-weight:600;font-size:clamp(28px,3.6vw,46px);line-height:.75;color:#7d5cbb;width:1.5em}
+.prio2 .trow__t{font-family:var(--font-display);font-size:clamp(19px,2.4vw,26px);line-height:1.05}
+.prio2 .trow__m{font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:6px;color:var(--brun);opacity:.9}
+.prio2 .trow__e{font-family:var(--font-display);font-style:italic;font-size:19px;white-space:nowrap;opacity:.8}
+@media(max-width:680px){.prio2 .today .trow{grid-template-columns:auto 1fr;gap:10px}.prio2 .trow__e,.prio2 .trow__a{grid-column:2}}
+
+/* lignes datées (En retard / Cette semaine) */
+.prio2 .drow{display:grid;grid-template-columns:120px 1fr auto;gap:clamp(12px,1.8vw,22px);align-items:center;padding:15px 0}
+.prio2 .drow+.drow{border-top:1px solid var(--line)}
+.prio2 .panel--nuit .drow+.drow{border-color:rgba(251,250,255,.16)}
+.prio2 .drow__d b{font-family:var(--font-display);font-style:italic;font-size:20px;font-weight:600}
+.prio2 .drow__d span{display:block;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;margin-top:3px;opacity:.85}
+.prio2 .drow__t{font-family:var(--font-display);font-size:clamp(18px,2.1vw,23px);line-height:1.08}
+.prio2 .drow__m{font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:6px;opacity:.78}
+.prio2 .dayhead{font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--brun);margin:16px 0 2px;opacity:.85}
+.prio2 .rvtag{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 9px;border-radius:99px;background:#e6d1ac;color:#7a4f1f;margin-left:7px;vertical-align:middle;white-space:nowrap}
+@media(max-width:680px){.prio2 .drow{grid-template-columns:1fr;gap:6px}.prio2 .rowacts{justify-content:flex-start}}
+
+/* En attente (fiches) */
+.prio2 .waits .wl+.wl{border-top:1px solid var(--line);margin-top:2px;padding-top:14px}
+.prio2 .wl{display:grid;grid-template-columns:96px 1fr auto;gap:16px;align-items:center;padding-bottom:2px}
+.prio2 .wl__who{font-family:var(--font-display);font-style:italic;font-size:21px}
+.prio2 .wl__t{font-family:var(--font-display);font-size:19px;line-height:1.1}
+.prio2 .wl__m{font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--brun);opacity:.8;margin-top:4px}
+.prio2 .wtag{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 11px;border-radius:99px;white-space:nowrap}
+.prio2 .wtag--elle{background:var(--lav);color:var(--nuit)}
+.prio2 .wtag--moi{background:var(--creme);color:var(--brun)}
+@media(max-width:680px){.prio2 .wl{grid-template-columns:1fr auto}.prio2 .wl__who{grid-column:1/-1}}
+
+/* section analytique (onglets) en dessous, un cran plus discrète */
+.prio2 .secmark{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin:clamp(30px,4vw,48px) 0 14px}
+.prio2 .prioempty{font-family:var(--font-body);font-style:italic;color:var(--muted);padding:8px 0;opacity:.8}
+/* boutons d'action réutilisés (pbtn) restylés dans le cockpit */
+.prio2 .rowacts .pbtn{background:rgba(28,18,5,.06);color:var(--brun);border-radius:9px;font-size:9.5px}
+.prio2 .rowacts .pbtn:hover{background:var(--lav);color:var(--nuit)}
+.prio2 .rowacts .pbtn--ok{background:rgba(79,106,70,.14);color:#4f6a46}
+.prio2 .rowacts .pbtn--ok:hover{background:rgba(79,106,70,.24)}
+.prio2 .panel--nuit .rowacts .pbtn{background:rgba(251,250,255,.12);color:var(--ivoire)}
+.prio2 .panel--nuit .rowacts .pbtn:hover{background:var(--lav);color:var(--nuit)}
+.prio2 .panel--nuit .rowacts .pbtn--ok{background:var(--creme);color:var(--brun)}
+.prio2 .panel--surf .prow{padding:13px 2px}
+.prio2 .panel--surf .prow__el{font-family:var(--font-display);font-size:19px}

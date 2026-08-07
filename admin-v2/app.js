@@ -1433,13 +1433,70 @@
         '</div>';
       }
 
-      // ── Onglets : on segmente la page (plus de long scroll) ──
-      var tabDefs = [['todo', 'À faire', mine.length, false], ['waiting', 'Attente client', nWait, false]];
+      // ══ Refonte cockpit : blocs éditoriaux (mêmes données, mêmes actions) ══
+      var P2_late = mine.filter(function (x) { return x._d < 0; }).sort(function (a, b) { return a._d - b._d; });
+      var P2_today = mine.filter(function (x) { return x._d === 0; });
+      var P2_week = mine.filter(function (x) { return x._d > 0 && x._d <= 7; });
+      function p2Meta(x) { return esc(x.kind) + ' · ' + esc(x.projectLabel) + ' · ' + esc(x.client); }
+      function p2Acts(x, dark) {
+        if (!x.id) return pill(x.status, SL[x.status] || x.status);
+        var iso = (x.dueDate || '').slice(0, 10);
+        return prioTimer(x, dark) +
+          (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
+          '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
+          ((x.kind === 'tâche' || x.kind === 'ticket')
+            ? '<button class="pbtn" title="Proposer un report" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
+            : '<button class="pbtn" title="Reporter" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>');
+      }
+      function p2Trow(x, n) {
+        return '<div class="trow"><div class="trow__n tnum">' + n + '</div>' +
+          '<div><div class="trow__t">' + esc(x.title) + '</div><div class="trow__m">' + p2Meta(x) + '</div></div>' +
+          '<span class="trow__e">' + (x.estMinutes > 0 ? hLabel(x.estMinutes) : '') + '</span>' +
+          '<div class="trow__a rowacts">' + p2Acts(x, false) + '</div></div>';
+      }
+      function p2Drow(x, dark, whenCol) {
+        var col = whenCol || (x._d < 0 ? '#a23c28' : (x._d === 0 ? 'var(--orange)' : 'inherit'));
+        return '<div class="drow"><div class="drow__d"><b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span></div>' +
+          '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div></div>' +
+          '<div class="rowacts">' + p2Acts(x, dark) + '</div></div>';
+      }
+      var P2_todayBody = P2_today.length ? P2_today.map(function (x, i) { return p2Trow(x, ('0' + (i + 1)).slice(-2)); }).join('') : '<div class="prioempty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>';
+      var blockToday = '<section class="panel panel--lav"><span class="heromk">' + (new Date().getDate()) + '</span>' +
+        '<div class="panel__h"><span class="tag">Aujourd\'hui · ' + P2_today.length + '</span><h2>Ce qui doit bouger maintenant</h2></div>' +
+        '<div class="today">' + P2_todayBody + '</div></section>';
+      var blockLate = P2_late.length ? '<section class="panel panel--nuit"><div class="panel__h"><span class="tag">En retard · ' + P2_late.length + '</span><h2>À rattraper</h2></div>' +
+        P2_late.map(function (x) { return p2Drow(x, true, '#f4a48f'); }).join('') + '</section>' : '';
+      var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div>' + waitHtml + '</section>' : '';
+      // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
+      var P2_days = {};
+      function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
+      P2_week.forEach(function (x) { p2DayPush((x.dueDate || '').slice(0, 10), p2Drow(x, false)); });
+      (revs || []).forEach(function (r) {
+        var wk = (r.wishDate || '').slice(0, 10);
+        var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>';
+        var row = '<div class="drow"><div class="drow__d"><b>' + (wk ? fmtDate(wk) : '—') + '</b><span style="color:#8d5a2b;font-weight:700;opacity:1">souhaitée</span></div>' +
+          '<div><div class="drow__t">' + esc(r.name || r.taskTitle || 'Révision') + ' <span class="rvtag">Révision</span></div><div class="drow__m">' + esc(r.projectLabel || '') + ' · ' + esc(r.client || '') + (r.comment ? ' · « ' + esc(String(r.comment).slice(0, 70)) + ' »' : '') + '</div></div>' +
+          '<div class="rowacts">' + acts + '</div></div>';
+        p2DayPush(wk || 'zzz', row);
+      });
+      var P2_dayKeys = Object.keys(P2_days).sort();
+      function p2DayLabel(k) { if (k === 'zzz' || !k) return 'À planifier'; var dt = new Date(k); var s = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); }
+      var blockWeekBody = P2_dayKeys.map(function (k) { return '<div class="dayhead">' + p2DayLabel(k) + '</div>' + P2_days[k].join(''); }).join('');
+      var blockWeek = blockWeekBody ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div>' + blockWeekBody + '</section>' : '';
+      var P2_board = '<div class="board">' + blockToday;
+      if (blockLate && blockWait) P2_board += '<div class="row2 row2--a">' + blockLate + blockWait + '</div>';
+      else P2_board += (blockLate || '') + (blockWait || '');
+      P2_board += blockWeek + '</div>';
+
+      // ── Onglets analytiques (sous la composition) : Risques / Engagement / Charge ──
+      var tabDefs = [];
       if (riskItems.length) tabDefs.push(['risks', 'Risques', riskItems.length, nRiskHigh > 0]);
       if (engList.length) tabDefs.push(['engagement', 'Engagement', engList.length, engRelance > 0]);
-      if (revs.length) tabDefs.push(['revisions', 'Révisions', revs.length, true]);
       tabDefs.push(['load', 'Charge & forfaits', null, false]);
-      if (!tabDefs.some(function (t) { return t[0] === PRIO_TAB; })) PRIO_TAB = 'todo';
+      if (!tabDefs.some(function (t) { return t[0] === PRIO_TAB; })) PRIO_TAB = tabDefs[0][0];
       var tabBar = '<div class="tabs">' + tabDefs.map(function (t) {
         var b = t[3] ? badgeAlert(t[2]) : (t[2] != null ? badge(t[2]) : '');
         return '<button class="tab' + (PRIO_TAB === t[0] ? ' active' : '') + '" onclick="ADM.prioSetTab(\'' + t[0] + '\')">' + esc(t[1]) + b + '</button>';
@@ -1493,8 +1550,10 @@
           return '<div class="file" style="gap:10px"><span class="nm">' + esc(q.name) + ' <span class="micro" style="color:var(--muted)">· ' + esc(q.client) + (q.completedAt ? ' · ' + fmtDate(q.completedAt) : '') + '</span></span>' +
             '<button class="btn btn--dark btn--sm" onclick="ADM.prioConsultQnr(\'' + q.key + '\',\'' + q.id + '\')">Consulter</button></div>';
         }).join('') + '</div>' : '';
-      setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap">' +
-        focusBand + qnrDoneCard + kpis + tabBar + '<div id="priobody">' + tabBody + '</div></div>');
+      setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap prio2">' +
+        P2_board + qnrDoneCard +
+        (tabDefs.length ? '<div class="secmark">Pilotage &amp; charge</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>' : '') +
+        '</div>');
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
