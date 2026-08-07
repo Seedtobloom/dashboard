@@ -1165,6 +1165,7 @@ async function handleDashboard(env) {
     const newTasks = [];
     const reworkTasks = [];
     const commentTasks = [];
+    const activeProjects = [];
     for (const ci of idx) {
         const data = (await env.KV_CLIENT.get(ci.key, { type: 'json' }));
         if (!data)
@@ -1256,14 +1257,47 @@ async function handleDashboard(env) {
                         deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
                 collectLiv(o, supportLabel(pid), 'support-' + pid);
             }
+        // Projets en cours (avancement) pour le cockpit : % = étapes terminées / total.
+        const addProj = (suivi, label, category) => {
+            if (!Array.isArray(suivi) || !suivi.length)
+                return;
+            const total = suivi.length, done = suivi.filter((s) => s.status === 'done').length;
+            if (done >= total)
+                return; // projet terminé : pas « en cours »
+            const notDone = suivi.filter((s) => s.status !== 'done');
+            const cur = notDone.find((s) => s.status === 'in_progress') || notDone[0];
+            const ci2 = suivi.indexOf(cur);
+            const next = suivi.slice(ci2 + 1).find((s) => s.status !== 'done');
+            const dates = suivi.map((s) => s.date).filter(Boolean).sort();
+            activeProjects.push({ key: ci.key, client: who, projectLabel: label, category, pct: Math.round(done / total * 100), currentStep: cur ? (cur.title || '') : '', nextStep: next ? (next.title || '') : '', delivery: dates.length ? dates[dates.length - 1] : '' });
+        };
+        if (sw)
+            addProj(sw.suivi, 'Site web', 'website');
+        if (iv)
+            addProj(iv.suivi, 'Identité visuelle', 'branding');
+        if (sd)
+            for (const pid of Object.keys(sd)) {
+                const o = getSupportObj(esp, pid);
+                if (o)
+                    addProj(o.suivi, supportLabel(pid), 'support');
+            }
+        if (pc && Array.isArray(pc.taches) && pc.taches.length) {
+            const tot = pc.taches.length, dn = pc.taches.filter((t) => t.status === 'done').length;
+            if (dn < tot) {
+                const nd = pc.taches.filter((t) => t.status !== 'done');
+                const cur = nd.find((t) => t.status === 'in_progress' || t.status === 'review') || nd[0];
+                activeProjects.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', category: 'partner', pct: Math.round(dn / tot * 100), currentStep: cur ? (cur.title || '') : '', nextStep: '', delivery: cur && cur.dueDate ? cur.dueDate : '' });
+            }
+        }
     }
+    activeProjects.sort((a, b) => String(a.delivery || '9999').localeCompare(String(b.delivery || '9999')));
     deadlines.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
     pendingValidation.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     revisions.sort((a, b) => String(b.at).localeCompare(String(a.at)));
     newTasks.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     reworkTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
     commentTasks.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-    return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, clientCount: idx.length });
+    return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, activeProjects, clientCount: idx.length });
 }
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
 async function handleDone(env) {

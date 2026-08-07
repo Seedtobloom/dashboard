@@ -292,6 +292,25 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .sm__l{font-family:var(--font-micro);font-weight:500;font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--brun);opacity:.68;margin-top:10px}
 .prio2 .sm--late .sm__n{color:#a23c28}
 @media(max-width:680px){.prio2 .summary{grid-template-columns:1fr 1fr}}
+/* cartes « projets en cours » */
+.prio2 .covers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:960px){.prio2 .covers{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.prio2 .covers{grid-template-columns:1fr}}
+.prio2 .cc{border:none;border-radius:18px;overflow:hidden;text-align:left;display:flex;flex-direction:column;cursor:pointer;transition:transform .25s;padding:0}
+.prio2 .cc:hover{transform:translateY(-4px)}
+.prio2 .cc__top{position:relative;overflow:hidden;min-height:118px;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between}
+.prio2 .cc__cat{font-family:var(--font-micro);font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase}
+.prio2 .cc__pct{font-family:var(--font-display);font-style:italic;font-size:30px;line-height:.8}
+.prio2 .cc__t{font-family:var(--font-display);font-style:italic;font-size:24px;line-height:1;margin-top:auto}
+.prio2 .cc__mk{position:absolute;right:-6px;top:-28px;font-family:var(--font-display);font-style:italic;font-size:118px;line-height:1;pointer-events:none;user-select:none}
+.prio2 .cc--brun{background:var(--brun);color:var(--ivoire)}.prio2 .cc--brun .cc__cat{color:var(--creme)}.prio2 .cc--brun .cc__mk{color:rgba(242,229,194,.1)}
+.prio2 .cc--lav{background:var(--lav);color:var(--nuit)}.prio2 .cc--lav .cc__cat{color:var(--brun)}.prio2 .cc--lav .cc__mk{color:rgba(28,18,5,.06)}
+.prio2 .cc--nuit{background:var(--nuit);color:var(--ivoire)}.prio2 .cc--nuit .cc__cat{color:var(--lav)}.prio2 .cc--nuit .cc__mk{color:rgba(228,209,254,.09)}
+.prio2 .cbar{height:5px;background:rgba(28,18,5,.14)}.prio2 .cbar i{display:block;height:100%;background:var(--brun)}
+.prio2 .cc--brun .cbar i,.prio2 .cc--nuit .cbar i{background:var(--lav)}
+.prio2 .cc__b{padding:15px 18px 18px;display:flex;flex-direction:column;gap:8px;background:var(--surf)}
+.prio2 .cline{display:flex;gap:9px;align-items:baseline;font-family:var(--font-micro);font-size:12.5px;color:var(--nuit)}
+.prio2 .cline .k{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--brun);opacity:.7;width:62px;flex-shrink:0}
 
 /* grille éditoriale : héros pleine largeur + rangées zigzag à hauteur égale */
 .prio2 .board{display:flex;flex-direction:column;gap:16px;margin-top:clamp(24px,3.4vw,40px)}

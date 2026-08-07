@@ -1500,6 +1500,23 @@
         '<div class="sm"><div class="sm__n tnum">' + nWait + '</div><div class="sm__l">En attente</div></div>' +
         '</div>';
 
+      // Tes projets en cours (cartes avec % d'avancement) — repris du prototype
+      var P2_projs = d.activeProjects || [];
+      function p2CcCol(cat) { return cat === 'partner' ? 'cc--brun' : (cat === 'branding' ? 'cc--nuit' : 'cc--lav'); }
+      function p2ProjCard(p) {
+        return '<button class="cc ' + p2CcCol(p.category) + '" onclick="ADM.openClient(\'' + p.key + '\')">' +
+          '<div class="cc__top"><span class="cc__mk">' + esc((String(p.client || '?').trim().charAt(0) || '?').toUpperCase()) + '</span>' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><span class="cc__cat">' + esc(p.projectLabel) + '</span><span class="cc__pct tnum">' + p.pct + '%</span></div>' +
+            '<span class="cc__t">' + esc(p.client) + '</span></div>' +
+          '<div class="cbar"><i style="width:' + p.pct + '%"></i></div>' +
+          '<div class="cc__b">' +
+            (p.currentStep ? '<div class="cline"><span class="k">En cours</span>' + esc(p.currentStep) + '</div>' : '') +
+            (p.nextStep ? '<div class="cline"><span class="k">Ensuite</span>' + esc(p.nextStep) + '</div>' : '') +
+            (p.delivery ? '<div class="cline"><span class="k">Livraison</span>' + fmtDate(p.delivery) + '</div>' : '') +
+          '</div></button>';
+      }
+      var blockProjects = P2_projs.length ? '<section style="margin-top:clamp(26px,3.4vw,44px)"><div class="secmark" style="margin-top:0">Tes projets en cours · ' + P2_projs.length + '</div><div class="covers">' + P2_projs.map(p2ProjCard).join('') + '</div></section>' : '';
+
       // ── Onglets analytiques (sous la composition) : Risques / Engagement / Charge ──
       var tabDefs = [];
       if (riskItems.length) tabDefs.push(['risks', 'Risques', riskItems.length, nRiskHigh > 0]);
@@ -1561,6 +1578,7 @@
         }).join('') + '</div>' : '';
       setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap prio2">' +
         P2_hello + P2_summary + P2_board +
+        blockProjects +
         '<div style="margin-top:clamp(24px,3vw,38px)">' + meteo + '</div>' +
         qnrDoneCard +
         (tabDefs.length ? '<div class="secmark">Pilotage &amp; forfaits</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>' : '') +
