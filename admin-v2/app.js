@@ -2477,7 +2477,7 @@
       (toPlace.length ? '<div class="placegrid">' + toPlace.slice(0, 40).map(function (t) {
         var cn = t.clientName ? '<span class="wblk__c" style="opacity:.65"> · ' + esc(t.clientName) + '</span>' : '';
         var due = t.dueDate ? '<span class="due">' + msShort(t.dueDate) + '</span>' : '';
-        return '<div class="placerow ' + msWt(t) + '">' +
+        return '<div class="placerow">' +
           '<span class="t">' + esc(t.title) + cn + '</span>' + due +
           '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:64px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +

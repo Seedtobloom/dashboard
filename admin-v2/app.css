@@ -372,11 +372,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .addrow .inp{background:var(--bg)}
 .sem2 .placegrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 @media(max-width:760px){.sem2 .placegrid{grid-template-columns:1fr}}
-.sem2 .placerow{display:flex;align-items:center;gap:9px;border-radius:11px;padding:10px 13px;background:var(--bg);border-left:3px solid var(--line)}
-.sem2 .placerow.wt-client{border-left-color:var(--lav)}
-.sem2 .placerow.wt-crea{border-left-color:var(--brun)}
-.sem2 .placerow.wt-studio{border-left-color:#c9b6ef}
-.sem2 .placerow.wt-admin{border-left-color:#dcc99a}
+.sem2 .placerow{display:flex;align-items:center;gap:10px;border-radius:11px;padding:11px 13px;background:var(--bg)}
 .sem2 .placerow .t{flex:1;min-width:0;font-family:var(--font-micro);font-size:13px;font-weight:500;color:var(--nuit);line-height:1.3}
 .sem2 .placerow .due{font-family:var(--font-micro);font-size:9.5px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;color:var(--brun);opacity:.75;white-space:nowrap;background:var(--surf);padding:4px 9px;border-radius:99px}
 .sem2 .emptyz{font-family:var(--font-body);font-style:italic;color:var(--muted);padding:16px;text-align:center}
