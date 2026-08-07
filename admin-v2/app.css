@@ -329,8 +329,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .today .trow{display:grid;grid-template-columns:auto 1fr auto auto;gap:clamp(12px,2vw,22px);align-items:center;padding:16px 0}
 .prio2 .today .trow+.trow{border-top:1px solid rgba(28,18,5,.14)}
 .prio2 .trow__n{font-family:var(--font-display);font-weight:600;font-size:clamp(28px,3.6vw,46px);line-height:.75;color:#7d5cbb;width:1.5em}
-.prio2 .trow__t{font-family:var(--font-display);font-size:clamp(19px,2.4vw,26px);line-height:1.05}
-.prio2 .trow__m{font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:6px;color:var(--brun);opacity:.9}
+.prio2 .trow__t{font-family:var(--font-micro);font-weight:500;font-size:clamp(16px,1.7vw,19px);line-height:1.35;letter-spacing:0}
+.prio2 .trow__m{font-family:var(--font-micro);font-weight:400;font-size:12.5px;letter-spacing:0;text-transform:none;margin-top:5px;color:var(--brun);opacity:.8}
 .prio2 .trow__e{font-family:var(--font-display);font-style:italic;font-size:19px;white-space:nowrap;opacity:.8}
 @media(max-width:680px){.prio2 .today .trow{grid-template-columns:auto 1fr;gap:10px}.prio2 .trow__e,.prio2 .trow__a{grid-column:2}}
 
@@ -340,8 +340,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .panel--nuit .drow+.drow{border-color:rgba(251,250,255,.16)}
 .prio2 .drow__d b{font-family:var(--font-display);font-style:italic;font-size:20px;font-weight:600}
 .prio2 .drow__d span{display:block;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;margin-top:3px;opacity:.85}
-.prio2 .drow__t{font-family:var(--font-display);font-size:clamp(18px,2.1vw,23px);line-height:1.08}
-.prio2 .drow__m{font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:6px;opacity:.78}
+.prio2 .drow__t{font-family:var(--font-micro);font-weight:500;font-size:clamp(15.5px,1.6vw,18px);line-height:1.35;letter-spacing:0}
+.prio2 .drow__m{font-family:var(--font-micro);font-weight:400;font-size:12.5px;letter-spacing:0;text-transform:none;margin-top:5px;opacity:.78}
 .prio2 .dayhead{font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--brun);margin:16px 0 2px;opacity:.85}
 .prio2 .rvtag{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 9px;border-radius:99px;background:#e6d1ac;color:#7a4f1f;margin-left:7px;vertical-align:middle;white-space:nowrap}
 @media(max-width:680px){.prio2 .drow{grid-template-columns:1fr;gap:6px}.prio2 .rowacts{justify-content:flex-start}}
@@ -370,4 +370,5 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .panel--nuit .rowacts .pbtn--ok{background:var(--creme);color:var(--brun)}
 .prio2 .panel--surf .prow{padding:15px 16px;margin-bottom:11px;box-shadow:none;border-radius:12px}
 .prio2 .panel--surf .prow:last-child{margin-bottom:0}
-.prio2 .panel--surf .prow__el{font-family:var(--font-display);font-size:19px}
+.prio2 .panel--surf .prow__el{font-family:var(--font-micro);font-weight:500;font-size:15px;line-height:1.35}
+.prio2 .prow__meta,.prio2 .prow__meta a{font-family:var(--font-micro);font-size:12.5px}
