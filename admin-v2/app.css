@@ -378,7 +378,12 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .emptyz{font-family:var(--font-body);font-style:italic;color:var(--muted);padding:16px;text-align:center}
 
 /* ═══ Mes tâches — habillage éditorial (scopé .mt2) ═══ */
-.mt2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13)}
+/* Redéfinit les variables de palette + police DANS la vue : tous les styles
+   en dur (var(--card)/var(--bone-d)/texte) basculent en éditorial sans réécrire
+   chaque composant. Les titres de section gardent leur serif italique (défini
+   en dur), le corps passe en Inter pour la lisibilité. */
+.mt2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13);--card:#ffffff;--bone-d:rgba(65,47,33,.1);--surface-2:#f1eee7;font-family:var(--font-micro)}
+.mt2 .micro{font-family:var(--font-micro)}
 .mt2 .kpis{gap:12px;margin-bottom:22px}
 .mt2 .kpi{background:var(--surf);border-radius:16px;padding:18px 20px;box-shadow:none}
 .mt2 .kpi__n{font-family:var(--font-display);font-weight:600;font-size:clamp(26px,3vw,38px);color:var(--brun)}
