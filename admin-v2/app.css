@@ -311,6 +311,42 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .cc__b{padding:15px 18px 18px;display:flex;flex-direction:column;gap:8px;background:var(--surf)}
 .prio2 .cline{display:flex;gap:9px;align-items:baseline;font-family:var(--font-micro);font-size:12.5px;color:var(--nuit)}
 .prio2 .cline .k{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--brun);opacity:.7;width:62px;flex-shrink:0}
+
+/* ═══ Ma semaine — refonte éditoriale (scopé .sem2) ═══ */
+.sem2{--brun:#412F21;--nuit:#1C1205;--ivoire:#FBFAFF;--lav:#E4D1FE;--lavc:#F0E8FF;--creme:#F2E5C2;--surf:#F8F6F2;--line:rgba(65,47,33,.13);max-width:1380px}
+.sem2 .intro{font-family:var(--font-micro);font-size:12px;color:var(--terre-600);margin-bottom:16px;line-height:1.5}
+.sem2 .spanel{background:var(--surf);border-radius:20px;padding:clamp(18px,2.4vw,26px);margin-bottom:16px}
+.sem2 .whead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sem2 .snav{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--brun);transition:.15s}
+.sem2 .snav:hover{background:var(--lav);color:var(--nuit)}
+.sem2 .wrange{font-family:var(--font-display);font-style:italic;font-size:clamp(22px,2.6vw,30px);color:var(--brun);margin-left:6px}
+.sem2 .wcap{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;margin-top:16px}
+.sem2 .wcap .n{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--brun);line-height:1}
+.sem2 .wcap .l{font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--brun);opacity:.65;margin-bottom:4px}
+.sem2 .capbar{flex:1;min-width:180px}
+.sem2 .capbar .track{height:8px;background:var(--bg);border-radius:999px;overflow:hidden}
+.sem2 .capbar i{display:block;height:100%;border-radius:999px;background:var(--brun)}
+.sem2 .capnote{font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.02em;margin-top:6px;color:var(--brun);opacity:.7}
+.sem2 .week{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.sem2 .week{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.sem2 .week{grid-template-columns:1fr}}
+.sem2 .wday{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:13px}
+.sem2 .wday.is-today{border-color:transparent;box-shadow:0 0 0 2px var(--lav)}
+.sem2 .wday__h{text-align:center;padding-bottom:10px;margin-bottom:11px;border-bottom:1px solid var(--line)}
+.sem2 .wday__dow{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--brun);opacity:.75}
+.sem2 .wday__n{font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--brun);line-height:1;margin-top:2px}
+.sem2 .wday__cap{font-family:var(--font-micro);font-size:10px;margin-top:5px}
+.sem2 .wtask{background:var(--surf);border-radius:11px;padding:10px 11px;margin-bottom:8px}
+.sem2 .wtask__t{font-family:var(--font-micro);font-size:12.5px;font-weight:500;line-height:1.32;color:var(--nuit)}
+.sem2 .wtask__c{font-family:var(--font-micro);font-size:10px;color:var(--brun);opacity:.72;margin-top:2px}
+.sem2 .wfree{font-family:var(--font-micro);font-size:11px;text-align:center;color:var(--brun);opacity:.55;padding:8px 0}
+.sem2 .inp{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--nuit)}
+.sem2 .inp:focus{box-shadow:0 0 0 2px var(--lav);border-color:transparent}
+.sem2 h3{font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--brun);margin-bottom:6px}
+.sem2 .placerow{display:flex;align-items:center;gap:10px;border-radius:11px;padding:10px 12px;background:var(--surf)}
+.sem2 .placerow+.placerow{margin-top:8px}
+.sem2 .placerow .t{flex:1;min-width:0;font-family:var(--font-micro);font-size:13px;font-weight:500;color:var(--nuit)}
+.sem2 .emptyz{font-family:var(--font-body);font-style:italic;color:var(--muted);padding:16px;text-align:center}
 /* bloc En attente — cartes 2 colonnes, date en évidence */
 .prio2 .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:820px){.prio2 .wgrid{grid-template-columns:1fr}}

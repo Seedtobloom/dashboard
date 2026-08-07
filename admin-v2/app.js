@@ -2411,31 +2411,31 @@
     var over = weekAvail && weekPlanned > weekAvail;
     var barCol = over ? '#b0761c' : 'var(--terre)';
     var rangeLbl = days[0].getDate() + ' → ' + days[4].getDate() + ' ' + MS_MONTHS[days[4].getMonth()] + ' ' + days[4].getFullYear();
-    var header = '<div class="card" style="background:var(--card)">' +
-      '<div class="row" style="align-items:center;gap:12px;flex-wrap:wrap">' +
-        '<button class="pbtn" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
-        '<button class="pbtn" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
-        '<button class="pbtn" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
-        '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-left:4px">' + rangeLbl + '</span>' +
+    var header = '<div class="spanel">' +
+      '<div class="whead">' +
+        '<button class="snav" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
+        '<button class="snav" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
+        '<button class="snav" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
+        '<span class="wrange">' + rangeLbl + '</span>' +
       '</div>' +
-      '<div class="row" style="align-items:center;gap:18px;flex-wrap:wrap;margin-top:14px">' +
-        '<div><div class="micro" style="color:var(--muted)">Planifié</div><div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + msHours(weekPlanned) + '</div></div>' +
-        '<div><div class="micro" style="color:var(--muted)">Disponible</div><div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + (weekAvail ? msHours(weekAvail) : '—') + '</div></div>' +
-        '<div style="flex:1;min-width:160px">' +
-          '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;background:' + barCol + ';width:' + Math.min(100, pct) + '%"></div></div>' +
-          '<div class="micro" style="margin-top:5px;color:' + (over ? '#b0761c' : 'var(--muted)') + '">' + (weekAvail ? pct + '% de ta capacité' + (over ? ' · semaine chargée' : '') : 'Renseigne tes disponibilités dans le Calendrier pour voir ta capacité') + '</div>' +
+      '<div class="wcap">' +
+        '<div><div class="l">Planifié</div><div class="n">' + msHours(weekPlanned) + '</div></div>' +
+        '<div><div class="l">Disponible</div><div class="n">' + (weekAvail ? msHours(weekAvail) : '—') + '</div></div>' +
+        '<div class="capbar">' +
+          '<div class="track"><i style="width:' + Math.min(100, pct) + '%;background:' + (over ? '#b0761c' : 'var(--brun)') + '"></i></div>' +
+          '<div class="capnote"' + (over ? ' style="color:#b0761c;opacity:1"' : '') + '>' + (weekAvail ? pct + '% de ta capacité' + (over ? ' · semaine chargée' : '') : 'Renseigne tes disponibilités dans le Calendrier pour voir ta capacité') + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
     // Colonnes par jour
     function taskChip(t, diso) {
-      var cn = t.clientName ? '<span style="font-family:var(--font-micro);font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">' + esc(t.clientName) + '</span>' : '';
-      var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? '<span title="Échéance dépassée" style="color:var(--red);font-weight:700"> !</span>' : (t.dueDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0"> · échéance ' + msShort(t.dueDate) + '</span>' : '');
-      return '<div style="background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:8px 10px;margin-bottom:7px">' +
-        '<div style="font-size:12.5px;color:var(--terre);line-height:1.25">' + esc(t.title) + dueWarn + '</div>' + cn +
-        '<div class="row" style="gap:5px;align-items:center;margin-top:6px">' +
-          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:64px;font-size:11px;padding:3px 6px">' +
-          '<select class="inp" title="Déplacer" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="font-size:11px;padding:3px 6px;flex:1;min-width:0">' + msDaySelect(days, diso) + '</select>' +
+      var cn = t.clientName ? '<div class="wtask__c">' + esc(t.clientName) + '</div>' : '';
+      var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? ' <span title="Échéance dépassée" style="color:#a23c28;font-weight:700">!</span>' : (t.dueDate ? ' <span class="wtask__c" style="display:inline;margin:0">· éch. ' + msShort(t.dueDate) + '</span>' : '');
+      return '<div class="wtask">' +
+        '<div class="wtask__t">' + esc(t.title) + dueWarn + '</div>' + cn +
+        '<div class="row" style="gap:5px;align-items:center;margin-top:8px">' +
+          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:60px;font-size:11px;padding:4px 6px">' +
+          '<select class="inp" title="Déplacer" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="font-size:11px;padding:4px 6px;flex:1;min-width:0">' + msDaySelect(days, diso) + '</select>' +
         '</div>' +
       '</div>';
     }
@@ -2447,39 +2447,39 @@
       var dOver = avail && planned > avail;
       var capCol = dOver ? '#b0761c' : '#4f7a52';
       var isToday = diso === todayIso;
-      var head = '<div style="text-align:center;padding-bottom:8px;border-bottom:1px solid var(--bone-d);margin-bottom:10px">' +
-        '<div class="micro" style="color:' + (isToday ? 'var(--terre)' : 'var(--terre-600)') + ';font-weight:700">' + MS_DOW[(d.getDay() + 6) % 7] + '</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:' + (isToday ? 'var(--terre)' : 'var(--terre-400)') + '">' + d.getDate() + '</div>' +
-        (planned ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;font-family:var(--font-micro);font-size:10px;color:' + capCol + '"><span style="width:7px;height:7px;border-radius:50%;background:' + capCol + '"></span>' + msDur(planned) + (avail ? ' / ' + msHours(avail) : '') + '</div>' : '<div class="micro" style="margin-top:3px;color:var(--muted)">libre</div>') +
+      var head = '<div class="wday__h">' +
+        '<div class="wday__dow">' + MS_DOW[(d.getDay() + 6) % 7] + '</div>' +
+        '<div class="wday__n">' + d.getDate() + '</div>' +
+        (planned ? '<div class="wday__cap" style="color:' + capCol + '">● ' + msDur(planned) + (avail ? ' / ' + msHours(avail) : '') + '</div>' : '<div class="wday__cap" style="color:var(--brun);opacity:.5">libre</div>') +
       '</div>';
-      var body = dayTasks.length ? dayTasks.map(function (t) { return taskChip(t, diso); }).join('') : '<div class="micro" style="text-align:center;color:var(--muted);padding:10px 0;text-transform:none;letter-spacing:0">Rien de planifié</div>';
-      var dayAdd = '<input class="inp" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px 8px;margin-top:6px">';
-      return '<div style="background:#fff;border:1px solid ' + (isToday ? 'var(--terre)' : 'var(--bone-d)') + ';border-radius:12px;padding:12px">' + head + body + dayAdd + '</div>';
+      var body = dayTasks.length ? dayTasks.map(function (t) { return taskChip(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
+      var dayAdd = '<input class="inp" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}" style="width:100%;box-sizing:border-box;font-size:11px;padding:7px 9px;margin-top:6px">';
+      return '<div class="wday' + (isToday ? ' is-today' : '') + '">' + head + body + dayAdd + '</div>';
     }).join('');
-    var grid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px">' + cols + '</div>';
+    var grid = '<div class="week">' + cols + '</div>';
     // À placer
     var toPlace = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
-    var placeHtml = '<div class="card" style="background:var(--card);margin-top:16px">' +
-      '<h3 style="margin-bottom:4px">À placer cette semaine</h3>' +
-      '<div class="micro mb" style="color:var(--muted)">Des tâches à faire, pas encore posées sur un jour. Donne-leur une estimation et glisse-les dans la semaine.</div>' +
-      (toPlace.length ? '<div style="display:flex;flex-direction:column;gap:8px">' + toPlace.slice(0, 40).map(function (t) {
-        var cn = t.clientName ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0"> · ' + esc(t.clientName) + '</span>' : '';
-        var due = t.dueDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;white-space:nowrap">échéance ' + msShort(t.dueDate) + '</span>' : '';
-        return '<div class="row" style="align-items:center;gap:10px;border:1px solid var(--bone-d);border-radius:10px;padding:9px 12px;background:#fff">' +
-          '<span style="flex:1;min-width:0;font-size:13.5px;color:var(--terre)">' + esc(t.title) + cn + '</span>' + due +
+    var placeHtml = '<div class="spanel">' +
+      '<h3>À placer cette semaine</h3>' +
+      '<div class="intro">Des tâches à faire, pas encore posées sur un jour. Donne-leur une estimation et place-les dans la semaine.</div>' +
+      (toPlace.length ? '<div>' + toPlace.slice(0, 40).map(function (t) {
+        var cn = t.clientName ? '<span class="wtask__c" style="display:inline;margin:0"> · ' + esc(t.clientName) + '</span>' : '';
+        var due = t.dueDate ? '<span class="wtask__c" style="display:inline;margin:0;white-space:nowrap">éch. ' + msShort(t.dueDate) + '</span>' : '';
+        return '<div class="placerow">' +
+          '<span class="t">' + esc(t.title) + cn + '</span>' + due +
           '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:70px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
         '</div>';
-      }).join('') + '</div>' : '<div class="empty" style="padding:18px">Tout est placé. 🌿</div>') +
+      }).join('') + '</div>' : '<div class="emptyz">Tout est placé. 🌿</div>') +
     '</div>';
-    var addBar = '<div class="card" style="background:var(--card)"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
+    var addBar = '<div class="spanel"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
       '<input class="inp" id="ms-add-title" placeholder="Ajouter une tâche…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}">' +
       '<select class="inp" id="ms-add-day" style="width:auto" title="Jour où tu bosses dessus">' + msDaySelect(days, '') + '</select>' +
       '<input class="inp" id="ms-add-est" type="number" min="0" step="15" placeholder="min" style="width:82px" title="Temps estimé">' +
       '<button class="btn btn--dark btn--sm" onclick="ADM.msAddTop()">+ Ajouter</button>' +
     '</div></div>';
-    var html = '<div class="wrap">' +
-      '<div class="micro mb" style="color:var(--muted)"><strong style="color:var(--terre)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--terre)">Mes tâches</strong> = tout ce que tu as à faire. Même données, deux vues.</div>' +
+    var html = '<div class="wrap sem2">' +
+      '<div class="intro"><strong style="color:var(--brun)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--brun)">Mes tâches</strong> = tout ce que tu as à faire. Mêmes données, deux vues.</div>' +
       header + addBar + grid + placeHtml +
     '</div>';
     setMain(topbar('Ma semaine') + html);
