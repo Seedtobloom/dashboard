@@ -2559,6 +2559,34 @@
   function mtScrollTo(id) { var e = el(id); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   // Ligne compacte utilisée dans la vue Focus. showMode : afficher la pastille
   // de mode (utile dans « Aujourd'hui » qui mélange les modes).
+  // Icônes SVG (trait) + jauge d'énergie en barres — pour la vue Focus.
+  var MT_ICONS = {
+    client: '<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>',
+    studio: '<path d="M12 3l2.2 5.2L20 9l-4 3.6 1 5.4-5-2.8-5 2.8 1-5.4L4 9l5.8-.8z"/>',
+    marketing: '<path d="M3 11v2l13 4.5V6.5L3 11z"/><path d="M16 9.5a3 3 0 0 1 0 5"/>',
+    organisation: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.5M12 19v2.5M4.2 7l2.2 1.3M17.6 15.7l2.2 1.3M4.2 17l2.2-1.3M17.6 8.3l2.2-1.3"/>',
+    admin: '<rect x="4.5" y="3" width="15" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
+    idee: '<path d="M9.5 18.5h5"/><path d="M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.4 1 2.4h6c0-1 .4-1.9 1-2.4A6.5 6.5 0 0 0 12 2.5z"/>',
+    today: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/>',
+    unclassed: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    play: '<path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>'
+  };
+  function mtSvg(key, sz) { return '<svg class="ic" width="' + (sz || 15) + '" height="' + (sz || 15) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (MT_ICONS[key] || '') + '</svg>'; }
+  function mtEnergyBars(e) {
+    var lvl = { quick: 1, short: 2, medium: 3, deep: 4 }[e] || 0;
+    if (!lvl) return '';
+    var r = [[0, 9, 5], [4.5, 6, 8], [9, 3, 11], [13.5, 0, 14]];
+    return '<span class="edot" title="Énergie / durée">' + '<svg class="ic" width="16.5" height="14" viewBox="0 0 16.5 14">' + r.map(function (x, i) { return '<rect x="' + x[0] + '" y="' + x[1] + '" width="3" height="' + x[2] + '" rx="1.2" fill="' + (i < lvl ? 'currentColor' : 'rgba(65,47,33,.16)') + '"/>'; }).join('') + '</svg></span>';
+  }
+  function mtFocusPill(mode) { var m = mtMode(mode); if (!m) return ''; return '<span class="pill">' + mtSvg(mode, 12) + m[1] + '</span>'; }
+  function mtCapCard(todayTasks) {
+    var planned = todayTasks.reduce(function (s, t) { return s + mtTaskMinutes(t); }, 0);
+    var cap = MT_TODAY_CAP;
+    if (!cap) return '<div class="cap"><b>' + fmtMin(planned) + '</b> prévues aujourd\'hui · <a href="javascript:ADM.nav(\'planning\')" style="color:inherit;text-decoration:underline">règle ta capacité</a> pour voir si ta journée est réaliste.</div>';
+    var over = planned > cap, pct = Math.min(100, Math.round(planned / cap * 100)), free = Math.max(0, cap - planned);
+    return '<div class="cap"><b>' + fmtMin(planned) + '</b> prévues · ' + (over ? ('<b style="color:#a23c28">+' + fmtMin(planned - cap) + '</b> au-delà de ta capacité') : ('<b>' + fmtMin(free) + '</b> encore dispo')) + '<div class="track"><i style="width:' + pct + '%' + (over ? ';background:#a23c28' : '') + '"></i></div></div>';
+  }
   function mtFocusRow(t, showMode) {
     var dn = t.status === 'done';
     var today = mtIsToday(t);
@@ -2569,28 +2597,24 @@
     var metaBits = [];
     if (mins) metaBits.push(fmtMin(mins));
     if (t.dueDate) metaBits.push((overdue ? 'en retard · ' : 'échéance ') + fmtDate(t.dueDate));
-    if (t.impact === 'fort') metaBits.push('⭐ fort');
+    if (t.impact === 'fort') metaBits.push('impact fort');
     var meta = metaBits.join(' · ');
-    var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
-    var noteMark = ((t.notes && String(t.notes).trim()) || subs.length) ? '📝' + (subs.length ? ' ' + subs.filter(function (s) { return s.done; }).length + '/' + subs.length : '') : '';
     var timerBtn = running
-      ? '<button class="pbtn" style="color:var(--orange)" onclick="ADM.mtPause(\'' + t.id + '\')" title="Pause">⏸</button>'
-      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')" title="Démarrer le chrono">▶</button>';
+      ? '<button class="act" style="color:var(--orange);opacity:1" onclick="ADM.mtPause(\'' + t.id + '\')" title="Pause">' + mtSvg('pause', 13) + '</button>'
+      : '<button class="act" onclick="ADM.mtStart(\'' + t.id + '\')" title="Démarrer le chrono">' + mtSvg('play', 13) + '</button>';
     var toggleBtn = today
-      ? '<button class="pbtn" title="Retirer d\'aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">Retirer</button>'
-      : '<button class="pbtn" title="Planifier pour aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">📌 Aujourd\'hui</button>';
-    var moveBtn = '<button class="pbtn" title="Ranger (mode / idée)" onclick="ADM.mtMovePick(\'' + t.id + '\')">Ranger</button>';
-    return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid var(--bone-d)">' +
-      '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
-      (t.energy ? mtEnergyDot(t.energy) : '') +
-      '<span style="flex:1;min-width:0;cursor:pointer;overflow:hidden" onclick="ADM.mtEditOpen(\'' + t.id + '\')">' +
-        '<span style="font-size:14px;color:var(--terre)">' + esc(t.title) + '</span>' +
-        (showMode && t.mode ? ' ' + mtModePill(t.mode) : '') +
-        (meta ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:' + (overdue ? '#a23c28' : 'var(--muted)') + ';margin-left:8px">' + meta + '</span>' : '') +
+      ? '<button class="act" title="Retirer d\'aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">Retirer</button>'
+      : '<button class="act" title="Planifier pour aujourd\'hui" onclick="ADM.mtToggleToday(\'' + t.id + '\')">Aujourd\'hui</button>';
+    var moveBtn = '<button class="act" title="Ranger (mode / idée)" onclick="ADM.mtMovePick(\'' + t.id + '\')">Ranger</button>';
+    return '<div class="trow">' +
+      '<span class="cbx" title="Marquer comme fait" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')"></span>' +
+      mtEnergyBars(t.energy) +
+      '<span class="trow__t" onclick="ADM.mtEditOpen(\'' + t.id + '\')">' + esc(t.title) +
+        (showMode && t.mode ? mtFocusPill(t.mode) : '') +
+        (meta ? '<span class="trow__m" style="margin-left:8px' + (overdue ? ';color:#a23c28;opacity:1' : '') + '">' + meta + '</span>' : '') +
       '</span>' +
-      (t.clientName ? '<span class="micro" title="' + esc(t.clientName) + '" style="flex-shrink:0;text-transform:none;letter-spacing:0;color:var(--glycine-900);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(t.clientName) + '</span>' : '') +
-      (noteMark ? '<span style="color:var(--muted);font-size:11px;flex-shrink:0">' + noteMark + '</span>' : '') +
-      '<div class="row" style="gap:4px;flex-shrink:0">' + moveBtn + timerBtn + toggleBtn + '</div>' +
+      (t.clientName ? '<span class="cli" title="' + esc(t.clientName) + '" onclick="ADM.openClient(\'' + esc(t.clientKey) + '\')">' + esc(t.clientName) + '</span>' : '') +
+      '<span class="tacts">' + moveBtn + timerBtn + toggleBtn + '</span>' +
     '</div>';
   }
   function mtSectionHead(emoji, label, color, count, hint) {
@@ -2628,48 +2652,42 @@
   function mtFocusView(todo) {
     var today = todo.filter(mtIsToday);
     var rest = todo.filter(function (t) { return !mtIsToday(t); });
-    // Fin de la semaine courante (dimanche), pour « cette semaine ».
     var now = new Date(); now.setHours(0, 0, 0, 0);
     var weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + ((7 - now.getDay()) % 7)); weekEnd.setHours(23, 59, 59, 999);
     var weekN = rest.filter(function (t) { if (!t.doDate) return false; var d = new Date(t.doDate); return !isNaN(d) && d > now && d <= weekEnd; }).length;
     var waitingN = rest.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).length;
     var idees = rest.filter(function (t) { return t.mode === 'idee'; });
     var studioN = rest.filter(function (t) { return t.mode === 'studio'; }).length;
-    // Barre stratégique : où mettre ton énergie (pas un simple compteur).
-    var strat = '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px">' +
-      mtStratChip(today.length, 'Aujourd\'hui', 'mt-sec-today') +
-      mtStratChip(weekN, 'Cette semaine', 'mt-sec-today') +
-      mtStratChip(waitingN, 'En attente', 'mt-sec-organisation') +
-      mtStratChip(studioN, 'Projets', 'mt-sec-studio') +
-      mtStratChip(idees.length, 'Idées', 'mt-sec-idee') +
-    '</div>';
-    // 🎯 Aujourd'hui
+    function tile(n, l, tgt) { return '<button class="tile" onclick="ADM.mtScrollTo(\'' + tgt + '\')"><b>' + n + '</b><span>' + l + '</span></button>'; }
+    var tiles = '<div class="tiles">' +
+      tile(today.length, 'Aujourd\'hui', 'mt-sec-today') + tile(weekN, 'Cette semaine', 'mt-sec-today') +
+      tile(waitingN, 'En attente', 'mt-sec-organisation') + tile(studioN, 'Projets', 'mt-sec-studio') +
+      tile(idees.length, 'Idées', 'mt-sec-idee') + '</div>';
+    // Aujourd'hui (bloc mis en avant)
     var todaySorted = today.slice().sort(function (a, b) { return mtTaskMinutes(b) - mtTaskMinutes(a); });
-    var todayHtml = '<div id="mt-sec-today">' + mtSectionHead('🎯', 'Aujourd\'hui', 'var(--terre)', today.length + (today.length ? ' tâche' + (today.length > 1 ? 's' : '') : ''), '') +
-      mtCapacityBar(today) +
+    var todayPanel = '<section class="tdy" id="mt-sec-today"><div class="tdy__h">' + mtSvg('today', 20) + '<h2>Aujourd\'hui</h2><span class="c">' + (today.length ? today.length + ' tâche' + (today.length > 1 ? 's' : '') : 'rien d\'épinglé') + '</span></div>' +
+      mtCapCard(today) +
       (today.length
-        ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden;margin-top:8px">' + todaySorted.map(function (t) { return mtFocusRow(t, true); }).join('') + '</div>'
-        : '<div style="border:1px dashed var(--bone-d);border-radius:13px;padding:20px;text-align:center;margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Rien de prévu aujourd\'hui. Épingle 3 à 5 tâches depuis les sections ci-dessous avec <strong>📌 Aujourd\'hui</strong>.</div></div>') +
-    '</div>';
-    // Sections par mode (hors aujourd'hui, hors idées)
-    var modesHtml = MT_MODES.filter(function (m) { return m[0] !== 'idee'; }).map(function (m) {
+        ? '<div class="list">' + todaySorted.map(function (t) { return mtFocusRow(t, true); }).join('') + '</div>'
+        : '<div class="secempty">Épingle 3 à 5 tâches depuis les sections ci-dessous avec « Aujourd\'hui ».</div>') +
+    '</section>';
+    // Sections par mode
+    function sec(iconKey, label, id, items) { return '<section class="sec"' + (id ? ' id="' + id + '"' : '') + '><div class="sec__h">' + mtSvg(iconKey, 19) + '<h3>' + label + '</h3><span class="c">' + items.length + '</span></div><div class="list">' + items.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div></section>'; }
+    var modeSecs = MT_MODES.filter(function (m) { return m[0] !== 'idee'; }).map(function (m) {
       var list = rest.filter(function (t) { return t.mode === m[0]; });
       if (!list.length) return '';
       list.sort(function (a, b) { return String(a.doDate || a.dueDate || '9999').localeCompare(String(b.doDate || b.dueDate || '9999')); });
-      return '<div id="mt-sec-' + m[0] + '">' + mtSectionHead(m[2], m[1], m[3], list.length, '') +
-        '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden">' + list.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div></div>';
-    }).join('');
-    // À classer (sans mode)
+      return sec(m[0], m[1], 'mt-sec-' + m[0], list);
+    }).filter(Boolean);
     var unclassed = rest.filter(function (t) { return !mtMode(t.mode); });
-    var unclassedHtml = unclassed.length ? '<div id="mt-sec-unclassed">' + mtSectionHead('🗂', 'À classer', 'var(--muted)', unclassed.length, 'donne un mode à ces tâches') +
-      '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden">' + unclassed.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div></div>' : '';
-    // 💡 Idées
-    var ideesHtml = '<div id="mt-sec-idee">' + mtSectionHead('💡', 'Idées', '#8a6f2e', idees.length, 'aucune date, aucune pression') +
+    if (unclassed.length) modeSecs.push(sec('unclassed', 'À classer', 'mt-sec-unclassed', unclassed));
+    var grid = modeSecs.length ? '<div class="grid2">' + modeSecs.join('') + '</div>' : '';
+    var idBlock = '<div id="mt-sec-idee" style="margin-top:22px">' +
       (idees.length
-        ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:13px;overflow:hidden">' + idees.map(function (t) { return mtFocusRow(t, false); }).join('') + '</div>'
-        : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:4px 2px">Note ici tout ce qui te passe par la tête — via « + Nouveau » → Idée.</div>') +
+        ? sec('idee', 'Idées', '', idees)
+        : '<div class="sec__h">' + mtSvg('idee', 19) + '<h3>Idées</h3></div><div class="secempty">Note ici tout ce qui te passe par la tête — via « + Nouveau » → Idée.</div>') +
     '</div>';
-    return strat + todayHtml + modesHtml + unclassedHtml + ideesHtml;
+    return tiles + todayPanel + grid + idBlock;
   }
   // Menu « Que veux-tu créer ? »
   var MT_CREATE_KIND = 'task';
