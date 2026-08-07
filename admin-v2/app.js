@@ -1319,16 +1319,29 @@
             ? (x.taskId ? { id: x.taskId, key: x.key, project: 'partner', timeSpentSeconds: x.timeSpentSeconds || 0 } : null)
             : { id: x.id, key: x.key, project: 'partner', timeSpentSeconds: x.timeSpentSeconds || 0 });
         var timerHtml = timeObj ? prioTimer(timeObj, false) : '';
-        return '<div class="prow"' + (flag ? ' style="background:' + flag + ';border-radius:9px"' : '') + '>' +
-          '<div class="prow__date">' + (refDate ? '<strong>' + fmtDate(refDate) + '</strong>' : '<strong>—</strong>') + '<span style="color:' + ageCol + ';font-weight:600">' + ageLbl + '</span></div>' +
-          '<div class="prow__main"><div class="prow__el">' + title + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div>' + linkLine + '</div>' +
-          '<div class="prow__act">' + timerHtml + badgeHtml + linkBtn +
-            (isReview ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
-            (isReview ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
-            (isReview ? '<button class="pbtn pbtn--ok" title="Valider toi-même et marquer terminé" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Valider</button>' : '') +
-            (w.kind === 'dlv' ? '<button class="pbtn pbtn--ok" title="Clôturer sans attendre la cliente" onclick="ADM.prioCloseDlv(\'' + x.key + '\',\'' + (x.project || 'partner') + '\',\'' + x.id + '\',\'' + (x.taskId || '') + '\')">Clôturer</button>' : '') +
-            (isStep ? '<button class="pbtn pbtn--ok" title="Marquer terminé sans attendre la cliente" onclick="ADM.prioDone(\'' + x.key + '\',\'' + (x.project || 'partner') + '\',\'step\',\'' + x.id + '\')">Clôturer</button>' : '') +
-            '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button></div></div>';
+        // Carte En attente : pastille date bien visible + ancienneté colorée + actions en pied.
+        var _dt = refDate ? new Date(refDate) : null;
+        var _dd = (_dt && !isNaN(_dt)) ? ('0' + _dt.getDate()).slice(-2) : '—';
+        var _mo = (_dt && !isNaN(_dt)) ? _dt.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') : '';
+        var _ageC = s >= 20 ? 'wage--hot' : (s >= 10 ? 'wage--warm' : (s > 0 ? 'wage--cool' : ''));
+        var _ageChip = s > 0 ? '<span class="wage ' + _ageC + '">' + s + ' j' + (s >= 5 ? ' · à relancer' : '') + '</span>' : '';
+        var _chip = isReview ? '<span class="wchip wchip--rev">Révision à faire</span>' : (isStep ? '<span class="wchip wchip--step">Étape</span>' : '<span class="wchip wchip--liv">Livrable</span>');
+        var _linkLine = reviewUrl ? '<div class="wc__link">🔗 <a href="' + esc(reviewUrl) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(x.reviewLink) + '</a></div>' : '';
+        var _acts = timerHtml + linkBtn +
+          (isReview ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
+          (isReview ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
+          (isReview ? '<button class="pbtn pbtn--ok" title="Valider toi-même et marquer terminé" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Valider</button>' : '') +
+          (w.kind === 'dlv' ? '<button class="pbtn pbtn--ok" title="Clôturer sans attendre la cliente" onclick="ADM.prioCloseDlv(\'' + x.key + '\',\'' + (x.project || 'partner') + '\',\'' + x.id + '\',\'' + (x.taskId || '') + '\')">Clôturer</button>' : '') +
+          (isStep ? '<button class="pbtn pbtn--ok" title="Marquer terminé sans attendre la cliente" onclick="ADM.prioDone(\'' + x.key + '\',\'' + (x.project || 'partner') + '\',\'step\',\'' + x.id + '\')">Clôturer</button>' : '') +
+          '<button class="pbtn" title="Envoyer un rappel par mail" onclick="ADM.remind(\'' + x.key + '\',\'' + kindArg + '\',\'' + titleArg + '\',\'' + jsq(x.projectLabel) + '\')">Relancer</button>';
+        return '<div class="wc">' +
+          '<div class="wc__head"><div class="wdate"><b>' + _dd + '</b>' + (_mo ? '<span>' + _mo + '</span>' : '') + '</div>' +
+            '<div class="wc__mid"><div class="wc__row1">' + _chip + _ageChip + '</div>' +
+              '<div class="wc__t">' + title + '</div>' +
+              '<div class="wc__c"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + (isReview ? ' · en attente de sa révision' : '') + '</div>' +
+              _linkLine +
+            '</div></div>' +
+          '<div class="wc__foot">' + _acts + '</div></div>';
       }
       var waitHtml = waitAll.map(waitRow).join('');
 
@@ -1469,7 +1482,7 @@
         '<div class="today">' + P2_todayBody + '</div></section>';
       var blockLate = P2_late.length ? '<section class="panel panel--nuit"><div class="panel__h"><span class="tag">En retard · ' + P2_late.length + '</span><h2>À rattraper</h2></div>' +
         P2_late.map(function (x) { return p2Drow(x, true, '#f4a48f'); }).join('') + '</section>' : '';
-      var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div>' + waitHtml + '</section>' : '';
+      var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div><div class="wgrid">' + waitHtml + '</div></section>' : '';
       // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
       var P2_days = {};
       function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
@@ -1486,10 +1499,7 @@
       function p2DayLabel(k) { if (k === 'zzz' || !k) return 'À planifier'; var dt = new Date(k); var s = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); }
       var blockWeekBody = P2_dayKeys.map(function (k) { return '<div class="dayhead">' + p2DayLabel(k) + '</div>' + P2_days[k].join(''); }).join('');
       var blockWeek = blockWeekBody ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div>' + blockWeekBody + '</section>' : '';
-      var P2_board = '<div class="board">' + blockToday;
-      if (blockLate && blockWait) P2_board += '<div class="row2 row2--a">' + blockLate + blockWait + '</div>';
-      else P2_board += (blockLate || '') + (blockWait || '');
-      P2_board += blockWeek + '</div>';
+      var P2_board = '<div class="board">' + blockToday + (blockLate || '') + (blockWait || '') + blockWeek + '</div>';
 
       // Accueil + bande de compteurs (repris du prototype)
       var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';
