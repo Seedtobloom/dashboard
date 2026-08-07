@@ -516,6 +516,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .cl2 .prj .dec+.dec{border-top:1px solid var(--line)}
 .cl2 .prj .dec .ok{color:var(--brun);display:inline-flex}
 .cl2 .prj .dec .ok svg{width:15px;height:15px}
+.cl2 .prj .tdue{margin-left:auto;font-family:var(--font-micro);font-size:11px;color:var(--brun);opacity:.72;white-space:nowrap}
+.cl2 .prj .tdue + .todo__a{margin-left:14px}
 /* bloc En attente — cartes 2 colonnes, date en évidence */
 .prio2 .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:820px){.prio2 .wgrid{grid-template-columns:1fr}}

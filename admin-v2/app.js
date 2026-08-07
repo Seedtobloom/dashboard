@@ -3861,8 +3861,8 @@
     if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['questionnaire', 'Questionnaire', qn]);
     s.push(['msg', 'Messages', d.unread || 0]);
-    // Aperçu (console de synthèse) en tête, pour les projets à étapes.
-    if (!isSupport && d.content.suivi !== undefined) s.unshift(['apercu', 'Aperçu', 0]);
+    // Aperçu (console de synthèse) en tête : projets à étapes + Partenaire créative.
+    if (!isSupport && (d.content.suivi !== undefined || d.id === 'partner')) s.unshift(['apercu', 'Aperçu', 0]);
     return s;
   }
   function subtab(domId, key) { SUBTAB[domId] = key; renderTab(); }
@@ -5118,45 +5118,72 @@
     var who = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || (CUR.entreprise && CUR.entreprise.nom) || CUR.key;
     var label = DOMAIN_LABELS[d.id] || d.label || 'Projet';
     var steps = (d.content.suivi || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
-    var total = steps.length, done = steps.filter(function (s) { return s.status === 'done'; }).length;
-    var pct = total ? Math.round(done / total * 100) : 0;
-    var dates = steps.map(function (s) { return s.date; }).filter(Boolean).sort();
-    var livraison = dates.length ? dates[dates.length - 1] : '';
-    var current = steps.filter(function (s) { return s.status === 'in_progress'; })[0];
-    var nextStep = steps.filter(function (s) { return s.status !== 'done'; })[0];
     var livr = Array.isArray(d.content.livrables) ? d.content.livrables : [];
-    var stMap = { done: 'done', in_progress: 'now', waiting_client: 'now', upcoming: 'up' };
-    var tline = total ? steps.map(function (s) {
-      var st = stMap[s.status] || 'up';
-      return '<div class="tstep ' + st + '"><span class="dm"></span><div class="tstep__t">' + esc(s.title) + '</div><div class="tstep__d">' + (s.date ? 'prévu ' + fmtDate(s.date) : '—') + (s.status === 'done' && s.completedAt ? ' · <b>fait ' + fmtDate(s.completedAt) + '</b>' : '') + '</div></div>';
-    }).join('') : '<div class="prjmuted">Aucune étape encore — ajoute-les dans l\'onglet « Étapes ».</div>';
-    // à faire (de ton côté)
-    var todos = [];
-    livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Déposer une nouvelle version — ' + esc(l.name || 'livrable'), 'liv']); });
-    steps.filter(function (s) { return s.status === 'in_progress'; }).forEach(function (s) { todos.push(['Étape', 'Avancer : ' + esc(s.title), 'suivi']); });
-    if (d.unread) todos.push(['Messages', d.unread + ' message' + (d.unread > 1 ? 's' : '') + ' à lire', 'msg']);
-    var todoHtml = todos.length ? todos.map(function (t) { return '<div class="todo__r"><span class="todo__tag">' + t[0] + '</span>' + t[1] + '<button class="todo__a" onclick="ADM.subtab(\'' + d.id + '\',\'' + t[2] + '\')">Ouvrir</button></div>'; }).join('') : '<div class="todo__empty">Rien d\'urgent de ton côté. 🌿</div>';
-    var nextAction = current ? current.title : (nextStep ? nextStep.title : 'Projet à jour — rien à faire dans l\'immédiat.');
-    // ce qui bloque (côté cliente)
-    var waitSteps = steps.filter(function (s) { return s.status === 'waiting_client'; });
-    var aValider = livr.filter(function (l) { return l.status === 'a_valider'; });
-    var blocker = waitSteps.length ? ('En attente de la cliente — ' + esc(waitSteps[0].title)) : (aValider.length ? ('En attente de validation — ' + esc(aValider[0].name || 'livrable')) : '');
-    // décisions = livrables validés
+    var taches = Array.isArray(d.content.taches) ? d.content.taches.filter(function (t) { return !t.archived; }) : [];
+    var mode = steps.length ? 'steps' : (d.id === 'partner' ? 'tasks' : 'steps');
+    var pct, done, total, livraison = '', nextLabel = '', avanTitle, avanHtml;
+    var todos = [], nextAction, blocker = '', jHtml, enbref;
+    var TL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' };
     var validated = livr.filter(function (l) { return l.status === 'valide' || l.status === 'validé'; });
     var decHtml = validated.length ? validated.slice(0, 6).map(function (l) { return '<div class="dec"><span class="ok">' + CHECK + '</span>' + esc(l.name || 'Livrable') + '</div>'; }).join('') : '<div class="prjmuted">Les livrables validés apparaîtront ici.</div>';
-    // journal = étapes terminées, récentes d'abord
-    var jitems = steps.filter(function (s) { return s.status === 'done' && (s.completedAt || s.date); }).sort(function (a, b) { return String(b.completedAt || b.date).localeCompare(String(a.completedAt || a.date)); }).slice(0, 5);
-    var jHtml = jitems.length ? jitems.map(function (s) { return '<div class="jent"><div class="jent__d">' + fmtDate(s.completedAt || s.date) + '</div><div class="jent__t">Étape terminée : ' + esc(s.title) + '.</div></div>'; }).join('') : '<div class="prjmuted">L\'historique s\'écrira au fil des étapes terminées.</div>';
-    var enbref = '<div class="kv"><span class="k">Offre</span><span class="v">' + esc(label) + '</span></div>' +
-      (livraison ? '<div class="kv"><span class="k">Livraison</span><span class="v">' + fmtDate(livraison) + '</span></div>' : '') +
-      (nextStep ? '<div class="kv"><span class="k">Prochain jalon</span><span class="v">' + esc(nextStep.title) + (nextStep.date ? ' · ' + fmtDate(nextStep.date) : '') + '</span></div>' : '') +
-      '<div class="kv"><span class="k">Étapes</span><span class="v">' + done + ' / ' + total + '</span></div>';
+    var aValider = livr.filter(function (l) { return l.status === 'a_valider'; });
+
+    if (mode === 'steps') {
+      total = steps.length; done = steps.filter(function (s) { return s.status === 'done'; }).length;
+      pct = total ? Math.round(done / total * 100) : 0;
+      var dates = steps.map(function (s) { return s.date; }).filter(Boolean).sort();
+      livraison = dates.length ? dates[dates.length - 1] : '';
+      var current = steps.filter(function (s) { return s.status === 'in_progress'; })[0];
+      var nextStep = steps.filter(function (s) { return s.status !== 'done'; })[0];
+      var stMap = { done: 'done', in_progress: 'now', waiting_client: 'now', upcoming: 'up' };
+      avanTitle = 'Là où on en est';
+      avanHtml = '<div class="tline">' + (total ? steps.map(function (s) {
+        var st = stMap[s.status] || 'up';
+        return '<div class="tstep ' + st + '"><span class="dm"></span><div class="tstep__t">' + esc(s.title) + '</div><div class="tstep__d">' + (s.date ? 'prévu ' + fmtDate(s.date) : '—') + (s.status === 'done' && s.completedAt ? ' · <b>fait ' + fmtDate(s.completedAt) + '</b>' : '') + '</div></div>';
+      }).join('') : '<div class="prjmuted">Aucune étape encore — ajoute-les dans « Étapes ».</div>') + '</div>';
+      livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Déposer une nouvelle version — ' + esc(l.name || 'livrable'), 'liv']); });
+      steps.filter(function (s) { return s.status === 'in_progress'; }).forEach(function (s) { todos.push(['Étape', 'Avancer : ' + esc(s.title), 'suivi']); });
+      nextAction = current ? current.title : (nextStep ? nextStep.title : 'Projet à jour — rien dans l\'immédiat.');
+      var waitSteps = steps.filter(function (s) { return s.status === 'waiting_client'; });
+      blocker = waitSteps.length ? ('En attente de la cliente — ' + esc(waitSteps[0].title)) : (aValider.length ? ('En attente de validation — ' + esc(aValider[0].name || 'livrable')) : '');
+      var jst = steps.filter(function (s) { return s.status === 'done' && (s.completedAt || s.date); }).sort(function (a, b) { return String(b.completedAt || b.date).localeCompare(String(a.completedAt || a.date)); }).slice(0, 5);
+      jHtml = jst.length ? jst.map(function (s) { return '<div class="jent"><div class="jent__d">' + fmtDate(s.completedAt || s.date) + '</div><div class="jent__t">Étape terminée : ' + esc(s.title) + '.</div></div>'; }).join('') : '<div class="prjmuted">L\'historique s\'écrira au fil des étapes.</div>';
+      enbref = '<div class="kv"><span class="k">Offre</span><span class="v">' + esc(label) + '</span></div>' +
+        (livraison ? '<div class="kv"><span class="k">Livraison</span><span class="v">' + fmtDate(livraison) + '</span></div>' : '') +
+        (nextStep ? '<div class="kv"><span class="k">Prochain jalon</span><span class="v">' + esc(nextStep.title) + (nextStep.date ? ' · ' + fmtDate(nextStep.date) : '') + '</span></div>' : '') +
+        '<div class="kv"><span class="k">Étapes</span><span class="v">' + done + ' / ' + total + '</span></div>';
+    } else {
+      // mode « tâches » (Partenaire créative)
+      total = taches.length; done = taches.filter(function (t) { return t.status === 'done'; }).length;
+      pct = total ? Math.round(done / total * 100) : 0;
+      var active = taches.filter(function (t) { return t.status !== 'done'; }).sort(function (a, b) { return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')); });
+      var todo0 = active.filter(function (t) { return t.status === 'in_progress'; })[0] || active.filter(function (t) { return t.status === 'todo'; })[0];
+      var nextDue = active.map(function (t) { return t.dueDate; }).filter(Boolean).sort()[0];
+      avanTitle = 'Les tâches en cours';
+      avanHtml = '<div class="todo" style="border-top:none;padding-top:0">' + (active.length ? active.slice(0, 10).map(function (t) {
+        return '<div class="todo__r"><span class="todo__tag">' + (TL[t.status] || t.status) + '</span>' + esc(t.title) + (t.dueDate ? '<span class="tdue">' + fmtDate(t.dueDate) + '</span>' : '') + '<button class="todo__a" onclick="ADM.subtab(\'' + d.id + '\',\'taches\')">Ouvrir</button></div>';
+      }).join('') : '<div class="prjmuted">Aucune tâche en cours.</div>') + '</div>';
+      taches.filter(function (t) { return t.needsRework; }).forEach(function (t) { todos.push(['À retravailler', esc(t.title), 'taches']); });
+      taches.filter(function (t) { return t.status === 'in_progress'; }).slice(0, 4).forEach(function (t) { todos.push(['En cours', esc(t.title), 'taches']); });
+      livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Nouvelle version — ' + esc(l.name || 'livrable'), 'taches']); });
+      if (d.unread) todos.push(['Messages', d.unread + ' message' + (d.unread > 1 ? 's' : '') + ' à lire', 'msg']);
+      nextAction = todo0 ? todo0.title : 'Tout est traité côté studio.';
+      var reviewN = taches.filter(function (t) { return t.status === 'review'; });
+      blocker = reviewN.length ? (reviewN.length + ' tâche' + (reviewN.length > 1 ? 's' : '') + ' en attente de validation de la cliente') : (aValider.length ? ('En attente de validation — ' + esc(aValider[0].name || 'livrable')) : '');
+      var jt = taches.filter(function (t) { return t.status === 'done' && t.completedAt; }).sort(function (a, b) { return String(b.completedAt).localeCompare(String(a.completedAt)); }).slice(0, 5);
+      jHtml = jt.length ? jt.map(function (t) { return '<div class="jent"><div class="jent__d">' + fmtDate(t.completedAt) + '</div><div class="jent__t">Tâche terminée : ' + esc(t.title) + '.</div></div>'; }).join('') : '<div class="prjmuted">L\'historique s\'écrira au fil des tâches terminées.</div>';
+      enbref = '<div class="kv"><span class="k">Offre</span><span class="v">' + esc(label) + '</span></div>' +
+        '<div class="kv"><span class="k">Tâches faites</span><span class="v">' + done + ' / ' + total + '</span></div>' +
+        (nextDue ? '<div class="kv"><span class="k">Prochaine échéance</span><span class="v">' + fmtDate(nextDue) + '</span></div>' : '') +
+        '<div class="kv"><span class="k">En cours</span><span class="v">' + active.length + '</span></div>';
+    }
+    var todoHtml = todos.length ? todos.map(function (t) { return '<div class="todo__r"><span class="todo__tag">' + t[0] + '</span>' + t[1] + '<button class="todo__a" onclick="ADM.subtab(\'' + d.id + '\',\'' + t[2] + '\')">Ouvrir</button></div>'; }).join('') : '<div class="todo__empty">Rien d\'urgent de ton côté. 🌿</div>';
     return '<div class="prj">' +
       '<section class="phero"><span class="mk it">' + esc((who[0] || '?').toUpperCase()) + '</span><div class="phero__grid">' +
         '<div><p class="eyebrow">' + esc(label) + ' · ' + esc(who) + '</p><h1 class="phero__t">' + esc(label) + '</h1>' + (livraison ? '<p class="phero__s">Livraison prévue le ' + fmtDate(livraison) + '</p>' : '') + '</div>' +
         '<div class="phero__pct"><b>' + pct + '<span style="font-size:.5em">%</span></b><span class="l">avancement</span><div class="phero__bar"><i style="width:' + pct + '%"></i></div></div>' +
       '</div></section>' +
-      '<section class="block block--full"><div class="sect__h"><p class="eyebrow">Avancement</p><h2 class="it">Là où on en est</h2></div><div class="tline">' + tline + '</div></section>' +
+      '<section class="block block--full"><div class="sect__h"><p class="eyebrow">Avancement</p><h2 class="it">' + avanTitle + '</h2></div>' + avanHtml + '</section>' +
       '<div class="pgrid"><div class="col">' +
         '<section class="now"><p class="eyebrow dim">À faire maintenant</p><p class="now__act">' + esc(nextAction) + '</p><div class="todo">' + todoHtml + '</div></section>' +
         '<section class="block"><div class="sect__h"><p class="eyebrow">Journal</p><h2 class="it">Ce qu\'il faut se rappeler</h2></div><div class="jrnl">' + jHtml + '</div></section>' +
