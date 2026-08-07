@@ -3819,7 +3819,8 @@
       return '<button class="subtab' + (cur === x[0] ? ' active' : '') + '" onclick="ADM.subtab(\'' + d.id + '\',\'' + x[0] + '\')">' + esc(x[1]) + (x[2] > 0 ? ' ' + badge(x[2]) : '') + '</button>';
     }).join('') + '</div>';
     var content = '';
-    if (cur === 'tickets') content = maintTickets(d);
+    if (cur === 'apercu') content = apercuCard(d);
+    else if (cur === 'tickets') content = maintTickets(d);
     else if (cur === 'creations') content = creationsGallery(d);
     else if (cur === 'planning') content = planningTab(d);
     else if (cur === 'forfait') content = partnerForfait(d);
@@ -3860,6 +3861,8 @@
     if (Array.isArray(d.content.livrables) && !isSupport) s.push(['liv', 'Livrables', (d.content.livrables || []).length]);
     s.push(['questionnaire', 'Questionnaire', qn]);
     s.push(['msg', 'Messages', d.unread || 0]);
+    // Aperçu (console de synthèse) en tête, pour les projets à étapes.
+    if (!isSupport && d.content.suivi !== undefined) s.unshift(['apercu', 'Aperçu', 0]);
     return s;
   }
   function subtab(domId, key) { SUBTAB[domId] = key; renderTab(); }
@@ -5107,6 +5110,63 @@
   function taskComment(pid, id) { var i = el('cm-' + id); var v = (i.value || '').trim(); if (!v) return; jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/comments', { projectId: pid, text: v }).then(function (r) { if (r.ok) { toast('Commentaire envoyé'); loadClient(); } }); }
 
   /* suivi (étapes) */
+  // Aperçu projet (console) : synthèse d'un domaine à partir de ses vraies
+  // données (étapes, livrables, messages). Lecture seule + raccourcis vers
+  // les sous-onglets ; aucune donnée modifiée ici.
+  function apercuCard(d) {
+    var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+    var who = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || (CUR.entreprise && CUR.entreprise.nom) || CUR.key;
+    var label = DOMAIN_LABELS[d.id] || d.label || 'Projet';
+    var steps = (d.content.suivi || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    var total = steps.length, done = steps.filter(function (s) { return s.status === 'done'; }).length;
+    var pct = total ? Math.round(done / total * 100) : 0;
+    var dates = steps.map(function (s) { return s.date; }).filter(Boolean).sort();
+    var livraison = dates.length ? dates[dates.length - 1] : '';
+    var current = steps.filter(function (s) { return s.status === 'in_progress'; })[0];
+    var nextStep = steps.filter(function (s) { return s.status !== 'done'; })[0];
+    var livr = Array.isArray(d.content.livrables) ? d.content.livrables : [];
+    var stMap = { done: 'done', in_progress: 'now', waiting_client: 'now', upcoming: 'up' };
+    var tline = total ? steps.map(function (s) {
+      var st = stMap[s.status] || 'up';
+      return '<div class="tstep ' + st + '"><span class="dm"></span><div class="tstep__t">' + esc(s.title) + '</div><div class="tstep__d">' + (s.date ? 'prévu ' + fmtDate(s.date) : '—') + (s.status === 'done' && s.completedAt ? ' · <b>fait ' + fmtDate(s.completedAt) + '</b>' : '') + '</div></div>';
+    }).join('') : '<div class="prjmuted">Aucune étape encore — ajoute-les dans l\'onglet « Étapes ».</div>';
+    // à faire (de ton côté)
+    var todos = [];
+    livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Déposer une nouvelle version — ' + esc(l.name || 'livrable'), 'liv']); });
+    steps.filter(function (s) { return s.status === 'in_progress'; }).forEach(function (s) { todos.push(['Étape', 'Avancer : ' + esc(s.title), 'suivi']); });
+    if (d.unread) todos.push(['Messages', d.unread + ' message' + (d.unread > 1 ? 's' : '') + ' à lire', 'msg']);
+    var todoHtml = todos.length ? todos.map(function (t) { return '<div class="todo__r"><span class="todo__tag">' + t[0] + '</span>' + t[1] + '<button class="todo__a" onclick="ADM.subtab(\'' + d.id + '\',\'' + t[2] + '\')">Ouvrir</button></div>'; }).join('') : '<div class="todo__empty">Rien d\'urgent de ton côté. 🌿</div>';
+    var nextAction = current ? current.title : (nextStep ? nextStep.title : 'Projet à jour — rien à faire dans l\'immédiat.');
+    // ce qui bloque (côté cliente)
+    var waitSteps = steps.filter(function (s) { return s.status === 'waiting_client'; });
+    var aValider = livr.filter(function (l) { return l.status === 'a_valider'; });
+    var blocker = waitSteps.length ? ('En attente de la cliente — ' + esc(waitSteps[0].title)) : (aValider.length ? ('En attente de validation — ' + esc(aValider[0].name || 'livrable')) : '');
+    // décisions = livrables validés
+    var validated = livr.filter(function (l) { return l.status === 'valide' || l.status === 'validé'; });
+    var decHtml = validated.length ? validated.slice(0, 6).map(function (l) { return '<div class="dec"><span class="ok">' + CHECK + '</span>' + esc(l.name || 'Livrable') + '</div>'; }).join('') : '<div class="prjmuted">Les livrables validés apparaîtront ici.</div>';
+    // journal = étapes terminées, récentes d'abord
+    var jitems = steps.filter(function (s) { return s.status === 'done' && (s.completedAt || s.date); }).sort(function (a, b) { return String(b.completedAt || b.date).localeCompare(String(a.completedAt || a.date)); }).slice(0, 5);
+    var jHtml = jitems.length ? jitems.map(function (s) { return '<div class="jent"><div class="jent__d">' + fmtDate(s.completedAt || s.date) + '</div><div class="jent__t">Étape terminée : ' + esc(s.title) + '.</div></div>'; }).join('') : '<div class="prjmuted">L\'historique s\'écrira au fil des étapes terminées.</div>';
+    var enbref = '<div class="kv"><span class="k">Offre</span><span class="v">' + esc(label) + '</span></div>' +
+      (livraison ? '<div class="kv"><span class="k">Livraison</span><span class="v">' + fmtDate(livraison) + '</span></div>' : '') +
+      (nextStep ? '<div class="kv"><span class="k">Prochain jalon</span><span class="v">' + esc(nextStep.title) + (nextStep.date ? ' · ' + fmtDate(nextStep.date) : '') + '</span></div>' : '') +
+      '<div class="kv"><span class="k">Étapes</span><span class="v">' + done + ' / ' + total + '</span></div>';
+    return '<div class="prj">' +
+      '<section class="phero"><span class="mk it">' + esc((who[0] || '?').toUpperCase()) + '</span><div class="phero__grid">' +
+        '<div><p class="eyebrow">' + esc(label) + ' · ' + esc(who) + '</p><h1 class="phero__t">' + esc(label) + '</h1>' + (livraison ? '<p class="phero__s">Livraison prévue le ' + fmtDate(livraison) + '</p>' : '') + '</div>' +
+        '<div class="phero__pct"><b>' + pct + '<span style="font-size:.5em">%</span></b><span class="l">avancement</span><div class="phero__bar"><i style="width:' + pct + '%"></i></div></div>' +
+      '</div></section>' +
+      '<section class="block block--full"><div class="sect__h"><p class="eyebrow">Avancement</p><h2 class="it">Là où on en est</h2></div><div class="tline">' + tline + '</div></section>' +
+      '<div class="pgrid"><div class="col">' +
+        '<section class="now"><p class="eyebrow dim">À faire maintenant</p><p class="now__act">' + esc(nextAction) + '</p><div class="todo">' + todoHtml + '</div></section>' +
+        '<section class="block"><div class="sect__h"><p class="eyebrow">Journal</p><h2 class="it">Ce qu\'il faut se rappeler</h2></div><div class="jrnl">' + jHtml + '</div></section>' +
+      '</div><div class="col">' +
+        (blocker ? '<div class="rcard rcard--wait"><h4>Ce qui bloque</h4><div class="w">' + blocker + '</div></div>' : '') +
+        '<div class="rcard"><h4>En bref</h4>' + enbref + '</div>' +
+        '<div class="rcard"><h4>Décisions · la mémoire</h4><div class="decis">' + decHtml + '</div></div>' +
+      '</div></div>' +
+    '</div>';
+  }
   function suiviCard(d) {
     var steps = (d.content.suivi || []).slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
     var rows = steps.length ? steps.map(function (s) {
