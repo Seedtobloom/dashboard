@@ -188,7 +188,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-fcard__d b { width: 7px; height: 7px; border-radius: 50%; background: var(--terre); flex-shrink: 0; }
 .cp-fcard--now .cp-fcard__d { opacity: 1; color: var(--terre); }
 .cp-fcard--now .cp-fcard__d b { background: var(--terre); }
-.cp-fcard__t { font-family: var(--font-display); font-style: italic; font-size: clamp(17px, 1.9vw, 20px); color: var(--terre); line-height: 1.3; }
+.cp-fcard__t { font-family: var(--font-micro); font-size: 14.5px; font-weight: 500; color: var(--terre); line-height: 1.45; }
 
 /* Sous-titre d'accueil (maquette : « Voici où on en est… ») */
 .cp-home__lead { font-family: var(--font-micro); font-size: 15.5px; color: var(--terre); opacity: 0.85; line-height: 1.5; max-width: 46ch; margin: 11px 2px 30px; }
@@ -1187,7 +1187,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (stats.length < 2) return '';
     var tiles = stats.map(function(s, i) {
       return '<div style="flex:1;min-width:96px;padding:14px 16px' + (i ? ';border-left:1px solid var(--bone-d)' : '') + '">' +
-        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:27px;color:var(--terre);line-height:1">' + esc(s[0]) + '</div>' +
+        '<div style="font-family:var(--font-display,serif);font-weight:600;font-size:30px;color:var(--terre);line-height:0.9">' + esc(s[0]) + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--terre-400);margin-top:4px">' + esc(s[1]) + '</div>' +
       '</div>';
     }).join('');
