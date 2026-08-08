@@ -493,7 +493,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 /* un support = un « spanel » */
 .cp-spanel { background: var(--surface); border-radius: 20px; padding: clamp(18px,2vw,26px); margin-top: 16px; }
 .cp-spanel__h { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.cp-spanel__ic { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--brume); color: var(--terre); }
+.cp-spanel__ic { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--glycine); border: 1px solid rgba(87,59,138,0.18); color: var(--terre); }
 .cp-spanel__t { font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: var(--terre); }
 .cp-spanel__meta { font-family: var(--font-micro); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 5px; }
 .cp-spanel__st { margin-left: auto; font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 99px; background: #fff; color: var(--terre); }
@@ -2848,7 +2848,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (creations.length) {
         var CR_TY = { print:'Support print', digital:'Support digital', reseaux:'Réseaux sociaux', evenementiel:'Événementiel', autre:'Support' };
         var CR_IC = { print:'image', digital:'image', reseaux:'chat', evenementiel:'calendar', autre:'file' };
-        var CR_ICBG = { print:'var(--paille)', digital:'var(--brume)', reseaux:'var(--glycine)', evenementiel:'#e8f0e3', autre:'var(--brume)' };
+        var CR_ICBG = { print:'var(--glycine)', digital:'var(--glycine)', reseaux:'var(--glycine)', evenementiel:'var(--glycine)', autre:'var(--glycine)' };
         var CR_ST = { a_preparer:['À préparer',false], en_creation:['En création',true], attente_client:['Vos retours',true], revision:['En révision',true], valide:['Terminée',false], archive:['Archivée',false] };
         var spanels = creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });

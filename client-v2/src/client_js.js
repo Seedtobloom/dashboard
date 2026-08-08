@@ -2321,7 +2321,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (creations.length) {
         var CR_TY = { print:'Support print', digital:'Support digital', reseaux:'Réseaux sociaux', evenementiel:'Événementiel', autre:'Support' };
         var CR_IC = { print:'image', digital:'image', reseaux:'chat', evenementiel:'calendar', autre:'file' };
-        var CR_ICBG = { print:'var(--paille)', digital:'var(--brume)', reseaux:'var(--glycine)', evenementiel:'#e8f0e3', autre:'var(--brume)' };
+        var CR_ICBG = { print:'var(--glycine)', digital:'var(--glycine)', reseaux:'var(--glycine)', evenementiel:'var(--glycine)', autre:'var(--glycine)' };
         var CR_ST = { a_preparer:['À préparer',false], en_creation:['En création',true], attente_client:['Vos retours',true], revision:['En révision',true], valide:['Terminée',false], archive:['Archivée',false] };
         var spanels = creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
