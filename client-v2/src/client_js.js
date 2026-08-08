@@ -2291,7 +2291,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
       // Bannière (reprise de la maquette « Support de communication »).
       var spBanner = '<section class="cp-sp__banner">' +
-        cpIcon('image', 120, 'position:absolute;right:2%;top:-14%;opacity:0.10;color:var(--glycine)') +
         '<p class="cp-sp__eyebrow">Support de communication</p>' +
         '<h1 class="cp-sp__h1">' + esc(project.projectTitle || 'Support de com') + '</h1>' +
         '<p class="cp-sp__lead">Vos supports, leurs versions et leur planning — au même endroit.</p>' +
@@ -2350,7 +2349,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           // Retours + versions (fonctionnel : télécharger / valider / réviser).
           var revMsg = cliRevMsg(revMax, revUsed);
           var revBlock = revMax ? (
-            '<div style="margin-top:20px;padding:14px 16px;background:#fff;border:1px solid var(--bone-d);border-radius:13px">' +
+            '<div style="margin-top:20px;padding:14px 16px;background:#fff;border:1px solid var(--bone-d);border-radius:12px">' +
               '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">' +
                 '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.1;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
                 '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
@@ -6451,6 +6450,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function renderShell(opts) {
     // Avant tout re-rendu, on sauve l'étape de questionnaire en cours (nav vers une autre section, etc.).
     if (typeof cpQnrFlush === 'function') cpQnrFlush();
+    // Mémorise la vue courante pour la restaurer au rafraîchissement (voir renderApp).
+    try { localStorage.setItem('cp-lastview-' + ((typeof TOKEN !== 'undefined' && TOKEN) ? TOKEN : ''), JSON.stringify({ v: currentView, id: currentId })); } catch(e) {}
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
     // Optimisation : ne reconstruire que cp-main si la sidebar est déjà là
     var mainEl = !opts || !opts.full ? document.getElementById('cp-main') : null;
@@ -6616,6 +6617,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     convoId = currentId;
     clientInitial = (appData.clientName||'C').charAt(0).toUpperCase();
     currentView = portal ? 'home' : 'project';
+    // Restaure la dernière vue consultée (persistée dans renderShell) si elle est
+    // toujours valide — pour ne pas retomber sur l'accueil à chaque rafraîchissement.
+    try {
+      var _lv = JSON.parse(localStorage.getItem('cp-lastview-' + ((typeof TOKEN !== 'undefined' && TOKEN) ? TOKEN : '')) || 'null');
+      if (_lv && _lv.v) {
+        if (_lv.v === 'project') {
+          if (_lv.id && appData.projects.some(function(pd){ return pd.project.id === _lv.id; })) { currentView = 'project'; currentId = _lv.id; }
+        } else if (['home','messages','questionnaires','livrables','fichiers','hub','stats','interventions','cal'].indexOf(_lv.v) !== -1) {
+          if (_lv.v !== 'home' || portal) { currentView = _lv.v; if (_lv.id) currentId = _lv.id; }
+        }
+      }
+    } catch(e) {}
     renderShell();
     startPoll();
     if (portal) setTimeout(cpShowOnboarding, 700);

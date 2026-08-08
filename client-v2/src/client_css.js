@@ -450,14 +450,14 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
    --surface→--surface  --nuit→--nuit  --ivoire→#f6efe6  --bg→#fff  --line→--bone-d
    ============================================================ */
 .cp-sp { max-width: 1040px; margin: 0 auto; }
-.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 22px; background: var(--terre); color: #f6efe6; }
+.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 20px; background: var(--terre); color: #f6efe6; }
 .cp-sp__eyebrow { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paille); position: relative; }
 .cp-sp__h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(30px,3.4vw,48px); line-height: 1; color: #fff; margin-top: 12px; position: relative; }
 .cp-sp__lead { font-family: var(--font-micro); font-size: clamp(15px,1.4vw,18px); color: var(--paille); opacity: 0.9; margin-top: 10px; max-width: 44ch; position: relative; }
 
 .cp-sp__row { display: grid; grid-template-columns: 1.7fr 1fr; gap: clamp(16px,1.8vw,26px); margin-top: clamp(18px,2vw,28px); }
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
-.cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 22px; background: var(--surface); }
+.cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
 .cp-sp__card--cta { background: var(--paille); display: flex; flex-direction: column; }
 .cp-sp__cardtop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cp-sp__kick { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--terre); display: inline-flex; align-items: center; gap: 9px; }
@@ -472,7 +472,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 /* un support = un « spanel » */
 .cp-spanel { background: var(--surface); border-radius: 20px; padding: clamp(18px,2vw,26px); margin-top: 16px; }
 .cp-spanel__h { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.cp-spanel__ic { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--brume); color: var(--terre); }
+.cp-spanel__ic { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--brume); color: var(--terre); }
 .cp-spanel__t { font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: var(--terre); }
 .cp-spanel__meta { font-family: var(--font-micro); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 5px; }
 .cp-spanel__st { margin-left: auto; font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 99px; background: #fff; color: var(--terre); }

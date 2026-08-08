@@ -471,14 +471,14 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
    --surface→--surface  --nuit→--nuit  --ivoire→#f6efe6  --bg→#fff  --line→--bone-d
    ============================================================ */
 .cp-sp { max-width: 1040px; margin: 0 auto; }
-.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 22px; background: var(--terre); color: #f6efe6; }
+.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 20px; background: var(--terre); color: #f6efe6; }
 .cp-sp__eyebrow { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paille); position: relative; }
 .cp-sp__h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(30px,3.4vw,48px); line-height: 1; color: #fff; margin-top: 12px; position: relative; }
 .cp-sp__lead { font-family: var(--font-micro); font-size: clamp(15px,1.4vw,18px); color: var(--paille); opacity: 0.9; margin-top: 10px; max-width: 44ch; position: relative; }
 
 .cp-sp__row { display: grid; grid-template-columns: 1.7fr 1fr; gap: clamp(16px,1.8vw,26px); margin-top: clamp(18px,2vw,28px); }
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
-.cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 22px; background: var(--surface); }
+.cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
 .cp-sp__card--cta { background: var(--paille); display: flex; flex-direction: column; }
 .cp-sp__cardtop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cp-sp__kick { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--terre); display: inline-flex; align-items: center; gap: 9px; }
@@ -493,7 +493,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 /* un support = un « spanel » */
 .cp-spanel { background: var(--surface); border-radius: 20px; padding: clamp(18px,2vw,26px); margin-top: 16px; }
 .cp-spanel__h { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.cp-spanel__ic { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--brume); color: var(--terre); }
+.cp-spanel__ic { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--brume); color: var(--terre); }
 .cp-spanel__t { font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: var(--terre); }
 .cp-spanel__meta { font-family: var(--font-micro); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 5px; }
 .cp-spanel__st { margin-left: auto; font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 99px; background: #fff; color: var(--terre); }
@@ -2818,7 +2818,6 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
       // Bannière (reprise de la maquette « Support de communication »).
       var spBanner = '<section class="cp-sp__banner">' +
-        cpIcon('image', 120, 'position:absolute;right:2%;top:-14%;opacity:0.10;color:var(--glycine)') +
         '<p class="cp-sp__eyebrow">Support de communication</p>' +
         '<h1 class="cp-sp__h1">' + esc(project.projectTitle || 'Support de com') + '</h1>' +
         '<p class="cp-sp__lead">Vos supports, leurs versions et leur planning, au même endroit.</p>' +
@@ -2877,7 +2876,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           // Retours + versions (fonctionnel : télécharger / valider / réviser).
           var revMsg = cliRevMsg(revMax, revUsed);
           var revBlock = revMax ? (
-            '<div style="margin-top:20px;padding:14px 16px;background:#fff;border:1px solid var(--bone-d);border-radius:13px">' +
+            '<div style="margin-top:20px;padding:14px 16px;background:#fff;border:1px solid var(--bone-d);border-radius:12px">' +
               '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">' +
                 '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.1;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
                 '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
@@ -6981,6 +6980,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function renderShell(opts) {
     // Avant tout re-rendu, on sauve l'étape de questionnaire en cours (nav vers une autre section, etc.).
     if (typeof cpQnrFlush === 'function') cpQnrFlush();
+    // Mémorise la vue courante pour la restaurer au rafraîchissement (voir renderApp).
+    try { localStorage.setItem('cp-lastview-' + ((typeof TOKEN !== 'undefined' && TOKEN) ? TOKEN : ''), JSON.stringify({ v: currentView, id: currentId })); } catch(e) {}
     var scrollY = (opts && opts.resetScroll) ? 0 : window.scrollY;
     // Optimisation : ne reconstruire que cp-main si la sidebar est déjà là
     var mainEl = !opts || !opts.full ? document.getElementById('cp-main') : null;
@@ -7146,6 +7147,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     convoId = currentId;
     clientInitial = (appData.clientName||'C').charAt(0).toUpperCase();
     currentView = portal ? 'home' : 'project';
+    // Restaure la dernière vue consultée (persistée dans renderShell) si elle est
+    // toujours valide, pour ne pas retomber sur l'accueil à chaque rafraîchissement.
+    try {
+      var _lv = JSON.parse(localStorage.getItem('cp-lastview-' + ((typeof TOKEN !== 'undefined' && TOKEN) ? TOKEN : '')) || 'null');
+      if (_lv && _lv.v) {
+        if (_lv.v === 'project') {
+          if (_lv.id && appData.projects.some(function(pd){ return pd.project.id === _lv.id; })) { currentView = 'project'; currentId = _lv.id; }
+        } else if (['home','messages','questionnaires','livrables','fichiers','hub','stats','interventions','cal'].indexOf(_lv.v) !== -1) {
+          if (_lv.v !== 'home' || portal) { currentView = _lv.v; if (_lv.id) currentId = _lv.id; }
+        }
+      }
+    } catch(e) {}
     renderShell();
     startPoll();
     if (portal) setTimeout(cpShowOnboarding, 700);
