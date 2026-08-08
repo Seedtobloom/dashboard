@@ -171,6 +171,14 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-top: auto; margin-bottom: 6px; }
 .cp-proj-bar__fill { height: 100%; border-radius: 999px; background: var(--brume-700); transition: width 0.8s var(--ease); }
 .cp-proj-card__pct { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); display: flex; justify-content: space-between; letter-spacing: 0.04em; text-transform: uppercase; }
+/* En-tête de section éditorial (grand titre italique + pastille compteur) */
+.cp-sech { display: flex; align-items: baseline; gap: 10px; margin: 4px 2px 14px; }
+.cp-sech h2 { font-family: var(--font-display); font-style: italic; font-size: clamp(22px, 2.7vw, 30px); color: var(--terre); font-weight: 400; margin: 0; }
+.cp-sech .c { font-family: var(--font-micro); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-400); margin-left: auto; }
+/* Eyebrow + sous-titre sous le bonjour */
+.cp-home__eyebrow { font-family: var(--font-micro); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--terre-400); margin-bottom: 8px; }
+.cp-home__intro { font-family: var(--font-body); font-size: 15.5px; color: var(--terre-600); line-height: 1.55; margin-bottom: 30px; max-width: 46ch; }
+
 /* Le fil de notre collaboration  petites cartes en colonnes, sans ligne */
 .cp-feed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 @media (max-width: 720px) { .cp-feed { grid-template-columns: 1fr; } }
@@ -1207,8 +1215,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div class="cp-fcard__t">' + esc(c.text) + '</div>' +
       '</div>';
     }).join('');
+    var ftn = cards.length + ' temps fort' + (cards.length > 1 ? 's' : '');
     return '<div style="margin-bottom:24px">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:10px">Le fil de notre collaboration</div>' +
+      '<div class="cp-sech"><h2>Le fil de notre collaboration</h2><span class="c">' + ftn + '</span></div>' +
       '<div class="cp-feed">' + cells + '</div>' +
     '</div>';
   }
@@ -1693,13 +1702,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var multiIntro = cpSecWrap(multiPid, 'intro', cpBuildEditableIntro(multiPid, false));
     var multiBlocks = cpBuildHomeBlocks(multiPid);
 
+    var espHeader = active.length
+      ? '<div class="cp-sech"><h2>Tes espaces</h2><span class="c">' + active.length + ' en cours</span></div>'
+      : '';
     return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
       ((_isAdminEdit || hbHasContent) ? homeBannerHtml :
-        '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
+        '<div class="cp-home__eyebrow">Ton espace · Seed to Bloom</div><h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
       ) +
       cpTodayCard() +
       cpValueStats() +
       multiBlocks +
+      espHeader +
       activeHtml +
       cpCollabFeed() +
       archivedHtml +

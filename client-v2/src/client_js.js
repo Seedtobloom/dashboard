@@ -763,8 +763,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-fcard__t">' + esc(c.text) + '</div>' +
       '</div>';
     }).join('');
+    var ftn = cards.length + ' temps fort' + (cards.length > 1 ? 's' : '');
     return '<div style="margin-bottom:24px">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:10px">Le fil de notre collaboration</div>' +
+      '<div class="cp-sech"><h2>Le fil de notre collaboration</h2><span class="c">' + ftn + '</span></div>' +
       '<div class="cp-feed">' + cells + '</div>' +
     '</div>';
   }
@@ -1249,13 +1250,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var multiIntro = cpSecWrap(multiPid, 'intro', cpBuildEditableIntro(multiPid, false));
     var multiBlocks = cpBuildHomeBlocks(multiPid);
 
+    var espHeader = active.length
+      ? '<div class="cp-sech"><h2>Tes espaces</h2><span class="c">' + active.length + ' en cours</span></div>'
+      : '';
     return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
       ((_isAdminEdit || hbHasContent) ? homeBannerHtml :
-        '<h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
+        '<div class="cp-home__eyebrow">Ton espace · Seed to Bloom</div><h1 class="cp-home__greeting">Bonjour ' + esc(appData.clientName) + '</h1>'
       ) +
       cpTodayCard() +
       cpValueStats() +
       multiIntro + multiBlocks +
+      espHeader +
       activeHtml +
       cpCollabFeed() +
       archivedHtml +
