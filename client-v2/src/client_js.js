@@ -716,7 +716,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (stats.length < 2) return '';
     var tiles = stats.map(function(s, i) {
       return '<div style="flex:1;min-width:96px;padding:14px 16px' + (i ? ';border-left:1px solid var(--bone-d)' : '') + '">' +
-        '<div style="font-family:var(--font-display,serif);font-weight:600;font-size:30px;color:var(--terre);line-height:0.9">' + esc(s[0]) + '</div>' +
+        '<div style="font-family:var(--font-micro);font-weight:600;font-size:26px;color:var(--terre);line-height:1;letter-spacing:-0.01em">' + esc(s[0]) + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--terre-400);margin-top:4px">' + esc(s[1]) + '</div>' +
       '</div>';
     }).join('');
