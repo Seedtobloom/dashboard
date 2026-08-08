@@ -4045,6 +4045,17 @@
       });
     });
   }
+  // Icônes SVG pour la refonte Créations/planning (cohérentes avec la DA).
+  var CG_IC = {
+    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+    download: '<path d="M12 4v10M8 11l4 4 4-4"/><path d="M5 19h14"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+    trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+    up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M18 13l-6 6-6-6"/>',
+    cal: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 9.5h16M8 3.5v4M16 3.5v4"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>'
+  };
+  function cgIcon(n, sz) { sz = sz || 14; return '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (CG_IC[n] || '') + '</svg>'; }
   var CR_TYPES = [['print', 'Print'], ['digital', 'Digital'], ['reseaux', 'Réseaux sociaux'], ['evenementiel', 'Événementiel'], ['autre', 'Autre']];
   var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
   // Couleur d'identité par catégorie : [encre, fond teinté] pour différencier les cards.
@@ -4101,27 +4112,29 @@
     var pid = d.pid;
     var creations = Array.isArray(d.content.creations) ? d.content.creations : [];
     var livr = Array.isArray(d.content.livrables) ? d.content.livrables : [];
+    var CG_VST = { a_valider: ['À valider', '#efe1ff', '#59409a'], valide: ['Validé', '#e3f0e7', '#2f7d4e'], refuse: ['À revoir', '#f6e4de', '#8d2b21'], revision: ['À revoir', '#f6e4de', '#8d2b21'] };
     function verRow(l, i) {
       var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
-      var stl = ({ a_valider: 'à valider', valide: 'validé', refuse: 'à revoir', revision: 'à revoir' })[l.status] || l.status;
-      var row = '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 0">' +
-        '<strong style="font-family:var(--font-micro);font-size:10px;flex-shrink:0">V' + (i + 1) + '</strong>' +
-        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(l.name) + '</span>' +
-        pill(l.status, stl) +
-        (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download" title="Télécharger">↓</a>' : '') +
-        (lnk ? '<a class="btn btn--outline btn--sm" href="' + esc(lnk) + '" target="_blank" rel="noopener" title="Ouvrir">🔗</a>' : '') +
-        '<button class="btn btn--danger btn--sm" onclick="ADM.crDelVersion(\'' + pid + '\',\'' + l.id + '\')" title="Retirer">✕</button>' +
+      var sc = CG_VST[l.status] || [l.status, '#efe7d7', '#675334'];
+      var row = '<div class="cg-ver">' +
+        '<span class="cg-ver__ic">V' + (i + 1) + '</span>' +
+        '<span class="cg-ver__n">' + esc(l.name) + '</span>' +
+        '<span class="cg-pill" style="background:' + sc[1] + ';color:' + sc[2] + '">' + esc(sc[0]) + '</span>' +
+        '<div class="cg-ver__a">' +
+          (l.fileKey ? '<a class="cg-btn cg-btn--soft cg-btn--icon" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download" title="Télécharger">' + cgIcon('download', 15) + '</a>' : '') +
+          (lnk ? '<a class="cg-btn cg-btn--soft cg-btn--icon" href="' + esc(lnk) + '" target="_blank" rel="noopener" title="Ouvrir">' + cgIcon('link', 15) + '</a>' : '') +
+          '<button class="cg-ib cg-ib--del" onclick="ADM.crDelVersion(\'' + pid + '\',\'' + l.id + '\')" title="Retirer">' + cgIcon('x', 15) + '</button>' +
+        '</div>' +
       '</div>';
-      // Retour de la cliente (demande de révision) : message + fichiers + lien.
       var fb = '';
       var atts = Array.isArray(l.clientAttachments) ? l.clientAttachments : [];
       if ((l.status === 'refuse' || l.status === 'revision') && (l.clientComment || atts.length || l.clientLink)) {
-        var attHtml = atts.map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
-        var lkHtml = l.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
-        fb = '<div style="margin:2px 0 6px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
+        var attHtml = atts.map(function (a) { return '<a class="cg-btn cg-btn--soft" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
+        var lkHtml = l.clientLink ? '<a class="cg-btn cg-btn--soft" href="' + esc(/^https?:\/\//i.test(l.clientLink) ? l.clientLink : 'https://' + l.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
+        fb = '<div style="margin:0 0 8px;padding:11px 13px;background:#fbeae5;border:1px solid #f0d3c9;border-radius:10px">' +
           '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8d2b21;margin-bottom:5px">Retour de la cliente</div>' +
           (l.clientComment ? '<div style="font-size:13px;color:#7a2e1e;white-space:pre-wrap;line-height:1.5">' + esc(l.clientComment) + '</div>' : '') +
-          ((attHtml || lkHtml) ? '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
+          ((attHtml || lkHtml) ? '<div class="cg-btnrow" style="flex-wrap:wrap;margin-top:8px">' + attHtml + lkHtml + '</div>' : '') +
         '</div>';
       }
       return row + fb;
@@ -4129,38 +4142,42 @@
     function card(c) {
       var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
       var col = CR_ST_COL[c.status] || '#8a7d6b';
-      var ty = CR_TYCOL[c.type] || ['#8a7d6b', '#f7f3ee'];
-      var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:5px 0">Aucune version. Dépose la V1 ci-dessous.</div>';
-      return '<div style="border:1px solid ' + ty[0] + '30;border-radius:16px;background:' + ty[1] + ';padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:none">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">' +
-          '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;min-width:0;font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);border:none;background:transparent;padding:0" title="Nom de la création">' +
-          '<span style="flex-shrink:0;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:999px;background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
-        '</div>' +
-        '<div class="row" style="gap:10px">' +
-          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="flex:1" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
-          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" style="flex:1" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
+      var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="cg-empty">Aucune version. Dépose la V1 ci-dessous.</div>';
+      var fullPid = 'support-' + pid;
+      var n = Array.isArray(c.planning) ? c.planning.length : 0;
+      return '<section class="cg-card">' +
+        '<div class="cg-head">' +
+          '<span class="cg-ic">' + cgIcon('image', 20) + '</span>' +
+          '<input class="cg-name" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" title="Nom de la création">' +
+          '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
+          '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
+          '<span class="cg-status cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
         '</div>' +
         crBannerRow(pid, c) +
-        '<div style="border-top:1px solid var(--bone-d);padding-top:16px;display:flex;flex-direction:column;gap:9px"><div class="micro" style="color:var(--muted);letter-spacing:0.08em">Versions</div>' + vHtml + '</div>' +
-        '<div class="row" style="gap:8px">' +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">+ Version</button>' +
-          '<button class="btn btn--outline btn--sm" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">🔗 Lien</button>' +
-          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:var(--red)" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">🗑</button>' +
+        '<div class="cg-cols">' +
+          '<div class="cg-ver-col">' +
+            '<div class="cg-lbl">Versions</div>' + vHtml +
+            '<div class="cg-btnrow">' +
+              '<button class="cg-btn cg-btn--dark" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">' + cgIcon('plus', 14) + ' Version</button>' +
+              '<button class="cg-btn cg-btn--soft" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">' + cgIcon('link', 14) + ' Lien</button>' +
+              '<button class="cg-ib cg-ib--del" style="margin-left:auto" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')" title="Supprimer la création">' + cgIcon('trash', 15) + '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cg-plan-col">' +
+            '<div class="cg-lbl">' + cgIcon('cal', 13) + ' Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</div>' +
+            '<div id="planwrap-' + fullPid + '-' + c.id + '" class="cg-plan">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
+          '</div>' +
         '</div>' +
-        crPlanBlock(pid, c) +
-      '</div>';
+      '</section>';
     }
-    var addCard = '<div style="border:1.5px dashed var(--bone-d);border-radius:14px;background:#faf7f0;padding:20px;display:flex;flex-direction:column;gap:11px;justify-content:center;min-height:150px">' +
-      '<div class="micro" style="color:var(--muted)">Nouvelle création</div>' +
-      '<input class="inp" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}">' +
-      '<button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">+ Créer</button>' +
-    '</div>';
-    var grid = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px">' + creations.map(card).join('') + addCard + '</div>';
+    var listHtml = creations.length ? creations.map(card).join('') : '<div class="cg-empty" style="padding:16px 0">Aucune création pour le moment. Crée la première ci-dessous.</div>';
+    var newcr = '<div class="cg-newcr"><span class="cg-lbl">Nouvelle création</span><input class="cg-in" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crAdd(\'' + pid + '\')">' + cgIcon('plus', 14) + ' Créer</button></div>';
     var unclassed = livr.filter(function (l) { return !l.creationId; });
-    var unclassedHtml = unclassed.length ? '<div class="card" style="background:#faf7f0;margin-top:16px"><div class="micro mb">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
-    return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Créations</h3>' +
-      '<div class="micro mb">Chaque création (flyer, carte, brochure…) a sa catégorie, son statut et ses versions. Dépose une version par fichier ou par lien — la cliente la retrouve dans son espace pour la valider ou demander une révision.</div>' +
-      grid + unclassedHtml + '</div>';
+    var unclassedHtml = unclassed.length ? '<div class="cg-card" style="margin-top:16px"><div class="cg-lbl">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
+    return '<div class="card infocard" style="background:#fff"><h3>Créations</h3>' +
+      '<div class="cg-lead">Chaque création (flyer, carte, brochure…) a sa catégorie, son statut et ses versions. Dépose une version par fichier ou par lien — la cliente la retrouve dans son espace pour la valider ou demander une révision.</div>' +
+      '<div class="cg-list">' + listHtml + '</div>' + newcr + unclassedHtml +
+    '</div>';
   }
   // ── Planning éditorial d'un projet de com (jalons datés, cascade) ──
   var PLAN_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -4206,42 +4223,47 @@
     t0 = t0 || '';
     var cq = cid ? ',\'' + cid + '\'' : '';
     var rows = planCompute(planning, t0);
+    var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#f4f1fa', '#573b8a'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
+    var STx = { fait: ['Fait', '#e6f0e2', '#456039'], en_cours: ['En cours', '#f6ead2', '#8a6414'], a_venir: ['À venir', '#efe7d7', '#675334'] };
     function jalonRow(r) {
       var j = r.j;
-      var ownerChip = j.owner === 'cliente'
-        ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f4f1fa;color:#573b8a;white-space:nowrap">👤 Cliente</span>'
-        : (j.owner === 'les_deux'
-          ? '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1ec;color:#3f5a37;white-space:nowrap">🤝 Vous deux</span>'
-          : '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef3f6;color:#305277;white-space:nowrap">🎨 Toi</span>');
+      var ow = OWN[j.owner] || OWN.studio;
+      var stt = STx[j.status] || STx.a_venir;
+      var dotc = j.status === 'fait' ? '#456039' : (j.status === 'en_cours' ? '#8a6414' : '#c8b29a');
       var timing = j.dateMode === 'fixed'
-        ? '<input class="inp" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')" style="width:150px" title="Date fixe">'
+        ? '<label class="cg-fld"><span>Date fixe</span><input class="cg-in" type="date" value="' + esc(j.date || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'date\',this.value' + cq + ')"></label>'
         : (j.dateMode === 'range'
-          ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">du <input class="inp" type="date" value="' + esc(j.dateStart || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateStart\',this.value' + cq + ')" style="width:145px" title="Début"> au <input class="inp" type="date" value="' + esc(j.dateEnd || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateEnd\',this.value' + cq + ')" style="width:145px" title="Fin"></span>'
-          : '<span style="display:inline-flex;align-items:center;gap:5px"><input class="inp" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:64px" title="Durée"><select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')" style="width:auto"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span>');
-      return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:15px;margin-bottom:10px;background:#fff">' +
-        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
-          '<span style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre);white-space:nowrap">' + (r.label || '—') + '</span>' + ownerChip +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')" style="width:auto;margin-left:auto"><option value="a_venir"' + (j.status === 'a_venir' ? ' selected' : '') + '>À venir</option><option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option><option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option></select>' +
-        '</div>' +
-        '<input class="inp" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value' + cq + ')" placeholder="Ce que tu fais" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
-        '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
-          '<input class="inp" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Jalon (Envoi V1, Retours, Livraison…)" style="flex:1;min-width:150px">' +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')" style="width:auto"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select>' +
-          '<select class="inp" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')" style="width:auto"><option value="duration"' + (j.dateMode !== 'fixed' && j.dateMode !== 'range' ? ' selected' : '') + '>Durée</option><option value="range"' + (j.dateMode === 'range' ? ' selected' : '') + '>Plage de dates</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select>' + timing +
-        '</div>' +
-        (j.note ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">' + esc(j.note) + '</div>' : '') +
-        '<div class="row" style="gap:6px;margin-top:10px">' +
-          '<button class="pbtn" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'up\'' + cq + ')" title="Monter">↑</button>' +
-          '<button class="pbtn" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'down\'' + cq + ')" title="Descendre">↓</button>' +
-          (j.owner === 'cliente' ? '<button class="pbtn" onclick="ADM.pjNotify(\'' + pid + '\',\'' + j.id + '\'' + cq + ')" title="Prévenir la cliente par e-mail">✉ Prévenir</button>' : '') +
-          '<button class="pbtn" style="margin-left:auto;color:var(--red)" onclick="ADM.pjDel(\'' + pid + '\',\'' + j.id + '\'' + cq + ')">Supprimer</button>' +
+          ? '<label class="cg-fld"><span>Plage</span><span class="cg-dates"><input class="cg-in" type="date" value="' + esc(j.dateStart || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateStart\',this.value' + cq + ')" title="Début"><span class="cg-sep">→</span><input class="cg-in" type="date" value="' + esc(j.dateEnd || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateEnd\',this.value' + cq + ')" title="Fin"></span></label>'
+          : '<label class="cg-fld"><span>Durée</span><span class="cg-dur"><input class="cg-in" type="number" min="0" max="52" value="' + (j.durationValue || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationValue\',this.value' + cq + ')" style="width:60px"><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'durationUnit\',this.value' + cq + ')"><option value="semaines"' + (j.durationUnit === 'semaines' ? ' selected' : '') + '>semaines</option><option value="jours"' + (j.durationUnit === 'jours' ? ' selected' : '') + '>jours</option></select></span></label>');
+      return '<div class="cg-jal">' +
+        '<div class="cg-jal__spine"><span class="cg-jal__dot" style="background:' + dotc + '"></span><span class="cg-jal__line"></span></div>' +
+        '<div class="cg-jal__body">' +
+          '<div class="cg-jal__top">' +
+            '<span class="cg-jal__date">' + (r.label || '—') + '</span>' +
+            '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
+            '<span class="cg-pill" style="background:' + stt[1] + ';color:' + stt[2] + '">' + stt[0] + '</span>' +
+          '</div>' +
+          '<input class="cg-in cg-in--title" value="' + esc(j.title) + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'title\',this.value' + cq + ')" placeholder="Ce que tu fais">' +
+          '<div class="cg-jal__meta">' +
+            '<label class="cg-fld"><span>Jalon</span><input class="cg-in" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Envoi V1, Retours…" style="min-width:130px"></label>' +
+            '<label class="cg-fld"><span>Responsable</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select></label>' +
+            '<label class="cg-fld"><span>Échéance</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')"><option value="duration"' + (j.dateMode !== 'fixed' && j.dateMode !== 'range' ? ' selected' : '') + '>Durée</option><option value="range"' + (j.dateMode === 'range' ? ' selected' : '') + '>Plage de dates</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select></label>' +
+            timing +
+            '<div class="cg-jal__actions">' +
+              '<button class="cg-ib" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'up\'' + cq + ')" title="Monter">' + cgIcon('up', 15) + '</button>' +
+              '<button class="cg-ib" onclick="ADM.pjMove(\'' + pid + '\',\'' + j.id + '\',\'down\'' + cq + ')" title="Descendre">' + cgIcon('down', 15) + '</button>' +
+              (j.owner === 'cliente' ? '<button class="cg-ib" onclick="ADM.pjNotify(\'' + pid + '\',\'' + j.id + '\'' + cq + ')" title="Prévenir la cliente par e-mail">✉</button>' : '') +
+              '<button class="cg-ib cg-ib--del" onclick="ADM.pjDel(\'' + pid + '\',\'' + j.id + '\'' + cq + ')" title="Supprimer">' + cgIcon('trash', 15) + '</button>' +
+            '</div>' +
+          '</div>' +
+          (j.note ? '<div class="cg-empty" style="padding:6px 0 0">' + esc(j.note) + '</div>' : '') +
         '</div>' +
       '</div>';
     }
     var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
-    return '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bone-d)"><label class="micro" style="text-transform:none;letter-spacing:0">Départ (T0) :</label><input class="inp" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value' + cq + ')" style="width:auto"><span class="micro" style="color:var(--muted)">' + (t0 ? 'les dates se calculent à partir de là' : 'vide = dates relatives (Sem 1, Sem 3-4…)') + '</span></div>' +
-      (rows.length ? rows.map(jalonRow).join('') : '<div class="empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
-      '<div class="row mt" style="gap:6px"><input class="inp" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="btn btn--dark btn--sm" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">+ Ajouter un jalon</button></div>';
+    return '<div class="cg-t0"><span>Départ (T0)</span><input class="cg-in" type="date" value="' + esc(t0) + '" onchange="ADM.pjStart(\'' + pid + '\',this.value' + cq + ')" style="width:150px"><span class="cg-hint">' + (t0 ? 'les dates se calculent à partir de là' : 'vide = dates relatives (Sem 1, Sem 3-4…)') + '</span></div>' +
+      (rows.length ? '<div class="cg-jals">' + rows.map(jalonRow).join('') + '</div>' : '<div class="cg-empty">Aucun jalon. Ajoute la première étape ci-dessous.</div>') +
+      '<div class="cg-addj"><input class="cg-in" id="' + eid + '" placeholder="Titre de l\'étape (ex. Intégration des templates)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.pjAdd(\'' + pid + '\'' + cq + ');}"><button class="cg-btn cg-btn--dark" onclick="ADM.pjAdd(\'' + pid + '\'' + cq + ')">' + cgIcon('plus', 14) + ' Ajouter un jalon</button></div>';
   }
   // Blocs « planning prévisionnel » ouverts : on mémorise l'état déplié pour
   // qu'un rafraîchissement (ajout de jalon, édition de date…) ne referme pas le bloc.
