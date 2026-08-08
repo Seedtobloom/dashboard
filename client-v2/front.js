@@ -171,6 +171,17 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-top: auto; margin-bottom: 6px; }
 .cp-proj-bar__fill { height: 100%; border-radius: 999px; background: var(--brume-700); transition: width 0.8s var(--ease); }
 .cp-proj-card__pct { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); display: flex; justify-content: space-between; letter-spacing: 0.04em; text-transform: uppercase; }
+/* Le fil de notre collaboration  petites cartes en colonnes, sans ligne */
+.cp-feed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 720px) { .cp-feed { grid-template-columns: 1fr; } }
+.cp-fcard { background: var(--card); border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.cp-fcard--now { background: var(--glycine-50, #f4eefb); border-color: transparent; }
+.cp-fcard__d { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-micro); font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--terre-600); opacity: 0.75; }
+.cp-fcard__d b { width: 7px; height: 7px; border-radius: 50%; background: var(--terre); flex-shrink: 0; }
+.cp-fcard--now .cp-fcard__d { opacity: 1; color: var(--terre); }
+.cp-fcard--now .cp-fcard__d b { background: var(--glycine-700, #6a4a9c); }
+.cp-fcard__t { font-family: var(--font-display); font-style: italic; font-size: clamp(17px, 1.9vw, 20px); color: var(--terre); line-height: 1.3; }
+
 .cp-archive-section { margin-top: 8px; }
 .cp-archive-title { font-family: var(--font-display); font-size: 22px; color: var(--terre-600); font-style: italic; margin-bottom: 16px; padding-top: 24px; border-top: 1px solid var(--bone-d); font-weight: 400; }
 .cp-type-section { margin-bottom: 28px; }
@@ -1154,6 +1165,54 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
+  // « Le fil de notre collaboration » : quelques temps forts issus des vraies
+  // données (étapes terminées, livrables validés, demandes bouclées) + l'étape
+  // en cours. Présenté en petites cartes en colonnes (pas de ligne continue).
+  // Masqué s'il n'y a pas assez d'historique.
+  function cpCollabFeed() {
+    var evts = [];
+    (appData.projects || []).forEach(function(pd) {
+      var p = pd.project; if (!p || p.status === 'archived') return;
+      (p.steps || []).forEach(function(s) {
+        if (s.status === 'done') evts.push({ ts: s.completedAt || s.date || '', text: s.title || '' });
+      });
+      (p.deliverables || []).forEach(function(d) {
+        if ((d.status || '') === 'valide') evts.push({ ts: d.validatedAt || d.createdAt || '', text: d.name || d.taskTitle || 'Livrable validé' });
+      });
+      (p.tasks || []).forEach(function(t) {
+        if (t.status === 'done' && !t.archived) evts.push({ ts: t.completedAt || t.dueDate || '', text: t.title || '' });
+      });
+    });
+    // Étape / demande en cours = le « en ce moment »
+    var now = '';
+    (appData.projects || []).forEach(function(pd) {
+      if (now) return;
+      var p = pd.project; if (!p || p.status === 'archived') return;
+      var cur = (p.steps || []).filter(function(s) { return s.status === 'in_progress' || s.status === 'waiting_client'; })[0]
+             || (p.steps || []).filter(function(s) { return s.status !== 'done'; })[0];
+      if (cur) { now = cur.title || ''; return; }
+      var t = (p.tasks || []).filter(function(t) { return t.status !== 'done' && !t.archived; })[0];
+      if (t) now = t.title || '';
+    });
+    evts = evts.filter(function(e) { return e.text; });
+    evts.sort(function(a, b) { return String(a.ts).localeCompare(String(b.ts)); });
+    var cards = evts.slice(-2).map(function(e) {
+      return { now: false, when: e.ts ? fmtShort(e.ts) : 'Précédemment', text: e.text };
+    });
+    if (now) cards.push({ now: true, when: 'En ce moment', text: now });
+    if (cards.length < 2) return '';
+    var cells = cards.map(function(c) {
+      return '<div class="cp-fcard' + (c.now ? ' cp-fcard--now' : '') + '">' +
+        '<div class="cp-fcard__d"><b></b>' + esc(c.when) + '</div>' +
+        '<div class="cp-fcard__t">' + esc(c.text) + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="margin-bottom:24px">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:10px">Le fil de notre collaboration</div>' +
+      '<div class="cp-feed">' + cells + '</div>' +
+    '</div>';
+  }
+
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
@@ -1641,7 +1700,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       cpTodayCard() +
       cpValueStats() +
       multiBlocks +
-      activeHtml + archivedHtml +
+      activeHtml +
+      cpCollabFeed() +
+      archivedHtml +
     '</div></div>';
   }
 

@@ -154,6 +154,17 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
 .cp-proj-bar__fill { height: 100%; border-radius: 999px; background: var(--brume-700); transition: width 0.8s var(--ease); }
 .cp-proj-card__pct { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); display: flex; justify-content: space-between; letter-spacing: 0.04em; text-transform: uppercase; }
+/* Le fil de notre collaboration — petites cartes en colonnes, sans ligne */
+.cp-feed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 720px) { .cp-feed { grid-template-columns: 1fr; } }
+.cp-fcard { background: var(--card); border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.cp-fcard--now { background: var(--glycine-50, #f4eefb); border-color: transparent; }
+.cp-fcard__d { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-micro); font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--terre-600); opacity: 0.75; }
+.cp-fcard__d b { width: 7px; height: 7px; border-radius: 50%; background: var(--terre); flex-shrink: 0; }
+.cp-fcard--now .cp-fcard__d { opacity: 1; color: var(--terre); }
+.cp-fcard--now .cp-fcard__d b { background: var(--glycine-700, #6a4a9c); }
+.cp-fcard__t { font-family: var(--font-display); font-style: italic; font-size: clamp(17px, 1.9vw, 20px); color: var(--terre); line-height: 1.3; }
+
 .cp-archive-section { margin-top: 8px; }
 .cp-archive-title { font-family: var(--font-display); font-size: 22px; color: var(--terre-600); font-style: italic; margin-bottom: 16px; padding-top: 24px; border-top: 1px solid var(--bone-d); font-weight: 400; }
 .cp-type-section { margin-bottom: 28px; }

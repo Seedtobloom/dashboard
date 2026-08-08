@@ -721,6 +721,54 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     '</div>';
   }
 
+  // « Le fil de notre collaboration » : quelques temps forts issus des vraies
+  // données (étapes terminées, livrables validés, demandes bouclées) + l'étape
+  // en cours. Présenté en petites cartes en colonnes (pas de ligne continue).
+  // Masqué s'il n'y a pas assez d'historique.
+  function cpCollabFeed() {
+    var evts = [];
+    (appData.projects || []).forEach(function(pd) {
+      var p = pd.project; if (!p || p.status === 'archived') return;
+      (p.steps || []).forEach(function(s) {
+        if (s.status === 'done') evts.push({ ts: s.completedAt || s.date || '', text: s.title || '' });
+      });
+      (p.deliverables || []).forEach(function(d) {
+        if ((d.status || '') === 'valide') evts.push({ ts: d.validatedAt || d.createdAt || '', text: d.name || d.taskTitle || 'Livrable validé' });
+      });
+      (p.tasks || []).forEach(function(t) {
+        if (t.status === 'done' && !t.archived) evts.push({ ts: t.completedAt || t.dueDate || '', text: t.title || '' });
+      });
+    });
+    // Étape / demande en cours = le « en ce moment »
+    var now = '';
+    (appData.projects || []).forEach(function(pd) {
+      if (now) return;
+      var p = pd.project; if (!p || p.status === 'archived') return;
+      var cur = (p.steps || []).filter(function(s) { return s.status === 'in_progress' || s.status === 'waiting_client'; })[0]
+             || (p.steps || []).filter(function(s) { return s.status !== 'done'; })[0];
+      if (cur) { now = cur.title || ''; return; }
+      var t = (p.tasks || []).filter(function(t) { return t.status !== 'done' && !t.archived; })[0];
+      if (t) now = t.title || '';
+    });
+    evts = evts.filter(function(e) { return e.text; });
+    evts.sort(function(a, b) { return String(a.ts).localeCompare(String(b.ts)); });
+    var cards = evts.slice(-2).map(function(e) {
+      return { now: false, when: e.ts ? fmtShort(e.ts) : 'Précédemment', text: e.text };
+    });
+    if (now) cards.push({ now: true, when: 'En ce moment', text: now });
+    if (cards.length < 2) return '';
+    var cells = cards.map(function(c) {
+      return '<div class="cp-fcard' + (c.now ? ' cp-fcard--now' : '') + '">' +
+        '<div class="cp-fcard__d"><b></b>' + esc(c.when) + '</div>' +
+        '<div class="cp-fcard__t">' + esc(c.text) + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="margin-bottom:24px">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:10px">Le fil de notre collaboration</div>' +
+      '<div class="cp-feed">' + cells + '</div>' +
+    '</div>';
+  }
+
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
@@ -1208,7 +1256,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       cpTodayCard() +
       cpValueStats() +
       multiIntro + multiBlocks +
-      activeHtml + archivedHtml +
+      activeHtml +
+      cpCollabFeed() +
+      archivedHtml +
     '</div></div>';
   }
 
