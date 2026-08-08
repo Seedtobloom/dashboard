@@ -3639,7 +3639,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var project = pd.project, files = pd.files;
     var tasks = Array.isArray(project.tasks) ? project.tasks : [];
     var pid = project.id;
-    var tab = cliPartTab[pid] || 'board';
+    var tab = cliPartTab[pid] || 'cal';
 
     // Calculs pour la barre récap
     var todayStr0 = _todayStr();
@@ -3702,7 +3702,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="display:flex;gap:0">' +
         (function(){
           var nFin = tasks.filter(function(t){ return t.archived || t.status==='done'; }).length;
-          return [['board','Tableau'],['forfait','Forfait'],['liv','Livrables'],['archives','Terminées'+(nFin?' ('+nFin+')':'')]].map(function(t){
+          return [['cal','Calendrier'],['board','Tableau'],['forfait','Forfait'],['liv','Livrables'],['archives','Terminées'+(nFin?' ('+nFin+')':'')]].map(function(t){
             return '<button class="cp-part-tab'+(tab===t[0]?' active':'')+'" onclick="cliPartSwitch(\''+pid+'\',\''+t[0]+'\')">'+t[1]+'</button>';
           }).join('');
         })() +
@@ -3711,12 +3711,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
 
     var content = '';
-    if (tab === 'board')   content = buildPartBoard(pid, tasks, files);
+    if (tab === 'cal')      content = buildPartCal(pid, tasks, files, project);
+    else if (tab === 'board')   content = buildPartBoard(pid, tasks, files);
     else if (tab === 'forfait') content = buildPartForfait(pid, tasks, project);
     else if (tab === 'msg')     content = stbChat(pid);
     else if (tab === 'liv')     content = stbDeliverables(pid);
     else if (tab === 'archives') content = buildPartArchives(pid, tasks);
-    else content = buildPartBoard(pid, tasks, files);
+    else content = buildPartCal(pid, tasks, files, project);
 
     // Récap en rangée, puis onglets + contenu (calendrier) sur toute la largeur.
     return fab + forfaitAlert + metaRow + tabs + content;
@@ -4559,7 +4560,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
 
   window.cliOpenTaskDrawer = function(pid, taskId) { if (typeof cliTaskFlushAll === 'function') cliTaskFlushAll(); cliSelTask[pid] = taskId; renderShell(); };
-  window.cliOpenTaskFromHome = function(pid, taskId) { cliSelTask[pid] = taskId; cliPartTab[pid] = 'board'; cpSel(pid); };
+  window.cliOpenTaskFromHome = function(pid, taskId) { cliSelTask[pid] = taskId; cliPartTab[pid] = 'cal'; cpSel(pid); };
   window.cliCloseTaskDrawer = function(pid) { if (typeof cliTaskFlushAll === 'function') cliTaskFlushAll(); delete cliSelTask[pid]; renderShell(); };
   window.cliCalGoToday = function(pid) { var d=new Date(); d.setDate(1); d.setHours(0,0,0,0); cliCalMonth[pid]=d; renderShell(); };
   function _ptaskRenderFiles() {
