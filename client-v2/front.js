@@ -1170,7 +1170,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       });
       // Livrables à valider
       (p.deliverables || []).forEach(function(dv) {
-        if ((dv.status || 'a_valider') === 'a_valider' && (dv.fileKey || dv.reviewLink)) acts.push({ pr: 2, label: 'Un livrable attend ta validation' + (dv.name || dv.taskTitle ? ' : ' + (dv.name || dv.taskTitle) : ''), cta: 'Valider', onclick: "cpGoLivrables()" });
+        if ((dv.status || 'a_valider') === 'a_valider' && (dv.fileKey || dv.reviewLink)) acts.push({ pr: 2, label: 'Un livrable attend ta validation' + (dv.name || dv.taskTitle ? ' : ' + (dv.name || dv.taskTitle) : ''), cta: 'Valider', onclick: "cpGoLivrables()", view: "cpGoLivrables()" });
       });
     });
     // Questionnaires non complétés
@@ -1205,7 +1205,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       return '<div class="cp-drow">' +
         '<span class="cp-drow__ic">' + cpIcon(cpActIcon(a.cta), 16) + '</span>' +
         '<div class="cp-drow__m"><div class="cp-drow__t">' + esc(a.label) + '</div></div>' +
-        '<div class="cp-drow__a"><button class="cp-cbtn" onclick="' + a.onclick + '">' + esc(a.cta) + '</button></div>' +
+        '<div class="cp-drow__a">' +
+          (a.view ? '<button class="cp-cbtn cp-cbtn--soft" onclick="' + a.view + '">Voir</button>' : '') +
+          '<button class="cp-cbtn" onclick="' + a.onclick + '">' + esc(a.cta) + '</button>' +
+        '</div>' +
       '</div>';
     }).join('');
     var more = acts.length > shown.length
@@ -2906,7 +2909,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         crBody = '<div class="cp-spanel"><p style="font-family:var(--font-micro);font-size:14.5px;color:var(--terre-600);line-height:1.55">Votre première création arrivera bientôt ici, je vous préviens dès qu\'une version est prête.</p>' + stbDeliverables(project.id) + '</div>';
       }
 
-      var supportSide = pracPanel.replace(' hidden', '') + meetPanel.replace(' hidden', '') + helpCard;
+      var supportSide = pracPanel.replace(' hidden', '') + helpCard;
       return header + '<div class="cp-content"><div class="cp-sp">' +
         spBanner +
         '<div class="cp-sp__row">' + vpCard + avCard + '</div>' +
