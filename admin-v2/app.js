@@ -22,6 +22,7 @@
     done: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
     clients: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
     chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+    clip: 'M21 11l-8.5 8.5a4 4 0 0 1-6-6L14 5.5a2.5 2.5 0 0 1 4 4l-8 8',
     avis: 'M11.5 3l2.5 5.1 5.6.8-4 3.9 1 5.6-5-2.6-5 2.6 1-5.6-4-3.9 5.6-.8z',
     emails: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 7l-10 6L2 7',
     video: 'M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z',
@@ -101,13 +102,13 @@
     if (!atts || !atts.length) return '';
     var k = admChatKey();
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function (a) {
-      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">' + admIcon('clip') + ' ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   function admMsgAttRender(cid) {
     var box = el(cid + '-att'); if (!box) return;
     box.innerHTML = (ADM_MSG_ATT[cid] || []).map(function (a, i) {
-      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:1px solid var(--bone-d);border-radius:8px;padding:4px 9px">📎 ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:1px solid var(--bone-d);border-radius:8px;padding:4px 9px">' + admIcon('clip') + ' ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
     }).join('');
   }
   function admMsgAttRemove(cid, i) { if (ADM_MSG_ATT[cid]) { ADM_MSG_ATT[cid].splice(i, 1); admMsgAttRender(cid); } }
@@ -127,7 +128,7 @@
   }
   // Bouton « joindre » : label + input caché, à placer dans une zone de saisie.
   function admAttachBtn(cid, projectId) {
-    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:12.5px;font-weight:600;white-space:nowrap">📎 Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
+    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:12.5px;font-weight:600;white-space:nowrap">' + admIcon('clip') + ' Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
   }
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
