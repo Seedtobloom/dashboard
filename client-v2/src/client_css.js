@@ -443,6 +443,58 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-dpill.late { color:#8d2b21; }
 .cp-dpill.soon { color:#6a4a0b; }
 
+/* ============================================================
+   Espace « Support de com » — vue client (portée de la maquette offers)
+   Tokens maquette → tokens live :
+   --brun→--terre  --lav→--glycine  --lav-clair→--brume  --creme→--paille
+   --surface→--surface  --nuit→--nuit  --ivoire→#f6efe6  --bg→#fff  --line→--bone-d
+   ============================================================ */
+.cp-sp { max-width: 1040px; margin: 0 auto; }
+.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 22px; background: var(--terre); color: #f6efe6; }
+.cp-sp__eyebrow { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paille); position: relative; }
+.cp-sp__h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(30px,3.4vw,48px); line-height: 1; color: #fff; margin-top: 12px; position: relative; }
+.cp-sp__lead { font-family: var(--font-micro); font-size: clamp(15px,1.4vw,18px); color: var(--paille); opacity: 0.9; margin-top: 10px; max-width: 44ch; position: relative; }
+
+.cp-sp__row { display: grid; grid-template-columns: 1.7fr 1fr; gap: clamp(16px,1.8vw,26px); margin-top: clamp(18px,2vw,28px); }
+@media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
+.cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 22px; background: var(--surface); }
+.cp-sp__card--cta { background: var(--paille); display: flex; flex-direction: column; }
+.cp-sp__cardtop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cp-sp__kick { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--terre); display: inline-flex; align-items: center; gap: 9px; }
+.cp-sp__big { font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: clamp(34px,3.6vw,52px); line-height: 0.9; color: var(--terre); }
+.cp-sp__big .u { font-size: 0.5em; font-style: italic; }
+.cp-sp__cardlead { font-family: var(--font-micro); font-size: clamp(15px,1.4vw,18px); color: var(--terre); margin-top: 8px; }
+.cp-sp__hm { font-family: var(--font-display); font-style: italic; font-size: clamp(22px,2.4vw,30px); line-height: 1.05; color: var(--terre); margin-top: 12px; }
+.cp-sp__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: auto; background: var(--nuit); color: #f6efe6; border: none; padding: 13px 22px; border-radius: 12px; font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; align-self: flex-start; }
+
+.cp-sp__seclbl { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--terre); margin: clamp(36px,4vw,56px) 2px 0; }
+
+/* un support = un « spanel » */
+.cp-spanel { background: var(--surface); border-radius: 20px; padding: clamp(18px,2vw,26px); margin-top: 16px; }
+.cp-spanel__h { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cp-spanel__ic { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--brume); color: var(--terre); }
+.cp-spanel__t { font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: var(--terre); }
+.cp-spanel__meta { font-family: var(--font-micro); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 5px; }
+.cp-spanel__st { margin-left: auto; font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 99px; background: #fff; color: var(--terre); }
+.cp-spanel__st.now { background: var(--glycine); color: var(--nuit); }
+.cp-spanel__bar { height: 6px; border-radius: 99px; background: rgba(65,47,33,0.12); overflow: hidden; margin-top: 16px; max-width: 280px; }
+.cp-spanel__bar i { display: block; height: 100%; background: var(--terre); border-radius: 99px; }
+
+/* planning prévisionnel = étapes du support */
+.cp-plan-lbl { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--terre-600); margin-top: 22px; }
+.cp-ptl { display: flex; margin-top: 14px; overflow-x: auto; padding-bottom: 4px; }
+.cp-ptl__s { flex: 1; min-width: 96px; text-align: center; position: relative; padding-top: 30px; }
+.cp-ptl__s::before { content: ""; position: absolute; top: 9px; left: 0; right: 0; height: 2px; background: var(--bone-d); }
+.cp-ptl__s:first-child::before { left: 50%; }
+.cp-ptl__s:last-child::before { right: 50%; }
+.cp-ptl__s.done::before, .cp-ptl__s.now::before { background: var(--terre); }
+.cp-ptl__n { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: var(--terre); }
+.cp-ptl__n .ic, .cp-ptl__n svg { width: 12px; height: 12px; }
+.cp-ptl__s.now .cp-ptl__n { background: var(--glycine); color: var(--nuit); box-shadow: 0 0 0 4px rgba(228,209,254,0.4); }
+.cp-ptl__s.done, .cp-ptl__s.future { opacity: 0.5; }
+.cp-ptl__d { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--terre); }
+.cp-ptl__t { font-family: var(--font-micro); font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-600); margin-top: 2px; }
+
 /* fade-up entrance */
 @media (prefers-reduced-motion:no-preference) { .fade-up { animation:fadeUp var(--dur) var(--ease) both; } }
 `;

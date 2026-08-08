@@ -2279,81 +2279,111 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var creations = Array.isArray(project.creations) ? project.creations : [];
       var allDlv = project.deliverables || [];
       var crWaiting = allDlv.filter(function(d){ return d.status === 'a_valider'; }).length;
-      // ── Brique 2 : haut de l'espace — contexte + progression concrète + action ──
-      var crBy = { valide:0, en_creation:0, a_preparer:0, attente_client:0, revision:0, archive:0 };
-      creations.forEach(function(c){ if (crBy[c.status] !== undefined) crBy[c.status]++; });
-      var nDone = crBy.valide, nWait = crBy.attente_client, nRev = crBy.revision, nWork = crBy.en_creation + crBy.a_preparer;
-      var crCtx;
-      if (nWait > 0) crCtx = 'Aujourd’hui, ' + (nWait > 1 ? nWait + ' créations attendent' : 'une création attend') + ' votre retour.';
-      else if (creations.length && nDone === creations.length) crCtx = 'Toutes vos créations sont validées et livrées.';
-      else if (nRev > 0) crCtx = 'J’intègre vos retours' + (nRev > 1 ? ' sur plusieurs créations' : '') + '.';
-      else if (creations.length) crCtx = 'Vos créations avancent — je vous préviens dès qu’une version est prête.';
-      else crCtx = 'Votre création arrive bientôt ici.';
-      function crDotLbl(color, label){ return '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0"></span>' + label + '</span>'; }
-      var crParts = [];
-      if (nDone) crParts.push(crDotLbl('#3f8f5b', nDone + ' terminée' + (nDone > 1 ? 's' : '')));
-      if (nWork) crParts.push(crDotLbl('#35608f', nWork + ' en création'));
-      if (nWait) crParts.push(crDotLbl('#6c4ea4', nWait + ' en attente de vous'));
-      if (nRev) crParts.push(crDotLbl('#c0533b', nRev + ' en révision'));
-      var crBreakdown = creations.length ? '<div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px;font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600)"><span style="font-weight:700;color:var(--terre)">' + creations.length + ' création' + (creations.length > 1 ? 's' : '') + '</span>' + crParts.join('') + '</div>' : '';
-      var crIntro = '<div style="max-width:680px;margin:2px 0 24px">' +
-        '<p style="font-family:var(--font-display,serif);font-style:italic;font-size:21px;color:var(--terre);line-height:1.32;margin:0 0 8px">' + crCtx + '</p>' +
-        '<p style="font-size:14px;color:var(--terre-600);line-height:1.55;margin:0">Retrouvez vos créations et leurs versions — à télécharger, valider ou renvoyer en révision' + (project.deadline ? '. À livrer le ' + fmtDate(project.deadline) : '') + '.</p>' +
-        crBreakdown +
-        (crWaiting ? '<div style="margin-top:16px;display:flex;align-items:center;gap:10px;padding:12px 15px;background:#efe9f8;border:1px solid #dcd2f0;border-radius:12px;font-size:14px;color:#59409a"><span style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#59409a;color:#fff;padding:3px 8px;border-radius:999px;flex-shrink:0">Action</span><span>' + (crWaiting > 1 ? crWaiting + ' versions attendent' : 'Une version attend') + ' votre retour.</span></div>' : '') +
-      '</div>';
+
+      // Progression d'une création : jalons « fait » du planning, sinon repli par statut.
+      function crProgress(c){
+        var pl = Array.isArray(c.planning) ? c.planning : [];
+        if (pl.length){ var f = pl.filter(function(j){ return j.status === 'fait'; }).length; return Math.round(f / pl.length * 100); }
+        var m = { a_preparer:5, en_creation:35, attente_client:65, revision:70, valide:100, archive:100 };
+        return m[c.status] != null ? m[c.status] : 0;
+      }
+      var globalPct = creations.length ? Math.round(creations.reduce(function(s,c){ return s + crProgress(c); }, 0) / creations.length) : 0;
+
+      // Bannière (reprise de la maquette « Support de communication »).
+      var spBanner = '<section class="cp-sp__banner">' +
+        cpIcon('image', 120, 'position:absolute;right:2%;top:-14%;opacity:0.10;color:var(--glycine)') +
+        '<p class="cp-sp__eyebrow">Support de communication</p>' +
+        '<h1 class="cp-sp__h1">' + esc(project.projectTitle || 'Support de com') + '</h1>' +
+        '<p class="cp-sp__lead">Vos supports, leurs versions et leur planning — au même endroit.</p>' +
+      '</section>';
+
+      // Carte « À vous » : prochaine version en attente de validation.
+      var waitV = allDlv.filter(function(d){ return d.status === 'a_valider'; })[0];
+      var waitC = waitV ? creations.filter(function(c){ return c.id === waitV.creationId; })[0] : null;
+      var avCard = waitV
+        ? '<div class="cp-sp__card cp-sp__card--cta">' +
+            '<p class="cp-sp__kick">' + cpIcon('chat', 15, 'color:var(--terre)') + ' À vous</p>' +
+            '<h3 class="cp-sp__hm">Votre retour sur ' + esc(waitC ? waitC.name : (waitV.name || 'un livrable')) + '.</h3>' +
+            (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#f6efe6') + '</button>' : '') +
+          '</div>'
+        : '<div class="cp-sp__card cp-sp__card--cta">' +
+            '<p class="cp-sp__kick">' + cpIcon('check-circle', 15, 'color:var(--terre)') + ' À jour</p>' +
+            '<h3 class="cp-sp__hm">Rien à valider pour le moment.</h3>' +
+          '</div>';
+      var vpCard = '<div class="cp-sp__card">' +
+          '<div class="cp-sp__cardtop">' +
+            '<p class="cp-sp__kick" style="color:var(--terre-600)">Votre projet</p>' +
+            '<p class="cp-sp__big">' + globalPct + '<span class="u"> %</span></p>' +
+          '</div>' +
+          '<p class="cp-sp__cardlead">' + creations.length + ' support' + (creations.length > 1 ? 's' : '') + (crWaiting ? ' · ' + crWaiting + ' en attente de votre retour.' : '.') + '</p>' +
+        '</div>';
+
       var crBody;
       if (creations.length) {
-        var CR_ST = { a_preparer:['A preparer','#8a7d6b'], en_creation:['En creation','#35608f'], attente_client:['En attente de votre retour','#6c4ea4'], revision:['En revision','#c0533b'], valide:['Valide','#3f8f5b'], archive:['Archive','#8a7d6b'] };
-        var CR_TY = { print:'Print', digital:'Digital', reseaux:'Reseaux sociaux', evenementiel:'Evenementiel', autre:'Autre' };
-        // Couleur d'identité par categorie : [encre, fond teinte] pour differencier les cards.
-        var CR_TYCOL = { print:['#a35a1a','#fbeee0'], digital:['#35608f','#e7eff9'], reseaux:['#6c4ea4','#f1ecfa'], evenementiel:['#4f6a46','#e8f0e3'], autre:['#6b533b','#efe9e2'] };
-        crBody = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;align-items:start">' + creations.map(function(c){
+        var CR_TY = { print:'Support print', digital:'Support digital', reseaux:'Réseaux sociaux', evenementiel:'Événementiel', autre:'Support' };
+        var CR_IC = { print:'image', digital:'image', reseaux:'chat', evenementiel:'calendar', autre:'file' };
+        var CR_ICBG = { print:'var(--paille)', digital:'var(--brume)', reseaux:'var(--glycine)', evenementiel:'#e8f0e3', autre:'var(--brume)' };
+        var CR_ST = { a_preparer:['À préparer',false], en_creation:['En création',true], attente_client:['Vos retours',true], revision:['En révision',true], valide:['Terminée',false], archive:['Archivée',false] };
+        var spanels = creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
-          var st = CR_ST[c.status] || ['','#8a7d6b'];
+          var pct = crProgress(c);
           var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
           var revLeft = Math.max(0, revMax - revUsed);
-          var crCol = st[1] || '#9a8a72';
-          var ty = CR_TYCOL[c.type] || ['#9a8a72','#f5f0e8'];
-          // La cliente voit la couleur choisie par le studio si définie, sinon la couleur de catégorie.
-          var band = /^#[0-9a-fA-F]{6}$/.test(c.bannerColor || '') ? c.bannerColor : ty[0];
+          var stp = CR_ST[c.status] || ['', false];
+          var meta = (CR_TY[c.type] || 'Support') + ' · ' + pct + ' %' + (revMax ? ' · ' + revUsed + '/' + revMax + ' séries de retours' : '') + (c.status === 'valide' ? ' · livrée' : '');
+          // Planning prévisionnel horizontal (jalons du planning de la création).
+          var prows = planCompute(c.planning, c.planningStart);
+          var ptl = prows.length ? (
+            '<div class="cp-plan-lbl">Planning prévisionnel</div>' +
+            '<div class="cp-ptl">' + prows.map(function(r){
+              var j = r.j;
+              var state = j.status === 'fait' ? 'done' : (j.status === 'en_cours' ? 'now' : 'future');
+              var ic = state === 'done' ? 'check' : (state === 'now' ? 'chat' : 'lock');
+              return '<div class="cp-ptl__s ' + state + '">' +
+                '<span class="cp-ptl__n">' + cpIcon(ic, 12) + '</span>' +
+                '<div class="cp-ptl__d">' + esc(r.label || '—') + '</div>' +
+                '<div class="cp-ptl__t">' + esc(j.jalon || j.title || '') + '</div>' +
+              '</div>';
+            }).join('') + '</div>'
+          ) : '';
+          // Retours + versions (fonctionnel : télécharger / valider / réviser).
           var revMsg = cliRevMsg(revMax, revUsed);
           var revBlock = revMax ? (
-            '<div style="margin-bottom:18px;padding:14px 16px;background:#f8f4ee;border:1px solid ' + ty[0] + '22;border-radius:13px">' +
+            '<div style="margin-top:20px;padding:14px 16px;background:#fff;border:1px solid var(--bone-d);border-radius:13px">' +
               '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">' +
                 '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.1;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
-                '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600,#6f5c44);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
-              '</div>' +
-              cliRevGauge(revMax, revLeft, ty[0]) +
-              '<div style="font-size:12px;color:var(--terre-600,#6f5c44);margin-top:10px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
+                '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
+              '</div>' + cliRevGauge(revMax, revLeft, 'var(--terre)') +
+              '<div style="font-size:12px;color:var(--terre-600);margin-top:10px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
             '</div>'
           ) : '';
-          return '<div class="cp-proj-card cp-proj-card--static">' +
-            '<div class="cp-proj-banner" style="background:' + band + ';height:96px">' +
-              (CR_TY[c.type] ? '<span class="cp-proj-banner__badge">' + esc(CR_TY[c.type]) + '</span>' : '') +
-              (st[0] ? '<span class="cp-proj-banner__urgent" style="background:rgba(255,255,255,0.92);color:' + crCol + '">' + esc(st[0]) + '</span>' : '') +
+          var versions = stbVersionsList(project.id, vs);
+          var actions = (revBlock || versions.trim()) ? '<div style="border-top:1px solid var(--bone-d);margin-top:20px;padding-top:16px;display:flex;flex-direction:column;gap:14px">' + revBlock + versions + '</div>' : '';
+          return '<div class="cp-spanel" id="cp-sp-' + c.id + '">' +
+            '<div class="cp-spanel__h">' +
+              '<span class="cp-spanel__ic" style="background:' + (CR_ICBG[c.type] || 'var(--brume)') + '">' + cpIcon(CR_IC[c.type] || 'file', 22, 'color:var(--terre)') + '</span>' +
+              '<div><div class="cp-spanel__t">' + esc(c.name) + '</div><div class="cp-spanel__meta">' + esc(meta) + '</div></div>' +
+              (stp[0] ? '<span class="cp-spanel__st' + (stp[1] ? ' now' : '') + '">' + esc(stp[0]) + '</span>' : '') +
             '</div>' +
-            '<div class="cp-proj-card__body">' +
-              '<div class="cp-proj-card__title">' + esc(c.name) + '</div>' +
-              (c.dueDate ? '<div class="cp-proj-card__meta"><span>À livrer le ' + fmtDate(c.dueDate) + '</span></div>' : '') +
-              revBlock +
-              buildPlanningFrise(c, { compact: true }).html +
-              '<div style="border-top:1px solid var(--bone-d);padding-top:18px;margin-top:16px;display:flex;flex-direction:column;gap:14px">' + stbVersionsList(project.id, vs) + '</div>' +
-            '</div>' +
+            '<div class="cp-spanel__bar"><i style="width:' + pct + '%"></i></div>' +
+            ptl + actions +
           '</div>';
-        }).join('') + '</div>';
+        }).join('');
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
-        if (unclassed.length) crBody += '<div class="cp-card" style="margin-top:18px"><div class="cp-card__hd"><span class="cp-card__title">Autres livrables</span></div>' + stbVersionsList(project.id, unclassed) + '</div>';
+        crBody = spanels + (unclassed.length ? '<div class="cp-spanel"><div class="cp-spanel__t" style="margin-bottom:10px">Autres livrables</div>' + stbVersionsList(project.id, unclassed) + '</div>' : '');
       } else {
-        crBody = stbDeliverables(project.id);
+        crBody = '<div class="cp-spanel"><p style="font-family:var(--font-micro);font-size:14.5px;color:var(--terre-600);line-height:1.55">Votre première création arrivera bientôt ici — je vous préviens dès qu\'une version est prête.</p>' + stbDeliverables(project.id) + '</div>';
       }
-      // Bloc « Fichiers » retiré du Support de com : les fichiers vivent dans les
-      // créations (versions). On garde seulement infos pratiques + réunion si présentes.
-      var supportSide = pracPanel.replace(' hidden', '') + meetPanel.replace(' hidden', '') + helpCard;
-      return header + '<div class="cp-content">' + banner + onboarding + _pf.banner + crIntro + '<div style="margin-bottom:44px">' + crBody + '</div>' + _pf.html + supportSide + '</div>';
-    }
 
+      var supportSide = pracPanel.replace(' hidden', '') + meetPanel.replace(' hidden', '') + helpCard;
+      return header + '<div class="cp-content"><div class="cp-sp">' +
+        spBanner +
+        '<div class="cp-sp__row">' + vpCard + avCard + '</div>' +
+        (creations.length ? '<div class="cp-sp__seclbl">Vos créations · chaque support a son propre planning prévisionnel</div>' : '') +
+        crBody +
+      '</div>' + supportSide + '</div>';
+    }
     // L'ancien questionnaire par-projet est remplacé par la plateforme Questionnaires.
     var questionnaireCard = '';
 
