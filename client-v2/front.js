@@ -149,7 +149,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 
 /* Home cards view */
 .cp-home { flex: 1; min-height: 100vh; padding: 44px 52px 80px; background: var(--bone); }
-.cp-home__inner { max-width: 1320px; margin: 0 auto; }
+.cp-home__inner { max-width: 1040px; margin: 0 auto; }
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
@@ -157,7 +157,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-card--static { cursor: default; }
 .cp-proj-card--static:hover { transform: none; box-shadow: var(--shadow-1); }
-.cp-proj-banner { height: 140px; background: var(--terre); background-size: cover; background-position: center; position: relative; border-radius: var(--radius-3) var(--radius-3) 0 0; }
+.cp-proj-banner { height: 148px; background: var(--terre); background-size: cover; background-position: center; position: relative; border-radius: var(--radius-3) var(--radius-3) 0 0; }
 .cp-proj-banner::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; opacity: 0.12; mix-blend-mode: screen; }
 .cp-proj-banner[data-img]::after { display: none; }
 .cp-ph__banner[data-img]::after { display: none; }
@@ -581,6 +581,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Support de com', autre:'Autre' };
   var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'terre', support:'glycine', autre:'terre' };
+  // Couleurs de bannière franches (charte Écrin) reprises de la maquette :
+  // brun, lavande, crème, au lieu des tons « deep » délavés.
+  var CP_TYPE_BANNER = { identite:'#E4D1FE', site:'#F0E8FF', maintenance:'#412F21', partenaire:'#412F21', support:'#E4D1FE', autre:'#F2E5C2' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
@@ -1602,8 +1605,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var urgent = !isPart && days !== null && days <= 7 && days >= 0;
       var _tone = CP_TYPE_TONES[p.type] || 'terre';
       var _band = acc(_tone);
-      // Bandeau de couleur DA discret : pas d'image rognée, pas de doré hors-charte.
-      var bannerStyle = 'background:' + (p.bannerColor || _band.deep) + ';height:150px';
+      // Bannière de couleur franche (brun / lavande / crème), placeholder de la
+      // future image de couverture, reprise de la maquette validée.
+      var _bannerBg = (p.bannerColor ? String(p.bannerColor).split('|')[0] : '') || CP_TYPE_BANNER[p.type] || _band.deep;
+      var bannerStyle = 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
       var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#6a4a0b') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';

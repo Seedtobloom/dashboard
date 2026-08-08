@@ -96,9 +96,12 @@ css = css.replace("body { font-family: var(--font-body); background: var(--bone)
 must(css.indexOf("--font-body:'Alegreya',Georgia,'Times New Roman',serif;") !== -1, 'font-body inter');
 css = css.replace("--font-body:'Alegreya',Georgia,'Times New Roman',serif;", "--font-body:'Inter Tight','Inter',ui-sans-serif,system-ui,sans-serif;");
 
-// ── Card d'accueil : la bannière marron était trop courte (96px) -> plus haute ──
-must(js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1, 'banner height');
-js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + (p.bannerColor || _band.deep) + ';height:150px'");
+// ── Card d'accueil : hauteur + couleur de bannière désormais gérées dans la
+// source (bannière franche 150px, override bannerColor). Ancien patch conservé
+// en repli pour les sources non mises à jour.
+if (js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1) {
+  js = js.replace("'background:' + _band.deep + ';height:96px'", "'background:' + (p.bannerColor || _band.deep) + ';height:150px'");
+}
 // Cards à hauteur égale (bas alignés) MAIS sans vide sans couleur : le corps remplit
 // la card et le bas (barre de progression + pied) est poussé en bas.
 must(css.indexOf(".cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer;") !== -1, 'proj-card flex');
