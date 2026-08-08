@@ -2856,13 +2856,6 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       }
       var globalPct = creations.length ? Math.round(creations.reduce(function(s,c){ return s + crProgress(c); }, 0) / creations.length) : 0;
 
-      // Bannière (reprise de la maquette « Support de communication »).
-      var spBanner = '<section class="cp-sp__banner">' +
-        '<p class="cp-sp__eyebrow">Support de communication</p>' +
-        '<h1 class="cp-sp__h1">' + esc(project.projectTitle || 'Support de com') + '</h1>' +
-        '<p class="cp-sp__lead">Vos supports, leurs versions et leur planning, au même endroit.</p>' +
-      '</section>';
-
       // Carte « À vous » : prochaine version en attente de validation.
       var waitV = allDlv.filter(function(d){ return d.status === 'a_valider'; })[0];
       var waitC = waitV ? creations.filter(function(c){ return c.id === waitV.creationId; })[0] : null;
@@ -2948,7 +2941,6 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
       var supportSide = pracPanel.replace(' hidden', '') + helpCard;
       return header + '<div class="cp-content"><div class="cp-sp">' +
-        spBanner +
         '<div class="cp-sp__row">' + vpCard + avCard + '</div>' +
         (creations.length ? '<div class="cp-sp__seclbl">Vos créations · chaque support a son propre planning prévisionnel</div>' : '') +
         crBody +
