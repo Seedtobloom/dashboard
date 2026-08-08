@@ -23,7 +23,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --text: #412F21;
   --muted: #6b533b;
   --border: #eae5dc;
-  --surface: #f3ede3;
+  --surface: #F8F6F2;
   --sage: #a98bd6;
   --sky: #E4D1FE;
   --sidebar-text: #E4D1FE;

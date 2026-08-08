@@ -7,7 +7,7 @@
  */
   function showLogin(err){
     var app=document.getElementById('app'); if(!app) return;
-    app.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--surface,#f3ede3);padding:24px;font-family:var(--font-micro,sans-serif)">'
+    app.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--surface,#F8F6F2);padding:24px;font-family:var(--font-micro,sans-serif)">'
     +'<div style="width:100%;max-width:400px;background:var(--card,#fffefb);border:1px solid var(--bone-d,#eae5dc);border-radius:14px;box-shadow:0 14px 40px -18px rgba(28,18,5,0.35);padding:40px 34px">'
     +'<div style="text-align:center;margin-bottom:26px"><div style="font-family:var(--font-display,Georgia);font-style:italic;font-size:30px;color:var(--terre,#412F21)">Seed to Bloom</div>'
     +'<div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted,#8a6f54);margin-top:6px">Espace client</div></div>'
