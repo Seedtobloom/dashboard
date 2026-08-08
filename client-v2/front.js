@@ -493,7 +493,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 /* un support = un « spanel » */
 .cp-spanel { background: var(--surface); border-radius: 20px; padding: clamp(18px,2vw,26px); margin-top: 16px; }
 .cp-spanel__h { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.cp-spanel__ic { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--glycine); border: 1px solid rgba(87,59,138,0.18); color: var(--terre); }
+.cp-spanel__ic { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--glycine); color: var(--terre); }
 .cp-spanel__t { font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: var(--terre); }
 .cp-spanel__meta { font-family: var(--font-micro); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 5px; }
 .cp-spanel__st { margin-left: auto; font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 99px; background: #fff; color: var(--terre); }
@@ -2919,7 +2919,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           for (var gi = 0; gi < revMax; gi++){ gaugeSeg += '<span style="flex:1;height:11px;border-radius:99px;background:' + (gi < revLeft ? 'var(--terre)' : 'rgba(65,47,33,0.14)') + '"></span>'; }
           // « Séries de retours » mise en avant : encart lavande, gros titre, jauge épaisse.
           var revBlock = revMax ? (
-            '<div style="margin-top:20px;padding:18px 20px;background:var(--glycine);border:1px solid rgba(87,59,138,0.18);border-radius:12px">' +
+            '<div style="margin-top:20px;padding:18px 20px;background:var(--glycine);border-radius:12px">' +
               '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">' +
                 '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:20px;line-height:1.05;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
                 '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.02em;color:var(--terre);white-space:nowrap">' + revLeft + ' / ' + revMax + '</span>' +
