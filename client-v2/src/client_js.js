@@ -722,7 +722,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).join('');
     return '<div style="margin-bottom:24px">' +
       '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">Depuis le début</div>' +
-      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:var(--card,#fffdf8);overflow:hidden">' + tiles + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:#F8F6F2;overflow:hidden">' + tiles + '</div>' +
     '</div>';
   }
 

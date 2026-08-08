@@ -136,7 +136,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
-.cp-proj-card { background: var(--card); border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
+.cp-proj-card { background: #F8F6F2; border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-card--static { cursor: default; }
 .cp-proj-card--static:hover { transform: none; box-shadow: var(--shadow-1); }
@@ -165,7 +165,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 /* Le fil de notre collaboration — petites cartes en colonnes, sans ligne */
 .cp-feed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 @media (max-width: 720px) { .cp-feed { grid-template-columns: 1fr; } }
-.cp-fcard { background: var(--card); border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.cp-fcard { background: #F8F6F2; border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
 .cp-fcard--now { background: var(--brume); border-color: transparent; }
 .cp-fcard__d { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-micro); font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--terre-600); opacity: 0.75; }
 .cp-fcard__d b { width: 7px; height: 7px; border-radius: 50%; background: var(--terre); flex-shrink: 0; }
