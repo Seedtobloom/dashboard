@@ -166,12 +166,31 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-feed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 @media (max-width: 720px) { .cp-feed { grid-template-columns: 1fr; } }
 .cp-fcard { background: var(--card); border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
-.cp-fcard--now { background: var(--glycine-50, #f4eefb); border-color: transparent; }
+.cp-fcard--now { background: var(--brume); border-color: transparent; }
 .cp-fcard__d { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-micro); font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--terre-600); opacity: 0.75; }
 .cp-fcard__d b { width: 7px; height: 7px; border-radius: 50%; background: var(--terre); flex-shrink: 0; }
 .cp-fcard--now .cp-fcard__d { opacity: 1; color: var(--terre); }
-.cp-fcard--now .cp-fcard__d b { background: var(--glycine-700, #6a4a9c); }
+.cp-fcard--now .cp-fcard__d b { background: var(--terre); }
 .cp-fcard__t { font-family: var(--font-display); font-style: italic; font-size: clamp(17px, 1.9vw, 20px); color: var(--terre); line-height: 1.3; }
+
+/* Sous-titre d'accueil (maquette : « Voici où on en est… ») */
+.cp-home__lead { font-family: var(--font-micro); font-size: 15.5px; color: var(--terre); opacity: 0.85; line-height: 1.5; max-width: 46ch; margin: 11px 2px 30px; }
+
+/* « À toi de jouer » — carte lavande + lignes blanches (maquette validée) */
+.cp-todo { background: var(--brume); border-radius: 22px; padding: clamp(22px, 3vw, 30px); margin-bottom: 22px; }
+.cp-todo__h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.cp-todo__h h2 { font-family: var(--font-display); font-style: italic; font-size: clamp(24px, 3vw, 32px); color: var(--terre); font-weight: 400; margin: 0; }
+.cp-todo__h .c { font-family: var(--font-micro); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-600); opacity: 0.7; }
+.cp-drow { display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 14px; padding: 13px 16px; margin-bottom: 9px; }
+.cp-drow:last-child { margin-bottom: 0; }
+.cp-drow__ic { width: 38px; height: 38px; border-radius: 10px; background: var(--glycine); color: var(--nuit); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cp-drow__m { flex: 1; min-width: 0; }
+.cp-drow__t { font-family: var(--font-micro); font-size: 14.5px; font-weight: 500; color: var(--nuit); line-height: 1.3; }
+.cp-drow__s { font-family: var(--font-micro); font-size: 11.5px; color: var(--terre-600); opacity: 0.65; margin-top: 2px; }
+.cp-drow__a { display: flex; gap: 8px; flex-shrink: 0; }
+.cp-cbtn { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 9px 16px; border-radius: 10px; border: none; cursor: pointer; background: var(--nuit); color: #f6efe6; transition: opacity 140ms; }
+.cp-cbtn:hover { opacity: 0.88; }
+.cp-cbtn--soft { background: #fff; color: var(--terre); box-shadow: inset 0 0 0 1px var(--bone-d); }
 
 .cp-archive-section { margin-top: 8px; }
 .cp-archive-title { font-family: var(--font-display); font-size: 22px; color: var(--terre-600); font-style: italic; margin-bottom: 16px; padding-top: 24px; border-top: 1px solid var(--bone-d); font-weight: 400; }
