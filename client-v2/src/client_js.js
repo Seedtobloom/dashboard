@@ -1943,7 +1943,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var rel = current.dueDate ? cpRelDate(current.dueDate) : '';
       var ensuite = next ? '<div style="margin-top:10px;font-size:13.5px;color:var(--terre-600,#5a4a3a)"><span style="opacity:0.7">Ensuite :</span> ' + esc(next.title) + '</div>' : '';
       if (waiting) {
-        nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-left:3px solid ' + esc(accent) + ';border-radius:12px;padding:14px 16px">' +
+        nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-radius:12px;padding:14px 16px">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">🕓 En pause, on a besoin de toi</div>' +
           '<div style="font-size:15px;color:var(--terre);font-weight:600;margin-bottom:3px">' + esc(current.title) + '</div>' +
           '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5">' + (current.clientAction ? esc(current.clientAction) : 'Cette étape attend ton retour.') + ' Dès que c’est fait, je reprends le travail.' + (rel ? ' <span style="color:var(--terre-400,#8a7d6b)">(souhaité ' + esc(rel) + ')</span>' : '') + '</div>' +
@@ -2159,7 +2159,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px">'+esc(s.title)+' '+cpIcon('arrow',14,'color:var(--terre-400)')+'</div>' +
             (s.description ? '<p style="font-size:15px;color:var(--terre-600);line-height:1.55;margin-bottom:14px">'+esc(s.description)+'</p>' : '') +
             '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">'+cpDeadlinePill(s.dueDate, isDone)+'</div>' +
-            (s.status==='waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:'+svAccent.soft+';border-radius:var(--radius-2);border-left:3px solid '+svAccent.mid+'"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
+            (s.status==='waiting_client' && s.clientAction ? '<div style="margin-top:12px;padding:12px 16px;background:'+svAccent.soft+';border-radius:var(--radius-2)"><div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px">Ce que vous devez faire</div><div style="font-size:14px;color:var(--terre)">'+esc(s.clientAction)+'</div></div>' : '') +
           '</div>' +
           cpStatusPill(s.status) +
         '</div>' +
