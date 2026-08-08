@@ -12,21 +12,26 @@
     var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
     var validated = l.status === 'valide' || l.status === 'refuse';
     var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
+    // Pastilles + boutons alignés sur la nouvelle DA (Inter, arrondis 12px, palette terre/nuit).
+    var STCOL = { a_valider:['À valider','#efe1ff','#59409a'], valide:['Validé','#e3f0e7','#2f7d4e'], refuse:['Révision demandée','#f6e9d6','#8a6414'] };
+    var stc = STCOL[l.status] || ['', 'var(--surface)', 'var(--terre-600)'];
+    var pill = stc[0] ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 11px;border-radius:99px;background:'+stc[1]+';color:'+stc[2]+';white-space:nowrap;flex-shrink:0">'+esc(stc[0])+'</span>' : '';
+    var SOFT = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:var(--terre);box-shadow:inset 0 0 0 1px var(--bone-d);border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;text-decoration:none';
+    var PRIM = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--nuit);color:#f6efe6;border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer';
     var openBtn = dl
-      ? '<a class="cp-btn cp-btn--outline" href="'+dl+'">Telecharger</a>'
-      : (lnk ? '<a class="cp-btn cp-btn--outline" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">Ouvrir le livrable</a>' : '');
+      ? '<a style="'+SOFT+'" href="'+dl+'">'+cpIcon('download',14,'color:var(--terre)')+' Télécharger</a>'
+      : (lnk ? '<a style="'+SOFT+'" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">'+cpIcon('external',14,'color:var(--terre)')+' Ouvrir le livrable</a>' : '');
     var decideRow = validated ? '' : (needConsult
-      ? '<div class="cp-msg__date">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une revision.</div>'
-      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cp-btn" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">Valider</button>'+
-        '<button class="cp-btn cp-btn--outline" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une revision</button></div>');
-    return '<div class="cp-file" style="flex-direction:column;align-items:stretch;gap:8px">'+
-      '<div style="display:flex;align-items:center;gap:10px"><span class="cp-file__name">'+esc(l.name)+'</span>'+
-      '<span class="cp-step__badge">'+esc(stbLivLabel(l.status))+'</span></div>'+
-      openBtn +
-      (l.clientComment ? '<div class="cp-msg__date" style="white-space:pre-wrap;line-height:1.5">« '+esc(l.clientComment)+' »</div>' : '')+
-      ((l.clientAttachments && l.clientAttachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:5px">'+l.clientAttachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="font-size:11.5px;color:var(--navy,#1C1205);background:#f4f0e8;border-radius:8px;padding:4px 9px;text-decoration:none;display:inline-flex;align-items:center;gap:5px">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '')+
-      (l.clientLink ? '<div style="margin-top:5px;font-size:12px"><a href="'+esc(/^https?:\/\//i.test(l.clientLink)?l.clientLink:'https://'+l.clientLink)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#7a6030)">'+cpIcon('link',12)+' '+esc(l.clientLink.replace(/^https?:\/\//i,'').slice(0,50))+'</a></div>' : '')+
-      (l.clientWishDate ? '<div class="cp-msg__date" style="margin-top:4px">Nouvelle version souhaitee pour le '+esc(l.clientWishDate.split('-').reverse().join('/'))+'</div>' : '')+
+      ? '<div style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);line-height:1.5">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
+      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="'+PRIM+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">'+cpIcon('check',14,'color:#f6efe6')+' Valider</button>'+
+        '<button style="'+SOFT+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une révision</button></div>');
+    return '<div style="background:#fff;border:1px solid var(--bone-d);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:12px">'+
+      '<div style="display:flex;align-items:center;gap:10px"><span style="flex:1;min-width:0;font-family:var(--font-micro);font-size:14px;font-weight:500;color:var(--terre);word-break:break-word">'+esc(l.name)+'</span>'+pill+'</div>'+
+      (openBtn ? '<div>'+openBtn+'</div>' : '')+
+      (l.clientComment ? '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600);white-space:pre-wrap;line-height:1.5">« '+esc(l.clientComment)+' »</div>' : '')+
+      ((l.clientAttachments && l.clientAttachments.length) ? '<div style="display:flex;flex-wrap:wrap;gap:6px">'+l.clientAttachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="font-size:11.5px;color:var(--terre);background:var(--surface);border-radius:8px;padding:4px 9px;text-decoration:none;display:inline-flex;align-items:center;gap:5px">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '')+
+      (l.clientLink ? '<div style="font-size:12px"><a href="'+esc(/^https?:\/\//i.test(l.clientLink)?l.clientLink:'https://'+l.clientLink)+'" target="_blank" rel="noopener" style="color:var(--terre-600);display:inline-flex;align-items:center;gap:5px">'+cpIcon('link',12)+esc(l.clientLink.replace(/^https?:\/\//i,'').slice(0,50))+'</a></div>' : '')+
+      (l.clientWishDate ? '<div style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600)">Nouvelle version souhaitée pour le '+esc(l.clientWishDate.split('-').reverse().join('/'))+'</div>' : '')+
       decideRow +
     '</div>';
   }

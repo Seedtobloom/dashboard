@@ -2348,13 +2348,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           ) : '';
           // Retours + versions (fonctionnel : télécharger / valider / réviser).
           var revMsg = cliRevMsg(revMax, revUsed);
+          var gaugeSeg = '';
+          for (var gi = 0; gi < revMax; gi++){ gaugeSeg += '<span style="flex:1;height:11px;border-radius:99px;background:' + (gi < revLeft ? 'var(--terre)' : 'rgba(65,47,33,0.14)') + '"></span>'; }
+          // « Séries de retours » mise en avant : encart lavande, gros titre, jauge épaisse.
           var revBlock = revMax ? (
-            '<div style="margin-top:20px;padding:14px 16px;background:#fff;border:1px solid var(--bone-d);border-radius:12px">' +
-              '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">' +
-                '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:17px;line-height:1.1;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
-                '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);white-space:nowrap">' + revLeft + ' sur ' + revMax + '</span>' +
-              '</div>' + cliRevGauge(revMax, revLeft, 'var(--terre)') +
-              '<div style="font-size:12px;color:var(--terre-600);margin-top:10px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
+            '<div style="margin-top:20px;padding:18px 20px;background:var(--brume);border-radius:12px">' +
+              '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">' +
+                '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:20px;line-height:1.05;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
+                '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.02em;color:var(--terre);white-space:nowrap">' + revLeft + ' / ' + revMax + '</span>' +
+              '</div>' +
+              '<div style="display:flex;gap:6px">' + gaugeSeg + '</div>' +
+              '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600);margin-top:12px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
             '</div>'
           ) : '';
           var versions = stbVersionsList(project.id, vs);
