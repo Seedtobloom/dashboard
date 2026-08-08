@@ -524,7 +524,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .mx-msg--in { align-items:flex-start; align-self:flex-start; }
 .mx-msg--out { align-items:flex-end; align-self:flex-end; }
 .mx-b { font-family:var(--font-micro); font-size:14px; line-height:1.5; padding:11px 14px; border-radius:16px; white-space:pre-wrap; word-break:break-word; color:var(--terre); }
-.mx-msg--in .mx-b { background:#fff; border:1px solid var(--bone-d); border-top-left-radius:5px; }
+.mx-msg--in .mx-b { background:#F8F6F2; border:1px solid var(--bone-d); border-top-left-radius:5px; }
 .mx-msg--out .mx-b { background:var(--brume); border-top-right-radius:5px; }
 .mx-m { font-family:var(--font-micro); font-size:10px; color:var(--terre-400); margin-top:4px; padding:0 4px; }
 .mx-composer { display:flex; align-items:flex-end; gap:9px; padding:13px 16px; border-top:1px solid var(--bone-d); background:#fff; flex-shrink:0; }

@@ -218,7 +218,7 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 .msg--client{align-self:flex-start}
 .msg--cindy{align-self:flex-end;flex-direction:row-reverse}
 .bubble{padding:11px 14px;border-radius:16px;font-family:var(--font-micro);font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-.msg--client .bubble{background:#fff;border:1px solid var(--line);color:var(--terre);border-top-left-radius:5px}
+.msg--client .bubble{background:#F8F6F2;border:1px solid var(--line);color:var(--terre);border-top-left-radius:5px}
 .msg--cindy .bubble{background:var(--brume);color:var(--terre);border-top-right-radius:5px}
 .bmeta{font-family:var(--font-micro);font-size:9.5px;color:var(--muted);margin-top:4px;padding:0 3px;text-transform:uppercase;letter-spacing:0.04em}
 .msg--cindy .bmeta{text-align:right}
