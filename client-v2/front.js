@@ -2879,7 +2879,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           for (var gi = 0; gi < revMax; gi++){ gaugeSeg += '<span style="flex:1;height:11px;border-radius:99px;background:' + (gi < revLeft ? 'var(--terre)' : 'rgba(65,47,33,0.14)') + '"></span>'; }
           // « Séries de retours » mise en avant : encart lavande, gros titre, jauge épaisse.
           var revBlock = revMax ? (
-            '<div style="margin-top:20px;padding:18px 20px;background:var(--brume);border-radius:12px">' +
+            '<div style="margin-top:20px;padding:18px 20px;background:var(--glycine);border:1px solid rgba(87,59,138,0.18);border-radius:12px">' +
               '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">' +
                 '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:20px;line-height:1.05;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
                 '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.02em;color:var(--terre);white-space:nowrap">' + revLeft + ' / ' + revMax + '</span>' +
