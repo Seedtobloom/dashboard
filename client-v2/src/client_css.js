@@ -459,6 +459,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
 .cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
 .cp-sp__card--cta { background: var(--paille); display: flex; flex-direction: column; }
+.cp-sp__card--brown { background: var(--terre); }
+.cp-sp__card--brown .cp-sp__kick { color: var(--paille); }
+.cp-sp__card--brown .cp-sp__big { color: #fff; }
+.cp-sp__card--brown .cp-sp__cardlead { color: var(--paille); }
 .cp-sp__cardtop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cp-sp__kick { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--terre); display: inline-flex; align-items: center; gap: 9px; }
 .cp-sp__big { font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: clamp(34px,3.6vw,52px); line-height: 0.9; color: var(--terre); }

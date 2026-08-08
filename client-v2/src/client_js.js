@@ -2305,9 +2305,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<p class="cp-sp__kick">' + cpIcon('check-circle', 15, 'color:var(--terre)') + ' À jour</p>' +
             '<h3 class="cp-sp__hm">Rien à valider pour le moment.</h3>' +
           '</div>';
-      var vpCard = '<div class="cp-sp__card">' +
+      var vpCard = '<div class="cp-sp__card cp-sp__card--brown">' +
           '<div class="cp-sp__cardtop">' +
-            '<p class="cp-sp__kick" style="color:var(--terre-600)">Votre projet</p>' +
+            '<p class="cp-sp__kick">Votre projet</p>' +
             '<p class="cp-sp__big">' + globalPct + '<span class="u"> %</span></p>' +
           '</div>' +
           '<p class="cp-sp__cardlead">' + creations.length + ' support' + (creations.length > 1 ? 's' : '') + (crWaiting ? ' · ' + crWaiting + ' en attente de votre retour.' : '.') + '</p>' +
