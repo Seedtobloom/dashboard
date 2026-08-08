@@ -495,6 +495,43 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-ptl__d { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--terre); }
 .cp-ptl__t { font-family: var(--font-micro); font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-600); margin-top: 2px; }
 
+/* Messagerie client — inbox (design Écrin : entrant blanc, moi lavande, Inter) */
+.mx-modal { width:min(1120px,100%); height:min(740px,100%); background:#fff; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px -20px rgba(28,18,5,0.55); }
+.mx-modal__h { display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-modal__title { font-family:var(--font-display); font-style:italic; font-size:24px; color:var(--terre); }
+.mx-modal__x { background:none; border:none; cursor:pointer; color:var(--terre-400); font-size:18px; line-height:1; }
+.mx-modal__body { flex:1; display:flex; min-height:0; }
+.mx-rail { width:300px; flex-shrink:0; border-right:1px solid var(--bone-d); background:#F8F6F2; overflow-y:auto; display:flex; flex-direction:column; padding:8px; }
+.mx-pane { flex:1; display:flex; flex-direction:column; min-width:0; background:#fff; }
+.mx-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--terre-400); font-family:var(--font-micro); font-size:13px; }
+.mx-conv { display:flex; align-items:flex-start; gap:11px; padding:11px 12px; border:none; background:none; cursor:pointer; text-align:left; width:100%; border-radius:12px; margin-bottom:2px; }
+.mx-conv:hover { background:#fff; }
+.mx-conv.on { background:#fff; }
+.mx-conv__m { flex:1; min-width:0; }
+.mx-conv__top { display:flex; align-items:baseline; gap:8px; }
+.mx-conv__n { font-family:var(--font-micro); font-weight:600; font-size:14px; color:var(--terre); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mx-conv__ctx { font-family:var(--font-micro); font-size:9px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--terre-400); margin:2px 0 3px; }
+.mx-conv__snip { font-family:var(--font-micro); font-size:12.5px; color:var(--terre-600); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mx-conv__badge { align-self:center; font-family:var(--font-micro); font-size:11px; font-weight:700; background:var(--glycine); color:var(--nuit); border-radius:999px; min-width:20px; height:20px; display:grid; place-items:center; padding:0 5px; flex:none; }
+.mx-av { width:36px; height:36px; border-radius:50%; display:grid; place-items:center; font-family:var(--font-display); font-style:italic; font-size:16px; flex:none; }
+.mx-head { display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-head__t { min-width:0; flex:1; }
+.mx-head__n { font-family:var(--font-micro); font-weight:600; font-size:16px; color:var(--terre); line-height:1.15; }
+.mx-head__s { font-family:var(--font-micro); font-size:11px; color:var(--terre-600); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mx-headsearch { width:210px; max-width:38%; font-family:var(--font-micro); font-size:12.5px; padding:8px 13px; border:1px solid var(--bone-d); border-radius:999px; background:#F8F6F2; color:var(--terre); outline:none; }
+.mx-feed { flex:1; overflow-y:auto; padding:20px; background:#fff; display:flex; flex-direction:column; gap:12px; min-height:0; }
+.mx-msg { display:flex; flex-direction:column; max-width:74%; }
+.mx-msg--in { align-items:flex-start; align-self:flex-start; }
+.mx-msg--out { align-items:flex-end; align-self:flex-end; }
+.mx-b { font-family:var(--font-micro); font-size:14px; line-height:1.5; padding:11px 14px; border-radius:16px; white-space:pre-wrap; word-break:break-word; color:var(--terre); }
+.mx-msg--in .mx-b { background:#fff; border:1px solid var(--bone-d); border-top-left-radius:5px; }
+.mx-msg--out .mx-b { background:var(--brume); border-top-right-radius:5px; }
+.mx-m { font-family:var(--font-micro); font-size:10px; color:var(--terre-400); margin-top:4px; padding:0 4px; }
+.mx-composer { display:flex; align-items:flex-end; gap:9px; padding:13px 16px; border-top:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-input { flex:1; font-family:var(--font-micro); font-size:14px; color:var(--terre); background:#F8F6F2; border:1px solid var(--bone-d); border-radius:16px; padding:12px 16px; outline:none; resize:none; min-height:44px; max-height:160px; box-sizing:border-box; }
+.mx-input:focus { background:#fff; box-shadow:0 0 0 2px var(--glycine-700); }
+.mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#f6efe6; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
+@media (max-width:720px) { .mx-rail { width:120px; } .mx-conv__snip, .mx-conv__ctx { display:none; } }
 /* fade-up entrance */
 @media (prefers-reduced-motion:no-preference) { .fade-up { animation:fadeUp var(--dur) var(--ease) both; } }
 `;
