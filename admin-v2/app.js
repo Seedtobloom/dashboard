@@ -4255,23 +4255,83 @@
     var did = 'crplan-' + fullPid + (c.id ? '-' + c.id : '');
     return '<details id="' + did + '"' + (PJ_OPEN[did] ? ' open' : '') + ' ontoggle="ADM.pjToggle(\'' + did + '\',this.open)" style="border-top:1px solid var(--bone-d);padding-top:14px">' +
       '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);list-style:none">📅 Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</summary>' +
-      '<div style="margin-top:14px">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
+      '<div id="planwrap-' + fullPid + '-' + c.id + '" style="margin-top:14px">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
     '</details>';
   }
   function planningTab(d) {
     var pid = d.id;
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Planning éditorial</h3>' +
       '<div class="micro mb">Chaque jalon a une échéance (date fixe ou durée qui s\'enchaîne depuis le précédent) et un responsable (toi / la cliente). La cliente voit ce planning et est prévenue quand une action lui incombe.</div>' +
-      planningEditor(pid, d.content.planning, d.content.planningStart, '') +
+      '<div id="planwrap-' + pid + '">' + planningEditor(pid, d.content.planning, d.content.planningStart, '') + '</div>' +
     '</div>';
   }
   // pid = identifiant public du projet (d.id : 'website' / 'branding' / 'support-001'…),
   // envoyé en projectId à la route générique /planning résolue via resolveProject.
-  function pjAdd(pid, cid) { var eid = 'plan-new-' + pid + (cid ? '-' + cid : ''); var v = (el(eid) ? el(eid).value : '').trim(); var b = { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }; if (cid) b.creationId = cid; PJ_OPEN['crplan-' + pid + (cid ? '-' + cid : '')] = 1; jpost('/api/clients/' + CURKEY + '/planning', b).then(function (r) { if (r.ok) { toast('Jalon ajouté'); refreshClient(); setTimeout(function () { var nb = el(eid); if (nb) nb.focus(); }, 0); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function pjSet(pid, jid, field, val, cid) { var body = { projectId: pid }; body[field] = val; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  function pjMove(pid, jid, dir, cid) { var body = { projectId: pid, move: dir }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) refreshClient(); else toast('Erreur'); }); }
-  function pjDel(pid, jid, cid) { admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () { api('/api/clients/' + CURKEY + '/planning/' + jid + '?projectId=' + encodeURIComponent(pid) + (cid ? '&creationId=' + encodeURIComponent(cid) : ''), { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); refreshClient(); } else toast('Erreur'); }); }); }
-  function pjStart(pid, val, cid) { var body = { projectId: pid, planningStart: val || null }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning', body, 'PATCH').then(function (r) { if (r.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); refreshClient(); } else toast('Erreur'); }); }
+  // ── Édition du planning sans rebuild global ──────────────────────────────
+  // Chaque champ de jalon mettait à jour le serveur PUIS appelait refreshClient()
+  // (re-fetch + reconstruction de toute la vue client). Résultat : en saisissant
+  // une « plage de dates », le rebuild déclenché par la 1re date effaçait la 2e.
+  // On édite désormais le modèle local, on re-render UNIQUEMENT le bloc planning,
+  // et on persiste en arrière-plan (resync seulement en cas d'erreur).
+  function pjWrapId(pid, cid) { return 'planwrap-' + pid + (cid ? '-' + cid : ''); }
+  function pjResolve(pid, cid) {
+    var d = findDomain(pid); if (!d || !d.content) return null;
+    if (cid) {
+      var c = (d.content.creations || []).filter(function (x) { return x.id === cid; })[0];
+      if (!c) return null;
+      if (!Array.isArray(c.planning)) c.planning = [];
+      return { host: c, planning: c.planning, t0: c.planningStart || '' };
+    }
+    if (!Array.isArray(d.content.planning)) d.content.planning = [];
+    return { host: d.content, planning: d.content.planning, t0: d.content.planningStart || '' };
+  }
+  function pjRerender(pid, cid) {
+    var w = el(pjWrapId(pid, cid)); if (!w) return;
+    var r = pjResolve(pid, cid); if (!r) return;
+    w.innerHTML = planningEditor(pid, r.planning, r.t0, cid);
+  }
+  function pjJalon(r, jid) { for (var i = 0; i < r.planning.length; i++) { if (r.planning[i].id === jid) return r.planning[i]; } return null; }
+  function pjAdd(pid, cid) {
+    var eid = 'plan-new-' + pid + (cid ? '-' + cid : '');
+    var v = (el(eid) ? el(eid).value : '').trim();
+    var b = { projectId: pid, title: v, durationValue: 1, durationUnit: 'semaines' }; if (cid) b.creationId = cid;
+    PJ_OPEN['crplan-' + pid + (cid ? '-' + cid : '')] = 1;
+    // Le serveur génère l'id du jalon : on re-fetch en silence puis on re-render
+    // seulement le bloc planning (jamais renderClient).
+    jpost('/api/clients/' + CURKEY + '/planning', b).then(function (r) {
+      if (r.ok) { toast('Jalon ajouté'); loadClient(function () { pjRerender(pid, cid); setTimeout(function () { var nb = el(eid); if (nb) nb.focus(); }, 0); }); }
+      else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
+  function pjSet(pid, jid, field, val, cid) {
+    var r = pjResolve(pid, cid);
+    if (r) { var j = pjJalon(r, jid); if (j) { j[field] = val; pjRerender(pid, cid); } }
+    var body = { projectId: pid }; body[field] = val; if (cid) body.creationId = cid;
+    jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r2) { if (!r2.ok) { toast('Erreur'); refreshClient(); } }).catch(function () { toast('Erreur'); refreshClient(); });
+  }
+  function pjMove(pid, jid, dir, cid) {
+    var r = pjResolve(pid, cid);
+    if (r) {
+      var i = -1; for (var k = 0; k < r.planning.length; k++) { if (r.planning[k].id === jid) { i = k; break; } }
+      var ni = dir === 'up' ? i - 1 : i + 1;
+      if (i >= 0 && ni >= 0 && ni < r.planning.length) { var tmp = r.planning[i]; r.planning[i] = r.planning[ni]; r.planning[ni] = tmp; pjRerender(pid, cid); }
+    }
+    var body = { projectId: pid, move: dir }; if (cid) body.creationId = cid;
+    jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r2) { if (!r2.ok) { toast('Erreur'); refreshClient(); } }).catch(function () { toast('Erreur'); refreshClient(); });
+  }
+  function pjDel(pid, jid, cid) {
+    admConfirm({ title: 'Supprimer ce jalon ?', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () {
+      var r = pjResolve(pid, cid);
+      if (r) { for (var i = 0; i < r.planning.length; i++) { if (r.planning[i].id === jid) { r.planning.splice(i, 1); break; } } pjRerender(pid, cid); }
+      api('/api/clients/' + CURKEY + '/planning/' + jid + '?projectId=' + encodeURIComponent(pid) + (cid ? '&creationId=' + encodeURIComponent(cid) : ''), { method: 'DELETE' }).then(function (r2) { if (r2.ok) { toast('Supprimé'); } else { toast('Erreur'); refreshClient(); } });
+    });
+  }
+  function pjStart(pid, val, cid) {
+    var r = pjResolve(pid, cid);
+    if (r) { r.host.planningStart = val || null; pjRerender(pid, cid); }
+    var body = { projectId: pid, planningStart: val || null }; if (cid) body.creationId = cid;
+    jpost('/api/clients/' + CURKEY + '/planning', body, 'PATCH').then(function (r2) { if (r2.ok) { toast(val ? 'Départ fixé' : 'Dates en relatif'); } else { toast('Erreur'); refreshClient(); } }).catch(function () { toast('Erreur'); refreshClient(); });
+  }
   function pjNotify(pid, jid, cid) { var body = { projectId: pid, notify: true }; if (cid) body.creationId = cid; jpost('/api/clients/' + CURKEY + '/planning/' + jid, body, 'PATCH').then(function (r) { if (r.ok) toast('Cliente prévenue ✉'); else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function supportsCard() {
     var rows = (CUR.supports || []).map(function (s) {
