@@ -1986,11 +1986,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var cur = abs ? new Date(startISO+'T00:00:00') : null;
     var wk = 0;
     return (planning||[]).map(function(j){
-      var r = { j:j, label:'' };
+      var r = { j:j, label:'', start:null, end:null };
       if (j.dateMode==='range'){
         var rs = j.dateStart ? new Date(j.dateStart+'T00:00:00') : null;
         var re = j.dateEnd ? new Date(j.dateEnd+'T00:00:00') : null;
         if (rs||re) r.label = planFmtRange(rs||re, re||rs);
+        r.start = rs || re; r.end = re || rs;
         if (abs && re) cur = new Date(re);
         return r;
       }
@@ -2000,7 +2001,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         else { var d = (j.durationUnit==='semaines'?(j.durationValue||0)*7:(j.durationValue||0)); e = s ? new Date(s.getTime()+d*86400000) : null; }
         cur = e ? new Date(e) : cur;
         r.label = (s||e) ? planFmtRange(s,e) : '';
-      } else if (j.dateMode==='fixed' && j.date){ r.label = planFmtRange(new Date(j.date+'T00:00:00'), null); }
+        r.start = s; r.end = e;
+      } else if (j.dateMode==='fixed' && j.date){ var fd = new Date(j.date+'T00:00:00'); r.label = planFmtRange(fd, null); r.start = fd; r.end = fd; }
       else { var w = (j.durationUnit==='semaines'?(j.durationValue||0):Math.round((j.durationValue||0)/7*10)/10); var a = Math.floor(wk)+1, b = Math.max(a, Math.ceil(wk+w)); r.label = (a===b?'Sem '+a:'Sem '+a+'-'+b); wk = wk+w; }
       return r;
     });
@@ -2331,16 +2333,27 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var prows = planCompute(c.planning, c.planningStart);
           var ptl = prows.length ? (
             '<div class="cp-plan-lbl">Planning prévisionnel</div>' +
-            '<div class="cp-ptl">' + prows.map(function(r){
+            '<div class="cp-ptl">' + (function(){
+              var today = new Date(); today.setHours(0,0,0,0);
+              return prows.map(function(r){
               var j = r.j;
-              var state = j.status === 'fait' ? 'done' : (j.status === 'en_cours' ? 'now' : 'future');
+              // Le statut manuel prime ; sinon on déduit du calendrier : une étape
+              // dont la période est passée = faite, celle en cours = maintenant,
+              // et seules les étapes à venir (date future) sont « verrouillées ».
+              var state;
+              if (j.status === 'fait') state = 'done';
+              else if (j.status === 'en_cours') state = 'now';
+              else if (r.end && r.end < today) state = 'done';
+              else if (r.start && r.start <= today && (!r.end || r.end >= today)) state = 'now';
+              else if (r.start && r.start > today) state = 'future';
+              else state = 'future';
               var ic = state === 'done' ? 'check' : (state === 'now' ? 'chat' : 'lock');
               return '<div class="cp-ptl__s ' + state + '">' +
                 '<span class="cp-ptl__n">' + cpIcon(ic, 12) + '</span>' +
                 '<div class="cp-ptl__d">' + esc(r.label || '—') + '</div>' +
                 '<div class="cp-ptl__t">' + esc(j.jalon || j.title || '') + '</div>' +
               '</div>';
-            }).join('') + '</div>'
+            }).join('') + '</div>'; })()
           ) : '';
           // Retours + versions (fonctionnel : télécharger / valider / réviser).
           var revMsg = cliRevMsg(revMax, revUsed);

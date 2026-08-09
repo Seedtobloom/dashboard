@@ -776,7 +776,7 @@ async function handleClientApi(
         type: cleanEnum(body.type, CREATION_TYPES) || 'autre',
         status: cleanEnum(body.status, CREATION_STATUSES) || 'a_preparer',
         dueDate: body.dueDate ? String(body.dueDate).slice(0, 10) : null,
-        revisionsMax: typeof body.revisionsMax === 'number' ? Math.max(0, Math.min(20, Math.round(body.revisionsMax))) : 3,
+        revisionsMax: typeof body.revisionsMax === 'number' ? Math.max(0, Math.min(20, Math.round(body.revisionsMax))) : 2,
         bannerColor: cleanBannerColor(body.bannerColor),
         createdAt: nowIso(),
       };
