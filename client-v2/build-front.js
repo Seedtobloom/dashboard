@@ -83,8 +83,6 @@ must(js.indexOf("    var offset = firstDow;") !== -1, 'cal offset');
 js = js.replace("    var offset = firstDow;", "    var offset = firstDow >= 5 ? 0 : firstDow;");
 must(js.indexOf("allCells.length % 7 !== 0") !== -1, 'cal pad');
 js = js.replace("allCells.length % 7 !== 0", "allCells.length % 5 !== 0");
-must(js.indexOf("(idx<6?'border-right:1px solid '+BORD:'')") !== -1, 'cal header border');
-js = js.replace("(idx<6?'border-right:1px solid '+BORD:'')", "(idx<4?'border-right:1px solid '+BORD:'')");
 must(js.indexOf("grid-template-columns:repeat(7,1fr)") !== -1, 'cal grid');
 js = js.split("grid-template-columns:repeat(7,1fr)").join("grid-template-columns:repeat(5,1fr)");
 

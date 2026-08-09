@@ -3791,7 +3791,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     var BORD = '#ece4d6';
-    var emptyCell = '<div style="min-height:120px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#f3ede2"></div>';
+    var emptyCell = '<div style="min-height:132px;border-radius:14px;background:#f3ede2;opacity:.5"></div>';
     var dayCells = [];
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow;
@@ -3850,7 +3850,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var addBtn = isHol
         ? '<span title="Cindy est en congés ce jour-là" style="font-size:13px;opacity:0.65;line-height:1">🌴</span>'
         : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
-      dayCells.push('<div ' + (isHol ? '' : 'ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" ') + 'data-ds="'+ds+'" style="position:relative;min-height:120px;padding:10px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:'+cellBg+'">' +
+      dayCells.push('<div ' + (isHol ? '' : 'ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" ') + 'data-ds="'+ds+'" style="position:relative;min-height:132px;padding:12px;border-radius:14px;background:'+cellBg+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml + addBtn +
         '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5e4a2e;margin-top:2px">Congés</div>' : '') + pills +
       '</div>');
@@ -3860,12 +3860,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     allCells = allCells.concat(dayCells);
     while (allCells.length % 7 !== 0) allCells.push(emptyCell);
 
-    var calGrid = '<div style="border:1px solid '+BORD+';border-radius:16px;overflow:hidden;background:#fff;box-shadow:var(--shadow-1)">' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);background:#F8F6F2;border-bottom:1px solid '+BORD+'">' +
-        dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#6b533b;letter-spacing:0.08em;text-transform:uppercase;'+(idx<6?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
+    var calGrid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:10px">' +
+        dayNames.map(function(n,idx){return '<div style="padding:2px 8px;font-family:var(--font-micro);font-size:11px;font-weight:600;color:#8a7256;letter-spacing:0.08em;text-transform:uppercase">'+n+'</div>';}).join('') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr)">'+allCells.join('')+'</div>' +
-    '</div>';
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">'+allCells.join('')+'</div>';
 
     var drawer = cliSelTask[pid] ? buildPartTaskDrawer(pid, tasks, files, project) : '';
     // L'historique des tâches finies a désormais son propre onglet « Terminées ».
