@@ -29,6 +29,7 @@ type AnyObj = Record<string, any>;
 
 const SESSION_PREFIX = 'session:';
 const SESSION_TTL = 60 * 60 * 24; // 24h
+const REMEMBER_TTL = 60 * 60 * 24 * 30; // 30 jours (« Rester connectée »)
 const CLIENTS_INDEX = 'clients:index';
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -259,9 +260,10 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   const auth = (await env.KV_ADMIN.get('admin:auth', { type: 'json' })) as AnyObj | null;
   if (!auth || !auth.keyA || !auth.keyB) return json({ error: 'Auth admin non configurée' }, 500);
   if (keyA !== auth.keyA || keyB !== auth.keyB) { await loginFailed(env.KV_ADMIN, request); return json({ error: 'Clés invalides' }, 401); }
+  const ttl = body.remember === true ? REMEMBER_TTL : SESSION_TTL;
   const sid = genSession();
-  await env.KV_ADMIN.put(SESSION_PREFIX + sid, JSON.stringify({ admin: true, at: nowIso() }), { expirationTtl: SESSION_TTL });
-  const cookie = `stb_admin=${sid}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL}`;
+  await env.KV_ADMIN.put(SESSION_PREFIX + sid, JSON.stringify({ admin: true, at: nowIso() }), { expirationTtl: ttl });
+  const cookie = `stb_admin=${sid}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${ttl}`;
   return json({ success: true }, 200, { 'Set-Cookie': cookie });
 }
 async function handleLogout(request: Request, env: Env): Promise<Response> {

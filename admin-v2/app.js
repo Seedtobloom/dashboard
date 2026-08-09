@@ -270,6 +270,7 @@
           '<p class="login__s">Entrez vos deux clés d\'accès pour ouvrir le cockpit.</p>' +
           '<div class="field"><label>Clé A</label><div class="ifield"><input id="lg-a" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-a" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
           '<div class="field"><label>Clé B</label><div class="ifield"><input id="lg-b" class="inp" type="password" autocomplete="off" maxlength="32"><button type="button" class="login__eye" data-t="lg-b" aria-label="Afficher ou masquer">' + EYE_SVG + '</button></div></div>' +
+          '<label class="login__remember"><input type="checkbox" id="lg-remember" checked> Rester connectée 30 jours sur cet appareil</label>' +
           '<div class="err" id="lg-err"' + (err ? ' style="display:block"' : '') + '>' + (err ? esc(err) : '') + '</div>' +
           '<button class="btn btn--dark btn--block" id="lg-btn" onclick="ADM.login()">Se connecter</button>' +
           '<p class="login__hint">Double clé · accès sécurisé</p>' +
@@ -285,8 +286,9 @@
     var a = (el('lg-a').value || '').trim(), b = (el('lg-b').value || '').trim();
     var er = el('lg-err');
     if (!a || !b) { er.textContent = 'Les deux clés sont requises.'; er.style.display = 'block'; return; }
+    var rememberEl = el('lg-remember'); var remember = rememberEl ? !!rememberEl.checked : false;
     var btn = el('lg-btn'); btn.disabled = true; btn.textContent = 'Connexion…';
-    jpost('/api/login', { keyA: a, keyB: b }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    jpost('/api/login', { keyA: a, keyB: b, remember: remember }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) { if (res.ok) { boot(); } else { er.textContent = (res.d && res.d.error) || 'Clés invalides'; er.style.display = 'block'; btn.disabled = false; btn.textContent = 'Se connecter'; } })
       .catch(function () { er.textContent = 'Erreur réseau'; er.style.display = 'block'; btn.disabled = false; btn.textContent = 'Se connecter'; });
   }
