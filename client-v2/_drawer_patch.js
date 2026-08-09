@@ -34,6 +34,11 @@
     if (!inner || !String(inner).trim()) return '';
     return '<div style="background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
   }
+  // Compartiment lavande — utilisé pour le Livrable.
+  function dWrapLav(inner){
+    if (!inner || !String(inner).trim()) return '';
+    return '<div style="background:var(--brume,#F0E8FF);border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
+  }
   function buildPartTaskDrawer(pid, tasks, files, project){
     var taskId = cliSelTask[pid];
     if (!taskId) return '';
@@ -208,8 +213,8 @@
           // 1) Infos (façon Notion) dans un compartiment blanc.
           dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
             '<div style="font-size:11px;color:#9a93a5;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
-          // 2) Livrable.
-          dWrap(stbTaskDeliverables(pid, project, t, ''))+
+          // 2) Livrable (compartiment lavande).
+          dWrapLav(stbTaskDeliverables(pid, project, t, ''))+
           // 3) Échanges + historique des révisions.
           dWrap(commentsBlock + reviewHistHtml)+
           // 4) Le brief : la demande, le tableau et les fichiers joints.

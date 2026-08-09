@@ -187,10 +187,10 @@ must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#
 js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };");
 // fond des cartes de tâche : beige (DA) au lieu du dégradé d'urgence
 must(js.indexOf("background:'+(isDone?'#f3ede2':soft)+'") !== -1, 'card beige bg');
-js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?'#EDE4CF':'#F6ECD6')+'");
-// carte de tâche plus jolie : plus de padding, coins plus ronds, fine bordure
+js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?'#f1ece3':'#ffffff')+'");
+// carte de tâche blanche (DA Écrin) : plus de padding, coins ronds, ombre douce
 must(js.indexOf("padding:6px 8px;border-radius:7px;") !== -1, 'card pretty');
-js = js.replace("padding:6px 8px;border-radius:7px;", "padding:9px 11px;border-radius:12px;border:1px solid rgba(65,47,33,0.07);");
+js = js.replace("padding:6px 8px;border-radius:7px;", "padding:8px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(65,47,33,0.09);");
 // ── Filtres du calendrier : filtrer sur l'AVANCEMENT (p_brief) que la cliente règle via les pastilles ──
 must(js.indexOf("if (t.archived || t.status==='done') return false;") !== -1, 'cal filter archived');
 js = js.replace("if (t.archived || t.status==='done') return false;", "if (t.archived) return false; var _prog = (t.properties||{}).p_brief || '';");

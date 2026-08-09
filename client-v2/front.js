@@ -3710,6 +3710,38 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (cindyBanner ? '<div style="flex:1 1 210px;min-width:200px">' + cindyBanner + '</div>' : '') +
     '</div>';
 
+    // Bande « À faire en priorité · cette semaine » : les tâches non terminées
+    // les plus imminentes (classées par date d'échéance), en cartes cliquables.
+    var prioStrip = (function(){
+      var pr = tasks.filter(function(t){ return !t.archived && t.status !== 'done' && t.dueDate; })
+        .sort(function(a,b){ return (a.dueDate||'').localeCompare(b.dueDate||''); }).slice(0,3);
+      if (!pr.length) return '';
+      var icMap = { todo:'clock', in_progress:'zap', review:'chat', done:'check' };
+      var cards = pr.map(function(t){
+        var sm = cliTaskStatusMeta(t.status);
+        var ic = cpIcon(icMap[t.status] || 'clock', 15, 'color:' + sm.color + ';flex-shrink:0');
+        var when = t.dueDate ? fmtDate(t.dueDate) : '';
+        var action = t.status === 'review'
+          ? '<div style="margin-top:12px;display:inline-block;font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--nuit);background:var(--glycine);border-radius:999px;padding:8px 14px">À valider chez vous</div>'
+          : '';
+        return '<button onclick="cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="text-align:left;border:none;cursor:pointer;background:#fff;border-radius:16px;padding:16px 17px;box-shadow:0 3px 12px rgba(65,47,33,0.06);display:block;width:100%">' +
+          '<div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">' + ic +
+            '<span style="flex:1;font-family:var(--font-micro);font-size:12.5px;font-weight:700;color:var(--terre)">' + esc(when) + '</span>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:' + sm.bg + ';color:' + sm.color + '">' + esc(sm.label) + '</span>' +
+          '</div>' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;line-height:1.1;color:var(--terre)">' + esc(t.title) + '</div>' +
+          action +
+        '</button>';
+      }).join('');
+      return '<section style="background:#EDE3FF;border-radius:22px;padding:22px 24px;margin-bottom:20px">' +
+        '<div style="display:flex;align-items:baseline;gap:11px;margin-bottom:16px">' +
+          '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:27px;color:var(--terre);margin:0">À faire en priorité</h2>' +
+          '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Classé par date</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">' + cards + '</div>' +
+      '</section>';
+    })();
+
     // Alerte forfait bientôt épuisé / dépassé, en tête (pleine largeur).
     var forfaitAlert = buildForfaitAlert(pid, project, _pf);
     var fab = '<button class="cp-fab" onclick="cliNewDemande(\''+pid+'\')" aria-label="Nouvelle demande">'+cpIcon('plus',20)+'<span>Nouvelle demande</span></button>';
@@ -3736,8 +3768,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else if (tab === 'archives') content = buildPartArchives(pid, tasks);
     else content = buildPartCal(pid, tasks, files, project);
 
-    // Récap en rangée, puis onglets + contenu (calendrier) sur toute la largeur.
-    return fab + forfaitAlert + metaRow + tabs + content;
+    // Récap en rangée, priorités de la semaine, puis onglets + contenu.
+    return fab + forfaitAlert + metaRow + prioStrip + tabs + content;
   }
   // Onglet dédié aux tâches archivées (= terminées + archivées).
   function buildPartArchives(pid, tasks) {
@@ -4372,9 +4404,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var statusPill = '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:' + sm.color + ';background:' + sm.bg + ';white-space:nowrap">' + esc(sm.label) + '</span>';
         var briefRaw = propVals.p_clientbrief === 'Brief terminé' ? 'Brief prêt' : propVals.p_clientbrief;
         var propChipsHtml = propChip(briefRaw, STATUT_COL) + statusPill;
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:9px 11px;border-radius:12px;border:1px solid rgba(65,47,33,0.07);background:'+(isDone?'#EDE4CF':'#F6ECD6')+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
+        var _stIcMap = { todo:'clock', in_progress:'zap', review:'chat', done:'check' };
+        var _stIc = cpIcon(_stIcMap[t.status] || 'clock', 12, 'color:' + sm.color + ';flex-shrink:0');
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:8px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(65,47,33,0.09);background:'+(isDone?'#f1ece3':'#ffffff')+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
-            cliUrgIcon(t.urgency, 11) +
+            _stIc +
             '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#5e4a2e;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
@@ -4382,7 +4416,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>';
       }).join('') + (dt.length>3?'<div style="font-size:10px;color:#5e4a2e;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       // Jour de congés : grisé, non déposable, avec un repère « congés » à la place du +.
-      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#f4ece1,#f4ece1 7px,#efe4d5 7px,#efe4d5 14px)' : (isWeekend ? '#faf7f1' : '#fff');
+      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#f4ece1,#f4ece1 7px,#efe4d5 7px,#efe4d5 14px)' : (isWeekend ? '#f3ede2' : '#f8f5ef');
       var addBtn = isHol
         ? '<span title="Cindy est en congés ce jour-là" style="font-size:13px;opacity:0.65;line-height:1">🌴</span>'
         : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
@@ -9039,6 +9073,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (!inner || !String(inner).trim()) return '';
     return '<div style="background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
   }
+  // Compartiment lavande, utilisé pour le Livrable.
+  function dWrapLav(inner){
+    if (!inner || !String(inner).trim()) return '';
+    return '<div style="background:var(--brume,#F0E8FF);border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
+  }
   function buildPartTaskDrawer(pid, tasks, files, project){
     var taskId = cliSelTask[pid];
     if (!taskId) return '';
@@ -9213,8 +9252,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           // 1) Infos (façon Notion) dans un compartiment blanc.
           dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
             '<div style="font-size:11px;color:#9a93a5;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
-          // 2) Livrable.
-          dWrap(stbTaskDeliverables(pid, project, t, ''))+
+          // 2) Livrable (compartiment lavande).
+          dWrapLav(stbTaskDeliverables(pid, project, t, ''))+
           // 3) Échanges + historique des révisions.
           dWrap(commentsBlock + reviewHistHtml)+
           // 4) Le brief : la demande, le tableau et les fichiers joints.
