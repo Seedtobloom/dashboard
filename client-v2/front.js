@@ -9029,10 +9029,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return s;
   }
   function dRow(icon, label, valueHtml){
-    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:5px 0">'+
-      '<div style="display:flex;align-items:center;gap:7px;width:158px;flex-shrink:0;color:#9a93a5;font-size:12.5px;padding-top:7px"><span style="opacity:0.85">'+icon+'</span><span>'+label+'</span></div>'+
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid #f4f0ea">'+
+      '<div style="display:flex;align-items:center;gap:8px;width:160px;flex-shrink:0;color:#8a7256;font-size:12.5px;padding-top:7px"><span style="opacity:0.85">'+icon+'</span><span>'+label+'</span></div>'+
       '<div style="flex:1;min-width:0;padding-top:1px">'+valueHtml+'</div>'+
     '</div>';
+  }
+  // Compartiment : carte blanche (les blocs de la tâche, posés sur le tiroir beige).
+  function dWrap(inner){
+    if (!inner || !String(inner).trim()) return '';
+    return '<div style="background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
   }
   function buildPartTaskDrawer(pid, tasks, files, project){
     var taskId = cliSelTask[pid];
@@ -9144,13 +9149,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       : '';
 
     var backdrop = '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>';
-    var cover = '<div style="height:104px;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
+    var cover = '<div style="height:104px;border-radius:22px 22px 0 0;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
     var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
     // Bouton agrandir / réduire le tiroir (pratique pour éditer un tableau).
     if (window.cliTaskBig === undefined) window.cliTaskBig = true;
     var big = !!window.cliTaskBig;
     var expandBtn = '<button onclick="cliToggleTaskBig()" title="'+(big?'Réduire':'Agrandir')+'" style="position:absolute;top:16px;right:58px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#412F21;line-height:1">'+(big?'⤡':'⤢')+'</button>';
-    var icon = '<div style="margin:-32px 0 0 44px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
+    var icon = '<div style="margin:-32px 0 0 24px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
     var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
 
     // Lien de révision déposé par Cindy : appel à l'action mis en avant tant que
@@ -9199,29 +9204,21 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       : '';
 
     return backdrop +
-      '<div class="cp-task-overlay" style="background:var(--card,#fffefb);border:none;border-radius:0;padding:0;position:fixed;top:0;right:0;height:100vh;width:'+(big?'min(1180px,99vw)':'min(780px,96vw)')+';overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">'+
+      '<div class="cp-task-overlay" style="background:#F8F6F2;border:none;border-radius:22px;padding:0;position:fixed;top:20px;right:20px;bottom:20px;width:'+(big?'min(1140px,94vw)':'min(760px,92vw)')+';overflow-y:auto;z-index:100;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55);animation:cpDrawerIn .24s var(--ease) both">'+
         closeBtn + expandBtn + cover + icon +
-        '<div style="padding:0 44px 44px">'+
+        '<div style="padding:0 24px 28px">'+
           title +
           reviewCallout +
           proposeCallout +
-          // 1) Propriétés / suivi (avancement, échéance, priorité, statut brief…).
-          '<div style="margin:14px 0 4px">'+propertiesHtml+'</div>'+
-          '<div style="font-size:11px;color:#9a93a5;margin:2px 0 4px">✎ modifiable par vous · 🔒 suivi par Cindy</div>'+
-          sep +
+          // 1) Infos (façon Notion) dans un compartiment blanc.
+          dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
+            '<div style="font-size:11px;color:#9a93a5;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
           // 2) Livrable.
-          stbTaskDeliverables(pid, project, t, sep) +
-          sep +
-          // 3) Échanges.
-          commentsBlock +
-          reviewHistHtml +
-          sep +
-          // 4) Le brief : la demande, le tableau et les fichiers joints
-          //    (tout ce qui concerne le brief est regroupé ici).
-          stbBlocks(pid, t) +
-          stbTaskTable(pid, t) +
-          attachBlock +
-          sep +
+          dWrap(stbTaskDeliverables(pid, project, t, ''))+
+          // 3) Échanges + historique des révisions.
+          dWrap(commentsBlock + reviewHistHtml)+
+          // 4) Le brief : la demande, le tableau et les fichiers joints.
+          dWrap(stbBlocks(pid, t) + stbTaskTable(pid, t) + attachBlock)+
           actions +
         '</div>'+
       '</div>';
