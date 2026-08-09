@@ -4154,6 +4154,10 @@
           '<input class="cg-name" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" title="Nom de la création">' +
           '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
           '<select class="cg-in" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
+          '<label class="cg-rev" title="Nombre de séries de retours incluses (aller-retours de validation) pour ce support">' +
+            '<span class="cg-rev__lb">↩ Séries de retours</span>' +
+            '<input class="cg-in cg-rev__in" type="number" min="0" max="20" value="' + (typeof c.revisionsMax === 'number' ? c.revisionsMax : 3) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revisionsMax\',this.value)">' +
+          '</label>' +
           '<span class="cg-status cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
         '</div>' +
         crBannerRow(pid, c) +
