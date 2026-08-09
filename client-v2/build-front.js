@@ -198,11 +198,11 @@ must(js.indexOf("if (flt.status && t.status !== flt.status) return false;") !== 
 js = js.replace("if (flt.status && t.status !== flt.status) return false;", "if (flt.status) { if (flt.status==='Terminé') { if (_prog!=='Terminé' && t.status!=='done') return false; } else if (_prog !== flt.status) return false; } else if (t.status==='done') return false;");
 // chips de filtre alignés sur les libellés d'avancement (+ TERMINÉ)
 must(js.indexOf("{ k:'todo',        label:'REÇUE',     col:'#b08968' },") !== -1, 'cal chip recue');
-js = js.replace("{ k:'todo',        label:'REÇUE',     col:'#b08968' },", "{ k:'En attente du brief', label:'EN ATTENTE', col:'#b08968' },");
+js = js.replace("{ k:'todo',        label:'REÇUE',     col:'#b08968' },", "{ k:'En attente du brief', label:'EN ATTENTE', col:'#B8A98F' },");
 must(js.indexOf("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },") !== -1, 'cal chip encours');
-js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },", "{ k:'En cours', label:'EN COURS', col:'#7da2e0' },");
+js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },", "{ k:'En cours', label:'EN COURS', col:'#6E86B8' },");
 must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#c9952f' }") !== -1, 'cal chip avalider');
-js = js.replace("{ k:'review',      label:'À VALIDER', col:'#c9952f' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#d98a5b' },\n      { k:'Terminé', label:'TERMINÉ', col:'#5fa873' }");
+js = js.replace("{ k:'review',      label:'À VALIDER', col:'#c9952f' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#C8794E' },\n      { k:'Terminé', label:'TERMINÉ', col:'#7C8B5A' }");
 
 // la sauvegarde d'une propriété recolore la pastille (re-render) — fiable aussi depuis la carte
 must(js.indexOf("toast('Enregistré ✓'); })") !== -1, 'prop save rerender');

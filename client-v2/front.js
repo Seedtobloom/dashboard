@@ -3674,24 +3674,26 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
     // ── Cartes récap (empilées dans la colonne de droite) ──
-    var cardCss = 'background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px';
+    var cardCss = 'background:#F8F6F2;border:none;border-radius:18px;padding:20px 22px';
+    var statLbl = 'font-family:var(--font-micro);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--terre-400,#8a6f54);margin-bottom:10px';
+    var statVal = 'font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:34px;line-height:1;font-weight:600';
     var statForfait = '<div style="' + cardCss + '">' +
-        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Forfait restant</div>' +
-        '<div style="font-size:22px;font-weight:700;color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--navy)')+'">' +
+        '<div style="'+statLbl+'">Forfait restant</div>' +
+        '<div style="'+statVal+';color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--terre)')+'">' +
           (forfaitH ? fmtHours(forfaitLeft) : '') +
         '</div>' +
-        (forfaitH ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-size:11px;color:var(--muted)">Forfait non défini</div>') +
+        (forfaitH ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">Forfait non défini</div>') +
       '</div>';
     var statToday = '<div style="' + cardCss + '">' +
-        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Tâches aujourd\'hui</div>' +
-        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+todayTasks.length+'</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">à réaliser</div>' +
+        '<div style="'+statLbl+'">Tâches aujourd\'hui</div>' +
+        '<div style="'+statVal+';color:var(--terre)">'+todayTasks.length+'</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">à réaliser</div>' +
       '</div>';
     var statProg = '<div style="' + cardCss + '">' +
-        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Progression</div>' +
-        '<div style="font-size:22px;font-weight:700;color:var(--navy)">'+pctDone+'%</div>' +
-        '<div style="background:var(--border);border-radius:999px;height:5px;margin-top:6px"><div style="background:var(--sage);height:100%;border-radius:999px;width:'+pctDone+'%"></div></div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+' </div>' +
+        '<div style="'+statLbl+'">Progression</div>' +
+        '<div style="'+statVal+';color:var(--terre)">'+pctDone+' %</div>' +
+        '<div style="background:rgba(65,47,33,.12);border-radius:999px;height:7px;margin-top:12px"><div style="background:var(--terre);height:100%;border-radius:999px;width:'+pctDone+'%"></div></div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+'</div>' +
       '</div>';
     // Créneaux réservés : quand Cindy travaille sur ce projet (réglé côté studio).
     var _slots = Array.isArray(project.workSlots) ? project.workSlots : [];
@@ -4321,11 +4323,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var forfaitLeft = forfaitH - monthReel;
     var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
     var forfaitBar = forfaitH
-      ? '<div style="display:flex;align-items:center;gap:14px;padding:14px 22px;background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap">' +
+      ? '<div style="display:flex;align-items:center;gap:14px;padding:15px 22px;background:#F8F6F2;border:none;border-radius:14px;margin-bottom:18px;flex-wrap:wrap">' +
           cpIcon('timer',16,'color:#6b533b') +
           '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b533b;white-space:nowrap">Forfait du mois</span>' +
           '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#412F21)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#6b533b">/'+forfaitH+' h</span></span>' +
-          '<div style="flex:1;min-width:120px;height:8px;background:#ece4d4;border-radius:999px;overflow:hidden"><div style="height:100%;background:#7da2e0;width:'+forfaitPct+'%;border-radius:999px;transition:width .3s"></div></div>' +
+          '<div style="flex:1;min-width:120px;height:8px;background:rgba(65,47,33,.1);border-radius:999px;overflow:hidden"><div style="height:100%;background:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#412F21)')+';width:'+forfaitPct+'%;border-radius:999px;transition:width .3s"></div></div>' +
           '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#412F21)')+';white-space:nowrap">'+(forfaitLeft>=0?forfaitLeft.toFixed(1)+' H RESTANTES':(-forfaitLeft).toFixed(1)+' H DEPASSEES')+'</span>' +
         '</div>'
       : '';
@@ -4333,10 +4335,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Header: ← Mois → | AUJOURD'HUI | filtres statut | + AJOUTER
     var CAL_STATUS_F = [
       { k:'',            label:'TOUTES',    col:'#1C1205' },
-      { k:'En attente du brief', label:'EN ATTENTE', col:'#b08968' },
-      { k:'En cours', label:'EN COURS', col:'#7da2e0' },
-      { k:'À retravailler', label:'À RETRAVAILLER', col:'#d98a5b' },
-      { k:'Terminé', label:'TERMINÉ', col:'#5fa873' }
+      { k:'En attente du brief', label:'EN ATTENTE', col:'#B8A98F' },
+      { k:'En cours', label:'EN COURS', col:'#6E86B8' },
+      { k:'À retravailler', label:'À RETRAVAILLER', col:'#C8794E' },
+      { k:'Terminé', label:'TERMINÉ', col:'#7C8B5A' }
     ];
     var urgFilters = CAL_STATUS_F.map(function(s){
       var active = (flt.status||'')===s.k;
@@ -4359,8 +4361,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Grid cells, table unifiée bordurée
     var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
-    var BORD = '#e3ddd0';
-    var emptyCell = '<div style="min-height:120px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#faf7f1"></div>';
+    var BORD = '#ece4d6';
+    var emptyCell = '<div style="min-height:120px;border-right:1px solid '+BORD+';border-bottom:1px solid '+BORD+';background:#f3ede2"></div>';
     var dayCells = [];
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow >= 5 ? 0 : firstDow;
@@ -4430,8 +4432,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     allCells = allCells.concat(dayCells);
     while (allCells.length % 5 !== 0) allCells.push(emptyCell);
 
-    var calGrid = '<div style="border:1px solid '+BORD+';border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow-1)">' +
-      '<div style="display:grid;grid-template-columns:repeat(5,1fr);background:#faf6ee;border-bottom:1px solid '+BORD+'">' +
+    var calGrid = '<div style="border:1px solid '+BORD+';border-radius:16px;overflow:hidden;background:#fff;box-shadow:var(--shadow-1)">' +
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);background:#F8F6F2;border-bottom:1px solid '+BORD+'">' +
         dayNames.map(function(n,idx){return '<div style="padding:11px 12px;font-size:11px;font-weight:700;color:#6b533b;letter-spacing:0.08em;text-transform:uppercase;'+(idx<4?'border-right:1px solid '+BORD:'')+'">'+n+'</div>';}).join('') +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(5,1fr)">'+allCells.join('')+'</div>' +
