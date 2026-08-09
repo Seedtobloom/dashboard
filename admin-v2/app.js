@@ -299,7 +299,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['semaine', 'Ma semaine'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['planning', 'Calendrier'], ['done', 'Réalisé']]],
+      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['semaine', 'Ma semaine'], ['mytasks', 'Mes tâches'], ['visios', 'Visios'], ['questionnaires', 'Questionnaires'], ['projtpl', 'Modèles de projets'], ['done', 'Réalisé']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['avis', 'Avis'], ['incidents', 'Incidents'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
@@ -2415,7 +2415,7 @@
     var barCol = over ? '#b0761c' : 'var(--terre)';
     var rangeLbl = days[0].getDate() + ' → ' + days[4].getDate() + ' ' + MS_MONTHS[days[4].getMonth()] + ' ' + days[4].getFullYear();
     var marge = weekAvail - weekPlanned;
-    var note = !weekAvail ? 'Renseigne tes disponibilités dans le Calendrier pour voir ta marge.'
+    var note = !weekAvail ? 'Capacité hebdo non renseignée — la marge n\'est pas calculée.'
       : (over ? 'Semaine chargée — au-delà de ta capacité, lève le pied.'
         : (marge <= weekAvail * 0.15 ? 'Semaine bien remplie, mais tu tiens le rythme.' : 'La semaine respire, tu as de la marge.'));
     var whead = '<div class="whead">' +
