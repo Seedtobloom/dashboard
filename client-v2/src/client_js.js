@@ -2282,6 +2282,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // et les fichiers associés. Refonte inspirée de la vision de Clara.
     if (project.type === 'support') {
       var creations = Array.isArray(project.creations) ? project.creations : [];
+      // Priorité d'affichage : les supports dont la date de début est la plus
+      // proche passent en premier ; ceux sans date planifiée finissent en bas.
+      function crStartTime(c){
+        var rows = planCompute(Array.isArray(c.planning) ? c.planning : [], c.planningStart);
+        var min = null;
+        rows.forEach(function(r){ var d = r.start || r.end; if (d && (min === null || d < min)) min = d; });
+        if (!min && c.planningStart) min = new Date(c.planningStart + 'T00:00:00');
+        return min ? min.getTime() : Infinity;
+      }
+      creations = creations.slice().sort(function(a, b){ return crStartTime(a) - crStartTime(b); });
       var allDlv = project.deliverables || [];
       var crWaiting = allDlv.filter(function(d){ return d.status === 'a_valider'; }).length;
 
@@ -2358,16 +2368,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           // Retours + versions (fonctionnel : télécharger / valider / réviser).
           var revMsg = cliRevMsg(revMax, revUsed);
           var gaugeSeg = '';
-          for (var gi = 0; gi < revMax; gi++){ gaugeSeg += '<span style="flex:1;height:11px;border-radius:99px;background:' + (gi < revLeft ? 'var(--terre)' : 'rgba(65,47,33,0.14)') + '"></span>'; }
-          // « Séries de retours » mise en avant : encart lavande, gros titre, jauge épaisse.
+          for (var gi = 0; gi < revMax; gi++){ gaugeSeg += '<span style="width:16px;height:7px;border-radius:99px;background:' + (gi < revLeft ? 'var(--terre)' : 'rgba(65,47,33,0.18)') + '"></span>'; }
+          // « Séries de retours » : pilule lavande compacte (titre court + jauge fine + compteur).
           var revBlock = revMax ? (
-            '<div style="margin-top:20px;padding:18px 20px;background:var(--glycine);border-radius:12px">' +
-              '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">' +
-                '<span style="font-family:var(--font-display,serif);font-style:italic;font-size:20px;line-height:1.05;color:var(--terre)">' + (revLeft > 0 ? 'Il reste ' + revLeft + ' série' + (revLeft > 1 ? 's' : '') + ' de retours' : 'Séries de retours épuisées') + '</span>' +
-                '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.02em;color:var(--terre);white-space:nowrap">' + revLeft + ' / ' + revMax + '</span>' +
-              '</div>' +
-              '<div style="display:flex;gap:6px">' + gaugeSeg + '</div>' +
-              '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600);margin-top:12px;line-height:1.45">' + esc(revMsg[1]) + '</div>' +
+            '<div title="' + esc(revMsg[1]) + '" style="display:inline-flex;align-items:center;gap:11px;padding:8px 15px;background:var(--glycine);border-radius:999px;align-self:flex-start">' +
+              '<span style="font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">↩ ' + (revLeft > 0 ? 'Retours restants' : 'Retours épuisés') + '</span>' +
+              '<span style="display:flex;gap:4px">' + gaugeSeg + '</span>' +
+              '<span style="font-family:var(--font-micro);font-size:12.5px;font-weight:700;letter-spacing:0.02em;color:var(--terre);white-space:nowrap">' + revLeft + ' / ' + revMax + '</span>' +
             '</div>'
           ) : '';
           var versions = stbVersionsList(project.id, vs);

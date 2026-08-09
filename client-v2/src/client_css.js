@@ -485,19 +485,20 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-spanel__bar i { display: block; height: 100%; background: var(--terre); border-radius: 99px; }
 
 /* planning prévisionnel = étapes du support */
-.cp-plan-lbl { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--terre-600); margin-top: 22px; }
-.cp-ptl { display: flex; margin-top: 14px; overflow-x: auto; padding-bottom: 4px; }
-.cp-ptl__s { flex: 1; min-width: 96px; text-align: center; position: relative; padding-top: 30px; }
-.cp-ptl__s::before { content: ""; position: absolute; top: 9px; left: 0; right: 0; height: 2px; background: var(--bone-d); }
+.cp-plan-lbl { font-family: var(--font-micro); font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--terre); margin-top: 22px; }
+.cp-ptl { display: flex; margin-top: 12px; overflow-x: auto; padding: 22px 14px 16px; background: #fff; border: 1px solid var(--bone-d); border-radius: 16px; }
+.cp-ptl__s { flex: 1; min-width: 104px; text-align: center; position: relative; padding-top: 34px; }
+.cp-ptl__s::before { content: ""; position: absolute; top: 11px; left: 0; right: 0; height: 2px; background: var(--bone-d); }
 .cp-ptl__s:first-child::before { left: 50%; }
 .cp-ptl__s:last-child::before { right: 50%; }
 .cp-ptl__s.done::before, .cp-ptl__s.now::before { background: var(--terre); }
-.cp-ptl__n { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: var(--terre); }
-.cp-ptl__n .ic, .cp-ptl__n svg { width: 12px; height: 12px; }
-.cp-ptl__s.now .cp-ptl__n { background: var(--glycine); color: var(--nuit); box-shadow: 0 0 0 4px rgba(228,209,254,0.4); }
-.cp-ptl__s.done, .cp-ptl__s.future { opacity: 0.5; }
-.cp-ptl__d { font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--terre); }
-.cp-ptl__t { font-family: var(--font-micro); font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--terre-600); margin-top: 2px; }
+.cp-ptl__n { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px var(--bone-d); display: flex; align-items: center; justify-content: center; color: var(--terre); }
+.cp-ptl__n .ic, .cp-ptl__n svg { width: 13px; height: 13px; }
+.cp-ptl__s.done .cp-ptl__n { background: var(--terre); color: #fff; box-shadow: none; }
+.cp-ptl__s.now .cp-ptl__n { background: var(--glycine); color: var(--nuit); box-shadow: 0 0 0 4px rgba(228,209,254,0.5); }
+.cp-ptl__s.future { opacity: 0.55; }
+.cp-ptl__d { font-family: var(--font-display); font-style: italic; font-size: 17px; color: var(--terre); }
+.cp-ptl__t { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 3px; }
 
 /* Messagerie client — inbox (design Écrin : entrant blanc, moi lavande, Inter) */
 .mx-modal { width:min(1120px,100%); height:min(740px,100%); background:#fff; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px -20px rgba(28,18,5,0.55); }
