@@ -2170,19 +2170,18 @@
     ['budget', 'Budget ?'], ['offre', 'Offre pertinente'], ['etape', 'Prochaine étape']
   ];
   function callAntiseche() {
-    var SC = 'background:#fff;border-radius:11px;padding:10px 13px;margin-bottom:8px';
+    var SC = 'background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:10px;break-inside:avoid;-webkit-column-break-inside:avoid';
     var HD = 'font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54)';
     var steps = CALL_STEPS.map(function (s) {
-      var rel = s.r.join(' · ');
-      var relHtml = rel ? '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre-600,#6b533b);line-height:1.4;margin-top:4px">' + esc(rel) + '</div>' : '';
+      var relHtml = s.r.map(function (x) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre-600,#6b533b);line-height:1.4;margin-top:4px">› ' + esc(x) + '</div>'; }).join('');
       return '<div style="' + SC + '"><div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:50%;background:var(--terre);color:var(--paille);display:grid;place-items:center;font-family:var(--font-micro);font-weight:700;font-size:11px;flex:none">' + s.n + '</span><span style="' + HD + '">' + esc(s.t) + '</span></div>' +
-        '<div style="font-family:var(--font-micro);font-weight:600;font-size:15px;line-height:1.3;color:var(--terre);margin-top:5px">' + esc(s.q) + '</div>' + relHtml + '</div>';
+        '<div style="font-family:var(--font-micro);font-weight:600;font-size:14.5px;line-height:1.35;color:var(--terre);margin-top:6px">' + esc(s.q) + '</div>' + relHtml + '</div>';
     }).join('');
-    var reb = '<div style="' + SC + '"><div style="' + HD + ';margin-bottom:7px">Rebonds</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">' +
-      CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.35">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b> ' + esc(r[2]) + '</div>'; }).join('') + '</div></div>';
-    var sec = '<div style="' + SC + ';margin-bottom:0"><div style="' + HD + ';margin-bottom:6px">Secours</div>' +
-      CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.45;margin-bottom:3px">' + esc(p) + '</div>'; }).join('') + '</div>';
-    return '<aside style="position:sticky;top:12px"><div style="background:#F0E8FF;border-radius:14px;padding:12px">' + steps + reb + sec + '</div></aside>';
+    var reb = '<div style="' + SC + '"><div style="' + HD + ';margin-bottom:8px">Rebonds</div>' +
+      CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.5;margin-bottom:5px">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b><br>' + esc(r[2]) + '</div>'; }).join('') + '</div>';
+    var sec = '<div style="' + SC + ';margin-bottom:0"><div style="' + HD + ';margin-bottom:8px">Secours</div>' +
+      CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.45;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
+    return '<aside style="position:sticky;top:12px"><div style="background:#F0E8FF;border-radius:14px;padding:12px;column-count:2;column-gap:12px">' + steps + reb + sec + '</div></aside>';
   }
   function callEditor(n) {
     return '<div>' +
@@ -2211,7 +2210,7 @@
     var editor = cur
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:14px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
-    return '<div style="display:grid;grid-template-columns:230px minmax(0,1fr) 320px;gap:18px;align-items:start">' + list + editor + callAntiseche() + '</div>';
+    return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 470px;gap:16px;align-items:start">' + list + editor + callAntiseche() + '</div>';
   }
   function visCardsHtml() {
     function section(cat, label, col) {
