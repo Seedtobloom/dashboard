@@ -2079,7 +2079,7 @@
   var VISIOS = { cards: [], templates: [] }, VISIOS_LOADED = false, VIS_TAB = 'cards', VIS_SEL = null;
   function renderVisios() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'suivi\')">+ Client suivi</button><button class="btn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau client</button>';
-    setMain(topbar('Visios', right, 'Prépare tes rendez-vous : un déroulé étape par étape et tes questions') + '<div class="wrap" id="vis-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain(topbar('Visios', right, 'Prépare tes rendez-vous : un déroulé étape par étape et tes questions') + '<div class="wrap" id="vis-body" style="max-width:1560px"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
@@ -2210,7 +2210,7 @@
     var editor = cur
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:14px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
-    return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 470px;gap:16px;align-items:start">' + list + editor + callAntiseche() + '</div>';
+    return '<div style="display:grid;grid-template-columns:220px minmax(0,1fr) 520px;gap:18px;align-items:start">' + list + editor + callAntiseche() + '</div>';
   }
   function visCardsHtml() {
     function section(cat, label, col) {
