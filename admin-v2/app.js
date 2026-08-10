@@ -2100,10 +2100,126 @@
     var tabs = '<div class="subtabs" style="margin-bottom:18px">' +
       '<button class="subtab' + (VIS_TAB === 'cards' ? ' active' : '') + '" onclick="ADM.visTab(\'cards\')">Rendez-vous · ' + VISIOS.cards.length + '</button>' +
       '<button class="subtab' + (VIS_TAB === 'templates' ? ' active' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles · ' + VISIOS.templates.length + '</button>' +
+      '<button class="subtab' + (VIS_TAB === 'fiche' ? ' active' : '') + '" onclick="ADM.visTab(\'fiche\')">🌱 Fiche d\'appel</button>' +
     '</div>';
-    body.innerHTML = tabs + (VIS_TAB === 'cards' ? visCardsHtml() : visTemplatesHtml());
+    body.innerHTML = tabs + (VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
   }
   function visTab(t) { VIS_TAB = t; renderVisiosBody(); }
+
+  // ── Fiche d'appel : notes multiples (façon Apple Notes) + suivi + anti-sèche ──
+  var CALL_SEL = null;
+  var CALL_KEY = 'stb_call_notes';
+  function callNotesLoad() { try { return JSON.parse(localStorage.getItem(CALL_KEY) || '[]') || []; } catch (e) { return []; } }
+  function callNotesSave(a) { try { localStorage.setItem(CALL_KEY, JSON.stringify(a)); } catch (e) {} }
+  function callNoteNew() {
+    var a = callNotesLoad();
+    var d = new Date();
+    var n = { id: 'n' + Date.now(), title: '', date: d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }), f: {}, text: '' };
+    a.unshift(n); callNotesSave(a); CALL_SEL = n.id; renderVisiosBody();
+    setTimeout(function () { var el0 = el('call-title'); if (el0) el0.focus(); }, 40);
+  }
+  function callNoteSel(id) { CALL_SEL = id; renderVisiosBody(); }
+  function callNoteDel(id) {
+    admConfirm({ title: 'Supprimer cette note ?', message: 'La note et son suivi seront effacés de cet appareil.', danger: true, yes: 'Supprimer', no: 'Annuler' }, function () {
+      var a = callNotesLoad().filter(function (n) { return n.id !== id; });
+      callNotesSave(a); if (CALL_SEL === id) CALL_SEL = null; renderVisiosBody();
+    });
+  }
+  function callNoteSet(id, field, val) {
+    var a = callNotesLoad(); var n = a.filter(function (x) { return x.id === id; })[0]; if (!n) return;
+    if (field === 'title') { n.title = val; var lab = el('cnli-' + id); if (lab) lab.textContent = val || 'Sans titre'; }
+    else if (field === 'text') n.text = val;
+    else { if (!n.f) n.f = {}; n.f[field] = val; }
+    callNotesSave(a);
+  }
+
+  // Contenu de référence (questions / rebonds / secours) — texte en clair.
+  var CALL_STEPS = [
+    { n: '1', t: 'Pourquoi cet appel ?', q: "« Qu'est-ce qui t'a donné envie d'accepter cet échange après mon mail ? »",
+      r: ["Besoin → « Tu peux m'en dire un peu plus ? »", "Étude de cas → « Qu'est-ce qui t'a parlé dans le projet Envol ? »"] },
+    { n: '2', t: "Aujourd'hui, comment ça se passe ?", q: "« Comment est organisée votre communication aujourd'hui ? »",
+      r: ["Qui ? → « Qui s'occupe des supports ? »", "Quoi ? → « Quels supports produisez-vous ? »", "Comment ? → « Comment ça se passe pour créer un support ? »"],
+      e: "interne · Canva · freelance · pas de charte · templates · manque de temps" },
+    { n: '3', t: "Qu'est-ce qui coince ?", q: "« Qu'est-ce qui vous prend le plus de temps ou vous frustre ? »",
+      r: ["« Manque de temps » → « Sur quoi vous en perdez le plus ? »", "« Manque de cohérence » → « Sur quels supports surtout ? »", "« On repart de zéro » → « Quels supports concernés ? »", "« Identité datée » → « Qu'est-ce qui a changé depuis ? »"] },
+    { n: '4', t: 'Où veulent-ils aller ?', q: "« Qu'est-ce que vous aimeriez avoir à la place ? »",
+      r: ["« Des projets / échéances à venir ? »", "🔑 « Dans 6 mois, qu'est-ce qui te ferait dire que ça a été utile ? »"],
+      e: "professionnaliser · gagner du temps · cohérence · se différencier · nouveaux clients · événement" },
+    { n: '5', t: 'Je reformule → je propose', q: "« Si je résume : vous avez [X], la difficulté est [Y], vous aimeriez [Z]. C'est bien ça ? »",
+      r: ["🌱 Identité — souci d'image / charte", "🌿 Supports — identité OK + besoin ponctuel", "🌳 360° — besoins récurrents + peu de temps", "Puis : « Est-ce que ça correspond ? »"] }
+  ];
+  var CALL_REBONDS = [
+    ['🟢', 'Un fait', '« Concrètement ? »'],
+    ['🟠', 'Un problème', "« Qu'est-ce que ça entraîne ? »"],
+    ['🔵', 'Un souhait', '« Pour quoi faire ? »'],
+    ['🟣', 'Un mot clé', "« Tu peux m'en dire plus ? »"],
+    ['🧭', 'Perdue', '« Si je comprends bien… »'],
+    ['⏱️', 'Silence OK', "« Tu disais que… »"]
+  ];
+  var CALL_SECOURS = [
+    "« Tu peux m'en dire un peu plus ? »",
+    "« Concrètement, ça se traduit comment au quotidien ? »",
+    "« Et ça, c'est un sujet depuis longtemps ? »",
+    "« Qu'est-ce qui serait idéal pour vous ? »",
+    "« Pourquoi c'est important pour vous aujourd'hui ? »"
+  ];
+  var CALL_FIELDS = [
+    ['pourquoi', 'Pourquoi maintenant ?'], ['situation', 'Situation actuelle'],
+    ['probleme', 'Problème principal'], ['veulent', 'Ce qu\'ils veulent'],
+    ['projet', 'Projet / timing'], ['decide', 'Qui décide ?'],
+    ['budget', 'Budget ?'], ['offre', 'Offre pertinente'], ['etape', 'Prochaine étape']
+  ];
+  function callAntiseche() {
+    var SC = 'background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px';
+    var steps = CALL_STEPS.map(function (s) {
+      var rel = s.r.map(function (x) { return '<div style="font-size:12px;color:var(--terre-600,#6b533b);line-height:1.45;margin-top:5px">› ' + esc(x) + '</div>'; }).join('');
+      var ec = s.e ? '<div style="margin-top:8px;font-size:11px;color:#573b8a;background:#f4eefe;border-radius:8px;padding:6px 9px">💡 ' + esc(s.e) + '</div>' : '';
+      return '<div style="' + SC + '"><div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:var(--terre);color:var(--paille);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:13px;flex:none">' + s.n + '</span><span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54)">' + esc(s.t) + '</span></div>' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:16px;line-height:1.2;color:var(--terre);margin-top:6px">' + esc(s.q) + '</div>' + rel + ec + '</div>';
+    }).join('');
+    var reb = '<div style="' + SC + '"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-400,#8a6f54);margin-bottom:9px">Rebonds express</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+      CALL_REBONDS.map(function (r) { return '<div style="font-size:12px;color:var(--terre)"><span style="margin-right:5px">' + r[0] + '</span><b style="font-weight:600">' + esc(r[1]) + '</b><div style="color:var(--terre-600,#6b533b);margin-top:2px">' + esc(r[2]) + '</div></div>'; }).join('') + '</div></div>';
+    var sec = '<div style="' + SC + ';margin-bottom:0"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-400,#8a6f54);margin-bottom:9px">Phrases de secours</div>' +
+      CALL_SECOURS.map(function (p) { return '<div style="font-size:12.5px;color:var(--terre);line-height:1.5;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
+    return '<aside style="position:sticky;top:16px"><div style="background:#F0E8FF;border-radius:16px;padding:14px"><div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre);margin:2px 4px 12px">Anti-sèche</div>' + steps + reb + sec + '</div></aside>';
+  }
+  function callEditor(n) {
+    var SINP = 'width:100%;box-sizing:border-box;border:none;background:#F8F6F2;border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-size:13px;color:var(--terre);outline:none';
+    var fields = CALL_FIELDS.map(function (f) {
+      return '<div><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54);margin-bottom:5px">' + esc(f[1]) + '</div>' +
+        '<input value="' + esc((n.f && n.f[f[0]]) || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'' + f[0] + '\',this.value)" style="' + SINP + '"></div>';
+    }).join('');
+    return '<div>' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">' +
+        '<input id="call-title" value="' + esc(n.title || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'title\',this.value)" placeholder="Nom de l\'appel (ex. Victor · Coup de Pousses)" style="flex:1;border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:28px;color:var(--terre)">' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.callNoteDel(\'' + n.id + '\')">Supprimer</button>' +
+      '</div>' +
+      '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);letter-spacing:.03em;margin-bottom:18px">' + esc(n.date || '') + '</div>' +
+      '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Suivi de l\'appel</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:22px">' + fields + '</div>' +
+      '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:10px">Notes libres</div>' +
+      '<textarea oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Mots-clés, verbatims, ce que tu retiens…" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:14px 16px;font-family:var(--font-micro);font-size:14px;line-height:1.6;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
+    '</div>';
+  }
+  function visFicheHtml() {
+    var notes = callNotesLoad();
+    if (CALL_SEL && !notes.some(function (n) { return n.id === CALL_SEL; })) CALL_SEL = null;
+    if (!CALL_SEL && notes.length) CALL_SEL = notes[0].id;
+    var cur = notes.filter(function (n) { return n.id === CALL_SEL; })[0] || null;
+    var items = notes.map(function (n) {
+      var on = n.id === CALL_SEL;
+      return '<button onclick="ADM.callNoteSel(\'' + n.id + '\')" style="display:block;width:100%;text-align:left;border:none;cursor:pointer;background:' + (on ? '#fff' : 'transparent') + ';border-radius:11px;padding:11px 13px;margin-bottom:2px">' +
+        '<div id="cnli-' + n.id + '" style="font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(n.title || 'Sans titre') + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-top:2px">' + esc(n.date || '') + '</div>' +
+      '</button>';
+    }).join('') || '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--muted);padding:14px 6px">Aucune note pour le moment.</div>';
+    var list = '<aside style="background:#F8F6F2;border-radius:16px;padding:10px;align-self:start">' +
+      '<button class="btn btn--dark btn--block btn--sm" onclick="ADM.callNoteNew()" style="margin-bottom:8px">+ Nouvelle note</button>' + items + '</aside>';
+    var editor = cur
+      ? '<div style="background:#fff;border-radius:16px;padding:24px 26px;min-height:420px">' + callEditor(cur) + '</div>'
+      : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:14px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
+    return '<div style="display:grid;grid-template-columns:230px minmax(0,1fr) 320px;gap:18px;align-items:start">' + list + editor + callAntiseche() + '</div>';
+  }
   function visCardsHtml() {
     function section(cat, label, col) {
       var cards = VISIOS.cards.filter(function (c) { return (c.category || 'nouveau') === cat; })
@@ -6334,7 +6450,7 @@
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
+    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
