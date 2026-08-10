@@ -2170,35 +2170,28 @@
     ['budget', 'Budget ?'], ['offre', 'Offre pertinente'], ['etape', 'Prochaine étape']
   ];
   function callAntiseche() {
-    var SC = 'background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px';
+    var SC = 'background:#fff;border-radius:11px;padding:10px 13px;margin-bottom:8px';
+    var HD = 'font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54)';
     var steps = CALL_STEPS.map(function (s) {
-      var rel = s.r.map(function (x) { return '<div style="font-size:12px;color:var(--terre-600,#6b533b);line-height:1.45;margin-top:5px">› ' + esc(x) + '</div>'; }).join('');
-      var ec = s.e ? '<div style="margin-top:8px;font-size:11px;color:#573b8a;background:#f4eefe;border-radius:8px;padding:6px 9px">💡 ' + esc(s.e) + '</div>' : '';
-      return '<div style="' + SC + '"><div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:var(--terre);color:var(--paille);display:grid;place-items:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:13px;flex:none">' + s.n + '</span><span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54)">' + esc(s.t) + '</span></div>' +
-        '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:16px;line-height:1.2;color:var(--terre);margin-top:6px">' + esc(s.q) + '</div>' + rel + ec + '</div>';
+      var rel = s.r.join(' · ');
+      var relHtml = rel ? '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre-600,#6b533b);line-height:1.4;margin-top:4px">' + esc(rel) + '</div>' : '';
+      return '<div style="' + SC + '"><div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:50%;background:var(--terre);color:var(--paille);display:grid;place-items:center;font-family:var(--font-micro);font-weight:700;font-size:11px;flex:none">' + s.n + '</span><span style="' + HD + '">' + esc(s.t) + '</span></div>' +
+        '<div style="font-family:var(--font-micro);font-weight:600;font-size:15px;line-height:1.3;color:var(--terre);margin-top:5px">' + esc(s.q) + '</div>' + relHtml + '</div>';
     }).join('');
-    var reb = '<div style="' + SC + '"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-400,#8a6f54);margin-bottom:9px">Rebonds express</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-      CALL_REBONDS.map(function (r) { return '<div style="font-size:12px;color:var(--terre)"><span style="margin-right:5px">' + r[0] + '</span><b style="font-weight:600">' + esc(r[1]) + '</b><div style="color:var(--terre-600,#6b533b);margin-top:2px">' + esc(r[2]) + '</div></div>'; }).join('') + '</div></div>';
-    var sec = '<div style="' + SC + ';margin-bottom:0"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-400,#8a6f54);margin-bottom:9px">Phrases de secours</div>' +
-      CALL_SECOURS.map(function (p) { return '<div style="font-size:12.5px;color:var(--terre);line-height:1.5;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
-    return '<aside style="position:sticky;top:16px"><div style="background:#F0E8FF;border-radius:16px;padding:14px"><div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre);margin:2px 4px 12px">Anti-sèche</div>' + steps + reb + sec + '</div></aside>';
+    var reb = '<div style="' + SC + '"><div style="' + HD + ';margin-bottom:7px">Rebonds</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">' +
+      CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.35">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b> ' + esc(r[2]) + '</div>'; }).join('') + '</div></div>';
+    var sec = '<div style="' + SC + ';margin-bottom:0"><div style="' + HD + ';margin-bottom:6px">Secours</div>' +
+      CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.45;margin-bottom:3px">' + esc(p) + '</div>'; }).join('') + '</div>';
+    return '<aside style="position:sticky;top:12px"><div style="background:#F0E8FF;border-radius:14px;padding:12px">' + steps + reb + sec + '</div></aside>';
   }
   function callEditor(n) {
-    var SINP = 'width:100%;box-sizing:border-box;border:none;background:#F8F6F2;border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-size:13px;color:var(--terre);outline:none';
-    var fields = CALL_FIELDS.map(function (f) {
-      return '<div><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-400,#8a6f54);margin-bottom:5px">' + esc(f[1]) + '</div>' +
-        '<input value="' + esc((n.f && n.f[f[0]]) || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'' + f[0] + '\',this.value)" style="' + SINP + '"></div>';
-    }).join('');
     return '<div>' +
-      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">' +
-        '<input id="call-title" value="' + esc(n.title || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'title\',this.value)" placeholder="Nom de l\'appel (ex. Victor · Coup de Pousses)" style="flex:1;border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:28px;color:var(--terre)">' +
-        '<button class="btn btn--outline btn--sm" onclick="ADM.callNoteDel(\'' + n.id + '\')">Supprimer</button>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+        '<input id="call-title" value="' + esc(n.title || '') + '" oninput="ADM.callNoteSet(\'' + n.id + '\',\'title\',this.value)" placeholder="Nom de l\'appel…" style="flex:1;border:none;outline:none;background:none;font-family:var(--font-micro);font-weight:700;font-size:22px;color:var(--terre)">' +
+        '<span style="font-family:var(--font-micro);font-size:12px;color:var(--muted);white-space:nowrap">' + esc(n.date || '') + '</span>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.callNoteDel(\'' + n.id + '\')">Suppr.</button>' +
       '</div>' +
-      '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);letter-spacing:.03em;margin-bottom:18px">' + esc(n.date || '') + '</div>' +
-      '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Suivi de l\'appel</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:22px">' + fields + '</div>' +
-      '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:10px">Notes libres</div>' +
-      '<textarea oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Mots-clés, verbatims, ce que tu retiens…" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:14px 16px;font-family:var(--font-micro);font-size:14px;line-height:1.6;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
+      '<textarea oninput="ADM.callNoteSet(\'' + n.id + '\',\'text\',this.value)" placeholder="Note à l\'arrache : mots-clés, verbatims, ce que tu retiens…" style="width:100%;box-sizing:border-box;min-height:calc(100vh - 220px);resize:vertical;border:none;background:#F8F6F2;border-radius:12px;padding:16px 18px;font-family:var(--font-micro);font-size:16px;line-height:1.65;color:var(--terre);outline:none">' + esc(n.text || '') + '</textarea>' +
     '</div>';
   }
   function visFicheHtml() {
@@ -2216,7 +2209,7 @@
     var list = '<aside style="background:#F8F6F2;border-radius:16px;padding:10px;align-self:start">' +
       '<button class="btn btn--dark btn--block btn--sm" onclick="ADM.callNoteNew()" style="margin-bottom:8px">+ Nouvelle note</button>' + items + '</aside>';
     var editor = cur
-      ? '<div style="background:#fff;border-radius:16px;padding:24px 26px;min-height:420px">' + callEditor(cur) + '</div>'
+      ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:14px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
     return '<div style="display:grid;grid-template-columns:230px minmax(0,1fr) 320px;gap:18px;align-items:start">' + list + editor + callAntiseche() + '</div>';
   }
