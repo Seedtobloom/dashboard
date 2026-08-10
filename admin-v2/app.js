@@ -928,7 +928,8 @@
     return c ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + mtLinkify(c) + '</div>' : '';
   }
   function inboxAtts(x) {
-    var atts = Array.isArray(x.attachments) ? x.attachments : [];
+    // Dernier fichier joint en premier (les fichiers récents sont ajoutés en fin de liste).
+    var atts = (Array.isArray(x.attachments) ? x.attachments : []).slice().reverse();
     if (!atts.length) return '';
     return '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' + atts.map(function (a) {
       var url = '/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download';
@@ -1030,7 +1031,6 @@
     var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8d2b21;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
     var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
-    var atts = (x.attachments || []).map(function (a) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
     var body =
       '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
@@ -1045,7 +1045,8 @@
         '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
         (x.avgMinutes ? '<span>⏱ Temps moyen : ' + fmtMin(x.avgMinutes) + '</span>' : '') +
       '</div>' +
-      ((atts || link) ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">' + atts + link + '</div>' : '');
+      inboxAtts(x) +
+      (link ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">' + link + '</div>' : '');
     var actions =
       '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
