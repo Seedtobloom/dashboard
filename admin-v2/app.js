@@ -930,8 +930,13 @@
   function inboxAtts(x) {
     var atts = Array.isArray(x.attachments) ? x.attachments : [];
     if (!atts.length) return '';
-    return '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
-      return '<a href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+    return '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' + atts.map(function (a) {
+      var url = '/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download';
+      var isImg = /\.(jpe?g|png|webp|gif|avif|svg)$/i.test(a.name || '');
+      if (isImg) {
+        return '<a href="' + url + '" target="_blank" rel="noopener" title="' + esc(a.name || 'image') + '" style="display:block;border-radius:10px;overflow:hidden;border:1px solid var(--bone-d);line-height:0"><img src="' + url + '" alt="' + esc(a.name || '') + '" loading="lazy" style="max-height:140px;max-width:220px;display:block;object-fit:cover"></a>';
+      }
+      return '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 10px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   function inboxCard(it) {
@@ -946,9 +951,9 @@
     } else if (it.type === 'task' || it.type === 'ticket') {
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + inboxPreview(x.content) + inboxAtts(x);
     } else if (it.type === 'rework') {
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a laissé ses retours · à retravailler de ton côté.</div>';
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a laissé ses retours · à retravailler de ton côté.</div>' + inboxAtts(x);
     } else if (it.type === 'comment') {
-      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(x.text) + ' »</div>' : '');
+      body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic">« ' + esc(x.text) + ' »</div>' : '') + inboxAtts(x);
     } else if (it.type === 'validated') {
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
     } else if (it.type === 'revision') {
@@ -2440,7 +2445,7 @@
         '<span class="wblk__t">' + esc(t.title) + dueWarn + '</span>' +
         (t.clientName ? '<span class="wblk__c">' + esc(t.clientName) + '</span>' : '') +
         '<div class="wblk__ctl">' +
-          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)">' +
+          '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (en heures, ex. 1.5)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)">' +
           '<select class="inp" title="Déplacer sur un autre jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)">' + msDaySelect(days, diso) + '</select>' +
         '</div>' +
       '</div>';
@@ -2474,7 +2479,7 @@
       '<div class="addrow">' +
         '<input class="inp" id="ms-add-title" placeholder="Ajouter une tâche…" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}">' +
         '<select class="inp" id="ms-add-day" style="width:auto" title="Jour où tu bosses dessus">' + msDaySelect(days, '') + '</select>' +
-        '<input class="inp" id="ms-add-est" type="number" min="0" step="15" placeholder="min" style="width:82px" title="Temps estimé">' +
+        '<input class="inp" id="ms-add-est" type="number" min="0" step="0.25" placeholder="h" style="width:82px" title="Temps estimé (en heures, ex. 1.5)">' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.msAddTop()">+ Ajouter</button>' +
       '</div>' +
       (toPlace.length ? '<div class="placegrid">' + toPlace.slice(0, 40).map(function (t) {
@@ -2482,7 +2487,7 @@
         var due = t.dueDate ? '<span class="due">' + msShort(t.dueDate) + '</span>' : '';
         return '<div class="placerow">' +
           '<span class="t">' + esc(t.title) + cn + '</span>' + due +
-          '<input class="inp" type="number" min="0" step="15" value="' + (t.estMinutes || '') + '" placeholder="min" title="Temps estimé" onchange="ADM.msEst(\'' + t.id + '\',this.value)" style="width:64px;font-size:12px">' +
+          '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (en heures, ex. 1.5)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)" style="width:64px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
         '</div>';
       }).join('') + '</div>' : '<div class="emptyz">Tout est placé. 🌿</div>') +
@@ -2522,13 +2527,15 @@
   }
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
   function msEst(id, val) { msPatch(id, { estMinutes: parseInt(val, 10) || 0 }); }
+  // Saisie du temps estimé en HEURES (décimal, ex. 1.5 = 1 h 30) → stocké en minutes.
+  function msEstH(id, val) { msPatch(id, { estMinutes: Math.round((parseFloat(val) || 0) * 60) }); }
   function msCreate(title, doDate, est) {
     title = (title || '').trim(); if (!title) { toast('Titre requis'); return; }
     jpost('/api/admin/tasks', { title: title, doDate: doDate || null, estMinutes: parseInt(est, 10) || 0 }).then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
       if (t) { MS_TASKS.push(t); toast('Ajoutée'); renderMaSemaineBody(); } else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
-  function msAddTop() { var t = el('ms-add-title'); if (!t) return; msCreate(t.value, el('ms-add-day') ? el('ms-add-day').value : '', el('ms-add-est') ? el('ms-add-est').value : ''); }
+  function msAddTop() { var t = el('ms-add-title'); if (!t) return; var e = el('ms-add-est'); var estMin = e && e.value ? String(Math.round((parseFloat(e.value) || 0) * 60)) : ''; msCreate(t.value, el('ms-add-day') ? el('ms-add-day').value : '', estMin); }
   function msAddDay(diso) { var i = el('ms-dayadd-' + diso); if (!i) return; msCreate(i.value, diso, ''); }
   // ── Vue Focus : organisée par mode de travail, avec « Aujourd'hui » en tête ──
   function mtToggleToday(id) {
@@ -6317,7 +6324,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msEst: msEst, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,

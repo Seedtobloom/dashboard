@@ -1603,12 +1603,15 @@ async function handleDashboard(env: Env): Promise<Response> {
         // Notification persistante : tâche créée par le client et pas encore traitée.
         if (t.clientNotif && !t.archived) newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, attachments: (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key), createdAt: t.createdAt || '' });
         // Notification persistante : le client a fait ses retours, à retravailler.
-        if (t.needsRework && !t.archived) reworkTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, dueDate: t.dueDate || '', reviewLink: t.reviewLink || '', at: t.clientFeedbackAt || '' });
+        const taskAtts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
+        if (t.needsRework && !t.archived) reworkTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, dueDate: t.dueDate || '', reviewLink: t.reviewLink || '', at: t.clientFeedbackAt || '', attachments: taskAtts });
         // Notification persistante : commentaire du client non lu.
         if (t.clientCommentNotif && !t.archived) {
           const cc = Array.isArray(t.comments) ? t.comments.filter((c: AnyObj) => c.author === 'client') : [];
           const last = cc.length ? cc[cc.length - 1] : null;
-          commentTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, text: last ? (last.text || '') : '', at: last ? (last.createdAt || '') : '' });
+          const cAtts = (last && Array.isArray(last.attachments) ? last.attachments : []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
+          const _seen: AnyObj = {}; const allAtts = cAtts.concat(taskAtts).filter((a: AnyObj) => { if (_seen[a.key]) return false; _seen[a.key] = 1; return true; });
+          commentTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, text: last ? (last.text || '') : '', at: last ? (last.createdAt || '') : '', attachments: allAtts });
         }
       });
     }
