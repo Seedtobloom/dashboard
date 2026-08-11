@@ -2182,7 +2182,96 @@
       CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.5;margin-bottom:5px">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b><br>' + esc(r[2]) + '</div>'; }).join('') + '</div>';
     var sec = '<div style="' + SC + ';margin-bottom:0"><div style="' + HD + ';margin-bottom:8px">Secours</div>' +
       CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.45;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
-    return '<aside style="position:sticky;top:12px"><div style="background:#F0E8FF;border-radius:14px;padding:12px;column-count:2;column-gap:12px">' + steps + reb + sec + '</div></aside>';
+    return '<div style="background:#F0E8FF;border-radius:14px;padding:12px;column-count:2;column-gap:12px">' + steps + reb + sec + '</div>';
+  }
+
+  // ── Trames d'appel : scripts que Cindy crée/édite et suit pendant la visio ──
+  var CALL_RIGHT = 'trame', CALL_TRAME_SEL = null, CALL_TRAME_EDIT = false, TRAME_KEY = 'stb_trames';
+  function tramesRaw() { try { return JSON.parse(localStorage.getItem(TRAME_KEY) || 'null'); } catch (e) { return null; } }
+  function tramesSaveAll(a) { try { localStorage.setItem(TRAME_KEY, JSON.stringify(a)); } catch (e) {} }
+  function defaultTrame() {
+    var L = [
+      '🌱 Trame — Appel découverte',
+      "Durée 30 min · Fil : Pourquoi → Situation → Ce qui coince → Ce qu'ils veulent → Ta proposition → Suite",
+      '',
+      '① ACCUEIL — 2 min',
+      "« Bonjour, merci d'avoir pris le temps ! Comment vas-tu ? »",
+      "« L'idée aujourd'hui : mieux comprendre votre fonctionnement et vos enjeux com', et voir si je peux vous être utile. »",
+      "« Pour commencer : qu'est-ce qui t'a donné envie d'accepter cet échange ? »",
+      '',
+      '② LEUR SITUATION — 7 min',
+      "« Tu peux me raconter où vous en êtes aujourd'hui et ce que vous cherchez à développer ? »",
+      '→ Laisse parler. Note des mots-clés. Puis creuse UN mot.',
+      '',
+      '③ COMMENT ILS PRODUISENT — 5 min',
+      '« Comment ça se passe quand vous devez créer un nouveau support ? »',
+      "→ Qui s'en occupe ? · Templates ou repart de zéro ? · Quels supports le plus souvent ?",
+      '',
+      '④ LE PROBLÈME — 7 min',
+      '« Qu\'est-ce qui est le plus compliqué pour vous là-dedans ? »',
+      "→ « Sur quoi vous en perdez le plus ? » · « Qu'est-ce que ça vous empêche de faire ? »",
+      '',
+      '⑤ CE QU\'ILS VEULENT — 4 min',
+      "« Idéalement, qu'est-ce que vous aimeriez à la place ? »",
+      '« Qu\'est-ce que ça changerait au quotidien ? »',
+      '« Des projets / échéances dans les prochains mois ? »',
+      '',
+      '⑥ ÉTUDE DE CAS — 2 min',
+      "« Tu as eu le temps de regarder l'étude de cas que je t'ai envoyée ? »",
+      "→ « Qu'est-ce qui t'a parlé ? » · « Tu retrouves des points communs chez vous ? »",
+      '',
+      '⑦ SYNTHÈSE — 2 min',
+      "« Si je résume : aujourd'hui vous [situation], la difficulté est [problème], vous aimeriez [objectif]. C'est bien ça ? »",
+      '',
+      '⑧ RECOMMANDATION — 2 min',
+      "🌱 Identité — souci d'image / charte",
+      '🌿 Supports — identité OK + besoin ponctuel',
+      '🌳 360° — besoins récurrents + peu de temps',
+      '« Est-ce que ça correspond à ce que tu imaginais ? »',
+      '',
+      '⑨ LA SUITE — 1 min',
+      'Intéressé : « Je te prépare une proposition sous 48 h. »',
+      "Hésite : « Qu'est-ce que tu aimerais clarifier avant de te positionner ? »",
+      "Pas le moment : « Qu'est-ce qui ferait que ce serait le bon moment ? »"
+    ];
+    return { id: 't_decouverte', title: 'Appel découverte', content: L.join('\n') };
+  }
+  function tramesGet() { var a = tramesRaw(); if (!Array.isArray(a)) { a = [defaultTrame()]; tramesSaveAll(a); } return a; }
+  function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; renderVisiosBody(); }
+  function trameSel(id) { CALL_TRAME_SEL = id; CALL_TRAME_EDIT = false; renderVisiosBody(); }
+  function trameDel(id) { admConfirm({ title: 'Supprimer cette trame ?', danger: true, yes: 'Supprimer', no: 'Annuler' }, function () { var a = tramesGet().filter(function (t) { return t.id !== id; }); tramesSaveAll(a); if (CALL_TRAME_SEL === id) CALL_TRAME_SEL = null; CALL_TRAME_EDIT = false; renderVisiosBody(); }); }
+  function trameSet(id, field, val) { var a = tramesGet(); var t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return; t[field] = val; tramesSaveAll(a); }
+  function trameEditToggle() { CALL_TRAME_EDIT = !CALL_TRAME_EDIT; renderVisiosBody(); }
+  function callRight(mode) { CALL_RIGHT = mode; renderVisiosBody(); }
+  function trameRender(content) {
+    var lines = String(content || '').split('\n');
+    return lines.map(function (l) {
+      var t = l.trim();
+      if (t === '') return '<div style="height:9px"></div>';
+      if (/^[①②③④⑤⑥⑦⑧⑨🌱📝]/.test(t)) return '<div style="font-family:var(--font-micro);font-weight:700;font-size:14.5px;color:var(--terre);margin:14px 0 3px">' + esc(l) + '</div>';
+      var isQ = /[«»]/.test(t);
+      return '<div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.55;color:' + (isQ ? 'var(--terre)' : 'var(--terre-600,#6b533b)') + (isQ ? ';font-weight:500' : '') + '">' + esc(l) + '</div>';
+    }).join('');
+  }
+  function callTrame() {
+    var trames = tramesGet();
+    if (CALL_TRAME_SEL && !trames.some(function (t) { return t.id === CALL_TRAME_SEL; })) CALL_TRAME_SEL = null;
+    if (!CALL_TRAME_SEL) CALL_TRAME_SEL = trames[0].id;
+    var cur = trames.filter(function (t) { return t.id === CALL_TRAME_SEL; })[0];
+    if (CALL_TRAME_EDIT) {
+      return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
+        '<input value="' + esc(cur.title || '') + '" oninput="ADM.trameSet(\'' + cur.id + '\',\'title\',this.value)" placeholder="Titre de la trame" style="width:100%;box-sizing:border-box;border:none;outline:none;background:#F8F6F2;border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:700;font-size:15px;color:var(--terre);margin-bottom:10px">' +
+        '<textarea oninput="ADM.trameSet(\'' + cur.id + '\',\'content\',this.value)" placeholder="Écris ou colle ta trame ici… (une étape par bloc, mets un ① ou un titre en MAJUSCULES pour les sections)" style="width:100%;box-sizing:border-box;min-height:calc(100vh - 320px);resize:vertical;border:none;background:#F8F6F2;border-radius:11px;padding:12px 14px;font-family:var(--font-micro);font-size:13.5px;line-height:1.55;color:var(--terre);outline:none">' + esc(cur.content || '') + '</textarea>' +
+        '<div class="row" style="gap:8px;margin-top:10px"><button class="btn btn--dark btn--sm" onclick="ADM.trameEditToggle()">Terminé</button><button class="btn btn--outline btn--sm" style="color:#8d2b21;margin-left:auto" onclick="ADM.trameDel(\'' + cur.id + '\')">Supprimer</button></div>' +
+      '</div>';
+    }
+    var opts = trames.map(function (t) { return '<option value="' + t.id + '"' + (t.id === CALL_TRAME_SEL ? ' selected' : '') + '>' + esc(t.title || 'Sans titre') + '</option>'; }).join('');
+    return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
+      '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:13px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
+        '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">✎</button>' +
+        '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button></div>' +
+      '<div style="max-height:calc(100vh - 250px);overflow:auto;padding-right:4px">' + trameRender(cur.content) + '</div>' +
+    '</div>';
   }
   function callEditor(n) {
     return '<div>' +
@@ -2211,7 +2300,12 @@
     var editor = cur
       ? '<div style="background:#fff;border-radius:16px;padding:18px 20px">' + callEditor(cur) + '</div>'
       : '<div style="background:#fff;border-radius:16px;padding:60px 26px;text-align:center;color:var(--muted);font-family:var(--font-micro);font-size:14px">Crée une note pour préparer et suivre ton appel.<br>L\'anti-sèche reste affichée à droite.</div>';
-    return '<div style="display:grid;grid-template-columns:220px minmax(0,1fr) 520px;gap:18px;align-items:start">' + list + editor + callAntiseche() + '</div>';
+    var rtoggle = '<div class="subtabs" style="margin-bottom:10px">' +
+      '<button class="subtab' + (CALL_RIGHT === 'trame' ? ' active' : '') + '" onclick="ADM.callRight(\'trame\')">📋 Trame</button>' +
+      '<button class="subtab' + (CALL_RIGHT === 'anti' ? ' active' : '') + '" onclick="ADM.callRight(\'anti\')">🌱 Anti-sèche</button>' +
+    '</div>';
+    var right = '<aside style="position:sticky;top:12px">' + rtoggle + (CALL_RIGHT === 'trame' ? callTrame() : callAntiseche()) + '</aside>';
+    return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 560px;gap:18px;align-items:start">' + list + editor + right + '</div>';
   }
   function visCardsHtml() {
     function section(cat, label, col) {
@@ -6443,7 +6537,7 @@
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
+    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     planCap: planCap, planDone: planDone, planStart: planStart, planEnd: planEnd, planLunch: planLunch, planBlockAdd: planBlockAdd, planBlockDel: planBlockDel, planTypeChange: planTypeChange, planGroupColor: planGroupColor, planGroupDel: planGroupDel, planTaskForm: planTaskForm, planTaskAdd: planTaskAdd,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
