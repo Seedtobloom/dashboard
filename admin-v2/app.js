@@ -2274,14 +2274,21 @@
   function trameSet(id, field, val) { var a = tramesGet(); var t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return; t[field] = val; tramesSaveAll(a); }
   function trameEditToggle() { CALL_TRAME_EDIT = !CALL_TRAME_EDIT; renderVisiosBody(); }
   function callRight(mode) { CALL_RIGHT = mode; renderVisiosBody(); }
+  // Surligne les passages entre guillemets « … » = ce que Cindy dit à l'oral.
+  function trameHi(s) {
+    return esc(s).replace(/«[^»]*»/g, function (m) { return '<span style="background:#efe4ff;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 4px">' + m + '</span>'; });
+  }
   function trameRender(content) {
     var lines = String(content || '').split('\n');
     return lines.map(function (l) {
       var t = l.trim();
       if (t === '') return '<div style="height:9px"></div>';
-      if (/^[①②③④⑤⑥⑦⑧⑨🌱📝]/.test(t)) return '<div style="font-family:var(--font-micro);font-weight:700;font-size:14.5px;color:var(--terre);margin:14px 0 3px">' + esc(l) + '</div>';
-      var isQ = /[«»]/.test(t);
-      return '<div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.55;color:' + (isQ ? 'var(--terre)' : 'var(--terre-600,#6b533b)') + (isQ ? ';font-weight:500' : '') + '">' + esc(l) + '</div>';
+      if (/^[①②③④⑤⑥⑦⑧⑨🌱📝]/.test(t)) return '<div style="font-family:var(--font-micro);font-weight:700;font-size:14.5px;color:var(--terre);margin:15px 0 5px">' + esc(l) + '</div>';
+      var hasQ = /«[^»]*»/.test(l);
+      // Ligne avec guillemets = dialogue (à dire) ; sinon = repère/instruction (gris, à ne pas dire).
+      var col = hasQ ? 'var(--terre-600,#6b533b)' : 'var(--muted)';
+      var it = hasQ ? '' : ';font-style:italic';
+      return '<div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.6;color:' + col + it + ';margin-bottom:3px">' + trameHi(l) + '</div>';
     }).join('');
   }
   function callTrame() {
@@ -2301,6 +2308,7 @@
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:13px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
         '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">✎</button>' +
         '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button></div>' +
+      '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="background:#efe4ff;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« à dire »</span> à l\'oral · <span style="font-style:italic">le reste = tes repères</span></div>' +
       '<div style="max-height:calc(100vh - 250px);overflow:auto;padding-right:4px">' + trameRender(cur.content) + '</div>' +
     '</div>';
   }
