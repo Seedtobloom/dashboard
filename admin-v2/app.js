@@ -1093,9 +1093,16 @@
     notifyConfirm(labels[action], function (notify) { doIt(notify); });
   }
 
+  // Charge une fois la liste des catégories/types de mission (pour l'édition sur les cartes).
+  function ensureMissionTypes(cb) {
+    if (MISSION_LIST.length) { cb(); return; }
+    api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) { MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : []; cb(); }).catch(function () { cb(); });
+  }
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
+    ensureMissionTypes(function () {
+      api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
+    });
   }
   // Rafraîchissement « silencieux » après une action réussie (envoi de livrable…) :
   // ne remplace jamais l'écran par une erreur pleine page si le rechargement
@@ -1483,11 +1490,18 @@
           '<span class="trow__e">' + (x.estMinutes > 0 ? hLabel(x.estMinutes) : '') + '</span>' +
           '<div class="trow__a rowacts">' + p2Acts(x, false) + '</div></div>';
       }
-      function p2Drow(x, dark, whenCol) {
+      function p2Drow(x, dark, whenCol, drag) {
         var col = whenCol || (x._d < 0 ? '#a23c28' : (x._d === 0 ? 'var(--orange)' : 'inherit'));
-        return '<div class="drow"><div class="drow__d"><b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span></div>' +
+        var isTask = drag && x.kind === 'tâche' && x.id;
+        var dragAttr = isTask ? ' draggable="true" ondragstart="ADM.prioDragStart(\'' + x.key + '\',\'' + x.id + '\')" ondragend="ADM.prioDragEnd()"' : '';
+        var grip = isTask ? '<span class="drow__grip" title="Glisser sur un autre jour">⠿</span>' : '';
+        var catSel = isTask ? prioCatSelect(x) : '';
+        // Jour de travail perso posé et différent de l'échéance → on le signale.
+        var doNote = (isTask && x.doDate && x.doDate.slice(0, 10) !== (x.dueDate || '').slice(0, 10))
+          ? '<span class="drow__do">jour choisi · <a href="javascript:ADM.prioClearDoDate(\'' + x.key + '\',\'' + x.id + '\')">retirer</a></span>' : '';
+        return '<div class="drow' + (isTask ? ' drow--drag' : '') + '"' + dragAttr + '>' + grip + '<div class="drow__d"><b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span>' + doNote + '</div>' +
           '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div></div>' +
-          '<div class="rowacts">' + p2Acts(x, dark) + '</div></div>';
+          '<div class="rowacts">' + catSel + p2Acts(x, dark) + '</div></div>';
       }
       var P2_todayBody = P2_today.length ? P2_today.map(function (x, i) { return p2Trow(x, ('0' + (i + 1)).slice(-2)); }).join('') : '<div class="prioempty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>';
       var blockToday = '<section class="panel panel--lav"><span class="heromk">' + (new Date().getDate()) + '</span>' +
@@ -1499,7 +1513,8 @@
       // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
       var P2_days = {};
       function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
-      P2_week.forEach(function (x) { p2DayPush((x.dueDate || '').slice(0, 10), p2Drow(x, false)); });
+      // Placement par jour de travail perso (doDate) si posé, sinon par échéance.
+      P2_week.forEach(function (x) { var pd = ((x.doDate || x.dueDate) || '').slice(0, 10); p2DayPush(pd, p2Drow(x, false, null, true)); });
       (revs || []).forEach(function (r) {
         var wk = (r.wishDate || '').slice(0, 10);
         var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' + '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>';
@@ -1508,10 +1523,23 @@
           '<div class="rowacts">' + acts + '</div></div>';
         p2DayPush(wk || 'zzz', row);
       });
-      var P2_dayKeys = Object.keys(P2_days).sort();
+      // Colonnes = les 7 prochains jours (toujours présents comme cibles de dépôt) + tout jour déjà utilisé.
+      function isoAddDays(n) { var dt = new Date(); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() + n); return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
+      var colSet = {}, colKeys = [];
+      for (var _n = 1; _n <= 7; _n++) { var _k = isoAddDays(_n); if (!colSet[_k]) { colSet[_k] = 1; colKeys.push(_k); } }
+      Object.keys(P2_days).forEach(function (k) { if (k !== 'zzz' && !colSet[k]) { colSet[k] = 1; colKeys.push(k); } });
+      colKeys.sort();
+      if (P2_days['zzz']) colKeys.push('zzz');
       function p2DayLabel(k) { if (k === 'zzz' || !k) return 'À planifier'; var dt = new Date(k); var s = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); }
-      var blockWeekBody = P2_dayKeys.map(function (k) { return '<div class="dayhead">' + p2DayLabel(k) + '</div>' + P2_days[k].join(''); }).join('');
-      var blockWeek = blockWeekBody ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div>' + blockWeekBody + '</section>' : '';
+      function p2DayCol(k) {
+        var items = P2_days[k] ? P2_days[k].join('') : '';
+        var body = items || '<div class="daycol__empty">Dépose une tâche ici</div>';
+        var drop = k === 'zzz' ? '' : ' ondragover="ADM.prioDayOver(event,this)" ondragleave="ADM.prioDayLeave(this)" ondrop="ADM.prioDropDay(event,\'' + k + '\')"';
+        return '<div class="daycol"' + drop + '><div class="dayhead">' + p2DayLabel(k) + '</div>' + body + '</div>';
+      }
+      var hasWeek = (P2_week.length + (revs ? revs.length : 0)) > 0;
+      var blockWeekBody = colKeys.map(p2DayCol).join('');
+      var blockWeek = hasWeek ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div><div class="panel__hint">Glisse une tâche par la poignée ⠿ sur le jour où tu comptes la faire. Ça n\'affecte pas l\'échéance de la cliente.</div>' + blockWeekBody + '</section>' : '';
       var P2_board = '<div class="board">' + blockToday + (blockLate || '') + (blockWait || '') + blockWeek + '</div>';
 
       // Accueil + bande de compteurs (repris du prototype)
@@ -3848,6 +3876,45 @@
     inp.onblur = function () { setTimeout(cleanup, 200); };
     if (inp.showPicker) { try { inp.showPicker(); return; } catch (e) { } }
     inp.focus(); inp.click();
+  }
+
+  // ── Board « Cette semaine » : glisser une tâche sur un jour + changer sa catégorie ──
+  var PRIO_DRAG = null; // { key, id } de la tâche en cours de glissement
+  function prioDragStart(key, id) { PRIO_DRAG = { key: key, id: id }; }
+  function prioDragEnd() { PRIO_DRAG = null; document.querySelectorAll('.daycol--over').forEach(function (e) { e.classList.remove('daycol--over'); }); }
+  function prioDayOver(ev, elme) { ev.preventDefault(); if (elme && !elme.classList.contains('daycol--over')) elme.classList.add('daycol--over'); }
+  function prioDayLeave(elme) { if (elme) elme.classList.remove('daycol--over'); }
+  function prioDropDay(ev, iso) {
+    ev.preventDefault();
+    var t = PRIO_DRAG; PRIO_DRAG = null;
+    document.querySelectorAll('.daycol--over').forEach(function (e) { e.classList.remove('daycol--over'); });
+    if (!t || !iso) return;
+    prioSetDoDate(t.key, t.id, iso);
+  }
+  // Jour de travail perso (doDate) : ne touche pas l'échéance, ne prévient pas la cliente.
+  function prioSetDoDate(key, id, iso) {
+    if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) { it.doDate = iso; renderPrioBody(PRIO_D); } }
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', doDate: iso }, 'PATCH').then(function (r) {
+      if (r.ok) { toast('Placé au ' + fmtDate(iso)); refreshPriorities(); } else { toast('Erreur — réessaie'); refreshPriorities(); }
+    }).catch(function () { toast('Erreur — réessaie'); });
+  }
+  // Retirer le jour de travail perso (revenir au placement par échéance).
+  function prioClearDoDate(key, id) {
+    if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) { it.doDate = ''; renderPrioBody(PRIO_D); } }
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', doDate: '' }, 'PATCH').then(function () { refreshPriorities(); }).catch(function () {});
+  }
+  function prioSetCat(key, id, val) {
+    if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) it.pole = val; }
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', pole: val }, 'PATCH').then(function (r) { if (r.ok) toast('Catégorie mise à jour'); else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  // Petit menu de catégorie (type/pôle) sur une carte de tâche partenaire.
+  function prioCatSelect(x) {
+    var cur = x.pole || '';
+    var opts = '<option value="">— Catégorie</option>';
+    var found = false;
+    MISSION_LIST.forEach(function (t) { if (t === cur) found = true; opts += '<option value="' + esc(t) + '"' + (t === cur ? ' selected' : '') + '>' + esc(t) + '</option>'; });
+    if (cur && !found) opts += '<option value="' + esc(cur) + '" selected>' + esc(cur) + '</option>';
+    return '<select class="pcat" title="Catégorie de la tâche" onchange="ADM.prioSetCat(\'' + x.key + '\',\'' + x.id + '\',this.value)" onmousedown="event.stopPropagation()">' + opts + '</select>';
   }
 
   /* ── Clients ── */
@@ -6617,7 +6684,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
