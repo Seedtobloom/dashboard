@@ -2948,6 +2948,27 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           ) : '';
           var versions = stbVersionsList(project.id, vs);
           var actions = (revBlock || versions.trim()) ? '<div style="border-top:1px solid var(--bone-d);margin-top:20px;padding-top:16px;display:flex;flex-direction:column;gap:14px">' + revBlock + versions + '</div>' : '';
+          // Espace d'échange par création : fichiers déposés + commentaires du client.
+          var supPid = (project.id || '').replace(/^support-/, '');
+          var crFiles = Array.isArray(c.files) ? c.files : [];
+          var crComments = Array.isArray(c.comments) ? c.comments : [];
+          var crFilesHtml = crFiles.length
+            ? crFiles.map(function(f){ return '<a href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cpIcon('paperclip',12) + esc(f.name || 'fichier') + '</a>'; }).join('')
+            : '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400)">Aucun fichier déposé.</span>';
+          var crCommentsHtml = crComments.length
+            ? crComments.map(function(m){ var mine = m.author !== 'cindy'; return '<div style="margin-bottom:9px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-400);margin-bottom:3px">' + (mine ? 'Vous' : 'Cindy') + ' · ' + fmtDate(m.createdAt) + '</div><div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.5;color:var(--terre);background:' + (mine ? '#F8F6F2' : 'var(--brume)') + ';border-radius:10px;padding:9px 12px">' + esc(m.text || '') + '</div></div>'; }).join('')
+            : '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);font-style:italic;margin-bottom:10px">Aucun commentaire. Laissez un mot à Cindy si besoin.</div>';
+          var exchange = '<div style="border-top:1px solid var(--bone-d);margin-top:20px;padding-top:16px">' +
+              '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Vos fichiers &amp; commentaires</div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px">' + crFilesHtml +
+                '<button onclick="window.cpCrFile(\'' + supPid + '\',\'' + c.id + '\')" style="display:inline-flex;align-items:center;gap:6px;background:var(--glycine);border:none;border-radius:9px;padding:7px 12px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--nuit);cursor:pointer">' + cpIcon('plus',12) + ' Ajouter un fichier</button>' +
+              '</div>' +
+              crCommentsHtml +
+              '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:4px">' +
+                '<textarea id="cp-crc-' + c.id + '" placeholder="Écrire un commentaire à Cindy…" style="flex:1;box-sizing:border-box;min-height:44px;max-height:140px;resize:vertical;border:1px solid var(--bone-d);background:#fff;border-radius:12px;padding:11px 13px;font-family:var(--font-micro);font-size:13.5px;color:var(--terre);outline:none" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\');}"></textarea>' +
+                '<button onclick="window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\')" style="border:none;background:var(--nuit);color:#f6efe6;border-radius:12px;padding:12px 17px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;flex:none">Envoyer</button>' +
+              '</div>' +
+            '</div>';
           return '<div class="cp-spanel" id="cp-sp-' + c.id + '">' +
             '<div class="cp-spanel__h">' +
               '<span class="cp-spanel__ic" style="background:' + (CR_ICBG[c.type] || 'var(--brume)') + '">' + cpIcon(CR_IC[c.type] || 'file', 22, 'color:var(--terre)') + '</span>' +
@@ -2955,7 +2976,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               (stp[0] ? '<span class="cp-spanel__st' + (stp[1] ? ' now' : '') + '">' + esc(stp[0]) + '</span>' : '') +
             '</div>' +
             '<div class="cp-spanel__bar"><i style="width:' + pct + '%"></i></div>' +
-            ptl + actions +
+            ptl + actions + exchange +
           '</div>';
         }).join('');
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
@@ -7395,6 +7416,36 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   // qu'après avoir ouvert le lien au moins une fois.
   var cpConsulted = {};
   window.cpMarkConsulted = function(id) { if (id) { cpConsulted[id] = true; renderShell(); } };
+
+  // ── Espace d'échange par création (support de com) : fichiers + commentaires ──
+  function _cpFindCreation(pid, cid) {
+    var proj = (appData.projects || []).map(function(p){ return p.project; }).filter(function(p){ return p && p.id === 'support-' + pid; })[0];
+    if (!proj || !Array.isArray(proj.creations)) return null;
+    return proj.creations.filter(function(c){ return c.id === cid; })[0] || null;
+  }
+  window.cpCrComment = function(pid, cid) {
+    var inp = document.getElementById('cp-crc-' + cid);
+    var v = ((inp && inp.value) || '').trim(); if (!v) return;
+    fetch(API_BASE + '/support/' + pid + '/creations/' + cid + '/comment', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: v }) })
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(m){ var c = _cpFindCreation(pid, cid); if (c){ if (!Array.isArray(c.comments)) c.comments = []; c.comments.push(m); } toast('Commentaire envoyé'); renderShell(); })
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  };
+  window.cpCrFile = function(pid, cid) {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(inp);
+    inp.onchange = function(){
+      var f = inp.files && inp.files[0]; if (!f) { if (inp.parentNode) inp.parentNode.removeChild(inp); return; }
+      var fd = new FormData(); fd.append('file', f);
+      toast('Envoi du fichier…');
+      fetch(API_BASE + '/support/' + pid + '/creations/' + cid + '/file', { method:'POST', body: fd })
+        .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(e){ var c = _cpFindCreation(pid, cid); if (c){ if (!Array.isArray(c.files)) c.files = []; c.files.push(e); } toast('Fichier envoyé'); renderShell(); })
+        .catch(function(){ toast('Erreur, réessayez.'); })
+        .then(function(){ if (inp.parentNode) inp.parentNode.removeChild(inp); });
+    };
+    inp.click();
+  };
   window.cpGoLivrables = function() {
     currentView = 'livrables';
     renderShell({ resetScroll: true });

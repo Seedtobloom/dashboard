@@ -794,6 +794,13 @@ async function handleClientApi(
       if ('dueDate' in body) cr.dueDate = body.dueDate ? String(body.dueDate).slice(0, 10) : null;
       if ('revisionsMax' in body) cr.revisionsMax = Math.max(0, Math.min(20, Math.round(Number(body.revisionsMax) || 0)));
       if ('bannerColor' in body) cr.bannerColor = cleanBannerColor(body.bannerColor);
+      // Réponse de Cindy à l'échange de la création + accusé de lecture.
+      if ('reply' in body && String(body.reply || '').trim()) {
+        if (!Array.isArray(cr.comments)) cr.comments = [];
+        cr.comments.push({ id: genId(), author: 'cindy', text: String(body.reply).slice(0, 4000).trim(), createdAt: nowIso() });
+        cr.clientNotif = false;
+      }
+      if (body.seen === true) cr.clientNotif = false;
       await saveClient(env, key, data);
       return json(cr);
     }

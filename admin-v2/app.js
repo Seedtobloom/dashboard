@@ -4435,7 +4435,20 @@
             '<div id="planwrap-' + fullPid + '-' + c.id + '" class="cg-plan">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
           '</div>' +
         '</div>' +
+        crExchange(pid, c) +
       '</section>';
+    }
+    function crExchange(pid, c) {
+      var files = Array.isArray(c.files) ? c.files : [];
+      var comments = Array.isArray(c.comments) ? c.comments : [];
+      if (!files.length && !comments.length && !c.clientNotif) return '';
+      var filesHtml = files.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">' + files.map(function (f) { return '<a href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d,#eae5dc);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cgIcon('download', 12) + esc(f.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
+      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtShort(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:13px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#F0E8FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
+      return '<div style="border-top:1px solid var(--line,#eee);margin-top:14px;padding-top:12px">' +
+        '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-600,#6b533b);margin-bottom:10px;display:flex;align-items:center;gap:7px">' + cgIcon('image', 13) + ' Échanges cliente' + (c.clientNotif ? '<span style="width:8px;height:8px;border-radius:50%;background:#c0533b;display:inline-block"></span>' : '') + '</div>' +
+        filesHtml + commentsHtml +
+        '<div class="row" style="gap:8px;margin-top:4px"><input class="cg-in" id="cg-reply-' + c.id + '" placeholder="Répondre à la cliente…" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crReply(\'' + pid + '\',\'' + c.id + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crReply(\'' + pid + '\',\'' + c.id + '\')">Répondre</button></div>' +
+      '</div>';
     }
     var listHtml = creations.length ? creations.map(card).join('') : '<div class="cg-empty" style="padding:16px 0">Aucune création pour le moment. Crée la première ci-dessous.</div>';
     var newcr = '<div class="cg-newcr"><span class="cg-lbl">Nouvelle création</span><input class="cg-in" id="cr-new-' + pid + '" placeholder="ex. Flyer, Carte de visite…" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="cg-btn cg-btn--dark" onclick="ADM.crAdd(\'' + pid + '\')">' + cgIcon('plus', 14) + ' Créer</button></div>';
@@ -4653,6 +4666,10 @@
   function crSet(pid, cid, field, val) {
     var body = {}; body[field] = val;
     jpost('/api/clients/' + CURKEY + '/support/' + pid + '/creations/' + cid, body, 'PATCH').then(function (r) { if (r.ok) { refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  function crReply(pid, cid) {
+    var inp = el('cg-reply-' + cid); var v = ((inp && inp.value) || '').trim(); if (!v) return;
+    jpost('/api/clients/' + CURKEY + '/support/' + pid + '/creations/' + cid, { reply: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Réponse envoyée'); refreshClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
   }
   function crDel(pid, cid) {
     admConfirm({ title: 'Supprimer cette création ?', message: 'Les versions rattachées redeviennent « non classées » (non supprimées).', danger: true, yes: 'Oui, supprimer', no: 'Non' }, function () {
@@ -6578,7 +6595,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,

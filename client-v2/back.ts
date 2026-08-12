@@ -229,6 +229,12 @@ async function handleClientApi(
   // Avis du client sur son espace (manques, incompréhensions)
   if (sub === '/space-feedback' && method === 'POST') return handleSpaceFeedback(request, env, masterKey, data);
 
+  // Espace d'échange par création (support de com) : commentaire + fichier
+  const crCom = sub.match(/^\/support\/(\d{3})\/creations\/([a-zA-Z0-9_-]+)\/comment$/);
+  if (crCom && method === 'POST') return handleCreationComment(request, env, masterKey, data, crCom[1], crCom[2]);
+  const crFile = sub.match(/^\/support\/(\d{3})\/creations\/([a-zA-Z0-9_-]+)\/file$/);
+  if (crFile && method === 'POST') return handleCreationFile(request, env, masterKey, data, crFile[1], crFile[2]);
+
   // Conseils / retours
   let cr = sub.match(/^\/(counsels|feedbacks)$/);
   if (cr && method === 'POST') return handleCRAdd(request, env, masterKey, data, cr[1]);
@@ -643,6 +649,8 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
             id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
             dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3,
             bannerColor: c.bannerColor || null, createdAt: c.createdAt || null,
+            comments: Array.isArray(c.comments) ? c.comments : [],
+            files: Array.isArray(c.files) ? c.files.map((f: AnyObj) => ({ key: f.key, name: f.name, createdAt: f.createdAt || null, author: f.author || 'client' })) : [],
             ...planningOf(c),
           })) : [],
           ...planningOf(obj),
@@ -1173,6 +1181,56 @@ async function handleTaskComment(request: Request, env: Env, masterKey: string, 
     (wasReview ? ` (en réponse à votre demande de révision)` : ``) + ` :</p>` +
     `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(text)}</p>`);
   return json(comment, 201);
+}
+
+// Retrouve une création (support de com) par pid + id.
+function findCreation(data: AnyObj, pid: string, cid: string): AnyObj | null {
+  const obj = getSupportObj(getEspace(data), pid);
+  if (!obj || !Array.isArray(obj.creations)) return null;
+  return obj.creations.find((c: AnyObj) => c.id === cid) || null;
+}
+// Le client laisse un commentaire sur une création.
+async function handleCreationComment(request: Request, env: Env, masterKey: string, data: AnyObj, pid: string, cid: string): Promise<Response> {
+  const body = await readJson(request);
+  const text = (body.content || body.text || '').toString().trim();
+  if (!text) return json({ error: 'content requis' }, 400);
+  const cr = findCreation(data, pid, cid);
+  if (!cr) return json({ error: 'Création introuvable' }, 404);
+  const comment = { id: genId(), author: 'client', text: text.substring(0, 4000), createdAt: nowIso() };
+  if (!Array.isArray(cr.comments)) cr.comments = [];
+  cr.comments.push(comment);
+  cr.clientNotif = true;
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Commentaire support · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a commenté « ${escHtml(cr.name || 'création')} » :</p>` +
+    `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(text)}</p>`);
+  return json(comment, 201);
+}
+// Le client dépose un fichier sur une création.
+async function handleCreationFile(request: Request, env: Env, masterKey: string, data: AnyObj, pid: string, cid: string): Promise<Response> {
+  const ct = request.headers.get('Content-Type') || '';
+  if (!ct.includes('multipart/form-data')) return json({ error: 'multipart/form-data required' }, 400);
+  const form = await request.formData();
+  const file = form.get('file') as unknown as File | null;
+  if (!file) return json({ error: 'file is required' }, 400);
+  const cr = findCreation(data, pid, cid);
+  if (!cr) return json({ error: 'Création introuvable' }, 404);
+  const safeName = sanitizeFileName(file.name);
+  if (!safeName) return json({ error: 'Nom de fichier invalide' }, 400);
+  if (typeof file.size === 'number' && file.size > MAX_UPLOAD_BYTES) return json({ error: 'Fichier trop lourd (30 Mo maximum)' }, 413);
+  const { key, name } = await uniqueR2Key(env, `${masterKey}/supportsDeCom/${pid}/`, safeName);
+  await env.R2_FILES.put(key, file.stream(), {
+    httpMetadata: { contentType: file.type || guessType(name) },
+    customMetadata: { source: 'client', category: 'creation' },
+  });
+  const entry = { key, name, createdAt: nowIso(), author: 'client' };
+  if (!Array.isArray(cr.files)) cr.files = [];
+  cr.files.push(entry);
+  cr.clientNotif = true;
+  await save(env, masterKey, data);
+  await notifyAdmin(env, `Fichier support · ${clientFullName(data)}`,
+    `<p><strong>${escHtml(clientFullName(data))}</strong> a déposé le fichier <strong>${escHtml(name)}</strong> sur « ${escHtml(cr.name || 'création')} ».</p>`);
+  return json(entry, 201);
 }
 
 function findTask(espace: AnyObj, taskId: string, projectId: string): { task: AnyObj; container: AnyObj } | null {
