@@ -2384,14 +2384,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var crFiles = Array.isArray(c.files) ? c.files : [];
           var crComments = Array.isArray(c.comments) ? c.comments : [];
           var crFilesHtml = crFiles.length
-            ? crFiles.map(function(f){ return '<a href="' + API_BASE + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cpIcon('paperclip',12) + esc(f.name || 'fichier') + '</a>'; }).join('')
+            ? crFiles.slice().reverse().map(function(f){ var fu = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
+                if (/\.(jpe?g|png|webp|gif|avif|svg)$/i.test(f.name || '')) { return '<a href="' + fu + '" target="_blank" rel="noopener" title="' + esc(f.name || 'image') + '" style="display:block;border-radius:10px;overflow:hidden;border:1px solid var(--bone-d);line-height:0"><img src="' + fu + '" alt="' + esc(f.name || '') + '" loading="lazy" style="max-height:130px;max-width:200px;display:block;object-fit:cover"></a>'; }
+                return '<a href="' + fu + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cpIcon('paperclip',12) + esc(f.name || 'fichier') + '</a>'; }).join('')
             : '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400)">Aucun fichier déposé.</span>';
           var crCommentsHtml = crComments.length
             ? crComments.map(function(m){ var mine = m.author !== 'cindy'; return '<div style="margin-bottom:9px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-400);margin-bottom:3px">' + (mine ? 'Vous' : 'Cindy') + ' · ' + fmtDate(m.createdAt) + '</div><div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.5;color:var(--terre);background:' + (mine ? '#F8F6F2' : 'var(--brume)') + ';border-radius:10px;padding:9px 12px">' + esc(m.text || '') + '</div></div>'; }).join('')
             : '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);font-style:italic;margin-bottom:10px">Aucun commentaire. Laissez un mot à Cindy si besoin.</div>';
           var exchange = '<div style="border-top:1px solid var(--bone-d);margin-top:20px;padding-top:16px">' +
               '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Vos fichiers &amp; commentaires</div>' +
-              '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px">' + crFilesHtml +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:14px">' + crFilesHtml +
                 '<button onclick="window.cpCrFile(\'' + supPid + '\',\'' + c.id + '\')" style="display:inline-flex;align-items:center;gap:6px;background:var(--glycine);border:none;border-radius:9px;padding:7px 12px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--nuit);cursor:pointer">' + cpIcon('plus',12) + ' Ajouter un fichier</button>' +
               '</div>' +
               crCommentsHtml +
