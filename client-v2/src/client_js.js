@@ -6034,11 +6034,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="padding:9px 18px;border:none;border-radius:999px;background:#3f6b3a;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Valider ce livrable</button>' +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="padding:9px 18px;border:1px solid var(--bone-d);border-radius:999px;background:var(--card);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Demander une révision</button>' +
           '</div>';
-      var decide = (it.status === 'a_valider' && it.id)
-        ? (needConsult
-            ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:13px;color:var(--terre-600);background:#fbf3d9;border:1px solid #f0e2b0;border-radius:10px;padding:10px 14px">👀 Ouvrez d\'abord le livrable via « Voir » ci-dessus pour pouvoir le valider ou demander une révision.</div>'
-            : decideBtns)
+      // On invite à ouvrir le livrable, mais sans jamais bloquer la validation :
+      // les boutons restent toujours disponibles pour un livrable « à valider ».
+      var consultHint = needConsult
+        ? '<div style="margin-top:12px;margin-bottom:2px;font-family:var(--font-body);font-size:12.5px;color:var(--terre-600);background:#fbf3d9;border:1px solid #f0e2b0;border-radius:10px;padding:9px 13px">👀 Pensez à ouvrir le livrable via « Voir » ci-dessus avant de vous prononcer.</div>'
         : '';
+      var decide = (it.status === 'a_valider' && it.id) ? (consultHint + decideBtns) : '';
       var comment = (it.status === 'refuse' && it.clientComment)
         ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8d2b21;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
         : '';
