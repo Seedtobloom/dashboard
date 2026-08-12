@@ -1423,6 +1423,9 @@ async function handleDeliverablePatch(request: Request, env: Env, key: string, d
   }
   // « Vu » depuis l'Inbox : le studio a pris connaissance de la validation.
   if (body.seenByAdmin === true) liv.seenByAdmin = true;
+  // Révision traitée (nouvelle version renvoyée, ou classée à la main) : on la
+  // sort des révisions actives pour éviter les doublons dans « Cette semaine ».
+  if (body.resolved === true) { liv.revisionResolved = true; liv.seenByAdmin = true; }
   await saveClient(env, key, data);
   return json(liv);
 }
@@ -1517,15 +1520,22 @@ async function handleDashboard(env: Env): Promise<Response> {
     // livrables : en attente de validation client, ou révision demandée par le client
     const collectLiv = (container: AnyObj | null, label: string, projectId: string) => {
       if (!container || !Array.isArray(container.livrables)) return;
-      // On ne considère que la dernière version d'une tâche (les versions précédentes sont l'historique).
-      const latestByTask: AnyObj = {};
+      // On ne considère que la dernière version d'un livrable (les versions
+      // précédentes sont l'historique). On regroupe par tâche OU par création :
+      // ainsi un nouveau dépôt fait bien disparaître l'ancienne demande de révision.
+      const groupKey = (l: AnyObj) => l.taskId ? ('t:' + l.taskId) : (l.creationId ? ('c:' + l.creationId) : '');
+      const latestByGroup: AnyObj = {};
       container.livrables.forEach((l: AnyObj) => {
-        if (!l.taskId) return;
-        const cur = latestByTask[l.taskId];
-        if (!cur || String(l.createdAt || '') >= String(cur.createdAt || '')) latestByTask[l.taskId] = l;
+        const gk = groupKey(l);
+        if (!gk) return;
+        const cur = latestByGroup[gk];
+        if (!cur || String(l.createdAt || '') >= String(cur.createdAt || '')) latestByGroup[gk] = l;
       });
       container.livrables.forEach((l: AnyObj) => {
-        if (l.taskId && latestByTask[l.taskId] !== l) return;
+        // Révision explicitement traitée (nouvelle version renvoyée) : on l'ignore.
+        if (l.revisionResolved === true) return;
+        const gk = groupKey(l);
+        if (gk && latestByGroup[gk] !== l) return;
         const st = l.status || 'a_valider';
         if (st === 'a_valider') {
           const lvTask = l.taskId && Array.isArray(container.taches) ? container.taches.find((x: AnyObj) => x.id === l.taskId) : null;

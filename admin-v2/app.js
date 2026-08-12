@@ -967,7 +967,8 @@
     }
     if (it.type === 'revision') {
       var cidArg = x.creationId ? '\'' + x.creationId + '\'' : 'null';
-      var resendArgs = '\'' + x.key + '\',\'' + (x.project || 'partner') + '\',' + cidArg + ',\'' + x.id + '\'';
+      var tidArg = x.taskId ? '\'' + x.taskId + '\'' : 'null';
+      var resendArgs = '\'' + x.key + '\',\'' + (x.project || 'partner') + '\',' + cidArg + ',' + tidArg + ',\'' + x.id + '\'';
       var resendBtns = '<button class="btn btn--dark btn--sm" onclick="ADM.inboxResend(' + resendArgs + ')">↩ Renvoyer une version (fichier)</button>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.inboxResendLink(' + resendArgs + ')">🔗 Renvoyer un lien</button>';
       return inboxChrome(it, body, resendBtns + openBtn + seenBtn, '#a8432f');
@@ -978,11 +979,13 @@
   // est traitée → on la retire de l'Inbox et on la marque vue côté serveur.
   function inboxResendDone(key, project, oldId) {
     inboxDrop(key, oldId);
-    jpost('/api/clients/' + key + '/deliverables/' + oldId, { projectId: project || 'partner', seenByAdmin: true }, 'PATCH').catch(function () {});
+    // On classe l'ancienne révision (traitée) pour qu'elle ne réapparaisse pas
+    // dans « Cette semaine » à côté de la nouvelle version.
+    jpost('/api/clients/' + key + '/deliverables/' + oldId, { projectId: project || 'partner', seenByAdmin: true, resolved: true }, 'PATCH').catch(function () {});
     if (CURKEY === key) refreshClient();
   }
   // Renvoyer une nouvelle version (fichier) en réponse à une demande de révision, depuis l'Inbox.
-  function inboxResend(key, project, cid, oldId) {
+  function inboxResend(key, project, cid, tid, oldId) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
     document.body.appendChild(inp);
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
@@ -990,7 +993,7 @@
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
       if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
       notifyConfirm('Envoyer cette nouvelle version à la cliente et la prévenir par e-mail ?', function (notify) {
-        var fd = new FormData(); fd.append('file', f); fd.append('projectId', project); fd.append('deliverable', '1'); if (cid) fd.append('creationId', cid); fd.append('notify', notify ? 'true' : 'false');
+        var fd = new FormData(); fd.append('file', f); fd.append('projectId', project); fd.append('deliverable', '1'); if (cid) fd.append('creationId', cid); if (tid) fd.append('taskId', tid); fd.append('notify', notify ? 'true' : 'false');
         toast('Envoi de la version…');
         api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
           .then(function (res) { cleanup(); if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
@@ -1000,7 +1003,7 @@
     inp.click();
   }
   // Renvoyer une nouvelle version (lien) en réponse à une demande de révision, depuis l'Inbox.
-  function inboxResendLink(key, project, cid, oldId) {
+  function inboxResendLink(key, project, cid, tid, oldId) {
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box"><div class="admconfirm__title">Nouvelle version sous forme de lien</div>' +
       '<div class="admconfirm__msg">Colle le lien de la nouvelle version (Figma, Drive, proofing…). La cliente pourra l\'ouvrir puis valider ou redemander une révision.</div>' +
@@ -1015,7 +1018,7 @@
       var name = (el('ibx-dl-name').value || '').trim();
       close();
       notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
-        jpost('/api/clients/' + key + '/deliverables', { projectId: project, creationId: cid || null, link: url, name: name, notify: notify }).then(admUploadResult)
+        jpost('/api/clients/' + key + '/deliverables', { projectId: project, creationId: cid || null, taskId: tid || null, link: url, name: name, notify: notify }).then(admUploadResult)
           .then(function (res) { if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
           .catch(function () { toast('Erreur — version non envoyée, réessaie'); });
       });
@@ -1294,6 +1297,7 @@
           '<div class="prow__act" style="flex-shrink:0">' +
             ((r.project === 'partner' && r.taskId) ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') +
             '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' +
+            '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>' +
           '</div>' +
         '</div>';
       }
@@ -1498,7 +1502,7 @@
       P2_week.forEach(function (x) { p2DayPush((x.dueDate || '').slice(0, 10), p2Drow(x, false)); });
       (revs || []).forEach(function (r) {
         var wk = (r.wishDate || '').slice(0, 10);
-        var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>';
+        var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' + '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>';
         var row = '<div class="drow"><div class="drow__d"><b>' + (wk ? fmtDate(wk) : '—') + '</b><span style="color:#8d5a2b;font-weight:700;opacity:1">souhaitée</span></div>' +
           '<div><div class="drow__t">' + esc(r.name || r.taskTitle || 'Révision') + ' <span class="rvtag">Révision</span></div><div class="drow__m">' + esc(r.projectLabel || '') + ' · ' + esc(r.client || '') + (r.comment ? ' · « ' + esc(String(r.comment).slice(0, 70)) + ' »' : '') + '</div></div>' +
           '<div class="rowacts">' + acts + '</div></div>';
@@ -3627,6 +3631,12 @@
         if (PRIO_D && Array.isArray(PRIO_D.pendingValidation)) { PRIO_D.pendingValidation = PRIO_D.pendingValidation.filter(function (x) { return !(x.id === id && x.key === key); }); renderPrioBody(PRIO_D); } else renderPriorities();
       }).catch(function () { toast('Erreur'); });
     });
+  }
+  // Classer une révision déjà traitée (sans redéposer) : la sort de « Cette semaine ».
+  function revResolve(key, id, project) {
+    jpost('/api/clients/' + key + '/deliverables/' + id, { projectId: project || 'partner', resolved: true, seenByAdmin: true }, 'PATCH')
+      .then(function (r) { if (r && r.ok) { toast('Révision classée ✓'); refreshPriorities(); if (CURKEY === key) refreshClient(); } else toast('Erreur — réessaie'); })
+      .catch(function () { toast('Erreur — réessaie'); });
   }
   function prioAddDlv(key, id) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
@@ -6607,7 +6617,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
