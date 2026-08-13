@@ -5785,7 +5785,7 @@
     if (!creations.length) return '';
     var active = ADM_CHAT_TOPIC[d.id] || '';
     var pills = chatSubPill(d, 'Discussion générale', '', active === '') + creations.map(function (c) { return chatSubPill(d, c.name || 'Création', c.id, active === c.id); }).join('');
-    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:18px 0 12px;padding-top:16px;border-top:1px solid var(--line,rgba(65,47,33,.13))"><span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
   }
   function chatSetTopic(pid, topic) {
     ADM_CHAT_TOPIC[pid] = topic;
