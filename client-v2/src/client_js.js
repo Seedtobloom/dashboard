@@ -5544,14 +5544,26 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function convThreads() {
     var list = [{ id: '_general', label: 'Cindy · Général', kind: 'general' }];
     (appData.projects || []).forEach(function(pd) {
-      if (pd.project && pd.project.type === 'support') list.push({ id: pd.project.id, label: pd.project.projectTitle || 'Support de com', kind: 'project' });
+      if (pd.project && pd.project.type === 'support') {
+        var supId = pd.project.id;
+        list.push({ id: supId, label: pd.project.projectTitle || 'Support de com', kind: 'support', supId: supId });
+        // Une sous-discussion par création (hors créations archivées).
+        (pd.project.creations || []).forEach(function(c) {
+          if (c.status === 'archive') return;
+          list.push({ id: 'crchat:' + supId + ':' + c.id, label: c.name || 'Création', kind: 'creation', supId: supId, cid: c.id });
+        });
+      }
     });
     return list;
   }
   function convThreadMsgs(thread) {
     if (!thread || thread.kind === 'general') return convData;
-    var pd = getPD(thread.id);
-    return (pd && Array.isArray(pd.messages)) ? pd.messages : [];
+    var pd = getPD(thread.supId || thread.id);
+    var msgs = (pd && Array.isArray(pd.messages)) ? pd.messages : [];
+    if (thread.kind === 'creation') return msgs.filter(function(m){ return m.topic === thread.cid; });
+    // Fil général du support : messages sans topic (ou dont la création n'existe plus).
+    var creaIds = (pd && pd.project && Array.isArray(pd.project.creations)) ? pd.project.creations.map(function(c){ return c.id; }) : [];
+    return msgs.filter(function(m){ return !m.topic || creaIds.indexOf(m.topic) === -1; });
   }
   function convThreadUnread(thread) {
     return convThreadMsgs(thread).filter(function(m){ return m.author === 'cindy' && !m.readByClient; }).length;
@@ -5565,17 +5577,23 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (t) {
       var msgs = convThreadMsgs(t);
       if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.author === 'cindy') { m.readByClient = true; m.manualUnread = false; } });
-      var projId = t.kind === 'project' ? t.id : '_general';
-      fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: projId }) }).catch(function(){});
+      if (t.kind !== 'general') {
+        var body = { projectId: t.supId || t.id };
+        // Marquer lu seulement la sous-discussion ouverte (topic = création, ou '' pour le fil général).
+        body.topic = t.kind === 'creation' ? t.cid : '';
+        fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }).catch(function(){});
+      } else {
+        fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: '_general' }) }).catch(function(){});
+      }
     }
     renderShell();
   };
   // Cliente : bascule un message de Cindy entre « non lu » et « lu ».
   window.cpMsgToggleUnread = function(id, makeUnread) {
     var threadId = cpConvThread || '_general';
-    var projId = (threadId && threadId !== '_general') ? threadId : '_general';
     // Optimiste : on met à jour l'état localement sans ré-ouvrir le fil.
     var t = convThreads().filter(function(x){ return x.id === threadId; })[0];
+    var projId = (t && t.kind !== 'general') ? (t.supId || t.id) : '_general';
     var msgs = t ? convThreadMsgs(t) : convData;
     if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.id === id) { m.readByClient = !makeUnread; m.manualUnread = !!makeUnread; } });
     fetch(API_BASE + '/message/unread', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: projId, id: id, unread: !!makeUnread }) }).catch(function(){});
@@ -5600,15 +5618,34 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<button class="cp-btn" onclick="document.getElementById(\'cp-convo-draft\')&&document.getElementById(\'cp-convo-draft\').focus()">Écrire un message</button>' +
         '</div>';
 
-    var selector = multi ? '<div style="display:flex;gap:7px;flex-wrap:wrap;padding:14px 24px 0;flex-shrink:0">' + threads.map(function(t){
-      var on = t.id === cpConvThread;
+    function convPill(t, label, active, small) {
       var u = convThreadUnread(t);
-      return '<button onclick="cpConvSetThread(\'' + esc(t.id) + '\')" style="padding:7px 15px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:10.5px;font-weight:600;letter-spacing:0.04em;background:' + (on ? 'var(--terre)' : 'var(--glycine-50)') + ';color:' + (on ? 'var(--paille)' : 'var(--terre-600)') + '">' + esc(t.label) + (u ? ' · ' + u : '') + '</button>';
-    }).join('') + '</div>' : '';
+      var pad = small ? '6px 13px' : '7px 15px';
+      var fs = small ? '10px' : '10.5px';
+      var bg = active ? 'var(--terre)' : (small ? 'var(--brume)' : 'var(--glycine-50)');
+      var col = active ? 'var(--paille)' : 'var(--terre-600)';
+      return '<button onclick="cpConvSetThread(\'' + esc(t.id) + '\')" style="padding:' + pad + ';border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:' + fs + ';font-weight:600;letter-spacing:0.04em;background:' + bg + ';color:' + col + '">' + esc(label) + (u ? ' · ' + u : '') + '</button>';
+    }
+    var topThreads = threads.filter(function(t){ return t.kind === 'general' || t.kind === 'support'; });
+    var activeSup = cur.kind === 'support' ? cur.id : (cur.kind === 'creation' ? cur.supId : '');
+    var row1html = topThreads.length > 1 ? topThreads.map(function(t){ var active = (t.id === cur.id) || (t.kind === 'support' && t.id === activeSup); return convPill(t, t.label, active, false); }).join('') : '';
+    var subhtml = '';
+    if (activeSup) {
+      var supThread = threads.filter(function(t){ return t.id === activeSup; })[0];
+      var subs = threads.filter(function(t){ return t.kind === 'creation' && t.supId === activeSup; });
+      if (supThread) subhtml += convPill(supThread, 'Discussion générale', cur.id === activeSup, true);
+      subhtml += subs.map(function(t){ return convPill(t, t.label, cur.id === t.id, true); }).join('');
+    }
+    var selector = (row1html || subhtml)
+      ? '<div style="padding:14px 24px 2px;flex-shrink:0">'
+        + (row1html ? '<div style="display:flex;gap:7px;flex-wrap:wrap">' + row1html + '</div>' : '')
+        + (subhtml ? '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px">' + '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-400);margin-right:3px">Créations</span>' + subhtml + '</div>' : '')
+        + '</div>'
+      : '';
 
-    var subtitle = cur.kind === 'general' ? 'Répond en général sous 24 h' : 'Fil dédié à ce support';
+    var subtitle = cur.kind === 'general' ? 'Répond en général sous 24 h' : (cur.kind === 'creation' ? 'Sous-discussion dédiée à cette création' : 'Fil général de ce support');
     var headTitle = cur.kind === 'general' ? 'Cindy · Seed to Bloom' : esc(cur.label);
-    var placeholder = cur.kind === 'general' ? 'Écrire un message à Cindy…' : 'Écrire au sujet de ce support…';
+    var placeholder = cur.kind === 'general' ? 'Écrire un message à Cindy…' : (cur.kind === 'creation' ? 'Écrire au sujet de « ' + esc(cur.label) + ' »…' : 'Écrire au sujet de ce support…');
 
     var convoHtml = '<div class="card fade-up" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:480px">' +
       selector +
@@ -5651,17 +5688,21 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!ta) return;
     var content = ta.value.trim();
     if (!content && !cpConvAtt.length) return;
-    var isProject = cpConvThread && cpConvThread !== '_general';
-    var url = isProject ? (API_BASE + '/message') : (API_BASE + '/conversation');
+    var threads = convThreads();
+    var t = threads.filter(function(x){ return x.id === cpConvThread; })[0] || threads[0];
+    var isGeneral = !t || t.kind === 'general';
+    var url = isGeneral ? (API_BASE + '/conversation') : (API_BASE + '/message');
     var atts = cpConvAtt.slice();
-    var payload = isProject ? { projectId: cpConvThread, content: content, attachments: atts } : { content: content, attachments: atts };
+    var payload;
+    if (isGeneral) { payload = { content: content, attachments: atts }; }
+    else { payload = { projectId: t.supId || t.id, content: content, attachments: atts }; if (t.kind === 'creation') payload.topic = t.cid; }
     ta.disabled = true;
     fetch(url, { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ' ' + (t||'').slice(0,120)); }); return r.json(); })
       .then(function(d) {
         var msg = d.message || d;
-        if (isProject) { var pd = getPD(cpConvThread); if (pd) { if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(msg); } }
-        else { convData.push(msg); }
+        if (isGeneral) { convData.push(msg); }
+        else { var pd = getPD(t.supId || t.id); if (pd) { if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(msg); } }
         var list = document.getElementById('cp-convo-list');
         var empty = list && list.querySelector('.cp-empty');
         if (empty) empty.remove();

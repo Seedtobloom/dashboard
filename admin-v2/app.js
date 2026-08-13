@@ -96,6 +96,7 @@
   }
   // ── Pièces jointes dans la messagerie (par zone de saisie) ──
   var ADM_MSG_ATT = {};
+  var ADM_CHAT_TOPIC = {}; // sous-discussion active par support (projectId -> topic création, ''=général)
   // Clé du client courant selon le contexte (vue client = CURKEY ; messagerie globale = CHAT.key).
   function admChatKey() { return (VIEW === 'chat' && CHAT && CHAT.key) ? CHAT.key : CURKEY; }
   function admMsgAttChips(atts) {
@@ -5713,11 +5714,19 @@
     return out;
   }
   function admClientInitial() { var c = (CUR && CUR.client) || {}; var s = (c.prenom || c.nom || '').trim(); return (s ? s[0] : '•').toUpperCase(); }
-  function chatBubbles(d, q) {
+  // Créations d'un support (hors archivées) — servent de sous-discussions.
+  function supportCreations(d) { return (d && d.content && Array.isArray(d.content.creations)) ? d.content.creations.filter(function (c) { return c.status !== 'archive'; }) : []; }
+  function chatBubbles(d, q, topic) {
     var all = d.content.chat || [];
+    if (topic !== undefined && topic !== null && supportCreations(d).length) {
+      var creaIds = (d.content.creations || []).map(function (c) { return c.id; });
+      all = (topic === '')
+        ? all.filter(function (m) { return !m.topic || creaIds.indexOf(m.topic) === -1; })
+        : all.filter(function (m) { return m.topic === topic; });
+    }
     var ql = (q || '').toLowerCase();
     var msgs = ql ? all.filter(function (m) { return (m.message || '').toLowerCase().indexOf(ql) !== -1; }) : all;
-    if (!all.length) return '<div class="empty">Aucun message.</div>';
+    if (!all.length) return '<div class="empty">Aucun message dans cette discussion.</div>';
     if (!msgs.length) return '<div class="empty">Aucun message ne contient ce mot.</div>';
     function bub(m) {
       var mine = m.from === 'cindy';
@@ -5754,21 +5763,60 @@
       }).catch(function () { toast('Erreur'); });
     });
   }
+  // Nombre de messages client non lus pour une sous-discussion (topic ''=général).
+  function chatSubUnread(d, topicVal) {
+    var chat = d.content.chat || [];
+    var creaIds = (d.content.creations || []).map(function (c) { return c.id; });
+    return chat.filter(function (m) {
+      if (m.from !== 'client' || m.readByAdmin !== false) return false;
+      if (topicVal === '') return !m.topic || creaIds.indexOf(m.topic) === -1;
+      return m.topic === topicVal;
+    }).length;
+  }
+  function chatSubPill(d, label, topicVal, on) {
+    var u = chatSubUnread(d, topicVal);
+    var bg = on ? 'var(--terre)' : 'rgba(65,47,33,.06)';
+    var col = on ? '#fff' : 'var(--terre-600)';
+    return '<button onclick="ADM.chatSetTopic(\'' + d.id + '\',\'' + topicVal + '\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;background:' + bg + ';color:' + col + '">' + esc(label) + (u ? ' · ' + u : '') + '</button>';
+  }
+  // Rangée de sous-discussions (Général + une par création) pour un support.
+  function chatSubRow(d) {
+    var creations = supportCreations(d);
+    if (!creations.length) return '';
+    var active = ADM_CHAT_TOPIC[d.id] || '';
+    var pills = chatSubPill(d, 'Discussion générale', '', active === '') + creations.map(function (c) { return chatSubPill(d, c.name || 'Création', c.id, active === c.id); }).join('');
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:3px">Créations</span>' + pills + '</div>';
+  }
+  function chatSetTopic(pid, topic) {
+    ADM_CHAT_TOPIC[pid] = topic;
+    // On classe lue la sous-discussion ouverte (par topic).
+    jpost('/api/clients/' + CURKEY + '/message/read', { projectId: pid, topic: topic }, 'POST').catch(function () {});
+    if (el('chatthread')) { chatProject(pid); return; } // messagerie (hub)
+    var d = findDomain(pid), w = el('chatwrap-' + pid);
+    if (d && w) { w.innerHTML = chatCardInner(d, ''); var box = el('chat-' + pid); if (box) box.scrollTop = box.scrollHeight; }
+  }
+  function chatCardInner(d, q) {
+    var topic = ADM_CHAT_TOPIC[d.id] || '';
+    return chatSubRow(d) +
+      '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
+      '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, q, topic) + '</div>';
+  }
   function chatCard(d) {
     return '<div class="card"><h3>Messages · ' + esc(DOMAIN_LABELS[d.id] || d.label) + '</h3>' +
-      '<div class="row mb"><input type="search" class="inp" placeholder="Rechercher dans la discussion…" oninput="ADM.chatCardSearch(\'' + d.id + '\',this.value)"></div>' +
-      '<div class="msgs" id="chat-' + d.id + '">' + chatBubbles(d, '') + '</div>' +
+      '<div id="chatwrap-' + d.id + '">' + chatCardInner(d, '') + '</div>' +
       admMsgToolbar('msg-' + d.id) +
       '<div id="msg-' + d.id + '-att" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0"></div>' +
       '<div class="row"><textarea class="inp" id="msg-' + d.id + '" placeholder="Répondre au client…" style="max-height:300px;overflow-y:auto" oninput="ADM.taGrow(this)"></textarea></div>' +
       '<div class="row row--end mt" style="gap:8px">' + admAttachBtn('msg-' + d.id, d.id) + '<button class="btn btn--outline btn--sm" title="Insérer une réponse rapide" onclick="ADM.qrPick(\'msg-' + d.id + '\')">⚡ Réponses</button><button class="btn btn--dark btn--sm" onclick="ADM.sendMsg(\'' + d.id + '\')">Envoyer</button></div></div>';
   }
-  function chatCardSearch(domainId, v) { var d = findDomain(domainId); var box = el('chat-' + domainId); if (d && box) box.innerHTML = chatBubbles(d, v); }
+  function chatCardSearch(domainId, v) { var d = findDomain(domainId); var box = el('chat-' + domainId); if (d && box) box.innerHTML = chatBubbles(d, v, ADM_CHAT_TOPIC[domainId] || ''); }
   function sendMsg(pid) {
     var cid = 'msg-' + pid; var i = el(cid); var v = (i.value || '').trim();
     var atts = ADM_MSG_ATT[cid] || [];
     if (!v && !atts.length) return;
-    jpost('/api/clients/' + CURKEY + '/message', { projectId: pid, content: v, attachments: atts }).then(function (r) { if (r.ok) { toast('Message envoyé'); ADM_MSG_ATT[cid] = []; loadClient(); } else toast('Erreur'); });
+    var body = { projectId: pid, content: v, attachments: atts };
+    var tp = ADM_CHAT_TOPIC[pid]; if (tp) body.topic = tp;
+    jpost('/api/clients/' + CURKEY + '/message', body).then(function (r) { if (r.ok) { toast('Message envoyé'); ADM_MSG_ATT[cid] = []; loadClient(); } else toast('Erreur'); });
   }
 
   /* documents */
@@ -5867,7 +5915,7 @@
     var d = findDomain(pid); if (!d) return;
     var box = el('chatthread'); if (!box) return;
     var chips = el('chatchips'); if (chips) { var bs = chips.querySelectorAll('.subtab'); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('active', bs[i].getAttribute('data-pid') === pid); }
-    box.innerHTML = '<div class="chatscroll" id="chatmsgs">' + chatBubbles(d, '') + '</div>' +
+    box.innerHTML = chatSubRow(d) + '<div class="chatscroll" id="chatmsgs">' + chatBubbles(d, '', ADM_CHAT_TOPIC[pid] || '') + '</div>' +
       '<div style="padding:0 4px">' + admMsgToolbar('gmsg') + '</div>' +
       '<div id="gmsg-att" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 6px"></div>' +
       '<div class="chatcompose">' + admAttachBtn('gmsg', pid) + '<textarea class="inp" id="gmsg" placeholder="Répondre au client…" onkeydown="ADM.chatKey(event)" oninput="ADM.taGrow(this)"></textarea>' +
@@ -5879,19 +5927,21 @@
   // Zone de saisie qui grandit avec le texte (pour voir ce qu'on écrit sans scroller).
   function taGrow(t) { if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 300) + 'px'; }
   function chatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); gsend(); } }
-  function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v); }
+  function chatSearch(v) { var d = findDomain(CHAT.project); var box = el('chatmsgs'); if (d && box) box.innerHTML = chatBubbles(d, v, ADM_CHAT_TOPIC[CHAT.project] || ''); }
   function gsend() {
     var i = el('gmsg'); var v = (i.value || '').trim();
     var atts = ADM_MSG_ATT['gmsg'] || [];
     if (!v && !atts.length) return;
-    jpost('/api/clients/' + CHAT.key + '/message', { projectId: CHAT.project, content: v, attachments: atts }).then(function (r) {
+    var gbody = { projectId: CHAT.project, content: v, attachments: atts };
+    var gtp = ADM_CHAT_TOPIC[CHAT.project]; if (gtp) gbody.topic = gtp;
+    jpost('/api/clients/' + CHAT.key + '/message', gbody).then(function (r) {
       if (!r.ok) { toast('Erreur'); return; }
       i.value = ''; taGrow(i); ADM_MSG_ATT['gmsg'] = [];
       api('/api/clients/' + CHAT.key).then(function (r2) { return r2.json(); }).then(function (d) {
         if (CHAT.key !== d.key) return;
         CUR = d; CURKEY = CHAT.key;
         var dom = findDomain(CHAT.project); var box = el('chatmsgs');
-        if (dom && box) { box.innerHTML = chatBubbles(dom, ''); box.scrollTop = box.scrollHeight; }
+        if (dom && box) { box.innerHTML = chatBubbles(dom, '', ADM_CHAT_TOPIC[CHAT.project] || ''); box.scrollTop = box.scrollHeight; }
       });
     });
   }
@@ -6695,7 +6745,7 @@
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
-    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, pinMsg: pinMsg, delMsg: delMsg, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
+    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
     msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
     msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,

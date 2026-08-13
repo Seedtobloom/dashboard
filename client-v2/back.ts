@@ -504,6 +504,7 @@ function mapChatToMessages(chat: any[]): AnyObj[] {
     readByClient: m.readByClient !== false,
     pinned: m.pinned === true,
     manualUnread: m.manualUnread === true,
+    topic: m.topic || '',
   }));
 }
 
@@ -798,7 +799,10 @@ async function handleMessage(request: Request, env: Env, masterKey: string, data
   if (!content && !attachments.length) return json({ error: 'content is required' }, 400);
   if (content.length > 4000) return json({ error: 'Message trop long' }, 400);
   if (!Array.isArray(container.chat)) container.chat = [];
-  const entry = { id: genId(), from: 'client', message: content, attachments, date: nowIso(), readByClient: true, readByAdmin: false };
+  // topic = id d'une création (sous-discussion du support). Vide = fil général.
+  const topic = (body.topic || '').toString().slice(0, 60);
+  const entry: AnyObj = { id: genId(), from: 'client', message: content, attachments, date: nowIso(), readByClient: true, readByAdmin: false };
+  if (topic) entry.topic = topic;
   container.chat.push(entry);
   await save(env, masterKey, data);
   await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`,
@@ -869,8 +873,12 @@ async function handleMessageRead(request: Request, env: Env, masterKey: string, 
   const body = await readJson(request);
   const chat = messageThreadOf(data, (body.projectId || '').toString());
   if (!chat) return json({ error: 'Projet introuvable' }, 404);
+  // Portée optionnelle à une sous-discussion (topic = création). Absent = tout le fil.
+  const hasTopic = Object.prototype.hasOwnProperty.call(body, 'topic');
+  const topic = (body.topic || '').toString();
   let changed = false;
   chat.forEach((m: AnyObj) => {
+    if (hasTopic && (m.topic || '') !== topic) return;
     if ((m.from === 'cindy' || m.from === 'studio' || m.author === 'cindy') && (m.readByClient === false || m.manualUnread === true)) { m.readByClient = true; m.manualUnread = false; changed = true; }
   });
   if (changed) await save(env, masterKey, data);

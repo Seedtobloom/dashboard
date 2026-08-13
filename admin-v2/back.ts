@@ -471,8 +471,10 @@ async function handleClientApi(
     const body = await readJson(request);
     const { container } = resolveProject(esp, (body.projectId || '').toString());
     if (!container) return json({ error: 'Projet introuvable' }, 404);
+    const hasTopic = Object.prototype.hasOwnProperty.call(body, 'topic');
+    const topic = (body.topic || '').toString();
     let changed = false;
-    (container.chat || []).forEach((mm: AnyObj) => { if (mm.from === 'client' && mm.readByAdmin === false) { mm.readByAdmin = true; changed = true; } });
+    (container.chat || []).forEach((mm: AnyObj) => { if (hasTopic && (mm.topic || '') !== topic) return; if (mm.from === 'client' && mm.readByAdmin === false) { mm.readByAdmin = true; changed = true; } });
     if (changed) await saveClient(env, key, data);
     return json({ ok: true });
   }
@@ -1008,7 +1010,7 @@ async function handleClientPatch(request: Request, env: Env, key: string, data: 
 
 /* ── chat ── */
 function mapMsg(m: AnyObj): AnyObj {
-  return { id: m.id, author: m.from === 'client' ? 'client' : 'cindy', content: m.message != null ? m.message : m.content, attachments: Array.isArray(m.attachments) ? m.attachments : [], createdAt: m.date || m.createdAt, readByAdmin: m.readByAdmin !== false };
+  return { id: m.id, author: m.from === 'client' ? 'client' : 'cindy', content: m.message != null ? m.message : m.content, attachments: Array.isArray(m.attachments) ? m.attachments : [], createdAt: m.date || m.createdAt, readByAdmin: m.readByAdmin !== false, topic: m.topic || '' };
 }
 function msgAttachments(raw: any): AnyObj[] {
   return Array.isArray(raw)
@@ -1027,7 +1029,10 @@ async function handleAdminMessage(request: Request, env: Env, key: string, data:
   if (!content && !attachments.length) return json({ error: 'content requis' }, 400);
   if (content.length > 4000) return json({ error: 'Message trop long' }, 400);
   if (!Array.isArray(container.chat)) container.chat = [];
-  const entry = { id: genId(), from: 'cindy', message: content, attachments, date: nowIso(), readByClient: false, readByAdmin: true };
+  // topic = id d'une création (sous-discussion du support). Vide = fil général.
+  const topic = (body.topic || '').toString().slice(0, 60);
+  const entry: AnyObj = { id: genId(), from: 'cindy', message: content, attachments, date: nowIso(), readByClient: false, readByAdmin: true };
+  if (topic) entry.topic = topic;
   container.chat.push(entry);
   await saveClient(env, key, data);
   await notifyClient(env, data, `Nouveau message · ${label}`, `<p>Cindy vous a répondu dans <em>${escHtml(label)}</em>. Connectez-vous à votre espace pour lire le message.</p>`, key);
