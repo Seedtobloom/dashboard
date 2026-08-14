@@ -5627,14 +5627,21 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return '<button onclick="cpConvSetThread(\'' + esc(t.id) + '\')" style="padding:' + pad + ';border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:' + fs + ';font-weight:600;letter-spacing:0.04em;background:' + bg + ';color:' + col + '">' + esc(label) + (u ? ' · ' + u : '') + '</button>';
     }
     var topThreads = threads.filter(function(t){ return t.kind === 'general' || t.kind === 'support'; });
-    var activeSup = cur.kind === 'support' ? cur.id : (cur.kind === 'creation' ? cur.supId : '');
-    var row1html = topThreads.length > 1 ? topThreads.map(function(t){ var active = (t.id === cur.id) || (t.kind === 'support' && t.id === activeSup); return convPill(t, t.label, active, false); }).join('') : '';
+    // Le support dans lequel la cliente se trouve réellement (pour la surbrillance).
+    var curSup = cur.kind === 'support' ? cur.id : (cur.kind === 'creation' ? cur.supId : '');
+    // Le support dont on affiche les créations : à défaut, le premier support (pour qu'elles soient toujours visibles).
+    var firstSup = topThreads.filter(function(t){ return t.kind === 'support'; })[0];
+    var displaySup = curSup || (firstSup ? firstSup.id : '');
+    var row1html = topThreads.length > 1 ? topThreads.map(function(t){ var active = (t.id === cur.id) || (t.kind === 'support' && t.id === curSup); return convPill(t, t.label, active, false); }).join('') : '';
     var subhtml = '';
-    if (activeSup) {
-      var supThread = threads.filter(function(t){ return t.id === activeSup; })[0];
-      var subs = threads.filter(function(t){ return t.kind === 'creation' && t.supId === activeSup; });
-      if (supThread) subhtml += convPill(supThread, 'Discussion générale', cur.id === activeSup, true);
-      subhtml += subs.map(function(t){ return convPill(t, t.label, cur.id === t.id, true); }).join('');
+    if (displaySup) {
+      var supThread = threads.filter(function(t){ return t.id === displaySup; })[0];
+      var subs = threads.filter(function(t){ return t.kind === 'creation' && t.supId === displaySup; });
+      // On n'affiche la rangée que s'il y a au moins une création à séparer.
+      if (subs.length) {
+        if (supThread) subhtml += convPill(supThread, 'Discussion générale', cur.id === displaySup, true);
+        subhtml += subs.map(function(t){ return convPill(t, t.label, cur.id === t.id, true); }).join('');
+      }
     }
     var selector = (row1html || subhtml)
       ? '<div style="padding:14px 24px 2px;flex-shrink:0">'
