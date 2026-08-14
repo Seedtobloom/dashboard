@@ -795,6 +795,8 @@ async function handleClientApi(
       if ('status' in body) cr.status = cleanEnum(body.status, CREATION_STATUSES) || cr.status;
       if ('dueDate' in body) cr.dueDate = body.dueDate ? String(body.dueDate).slice(0, 10) : null;
       if ('revisionsMax' in body) cr.revisionsMax = Math.max(0, Math.min(20, Math.round(Number(body.revisionsMax) || 0)));
+      // Ajustement manuel du décompte d'allers-retours (ceux faits hors de l'espace).
+      if ('revExtra' in body) cr.revExtra = Math.max(-20, Math.min(50, Math.round(Number(body.revExtra) || 0)));
       if ('bannerColor' in body) cr.bannerColor = cleanBannerColor(body.bannerColor);
       // Réponse de Cindy à l'échange de la création + accusé de lecture.
       if ('reply' in body && String(body.reply || '').trim()) {

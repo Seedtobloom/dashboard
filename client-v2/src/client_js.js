@@ -2334,7 +2334,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var spanels = creations.map(function(c){
           var vs = allDlv.filter(function(d){ return d.creationId === c.id; });
           var pct = crProgress(c);
-          var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length;
+          var revUsed = vs.filter(function(d){ return d.status === 'refuse'; }).length + (typeof c.revExtra === 'number' ? c.revExtra : 0);
+          if (revUsed < 0) revUsed = 0;
           var revMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 0;
           var revLeft = Math.max(0, revMax - revUsed);
           var stp = CR_ST[c.status] || ['', false];

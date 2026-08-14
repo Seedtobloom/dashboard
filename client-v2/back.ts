@@ -649,6 +649,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
           creations: Array.isArray(obj.creations) ? obj.creations.map((c: AnyObj) => ({
             id: c.id, name: c.name || '', type: c.type || 'autre', status: c.status || 'a_preparer',
             dueDate: c.dueDate || null, revisionsMax: typeof c.revisionsMax === 'number' ? c.revisionsMax : 3,
+            revExtra: typeof c.revExtra === 'number' ? c.revExtra : 0,
             bannerColor: c.bannerColor || null, createdAt: c.createdAt || null,
             comments: Array.isArray(c.comments) ? c.comments : [],
             files: Array.isArray(c.files) ? c.files.map((f: AnyObj) => ({ key: f.key, name: f.name, createdAt: f.createdAt || null, author: f.author || 'client' })) : [],

@@ -4483,6 +4483,11 @@
     function card(c) {
       var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
       var col = CR_ST_COL[c.status] || '#8a7d6b';
+      // Décompte des allers-retours : auto (révisions dans l'espace) + ajustement manuel (hors espace).
+      var crRevMax = typeof c.revisionsMax === 'number' ? c.revisionsMax : 3;
+      var crRevAuto = vs.filter(function (l) { return l.status === 'refuse'; }).length;
+      var crRevExtra = typeof c.revExtra === 'number' ? c.revExtra : 0;
+      var crRevUsed = Math.max(0, crRevAuto + crRevExtra);
       var vHtml = vs.length ? vs.map(verRow).join('') : '<div class="cg-empty">Aucune version. Dépose la V1 ci-dessous.</div>';
       var fullPid = 'support-' + pid;
       var n = Array.isArray(c.planning) ? c.planning.length : 0;
@@ -4496,6 +4501,14 @@
             '<span class="cg-rev__lb">↩ Séries de retours</span>' +
             '<input class="cg-in cg-rev__in" type="number" min="0" max="20" value="' + (typeof c.revisionsMax === 'number' ? c.revisionsMax : 3) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revisionsMax\',this.value)">' +
           '</label>' +
+          '<div class="cg-rev" title="Allers-retours utilisés : comptés automatiquement dans l\'espace + ajustés à la main pour ceux faits ailleurs (mail, appel…). − / +">' +
+            '<span class="cg-rev__lb">↩ Utilisés' + (crRevExtra ? ' (dont ' + (crRevExtra > 0 ? '+' : '') + crRevExtra + ' manuel)' : '') + '</span>' +
+            '<span style="display:inline-flex;align-items:center;gap:6px">' +
+              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra - 1) + ')" title="Retirer un aller-retour" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bone-d);background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">−</button>' +
+              '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;color:' + (crRevUsed > crRevMax ? '#b23b2a' : 'var(--terre)') + ';min-width:36px;text-align:center">' + crRevUsed + ' / ' + crRevMax + '</span>' +
+              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bone-d);background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">+</button>' +
+            '</span>' +
+          '</div>' +
           '<span class="cg-status cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
         '</div>' +
         crBannerRow(pid, c) +
