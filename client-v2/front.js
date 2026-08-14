@@ -9583,11 +9583,40 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }
     return out;
   }
-  function stbInboxBubbles(pd, q){
+  // Créations d'un support (hors archivées) : servent de sous-discussions.
+  function stbSupportCreations(pd){
+    var p = pd && pd.project;
+    if (!p || p.type !== 'support' || !Array.isArray(p.creations)) return [];
+    return p.creations.filter(function(c){ return c.status !== 'archive'; });
+  }
+  function stbTopicMsgs(pd, topic){
     var msgs = pd.messages || [];
+    if (topic === undefined || topic === null || !stbSupportCreations(pd).length) return msgs;
+    var creaIds = (pd.project && Array.isArray(pd.project.creations)) ? pd.project.creations.map(function(c){ return c.id; }) : [];
+    if (topic === '') return msgs.filter(function(m){ return !m.topic || creaIds.indexOf(m.topic) === -1; });
+    return msgs.filter(function(m){ return m.topic === topic; });
+  }
+  function stbSubUnread(pd, topicVal){
+    return stbTopicMsgs(pd, topicVal).filter(function(m){ return m.author === 'cindy' && m.readByClient === false; }).length;
+  }
+  function stbSubPill(pd, label, topicVal, on){
+    var u = stbSubUnread(pd, topicVal);
+    var bg = on ? 'var(--terre)' : 'var(--brume,#F0E8FF)';
+    var col = on ? 'var(--paille)' : 'var(--terre-600)';
+    return '<button onclick="window.stbInboxSetTopic(\''+pd.project.id+'\',\''+topicVal+'\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;background:'+bg+';color:'+col+'">'+esc(label)+(u?' · '+u:'')+'</button>';
+  }
+  function stbSubRow(pd){
+    var subs = stbSupportCreations(pd);
+    if (!subs.length) return '';
+    var topic = window._stbInboxTopic || '';
+    var pills = stbSubPill(pd, 'Discussion générale', '', topic === '') + subs.map(function(c){ return stbSubPill(pd, c.name || 'Création', c.id, topic === c.id); }).join('');
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:11px 16px 3px;border-bottom:1px solid var(--bone-d)"><span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-400);margin-right:3px">Créations</span>'+pills+'</div>';
+  }
+  function stbInboxBubbles(pd, q, topic){
+    var msgs = stbTopicMsgs(pd, topic);
     var ql = (q || '').toLowerCase();
     var shown = ql ? msgs.filter(function(m){ return (m.content || '').toLowerCase().indexOf(ql) !== -1; }) : msgs;
-    if (!msgs.length) return '<div class="mx-empty" style="margin-top:34px">Aucun message. Écris à Cindy.</div>';
+    if (!msgs.length) return '<div class="mx-empty" style="margin-top:34px">Aucun message dans cette discussion. Écris à Cindy.</div>';
     if (!shown.length) return '<div class="mx-empty" style="margin-top:34px">Aucun message ne contient ce mot.</div>';
     var head = ql ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);text-align:center">'+shown.length+' message'+(shown.length>1?'s':'')+' trouvé'+(shown.length>1?'s':'')+'</div>' : '';
     return head + shown.map(function(m){
@@ -9601,16 +9630,21 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.stbInboxSearch = function(pid, v){
     var pd = getPD(pid); if (!pd) return;
     window._stbInboxQ = v;
-    var box = document.getElementById('cp-inbox-msgs'); if (box) box.innerHTML = stbInboxBubbles(pd, v);
+    var box = document.getElementById('cp-inbox-msgs'); if (box) box.innerHTML = stbInboxBubbles(pd, v, window._stbInboxTopic || '');
   };
   function stbInboxConv(pd){
     var p = pd.project;
+    var topic = window._stbInboxTopic || '';
+    var subs = stbSupportCreations(pd);
+    var curCrea = subs.filter(function(c){ return c.id === topic; })[0];
+    var sub = (curCrea ? esc(curCrea.name || 'Création') : (subs.length ? 'Discussion générale' : esc(p.projectTitle || p.id)));
     return '<div class="mx-head">'+
         '<span class="mx-av" style="background:var(--terre);color:var(--paille)">C</span>'+
-        '<div class="mx-head__t"><div class="mx-head__n">Cindy</div><div class="mx-head__s">'+esc(p.projectTitle || p.id)+'</div></div>'+
+        '<div class="mx-head__t"><div class="mx-head__n">Cindy</div><div class="mx-head__s">'+sub+'</div></div>'+
         '<input type="search" class="mx-headsearch" placeholder="Rechercher…" oninput="window.stbInboxSearch(\''+p.id+'\',this.value)">'+
       '</div>'+
-      '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '')+'</div>'+
+      stbSubRow(pd)+
+      '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
       '<div class="mx-composer">'+
         '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
         '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
@@ -9618,20 +9652,39 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   window.stbInboxSelect = function(pid){
     var pd = getPD(pid); if (!pd) return;
+    window._stbInboxTopic = ''; // nouveau projet : on repart sur la discussion générale
     if (typeof stbMarkRead === 'function') stbMarkRead(pid, false);
     stbInboxRenderList();
     var act = document.getElementById('cp-inbox-item-'+pid); if (act) act.classList.add('on');
     var conv = document.getElementById('cp-inbox-conv'); if (conv) conv.innerHTML = stbInboxConv(pd);
     var box = document.getElementById('cp-inbox-msgs'); if (box) box.scrollTop = box.scrollHeight;
   };
+  // Changer de sous-discussion (création) au sein d'un support.
+  window.stbInboxSetTopic = function(pid, topic){
+    var pd = getPD(pid); if (!pd) return;
+    window._stbInboxTopic = topic;
+    // Marque lue la sous-discussion ouverte (côté serveur + local).
+    var msgs = stbTopicMsgs(pd, topic);
+    if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.author === 'cindy') m.readByClient = true; });
+    fetch('/api/client/' + TOKEN + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, topic: topic }) }).catch(function(){});
+    var conv = document.getElementById('cp-inbox-conv'); if (conv) conv.innerHTML = stbInboxConv(pd);
+    var box = document.getElementById('cp-inbox-msgs'); if (box) box.scrollTop = box.scrollHeight;
+    stbInboxRenderList();
+  };
   window.stbInboxSend = function(pid){
     var inp = document.getElementById('cp-inbox-input');
     var v = ((inp && inp.value) || '').trim(); if (!v) return;
-    fetch('/api/client/' + TOKEN + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, content: v }) })
+    var topic = window._stbInboxTopic || '';
+    fetch('/api/client/' + TOKEN + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, content: v, topic: topic }) })
       .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
       .then(function(res){
         var pd = getPD(pid); if (pd){ if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(res.message); }
-        window.stbInboxSelect(pid); toast('Message envoyé');
+        var box = document.getElementById('cp-inbox-msgs');
+        if (box && pd) box.innerHTML = stbInboxBubbles(pd, '', window._stbInboxTopic || '');
+        if (box) box.scrollTop = box.scrollHeight;
+        var inp2 = document.getElementById('cp-inbox-input'); if (inp2) inp2.value = '';
+        stbInboxRenderList();
+        toast('Message envoyé');
       })
       .catch(function(){ toast('Erreur, réessayez.'); });
   };
