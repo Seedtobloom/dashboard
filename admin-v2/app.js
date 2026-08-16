@@ -1513,10 +1513,11 @@
       var blockLate = P2_late.length ? '<section class="panel panel--nuit"><div class="panel__h"><span class="tag">En retard · ' + P2_late.length + '</span><h2>À rattraper</h2></div>' +
         P2_late.map(function (x) { return p2Drow(x, true, '#f4a48f'); }).join('') + '</section>' : '';
       var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div><div class="wgrid">' + waitHtml + '</div></section>' : '';
-      // Sans échéance (tickets de maintenance surtout) : à planifier — sinon ils passaient inaperçus.
-      var P2_undated = mine.filter(function (x) { return !x.dueDate; });
-      var blockPlan = P2_undated.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">À planifier · ' + P2_undated.length + '</span><h2>Demandes sans échéance</h2></div>' +
-        P2_undated.map(function (x) { return p2Drow(x, false); }).join('') + '</section>' : '';
+      // Tout ce qui est actionnable au-delà de cette semaine : sans date (tickets de
+      // maintenance surtout, _d=99) OU daté plus tard (_d>7). Sinon ça passait inaperçu.
+      var P2_later = mine.filter(function (x) { return x._d > 7; });
+      var blockPlan = P2_later.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">À planifier · ' + P2_later.length + '</span><h2>À venir &amp; sans échéance</h2></div>' +
+        P2_later.map(function (x) { return p2Drow(x, false); }).join('') + '</section>' : '';
       // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
       var P2_days = {};
       function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
