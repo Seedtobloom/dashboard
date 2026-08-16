@@ -1500,7 +1500,9 @@
         // Jour de travail perso posé et différent de l'échéance → on le signale.
         var doNote = (isTask && x.doDate && x.doDate.slice(0, 10) !== (x.dueDate || '').slice(0, 10))
           ? '<span class="drow__do">jour choisi · <a href="javascript:ADM.prioClearDoDate(\'' + x.key + '\',\'' + x.id + '\')">retirer</a></span>' : '';
-        return '<div class="drow' + (isTask ? ' drow--drag' : '') + '"' + dragAttr + '>' + grip + '<div class="drow__d"><b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span>' + doNote + '</div>' +
+        var undated = !x.dueDate;
+        var dateCol = undated ? '<b style="font-size:15px">Sans date</b><span style="color:var(--muted);opacity:1;font-weight:700">à planifier</span>' : '<b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span>';
+        return '<div class="drow' + (isTask ? ' drow--drag' : '') + '"' + dragAttr + '>' + grip + '<div class="drow__d">' + dateCol + doNote + '</div>' +
           '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div></div>' +
           '<div class="rowacts">' + catSel + p2Acts(x, dark) + '</div></div>';
       }
@@ -1511,6 +1513,10 @@
       var blockLate = P2_late.length ? '<section class="panel panel--nuit"><div class="panel__h"><span class="tag">En retard · ' + P2_late.length + '</span><h2>À rattraper</h2></div>' +
         P2_late.map(function (x) { return p2Drow(x, true, '#f4a48f'); }).join('') + '</section>' : '';
       var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div><div class="wgrid">' + waitHtml + '</div></section>' : '';
+      // Sans échéance (tickets de maintenance surtout) : à planifier — sinon ils passaient inaperçus.
+      var P2_undated = mine.filter(function (x) { return !x.dueDate; });
+      var blockPlan = P2_undated.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">À planifier · ' + P2_undated.length + '</span><h2>Demandes sans échéance</h2></div>' +
+        P2_undated.map(function (x) { return p2Drow(x, false); }).join('') + '</section>' : '';
       // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
       var P2_days = {};
       function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
@@ -1541,7 +1547,7 @@
       var hasWeek = (P2_week.length + (revs ? revs.length : 0)) > 0;
       var blockWeekBody = colKeys.map(p2DayCol).join('');
       var blockWeek = hasWeek ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div><div class="panel__hint">Glisse une tâche par la poignée ⠿ sur le jour où tu comptes la faire. Ça n\'affecte pas l\'échéance de la cliente.</div>' + blockWeekBody + '</section>' : '';
-      var P2_board = '<div class="board">' + blockToday + (blockLate || '') + (blockWait || '') + blockWeek + '</div>';
+      var P2_board = '<div class="board">' + blockToday + (blockLate || '') + (blockPlan || '') + (blockWait || '') + blockWeek + '</div>';
 
       // Accueil + bande de compteurs (repris du prototype)
       var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';
