@@ -225,7 +225,9 @@
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
     function updateBox(box, dom) {
       if (!box || !dom) return;
-      var html = chatBubbles(dom, '');
+      // Respecte la sous-discussion ouverte (topic) : sinon le rafraîchissement
+      // auto ré-affichait tout le fil alors que l'onglet création restait actif.
+      var html = chatBubbles(dom, '', ADM_CHAT_TOPIC[dom.id] || '');
       if (box.innerHTML === html) return;
       var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
       box.innerHTML = html;
@@ -237,7 +239,7 @@
         CUR = d; CURKEY = CHAT.key;
         var dom = findDomain(CHAT.project); if (!dom) return;
         updateBox(el('chatmsgs'), dom);
-        if (dom.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: CHAT.project }, 'POST'); dom.unread = 0; }
+        if (dom.unread > 0) { jpost('/api/clients/' + CHAT.key + '/message/read', { projectId: CHAT.project, topic: ADM_CHAT_TOPIC[CHAT.project] || '' }, 'POST'); dom.unread = 0; }
       }).catch(function () {});
     } else if (VIEW === 'client' && CURKEY && document.querySelector('[id^="chat-"]')) {
       api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) {
