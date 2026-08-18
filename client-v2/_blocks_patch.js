@@ -173,10 +173,30 @@
   window.stbCellFocus = function(el){ _stbActiveCell = el; stbUndoInit(el); };
   window.stbCellInput = function(el){
     stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
-    // Menu « / » : dans un bloc de texte vide, taper « / » propose les types.
+    // Menu « / » : dans une ligne vide, taper « / » propose les types.
     if (el.getAttribute('data-stb-block') === '1'){
-      var txt = (el.textContent || '').replace(/​/g, '');
+      var txt = (el.textContent || '').replace(/​/g, '').replace(/\n/g, '').trim();
       if (txt === '/') stbShowSlash(el); else stbHideSlash();
+    }
+  };
+  // Entrée = nouveau bloc (comme Notion) ; Maj+Entrée = retour à la ligne dans le bloc.
+  // Retour arrière sur un bloc vide = fusion avec le précédent.
+  window.stbRichKey = function(e, el){
+    if (_stbSlashMenu && _stbSlashMenu.style.display === 'block' && e.key === 'Enter'){ e.preventDefault(); return; }
+    var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid'), bid = el.getAttribute('data-bid');
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault(); stbHideSlash();
+      var t = cliTaskById(pid, tid); if (!t || !Array.isArray(t.blocks)) return;
+      stbCellSave(el, true);
+      var idx = -1; for (var k = 0; k < t.blocks.length; k++){ if (t.blocks[k].id === bid){ idx = k; break; } }
+      if (idx < 0) return;
+      var nb = { id: stbBid(), type: 'text', text: '' };
+      t.blocks.splice(idx + 1, 0, nb);
+      stbBlocksSave(pid, tid); stbRenderBlocks(pid, tid); stbFocus(nb.id);
+    } else if (e.key === 'Backspace' && (el.textContent || '').replace(/​/g, '') === ''){
+      var t2 = cliTaskById(pid, tid); if (!t2 || !Array.isArray(t2.blocks)) return;
+      var i2 = -1; for (var k2 = 0; k2 < t2.blocks.length; k2++){ if (t2.blocks[k2].id === bid){ i2 = k2; break; } }
+      if (i2 > 0){ e.preventDefault(); var prev = t2.blocks[i2 - 1]; t2.blocks.splice(i2, 1); stbBlocksSave(pid, tid); stbRenderBlocks(pid, tid); if (prev) stbFocus(prev.id); }
     }
   };
   // ── Menu « / » (à la Notion) : insérer titre, texte, liste… ──────────────
@@ -402,7 +422,9 @@
   function stbFocus(blockId){
     setTimeout(function(){
       var el = document.getElementById('stb-f-' + blockId);
-      if (el){ el.focus(); try { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length); } catch(e){} }
+      if (!el) return;
+      el.focus();
+      try { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length); else if (el.isContentEditable) stbCaretEnd(el); } catch(e){}
     }, 0);
   }
   // Bloc de texte enrichi : contenteditable (gras, italique, barré, couleur, surligne,
@@ -410,7 +432,7 @@
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
     return '<div id="stb-f-'+b.id+'" contenteditable="true" data-stb-rich="1" data-stb-block="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-ph="'+ph+'" '+
-      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" '+
+      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" onkeydown="window.stbRichKey(event,this)" '+
       'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
