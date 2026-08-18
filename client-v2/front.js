@@ -8933,6 +8933,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') +
       btn('<span style=\'text-decoration:line-through\'>S</span>', "window.stbFmt('strike')", 'Barré', 'stb-b-s') + sep +
       btn('<span style=\'font-size:9px;vertical-align:1px\'>A</span><span style=\'font-size:8px\'>–</span>', "window.stbFmt('small')", 'Réduire le texte') +
+      '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#c9bfae;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
       btn('<span style=\'font-size:15px\'>A</span><span style=\'font-size:10px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte (par paliers)') + sep +
       sw('#1C1205','color','rgba(255,255,255,0.35)') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
       sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg') + sw('#f6c9d6','bg') + clearBg;
@@ -8948,6 +8949,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       el.setAttribute('data-on', on ? '1' : '0');
       el.style.background = on ? 'rgba(242,229,194,0.22)' : 'none';
     });
+    // Repère de taille : px réellement rendu de la sélection.
+    var sz = document.getElementById('stb-b-size');
+    if (sz){ var px = stbSelPx(); sz.textContent = (px || 14) + ' px'; }
+  }
+  function stbSelPx(){
+    var sel = window.getSelection(); if (!sel || !sel.rangeCount) return null;
+    var n = sel.anchorNode; var e = n && (n.nodeType === 1 ? n : n.parentNode);
+    if (!e || !window.getComputedStyle) return null;
+    var px = parseFloat(window.getComputedStyle(e).fontSize);
+    return px ? Math.round(px) : null;
   }
   function stbHideToolbar(){ if (_stbTB) _stbTB.style.display = 'none'; }
   function stbPlaceToolbar(){
