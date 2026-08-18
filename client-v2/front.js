@@ -8774,12 +8774,20 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   window.stbCellFocus = function(el){ _stbActiveCell = el; stbUndoInit(el); };
   window.stbCellInput = function(el){
     stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
-    // Menu « / » : dans une ligne vide, taper « / » propose les types.
+    // Menu « / » : dès qu'on tape « / » en début de ligne (partout, même encadré).
     if (el.getAttribute('data-stb-block') === '1'){
-      var txt = (el.textContent || '').replace(/​/g, '').replace(/\n/g, '').trim();
-      if (txt === '/') stbShowSlash(el); else stbHideSlash();
+      var before = stbBeforeCaret(el).replace(/​/g, '');
+      if (/(^|\n)\/$/.test(before)) stbShowSlash(el); else stbHideSlash();
     }
   };
+  // Texte du bloc depuis son début jusqu'au curseur (pour détecter « / » en début de ligne).
+  function stbBeforeCaret(el){
+    var sel = window.getSelection(); if (!sel || !sel.rangeCount) return el.textContent || '';
+    var r = sel.getRangeAt(0), pre = r.cloneRange();
+    pre.selectNodeContents(el);
+    try { pre.setEnd(r.endContainer, r.endOffset); } catch(e){ return el.textContent || ''; }
+    return pre.toString();
+  }
   // Entrée = nouveau bloc (comme Notion) ; Maj+Entrée = retour à la ligne dans le bloc.
   // Retour arrière sur un bloc vide = fusion avec le précédent.
   window.stbRichKey = function(e, el){
@@ -8807,6 +8815,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ['text','Texte','Paragraphe simple'], ['todo','À faire','Case à cocher'],
     ['list','Liste à puces','Puce par ligne'], ['numbered','Liste numérotée','Étapes ordonnées'],
     ['quote','Citation','Texte en retrait'], ['callout','Encadré','Note mise en avant'],
+    ['section','Section dépliable','Titre qui déroule / masque'],
     ['table','Tableau','Lignes et colonnes'], ['sep','Séparateur','Ligne de séparation']
   ];
   function stbBuildSlash(){
@@ -8828,16 +8837,54 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     m.style.top = top + 'px'; m.style.left = (r.left + window.pageXOffset) + 'px';
   }
   function stbHideSlash(){ if (_stbSlashMenu) _stbSlashMenu.style.display = 'none'; _stbSlashEl = null; }
+  function stbNewBlock(type){
+    var nb = { id: stbBid(), type: type, text: '' };
+    if (type === 'todo') nb.done = false;
+    else if (type === 'table'){ nb.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']]; delete nb.text; }
+    else if (type === 'sep'){ delete nb.text; }
+    else if (type === 'link'){ nb.url = ''; }
+    else if (type === 'callout'){ nb.icon = '💡'; }
+    return nb;
+  }
   window.stbSlashPick = function(type){
     var el = _stbSlashEl; stbHideSlash(); if (!el) return;
     var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid'), bid = el.getAttribute('data-bid');
     var t = cliTaskById(pid, tid); if (!t || !Array.isArray(t.blocks)) return;
-    var b = t.blocks.find(function(x){ return x.id === bid; }); if (!b) return;
-    b.type = type; b.text = '';
-    if (type === 'todo') b.done = false;
-    else if (type === 'table'){ b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']]; delete b.text; }
-    else if (type === 'sep'){ delete b.text; }
-    stbBlocksSave(pid, tid); stbRenderBlocks(pid, tid); stbFocus(b.id);
+    var idx = -1; for (var k = 0; k < t.blocks.length; k++){ if (t.blocks[k].id === bid){ idx = k; break; } }
+    if (idx < 0) return; var b = t.blocks[idx];
+    // Retire le « / » déclencheur (le caractère juste avant le curseur).
+    try { el.focus(); document.execCommand('delete', false, null); } catch(e){}
+    stbCellSave(el, true);
+    var remaining = (el.textContent || '').replace(/​/g, '').trim();
+    if (!remaining){
+      // Ligne vide → on convertit ce bloc dans le type choisi.
+      var kept = stbNewBlock(type); kept.id = b.id; t.blocks[idx] = kept;
+      stbBlocksSave(pid, tid); stbRenderBlocks(pid, tid); stbFocus(b.id);
+    } else {
+      // Bloc déjà rempli → on insère un nouveau bloc juste après.
+      var nb = stbNewBlock(type);
+      t.blocks.splice(idx + 1, 0, nb);
+      stbBlocksSave(pid, tid); stbRenderBlocks(pid, tid); stbFocus(nb.id);
+    }
+  };
+  // Palette d'icônes pour un encadré (callout).
+  var STB_EMOJIS = ['💡','⚠️','✅','📌','🔥','⭐','❗','ℹ️','💬','🎯','📝','🔔','❤️','👉','✨','🚀','📅','📎','🌱','🎨'];
+  window.stbCalloutIcon = function(pid, taskId, blockId){
+    var old = document.getElementById('stb-emoji-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
+    var pop = document.createElement('div'); pop.id = 'stb-emoji-pop';
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px';
+    pop.innerHTML = STB_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSetCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+e+'\')" style="border:none;background:none;font-size:19px;cursor:pointer;padding:4px;border-radius:6px" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">'+e+'</button>'; }).join('');
+    document.body.appendChild(pop);
+    var btn = document.getElementById('stb-cico-' + blockId);
+    if (btn){ var r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + window.pageYOffset + 4) + 'px'; pop.style.left = (r.left + window.pageXOffset) + 'px'; }
+    setTimeout(function(){ function close(ev){ if (!pop.contains(ev.target)){ if (pop.parentNode) pop.parentNode.removeChild(pop); document.removeEventListener('mousedown', close); } } document.addEventListener('mousedown', close); }, 0);
+  };
+  window.stbSetCalloutIcon = function(pid, taskId, blockId, emoji){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
+    var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
+    b.icon = emoji;
+    var pop = document.getElementById('stb-emoji-pop'); if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   window.stbCellBlur = function(el){
     stbHideSlash();
@@ -9050,6 +9097,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var inner;
     if (b.type === 'sep') {
       inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
+    } else if (b.type === 'section') {
+      var arrow = b.collapsed ? '▸' : '▾';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:7px">'+
+        '<button type="button" onclick="window.stbSectionToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Dérouler / masquer" style="border:none;background:none;cursor:pointer;font-size:13px;color:#7a5ca8;padding:2px 5px;border-radius:5px;flex-shrink:0">'+arrow+'</button>'+
+        stbLineInput(pid, taskId, b, 'Titre de section', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:700;color:var(--navy,#1C1205)')+
+      '</div>';
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
       inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
@@ -9069,7 +9122,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     } else if (b.type === 'quote') {
       inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#6f5a40;background:#f7f2ea');
     } else if (b.type === 'callout') {
-      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:10px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 6px">'+cpIcon('info',17,'color:#7a5ca8;flex-shrink:0;margin-top:11px')+stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
+      var cico = b.icon || '💡';
+      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 8px">'+
+        '<button type="button" id="stb-cico-'+b.id+'" onclick="window.stbCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Changer l\'icône" style="flex-shrink:0;margin-top:6px;border:none;background:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 3px;border-radius:6px" onmouseover="this.style.background=\'#e3d3fa\'" onmouseout="this.style.background=\'none\'">'+esc(cico)+'</button>'+
+        stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
     } else if (b.type === 'table') {
       if (!Array.isArray(b.rows) || !b.rows.length) b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']];
       var ncol = b.rows[0].length;
@@ -9117,8 +9173,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#b3aa9a;padding:8px 10px 4px">'+txt+'</div>'; }
   function stbBlocksInner(pid, t){
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
-    var num = 0;
+    var num = 0, hidden = false;
     var rows = blocks.map(function(b, i){
+      if (b.type === 'section'){ hidden = b.collapsed === true; return stbBlockRow(pid, t.id, b, i, blocks.length, 0); }
+      if (hidden) return ''; // sous une section repliée : masqué
       if (b.type === 'numbered') num++; else num = 0;
       return stbBlockRow(pid, t.id, b, i, blocks.length, num);
     }).join('');
@@ -9129,6 +9187,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       stbMI(pid, t.id, 'text', 'text', 'Texte', 'Paragraphe simple')+
       stbMI(pid, t.id, 'quote', 'messages', 'Citation', 'Texte en retrait, en italique')+
       stbMI(pid, t.id, 'callout', 'info', 'Encadré', 'Note mise en avant')+
+      stbMI(pid, t.id, 'section', 'sort', 'Section dépliable', 'Titre qui déroule / masque')+
       stbMenuGroupTitle('Listes')+
       stbMI(pid, t.id, 'todo', 'check-circle', 'À faire', 'Case à cocher')+
       stbMI(pid, t.id, 'list', 'list', 'Liste à puces', 'Entrée = puce suivante')+
@@ -9219,9 +9278,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else if (type === 'table') { b.rows = [['Colonne 1', 'Colonne 2', 'Colonne 3'], ['', '', '']]; }
     else if (type === 'link') { b.text = ''; b.url = ''; }
     else if (type === 'embed') { b.url = ''; }
+    else if (type === 'callout') { b.text = ''; b.icon = '💡'; }
     else if (type !== 'sep' && type !== 'file') b.text = '';
     t.blocks.push(b); stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
-    if (type === 'text' || type === 'heading' || type === 'subheading' || type === 'todo' || type === 'list' || type === 'numbered' || type === 'quote' || type === 'callout') stbFocus(b.id);
+    if (type === 'text' || type === 'heading' || type === 'subheading' || type === 'section' || type === 'todo' || type === 'list' || type === 'numbered' || type === 'quote' || type === 'callout') stbFocus(b.id);
   };
   window.stbBlockSet = function(pid, taskId, blockId, value){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
@@ -9271,6 +9331,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
     var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
     b.done = !b.done; stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  // Déplier / replier une section (masque les blocs suivants jusqu'à la section suivante).
+  window.stbSectionToggle = function(pid, taskId, blockId){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
+    var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
+    b.collapsed = !b.collapsed; stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   window.stbBlockDel = function(pid, taskId, blockId){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
@@ -10227,7 +10293,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
 <link rel="stylesheet" href="https://use.typekit.net/kww0ycw.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya:ital,wght@0,400;1,400&family=Inter+Tight:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
 <style>${CLIENT_CSS}</style>
 </head>
 <body>
