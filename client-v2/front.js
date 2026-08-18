@@ -8772,8 +8772,55 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     stbCellSave(el, true);
   };
   window.stbCellFocus = function(el){ _stbActiveCell = el; stbUndoInit(el); };
-  window.stbCellInput = function(el){ stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el); };
+  window.stbCellInput = function(el){
+    stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
+    // Menu « / » : dans un bloc de texte vide, taper « / » propose les types.
+    if (el.getAttribute('data-stb-block') === '1'){
+      var txt = (el.textContent || '').replace(/​/g, '');
+      if (txt === '/') stbShowSlash(el); else stbHideSlash();
+    }
+  };
+  // ── Menu « / » (à la Notion) : insérer titre, texte, liste… ──────────────
+  var _stbSlashMenu = null, _stbSlashEl = null;
+  var STB_SLASH_ITEMS = [
+    ['heading','Titre','Grand titre de section'], ['subheading','Sous-titre','Titre secondaire'],
+    ['text','Texte','Paragraphe simple'], ['todo','À faire','Case à cocher'],
+    ['list','Liste à puces','Puce par ligne'], ['numbered','Liste numérotée','Étapes ordonnées'],
+    ['quote','Citation','Texte en retrait'], ['callout','Encadré','Note mise en avant'],
+    ['table','Tableau','Lignes et colonnes'], ['sep','Séparateur','Ligne de séparation']
+  ];
+  function stbBuildSlash(){
+    if (_stbSlashMenu) return _stbSlashMenu;
+    var m = document.createElement('div');
+    m.id = 'stb-slash';
+    m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
+    m.innerHTML = STB_SLASH_ITEMS.map(function(it){
+      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#f7f2ea\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#1C1205">'+esc(it[1])+'</span><span style="font-size:11px;color:#9a93a5">'+esc(it[2])+'</span></button>';
+    }).join('');
+    document.body.appendChild(m); _stbSlashMenu = m; return m;
+  }
+  function stbShowSlash(el){
+    _stbSlashEl = el;
+    var m = stbBuildSlash(); m.style.display = 'block';
+    var r = el.getBoundingClientRect();
+    var top = r.bottom + window.pageYOffset + 4;
+    if (top + m.offsetHeight > window.pageYOffset + document.documentElement.clientHeight - 8) top = r.top + window.pageYOffset - m.offsetHeight - 4;
+    m.style.top = top + 'px'; m.style.left = (r.left + window.pageXOffset) + 'px';
+  }
+  function stbHideSlash(){ if (_stbSlashMenu) _stbSlashMenu.style.display = 'none'; _stbSlashEl = null; }
+  window.stbSlashPick = function(type){
+    var el = _stbSlashEl; stbHideSlash(); if (!el) return;
+    var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid'), bid = el.getAttribute('data-bid');
+    var t = cliTaskById(pid, tid); if (!t || !Array.isArray(t.blocks)) return;
+    var b = t.blocks.find(function(x){ return x.id === bid; }); if (!b) return;
+    b.type = type; b.text = '';
+    if (type === 'todo') b.done = false;
+    else if (type === 'table'){ b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']]; delete b.text; }
+    else if (type === 'sep'){ delete b.text; }
+    stbBlocksSave(pid, tid); stbRenderBlocks(pid, tid); stbFocus(b.id);
+  };
   window.stbCellBlur = function(el){
+    stbHideSlash();
     stbCellSave(el, true); stbCommit(el);
     // Rafraîchit l'affichage pour révéler les liens (URL -> lien cliquable).
     var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid'), bid = el.getAttribute('data-bid');
@@ -8924,6 +8971,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     window.addEventListener('scroll', function(){ if (_stbTB && _stbTB.style.display !== 'none') stbPlaceToolbar(); }, true);
     // Ctrl+Z / Ctrl+Maj+Z (ou Ctrl+Y) dans une cellule de texte enrichi.
     document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape'){ stbHideSlash(); return; }
       var el = document.activeElement;
       if (!el || !el.getAttribute || el.getAttribute('data-stb-rich') !== '1') return;
       if (!(e.ctrlKey || e.metaKey)) return;
@@ -8934,7 +8982,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var _stbPh = document.createElement('style');
     _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
-      + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}';
+      + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}'
+      + '.stb-row .stb-ctrl,.stb-row .stb-del{opacity:0;transition:opacity .12s}'
+      + '.stb-row:hover .stb-ctrl,.stb-row:hover .stb-del{opacity:.6}'
+      + '.stb-row .stb-del:hover{opacity:1}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
@@ -8969,11 +9020,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
     var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#e8e0d4);border-radius:5px;background:#fff;color:#8a6f54;cursor:pointer;font-size:11px;line-height:1;padding:0';
-    var ctrl = '<div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
+    var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
     '</div>';
-    var del = '<button title="Supprimer" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:22px;height:22px;border:none;border-radius:6px;background:none;color:#c08;cursor:pointer;font-size:13px;line-height:1;opacity:0.55">✕</button>';
+    var del = '<button class="stb-del" title="Supprimer" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:22px;height:22px;border:none;border-radius:6px;background:none;color:#c08;cursor:pointer;font-size:13px;line-height:1">✕</button>';
     var inner;
     if (b.type === 'sep') {
       inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
@@ -9030,7 +9081,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     } else {
       inner = stbBlockTA(pid, taskId, b, 'Écrire…');
     }
-    return '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px">'+ctrl+inner+del+'</div>';
+    return '<div class="stb-row" style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px">'+ctrl+inner+del+'</div>';
   }
   function stbMI(pid, taskId, type, iconName, label, desc){
     var act = (type==='file')
@@ -9070,6 +9121,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
     var addBar = '<div id="stb-bm-'+t.id+'" style="position:relative;margin-top:12px">'+
       '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#e2dbd0);border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
+      '<span style="font-size:11.5px;color:#9a93a5;margin-left:10px">ou tapez <b style="font-family:monospace;background:#f4eee2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
       menu+
     '</div>';
     var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
@@ -9116,6 +9168,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (!t._blkInit){
       if (!Array.isArray(t.blocks)) t.blocks = [];
       if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
+      // Toujours une zone d'écriture prête : on peut taper « / » tout de suite.
+      if (!t.blocks.length) t.blocks = [{ id: stbBid(), type:'text', text:'' }];
       t._blkInit = true;
     }
     return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:22px;padding-top:20px">'+
