@@ -508,6 +508,29 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true });
   }
+  // Dupliquer une tâche (avec son brief) — repart à zéro : statut, temps, commentaires, livrables.
+  m = sub.match(/^\/tasks\/([a-f0-9]+)\/duplicate$/);
+  if (m && method === 'POST') {
+    const found = findTask(esp, (url.searchParams.get('projectId') || 'partner').toString(), m[1]);
+    if (!found || !Array.isArray(found.container.taches)) return json({ error: 'Tâche introuvable' }, 404);
+    const src = found.container.taches.find((t: AnyObj) => t.id === m![1]);
+    if (!src) return json({ error: 'Tâche introuvable' }, 404);
+    const copy: AnyObj = JSON.parse(JSON.stringify(src));
+    copy.id = genId();
+    copy.title = (src.title || 'Tâche') + ' (copie)';
+    copy.status = 'todo';
+    copy.timeSpentSeconds = 0; copy.timeSpentMinutes = 0;
+    copy.comments = []; copy.reviewHistory = [];
+    copy.completedAt = null; copy.reviewLink = '';
+    copy.v1Date = null; copy.v2Date = null; copy.doDate = null;
+    copy.clientNotif = false; copy.needsRework = false; copy.clientCommentNotif = false; copy.clientFeedbackAt = null;
+    copy.createdAt = nowIso();
+    if (Array.isArray(copy.blocks)) copy.blocks.forEach((b: AnyObj) => { if (b && typeof b === 'object') b.id = genId(); });
+    const at = found.container.taches.findIndex((t: AnyObj) => t.id === m![1]);
+    found.container.taches.splice(at + 1, 0, copy);
+    await saveClient(env, key, data);
+    return json(copy, 201);
+  }
   m = sub.match(/^\/tasks\/([a-f0-9]+)\/comments$/);
   if (m && method === 'POST') return handleTaskComment(request, env, key, data, m[1]);
 

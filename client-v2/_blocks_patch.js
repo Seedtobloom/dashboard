@@ -463,16 +463,33 @@
     for (var i = 0; i < els.length; i++){ var el = els[i]; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
   };
   // Re-render UNIQUEMENT le conteneur des blocs (pas de renderShell global).
+  // Trouve l'ancêtre défilant (pour ne pas remonter en haut après un changement).
+  function stbScrollParent(el){
+    var n = el && el.parentNode;
+    while (n && n.nodeType === 1){
+      var s = window.getComputedStyle(n);
+      if (/(auto|scroll)/.test(s.overflowY) && n.scrollHeight > n.clientHeight + 2) return n;
+      n = n.parentNode;
+    }
+    return null;
+  }
   function stbRenderBlocks(pid, taskId){
     var t = cliTaskById(pid, taskId); if (!t) return;
     var c = document.getElementById('stb-blocks-' + taskId);
-    if (c) { c.innerHTML = stbBlocksInner(pid, t); setTimeout(window.stbSizeAll, 0); }
+    if (!c) return;
+    // On mémorise le défilement pour rester là où on édite.
+    var sc = stbScrollParent(c); var sTop = sc ? sc.scrollTop : 0;
+    var wy = window.pageYOffset || 0;
+    c.innerHTML = stbBlocksInner(pid, t);
+    if (sc) sc.scrollTop = sTop;
+    if (wy) window.scrollTo(0, wy);
+    setTimeout(window.stbSizeAll, 0);
   }
   function stbFocus(blockId){
     setTimeout(function(){
       var el = document.getElementById('stb-f-' + blockId);
       if (!el) return;
-      el.focus();
+      try { el.focus({ preventScroll: true }); } catch(e){ el.focus(); }
       try { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length); else if (el.isContentEditable) stbCaretEnd(el); } catch(e){}
     }, 0);
   }

@@ -5167,7 +5167,8 @@
           '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + dueTag + dlvBadge + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:7px;flex-shrink:0">' +
-          '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' + archBtn +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' +
+          '<button class="btn btn--outline btn--sm" title="Créer une copie de cette tâche (brief compris)" onclick="ADM.taskDuplicate(\'' + t.id + '\')">Dupliquer</button>' + archBtn +
           '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button>' +
         '</div></div>';
       // brief de la demande
@@ -5576,6 +5577,11 @@
   }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
   function taskStatus(id, st) { if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); var lbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminée' }[st] || st; jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut : ' + lbl); loadClient(); } }); }
+  function taskDuplicate(id) {
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/duplicate?projectId=partner', {}).then(function (r) {
+      if (r.ok) { toast('Tâche dupliquée ✓'); loadClient(); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
   function taskDelete(id) {
     admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche, ses commentaires et son temps passé seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
       if (PT_TIMER && PT_TIMER.id === id) ptPause(id, true);
@@ -6756,7 +6762,7 @@
     msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
