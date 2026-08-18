@@ -1965,7 +1965,7 @@
   // cliente) de façon SÛRE : texte échappé + liens cliquables, et seules les
   // balises de mise en forme autorisées (gras/italique/souligné/span de style)
   // sont conservées. Bloque tout HTML dangereux (script, on*, styles à risque).
-  var ADM_RICH_TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', SPAN: 'span', BR: 'br', FONT: 'span', DIV: 'div', P: 'div' };
+  var ADM_RICH_TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', SPAN: 'span', BR: 'br', FONT: 'span', DIV: 'div', P: 'div' };
   var ADM_STYLE_OK = ['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'padding', 'border-radius', 'box-decoration-break', '-webkit-box-decoration-break'];
   function admStyleSafe(style) {
     var out = [];
@@ -5082,8 +5082,8 @@
       if (b.type === 'numbered') num++; else num = 0;
       if (b.type === 'heading') return '<div style="font-size:17px;font-weight:700;color:var(--terre);margin:14px 0 4px">' + esc(b.text || '') + '</div>';
       if (b.type === 'subheading') return '<div style="font-size:15px;font-weight:700;color:var(--terre);margin:11px 0 3px">' + esc(b.text || '') + '</div>';
-      if (b.type === 'quote') return '<div style="border-left:3px solid var(--bone-d);padding:3px 0 3px 12px;margin:8px 0;font-style:italic;color:var(--terre-600);white-space:pre-wrap">' + mtLinkify(b.text || '') + '</div>';
-      if (b.type === 'callout') return '<div style="background:#F0E8FF;border-radius:10px;padding:10px 13px;margin:8px 0;color:var(--terre);white-space:pre-wrap">' + mtLinkify(b.text || '') + '</div>';
+      if (b.type === 'quote') return '<div style="border-left:3px solid var(--bone-d);padding:3px 0 3px 12px;margin:8px 0;font-style:italic;color:var(--terre-600);white-space:pre-wrap">' + admRichSafe(b.text || '') + '</div>';
+      if (b.type === 'callout') return '<div style="background:#F0E8FF;border-radius:10px;padding:10px 13px;margin:8px 0;color:var(--terre);white-space:pre-wrap">' + admRichSafe(b.text || '') + '</div>';
       if (b.type === 'todo') return '<div style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><span style="flex-shrink:0">' + (b.done ? '☑' : '☐') + '</span><span style="white-space:pre-wrap;' + (b.done ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'list') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">•</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'numbered') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">' + num + '.</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
@@ -5099,7 +5099,7 @@
         var body = rows.slice(1).map(function (row) { return '<tr>' + cols.map(function (_c, ci) { return '<td style="border:' + bd + ';padding:7px 10px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:120px;max-width:420px">' + admRichSafe((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
         return '<div style="margin:10px 0;overflow-x:auto"><table style="border-collapse:collapse;width:100%">' + head + body + '</table></div>';
       }
-      return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + mtLinkify(b.text || '') + '</div>';
+      return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
     }).join('');
     return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">' + esc(label || 'Le brief du client') + '</div>' + html + '</div>';
   }

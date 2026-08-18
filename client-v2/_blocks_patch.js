@@ -50,7 +50,7 @@
    * flottante apparaît quand on sélectionne du texte (gras, italique, souligné,
    * couleur, surligne, taille). Le contenu est stocké en HTML nettoyé (liste
    * blanche de balises/styles) — sûr à réafficher côté admin. */
-  var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
+  var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', S:'s', STRIKE:'s', DEL:'s', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
   var STB_STYLE_OK = ['color','background-color','font-size','font-weight','font-style','text-decoration','text-decoration-line','padding','border-radius','box-decoration-break','-webkit-box-decoration-break'];
   function stbStyleSafe(style){
     var out = [];
@@ -92,8 +92,16 @@
   var _stbTB = null, _stbActiveCell = null;
   function stbCellSave(el, immediate){
     var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid');
-    var b = stbTableBlock(pid, tid, el.getAttribute('data-bid'));
-    if (b && b.rows){ var r = +el.getAttribute('data-r'), c = +el.getAttribute('data-c'); if (b.rows[r]) b.rows[r][c] = stbSanitizeRich(el.innerHTML); }
+    if (el.getAttribute('data-stb-block') === '1'){
+      // Bloc de texte enrichi (paragraphe, citation, encadré) : on stocke le HTML nettoyé dans b.text.
+      var t = cliTaskById(pid, tid);
+      var bid = el.getAttribute('data-bid');
+      var bb = (t && Array.isArray(t.blocks)) ? t.blocks.find(function(x){ return x.id === bid; }) : null;
+      if (bb) bb.text = stbSanitizeRich(el.innerHTML);
+    } else {
+      var b = stbTableBlock(pid, tid, el.getAttribute('data-bid'));
+      if (b && b.rows){ var r = +el.getAttribute('data-r'), c = +el.getAttribute('data-c'); if (b.rows[r]) b.rows[r][c] = stbSanitizeRich(el.innerHTML); }
+    }
     if (immediate) stbBlocksSave(pid, tid); else stbSaveSoon(pid, tid);
   }
   window.stbCellFocus = function(el){ _stbActiveCell = el; };
@@ -117,7 +125,8 @@
     tb.innerHTML =
       btn('<b>G</b>', "window.stbFmt('bold')", 'Gras', 'stb-b-b') +
       btn('<span style=\'font-style:italic;font-family:serif\'>I</span>', "window.stbFmt('italic')", 'Italique', 'stb-b-i') +
-      btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') + sep +
+      btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') +
+      btn('<span style=\'text-decoration:line-through\'>S</span>', "window.stbFmt('strike')", 'Barré', 'stb-b-s') + sep +
       btn('A<span style=\'font-size:11px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte') +
       btn('<span style=\'font-size:12px\'>A</span><span style=\'font-size:9px;vertical-align:1px\'>–</span>', "window.stbFmt('normal')", 'Taille normale') + sep +
       sw('#1C1205','color','rgba(255,255,255,0.35)') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
@@ -128,7 +137,7 @@
   // Met à jour l'état actif des boutons Gras/Italique/Souligné selon la sélection.
   function stbUpdateActive(){
     if (!_stbTB) return;
-    [['stb-b-b','bold'],['stb-b-i','italic'],['stb-b-u','underline']].forEach(function(p){
+    [['stb-b-b','bold'],['stb-b-i','italic'],['stb-b-u','underline'],['stb-b-s','strikeThrough']].forEach(function(p){
       var el = document.getElementById(p[0]); if (!el) return;
       var on = false; try { on = document.queryCommandState(p[1]); } catch(e){}
       el.setAttribute('data-on', on ? '1' : '0');
@@ -193,6 +202,7 @@
   window.stbFmt = function(kind, arg){
     var cell = _stbActiveCell; if (cell && document.activeElement !== cell) cell.focus();
     if (kind === 'bold' || kind === 'italic' || kind === 'underline') document.execCommand(kind, false, null);
+    else if (kind === 'strike') document.execCommand('strikeThrough', false, null);
     else if (kind === 'color'){ stbClearProp(['color']); stbWrapStyle('color', arg); }
     else if (kind === 'bg'){ stbClearProp(STB_BG_PROPS); stbWrapStyle('background-color', arg, { padding: '1px 5px', borderRadius: '5px', boxDecorationBreak: 'clone', webkitBoxDecorationBreak: 'clone' }); }
     else if (kind === 'nobg') stbClearProp(STB_BG_PROPS);
@@ -232,15 +242,13 @@
       if (el){ el.focus(); try { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length); } catch(e){} }
     }, 0);
   }
+  // Bloc de texte enrichi : contenteditable (gras, italique, barré, couleur, surligne,
+  // taille…) via la barre flottante partagée. Le HTML nettoyé est stocké dans b.text.
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
-    // Hauteur estimée dès le rendu (l'auto-agrandissement ne joue qu'à la
-    // frappe) : sans ça, un brief de plusieurs lignes s'affichait tronqué.
-    var txt = b.text || '';
-    var rows = 0;
-    txt.split('\n').forEach(function(l){ rows += Math.max(1, Math.ceil((l.length || 1) / 55)); });
-    rows = Math.max(2, Math.min(rows + 1, 60));
-    return '<textarea id="stb-f-'+b.id+'" rows="'+rows+'" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;resize:none;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;overflow:hidden;'+extra+'" onfocus="this.style.borderColor=\'var(--border,#e2dbd0)\';this.style.background=\'#fff\'" onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">'+esc(txt)+'</textarea>';
+    return '<div id="stb-f-'+b.id+'" contenteditable="true" data-stb-rich="1" data-stb-block="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-ph="'+ph+'" '+
+      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" '+
+      'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   function stbLineInput(pid, taskId, b, ph, extra){
