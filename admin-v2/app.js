@@ -1965,7 +1965,8 @@
   // cliente) de façon SÛRE : texte échappé + liens cliquables, et seules les
   // balises de mise en forme autorisées (gras/italique/souligné/span de style)
   // sont conservées. Bloque tout HTML dangereux (script, on*, styles à risque).
-  var ADM_RICH_TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', SPAN: 'span', BR: 'br', FONT: 'span', DIV: 'div', P: 'div' };
+  var ADM_RICH_TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', A: 'a', SPAN: 'span', BR: 'br', FONT: 'span', DIV: 'div', P: 'div' };
+  function admHrefSafe(h) { h = String(h == null ? '' : h).trim(); if (/^(https?:|mailto:)/i.test(h)) return h.replace(/["'<>\s]/g, ''); if (/^www\./i.test(h)) return 'https://' + h.replace(/["'<>\s]/g, ''); return ''; }
   var ADM_STYLE_OK = ['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'padding', 'border-radius', 'box-decoration-break', '-webkit-box-decoration-break'];
   function admStyleSafe(style) {
     var out = [];
@@ -1988,6 +1989,7 @@
       var tag = ADM_RICH_TAGS[ch.tagName];
       if (!tag) { out += admSerializeRich(ch); continue; }
       if (tag === 'br') { out += '<br>'; continue; }
+      if (tag === 'a') { var href = admHrefSafe(ch.getAttribute('href')); var inr = esc(ch.textContent || ''); out += href ? ('<a href="' + href + '" target="_blank" rel="noopener" style="color:var(--glycine-900);text-decoration:underline">' + inr + '</a>') : inr; continue; }
       var stl = (tag === 'span' || tag === 'div') ? admStyleSafe(ch.getAttribute('style') || '') : '';
       out += '<' + tag + (stl ? ' style="' + stl + '"' : '') + '>' + admSerializeRich(ch) + '</' + tag + '>';
     }

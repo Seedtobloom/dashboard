@@ -50,7 +50,14 @@
    * flottante apparaît quand on sélectionne du texte (gras, italique, souligné,
    * couleur, surligne, taille). Le contenu est stocké en HTML nettoyé (liste
    * blanche de balises/styles) — sûr à réafficher côté admin. */
-  var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', S:'s', STRIKE:'s', DEL:'s', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
+  var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', S:'s', STRIKE:'s', DEL:'s', A:'a', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
+  var STB_LINK_STYLE = 'color:#5e3fa0;text-decoration:underline';
+  function stbHrefSafe(h){
+    h = String(h == null ? '' : h).trim();
+    if (/^(https?:|mailto:)/i.test(h)) return h.replace(/["'<>\s]/g, '');
+    if (/^www\./i.test(h)) return 'https://' + h.replace(/["'<>\s]/g, '');
+    return '';
+  }
   var STB_STYLE_OK = ['color','background-color','font-size','font-weight','font-style','text-decoration','text-decoration-line','padding','border-radius','box-decoration-break','-webkit-box-decoration-break'];
   function stbStyleSafe(style){
     var out = [];
@@ -73,6 +80,12 @@
       var tag = STB_RICH_TAGS[ch.tagName];
       if (!tag){ out += stbSerializeSafe(ch); continue; }
       if (tag === 'br'){ out += '<br>'; continue; }
+      if (tag === 'a'){
+        var href = stbHrefSafe(ch.getAttribute('href'));
+        var inner = stbSerializeSafe(ch);
+        out += href ? ('<a href="' + href + '" target="_blank" rel="noopener" style="' + STB_LINK_STYLE + '">' + inner + '</a>') : inner;
+        continue;
+      }
       var st = (tag === 'span' || tag === 'div') ? stbStyleSafe(ch.getAttribute('style') || '') : '';
       out += '<' + tag + (st ? ' style="' + st + '"' : '') + '>' + stbSerializeSafe(ch) + '</' + tag + '>';
     }
@@ -82,12 +95,40 @@
     var d = document.createElement('div'); d.innerHTML = String(html == null ? '' : html);
     return stbSerializeSafe(d);
   }
+  // Transforme les URL « nues » (hors liens existants) en liens cliquables.
+  function stbLinkify(html){
+    var d = document.createElement('div'); d.innerHTML = String(html == null ? '' : html);
+    var re = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/;
+    (function walk(node){
+      var kids = Array.prototype.slice.call(node.childNodes);
+      for (var i = 0; i < kids.length; i++){
+        var ch = kids[i];
+        if (ch.nodeType === 1){ if (ch.tagName !== 'A') walk(ch); continue; }
+        if (ch.nodeType !== 3) continue;
+        var rest = ch.nodeValue; if (!re.test(rest)) continue;
+        var frag = document.createDocumentFragment(); var m;
+        while ((m = re.exec(rest))){
+          var idx = m.index;
+          if (idx > 0) frag.appendChild(document.createTextNode(rest.slice(0, idx)));
+          var u = m[0], trail = '';
+          while (/[.,;:!?)\]]$/.test(u)){ trail = u.slice(-1) + trail; u = u.slice(0, -1); }
+          var a = document.createElement('a'); a.setAttribute('href', /^www\./i.test(u) ? 'https://' + u : u); a.textContent = u;
+          frag.appendChild(a);
+          if (trail) frag.appendChild(document.createTextNode(trail));
+          rest = rest.slice(idx + m[0].length);
+        }
+        if (rest) frag.appendChild(document.createTextNode(rest));
+        node.replaceChild(frag, ch);
+      }
+    })(d);
+    return stbSerializeSafe(d);
+  }
   // Valeur de cellule -> HTML pour le contenteditable. Ancien texte simple
-  // (sans balise) : on l'échappe et on convertit les retours ligne en <br>.
+  // (sans balise) : on l'échappe et on convertit les retours ligne en <br>. Les URL deviennent des liens.
   function stbCellToHtml(v){
     v = String(v == null ? '' : v);
-    if (/<[a-z!/][\s\S]*>/i.test(v)) return stbSanitizeRich(v);
-    return esc(v).replace(/\n/g, '<br>');
+    var html = /<[a-z!/][\s\S]*>/i.test(v) ? stbSanitizeRich(v) : esc(v).replace(/\n/g, '<br>');
+    return stbLinkify(html);
   }
   var _stbTB = null, _stbActiveCell = null;
   function stbCellSave(el, immediate){
@@ -104,9 +145,44 @@
     }
     if (immediate) stbBlocksSave(pid, tid); else stbSaveSoon(pid, tid);
   }
-  window.stbCellFocus = function(el){ _stbActiveCell = el; };
-  window.stbCellInput = function(el){ stbCellSave(el, false); };
-  window.stbCellBlur = function(el){ stbCellSave(el, true); setTimeout(stbToolbarMaybeHide, 200); };
+  // ── Annuler / Rétablir (Ctrl+Z / Ctrl+Maj+Z) ─────────────────────────────
+  // Nos mises en forme modifient le DOM directement, ce qui casse l'annulation
+  // native. On tient donc notre propre pile d'états par cellule.
+  var _stbSnapT = null;
+  function stbUndoInit(el){ if (el && !el._stbUndo) el._stbUndo = { stack: [el.innerHTML], idx: 0 }; }
+  function stbCommit(el){
+    if (!el || !el._stbUndo) return;
+    var h = el.innerHTML, u = el._stbUndo;
+    if (h === u.stack[u.idx]) return;
+    u.stack = u.stack.slice(0, u.idx + 1);
+    u.stack.push(h);
+    if (u.stack.length > 120) u.stack.shift();
+    u.idx = u.stack.length - 1;
+  }
+  function stbSnapSoon(el){ if (_stbSnapT) clearTimeout(_stbSnapT); _stbSnapT = setTimeout(function(){ _stbSnapT = null; stbCommit(el); }, 450); }
+  function stbCaretEnd(el){ try { var r = document.createRange(); r.selectNodeContents(el); r.collapse(false); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch(e){} }
+  window.stbUndoStep = function(el, redo){
+    var u = el && el._stbUndo; if (!u) return;
+    if (_stbSnapT){ clearTimeout(_stbSnapT); _stbSnapT = null; stbCommit(el); }
+    if (redo){ if (u.idx >= u.stack.length - 1) return; u.idx++; }
+    else { if (u.idx <= 0) return; u.idx--; }
+    el.innerHTML = u.stack[u.idx];
+    stbCaretEnd(el);
+    stbCellSave(el, true);
+  };
+  window.stbCellFocus = function(el){ _stbActiveCell = el; stbUndoInit(el); };
+  window.stbCellInput = function(el){ stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el); };
+  window.stbCellBlur = function(el){
+    stbCellSave(el, true); stbCommit(el);
+    // Rafraîchit l'affichage pour révéler les liens (URL -> lien cliquable).
+    var pid = el.getAttribute('data-pid'), tid = el.getAttribute('data-tid'), bid = el.getAttribute('data-bid');
+    var val = '';
+    if (el.getAttribute('data-stb-block') === '1'){ var t = cliTaskById(pid, tid); var b = t && Array.isArray(t.blocks) ? t.blocks.find(function(x){ return x.id === bid; }) : null; if (b) val = b.text || ''; }
+    else { var b2 = stbTableBlock(pid, tid, bid); if (b2 && b2.rows){ var r = +el.getAttribute('data-r'), c = +el.getAttribute('data-c'); if (b2.rows[r]) val = b2.rows[r][c] || ''; } }
+    var reHtml = stbCellToHtml(val);
+    if (el.innerHTML !== reHtml){ el.innerHTML = reHtml; if (el._stbUndo){ el._stbUndo.stack[el._stbUndo.idx] = reHtml; } }
+    setTimeout(stbToolbarMaybeHide, 200);
+  };
   function stbToolbarMaybeHide(){
     var a = document.activeElement;
     if (_stbTB && a !== _stbTB && !(_stbTB.contains && _stbTB.contains(a)) && (!a || !a.getAttribute || !a.getAttribute('data-stb-rich'))) stbHideToolbar();
@@ -127,8 +203,8 @@
       btn('<span style=\'font-style:italic;font-family:serif\'>I</span>', "window.stbFmt('italic')", 'Italique', 'stb-b-i') +
       btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') +
       btn('<span style=\'text-decoration:line-through\'>S</span>', "window.stbFmt('strike')", 'Barré', 'stb-b-s') + sep +
-      btn('A<span style=\'font-size:11px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte') +
-      btn('<span style=\'font-size:12px\'>A</span><span style=\'font-size:9px;vertical-align:1px\'>–</span>', "window.stbFmt('normal')", 'Taille normale') + sep +
+      btn('<span style=\'font-size:9px;vertical-align:1px\'>A</span><span style=\'font-size:8px\'>–</span>', "window.stbFmt('small')", 'Réduire le texte') +
+      btn('<span style=\'font-size:15px\'>A</span><span style=\'font-size:10px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte (par paliers)') + sep +
       sw('#1C1205','color','rgba(255,255,255,0.35)') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
       sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg') + sw('#f6c9d6','bg') + clearBg;
     document.body.appendChild(tb);
@@ -199,16 +275,41 @@
       }
     }
   }
+  // Paliers de taille progressifs (1 = normal). « pas trop gros d'un coup ».
+  var STB_SIZES = [1, 1.15, 1.3, 1.5, 1.75, 2];
+  function stbFindStyled(prop){
+    var sel = window.getSelection(); if (!sel || !sel.rangeCount) return null;
+    var n = sel.anchorNode; var e = n && (n.nodeType === 1 ? n : n.parentNode);
+    while (e && e.getAttribute && !e.getAttribute('data-stb-rich')){
+      if (e.style && e.style[prop]) return e;
+      e = e.parentNode;
+    }
+    return null;
+  }
+  function stbSizeStep(dir){
+    var span = stbFindStyled('fontSize');
+    var cur = 1;
+    if (span){ var v = parseFloat(span.style.fontSize); if (v && String(span.style.fontSize).indexOf('em') !== -1) cur = v; }
+    var idx = 0, best = 1e9;
+    for (var i = 0; i < STB_SIZES.length; i++){ var d = Math.abs(STB_SIZES[i] - cur); if (d < best){ best = d; idx = i; } }
+    idx = Math.max(0, Math.min(STB_SIZES.length - 1, idx + dir));
+    stbClearProp(['font-size']);
+    if (STB_SIZES[idx] !== 1) stbWrapStyle('font-size', STB_SIZES[idx] + 'em');
+  }
   window.stbFmt = function(kind, arg){
     var cell = _stbActiveCell; if (cell && document.activeElement !== cell) cell.focus();
+    if (_stbSnapT){ clearTimeout(_stbSnapT); _stbSnapT = null; stbCommit(cell); } // fige la frappe en cours pour un annuler propre
+    // Balises sémantiques (b/i/u/s) plutôt que du CSS : rendu fiable, annulable.
+    try { document.execCommand('styleWithCSS', false, false); } catch(e){}
     if (kind === 'bold' || kind === 'italic' || kind === 'underline') document.execCommand(kind, false, null);
     else if (kind === 'strike') document.execCommand('strikeThrough', false, null);
     else if (kind === 'color'){ stbClearProp(['color']); stbWrapStyle('color', arg); }
     else if (kind === 'bg'){ stbClearProp(STB_BG_PROPS); stbWrapStyle('background-color', arg, { padding: '1px 5px', borderRadius: '5px', boxDecorationBreak: 'clone', webkitBoxDecorationBreak: 'clone' }); }
     else if (kind === 'nobg') stbClearProp(STB_BG_PROPS);
-    else if (kind === 'big'){ stbClearProp(['font-size']); stbWrapStyle('font-size', '1.35em'); }
+    else if (kind === 'big') stbSizeStep(1);
+    else if (kind === 'small') stbSizeStep(-1);
     else if (kind === 'normal') stbClearProp(['font-size']); // remet la taille de base
-    if (cell) window.stbCellCommit(cell);
+    if (cell){ window.stbCellCommit(cell); stbCommit(cell); }
     stbPlaceToolbar(); stbUpdateActive();
   };
   // Sauvegarde immédiate d'une cellule après une action de style (pas de perte).
@@ -220,8 +321,19 @@
     window._stbRichBound = true;
     document.addEventListener('selectionchange', stbToolbarOnSelect);
     window.addEventListener('scroll', function(){ if (_stbTB && _stbTB.style.display !== 'none') stbPlaceToolbar(); }, true);
+    // Ctrl+Z / Ctrl+Maj+Z (ou Ctrl+Y) dans une cellule de texte enrichi.
+    document.addEventListener('keydown', function(e){
+      var el = document.activeElement;
+      if (!el || !el.getAttribute || el.getAttribute('data-stb-rich') !== '1') return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+      var k = (e.key || '').toLowerCase();
+      if (k === 'z' && !e.shiftKey){ e.preventDefault(); window.stbUndoStep(el, false); }
+      else if ((k === 'z' && e.shiftKey) || k === 'y'){ e.preventDefault(); window.stbUndoStep(el, true); }
+    }, true);
     var _stbPh = document.createElement('style');
-    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}';
+    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
+      + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
+      + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
