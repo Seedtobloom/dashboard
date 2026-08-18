@@ -5080,7 +5080,13 @@
     var CK = keyOverride || CURKEY;
     var bd = '1px solid var(--bone-d)';
     var num = 0;
+    function admBgSafe(c) { c = String(c || ''); return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : ''; }
     var html = blocks.map(function (b) {
+      var _o = admBlockOne(b);
+      var bg = admBgSafe(b.bg);
+      return bg ? '<div style="background:' + bg + ';border-radius:10px;padding:5px 13px;margin:6px 0">' + _o + '</div>' : _o;
+    }).join('');
+    function admBlockOne(b) {
       if (b.type === 'numbered') num++; else num = 0;
       if (b.type === 'heading') return '<div style="font-size:17px;font-weight:700;color:var(--terre);margin:14px 0 4px">' + esc(b.text || '') + '</div>';
       if (b.type === 'subheading') return '<div style="font-size:15px;font-weight:700;color:var(--terre);margin:11px 0 3px">' + esc(b.text || '') + '</div>';
@@ -5104,7 +5110,7 @@
         return '<div style="margin:10px 0;overflow-x:auto"><table style="border-collapse:collapse;width:100%">' + head + body + '</table></div>';
       }
       return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
-    }).join('');
+    }
     return '<div style="margin-top:15px"><div class="micro" style="margin-bottom:7px">' + esc(label || 'Le brief du client') + '</div>' + html + '</div>';
   }
   // Tableau « legacy » d'une tâche (t.table) — lecture seule, réutilisable

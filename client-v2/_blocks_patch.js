@@ -297,6 +297,30 @@
     var pop = document.getElementById('stb-emoji-pop'); if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
     stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
+  // Couleur de fond d'un bloc.
+  var STB_BLOCK_BG = ['', '#FCE79A', '#E4D1FE', '#F0E8FF', '#cfe9cf', '#f6c9d6', '#F2E5C2', '#F8F6F2', '#e7eef6', '#fbe7dd', '#efe7d7', '#1C1205'];
+  window.stbBlockBg = function(pid, taskId, blockId){
+    var old = document.getElementById('stb-bg-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
+    var pop = document.createElement('div'); pop.id = 'stb-bg-pop';
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px';
+    pop.innerHTML = STB_BLOCK_BG.map(function(c){
+      var isNone = !c;
+      var sw = isNone ? 'background:#fff;border:1px solid #ddd;position:relative' : 'background:'+c+';border:1px solid rgba(0,0,0,0.1)';
+      var cross = isNone ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#c0533b;font-size:13px">⦸</span>' : '';
+      return '<button type="button" title="'+(isNone?'Aucune':c)+'" onmousedown="event.preventDefault()" onclick="window.stbSetBlockBg(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+c+'\')" style="width:24px;height:24px;border-radius:7px;cursor:pointer;padding:0;'+sw+'">'+cross+'</button>';
+    }).join('');
+    document.body.appendChild(pop);
+    var btn = document.getElementById('stb-bgbtn-' + blockId);
+    if (btn){ var r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + window.pageYOffset + 4) + 'px'; pop.style.left = Math.max(8, r.left + window.pageXOffset - 10) + 'px'; }
+    setTimeout(function(){ function close(ev){ if (!pop.contains(ev.target)){ if (pop.parentNode) pop.parentNode.removeChild(pop); document.removeEventListener('mousedown', close); } } document.addEventListener('mousedown', close); }, 0);
+  };
+  window.stbSetBlockBg = function(pid, taskId, blockId, color){
+    var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
+    var b = t.blocks.find(function(x){ return x.id === blockId; }); if (!b) return;
+    if (color) b.bg = color; else delete b.bg;
+    var pop = document.getElementById('stb-bg-pop'); if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
   window.stbCellBlur = function(el){
     stbHideSlash();
     stbCellSave(el, true); stbCommit(el);
@@ -548,6 +572,7 @@
     var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
+      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?'#6b533b':'#b9ac97')+';font-size:10px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
     '</div>';
     var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #efd9d4;border-radius:7px;background:#fbf1ef;color:#c0392b;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
@@ -620,7 +645,9 @@
     } else {
       inner = stbBlockTA(pid, taskId, b, 'Écrire…');
     }
-    return '<div class="stb-row" style="display:flex;align-items:flex-start;gap:5px;margin-bottom:3px">'+ctrl+inner+del+'</div>';
+    // Couleur de fond du bloc (facultative) : on enrobe le contenu en gardant le flux flex.
+    var innerWrap = b.bg ? '<div style="flex:1;min-width:0;display:flex;background:'+esc(b.bg)+';border-radius:10px;padding:3px 11px">'+inner+'</div>' : inner;
+    return '<div class="stb-row" style="display:flex;align-items:flex-start;gap:5px;margin-bottom:'+(b.bg?'6':'3')+'px">'+ctrl+innerWrap+del+'</div>';
   }
   function stbMI(pid, taskId, type, iconName, label, desc){
     var act = (type==='file')
