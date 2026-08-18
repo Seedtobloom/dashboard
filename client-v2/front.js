@@ -8746,7 +8746,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var t = cliTaskById(pid, tid);
       var bid = el.getAttribute('data-bid');
       var bb = (t && Array.isArray(t.blocks)) ? t.blocks.find(function(x){ return x.id === bid; }) : null;
-      if (bb) bb.text = stbSanitizeRich(el.innerHTML);
+      if (bb){ var cl = stbSanitizeRich(el.innerHTML); if (cl.replace(/<br\s*\/?>/gi, '').replace(/&nbsp;/g, '').replace(/​/g, '').trim() === '') cl = ''; bb.text = cl; }
     } else {
       var b = stbTableBlock(pid, tid, el.getAttribute('data-bid'));
       if (b && b.rows){ var r = +el.getAttribute('data-r'), c = +el.getAttribute('data-c'); if (b.rows[r]) b.rows[r][c] = stbSanitizeRich(el.innerHTML); }
@@ -9064,9 +9064,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
       + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}'
-      + '.stb-row .stb-ctrl,.stb-row .stb-del{opacity:0;transition:opacity .12s}'
-      + '.stb-row:hover .stb-ctrl,.stb-row:hover .stb-del{opacity:.6}'
-      + '.stb-row .stb-del:hover{opacity:1}';
+      + '.stb-row .stb-ctrl{opacity:0;transition:opacity .12s}'
+      + '.stb-row:hover .stb-ctrl{opacity:.6}'
+      + '.stb-del{opacity:.5;transition:opacity .12s,background .12s,color .12s}'
+      + '.stb-row:hover .stb-del{opacity:.9}'
+      + '.stb-del:hover{opacity:1;background:#fdece9!important;color:#c0392b!important}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
@@ -9115,8 +9117,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
+  // Champs sur une ligne (titres, sections, listes) = texte simple : on retire
+  // toute balise résiduelle (ex. « <br> » laissé par un champ vidé).
+  function stbPlain(v){ return String(v == null ? '' : v).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/​/g, '').trim(); }
   function stbLineInput(pid, taskId, b, ph, extra){
-    return '<input id="stb-f-'+b.id+'" value="'+esc(b.text||'')+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
+    return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
     var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#e8e0d4);border-radius:5px;background:#fff;color:#8a6f54;cursor:pointer;font-size:11px;line-height:1;padding:0';
@@ -9124,7 +9129,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
     '</div>';
-    var del = '<button class="stb-del" title="Supprimer" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:22px;height:22px;border:none;border-radius:6px;background:none;color:#c08;cursor:pointer;font-size:13px;line-height:1">✕</button>';
+    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #efd9d4;border-radius:7px;background:#fbf1ef;color:#c0392b;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
     if (b.type === 'sep') {
       inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
