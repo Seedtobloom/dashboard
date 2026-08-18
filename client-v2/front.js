@@ -8816,6 +8816,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ['list','Liste à puces','Puce par ligne'], ['numbered','Liste numérotée','Étapes ordonnées'],
     ['quote','Citation','Texte en retrait'], ['callout','Encadré','Note mise en avant'],
     ['section','Section dépliable','Titre qui déroule / masque'],
+    ['image','Image','Photo ou visuel'],
     ['table','Tableau','Lignes et colonnes'], ['sep','Séparateur','Ligne de séparation']
   ];
   function stbBuildSlash(){
@@ -8855,6 +8856,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Retire le « / » déclencheur (le caractère juste avant le curseur).
     try { el.focus(); document.execCommand('delete', false, null); } catch(e){}
     stbCellSave(el, true);
+    if (type === 'image'){ window.stbBlockAddImage(pid, tid, bid); return; } // upload puis insertion après
     var remaining = (el.textContent || '').replace(/​/g, '').trim();
     if (!remaining){
       // Ligne vide → on convertit ce bloc dans le type choisi.
@@ -9106,6 +9108,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
       inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
+    } else if (b.type === 'image') {
+      var iu = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '';
+      inner = iu
+        ? '<a href="'+iu+'" target="_blank" style="flex:1;min-width:0;display:block;line-height:0"><img src="'+iu+'" alt="'+esc(b.name||'')+'" style="max-width:100%;max-height:360px;border-radius:10px;display:block"></a>'
+        : '<div style="flex:1;padding:14px;background:#faf7f1;border:1px dashed var(--bone-d,#e8e0d4);border-radius:10px;color:#9a8a72;font-size:12.5px;text-align:center">Image…</div>';
     } else if (b.type === 'heading') {
       inner = stbLineInput(pid, taskId, b, 'Titre', 'font-family:\'Inter Tight\',sans-serif;font-size:21px;font-weight:600');
     } else if (b.type === 'subheading') {
@@ -9164,7 +9171,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function stbMI(pid, taskId, type, iconName, label, desc){
     var act = (type==='file')
       ? 'window.stbBlockMenu(\''+taskId+'\');window.stbBlockAddFile(\''+pid+'\',\''+taskId+'\')'
-      : 'window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')';
+      : (type==='image')
+        ? 'window.stbBlockMenu(\''+taskId+'\');window.stbBlockAddImage(\''+pid+'\',\''+taskId+'\')'
+        : 'window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')';
     return '<button onclick="'+act+'" onmouseover="this.style.background=\'#f7f2ea\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
       '<span style="width:30px;height:30px;border-radius:8px;background:#f4eee2;display:flex;align-items:center;justify-content:center;color:#6f5a40;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
       '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#1C1205)">'+label+'</span><span style="display:block;font-size:11px;color:#9a93a5">'+desc+'</span></span>'+
@@ -9194,6 +9203,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       stbMI(pid, t.id, 'numbered', 'sort', 'Liste numérotée', 'Étapes ordonnées')+
       stbMenuGroupTitle('Mise en forme')+
       stbMI(pid, t.id, 'table', 'columns', 'Tableau', 'Lignes et colonnes')+
+      stbMI(pid, t.id, 'image', 'image', 'Image', 'Photo ou visuel')+
       stbMI(pid, t.id, 'link', 'link', 'Lien', 'Lien cliquable')+
       stbMI(pid, t.id, 'embed', 'image', 'Vidéo', 'YouTube ou Vimeo')+
       stbMenuGroupTitle('Autres')+
@@ -9396,6 +9406,31 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var pd = getPD(pid); if (pd){ if (!Array.isArray(pd.project.files)) pd.project.files = []; pd.project.files.push(fileData); }
           t.blocks.push({ id: stbBid(), type:'file', fileKey: fileData.key, name: fileData.name || file.name });
           stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId); toast('Fichier ajouté ✓');
+        })
+        .catch(function(){ toast('Erreur lors du depot', true); });
+    };
+    input.click();
+  };
+  // Ajoute une image (affichée en aperçu). afterId : insérer après ce bloc (sinon à la fin).
+  window.stbBlockAddImage = function(pid, taskId, afterId){
+    var input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+    input.onchange = function(){
+      var file = input.files[0]; if (!file) return;
+      if (cliTooBig(file)) { toast(cliBigMsg(file), true); return; }
+      var fd = new FormData(); fd.append('file', file);
+      var sc = sessionStorage.getItem('_sc') || ''; var headers = {}; if (sc) headers['x-space-code'] = sc;
+      toast('Envoi de l image…');
+      fetch(API_BASE + '/files', { method:'POST', headers:headers, body:fd })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+        .then(function(fileData){
+          if (!fileData || !fileData.key) throw new Error();
+          var t = cliTaskById(pid, taskId); if (!t) return;
+          if (!Array.isArray(t.blocks)) t.blocks = [];
+          var pd = getPD(pid); if (pd){ if (!Array.isArray(pd.project.files)) pd.project.files = []; pd.project.files.push(fileData); }
+          var nb = { id: stbBid(), type:'image', fileKey: fileData.key, name: fileData.name || file.name };
+          var idx = -1; if (afterId){ for (var k = 0; k < t.blocks.length; k++){ if (t.blocks[k].id === afterId){ idx = k; break; } } }
+          if (idx >= 0) t.blocks.splice(idx + 1, 0, nb); else t.blocks.push(nb);
+          stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId); toast('Image ajoutée ✓');
         })
         .catch(function(){ toast('Erreur lors du depot', true); });
     };
