@@ -457,6 +457,18 @@
       if (k === 'z' && !e.shiftKey){ e.preventDefault(); window.stbUndoStep(el, false); }
       else if ((k === 'z' && e.shiftKey) || k === 'y'){ e.preventDefault(); window.stbUndoStep(el, true); }
     }, true);
+    // Copier-coller propre : on nettoie le contenu collé (Word, Notion, web…).
+    document.addEventListener('paste', function(e){
+      var el = document.activeElement;
+      if (!el || !el.getAttribute || el.getAttribute('data-stb-rich') !== '1') return;
+      var cd = e.clipboardData || window.clipboardData; if (!cd) return;
+      e.preventDefault();
+      var html = ''; try { html = cd.getData('text/html'); } catch(x){}
+      var text = ''; try { text = cd.getData('text/plain'); } catch(x){}
+      var ins = html ? stbLinkify(stbSanitizeRich(html)) : esc(text || '').replace(/\n/g, '<br>');
+      try { document.execCommand('insertHTML', false, ins); } catch(x){ try { document.execCommand('insertText', false, text || ''); } catch(y){} }
+      stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
+    }, true);
     var _stbPh = document.createElement('style');
     _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
