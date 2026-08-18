@@ -7433,6 +7433,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var _lastReturnRefresh = 0, _returnWired = false;
   function refreshOnReturn() {
     if (!API_BASE || !appData || _isAdminEdit) return;
+    // Ne pas re-render pendant l'édition d'une tâche ouverte (sinon on remonte en haut).
+    if (typeof document !== 'undefined' && document.querySelector('.cp-task-overlay')) return;
     var now = Date.now();
     if (now - _lastReturnRefresh < 12000) return;
     _lastReturnRefresh = now;

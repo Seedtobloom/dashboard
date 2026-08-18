@@ -8005,6 +8005,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var _lastReturnRefresh = 0, _returnWired = false;
   function refreshOnReturn() {
     if (!API_BASE || !appData || _isAdminEdit) return;
+    // Ne pas re-render pendant l'édition d'une tâche ouverte (sinon on remonte en haut).
+    if (typeof document !== 'undefined' && document.querySelector('.cp-task-overlay')) return;
     var now = Date.now();
     if (now - _lastReturnRefresh < 12000) return;
     _lastReturnRefresh = now;
@@ -8608,13 +8610,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
  * Ni backtick ni séquence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
-  function stbBlocksSave(pid, taskId){
+  function stbBlocksSave(pid, taskId, beacon){
     var t = cliTaskById(pid, taskId); if (!t) return;
     var body = { projectId: pid, blocks: t.blocks || [] };
     if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
-    // keepalive : la sauvegarde aboutit même si l'onglet se ferme juste après.
-    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive: true })
-      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+    var sc = ''; try { sc = sessionStorage.getItem('_sc') || ''; } catch(e){}
+    var headers = { 'Content-Type':'application/json' }; if (sc) headers['x-space-code'] = sc;
+    var opts = { method:'PATCH', headers: headers, body: JSON.stringify(body) };
+    // keepalive UNIQUEMENT à la fermeture de l'onglet : sinon la limite ~64 Ko
+    // des requêtes keepalive fait échouer l'enregistrement des briefs volumineux.
+    if (beacon) opts.keepalive = true;
+    fetch(API_BASE + '/tasks/' + taskId, opts)
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(d){ if (d && Array.isArray(d.blocksHistory)) t.blocksHistory = d.blocksHistory; })
       .catch(function(){ toast('Erreur d enregistrement', true); });
   }
@@ -8625,7 +8632,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (_stbTimer) clearTimeout(_stbTimer);
     _stbTimer = setTimeout(function(){ _stbTimer = null; var p = _stbPend; _stbPend = null; if (p) stbBlocksSave(p.pid, p.taskId); }, 600);
   }
-  function stbFlush(){ if (_stbTimer){ clearTimeout(_stbTimer); _stbTimer = null; } if (_stbPend){ var p = _stbPend; _stbPend = null; stbBlocksSave(p.pid, p.taskId); } }
+  function stbFlush(){ if (_stbTimer){ clearTimeout(_stbTimer); _stbTimer = null; } if (_stbPend){ var p = _stbPend; _stbPend = null; stbBlocksSave(p.pid, p.taskId, true); } }
   if (!window._stbFlushBound){
     window._stbFlushBound = true;
     window.addEventListener('pagehide', stbFlush);
@@ -8856,8 +8863,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Retire le « / » déclencheur (le caractère juste avant le curseur).
     try { el.focus(); document.execCommand('delete', false, null); } catch(e){}
     stbCellSave(el, true);
-    if (type === 'image'){ window.stbBlockAddImage(pid, tid, bid); return; } // upload puis insertion après
     var remaining = (el.textContent || '').replace(/​/g, '').trim();
+    if (type === 'image'){
+      // Upload puis insertion. Si la ligne est vide, on la retire (pas de ligne fantôme).
+      if (!remaining){ var prevId = idx > 0 ? t.blocks[idx - 1].id : null; t.blocks.splice(idx, 1); stbBlocksSave(pid, tid); window.stbBlockAddImage(pid, tid, prevId); }
+      else window.stbBlockAddImage(pid, tid, bid);
+      return;
+    }
     if (!remaining){
       // Ligne vide → on convertit ce bloc dans le type choisi.
       var kept = stbNewBlock(type); kept.id = b.id; t.blocks[idx] = kept;
@@ -9687,10 +9699,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var tb = t.table;
     var has = tb && Array.isArray(tb.cols) && tb.cols.length;
     var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Tableau</div>';
-    if (!has) {
-      return '<div style="margin-top:16px">'+lbl+
-        '<button onclick="cliTableCreate(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;padding:9px 15px;border:1px solid #e2dbd0;border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',15)+'Ajouter un tableau</button></div>';
-    }
+    // Le tableau existe déjà comme bloc « / » : on n'affiche plus le bouton « Ajouter un tableau »
+    // en double. On garde seulement l'affichage d'un ancien tableau déjà créé.
+    if (!has) return '';
     var cols = tb.cols, rows = Array.isArray(tb.rows) ? tb.rows : [];
     var bd = '1px solid #e7e0d4';
     var hCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';

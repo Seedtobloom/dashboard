@@ -7,13 +7,18 @@
  * Ni backtick ni séquence dollar-accolade dans ce bloc (template String.raw).
  */
   function stbBid(){ return 'b' + Math.random().toString(36).slice(2, 9); }
-  function stbBlocksSave(pid, taskId){
+  function stbBlocksSave(pid, taskId, beacon){
     var t = cliTaskById(pid, taskId); if (!t) return;
     var body = { projectId: pid, blocks: t.blocks || [] };
     if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
-    // keepalive : la sauvegarde aboutit même si l'onglet se ferme juste après.
-    fetch(API_BASE + '/tasks/' + taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive: true })
-      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+    var sc = ''; try { sc = sessionStorage.getItem('_sc') || ''; } catch(e){}
+    var headers = { 'Content-Type':'application/json' }; if (sc) headers['x-space-code'] = sc;
+    var opts = { method:'PATCH', headers: headers, body: JSON.stringify(body) };
+    // keepalive UNIQUEMENT à la fermeture de l'onglet : sinon la limite ~64 Ko
+    // des requêtes keepalive fait échouer l'enregistrement des briefs volumineux.
+    if (beacon) opts.keepalive = true;
+    fetch(API_BASE + '/tasks/' + taskId, opts)
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(d){ if (d && Array.isArray(d.blocksHistory)) t.blocksHistory = d.blocksHistory; })
       .catch(function(){ toast('Erreur d enregistrement', true); });
   }
@@ -24,7 +29,7 @@
     if (_stbTimer) clearTimeout(_stbTimer);
     _stbTimer = setTimeout(function(){ _stbTimer = null; var p = _stbPend; _stbPend = null; if (p) stbBlocksSave(p.pid, p.taskId); }, 600);
   }
-  function stbFlush(){ if (_stbTimer){ clearTimeout(_stbTimer); _stbTimer = null; } if (_stbPend){ var p = _stbPend; _stbPend = null; stbBlocksSave(p.pid, p.taskId); } }
+  function stbFlush(){ if (_stbTimer){ clearTimeout(_stbTimer); _stbTimer = null; } if (_stbPend){ var p = _stbPend; _stbPend = null; stbBlocksSave(p.pid, p.taskId, true); } }
   if (!window._stbFlushBound){
     window._stbFlushBound = true;
     window.addEventListener('pagehide', stbFlush);
@@ -255,8 +260,13 @@
     // Retire le « / » déclencheur (le caractère juste avant le curseur).
     try { el.focus(); document.execCommand('delete', false, null); } catch(e){}
     stbCellSave(el, true);
-    if (type === 'image'){ window.stbBlockAddImage(pid, tid, bid); return; } // upload puis insertion après
     var remaining = (el.textContent || '').replace(/​/g, '').trim();
+    if (type === 'image'){
+      // Upload puis insertion. Si la ligne est vide, on la retire (pas de ligne fantôme).
+      if (!remaining){ var prevId = idx > 0 ? t.blocks[idx - 1].id : null; t.blocks.splice(idx, 1); stbBlocksSave(pid, tid); window.stbBlockAddImage(pid, tid, prevId); }
+      else window.stbBlockAddImage(pid, tid, bid);
+      return;
+    }
     if (!remaining){
       // Ligne vide → on convertit ce bloc dans le type choisi.
       var kept = stbNewBlock(type); kept.id = b.id; t.blocks[idx] = kept;

@@ -231,10 +231,9 @@
     var tb = t.table;
     var has = tb && Array.isArray(tb.cols) && tb.cols.length;
     var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Tableau</div>';
-    if (!has) {
-      return '<div style="margin-top:16px">'+lbl+
-        '<button onclick="cliTableCreate(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;padding:9px 15px;border:1px solid #e2dbd0;border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',15)+'Ajouter un tableau</button></div>';
-    }
+    // Le tableau existe déjà comme bloc « / » : on n'affiche plus le bouton « Ajouter un tableau »
+    // en double. On garde seulement l'affichage d'un ancien tableau déjà créé.
+    if (!has) return '';
     var cols = tb.cols, rows = Array.isArray(tb.rows) ? tb.rows : [];
     var bd = '1px solid #e7e0d4';
     var hCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';
