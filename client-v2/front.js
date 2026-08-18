@@ -9111,8 +9111,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
       + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}'
-      + '.stb-row .stb-ctrl{opacity:0;transition:opacity .12s}'
-      + '.stb-row:hover .stb-ctrl{opacity:.6}'
+      + '.stb-row .stb-ctrl{opacity:.28;transition:opacity .12s}'
+      + '.stb-row:hover .stb-ctrl{opacity:1}'
+      + '.stb-ctrl button:hover{background:#f4eee2!important;color:#412F21!important}'
       + '.stb-del{opacity:.5;transition:opacity .12s,background .12s,color .12s}'
       + '.stb-row:hover .stb-del{opacity:.9}'
       + '.stb-del:hover{opacity:1;background:#fdece9!important;color:#c0392b!important}';
@@ -9175,7 +9176,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
-      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?'#6b533b':'#b9ac97')+';font-size:10px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
+      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?b.bg:'#8a6f54')+';font-size:11px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
     '</div>';
     var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #efd9d4;border-radius:7px;background:#fbf1ef;color:#c0392b;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
