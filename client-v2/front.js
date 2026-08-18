@@ -9212,7 +9212,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     } else {
       inner = stbBlockTA(pid, taskId, b, 'Écrire…');
     }
-    return '<div class="stb-row" style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px">'+ctrl+inner+del+'</div>';
+    return '<div class="stb-row" style="display:flex;align-items:flex-start;gap:5px;margin-bottom:3px">'+ctrl+inner+del+'</div>';
   }
   function stbMI(pid, taskId, type, iconName, label, desc){
     var act = (type==='file')
