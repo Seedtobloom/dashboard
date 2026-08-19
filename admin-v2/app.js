@@ -5769,7 +5769,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span> · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -5800,6 +5800,35 @@
         if (VIEW === 'client') loadClient(); else if (VIEW === 'chat' && CHAT && CHAT.project) chatProject(CHAT.project);
       }).catch(function () { toast('Erreur'); });
     });
+  }
+  // Déplacer un message vers une autre conversation / sous-discussion (quand on se trompe).
+  function msgMove(ev, fromPid, msgId) {
+    try { ev.stopPropagation(); } catch (e) {}
+    var old = document.getElementById('adm-msgmove'); if (old && old.parentNode) old.parentNode.removeChild(old);
+    var targets = [];
+    ((CUR && CUR.domains) || []).forEach(function (dn) { targets.push({ pid: dn.id, topic: '', label: DOMAIN_LABELS[dn.id] || dn.label }); });
+    ((CUR && CUR.supports) || []).forEach(function (s) {
+      targets.push({ pid: s.id, topic: '', label: (s.label || 'Support') + ' · Général' });
+      var cr = (s.content && Array.isArray(s.content.creations)) ? s.content.creations.filter(function (c) { return c.status !== 'archive'; }) : [];
+      cr.forEach(function (c) { targets.push({ pid: s.id, topic: c.id, label: (s.label || 'Support') + ' · ' + (c.name || 'Création') }); });
+    });
+    var pop = document.createElement('div'); pop.id = 'adm-msgmove';
+    pop.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid var(--bone-d);border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;max-height:340px;overflow-y:auto;min-width:240px';
+    pop.innerHTML = '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 9px 4px">Déplacer vers…</div>' +
+      targets.map(function (t) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgMoveTo(\'' + fromPid + '\',\'' + msgId + '\',\'' + t.pid + '\',\'' + esc(t.topic) + '\')" style="display:block;width:100%;text-align:left;border:none;background:none;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--terre)" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">' + esc(t.label) + '</button>'; }).join('');
+    document.body.appendChild(pop);
+    var x = (ev && ev.clientX) || 200, y = (ev && ev.clientY) || 200;
+    pop.style.left = Math.max(8, Math.min(x, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+    pop.style.top = Math.max(8, Math.min(y + 6, window.innerHeight - pop.offsetHeight - 8)) + 'px';
+    setTimeout(function () { function close(e) { if (!pop.contains(e.target)) { if (pop.parentNode) pop.parentNode.removeChild(pop); document.removeEventListener('mousedown', close); } } document.addEventListener('mousedown', close); }, 0);
+  }
+  function msgMoveTo(fromPid, msgId, toPid, toTopic) {
+    var pop = document.getElementById('adm-msgmove'); if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+    jpost('/api/clients/' + CURKEY + '/message/' + msgId + '/move', { projectId: fromPid, toProjectId: toPid, toTopic: toTopic }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Message déplacé ✓');
+      if (VIEW === 'chat' && CHAT && CHAT.key) chatClient(CHAT.key); else loadClient();
+    }).catch(function () { toast('Erreur'); });
   }
   // Nombre de messages client non lus pour une sous-discussion (topic ''=général).
   function chatSubUnread(d, topicVal) {
@@ -6783,7 +6812,7 @@
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
-    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
+    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgMove: msgMove, msgMoveTo: msgMoveTo, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
     msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
     msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,

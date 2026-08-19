@@ -451,6 +451,29 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true });
   }
+  // Déplacer un message vers une autre (sous-)discussion (topic) ou conversation.
+  const mvm = sub.match(/^\/message\/([a-zA-Z0-9]+)\/move$/);
+  if (mvm && method === 'PATCH') {
+    const body = await readJson(request);
+    const { container: srcC } = resolveProject(esp, (body.projectId || '').toString());
+    if (!srcC || !Array.isArray(srcC.chat)) return json({ error: 'Message introuvable' }, 404);
+    const idx = srcC.chat.findIndex((x: AnyObj) => x.id === mvm![1]);
+    if (idx === -1) return json({ error: 'Message introuvable' }, 404);
+    const { container: dstC } = resolveProject(esp, (body.toProjectId || body.projectId || '').toString());
+    if (!dstC) return json({ error: 'Destination introuvable' }, 404);
+    const toTopic = (body.toTopic || '').toString().slice(0, 60);
+    const msg = srcC.chat[idx];
+    if (dstC === srcC) {
+      if (toTopic) msg.topic = toTopic; else delete msg.topic;
+    } else {
+      srcC.chat.splice(idx, 1);
+      if (toTopic) msg.topic = toTopic; else delete msg.topic;
+      if (!Array.isArray(dstC.chat)) dstC.chat = [];
+      dstC.chat.push(msg);
+    }
+    await saveClient(env, key, data);
+    return json({ ok: true });
+  }
   // Suppression d'un message de la conversation (ex. doublon envoyé par erreur).
   const delm = sub.match(/^\/message\/([a-zA-Z0-9]+)$/);
   if (delm && method === 'DELETE') {
