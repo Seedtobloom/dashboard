@@ -10003,11 +10003,23 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var head = ql ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);text-align:center">'+shown.length+' message'+(shown.length>1?'s':'')+' trouvé'+(shown.length>1?'s':'')+'</div>' : '';
     return head + shown.map(function(m){
       var mine = m.author !== 'cindy';
+      var body = (m.content ? '<div class="mx-b">'+stbHi(m.content, q)+'</div>' : '') + stbInboxAtts(m.attachments);
       return '<div class="mx-msg mx-msg--'+(mine?'out':'in')+'">'+
-        '<div class="mx-b">'+stbHi(m.content, q)+'</div>'+
+        (body || '<div class="mx-b"></div>')+
         '<div class="mx-m">'+(mine?'Vous':'Cindy')+' · '+fmtDate(m.createdAt)+'</div>'+
       '</div>';
     }).join('');
+  }
+  // Pièces jointes d'un message : miniatures pour les images, puces sinon.
+  function stbInboxAtts(atts){
+    if (!atts || !atts.length) return '';
+    return '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">'+atts.map(function(a){
+      var u = API_BASE + '/files/' + encodeURIComponent(a.key) + '/download';
+      if (/\.(jpe?g|png|webp|gif|avif|svg)$/i.test(a.name||'')){
+        return '<a href="'+u+'" target="_blank" rel="noopener" title="'+esc(a.name||'')+'" style="display:block;border-radius:9px;overflow:hidden;border:1px solid var(--bone-d);line-height:0"><img src="'+u+'" alt="'+esc(a.name||'')+'" loading="lazy" style="max-height:130px;max-width:190px;display:block;object-fit:cover"></a>';
+      }
+      return '<a href="'+u+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#128206;</span>'+esc(a.name||'fichier')+'</a>';
+    }).join('')+'</div>';
   }
   window.stbInboxSearch = function(pid, v){
     var pd = getPD(pid); if (!pd) return;
