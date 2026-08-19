@@ -2790,6 +2790,7 @@
           '<span class="t">' + esc(t.title) + cn + '</span>' + due +
           '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (en heures, ex. 1.5)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)" style="width:64px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
+          '<button class="msdel" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer la tâche') + '" onclick="ADM.msDelete(\'' + t.id + '\')">×</button>' +
         '</div>';
       }).join('') + '</div>' : '<div class="emptyz">Tout est placé. 🌿</div>') +
     '</div>';
@@ -2829,6 +2830,25 @@
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
   // Cocher une tâche du jour comme faite : elle reste visible mais atténuée.
   function msDone(id, done) { msPatch(id, { status: done ? 'done' : 'todo' }); toast(done ? '✓ Fait' : 'Remise à faire'); }
+  // Supprimer une tâche perso de la liste « à placer ».
+  // (Les tâches Partenaire créative viennent des projets clients : on ne les
+  //  supprime pas ici, on les retire simplement du planning.)
+  function msDelete(id) {
+    var t = MS_ALL.find(function (x) { return x.id === id; }); if (!t) return;
+    if (t._src === 'client') {
+      admConfirm({ title: 'Retirer du planning ?', message: 'Cette tâche vient d\'un projet client. Elle sera retirée de ta semaine mais restera dans le projet.', yes: 'Retirer', no: 'Annuler' }, function () {
+        MS_PARTNER = MS_PARTNER.filter(function (x) { return x.id !== id; });
+        renderMaSemaineBody(); toast('Retirée du planning');
+      });
+      return;
+    }
+    admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche sera définitivement supprimée.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
+      api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) {
+        if (r.ok) { MS_TASKS = MS_TASKS.filter(function (x) { return x.id !== id; }); toast('Supprimée'); renderMaSemaineBody(); }
+        else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    });
+  }
   // Glisser-déposer d'une tâche sur un jour de « Ma semaine ».
   var MS_DRAG = null;
   function msDragStart(ev, id) { MS_DRAG = id; try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', id); } catch (e) {} }
@@ -6834,7 +6854,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDone: msDone, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
