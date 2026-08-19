@@ -7404,6 +7404,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           if (!data || data.wrongCode || data.locked || !data.projects) return;
           appData = data;
           cpRefreshBadge();
+          // Messagerie ouverte : mise à jour en direct (messages + fichiers reçus).
+          if (typeof window.stbInboxRefresh === 'function') { try { window.stbInboxRefresh(); } catch(e){} }
           if (currentView === 'messages') {
             var list = document.getElementById('cp-convo-list');
             if (list) {
@@ -7423,7 +7425,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         })
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
-    }, 30000);
+    }, 40000);
     wireReturnRefresh();
   }
 

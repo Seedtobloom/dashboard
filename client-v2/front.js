@@ -7976,6 +7976,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           if (!data || data.wrongCode || data.locked || !data.projects) return;
           appData = data;
           cpRefreshBadge();
+          // Messagerie ouverte : mise à jour en direct (messages + fichiers reçus).
+          if (typeof window.stbInboxRefresh === 'function') { try { window.stbInboxRefresh(); } catch(e){} }
           if (currentView === 'messages') {
             var list = document.getElementById('cp-convo-list');
             if (list) {
@@ -7995,7 +7997,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         })
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
-    }, 30000);
+    }, 40000);
     wireReturnRefresh();
   }
 
@@ -10046,6 +10048,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
   window.stbInboxSelect = function(pid){
     var pd = getPD(pid); if (!pd) return;
+    window._stbInboxPid = pid;
     window._stbInboxTopic = ''; // nouveau projet : on repart sur la discussion générale
     if (typeof stbMarkRead === 'function') stbMarkRead(pid, false);
     stbInboxRenderList();
@@ -10083,6 +10086,19 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       .catch(function(){ toast('Erreur, réessayez.'); });
   };
   window.cpCloseInbox = function(){ var o = document.getElementById('cp-inbox'); if (o && o.parentNode) o.parentNode.removeChild(o); };
+  // Rafraîchit la messagerie ouverte (appelée par le sondage) sans perdre la
+  // position ni le brouillon : on ne remplace que la liste des bulles si elle a changé.
+  window.stbInboxRefresh = function(){
+    if (!document.getElementById('cp-inbox') || !window._stbInboxPid) return;
+    var pd = getPD(window._stbInboxPid); if (!pd) return;
+    var box = document.getElementById('cp-inbox-msgs');
+    if (box){
+      var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      var html = stbInboxBubbles(pd, window._stbInboxQ || '', window._stbInboxTopic || '');
+      if (box.innerHTML !== html){ box.innerHTML = html; if (atBottom) box.scrollTop = box.scrollHeight; }
+    }
+    stbInboxRenderList();
+  };
   window.cpOpenMessages = function(){
     window.cpCloseInbox();
     var projects = (appData && appData.projects) || [];

@@ -120,6 +120,7 @@
   }
   window.stbInboxSelect = function(pid){
     var pd = getPD(pid); if (!pd) return;
+    window._stbInboxPid = pid;
     window._stbInboxTopic = ''; // nouveau projet : on repart sur la discussion générale
     if (typeof stbMarkRead === 'function') stbMarkRead(pid, false);
     stbInboxRenderList();
@@ -157,6 +158,19 @@
       .catch(function(){ toast('Erreur, réessayez.'); });
   };
   window.cpCloseInbox = function(){ var o = document.getElementById('cp-inbox'); if (o && o.parentNode) o.parentNode.removeChild(o); };
+  // Rafraîchit la messagerie ouverte (appelée par le sondage) sans perdre la
+  // position ni le brouillon : on ne remplace que la liste des bulles si elle a changé.
+  window.stbInboxRefresh = function(){
+    if (!document.getElementById('cp-inbox') || !window._stbInboxPid) return;
+    var pd = getPD(window._stbInboxPid); if (!pd) return;
+    var box = document.getElementById('cp-inbox-msgs');
+    if (box){
+      var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      var html = stbInboxBubbles(pd, window._stbInboxQ || '', window._stbInboxTopic || '');
+      if (box.innerHTML !== html){ box.innerHTML = html; if (atBottom) box.scrollTop = box.scrollHeight; }
+    }
+    stbInboxRenderList();
+  };
   window.cpOpenMessages = function(){
     window.cpCloseInbox();
     var projects = (appData && appData.projects) || [];
