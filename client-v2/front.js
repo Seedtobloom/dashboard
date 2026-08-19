@@ -820,6 +820,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
     s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function(m, c, t){ return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
     s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#6f5c44)">•</span> ');
+    s = s.replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
+      var tail = ''; var m = u.match(/[.,;:!?)\]]+$/);
+      if (m){ tail = m[0]; u = u.slice(0, u.length - tail.length); }
+      if (!u) return tail;
+      var href = /^https?:/i.test(u) ? u : 'http://' + u;
+      return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">' + u + '</a>' + tail;
+    });
     return s;
   }
   // Barre d'outils de mise en forme au-dessus d'une zone de saisie (textarea #id).
@@ -9955,9 +9962,19 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var projects = (appData && appData.projects) || [];
     l.innerHTML = projects.length ? projects.map(stbInboxItem).join('') : '<div class="mx-empty">Aucun projet.</div>';
   }
+  // Rend cliquables les liens (http(s):// ou www.) dans un texte DÉJÀ échappé.
+  function stbLinkMsgText(s){
+    return String(s).replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
+      var tail = ''; var m = u.match(/[.,;:!?)\]]+$/);
+      if (m){ tail = m[0]; u = u.slice(0, u.length - tail.length); }
+      if (!u) return tail;
+      var href = /^https?:/i.test(u) ? u : 'http://' + u;
+      return '<a href="'+href+'" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">'+u+'</a>'+tail;
+    });
+  }
   function stbHi(text, q){
     var s = String(text == null ? '' : text);
-    if (!q) return esc(s);
+    if (!q) return stbLinkMsgText(esc(s));
     var ql = q.toLowerCase(), low = s.toLowerCase(), out = '', i = 0;
     while (true){
       var idx = low.indexOf(ql, i);

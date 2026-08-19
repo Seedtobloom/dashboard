@@ -27,9 +27,19 @@
     var projects = (appData && appData.projects) || [];
     l.innerHTML = projects.length ? projects.map(stbInboxItem).join('') : '<div class="mx-empty">Aucun projet.</div>';
   }
+  // Rend cliquables les liens (http(s):// ou www.) dans un texte DÉJÀ échappé.
+  function stbLinkMsgText(s){
+    return String(s).replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
+      var tail = ''; var m = u.match(/[.,;:!?)\]]+$/);
+      if (m){ tail = m[0]; u = u.slice(0, u.length - tail.length); }
+      if (!u) return tail;
+      var href = /^https?:/i.test(u) ? u : 'http://' + u;
+      return '<a href="'+href+'" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">'+u+'</a>'+tail;
+    });
+  }
   function stbHi(text, q){
     var s = String(text == null ? '' : text);
-    if (!q) return esc(s);
+    if (!q) return stbLinkMsgText(esc(s));
     var ql = q.toLowerCase(), low = s.toLowerCase(), out = '', i = 0;
     while (true){
       var idx = low.indexOf(ql, i);
