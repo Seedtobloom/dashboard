@@ -2736,8 +2736,10 @@
     // bloc coloré par type de travail, avec estimation + déplacement
     function wblk(t, diso) {
       var cls = msWt(t);
+      var done = t.status === 'done';
       var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? ' <span title="Échéance dépassée" style="font-weight:700">!</span>' : '';
-      return '<div class="wblk ' + cls + '" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
+      return '<div class="wblk ' + cls + (done ? ' wblk--done' : '') + '" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
+        '<button class="wblk__chk' + (done ? ' is-on' : '') + '" title="' + (done ? 'Fait — décocher' : 'Marquer comme fait') + '" onclick="ADM.msDone(\'' + t.id + '\',' + (done ? 'false' : 'true') + ')">' + (done ? '✓' : '') + '</button>' +
         '<span class="wblk__k">' + msWtLabel(cls) + '</span>' +
         '<span class="wblk__t">' + esc(t.title) + dueWarn + '</span>' +
         (t.clientName ? '<span class="wblk__c">' + esc(t.clientName) + '</span>' : '') +
@@ -2749,12 +2751,14 @@
     }
     var cols = days.map(function (d) {
       var diso = msIso(d);
-      var allDayTasks = active.filter(function (t) { return (t.doDate || '').slice(0, 10) === diso; });
-      var planned = allDayTasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+      // On inclut les tâches FAITES du jour (affichées atténuées) pour voir ce qui a été accompli.
+      var allDayTasks = MS_ALL.filter(function (t) { return !t.archived && (t.doDate || '').slice(0, 10) === diso; });
+      var planned = allDayTasks.reduce(function (s, t) { return s + (t.status === 'done' ? 0 : (t.estMinutes || 0)); }, 0);
       var avail = msAvailMin(d);
       var dOver = avail && planned > avail;
       var isToday = diso === todayIso;
-      var shown = MS_FILTER === 'all' ? allDayTasks : allDayTasks.filter(function (t) { return msWt(t) === MS_FILTER; });
+      var shown = (MS_FILTER === 'all' ? allDayTasks : allDayTasks.filter(function (t) { return msWt(t) === MS_FILTER; }))
+        .slice().sort(function (a, b) { return (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0); });
       var capTxt = planned ? (msDur(planned) + (avail ? ' / ' + msHours(avail) : '')) : 'libre';
       var head = '<div class="wday__h"><span class="wday__d' + (isToday ? ' today' : '') + '">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isToday ? ' · auj.' : '') + '</span><span class="wday__cap' + (dOver ? ' full' : '') + '">' + capTxt + '</span></div>';
       var body = shown.length ? shown.map(function (t) { return wblk(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
@@ -2823,6 +2827,8 @@
     jpost(url, payload, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur'); }).catch(function () { toast('Erreur'); });
   }
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
+  // Cocher une tâche du jour comme faite : elle reste visible mais atténuée.
+  function msDone(id, done) { msPatch(id, { status: done ? 'done' : 'todo' }); toast(done ? '✓ Fait' : 'Remise à faire'); }
   // Glisser-déposer d'une tâche sur un jour de « Ma semaine ».
   var MS_DRAG = null;
   function msDragStart(ev, id) { MS_DRAG = id; try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', id); } catch (e) {} }
@@ -6828,7 +6834,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDone: msDone, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,

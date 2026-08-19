@@ -343,7 +343,15 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .wday__cap{font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;color:var(--brun);opacity:.7;white-space:nowrap}
 .sem2 .wday__cap.full{color:#a23c28;opacity:1;font-weight:700}
 .sem2 .wcol{display:flex;flex-direction:column;gap:9px;min-height:50px}
-.sem2 .wblk{border-radius:13px;padding:12px 13px;display:flex;flex-direction:column;gap:5px}
+.sem2 .wblk{position:relative;border-radius:13px;padding:12px 13px;display:flex;flex-direction:column;gap:5px}
+/* Coche « fait » en haut à droite du bloc */
+.sem2 .wblk__chk{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;background:transparent;color:inherit;opacity:.4;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1;padding:0;transition:opacity .12s,background .12s,color .12s}
+.sem2 .wblk__chk:hover{opacity:.85}
+.sem2 .wblk__chk.is-on{opacity:1;background:var(--ivoire);border-color:var(--ivoire);color:var(--brun)}
+.sem2 .wblk--done{opacity:.5;filter:saturate(.45)}
+.sem2 .wblk--done .wblk__t{text-decoration:line-through;text-decoration-thickness:1px}
+.sem2 .wblk--done:hover{opacity:.72}
+.sem2 .wblk__t{padding-right:22px}
 .sem2 .wblk__k{font-family:var(--font-micro);font-size:8.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:.85}
 .sem2 .wblk__t{font-family:var(--font-micro);font-weight:500;font-size:13px;line-height:1.28}
 .sem2 .wblk__c{font-family:var(--font-micro);font-size:10px;opacity:.82}
