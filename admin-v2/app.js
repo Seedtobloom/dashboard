@@ -2737,7 +2737,7 @@
     function wblk(t, diso) {
       var cls = msWt(t);
       var dueWarn = (t.dueDate && t.dueDate.slice(0, 10) < diso) ? ' <span title="Échéance dépassée" style="font-weight:700">!</span>' : '';
-      return '<div class="wblk ' + cls + '">' +
+      return '<div class="wblk ' + cls + '" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
         '<span class="wblk__k">' + msWtLabel(cls) + '</span>' +
         '<span class="wblk__t">' + esc(t.title) + dueWarn + '</span>' +
         (t.clientName ? '<span class="wblk__c">' + esc(t.clientName) + '</span>' : '') +
@@ -2759,7 +2759,7 @@
       var head = '<div class="wday__h"><span class="wday__d' + (isToday ? ' today' : '') + '">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isToday ? ' · auj.' : '') + '</span><span class="wday__cap' + (dOver ? ' full' : '') + '">' + capTxt + '</span></div>';
       var body = shown.length ? shown.map(function (t) { return wblk(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
       var dayAdd = '<input class="wadd" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}">';
-      return '<div>' + head + '<div class="wcol">' + body + dayAdd + '</div></div>';
+      return '<div>' + head + '<div class="wcol" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)">' + body + dayAdd + '</div></div>';
     }).join('');
     var grid = '<div class="week">' + cols + '</div>';
     var legend = '<div class="legend">' +
@@ -2782,7 +2782,7 @@
       (toPlace.length ? '<div class="placegrid">' + toPlace.slice(0, 40).map(function (t) {
         var cn = t.clientName ? '<span class="wblk__c" style="opacity:.65"> · ' + esc(t.clientName) + '</span>' : '';
         var due = t.dueDate ? '<span class="due">' + msShort(t.dueDate) + '</span>' : '';
-        return '<div class="placerow">' +
+        return '<div class="placerow" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
           '<span class="t">' + esc(t.title) + cn + '</span>' + due +
           '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (en heures, ex. 1.5)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)" style="width:64px;font-size:12px">' +
           '<select class="inp" title="Placer sur un jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)" style="width:auto;font-size:12px">' + msDaySelect(days, '') + '</select>' +
@@ -2823,6 +2823,18 @@
     jpost(url, payload, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur'); }).catch(function () { toast('Erreur'); });
   }
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
+  // Glisser-déposer d'une tâche sur un jour de « Ma semaine ».
+  var MS_DRAG = null;
+  function msDragStart(ev, id) { MS_DRAG = id; try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', id); } catch (e) {} }
+  function msDragEnd() { MS_DRAG = null; document.querySelectorAll('.wcol--over').forEach(function (e) { e.classList.remove('wcol--over'); }); }
+  function msDayOver(ev, elm) { ev.preventDefault(); if (elm && !elm.classList.contains('wcol--over')) elm.classList.add('wcol--over'); }
+  function msDayLeave(elm) { if (elm) elm.classList.remove('wcol--over'); }
+  function msDrop(ev, diso, elm) {
+    ev.preventDefault();
+    if (elm) elm.classList.remove('wcol--over');
+    var id = MS_DRAG || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); MS_DRAG = null;
+    if (id) msPlace(id, diso);
+  }
   function msEst(id, val) { msPatch(id, { estMinutes: parseInt(val, 10) || 0 }); }
   // Saisie du temps estimé en HEURES (décimal, ex. 1.5 = 1 h 30) → stocké en minutes.
   function msEstH(id, val) { msPatch(id, { estMinutes: Math.round((parseFloat(val) || 0) * 60) }); }
@@ -6816,7 +6828,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
