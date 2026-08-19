@@ -87,7 +87,7 @@
     var head = ql ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);text-align:center">'+shown.length+' message'+(shown.length>1?'s':'')+' trouvé'+(shown.length>1?'s':'')+'</div>' : '';
     return head + shown.map(function(m){
       var mine = m.author !== 'cindy';
-      var body = (m.content ? '<div class="mx-b">'+stbHi(m.content, q)+'</div>' : '') + stbInboxAtts(m.attachments);
+      var body = (m.content ? '<div class="mx-b">'+(q ? stbHi(m.content, q) : fmtMsg(m.content))+'</div>' : '') + stbInboxAtts(m.attachments);
       return '<div class="mx-msg mx-msg--'+(mine?'out':'in')+'">'+
         (body || '<div class="mx-b"></div>')+
         '<div class="mx-m">'+(mine?'Vous':'Cindy')+' · '+fmtDate(m.createdAt)+'</div>'+
@@ -124,8 +124,11 @@
       stbSubRow(pd)+
       '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
       '<div class="mx-composer">'+
-        '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
-        '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
+        '<div class="mx-tools">'+cpMsgToolbar('cp-inbox-input')+'</div>'+
+        '<div class="mx-composer__row">'+
+          '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
+          '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
+        '</div>'+
     '</div>';
   }
   window.stbInboxSelect = function(pid){

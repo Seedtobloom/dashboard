@@ -253,6 +253,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     s = esc(String(s == null ? '' : s));
     s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\[(grand|titre)\]([\s\S]+?)\[\/\]/g, function(m, sz, t){ return '<span style="' + (sz === 'titre' ? 'font-size:1.4em;font-weight:600' : 'font-size:1.18em') + ';line-height:1.35">' + t + '</span>'; });
     s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function(m, c, t){ return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
     s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#6f5c44)">•</span> ');
     s = s.replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
@@ -274,7 +275,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       CP_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.cpMsgIns(\'' + id + '\',\'' + e + '\')" style="border:none;background:none;font-size:18px;cursor:pointer;width:30px;height:30px;border-radius:6px">' + e + '</button>'; }).join('') + '</div>';
     return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">' +
       b('<strong>B</strong>', 'Gras', 'window.cpMsgWrap(\'' + id + '\',\'**\',\'**\')') +
-      b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') + sep +
+      b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') +
+      b('<span style="font-size:12px">A</span><span style="font-size:15px">+</span>', 'Grossir le texte', 'window.cpMsgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
+      b('<span style="font-size:11px">A</span><span style="font-size:16px">+</span>', 'Titre (plus grand)', 'window.cpMsgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
       sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
       b('•', 'Liste à puces', 'window.cpMsgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'window.cpEmojiToggle(\'' + id + '\')') +

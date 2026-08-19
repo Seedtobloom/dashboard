@@ -50,6 +50,7 @@
     s = esc(String(s == null ? '' : s));
     s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\[(grand|titre)\]([\s\S]+?)\[\/\]/g, function (m, sz, t) { return '<span style="' + (sz === 'titre' ? 'font-size:1.4em;font-weight:600' : 'font-size:1.18em') + ';line-height:1.35">' + t + '</span>'; });
     s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function (m, c, t) { return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
     s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="opacity:0.6">•</span> ');
     s = linkifyMsg(s);
@@ -75,7 +76,9 @@
       ADM_EMOJIS.map(function (e) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgIns(\'' + id + '\',\'' + e + '\')" style="border:none;background:none;font-size:17px;cursor:pointer;width:28px;height:28px;border-radius:6px">' + e + '</button>'; }).join('') + '</div>';
     return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px">' +
       b('<strong>B</strong>', 'Gras', 'ADM.msgWrap(\'' + id + '\',\'**\',\'**\')') +
-      b('<em>I</em>', 'Italique', 'ADM.msgWrap(\'' + id + '\',\'_\',\'_\')') + sep +
+      b('<em>I</em>', 'Italique', 'ADM.msgWrap(\'' + id + '\',\'_\',\'_\')') +
+      b('<span style="font-size:11px">A</span><span style="font-size:14px">+</span>', 'Grossir le texte', 'ADM.msgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
+      b('<span style="font-size:10px">A</span><span style="font-size:15px">+</span>', 'Titre (plus grand)', 'ADM.msgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
       sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
       b('•', 'Liste à puces', 'ADM.msgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'ADM.emojiToggle(\'' + id + '\')') +

@@ -71,7 +71,7 @@ const CLIENT_CSS = String.raw`/* Client portal  Ecrin Design System  Seed to Blo
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-body); font-synthesis: none; background: var(--bone); color: var(--terre); min-height: 100vh; font-size: var(--fs-body); line-height: 1.6; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-font-smoothing: antialiased; }
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
-.cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
+.cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name, .mx-b, .mx-conv__snip { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
 input, textarea, select, [contenteditable="true"] { cursor: text; }
 a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
 .cp { display: grid; grid-template-columns: var(--sw) 1fr; min-height: 100vh; }
@@ -553,7 +553,9 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .mx-msg--in .mx-b { background:#F8F6F2; border:1px solid var(--bone-d); border-top-left-radius:5px; }
 .mx-msg--out .mx-b { background:var(--brume); border-top-right-radius:5px; }
 .mx-m { font-family:var(--font-micro); font-size:10px; color:var(--terre-400); margin-top:4px; padding:0 4px; }
-.mx-composer { display:flex; align-items:flex-end; gap:9px; padding:13px 16px; border-top:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-composer { display:flex; flex-direction:column; gap:8px; padding:11px 16px 13px; border-top:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-composer__row { display:flex; align-items:flex-end; gap:9px; }
+.mx-tools { display:flex; }
 .mx-input { flex:1; font-family:var(--font-micro); font-size:14px; color:var(--terre); background:#F8F6F2; border:1px solid var(--bone-d); border-radius:16px; padding:12px 16px; outline:none; resize:none; min-height:44px; max-height:160px; box-sizing:border-box; }
 .mx-input:focus { background:#fff; box-shadow:0 0 0 2px var(--glycine-700); }
 .mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#f6efe6; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
@@ -818,6 +820,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     s = esc(String(s == null ? '' : s));
     s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\[(grand|titre)\]([\s\S]+?)\[\/\]/g, function(m, sz, t){ return '<span style="' + (sz === 'titre' ? 'font-size:1.4em;font-weight:600' : 'font-size:1.18em') + ';line-height:1.35">' + t + '</span>'; });
     s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function(m, c, t){ return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
     s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#6f5c44)">•</span> ');
     s = s.replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
@@ -839,7 +842,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       CP_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.cpMsgIns(\'' + id + '\',\'' + e + '\')" style="border:none;background:none;font-size:18px;cursor:pointer;width:30px;height:30px;border-radius:6px">' + e + '</button>'; }).join('') + '</div>';
     return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">' +
       b('<strong>B</strong>', 'Gras', 'window.cpMsgWrap(\'' + id + '\',\'**\',\'**\')') +
-      b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') + sep +
+      b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') +
+      b('<span style="font-size:12px">A</span><span style="font-size:15px">+</span>', 'Grossir le texte', 'window.cpMsgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
+      b('<span style="font-size:11px">A</span><span style="font-size:16px">+</span>', 'Titre (plus grand)', 'window.cpMsgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
       sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
       b('•', 'Liste à puces', 'window.cpMsgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'window.cpEmojiToggle(\'' + id + '\')') +
@@ -10022,7 +10027,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var head = ql ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);text-align:center">'+shown.length+' message'+(shown.length>1?'s':'')+' trouvé'+(shown.length>1?'s':'')+'</div>' : '';
     return head + shown.map(function(m){
       var mine = m.author !== 'cindy';
-      var body = (m.content ? '<div class="mx-b">'+stbHi(m.content, q)+'</div>' : '') + stbInboxAtts(m.attachments);
+      var body = (m.content ? '<div class="mx-b">'+(q ? stbHi(m.content, q) : fmtMsg(m.content))+'</div>' : '') + stbInboxAtts(m.attachments);
       return '<div class="mx-msg mx-msg--'+(mine?'out':'in')+'">'+
         (body || '<div class="mx-b"></div>')+
         '<div class="mx-m">'+(mine?'Vous':'Cindy')+' · '+fmtDate(m.createdAt)+'</div>'+
@@ -10059,8 +10064,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       stbSubRow(pd)+
       '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
       '<div class="mx-composer">'+
-        '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
-        '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
+        '<div class="mx-tools">'+cpMsgToolbar('cp-inbox-input')+'</div>'+
+        '<div class="mx-composer__row">'+
+          '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
+          '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
+        '</div>'+
     '</div>';
   }
   window.stbInboxSelect = function(pid){

@@ -54,7 +54,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-body); background: var(--bone); color: var(--terre); min-height: 100vh; font-size: var(--fs-body); line-height: 1.6; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-font-smoothing: antialiased; }
 input, textarea, select, [contenteditable="true"], .selectable, p, pre,
-.cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
+.cp-msg__text, .cp-step__desc, .cp-prac__body, .cp-file__name, .mx-b, .mx-conv__snip { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
 input, textarea, select, [contenteditable="true"] { cursor: text; }
 a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer; }
 .cp { display: grid; grid-template-columns: var(--sw) 1fr; min-height: 100vh; }
@@ -532,7 +532,9 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .mx-msg--in .mx-b { background:#F8F6F2; border:1px solid var(--bone-d); border-top-left-radius:5px; }
 .mx-msg--out .mx-b { background:var(--brume); border-top-right-radius:5px; }
 .mx-m { font-family:var(--font-micro); font-size:10px; color:var(--terre-400); margin-top:4px; padding:0 4px; }
-.mx-composer { display:flex; align-items:flex-end; gap:9px; padding:13px 16px; border-top:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-composer { display:flex; flex-direction:column; gap:8px; padding:11px 16px 13px; border-top:1px solid var(--bone-d); background:#fff; flex-shrink:0; }
+.mx-composer__row { display:flex; align-items:flex-end; gap:9px; }
+.mx-tools { display:flex; }
 .mx-input { flex:1; font-family:var(--font-micro); font-size:14px; color:var(--terre); background:#F8F6F2; border:1px solid var(--bone-d); border-radius:16px; padding:12px 16px; outline:none; resize:none; min-height:44px; max-height:160px; box-sizing:border-box; }
 .mx-input:focus { background:#fff; box-shadow:0 0 0 2px var(--glycine-700); }
 .mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#f6efe6; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
