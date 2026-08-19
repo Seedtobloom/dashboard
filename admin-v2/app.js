@@ -5769,7 +5769,7 @@
     function bub(m) {
       var mine = m.from === 'cindy';
       var av = '<span class="aavatar aavatar--' + (mine ? 'cindy' : 'client') + '">' + (mine ? 'C' : admClientInitial()) + '</span>';
-      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
+      return '<div class="msg msg--' + (mine ? 'cindy' : 'client') + '">' + av + '<div><div class="bubble"' + (m.pinned ? ' style="box-shadow:inset 0 0 0 1px #e8c98a"' : '') + '>' + (m.pinned ? '<span style="display:inline-block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;background:#faf1da;color:#6a4a0b;padding:1px 7px;border-radius:999px;margin-bottom:5px">📌 Épinglé</span>' : '') + (q ? hi(m.message, q) : fmtMsg(m.message)) + admMsgAttChips(m.attachments) + '</div><div class="bmeta">' + (mine ? 'Vous' : 'Client') + ' · ' + fmtDT(m.date) + (m.editedAt ? ' · <span style="color:var(--muted)">modifié</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.pinMsg(\'' + d.id + '\',\'' + m.id + '\',' + (m.pinned ? 'false' : 'true') + ')">' + (m.pinned ? 'détacher' : 'épingler') + '</span>' + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgEdit(\'' + d.id + '\',\'' + m.id + '\')">modifier</span>' : '') + (m.id ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgMove(event,\'' + d.id + '\',\'' + m.id + '\')">déplacer</span>' : '') + ' · <span style="cursor:pointer;text-decoration:underline;color:var(--red)" onclick="ADM.delMsg(\'' + d.id + '\',\'' + (m.id || '') + '\',\'' + esc(m.date || '') + '\',\'' + esc(m.from || '') + '\')">supprimer</span>' + ((mine || !m.id) ? '' : ' · <span style="cursor:pointer;text-decoration:underline" onclick="ADM.msgUnread(\'' + d.id + '\',\'' + m.id + '\')">non lu</span>') + '</div></div></div>';
     }
     var pinned = msgs.filter(function (m) { return m.pinned; });
     var rest = msgs.filter(function (m) { return !m.pinned; });
@@ -5829,6 +5829,28 @@
       toast('Message déplacé ✓');
       if (VIEW === 'chat' && CHAT && CHAT.key) chatClient(CHAT.key); else loadClient();
     }).catch(function () { toast('Erreur'); });
+  }
+  // Corriger le texte d'un message (faute de frappe).
+  function msgEdit(pid, msgId) {
+    var d = findDomain(pid); var chat = (d && d.content && Array.isArray(d.content.chat)) ? d.content.chat : [];
+    var m = chat.filter(function (x) { return x.id === msgId; })[0]; if (!m) { toast('Message introuvable'); return; }
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px"><div class="admconfirm__title">Modifier le message</div>' +
+      '<textarea id="msg-edit-ta" class="inp" style="width:100%;box-sizing:border-box;min-height:110px;margin:6px 0">' + esc(m.message || '') + '</textarea>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--dark btn--sm" data-yes>Enregistrer</button></div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var v = (el('msg-edit-ta').value || '').trim(); close();
+      jpost('/api/clients/' + CURKEY + '/message/' + msgId + '/edit', { projectId: pid, content: v }, 'PATCH').then(function (r) {
+        if (!r.ok) { toast('Erreur'); return; }
+        toast('Message modifié ✓');
+        if (VIEW === 'chat' && CHAT && CHAT.key) chatClient(CHAT.key); else loadClient();
+      }).catch(function () { toast('Erreur'); });
+    };
+    document.body.appendChild(ov);
+    var ta = el('msg-edit-ta'); if (ta) ta.focus();
   }
   // Nombre de messages client non lus pour une sous-discussion (topic ''=général).
   function chatSubUnread(d, topicVal) {
@@ -6812,7 +6834,7 @@
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
-    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgMove: msgMove, msgMoveTo: msgMoveTo, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
+    chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgEdit: msgEdit, msgMove: msgMove, msgMoveTo: msgMoveTo, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
     msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
     msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
     qrAdd: qrAdd, qrSet: qrSet, qrDel: qrDel, qrPick: qrPick,

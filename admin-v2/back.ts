@@ -451,6 +451,20 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json({ ok: true });
   }
+  // Modifier le texte d'un message (corriger une faute).
+  const edm = sub.match(/^\/message\/([a-zA-Z0-9]+)\/edit$/);
+  if (edm && method === 'PATCH') {
+    const body = await readJson(request);
+    const { container } = resolveProject(esp, (body.projectId || '').toString());
+    if (!container || !Array.isArray(container.chat)) return json({ error: 'Message introuvable' }, 404);
+    const msg = container.chat.find((x: AnyObj) => x.id === edm![1]);
+    if (!msg) return json({ error: 'Message introuvable' }, 404);
+    const content = (body.content || '').toString().slice(0, 4000);
+    msg.message = content;
+    msg.editedAt = nowIso();
+    await saveClient(env, key, data);
+    return json({ ok: true });
+  }
   // Déplacer un message vers une autre (sous-)discussion (topic) ou conversation.
   const mvm = sub.match(/^\/message\/([a-zA-Z0-9]+)\/move$/);
   if (mvm && method === 'PATCH') {
