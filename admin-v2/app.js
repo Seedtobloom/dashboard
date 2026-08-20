@@ -1173,10 +1173,12 @@
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
         var sumBg = dark ? 'rgba(242,229,194,0.16)' : '#efe6fb';
         var sumCol = dark ? 'var(--paille)' : '#5a3fa0';
+        // Le contenu déplié est TOUJOURS sur une carte claire (les blocs du
+        // client ont un texte foncé, illisible sur le panneau « En retard »).
         var body = (hasBlocks || hasTable)
-          ? '<div style="background:' + (dark ? 'rgba(0,0,0,0.16)' : 'var(--card)') + ';border:1px solid ' + (dark ? 'rgba(242,229,194,0.2)' : 'var(--bone-d)') + ';border-radius:10px;padding:8px 13px;margin-top:8px">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
+          ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box;color:var(--terre)">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
           : (c
-            ? '<div style="white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:' + txtCol + ';margin-top:8px">' + mtLinkify(c) + '</div>'
+            ? '<div style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--terre);background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box">' + mtLinkify(c) + '</div>'
             : '');
         var att = atts.length
           ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
@@ -1186,11 +1188,11 @@
         var link = hasLink ? prioClientLink(x, dark) : '';
         // Aperçu toujours visible du texte, pour voir la demande sans cliquer.
         var preview = c
-          ? '<div style="font-size:13px;color:' + txtCol + ';margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:660px">' + esc(c.slice(0, 200)) + (c.length > 200 ? '…' : '') + '</div>'
+          ? '<div style="font-size:13px;color:' + txtCol + ';margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(c.slice(0, 240)) + (c.length > 240 ? '…' : '') + '</div>'
           : '';
         var label = (hasBlocks || hasTable) ? 'Voir le brief du client' : (c ? 'Voir toute la demande' : (hasAtt ? 'Voir les pièces jointes' : 'Voir le lien'));
-        // Bouton bien visible (pastille) + contenu déplié.
-        return preview + '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:' + sumCol + ';background:' + sumBg + ';border-radius:999px;padding:5px 12px">📋 ' + label + '</summary>' + body + att + link + '</details>';
+        // Bouton bien visible (pastille) + contenu déplié, pleine largeur.
+        return '<div style="width:100%">' + preview + '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:' + sumCol + ';background:' + sumBg + ';border-radius:999px;padding:5px 12px">📋 ' + label + '</summary>' + body + att + link + '</details></div>';
       }
       // Chrono par tâche partenaire, utilisable directement depuis Priorités
       // (Démarrer/Pause), avec le temps déjà passé. Le temps est aussi visible
@@ -1513,10 +1515,12 @@
             : '<button class="pbtn" title="Reporter" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>');
       }
       function p2Trow(x, n) {
+        var brief = prioBrief(x, false);
         return '<div class="trow"><div class="trow__n tnum">' + n + '</div>' +
-          '<div><div class="trow__t">' + esc(x.title) + '</div><div class="trow__m">' + p2Meta(x) + '</div>' + prioBrief(x, false) + '</div>' +
+          '<div><div class="trow__t">' + esc(x.title) + '</div><div class="trow__m">' + p2Meta(x) + '</div></div>' +
           '<span class="trow__e">' + (x.estMinutes > 0 ? hLabel(x.estMinutes) : '') + '</span>' +
-          '<div class="trow__a rowacts">' + p2Acts(x, false) + '</div></div>';
+          '<div class="trow__a rowacts">' + p2Acts(x, false) + '</div>' +
+          (brief ? '<div class="rowbrief">' + brief + '</div>' : '') + '</div>';
       }
       function p2Drow(x, dark, whenCol, drag) {
         var col = whenCol || (x._d < 0 ? '#a23c28' : (x._d === 0 ? 'var(--orange)' : 'inherit'));
@@ -1529,9 +1533,11 @@
           ? '<span class="drow__do">jour choisi · <a href="javascript:ADM.prioClearDoDate(\'' + x.key + '\',\'' + x.id + '\')">retirer</a></span>' : '';
         var undated = !x.dueDate;
         var dateCol = undated ? '<b style="font-size:15px">Sans date</b><span style="color:var(--muted);opacity:1;font-weight:700">à planifier</span>' : '<b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span>';
+        var brief = prioBrief(x, dark);
         return '<div class="drow' + (isTask ? ' drow--drag' : '') + '"' + dragAttr + '>' + grip + '<div class="drow__d">' + dateCol + doNote + '</div>' +
-          '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div>' + prioBrief(x, dark) + '</div>' +
-          '<div class="rowacts">' + catSel + p2Acts(x, dark) + '</div></div>';
+          '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div></div>' +
+          '<div class="rowacts">' + catSel + p2Acts(x, dark) + '</div>' +
+          (brief ? '<div class="rowbrief">' + brief + '</div>' : '') + '</div>';
       }
       var P2_todayBody = P2_today.length ? P2_today.map(function (x, i) { return p2Trow(x, ('0' + (i + 1)).slice(-2)); }).join('') : '<div class="prioempty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>';
       var blockToday = '<section class="panel panel--lav"><span class="heromk">' + (new Date().getDate()) + '</span>' +

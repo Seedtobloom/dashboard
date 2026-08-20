@@ -612,6 +612,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 
 /* lignes datées (En retard / Cette semaine) */
 .prio2 .drow{display:grid;grid-template-columns:120px 1fr auto;gap:clamp(12px,1.8vw,22px);align-items:center;padding:15px 0}
+/* Détail (brief client) : pleine largeur sous la ligne */
+.prio2 .rowbrief{grid-column:1 / -1;width:100%;margin-top:2px}
 .prio2 .drow+.drow{border-top:1px solid var(--line)}
 .prio2 .panel--nuit .drow+.drow{border-color:rgba(251,250,255,.16)}
 .prio2 .drow__d b{font-family:var(--font-display);font-style:italic;font-size:20px;font-weight:600}
