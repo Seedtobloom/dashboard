@@ -1164,22 +1164,33 @@
         var c = (x.content || '').trim();
         var hasBlocks = Array.isArray(x.blocks) && x.blocks.length;
         var hasTable = x.table && Array.isArray(x.table.cols) && x.table.cols.length;
-        if (!c && !hasBlocks && !hasTable && !x.attCount) return '';
+        var atts = Array.isArray(x.attachments) ? x.attachments : [];
+        var hasLink = !!(x.clientLink && String(x.clientLink).trim());
+        var hasAtt = atts.length || x.attCount;
+        // Rien à montrer : ni texte, ni blocs, ni tableau, ni fichier, ni lien.
+        if (!c && !hasBlocks && !hasTable && !hasAtt && !hasLink) return '';
         var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
-        var sumCol = dark ? 'rgba(242,229,194,0.7)' : 'var(--glycine-900)';
+        var sumBg = dark ? 'rgba(242,229,194,0.16)' : '#efe6fb';
+        var sumCol = dark ? 'var(--paille)' : '#5a3fa0';
         var body = (hasBlocks || hasTable)
-          ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:10px;padding:8px 13px;margin-top:8px">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
+          ? '<div style="background:' + (dark ? 'rgba(0,0,0,0.16)' : 'var(--card)') + ';border:1px solid ' + (dark ? 'rgba(242,229,194,0.2)' : 'var(--bone-d)') + ';border-radius:10px;padding:8px 13px;margin-top:8px">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
           : (c
-            ? '<div style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:' + txtCol + ';margin-top:7px">' + mtLinkify(c) + '</div>'
-            : '<div style="margin-top:7px;font-size:12.5px;font-style:italic;color:' + mutCol + '">Aucune description ajoutée par le client.</div>');
-        var atts = Array.isArray(x.attachments) ? x.attachments : [];
+            ? '<div style="white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:' + txtCol + ';margin-top:8px">' + mtLinkify(c) + '</div>'
+            : '');
         var att = atts.length
           ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
               return '<a href="/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid ' + (dark ? 'rgba(242,229,194,0.25)' : 'var(--bone-d)') + ';color:' + (dark ? 'rgba(242,229,194,0.9)' : 'var(--glycine-900)') + ';text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
             }).join('') + '</div>'
           : (x.attCount ? '<div style="margin-top:7px;font-size:12px;color:' + mutCol + '">📎 ' + x.attCount + ' fichier' + (x.attCount > 1 ? 's' : '') + ' joint' + (x.attCount > 1 ? 's' : '') + '</div>' : '');
-        return '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:' + sumCol + '">Voir la demande</summary>' + body + att + '</details>';
+        var link = hasLink ? prioClientLink(x, dark) : '';
+        // Aperçu toujours visible du texte, pour voir la demande sans cliquer.
+        var preview = c
+          ? '<div style="font-size:13px;color:' + txtCol + ';margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:660px">' + esc(c.slice(0, 200)) + (c.length > 200 ? '…' : '') + '</div>'
+          : '';
+        var label = (hasBlocks || hasTable) ? 'Voir le brief du client' : (c ? 'Voir toute la demande' : (hasAtt ? 'Voir les pièces jointes' : 'Voir le lien'));
+        // Bouton bien visible (pastille) + contenu déplié.
+        return preview + '<details style="margin-top:7px"><summary style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:' + sumCol + ';background:' + sumBg + ';border-radius:999px;padding:5px 12px">📋 ' + label + '</summary>' + body + att + link + '</details>';
       }
       // Chrono par tâche partenaire, utilisable directement depuis Priorités
       // (Démarrer/Pause), avec le temps déjà passé. Le temps est aussi visible
