@@ -614,6 +614,22 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .drow{display:grid;grid-template-columns:120px 1fr auto;gap:clamp(12px,1.8vw,22px);align-items:center;padding:15px 0}
 /* Détail (brief client) : pleine largeur sous la ligne */
 .prio2 .rowbrief{grid-column:1 / -1;width:100%;margin-top:2px}
+/* Bandeau « Projets à venir » (Priorités + Ma semaine) */
+.upnext{background:var(--brume,#F0E8FF);border:1px solid #e2d5f6;border-radius:16px;padding:12px 8px 8px;margin-bottom:20px}
+.upnext__h{display:flex;align-items:center;gap:9px;font-family:var(--font-micro);font-weight:700;font-size:13px;letter-spacing:0.02em;color:var(--brun);padding:3px 9px 9px}
+.upnext__ic{font-size:15px}
+.upnext__n{background:var(--brun);color:var(--paille,#F2E5C2);border-radius:999px;font-size:11px;font-weight:700;padding:1px 9px}
+.upnext__sub{margin-left:auto;font-weight:500;font-size:11px;color:#7a5fb0}
+.upnext__row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:transparent;border:none;border-radius:10px;padding:9px 10px;cursor:pointer;transition:background .12s}
+.upnext__row:hover{background:rgba(255,255,255,.55)}
+.upnext__row+.upnext__row{border-top:1px solid rgba(65,47,33,.08)}
+.upnext__date{font-family:var(--font-micro);font-weight:700;font-size:12px;color:var(--brun);min-width:104px;flex-shrink:0}
+.upnext__date.is-soon{color:#a23c28}
+.upnext__t{flex:1;min-width:0;font-family:var(--font-micro);font-size:13.5px;color:var(--nuit);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upnext__c{color:var(--brun);opacity:.7}
+.upnext__w{font-family:var(--font-micro);font-size:11px;font-weight:600;color:#7a5fb0;flex-shrink:0;white-space:nowrap}
+.upnext__w.is-soon{color:#a23c28}
+@media(max-width:680px){.upnext__row{flex-wrap:wrap;gap:5px 10px}.upnext__t{flex-basis:100%;white-space:normal}}
 .prio2 .drow+.drow{border-top:1px solid var(--line)}
 .prio2 .panel--nuit .drow+.drow{border-color:rgba(251,250,255,.16)}
 .prio2 .drow__d b{font-family:var(--font-display);font-style:italic;font-size:20px;font-weight:600}

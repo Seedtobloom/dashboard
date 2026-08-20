@@ -1558,6 +1558,7 @@ function forfaitState(pc: AnyObj): AnyObj {
 async function handleDashboard(env: Env): Promise<Response> {
   const idx = await getIndex(env);
   const deadlines: AnyObj[] = [];
+  const upcoming: AnyObj[] = [];
   const forfaits: AnyObj[] = [];
   const pendingValidation: AnyObj[] = [];
   const revisions: AnyObj[] = [];
@@ -1668,6 +1669,12 @@ async function handleDashboard(env: Env): Promise<Response> {
         if (!t.archived && t.status !== 'done') {
           weekTasks.push({ key: ci.key, client: who, id: t.id, title: t.title || '', dueDate: t.dueDate || '', doDate: t.doDate || null, estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, status: t.status || 'todo' });
         }
+        // Projet à venir : une date de démarrage est posée et le travail n'a
+        // pas encore réellement commencé (pas démarré / pas terminé).
+        if (t.startDate && !t.archived && t.status !== 'done') {
+          const started = (t.status && t.status !== 'todo') || (t.timeSpentSeconds || t.timeSpentMinutes);
+          if (!started) upcoming.push({ key: ci.key, client: who, id: t.id, title: t.title || '', projectLabel: 'Partenaire créative', project: 'partner', startDate: t.startDate, dueDate: t.dueDate || '', status: t.status || 'todo' });
+        }
         // Une tâche « à valider » (review) est en attente du client : on la
         // remonte même sans échéance, avec le lien et la date d'envoi.
         if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
@@ -1735,7 +1742,8 @@ async function handleDashboard(env: Env): Promise<Response> {
   validated.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   const errList = (await env.KV_CLIENT.get('global:clientErrors', { type: 'json' })) as AnyObj[] | null;
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
-  return json({ deadlines, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  upcoming.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
+  return json({ deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

@@ -1115,6 +1115,28 @@
     if (MISSION_LIST.length) { cb(); return; }
     api('/api/mission-types').then(function (r) { return r.json(); }).then(function (d) { MISSION_LIST = Array.isArray(d.types) ? d.types.slice() : []; cb(); }).catch(function () { cb(); });
   }
+  // Bandeau « Projets à venir » : projets avec une date de démarrage posée,
+  // qui approche (ou déjà à démarrer). Affiché en tête des Priorités et de
+  // Ma semaine pour anticiper les nouveaux projets.
+  function upcomingBanner(list) {
+    var items = (Array.isArray(list) ? list : []).map(function (u) { u._d = u.startDate ? ddiff(u.startDate) : 99; return u; })
+      .filter(function (u) { return u._d <= 21; })
+      .sort(function (a, b) { return a._d - b._d; });
+    if (!items.length) return '';
+    var rows = items.slice(0, 10).map(function (u) {
+      var soon = u._d <= 3;
+      var when = u._d < -0.5 ? ('à démarrer · prévu il y a ' + Math.round(-u._d) + ' j')
+        : (u._d < 0.5 ? 'à démarrer aujourd\'hui'
+          : (u._d < 1.5 ? 'démarre demain' : 'démarre dans ' + Math.round(u._d) + ' j'));
+      return '<button class="upnext__row" onclick="ADM.openClient(\'' + u.key + '\')" title="Ouvrir la fiche cliente">' +
+        '<span class="upnext__date' + (soon ? ' is-soon' : '') + '">' + esc(fmtDate(u.startDate)) + '</span>' +
+        '<span class="upnext__t">' + esc(u.title) + '<span class="upnext__c"> · ' + esc(u.client) + '</span></span>' +
+        '<span class="upnext__w' + (soon ? ' is-soon' : '') + '">' + when + '</span></button>';
+    }).join('');
+    var soonCount = items.filter(function (u) { return u._d <= 3; }).length;
+    var sub = soonCount ? soonCount + ' très proche' + (soonCount > 1 ? 's' : '') : 'à anticiper';
+    return '<div class="upnext"><div class="upnext__h"><span class="upnext__ic">🚀</span><span>Projets à venir</span><span class="upnext__n">' + items.length + '</span><span class="upnext__sub">' + sub + '</span></div>' + rows + '</div>';
+  }
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     ensureMissionTypes(function () {
@@ -1669,7 +1691,7 @@
             '<button class="btn btn--dark btn--sm" onclick="ADM.prioConsultQnr(\'' + q.key + '\',\'' + q.id + '\')">Consulter</button></div>';
         }).join('') + '</div>' : '';
       setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap prio2">' +
-        P2_hello + P2_summary + P2_board +
+        P2_hello + upcomingBanner(d.upcoming) + P2_summary + P2_board +
         blockProjects +
         '<div style="margin-top:clamp(24px,3vw,38px)">' + meteo + '</div>' +
         qnrDoneCard +
@@ -2707,7 +2729,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all';
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [];
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -2725,6 +2747,7 @@
       MS_TASKS = res[0].tasks || [];
       MS_DAYS = (res[1] && res[1].days) || {};
       MS_PARTNER = (res[2] && res[2].weekTasks) || [];
+      MS_UPCOMING = (res[2] && res[2].upcoming) || [];
       renderMaSemaineBody();
     }).catch(showError);
   }
@@ -2827,6 +2850,7 @@
     '</div>';
     var html = '<div class="wrap sem2">' +
       '<div class="intro"><strong style="color:var(--brun)">Ma semaine</strong> = quand et comment tu bosses. <strong style="color:var(--brun)">Mes tâches</strong> = tout ce que tu as à faire. Mêmes données, deux vues.</div>' +
+      upcomingBanner(MS_UPCOMING) +
       whead + charge + filters + grid + legend + placeHtml +
     '</div>';
     setMain(topbar('Ma semaine') + html);
@@ -5278,6 +5302,13 @@
             ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente de la cliente</span>' +
               '<button class="btn btn--outline btn--sm" onclick="ADM.taskProposeDate(\'' + t.id + '\',\'\')">Annuler la proposition</button>'
             : '<span class="micro" style="text-transform:none;letter-spacing:0">Proposer un report d\'échéance</span><input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.dueDate ? ' value="' + esc(t.dueDate) + '"' : '') + ' onchange="ADM.taskProposeDate(\'' + t.id + '\',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">la cliente devra l\'accepter</span>') +
+        '</div>' +
+        // Date de démarrage prévue : sert à être prévenue quand le projet approche.
+        '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<span class="micro" style="text-transform:none;letter-spacing:0">📅 Démarrage prévu</span>' +
+          '<input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.startDate ? ' value="' + esc(t.startDate) + '"' : '') + ' onchange="ADM.taskMilestone(\'' + t.id + '\',\'startDate\',this.value)">' +
+          (t.startDate ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskMilestone(\'' + t.id + '\',\'startDate\',\'\')">Retirer</button>' : '') +
+          '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">tu seras prévenue quand ça approche</span>' +
         '</div></div>';
       // Lien de révision : l'endroit pour déposer un lien (Figma, proofing, Drive…)
       // que le client doit vérifier. « Envoyer au client » passe la tâche en
