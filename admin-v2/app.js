@@ -1503,7 +1503,7 @@
       }
       function p2Trow(x, n) {
         return '<div class="trow"><div class="trow__n tnum">' + n + '</div>' +
-          '<div><div class="trow__t">' + esc(x.title) + '</div><div class="trow__m">' + p2Meta(x) + '</div></div>' +
+          '<div><div class="trow__t">' + esc(x.title) + '</div><div class="trow__m">' + p2Meta(x) + '</div>' + prioBrief(x, false) + '</div>' +
           '<span class="trow__e">' + (x.estMinutes > 0 ? hLabel(x.estMinutes) : '') + '</span>' +
           '<div class="trow__a rowacts">' + p2Acts(x, false) + '</div></div>';
       }
@@ -1519,7 +1519,7 @@
         var undated = !x.dueDate;
         var dateCol = undated ? '<b style="font-size:15px">Sans date</b><span style="color:var(--muted);opacity:1;font-weight:700">à planifier</span>' : '<b>' + fmtDate(x.dueDate) + '</b><span style="color:' + col + ';opacity:1;font-weight:700">' + whenLabel(x._d) + '</span>';
         return '<div class="drow' + (isTask ? ' drow--drag' : '') + '"' + dragAttr + '>' + grip + '<div class="drow__d">' + dateCol + doNote + '</div>' +
-          '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div></div>' +
+          '<div><div class="drow__t">' + esc(x.title) + '</div><div class="drow__m">' + p2Meta(x) + '</div>' + prioBrief(x, dark) + '</div>' +
           '<div class="rowacts">' + catSel + p2Acts(x, dark) + '</div></div>';
       }
       var P2_todayBody = P2_today.length ? P2_today.map(function (x, i) { return p2Trow(x, ('0' + (i + 1)).slice(-2)); }).join('') : '<div class="prioempty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>';
