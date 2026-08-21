@@ -1365,6 +1365,44 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
+  // Bloc « Votre forfait » sur l'accueil : conso du mois avec distinction
+  // temps terminé / en cours / restant (même règle « mois travaillé »).
+  function cpForfaitHome() {
+    var projects = (appData && appData.projects) || [];
+    var project = null;
+    for (var i = 0; i < projects.length; i++) { var p = projects[i].project; if (p && p.type === 'partenaire' && (parseFloat(p.monthlyHours) || 0) > 0) { project = p; break; } }
+    if (!project) return '';
+    var f = cpForfaitState(project);
+    if (!f.configured) return '';
+    var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    var mk = _todayStr().slice(0, 7);
+    var doneMin = 0, wipMin = 0;
+    tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done') doneMin += m; else wipMin += m; });
+    var availMin = Math.round(f.available * 60), usedMin = doneMin + wipMin, restMin = availMin - usedMin;
+    function hm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
+    var donePct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
+    var wipPct = availMin > 0 ? Math.max(0, Math.min(100 - donePct, wipMin / availMin * 100)) : 0;
+    var moisLbl = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    function lg(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    return '<div style="background:#2A1D10;border-radius:20px;padding:24px 28px;color:#F2E5C2;margin-bottom:22px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
+        '<div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(moisLbl) + '</div>' +
+          '<div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:0.9;color:' + (restMin < 0 ? '#e79a8a' : '#FBFAF6') + '">' + hm(Math.abs(restMin)) + '</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">' + (restMin < 0 ? 'de dépassement' : 'restantes sur ' + hm(availMin)) + '</span></div>' +
+        '</div>' +
+        '<button onclick="cpOpenStats()" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir le détail →</button>' +
+      '</div>' +
+      '<div style="height:13px;background:rgba(251,250,246,0.14);border-radius:999px;overflow:hidden;margin:16px 0 12px;display:flex">' +
+        '<span style="height:100%;width:' + donePct + '%;background:#F4E7C0"></span>' +
+        '<span style="height:100%;width:' + wipPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:9px 22px">' +
+        lg('#F4E7C0', hm(doneMin) + ' terminé') +
+        (wipMin > 0 ? lg('#9a72d6', hm(wipMin) + ' en cours') : '') +
+        lg('rgba(251,250,246,0.22)', hm(Math.max(0, restMin)) + ' restantes') +
+      '</div>' +
+    '</div>';
+  }
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
     var archived = appData.projects.filter(function(pd) { return pd.project.status === 'archived'; });
@@ -1856,6 +1894,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<p class="cp-home__lead">Voici où on en est, et ce qui attend ton avis. Prends le temps qu’il te faut.</p>'
       ) +
       cpTodayCard() +
+      cpForfaitHome() +
       cpValueStats() +
       multiBlocks +
       espHeader +
