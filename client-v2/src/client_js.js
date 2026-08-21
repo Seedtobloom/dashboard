@@ -502,12 +502,22 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // Le report ne s'applique QUE si la prestation tournait le mois précédent
   // (au moins une activité enregistrée). Au tout début de la prestation — ou un
   // mois sans aucune consommation — il n'y a pas de report.
+  // Durée d'une session de chrono en minutes (plafond 24 h).
+  function cpSessionMin(s){ var st=s&&s.start?Date.parse(s.start):NaN, en=s&&s.end?Date.parse(s.end):NaN; if(isNaN(st)||isNaN(en)||en<=st) return 0; return Math.min((en-st)/60000, 24*60); }
+  // Répartition du temps d'une tâche par mois RÉELLEMENT travaillé (voir back.ts).
+  function cpTaskMinByMonth(t){
+    var map={}, sessions=Array.isArray(t.sessions)?t.sessions:[], sessTotal=0, lastStart='';
+    sessions.forEach(function(s){ var m=cpSessionMin(s), ym=String((s&&s.start)||'').slice(0,7); if(m<=0||!ym) return; map[ym]=(map[ym]||0)+m; sessTotal+=m; if(String(s.start)>lastStart) lastStart=String(s.start); });
+    var total=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0), residual=Math.max(0,total-sessTotal);
+    if(residual>0){ var rm=lastStart?lastStart.slice(0,7):''; if(!rm) rm=String(t.dueDate||t.createdAt||'').slice(0,7); if(!rm){ var n=new Date(); rm=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); } map[rm]=(map[rm]||0)+residual; }
+    return map;
+  }
   function cpForfaitState(p) {
     var base = parseFloat(p.monthlyHours) || 0;
     var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
     var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
-    function usedIn(ym){ return (p.tasks||[]).reduce(function(s,t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===ym ? s+(t.timeSpentMinutes||0)/60 : s; }, 0); }
-    function activeIn(ym){ return (p.tasks||[]).some(function(t){ var ref=(t.completedAt||t.dueDate||''); return ref.slice(0,7)===ym; }); }
+    function usedIn(ym){ return (p.tasks||[]).reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
+    function activeIn(ym){ return (p.tasks||[]).some(function(t){ return (cpTaskMinByMonth(t)[ym]||0)>0; }); }
     var now = new Date();
     var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
     var pdt = new Date(now.getFullYear(), now.getMonth()-1, 1);
@@ -531,16 +541,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }
     var available = base + carryIn;
     var remaining = available - used;
-    // « Reste réel » : on retire aussi le temps DÉJÀ passé sur des tâches pas
-    // encore validées (donc pas encore décomptées). Évite la mauvaise surprise
-    // « il me restait 9 h mais la validation en a mangé 3h38 ».
-    var engaged = (p.tasks||[]).reduce(function(s,t){
-      if (t.archived || t.completedAt) return s;                 // validée → déjà comptée
-      if (String(t.dueDate||'').slice(0,7) === cur) return s;    // échéance ce mois → déjà dans « utilisé »
-      return s + (t.timeSpentMinutes||0)/60;
-    }, 0);
-    var realRemaining = remaining - engaged;
-    return { base:base, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, engaged:engaged, realRemaining:realRemaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
+    return { base:base, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
   }
   function cpFmtH(h){ var v = Math.round(h*10)/10; return (v % 1 === 0 ? String(v) : v.toFixed(1)) + ' h'; }
 
@@ -1052,10 +1053,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span>'+cpFmtH(f.used)+' utilisées</span>' +
               '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':(f.carryIn<0?' (−'+cpFmtH(-f.carryIn)+' reportées du dépassement)':''))+'</span>' +
             '</div>' +
-            (f.engaged>0.05 ? '<div style="margin-top:11px;background:#f7f2ff;border:1px solid var(--glycine-200,#e2d5f6);border-radius:10px;padding:11px 13px;font-family:var(--font-body);font-size:12.5px;color:var(--terre);line-height:1.5">' +
-              '⏳ <strong>'+cpFmtH(f.engaged)+'</strong> déjà passées sur un projet en cours, <strong>pas encore validé</strong> — ce temps ne sera décompté qu\'à la validation.<br>' +
-              'Il vous restera donc réellement <strong style="color:'+(f.realRemaining<0?'#9b3a2e':'var(--glycine-900)')+'">'+(f.realRemaining<0?'−'+cpFmtH(-f.realRemaining)+' (dépassement)':cpFmtH(f.realRemaining))+'</strong> une fois ce projet validé.' +
-            '</div>' : '') +
             (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
             (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8d2b21;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
           '</div>';

@@ -1516,6 +1516,41 @@ async function handleDeliverableDelete(request: Request, env: Env, key: string, 
 
 /* ─────────────────────────── tableau de bord (priorités + forfaits) ─────────────────────────── */
 
+// Durée d'une session de chrono (en minutes), plafonnée à 24 h.
+function sessionMinutes(s: AnyObj): number {
+  const st = s && s.start ? Date.parse(s.start) : NaN;
+  const en = s && s.end ? Date.parse(s.end) : NaN;
+  if (isNaN(st) || isNaN(en) || en <= st) return 0;
+  return Math.min((en - st) / 60000, 24 * 60);
+}
+// Répartition du temps d'une tâche PAR MOIS où il a réellement été travaillé
+// (mois de chaque session de chrono). Le temps saisi à la main sans session
+// (résidu) est rattaché à un mois stable : dernière session, sinon échéance,
+// sinon création. On n'utilise JAMAIS la date de validation → une validation
+// tardive ne déplace pas rétroactivement la consommation d'un autre mois.
+function taskMinutesByMonth(t: AnyObj): Record<string, number> {
+  const map: Record<string, number> = {};
+  const sessions: AnyObj[] = Array.isArray(t.sessions) ? t.sessions : [];
+  let sessTotal = 0;
+  let lastStart = '';
+  for (const s of sessions) {
+    const mins = sessionMinutes(s);
+    const ym = String((s && s.start) || '').slice(0, 7);
+    if (mins <= 0 || !ym) continue;
+    map[ym] = (map[ym] || 0) + mins;
+    sessTotal += mins;
+    if (String(s.start) > lastStart) lastStart = String(s.start);
+  }
+  const total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
+  const residual = Math.max(0, total - sessTotal);
+  if (residual > 0) {
+    let rm = lastStart ? lastStart.slice(0, 7) : '';
+    if (!rm) rm = String(t.dueDate || t.createdAt || '').slice(0, 7);
+    if (!rm) { const n = new Date(); rm = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); }
+    map[rm] = (map[rm] || 0) + residual;
+  }
+  return map;
+}
 function forfaitState(pc: AnyObj): AnyObj {
   const base = parseFloat(pc.monthlyHours) || 0;
   const cap = (pc.rolloverCapHours != null && pc.rolloverCapHours !== '') ? parseFloat(pc.rolloverCapHours) : 2;
@@ -1525,8 +1560,9 @@ function forfaitState(pc: AnyObj): AnyObj {
   const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const pdt = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prev = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
-  const usedIn = (ym: string) => tasks.reduce((s, t) => ((t.completedAt || t.dueDate || '').slice(0, 7) === ym ? s + (t.timeSpentMinutes || 0) / 60 : s), 0);
-  const activeIn = (ym: string) => tasks.some((t) => (t.completedAt || t.dueDate || '').slice(0, 7) === ym);
+  // Temps rattaché au mois où il a été RÉELLEMENT travaillé (pas la validation).
+  const usedIn = (ym: string) => tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0);
+  const activeIn = (ym: string) => tasks.some((t) => (taskMinutesByMonth(t)[ym] || 0) > 0);
   const used = usedIn(cur);
   const usedPrev = usedIn(prev);
   // Report du mois précédent : heures non utilisées reportées (plafond `cap`),
