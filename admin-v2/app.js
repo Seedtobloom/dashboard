@@ -5077,19 +5077,38 @@
     }).join('');
     var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#5a3fa0;background:#efe6fb;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail des ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' comptée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
       (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucune tâche rattachée à ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
+    // « Reste réel » : on retire aussi le temps déjà passé sur des tâches PAS
+    // ENCORE validées (donc pas encore décomptées), pour que le reste affiché
+    // reflète ce qui partira vraiment quand ces tâches seront validées.
+    var tasksAll = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
+    var engagedMin = tasksAll.reduce(function (s, t) {
+      if (t.archived || t.completedAt) return s;             // validée → déjà comptée
+      if (String(t.dueDate || '').slice(0, 7) === mk) return s; // échéance ce mois → déjà dans « consommé »
+      return s + (t.timeSpentMinutes || 0);
+    }, 0);
+    var engagedH = Math.round(engagedMin / 60 * 10) / 10;
+    var realRemaining = Math.round((f.remaining - engagedH) * 10) / 10;
+    var realOver = realRemaining < 0;
+    var realCol = realOver ? 'var(--red)' : (realRemaining <= f.base * 0.2 ? 'var(--orange)' : 'var(--green)');
+    var engagedBlock = engagedH > 0
+      ? line('Déjà passé sur des projets en cours <span style="color:var(--muted)">(pas encore validés)</span>', '− ' + fmtHrs(engagedH), 'var(--orange)') +
+        '<div style="border-top:1px solid var(--bone-d);margin:4px 0"></div>' +
+        line(realOver ? 'Reste réel (dépassé)' : 'Reste réel une fois validés', realOver ? fmtHrs(-realRemaining) : fmtHrs(realRemaining), realCol, true)
+      : '';
     var breakdown = '<div class="card" style="margin-top:0">' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
       line('Forfait de base', fmtHrs(f.base) + ' <span class="micro" style="color:var(--muted)">/ mois</span>') +
       carryLine +
       '<div style="border-top:1px solid var(--bone-d);margin:4px 0"></div>' +
       line('= Disponible ce mois', fmtHrs(f.available), 'var(--terre)', true) +
-      line('Consommé ce mois', fmtHrs(f.used), 'var(--terre)') +
+      line('Consommé ce mois (validé)', fmtHrs(f.used), 'var(--terre)') +
       '<div class="bar' + (over ? ' over' : '') + '" style="margin:6px 0 8px"><span style="width:' + pct + '%"></span></div>' +
-      line(over ? 'Dépassement' : 'Reste', over ? fmtHrs(-f.remaining) : fmtHrs(f.remaining), restCol, true) +
+      line(over ? 'Dépassement' : 'Reste (validé)', over ? fmtHrs(-f.remaining) : fmtHrs(f.remaining), restCol, true) +
+      engagedBlock +
       billed +
       mtBlock +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:12px;background:var(--surface-2,#f4efe6);border-radius:10px;padding:10px 13px">' +
-        '📌 <strong>Comment c\'est compté :</strong> une tâche est rattachée au mois où elle est <strong>validée</strong> (marquée « Terminée »). Tant qu\'elle n\'est pas validée, elle est comptée provisoirement sur le mois de son <strong>échéance</strong>. Une tâche démarrée le 15 juillet mais validée en août bascule donc sur <strong>août</strong> (elle n\'est jamais comptée deux fois). Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
+        '📌 <strong>Comment c\'est compté :</strong> une tâche est rattachée au mois où elle est <strong>validée</strong> (marquée « Terminée »). Tant qu\'elle n\'est pas validée, elle est comptée provisoirement sur le mois de son <strong>échéance</strong>. Une tâche démarrée le 15 juillet mais validée en août bascule donc sur <strong>août</strong> (elle n\'est jamais comptée deux fois). Le « <strong>Reste réel</strong> » retire en plus le temps déjà passé sur les projets en cours pas encore validés : c\'est ce qu\'il restera vraiment une fois tout validé — plus de mauvaise surprise. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
       '</div>' +
     '</div>';
     return setup + '</div>' + breakdown + workSlotsSection();
