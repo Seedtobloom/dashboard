@@ -5047,13 +5047,22 @@
     if (residual > 0) { var rm = lastStart ? lastStart.slice(0, 7) : ''; if (!rm) rm = String(t.dueDate || t.createdAt || '').slice(0, 7); if (!rm) { var n = new Date(); rm = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); } map[rm] = (map[rm] || 0) + residual; }
     return map;
   }
-  // Tâches ayant du temps RÉELLEMENT TRAVAILLÉ sur le mois ym (avec la part du
-  // mois), triées par plus gros contributeur. La validation ne change rien.
+  // Bascule (voir back.ts) : règle « mois réellement travaillé » à partir de
+  // ce mois ; avant, ancien calcul (mois de validation/échéance).
+  var ADM_FORFAIT_NEW_FROM = '2026-09';
+  // Tâches ayant du temps sur le mois ym (avec la part du mois), triées par
+  // plus gros contributeur. Nouvelle règle = mois travaillé ; ancienne = mois
+  // de validation/échéance (temps total).
   function partnerMonthTasks(d, ym) {
     var tasks = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
-    return tasks.filter(function (t) { return !t.archived; })
-      .map(function (t) { return { t: t, mins: admTaskMinByMonth(t)[ym] || 0 }; })
-      .filter(function (o) { return o.mins > 0; })
+    if (ym >= ADM_FORFAIT_NEW_FROM) {
+      return tasks.filter(function (t) { return !t.archived; })
+        .map(function (t) { return { t: t, mins: admTaskMinByMonth(t)[ym] || 0 }; })
+        .filter(function (o) { return o.mins > 0; })
+        .sort(function (a, b) { return b.mins - a.mins; });
+    }
+    return tasks.filter(function (t) { return !t.archived && String(t.completedAt || t.dueDate || '').slice(0, 7) === ym; })
+      .map(function (t) { return { t: t, mins: t.timeSpentMinutes || 0 }; })
       .sort(function (a, b) { return b.mins - a.mins; });
   }
   function partnerForfait(d) {
@@ -5077,7 +5086,8 @@
     else if (f.carryIn < 0) carryLine = line('− Dépassement du mois dernier <span style="color:var(--muted)">(déduit)</span>', '− ' + fmtHrs(-f.carryIn), 'var(--red)');
     else carryLine = line('Report du mois dernier', '0 h', 'var(--muted)');
     var billed = f.billedCarry > 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;border-radius:8px;padding:7px 11px;margin-top:8px">⚠️ ' + fmtHrs(f.billedCarry) + ' de dépassement au-delà d\'un mois de forfait le mois dernier → à facturer (non reporté).</div>' : '';
-    // Liste des tâches ayant du temps travaillé ce mois-ci (part du mois).
+    var newRule = mk >= ADM_FORFAIT_NEW_FROM;
+    // Liste des tâches comptées ce mois-ci (part du mois si nouvelle règle).
     var mt = partnerMonthTasks(d, mk);
     var mtRows = mt.map(function (o) {
       var t = o.t;
@@ -5087,22 +5097,23 @@
         '<span style="font-size:13px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
         '<span style="font-weight:600;font-size:13px;white-space:nowrap">' + fmtHrs(o.mins / 60) + '</span></div>';
     }).join('');
-    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#5a3fa0;background:#efe6fb;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
-      (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucun temps passé sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
+    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#5a3fa0;background:#efe6fb;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' comptée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
+      (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucune tâche comptée sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
+    var note = newRule
+      ? '📌 <strong>Comment c\'est compté :</strong> chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), <strong>peu importe quand la tâche est validée</strong>. Une tâche travaillée 3 h en juillet mais validée en août compte <strong>3 h en juillet</strong> et <strong>0 h en août</strong> — une validation tardive ne modifie jamais un mois passé. Le temps saisi à la main sans chrono est rattaché au mois de la dernière session, sinon à l\'échéance. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.'
+      : '📌 <strong>Comment c\'est compté (ce mois) :</strong> jusqu\'en août 2026, une tâche est rattachée au mois de sa <strong>validation</strong> (ancien calcul, conservé pour ne pas changer ce que ta cliente a déjà vu). <strong>À partir de septembre 2026</strong>, chaque heure sera rattachée au <strong>mois réellement travaillé</strong> (d\'après le chrono). Dans les deux cas, un dépassement est reporté et déduit du mois suivant (plafond ' + fmtHrs(f.cap) + '), puis facturé au-delà d\'un mois de forfait.';
     var breakdown = '<div class="card" style="margin-top:0">' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong>' + (newRule ? '' : ' <span style="color:#8a5a2b">· ancien calcul</span>') + '</div>' +
       line('Forfait de base', fmtHrs(f.base) + ' <span class="micro" style="color:var(--muted)">/ mois</span>') +
       carryLine +
       '<div style="border-top:1px solid var(--bone-d);margin:4px 0"></div>' +
       line('= Disponible ce mois', fmtHrs(f.available), 'var(--terre)', true) +
-      line('Temps travaillé ce mois', fmtHrs(f.used), 'var(--terre)') +
+      line('Consommé ce mois', fmtHrs(f.used), 'var(--terre)') +
       '<div class="bar' + (over ? ' over' : '') + '" style="margin:6px 0 8px"><span style="width:' + pct + '%"></span></div>' +
       line(over ? 'Dépassement' : 'Reste', over ? fmtHrs(-f.remaining) : fmtHrs(f.remaining), restCol, true) +
       billed +
       mtBlock +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:12px;background:var(--surface-2,#f4efe6);border-radius:10px;padding:10px 13px">' +
-        '📌 <strong>Comment c\'est compté :</strong> chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), <strong>peu importe quand la tâche est validée</strong>. Une tâche travaillée 3 h en juillet mais validée en août compte <strong>3 h en juillet</strong> et <strong>0 h en août</strong> — une validation tardive ne modifie jamais un mois passé. Le temps saisi à la main sans chrono est rattaché au mois de la dernière session, sinon à l\'échéance. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
-      '</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:12px;background:var(--surface-2,#f4efe6);border-radius:10px;padding:10px 13px">' + note + '</div>' +
     '</div>';
     return setup + '</div>' + breakdown + workSlotsSection();
   }

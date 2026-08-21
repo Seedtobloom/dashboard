@@ -1551,6 +1551,11 @@ function taskMinutesByMonth(t: AnyObj): Record<string, number> {
   }
   return map;
 }
+// Bascule : la règle « heures rattachées au mois réellement travaillé »
+// s'applique à partir de ce mois. Avant (juillet/août 2026 et antérieurs),
+// on garde l'ancien calcul (mois de validation/échéance) pour ne pas changer
+// ce que les clientes ont déjà vu.
+const FORFAIT_NEW_FROM = '2026-09';
 function forfaitState(pc: AnyObj): AnyObj {
   const base = parseFloat(pc.monthlyHours) || 0;
   const cap = (pc.rolloverCapHours != null && pc.rolloverCapHours !== '') ? parseFloat(pc.rolloverCapHours) : 2;
@@ -1560,9 +1565,15 @@ function forfaitState(pc: AnyObj): AnyObj {
   const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const pdt = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prev = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
-  // Temps rattaché au mois où il a été RÉELLEMENT travaillé (pas la validation).
-  const usedIn = (ym: string) => tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0);
-  const activeIn = (ym: string) => tasks.some((t) => (taskMinutesByMonth(t)[ym] || 0) > 0);
+  const oldMonth = (t: AnyObj) => String(t.completedAt || t.dueDate || '').slice(0, 7);
+  // À partir de FORFAIT_NEW_FROM : mois réellement travaillé (sessions).
+  // Avant : ancien calcul (tout le temps sur le mois de validation/échéance).
+  const usedIn = (ym: string) => (ym >= FORFAIT_NEW_FROM)
+    ? tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0)
+    : tasks.reduce((s, t) => s + (oldMonth(t) === ym ? (t.timeSpentMinutes || 0) / 60 : 0), 0);
+  const activeIn = (ym: string) => (ym >= FORFAIT_NEW_FROM)
+    ? tasks.some((t) => (taskMinutesByMonth(t)[ym] || 0) > 0)
+    : tasks.some((t) => oldMonth(t) === ym);
   const used = usedIn(cur);
   const usedPrev = usedIn(prev);
   // Report du mois précédent : heures non utilisées reportées (plafond `cap`),

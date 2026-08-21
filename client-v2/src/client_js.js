@@ -512,12 +512,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if(residual>0){ var rm=lastStart?lastStart.slice(0,7):''; if(!rm) rm=String(t.dueDate||t.createdAt||'').slice(0,7); if(!rm){ var n=new Date(); rm=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); } map[rm]=(map[rm]||0)+residual; }
     return map;
   }
+  // Bascule (voir back.ts) : règle « mois réellement travaillé » à partir de
+  // ce mois ; avant, ancien calcul (mois de validation/échéance).
+  var CP_FORFAIT_NEW_FROM = '2026-09';
   function cpForfaitState(p) {
     var base = parseFloat(p.monthlyHours) || 0;
     var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
     var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
-    function usedIn(ym){ return (p.tasks||[]).reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
-    function activeIn(ym){ return (p.tasks||[]).some(function(t){ return (cpTaskMinByMonth(t)[ym]||0)>0; }); }
+    function oldMonth(t){ return String(t.completedAt||t.dueDate||'').slice(0,7); }
+    function usedIn(ym){ return (ym>=CP_FORFAIT_NEW_FROM)
+      ? (p.tasks||[]).reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0)
+      : (p.tasks||[]).reduce(function(s,t){ return s + (oldMonth(t)===ym ? (t.timeSpentMinutes||0)/60 : 0); }, 0); }
+    function activeIn(ym){ return (ym>=CP_FORFAIT_NEW_FROM)
+      ? (p.tasks||[]).some(function(t){ return (cpTaskMinByMonth(t)[ym]||0)>0; })
+      : (p.tasks||[]).some(function(t){ return oldMonth(t)===ym; }); }
     var now = new Date();
     var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
     var pdt = new Date(now.getFullYear(), now.getMonth()-1, 1);
