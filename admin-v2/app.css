@@ -130,6 +130,17 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .ctile__dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(93,122,82,0.14)}
 .ctile__meta{font-size:13px;color:var(--terre-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctile__foot{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}
+/* Vue rapide : forfait + projets en cours sur la tuile client */
+.ctile__forf{background:var(--bg,#f8f6f2);border-radius:10px;padding:9px 11px}
+.ctile__forfh{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600)}
+.ctile__bar{height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin:6px 0 5px}
+.ctile__bar>span{display:block;height:100%;border-radius:999px}
+.ctile__forfm{font-family:var(--font-micro);font-size:10.5px;color:var(--muted)}
+.ctile__projs{display:flex;flex-direction:column;gap:4px}
+.ctile__proj{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--font-micro);font-size:12px;color:var(--terre)}
+.ctile__projn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctile__projp{flex-shrink:0;font-weight:700;color:var(--glycine-900,#5a3fa0);font-size:11px}
+.ctile__projmore{font-family:var(--font-micro);font-size:10.5px;color:var(--muted)}
 .muted{color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:26px;font-size:14px}
 

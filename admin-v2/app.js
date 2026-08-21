@@ -4026,7 +4026,14 @@
   function renderClients() {
     var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()">Scanner le KV</button><button class="btn" onclick="ADM.nav(\'newclient\')">+ Nouveau client</button>';
     setMain(topbar('Clients', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
+    // On récupère aussi le tableau de bord pour la vue rapide : forfaits + projets en cours par client.
+    Promise.all([
+      api('/api/clients').then(function (r) { return r.json(); }),
+      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ]).then(function (res) {
+      var d = res[0], dash = res[1] || {};
+      var forfByKey = {}; (dash.forfaits || []).forEach(function (f) { forfByKey[f.key] = f; });
+      var projByKey = {}; (dash.activeProjects || []).forEach(function (p) { (projByKey[p.key] = projByKey[p.key] || []).push(p); });
       var clients = (d.clients || []).slice().sort(function (a, b) {
         if ((b.unread || 0) !== (a.unread || 0)) return (b.unread || 0) - (a.unread || 0);
         if (!!b.isActive !== !!a.isActive) return (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0);
@@ -4035,8 +4042,8 @@
       var actifs = clients.filter(function (c) { return c.isActive; }).length;
       var totalUnread = clients.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       var head = '<div class="micro" style="margin:-2px 0 16px;color:var(--terre-600)">' + clients.length + ' espace' + (clients.length > 1 ? 's' : '') + ' · ' + actifs + ' actif' + (actifs > 1 ? 's' : '') + (totalUnread ? ' · ' + totalUnread + ' message' + (totalUnread > 1 ? 's' : '') + ' à lire' : '') + '</div>';
-      var list = clients.map(clientCard).join('');
-      setMain(topbar('Clients', right, 'Tous tes espaces clients en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
+      var list = clients.map(function (c) { return clientCard(c, forfByKey[c.key], projByKey[c.key] || []); }).join('');
+      setMain(topbar('Clients', right, 'Forfaits et projets en cours, en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
     }).catch(showError);
   }
   // Présence : « En ligne » si activité < 5 min (le poll client entretient
@@ -4057,11 +4064,33 @@
     var ini = parts.length >= 2 ? (parts[0][0] + parts[1][0]) : (parts[0] ? parts[0].slice(0, 2) : '?');
     return ini.toUpperCase();
   }
-  function clientCard(c) {
+  function clientCard(c, forfait, projects) {
     var nm = clientName(c);
     var co = c.entreprise || '';
     var active = c.isActive;
     var unread = c.unread || 0;
+    // Vue rapide forfait : jauge consommé / disponible + reste coloré.
+    var forfHtml = '';
+    if (forfait && forfait.configured) {
+      var used = forfait.used || 0, avail = forfait.available || forfait.base || 0, rem = forfait.remaining || 0;
+      var over = rem < 0;
+      var low = !over && avail && rem <= avail * 0.2;
+      var pctU = avail > 0 ? Math.min(100, Math.round(used / avail * 100)) : (used > 0 ? 100 : 0);
+      var barc = over ? 'var(--red)' : (low ? 'var(--orange)' : 'var(--green)');
+      var restLbl = over ? ('dépassé de ' + fmtHrs(-rem)) : ('reste ' + fmtHrs(rem));
+      forfHtml = '<div class="ctile__forf">' +
+        '<div class="ctile__forfh"><span>Forfait</span><span style="color:' + barc + ';font-weight:700">' + restLbl + '</span></div>' +
+        '<div class="ctile__bar' + (over ? ' over' : '') + '"><span style="width:' + pctU + '%;background:' + barc + '"></span></div>' +
+        '<div class="ctile__forfm">' + fmtHrs(used) + ' / ' + fmtHrs(avail) + ' ce mois' + (forfait.carryIn > 0 ? ' · +' + fmtHrs(forfait.carryIn) + ' report' : (forfait.carryIn < 0 ? ' · −' + fmtHrs(-forfait.carryIn) + ' report' : '')) + '</div>' +
+      '</div>';
+    }
+    // Projets en cours : petites lignes titre + % d'avancement.
+    var projHtml = '';
+    if (projects && projects.length) {
+      projHtml = '<div class="ctile__projs">' + projects.slice(0, 3).map(function (p) {
+        return '<div class="ctile__proj"><span class="ctile__projn">' + esc(p.projectLabel || 'Projet') + '</span>' + (typeof p.pct === 'number' ? '<span class="ctile__projp">' + p.pct + '%</span>' : '') + '</div>';
+      }).join('') + (projects.length > 3 ? '<div class="ctile__projmore">+ ' + (projects.length - 3) + ' autre' + (projects.length - 3 > 1 ? 's' : '') + '</div>' : '') + '</div>';
+    }
     return '<div class="ctile" tabindex="0" onclick="ADM.openClient(\'' + c.key + '\')" onkeydown="if(event.key===\'Enter\')ADM.openClient(\'' + c.key + '\')">' +
       '<div class="ctile__top">' +
         '<div class="ctile__av">' + esc(clientInitials(c)) + '</div>' +
@@ -4069,9 +4098,11 @@
         (function () { var pr = presence(c.lastSeen); return '<span class="ctile__dot' + (pr.online ? ' on' : '') + '" title="' + pr.label + '"></span>'; })() +
       '</div>' +
       (function () { var pr = presence(c.lastSeen); return '<div class="ctile__meta">' + (c.email ? esc(c.email) + ' · ' : '') + '<span style="color:' + (pr.online ? 'var(--green)' : 'var(--muted)') + (pr.online ? ';font-weight:600' : '') + '">' + pr.label + '</span></div>'; })() +
+      forfHtml + projHtml +
       '<div class="ctile__foot">' +
         (active ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') +
         (unread > 0 ? '<span class="pill pill--a_valider">' + unread + ' message' + (unread > 1 ? 's' : '') + '</span>' : '') +
+        (projects && projects.length ? '<span class="pill">' + projects.length + ' projet' + (projects.length > 1 ? 's' : '') + '</span>' : '') +
       '</div></div>';
   }
   function scan() { api('/api/clients/scan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) { toast((d.added || 0) + ' client(s) ajouté(s)'); renderClients(); }); }
@@ -5047,22 +5078,13 @@
     if (residual > 0) { var rm = lastStart ? lastStart.slice(0, 7) : ''; if (!rm) rm = String(t.dueDate || t.createdAt || '').slice(0, 7); if (!rm) { var n = new Date(); rm = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); } map[rm] = (map[rm] || 0) + residual; }
     return map;
   }
-  // Bascule (voir back.ts) : règle « mois réellement travaillé » à partir de
-  // ce mois ; avant, ancien calcul (mois de validation/échéance).
-  var ADM_FORFAIT_NEW_FROM = '2026-09';
-  // Tâches ayant du temps sur le mois ym (avec la part du mois), triées par
-  // plus gros contributeur. Nouvelle règle = mois travaillé ; ancienne = mois
-  // de validation/échéance (temps total).
+  // Tâches ayant du temps RÉELLEMENT TRAVAILLÉ sur le mois ym (part du mois),
+  // triées par plus gros contributeur. La validation ne change rien.
   function partnerMonthTasks(d, ym) {
     var tasks = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
-    if (ym >= ADM_FORFAIT_NEW_FROM) {
-      return tasks.filter(function (t) { return !t.archived; })
-        .map(function (t) { return { t: t, mins: admTaskMinByMonth(t)[ym] || 0 }; })
-        .filter(function (o) { return o.mins > 0; })
-        .sort(function (a, b) { return b.mins - a.mins; });
-    }
-    return tasks.filter(function (t) { return !t.archived && String(t.completedAt || t.dueDate || '').slice(0, 7) === ym; })
-      .map(function (t) { return { t: t, mins: t.timeSpentMinutes || 0 }; })
+    return tasks.filter(function (t) { return !t.archived; })
+      .map(function (t) { return { t: t, mins: admTaskMinByMonth(t)[ym] || 0 }; })
+      .filter(function (o) { return o.mins > 0; })
       .sort(function (a, b) { return b.mins - a.mins; });
   }
   function partnerForfait(d) {
@@ -5086,8 +5108,7 @@
     else if (f.carryIn < 0) carryLine = line('− Dépassement du mois dernier <span style="color:var(--muted)">(déduit)</span>', '− ' + fmtHrs(-f.carryIn), 'var(--red)');
     else carryLine = line('Report du mois dernier', '0 h', 'var(--muted)');
     var billed = f.billedCarry > 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;border-radius:8px;padding:7px 11px;margin-top:8px">⚠️ ' + fmtHrs(f.billedCarry) + ' de dépassement au-delà d\'un mois de forfait le mois dernier → à facturer (non reporté).</div>' : '';
-    var newRule = mk >= ADM_FORFAIT_NEW_FROM;
-    // Liste des tâches comptées ce mois-ci (part du mois si nouvelle règle).
+    // Liste des tâches ayant du temps travaillé ce mois-ci (part du mois).
     var mt = partnerMonthTasks(d, mk);
     var mtRows = mt.map(function (o) {
       var t = o.t;
@@ -5097,23 +5118,22 @@
         '<span style="font-size:13px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
         '<span style="font-weight:600;font-size:13px;white-space:nowrap">' + fmtHrs(o.mins / 60) + '</span></div>';
     }).join('');
-    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#5a3fa0;background:#efe6fb;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' comptée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
-      (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucune tâche comptée sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
-    var note = newRule
-      ? '📌 <strong>Comment c\'est compté :</strong> chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), <strong>peu importe quand la tâche est validée</strong>. Une tâche travaillée 3 h en juillet mais validée en août compte <strong>3 h en juillet</strong> et <strong>0 h en août</strong> — une validation tardive ne modifie jamais un mois passé. Le temps saisi à la main sans chrono est rattaché au mois de la dernière session, sinon à l\'échéance. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.'
-      : '📌 <strong>Comment c\'est compté (ce mois) :</strong> jusqu\'en août 2026, une tâche est rattachée au mois de sa <strong>validation</strong> (ancien calcul, conservé pour ne pas changer ce que ta cliente a déjà vu). <strong>À partir de septembre 2026</strong>, chaque heure sera rattachée au <strong>mois réellement travaillé</strong> (d\'après le chrono). Dans les deux cas, un dépassement est reporté et déduit du mois suivant (plafond ' + fmtHrs(f.cap) + '), puis facturé au-delà d\'un mois de forfait.';
+    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#5a3fa0;background:#efe6fb;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
+      (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucun temps passé sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
     var breakdown = '<div class="card" style="margin-top:0">' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong>' + (newRule ? '' : ' <span style="color:#8a5a2b">· ancien calcul</span>') + '</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
       line('Forfait de base', fmtHrs(f.base) + ' <span class="micro" style="color:var(--muted)">/ mois</span>') +
       carryLine +
       '<div style="border-top:1px solid var(--bone-d);margin:4px 0"></div>' +
       line('= Disponible ce mois', fmtHrs(f.available), 'var(--terre)', true) +
-      line('Consommé ce mois', fmtHrs(f.used), 'var(--terre)') +
+      line('Temps travaillé ce mois', fmtHrs(f.used), 'var(--terre)') +
       '<div class="bar' + (over ? ' over' : '') + '" style="margin:6px 0 8px"><span style="width:' + pct + '%"></span></div>' +
       line(over ? 'Dépassement' : 'Reste', over ? fmtHrs(-f.remaining) : fmtHrs(f.remaining), restCol, true) +
       billed +
       mtBlock +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:12px;background:var(--surface-2,#f4efe6);border-radius:10px;padding:10px 13px">' + note + '</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:12px;background:var(--surface-2,#f4efe6);border-radius:10px;padding:10px 13px">' +
+        '📌 <strong>Comment c\'est compté :</strong> chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), <strong>peu importe quand la tâche est validée</strong>. Une tâche travaillée 3 h en juillet mais validée en août compte <strong>3 h en juillet</strong> et <strong>0 h en août</strong>. Le temps saisi à la main sans chrono est rattaché au mois de la dernière session, sinon à l\'échéance de la tâche. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
+      '</div>' +
     '</div>';
     return setup + '</div>' + breakdown + workSlotsSection();
   }
