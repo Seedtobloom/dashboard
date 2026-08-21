@@ -3709,10 +3709,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var curMonthKey = todayStr0.slice(0,7);
     var doneTasks = tasks.filter(function(t){return t.status==='done';});
     var todayTasks = tasks.filter(function(t){return (t.dueDate||'').slice(0,10)===todayStr0 && t.status!=='done';});
-    var monthReel = tasks.reduce(function(s,t){
-      var ref = (t.completedAt||t.dueDate||'');
-      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
-    }, 0);
+    // Heures du mois = temps RÉELLEMENT travaillé ce mois (même règle que le
+    // forfait), pour que la tuile, le graphe et le forfait affichent la même chose.
+    var monthReel = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
     var forfaitH = project.monthlyHours || 0;
     var _pf = cpForfaitState(project);
     var forfaitLeft = forfaitH ? _pf.remaining : 0;
@@ -4116,10 +4115,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var curMonthKey = todayStr0.slice(0,7);
     function fmtH(h){ return Math.floor(h)+'h'+(Math.round((h-Math.floor(h))*60)||''); }
 
-    var monthReel = tasks.reduce(function(s,t){
-      var ref = (t.completedAt||t.dueDate||'');
-      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
-    }, 0);
+    // Heures du mois = temps RÉELLEMENT travaillé ce mois (même règle que le
+    // forfait), pour que la tuile, le graphe et le forfait affichent la même chose.
+    var monthReel = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
     var active = tasks.filter(function(t){ return t.status !== 'done' && !t.archived; });
     var done = tasks.filter(function(t){ return t.status === 'done' && !t.archived; });
     var archived = tasks.filter(function(t){ return t.archived; });
@@ -4145,10 +4143,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     for (var i=4; i>=0; i--) {
       var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
       var key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      var h = tasks.reduce(function(s,t){
-        var ref = (t.completedAt||t.dueDate||'');
-        return ref.slice(0,7)===key ? s+(t.timeSpentMinutes||0)/60 : s;
-      }, 0);
+      var h = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[key]||0)/60; }, 0);
       months.push({ key:key, label:d.toLocaleDateString('fr-FR',{month:'short'}).toUpperCase(), h:h });
     }
     var maxH = Math.max.apply(null, months.map(function(m){return m.h;})) || 1;
@@ -4228,8 +4223,39 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       }).join('') : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune tache archivee pour le moment.</p>') +
     '</div>';
 
+    // Détail du mois : chaque tâche et son temps réellement passé ce mois,
+    // dont la somme = « Heures du mois » et le « consommé » du forfait. Rend
+    // le calcul transparent (« d'où vient le total »).
+    var monthLbl2 = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    var monthTasks = tasks.map(function(t){ return { t:t, mins: cpTaskMinByMonth(t)[curMonthKey]||0 }; })
+      .filter(function(o){ return o.mins > 0; })
+      .sort(function(a,b){ return b.mins - a.mins; });
+    var detailRows = monthTasks.map(function(o){
+      var t = o.t;
+      var st = t.status==='done' ? 'terminée' : (t.status==='in_progress' ? 'en cours' : 'à faire');
+      var cat = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || '';
+      return '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--bone-d)">' +
+        '<div style="min-width:0"><div style="font-size:14.5px;color:var(--terre);line-height:1.35">' + esc(t.title||'Tâche') + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + st + (cat ? ' · ' + esc(cat) : '') + '</div></div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);flex-shrink:0">' + cpFmtH(o.mins/60) + '</div>' +
+      '</div>';
+    }).join('');
+    var detailCard = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('timer',16,'color:var(--brume-700)') +
+        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Le détail de ' + esc(monthLbl2) + '</span></div>' +
+      '<p style="font-family:var(--font-body);font-size:13px;color:var(--terre-600);line-height:1.5;margin-bottom:8px">Chaque tâche et le temps que j\'y ai réellement passé ce mois-ci. C\'est ce total qui est décompté de votre forfait.</p>' +
+      (monthTasks.length
+        ? detailRows +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:15px 0 2px;border-top:2px solid var(--terre);margin-top:6px">' +
+            '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre)">Total ' + esc(monthLbl2) + '</span>' +
+            '<span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre)">' + cpFmtH(monthReel) + '</span>' +
+          '</div>'
+        : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>') +
+      '<p style="font-family:var(--font-body);font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Les heures sont comptées dans le mois où le travail a réellement été fait (d\'après le suivi du temps), et non à la date de validation. Une tâche commencée un mois et validée le suivant reste comptée sur le mois où elle a été travaillée.</p>' +
+    '</div>';
+
     return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
-      '<div>' + tilesHtml + chartCard + catCard + archivedHtml + '</div>' +
+      '<div>' + tilesHtml + detailCard + chartCard + catCard + archivedHtml + '</div>' +
       '<div>' + forfaitCard + '</div>' +
     '</div>';
   }
@@ -4362,17 +4388,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Forfait bar
     var forfaitH = project.monthlyHours || 0;
     var curMonthKey = todayStr.slice(0,7);
-    var monthReel = tasks.reduce(function(s,t){
-      var ref = (t.completedAt||t.dueDate||'');
-      return ref.slice(0,7)===curMonthKey ? s+(t.timeSpentMinutes||0)/60 : s;
-    }, 0);
-    var forfaitLeft = forfaitH - monthReel;
-    var forfaitPct = forfaitH ? Math.min(100, Math.round(monthReel/forfaitH*100)) : 0;
+    // Heures du mois = temps RÉELLEMENT travaillé ce mois (même règle que le
+    // forfait), pour que la tuile, le graphe et le forfait affichent la même chose.
+    var monthReel = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
+    var _pfBar = cpForfaitState(project);
+    var forfaitLeft = _pfBar.remaining;               // inclut le report du mois dernier
+    var forfaitPct = _pfBar.available ? Math.min(100, Math.round(_pfBar.used/_pfBar.available*100)) : 0;
     var forfaitBar = forfaitH
       ? '<div style="display:flex;align-items:center;gap:14px;padding:15px 22px;background:#F8F6F2;border:none;border-radius:14px;margin-bottom:18px;flex-wrap:wrap">' +
           cpIcon('timer',16,'color:#6b533b') +
           '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b533b;white-space:nowrap">Forfait du mois</span>' +
-          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#412F21)">'+monthReel.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#6b533b">/'+forfaitH+' h</span></span>' +
+          '<span style="white-space:nowrap"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:21px;color:var(--terre,#412F21)">'+_pfBar.used.toFixed(1).replace(/\.0$/,'')+'</span><span style="font-size:13px;color:#6b533b">/'+_pfBar.available.toFixed(1).replace(/\.0$/,'')+' h</span></span>' +
           '<div style="flex:1;min-width:120px;height:8px;background:rgba(65,47,33,.1);border-radius:999px;overflow:hidden"><div style="height:100%;background:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#412F21)')+';width:'+forfaitPct+'%;border-radius:999px;transition:width .3s"></div></div>' +
           '<span style="font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre,#412F21)')+';white-space:nowrap">'+(forfaitLeft>=0?forfaitLeft.toFixed(1)+' H RESTANTES':(-forfaitLeft).toFixed(1)+' H DEPASSEES')+'</span>' +
         '</div>'
