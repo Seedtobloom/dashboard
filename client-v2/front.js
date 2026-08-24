@@ -1365,32 +1365,50 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
   }
 
-  // Bloc « Votre forfait » sur l'accueil : conso du mois avec distinction
-  // temps terminé / en cours / restant (même règle « mois travaillé »).
-  function cpForfaitHome() {
-    var projects = (appData && appData.projects) || [];
-    var project = null;
-    for (var i = 0; i < projects.length; i++) { var p = projects[i].project; if (p && p.type === 'partenaire' && (parseFloat(p.monthlyHours) || 0) > 0) { project = p; break; } }
-    if (!project) return '';
-    var f = cpForfaitState(project);
-    if (!f.configured) return '';
-    var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+  // Minutes travaillées ce mois par type de tâche (terminé / en cours) pour
+  // un projet, selon la règle « mois réellement travaillé » (partenaire) ou
+  // le mois de résolution/création (maintenance). availMin = base + report.
+  function cpForfaitNums(project) {
     var mk = _todayStr().slice(0, 7);
-    var doneMin = 0, wipMin = 0;
-    tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done') doneMin += m; else wipMin += m; });
-    var availMin = Math.round(f.available * 60), usedMin = doneMin + wipMin, restMin = availMin - usedMin;
+    if (project.type === 'partenaire') {
+      var f = cpForfaitState(project);
+      if (!f.configured) return null;
+      var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+      var d = 0, w = 0;
+      tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done') d += m; else w += m; });
+      return { availMin: Math.round(f.available * 60), doneMin: d, wipMin: w };
+    }
+    if (project.type === 'maintenance') {
+      var base = parseFloat(project.monthlyHours) || 0; if (!base) return null;
+      var tickets = Array.isArray(project.tickets) ? project.tickets : [];
+      var pdt = new Date(); pdt.setMonth(pdt.getMonth() - 1);
+      var pk = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
+      function tmin(t) { return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
+      function mo(t) { return String(t.resolvedAt || t.createdAt || '').slice(0, 7); }
+      function usedIn(ym) { return tickets.reduce(function (s, t) { return mo(t) === ym ? s + tmin(t) : s; }, 0); }
+      function activeIn(ym) { return tickets.some(function (t) { return mo(t) === ym; }); }
+      var baseMin = base * 60, carryMin = 0;
+      if (baseMin && activeIn(pk)) { var diff = baseMin - usedIn(pk); if (diff >= 0) carryMin = Math.min(120, diff); else carryMin = -Math.min(-diff, baseMin); }
+      var d2 = 0, w2 = 0;
+      tickets.forEach(function (t) { if (mo(t) !== mk) return; var m = tmin(t); if (t.status === 'done' || t.status === 'closed') d2 += m; else w2 += m; });
+      return { availMin: baseMin + carryMin, doneMin: d2, wipMin: w2 };
+    }
+    return null;
+  }
+  function cpForfaitCard(eyebrow, nums, pid) {
+    var availMin = nums.availMin, doneMin = nums.doneMin, wipMin = nums.wipMin;
+    var usedMin = doneMin + wipMin, restMin = availMin - usedMin;
     function hm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
     var donePct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
     var wipPct = availMin > 0 ? Math.max(0, Math.min(100 - donePct, wipMin / availMin * 100)) : 0;
-    var moisLbl = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     function lg(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
     return '<div style="background:#2A1D10;border-radius:20px;padding:24px 28px;color:#F2E5C2;margin-bottom:22px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
         '<div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(moisLbl) + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">' + eyebrow + '</div>' +
           '<div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:0.9;color:' + (restMin < 0 ? '#e79a8a' : '#FBFAF6') + '">' + hm(Math.abs(restMin)) + '</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">' + (restMin < 0 ? 'de dépassement' : 'restantes sur ' + hm(availMin)) + '</span></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats()" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir le détail →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir le détail →</button>' +
       '</div>' +
       '<div style="height:13px;background:rgba(251,250,246,0.14);border-radius:999px;overflow:hidden;margin:16px 0 12px;display:flex">' +
         '<span style="height:100%;width:' + donePct + '%;background:#F4E7C0"></span>' +
@@ -1402,6 +1420,19 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         lg('rgba(251,250,246,0.22)', hm(Math.max(0, restMin)) + ' restantes') +
       '</div>' +
     '</div>';
+  }
+  // Bloc « Votre forfait » sur l'accueil, pour CHAQUE espace ayant un forfait.
+  function cpForfaitHome() {
+    var projects = (appData && appData.projects) || [];
+    var withForfait = projects.filter(function (pd) { return pd.project && (parseFloat(pd.project.monthlyHours) || 0) > 0 && (pd.project.type === 'partenaire' || pd.project.type === 'maintenance'); });
+    var moisLbl = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    return withForfait.map(function (pd) {
+      var project = pd.project;
+      var nums = cpForfaitNums(project);
+      if (!nums) return '';
+      var eyebrow = (withForfait.length > 1 && project.projectTitle) ? ('Forfait · ' + esc(project.projectTitle) + ' · ' + esc(moisLbl)) : ('Votre forfait · ' + esc(moisLbl));
+      return cpForfaitCard(eyebrow, nums, project.id);
+    }).join('');
   }
   function buildHome() {
     var active = appData.projects.filter(function(pd) { return pd.project.status !== 'archived'; });
@@ -4169,8 +4200,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ];
     var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
       tiles.map(function(t){
-        return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
-          '<div style="color:var(--brume-700);margin-bottom:12px">' + cpIcon(t.icon,20) + '</div>' +
+        return '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:22px 24px">' +
+          '<div style="color:var(--glycine-900);margin-bottom:12px">' + cpIcon(t.icon,20) + '</div>' +
           '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
           '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">' + t.label + '</div>' +
         '</div>';
@@ -4178,6 +4209,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>';
 
     var now = new Date();
+    var monthLbl2 = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     var months = [];
     for (var i=4; i>=0; i--) {
       var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
@@ -4198,7 +4230,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       }).join('') +
     '</div>';
 
-    var chartCard = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+    var chartCard = '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' +
         cpIcon('chart',16,'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Pour scaler</span>' +
@@ -4215,7 +4247,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var cats = Object.keys(catMap).map(function(k){ return { name:k, min:catMap[k].min, n:catMap[k].n }; })
       .filter(function(c){ return c.min > 0; }).sort(function(a,b){ return b.min - a.min; });
     var maxCatMin = cats.length ? Math.max.apply(null, cats.map(function(c){ return c.min; })) : 1;
-    var catCard = cats.length ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+    var catCard = cats.length ? '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' +
         cpIcon('chart',16,'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">En moyenne, combien de temps ça prend</span>' +
@@ -4237,17 +4269,28 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     '</div>' : '';
 
     var _pf = cpForfaitState(project);
-    var forfaitLeft = _pf.remaining;
-    var forfaitPct2 = _pf.available ? Math.min(100, Math.round(_pf.used/_pf.available*100)) : 0;
-    var forfaitCard = forfaitH ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
-      '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px">' +
-        '<span style="font-family:var(--font-display);font-size:28px;font-style:italic;color:'+(forfaitLeft<0?'#9b3a2e':'var(--terre)')+'">' + (forfaitLeft>=0?cpFmtH(forfaitLeft):'−'+cpFmtH(-forfaitLeft)) + '</span>' +
-        '<span style="font-size:14px;color:var(--terre-600)">' + (forfaitLeft>=0?'restantes':'de dépassement') + '</span>' +
+    // Répartition terminé / en cours du temps travaillé ce mois.
+    var _fdone = 0, _fwip = 0;
+    tasks.forEach(function(t){ var m = cpTaskMinByMonth(t)[curMonthKey]||0; if(!m) return; if(t.status==='done') _fdone+=m; else _fwip+=m; });
+    var _availMin = Math.round(_pf.available*60), _usedMin = _fdone+_fwip, _restMin = _availMin-_usedMin;
+    var _baseMin = Math.round(_pf.base*60), _carryMin = Math.round(_pf.carryIn*60);
+    function hmm(min){ min=Math.round(min); var neg=min<0; min=Math.abs(min); var h=Math.floor(min/60), m=min%60; return (neg?'−':'')+(m?(h+'h'+String(m).padStart(2,'0')):(h+' h')); }
+    var _dPct = _availMin>0?Math.max(0,Math.min(100,_fdone/_availMin*100)):0;
+    var _wPct = _availMin>0?Math.max(0,Math.min(100-_dPct,_fwip/_availMin*100)):0;
+    function _flg(c,txt){ return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:'+c+';flex-shrink:0"></i>'+txt+'</span>'; }
+    function _row(lbl,val,cls){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0'+(cls==='add'?';padding-left:12px':'')+'"><span style="font-family:var(--font-micro);font-size:12.5px;color:#e7dcc6">'+lbl+'</span><span style="font-family:var(--font-micro);font-weight:600;font-size:13.5px;color:'+(cls==='wip'?'#E4D1FE':'#FBFAF6')+';font-variant-numeric:tabular-nums">'+val+'</span></div>'; }
+    function _sum(lbl,val){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:6px;padding-top:9px;border-top:1px solid rgba(251,250,246,.22)"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#FBFAF6">'+lbl+'</span><span style="font-family:var(--font-display);font-style:italic;font-size:21px;color:#E4D1FE;font-variant-numeric:tabular-nums">'+val+'</span></div>'; }
+    var forfaitCard = forfaitH ? '<div style="background:#2A1D10;border-radius:20px;padding:24px 26px;color:#F2E5C2">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(monthLbl2) + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 16px"><span style="font-family:var(--font-display);font-style:italic;font-size:38px;line-height:.9;color:'+(_restMin<0?'#e79a8a':'#FBFAF6')+'">'+hmm(Math.abs(_restMin))+'</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">'+(_restMin<0?'de dépassement':'restantes sur '+hmm(_availMin))+'</span></div>' +
+      '<div style="height:13px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;margin-bottom:12px;display:flex"><span style="height:100%;width:'+_dPct+'%;background:#F4E7C0"></span><span style="height:100%;width:'+_wPct+'%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:9px 20px;margin-bottom:20px">'+_flg('#F4E7C0',hmm(_fdone)+' terminé')+(_fwip>0?_flg('#9a72d6',hmm(_fwip)+' en cours'):'')+_flg('rgba(251,250,246,.22)',hmm(Math.max(0,_restMin))+' restantes')+'</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce dont vous disposez</div>'+_row('Forfait de base',hmm(_baseMin))+(_carryMin!==0?_row((_carryMin>0?'+ Report du mois dernier':'− Dépassement reporté'),(_carryMin>0?'+':'−')+hmm(Math.abs(_carryMin)),'add'):'')+_sum('Disponible ce mois',hmm(_availMin))+'</div>' +
+        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce qui est consommé</div>'+_row('Temps terminé',hmm(_fdone))+(_fwip>0?_row('+ Temps en cours',hmm(_fwip),'wip'):'')+_sum('Total consommé',hmm(_usedMin))+'</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:rgba(228,209,254,.14);border-radius:14px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e7dcc6">Reste réel</span><span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:'+(_restMin<0?'#e79a8a':'#c8ecb0')+';font-variant-numeric:tabular-nums">'+hmm(_restMin)+'</span></div>' +
       '</div>' +
-      '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:'+(forfaitLeft<0?'#9b3a2e':'var(--brume-700)')+';border-radius:999px;width:'+forfaitPct2+'%"></div></div>' +
-      '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + fmtH(_pf.used) + ' utilisées</span><span>sur ' + cpFmtH(_pf.available) + (_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'') + '</span></div>' +
-      (forfaitLeft<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#8d2b21;margin-top:10px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+      (_pf.remaining<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#e79a8a;margin-top:14px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
     '</div>' : '';
 
     var archivedHtml = '<div style="margin-top:28px">' +
@@ -4256,7 +4299,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<h2 style="font-family:var(--font-display);font-size:22px;font-style:italic;color:var(--terre);font-weight:400">Taches archivees</h2>' +
       '</div>' +
       (archived.length ? archived.map(function(t){
-        return '<div style="padding:12px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px;opacity:0.7">' +
+        return '<div style="padding:12px 16px;background:#F4EFE6;border-radius:var(--radius-2);margin-bottom:8px;opacity:0.7">' +
           '<div style="font-size:15px;color:var(--terre);text-decoration:line-through">' + esc(t.title) + '</div>' +
         '</div>';
       }).join('') : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune tache archivee pour le moment.</p>') +
@@ -4265,7 +4308,6 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Détail du mois : chaque tâche et son temps réellement passé ce mois,
     // dont la somme = « Heures du mois » et le « consommé » du forfait. Rend
     // le calcul transparent (« d'où vient le total »).
-    var monthLbl2 = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     var monthTasks = tasks.map(function(t){ return { t:t, mins: cpTaskMinByMonth(t)[curMonthKey]||0 }; })
       .filter(function(o){ return o.mins > 0; })
       .sort(function(a,b){ return b.mins - a.mins; });
@@ -4279,7 +4321,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);flex-shrink:0">' + cpFmtH(o.mins/60) + '</div>' +
       '</div>';
     }).join('');
-    var detailCard = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+    var detailCard = '<div style="background:#FFFDF9;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('timer',16,'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Le détail de ' + esc(monthLbl2) + '</span></div>' +
       '<p style="font-family:var(--font-body);font-size:13px;color:var(--terre-600);line-height:1.5;margin-bottom:8px">Chaque tâche et le temps que j\'y ai réellement passé ce mois-ci. C\'est ce total qui est décompté de votre forfait.</p>' +
@@ -4293,10 +4335,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<p style="font-family:var(--font-body);font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Les heures sont comptées dans le mois où le travail a réellement été fait (d\'après le suivi du temps), et non à la date de validation. Une tâche commencée un mois et validée le suivant reste comptée sur le mois où elle a été travaillée.</p>' +
     '</div>';
 
-    return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
-      '<div>' + tilesHtml + detailCard + chartCard + catCard + archivedHtml + '</div>' +
-      '<div>' + forfaitCard + '</div>' +
-    '</div>';
+    // Mise en page variée : tuiles pleine largeur, puis détail + forfait, puis
+    // graphe + moyennes côte à côte.
+    return tilesHtml +
+      '<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,0.92fr);gap:24px;align-items:start">' +
+        '<div>' + detailCard + '</div>' +
+        '<div>' + forfaitCard + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">' + chartCard + catCard + '</div>' +
+      archivedHtml;
   }
 
   // Stats de l'espace maintenance (tickets) : miroir de buildPartStats, mais
@@ -7664,9 +7711,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell({ resetScroll: true }); };
   window.cpOpenCal = function() { currentView = 'cal'; renderShell({ resetScroll: true }); };
-  window.cpOpenStats = function() {
-    var parts = (appData.projects || []).filter(function(pd){ return pd.project && pd.project.type === 'partenaire'; });
-    var pick = parts[0] || (appData.projects || [])[0];
+  window.cpOpenStats = function(pid) {
+    var pick = null;
+    if (pid) pick = (appData.projects || []).filter(function(pd){ return pd.project && pd.project.id === pid; })[0];
+    if (!pick) { var parts = (appData.projects || []).filter(function(pd){ return pd.project && pd.project.type === 'partenaire'; }); pick = parts[0] || (appData.projects || [])[0]; }
     if (pick) currentId = pick.project.id;
     currentView = 'stats';
     renderShell({ resetScroll: true });
