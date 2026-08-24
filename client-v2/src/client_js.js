@@ -3797,8 +3797,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ];
     var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
       tiles.map(function(t){
-        return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
-          '<div style="color:var(--brume-700);margin-bottom:12px">' + cpIcon(t.icon, 20) + '</div>' +
+        return '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:22px 24px">' +
+          '<div style="color:var(--glycine-900);margin-bottom:12px">' + cpIcon(t.icon, 20) + '</div>' +
           '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
           '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">' + t.label + '</div>' +
         '</div>';
@@ -3823,7 +3823,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
       }).join('') +
     '</div>';
-    var chartCard = '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+    var chartCard = '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Temps par mois</span>' +
         '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
@@ -3834,7 +3834,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var catMap = {};
     tickets.forEach(function(t){ var c = (t.category && String(t.category).trim()) || 'Autre'; if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += tkMin(t); catMap[c].n += 1; });
     var cats = Object.keys(catMap).map(function(k){ return { name: k, min: catMap[k].min, n: catMap[k].n }; }).filter(function(c){ return c.min > 0; }).sort(function(a, b){ return b.min - a.min; });
-    var catCard = cats.length ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:24px 28px;box-shadow:var(--shadow-1);margin-bottom:24px">' +
+    var catCard = cats.length ? '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Par type de demande</span></div>' +
       cats.map(function(c){
@@ -3858,22 +3858,34 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       else { var ov = -diff, ded = Math.min(ov, baseMin); carryMin = -ded; billedMin = Math.round(ov - ded); }
     }
     var availMin = baseMin + carryMin, usedMin = usedMinIn(curMonthKey), remMin = availMin - usedMin;
-    var over = remMin < 0, fpct = availMin > 0 ? Math.min(100, Math.round(usedMin / availMin * 100)) : (usedMin > 0 ? 100 : 0);
-    var forfaitCard = forfaitH ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:22px 24px;box-shadow:var(--shadow-1)">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
-      '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px">' +
-        '<span style="font-family:var(--font-display);font-size:28px;font-style:italic;color:' + (over ? '#9b3a2e' : 'var(--terre)') + '">' + (over ? '−' + partFmtH(-remMin) : partFmtH(remMin)) + '</span>' +
-        '<span style="font-size:14px;color:var(--terre-600)">' + (over ? 'de dépassement' : 'restantes') + '</span>' +
+    // Répartition résolu / en cours du temps de ce mois.
+    var mDone = 0, mWip = 0;
+    tickets.forEach(function(t){ if (tkMonth(t) !== curMonthKey) return; var m = tkMin(t); if (t.status === 'done' || t.status === 'closed') mDone += m; else mWip += m; });
+    var mMoisLbl = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    function hmm(min){ min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
+    var mdPct = availMin > 0 ? Math.max(0, Math.min(100, mDone / availMin * 100)) : 0;
+    var mwPct = availMin > 0 ? Math.max(0, Math.min(100 - mdPct, mWip / availMin * 100)) : 0;
+    function mlg(c, txt){ return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    function mrow(lbl, val, cls){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0' + (cls === 'add' ? ';padding-left:12px' : '') + '"><span style="font-family:var(--font-micro);font-size:12.5px;color:#e7dcc6">' + lbl + '</span><span style="font-family:var(--font-micro);font-weight:600;font-size:13.5px;color:' + (cls === 'wip' ? '#E4D1FE' : '#FBFAF6') + ';font-variant-numeric:tabular-nums">' + val + '</span></div>'; }
+    function msum(lbl, val){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:6px;padding-top:9px;border-top:1px solid rgba(251,250,246,.22)"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#FBFAF6">' + lbl + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:21px;color:#E4D1FE;font-variant-numeric:tabular-nums">' + val + '</span></div>'; }
+    var forfaitCard = forfaitH ? '<div style="background:#2A1D10;border-radius:20px;padding:24px 26px;color:#F2E5C2">' +
+      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 16px"><span style="font-family:var(--font-display);font-style:italic;font-size:38px;line-height:.9;color:' + (over ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin)) + '</span></div>' +
+      '<div style="height:13px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;margin-bottom:12px;display:flex"><span style="height:100%;width:' + mdPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + mwPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:9px 20px;margin-bottom:20px">' + mlg('#F4E7C0', hmm(mDone) + ' résolu') + (mWip > 0 ? mlg('#9a72d6', hmm(mWip) + ' en cours') : '') + mlg('rgba(251,250,246,.22)', hmm(Math.max(0, remMin)) + ' restantes') + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce dont vous disposez</div>' + mrow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? mrow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin)), 'add') : '') + msum('Disponible ce mois', hmm(availMin)) + '</div>' +
+        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce qui est consommé</div>' + mrow('Temps résolu', hmm(mDone)) + (mWip > 0 ? mrow('+ Temps en cours', hmm(mWip), 'wip') : '') + msum('Total consommé', hmm(usedMin)) + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:rgba(228,209,254,.14);border-radius:14px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e7dcc6">Reste réel</span><span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:' + (over ? '#e79a8a' : '#c8ecb0') + ';font-variant-numeric:tabular-nums">' + hmm(remMin) + '</span></div>' +
       '</div>' +
-      '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:' + (over ? '#9b3a2e' : 'var(--brume-700)') + ';border-radius:999px;width:' + fpct + '%"></div></div>' +
-      '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-600)"><span>' + partFmtH(usedMin) + ' utilisées</span><span>sur ' + partFmtH(availMin) + (carryMin < 0 ? ' (−' + partFmtH(-carryMin) + ' du dépassement)' : (carryMin > 0 ? ' (+' + partFmtH(carryMin) + ' report.)' : '')) + '</span></div>' +
-      (carryMin < 0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#6a4a0b;margin-top:10px;line-height:1.45">' + partFmtH(-carryMin) + ' de dépassement du mois dernier déduites' + (billedMin > 0 ? ', et ' + partFmtH(billedMin) + ' facturées' : '') + '.</div>' : '') +
+      (billedMin > 0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#e79a8a;margin-top:14px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
     '</div>' : '';
 
-    return '<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">' +
-      '<div>' + tilesHtml + chartCard + catCard + '</div>' +
-      '<div>' + forfaitCard + '</div>' +
-    '</div>';
+    return tilesHtml +
+      '<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,0.92fr);gap:24px;align-items:start">' +
+        '<div>' + chartCard + catCard + '</div>' +
+        '<div>' + forfaitCard + '</div>' +
+      '</div>';
   }
 
   // ── Calendrier partenaire standalone ──────────────────────────────────────
