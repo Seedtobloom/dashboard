@@ -4193,7 +4193,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var archived = tasks.filter(function(t){ return t.archived; });
 
     var tiles = [
-      { v: fmtH(monthReel), label: 'Heures du mois', icon: 'timer' },
+      { v: hmm(Math.round(monthReel * 60)), label: 'Heures du mois', icon: 'timer' },
       { v: active.length, label: 'Taches actives', icon: 'tasks' },
       { v: done.length, label: 'Livrees', icon: 'check' },
       { v: archived.length, label: 'Archivees', icon: 'archive' },
@@ -4313,12 +4313,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       .sort(function(a,b){ return b.mins - a.mins; });
     var detailRows = monthTasks.map(function(o){
       var t = o.t;
-      var st = t.status==='done' ? 'terminée' : (t.status==='in_progress' ? 'en cours' : 'à faire');
+      var wip = t.status !== 'done';
+      var st = wip ? 'en cours · déjà comptée' : 'terminée';
       var cat = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || '';
-      return '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--bone-d)">' +
+      var wrap = wip
+        ? 'display:flex;justify-content:space-between;gap:14px;align-items:baseline;background:#EDE4FB;border-radius:12px;margin:6px 0;padding:13px 15px'
+        : 'display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--bone-d)';
+      return '<div style="' + wrap + '">' +
         '<div style="min-width:0"><div style="font-size:14.5px;color:var(--terre);line-height:1.35">' + esc(t.title||'Tâche') + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + st + (cat ? ' · ' + esc(cat) : '') + '</div></div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);flex-shrink:0">' + cpFmtH(o.mins/60) + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:' + (wip?'700':'500') + ';letter-spacing:0.05em;text-transform:uppercase;color:' + (wip?'var(--glycine-900)':'var(--terre-400)') + ';margin-top:4px">' + st + (cat ? ' · ' + esc(cat) : '') + '</div></div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:' + (wip?'var(--glycine-900)':'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</div>' +
       '</div>';
     }).join('');
     var detailCard = '<div style="background:#FFFDF9;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
@@ -4328,8 +4332,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       (monthTasks.length
         ? detailRows +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:15px 0 2px;border-top:2px solid var(--terre);margin-top:6px">' +
-            '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre)">Total ' + esc(monthLbl2) + '</span>' +
-            '<span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre)">' + cpFmtH(monthReel) + '</span>' +
+            '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre)">Total travaillé · ' + esc(monthLbl2) + '</span>' +
+            '<span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span>' +
           '</div>'
         : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>') +
       '<p style="font-family:var(--font-body);font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Les heures sont comptées dans le mois où le travail a réellement été fait (d\'après le suivi du temps), et non à la date de validation. Une tâche commencée un mois et validée le suivant reste comptée sur le mois où elle a été travaillée.</p>' +
