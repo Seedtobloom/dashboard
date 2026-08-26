@@ -150,6 +150,9 @@ async function handleClientApi(
   if (method === 'POST' && sub === '/message/unread') {
     return handleMessageUnread(request, env, masterKey, data);
   }
+  if (method === 'POST' && sub === '/message/edit') {
+    return handleMessageEdit(request, env, masterKey, data);
+  }
   const dlv = sub.match(/^\/deliverables\/([a-zA-Z0-9_-]+)$/);
   if (method === 'POST' && dlv) {
     return handleDeliverable(request, env, masterKey, data, dlv[1]);
@@ -504,6 +507,7 @@ function mapChatToMessages(chat: any[]): AnyObj[] {
     readByClient: m.readByClient !== false,
     pinned: m.pinned === true,
     manualUnread: m.manualUnread === true,
+    editedAt: m.editedAt || null,
     topic: m.topic || '',
   }));
 }
@@ -895,6 +899,23 @@ async function handleMessageUnread(request: Request, env: Env, masterKey: string
   if (!m) return json({ error: 'Message introuvable' }, 404);
   if (body.unread === false) { m.readByClient = true; m.manualUnread = false; }
   else { m.readByClient = false; m.manualUnread = true; }
+  await save(env, masterKey, data);
+  return json({ ok: true });
+}
+
+// Modifier un de SES propres messages : POST /message/edit {projectId, id, content}
+async function handleMessageEdit(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
+  const body = await readJson(request);
+  const chat = messageThreadOf(data, (body.projectId || '').toString());
+  if (!chat) return json({ error: 'Projet introuvable' }, 404);
+  const id = (body.id || '').toString();
+  const m = chat.find((x: AnyObj) => x.id === id);
+  if (!m) return json({ error: 'Message introuvable' }, 404);
+  if (m.from !== 'client') return json({ error: 'Vous ne pouvez modifier que vos propres messages' }, 403);
+  const content = (body.content || '').toString().trim();
+  if (!content) return json({ error: 'Message vide' }, 400);
+  m.message = content.slice(0, 5000);
+  m.editedAt = nowIso();
   await save(env, masterKey, data);
   return json({ ok: true });
 }

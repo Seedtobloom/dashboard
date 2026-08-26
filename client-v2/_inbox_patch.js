@@ -85,12 +85,17 @@
     if (!msgs.length) return '<div class="mx-empty" style="margin-top:34px">Aucun message dans cette discussion. Écris à Cindy.</div>';
     if (!shown.length) return '<div class="mx-empty" style="margin-top:34px">Aucun message ne contient ce mot.</div>';
     var head = ql ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);text-align:center">'+shown.length+' message'+(shown.length>1?'s':'')+' trouvé'+(shown.length>1?'s':'')+'</div>' : '';
+    var pid = pd.project.id;
+    function act(label, fn){ return ' · <span style="cursor:pointer;text-decoration:underline" onclick="'+fn+'">'+label+'</span>'; }
     return head + shown.map(function(m){
       var mine = m.author !== 'cindy';
       var body = (m.content ? '<div class="mx-b">'+(q ? stbHi(m.content, q) : fmtMsg(m.content))+'</div>' : '') + stbInboxAtts(m.attachments);
+      var meta = (mine?'Vous':'Cindy')+' · '+fmtDate(m.createdAt)+(m.editedAt?' · modifié':'')+
+        (mine && m.id ? act('modifier', 'window.stbInboxMsgEdit(\''+pid+'\',\''+m.id+'\')') : '')+
+        (!mine && m.id ? act(m.readByClient===false?'lu':'marquer non lu', 'window.stbInboxMsgUnread(\''+pid+'\',\''+m.id+'\','+(m.readByClient===false?'false':'true')+')') : '');
       return '<div class="mx-msg mx-msg--'+(mine?'out':'in')+'">'+
         (body || '<div class="mx-b"></div>')+
-        '<div class="mx-m">'+(mine?'Vous':'Cindy')+' · '+fmtDate(m.createdAt)+'</div>'+
+        '<div class="mx-m">'+meta+'</div>'+
       '</div>';
     }).join('');
   }
@@ -168,6 +173,37 @@
         stbInboxRenderList();
         toast('Message envoyé');
       })
+      .catch(function(){ toast('Erreur, réessayez.'); });
+  };
+  // Modifier un de SES propres messages (corriger une faute).
+  window.stbInboxMsgEdit = function(pid, id){
+    var pd = getPD(pid); if (!pd) return;
+    var m = (pd.messages || []).filter(function(x){ return x.id === id; })[0]; if (!m) return;
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:460px;width:100%">'+
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:12px">Modifier votre message</div>'+
+      '<textarea id="stb-medit" style="width:100%;min-height:110px;font-family:var(--font-body);font-size:15px;line-height:1.5;padding:12px 14px;border:1px solid var(--bone-d);border-radius:12px;resize:vertical;box-sizing:border-box;color:var(--terre)"></textarea>'+
+      '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">'+
+        '<button id="stb-mcancel" style="font-family:var(--font-micro);font-size:12px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid var(--bone-d);background:#fff;color:var(--terre);cursor:pointer">Annuler</button>'+
+        '<button id="stb-msave" style="font-family:var(--font-micro);font-size:12px;font-weight:600;padding:9px 18px;border-radius:999px;border:none;background:var(--terre);color:var(--paille);cursor:pointer">Enregistrer</button>'+
+      '</div></div>';
+    document.body.appendChild(ov);
+    var ta = ov.querySelector('#stb-medit'); ta.value = m.content || ''; ta.focus();
+    function close(){ if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function(e){ if (e.target === ov) close(); });
+    ov.querySelector('#stb-mcancel').onclick = close;
+    ov.querySelector('#stb-msave').onclick = function(){
+      var v = (ta.value || '').trim(); if (!v){ close(); return; }
+      fetch('/api/client/' + TOKEN + '/message/edit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, id: id, content: v }) })
+        .then(function(r){ if (!r.ok) throw new Error(); m.content = v; m.editedAt = 'now'; close(); window.stbInboxRefresh && window.stbInboxRefresh(); toast('Message modifié'); })
+        .catch(function(){ toast('Erreur, réessayez.'); });
+    };
+  };
+  // Marquer un message de Cindy comme non lu (pour y revenir), ou re-lu.
+  window.stbInboxMsgUnread = function(pid, id, unread){
+    fetch('/api/client/' + TOKEN + '/message/unread', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, id: id, unread: unread }) })
+      .then(function(r){ if (!r.ok) throw new Error(); var pd = getPD(pid); if (pd){ var m = (pd.messages || []).filter(function(x){ return x.id === id; })[0]; if (m){ m.readByClient = !unread; m.manualUnread = unread; } } toast(unread ? 'Marqué comme non lu' : 'Marqué comme lu'); window.stbInboxRefresh && window.stbInboxRefresh(); stbInboxRenderList(); })
       .catch(function(){ toast('Erreur, réessayez.'); });
   };
   window.cpCloseInbox = function(){ var o = document.getElementById('cp-inbox'); if (o && o.parentNode) o.parentNode.removeChild(o); };
