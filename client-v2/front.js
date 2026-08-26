@@ -6826,9 +6826,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var comment = (it.status === 'refuse' && it.clientComment)
         ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8d2b21;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
         : '';
-      return '<div style="padding:15px 17px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:9px">' +
+      return '<div style="padding:20px 22px;background:#F5F0E7;border-radius:16px;margin-bottom:14px">' +
         '<div style="display:flex;align-items:flex-start;gap:14px">' +
-        '<span style="width:40px;height:40px;border-radius:var(--radius-2);background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon('download', 18) + '</span>' +
+        '<span style="width:42px;height:42px;border-radius:12px;background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon('download', 18) + '</span>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.3">' + esc(it.name) + vTag + '</div>' +
           (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);margin-top:4px;letter-spacing:0.05em;text-transform:uppercase">' + esc(line1) + '</div>' : '') +
