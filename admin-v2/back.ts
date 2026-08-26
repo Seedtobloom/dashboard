@@ -1186,10 +1186,12 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if ('content' in body) body.content = (body.content || '').toString().slice(0, 10000);
   ADMIN_TASK_FIELDS.forEach((k) => { if (k in body) t[k] = body[k]; });
   if ('estMinutes' in body) t.estMinutes = Math.max(0, Math.min(100000, Math.round(Number(body.estMinutes) || 0)));
+  let manualDeltaMin = 0;
   if ('timeSpentSeconds' in body || 'timeSpentMinutes' in body) {
     const nsec = 'timeSpentSeconds' in body ? Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0)) : Math.max(0, Math.round(Number(body.timeSpentMinutes) || 0)) * 60;
     const cur = t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60;
     const finalSec = body.forceTime === true ? nsec : Math.max(nsec, cur);
+    if (!body.sessionStart) { const d = Math.round((finalSec - cur) / 60); if (d > 0) manualDeltaMin += d; }
     t.timeSpentSeconds = finalSec;
     t.timeSpentMinutes = Math.round(finalSec / 60);
   }
@@ -1199,12 +1201,20 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     const add = Math.round(Number(body.addMinutes) || 0);
     const cur = t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60;
     const finalSec = Math.max(0, cur + add * 60);
+    if (add > 0) manualDeltaMin += add;
     t.timeSpentSeconds = finalSec;
     t.timeSpentMinutes = Math.round(finalSec / 60);
   }
   if (body.sessionStart && body.sessionEnd) {
     if (!Array.isArray(t.sessions)) t.sessions = [];
     t.sessions.push({ start: String(body.sessionStart).slice(0, 30), end: String(body.sessionEnd).slice(0, 30) });
+    if (t.sessions.length > 100) t.sessions = t.sessions.slice(-100);
+  }
+  // Temps saisi à la main (hors chrono) : on l'horodate à maintenant pour le
+  // rattacher au bon mois de travail (et non à l'échéance, qui peut être future).
+  if (manualDeltaMin > 0) {
+    if (!Array.isArray(t.sessions)) t.sessions = [];
+    t.sessions.push({ start: nowIso(), end: nowIso(), minutes: manualDeltaMin });
     if (t.sessions.length > 100) t.sessions = t.sessions.slice(-100);
   }
   if (body.properties && typeof body.properties === 'object') t.properties = Object.assign({}, t.properties || {}, body.properties);
@@ -1516,8 +1526,10 @@ async function handleDeliverableDelete(request: Request, env: Env, key: string, 
 
 /* ─────────────────────────── tableau de bord (priorités + forfaits) ─────────────────────────── */
 
-// Durée d'une session de chrono (en minutes), plafonnée à 24 h.
+// Durée d'une entrée de temps (en minutes), plafonnée à 24 h. Une session de
+// chrono a start/end ; une saisie manuelle horodatée a { start, minutes }.
 function sessionMinutes(s: AnyObj): number {
+  if (s && typeof s.minutes === 'number') return Math.max(0, Math.min(s.minutes, 24 * 60));
   const st = s && s.start ? Date.parse(s.start) : NaN;
   const en = s && s.end ? Date.parse(s.end) : NaN;
   if (isNaN(st) || isNaN(en) || en <= st) return 0;
@@ -1544,9 +1556,17 @@ function taskMinutesByMonth(t: AnyObj): Record<string, number> {
   const total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
   const residual = Math.max(0, total - sessTotal);
   if (residual > 0) {
+    const now = new Date();
+    const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     let rm = lastStart ? lastStart.slice(0, 7) : '';
-    if (!rm) rm = String(t.dueDate || t.createdAt || '').slice(0, 7);
-    if (!rm) { const n = new Date(); rm = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); }
+    if (!rm) {
+      // Temps ancien saisi sans horodatage : on le rattache à l'échéance SI
+      // elle n'est pas dans le futur, sinon au mois courant. On ne compte
+      // JAMAIS du travail sur un mois futur.
+      const due = String(t.dueDate || '').slice(0, 7);
+      rm = (due && due <= cur) ? due : cur;
+    }
+    if (rm > cur) rm = cur;
     map[rm] = (map[rm] || 0) + residual;
   }
   return map;

@@ -5067,7 +5067,7 @@
 
   /* partner: forfait + tâches (sous-onglets séparés) */
   function fmtHrs(h) { h = Math.round((h || 0) * 10) / 10; return (h % 1 === 0 ? h : h.toFixed(1)) + ' h'; }
-  function admSessionMin(s) { var st = s && s.start ? Date.parse(s.start) : NaN, en = s && s.end ? Date.parse(s.end) : NaN; if (isNaN(st) || isNaN(en) || en <= st) return 0; return Math.min((en - st) / 60000, 24 * 60); }
+  function admSessionMin(s) { if (s && typeof s.minutes === 'number') return Math.max(0, Math.min(s.minutes, 24 * 60)); var st = s && s.start ? Date.parse(s.start) : NaN, en = s && s.end ? Date.parse(s.end) : NaN; if (isNaN(st) || isNaN(en) || en <= st) return 0; return Math.min((en - st) / 60000, 24 * 60); }
   // Répartition du temps d'une tâche par mois RÉELLEMENT travaillé (miroir de
   // back.ts : mois des sessions de chrono ; le résidu saisi à la main va au
   // dernier mois de session, sinon échéance/création). Jamais la validation.
@@ -5075,7 +5075,13 @@
     var map = {}, sessions = Array.isArray(t.sessions) ? t.sessions : [], sessTotal = 0, lastStart = '';
     sessions.forEach(function (s) { var m = admSessionMin(s), ym = String((s && s.start) || '').slice(0, 7); if (m <= 0 || !ym) return; map[ym] = (map[ym] || 0) + m; sessTotal += m; if (String(s.start) > lastStart) lastStart = String(s.start); });
     var total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0), residual = Math.max(0, total - sessTotal);
-    if (residual > 0) { var rm = lastStart ? lastStart.slice(0, 7) : ''; if (!rm) rm = String(t.dueDate || t.createdAt || '').slice(0, 7); if (!rm) { var n = new Date(); rm = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); } map[rm] = (map[rm] || 0) + residual; }
+    if (residual > 0) {
+      var n = new Date(); var cur = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+      var rm = lastStart ? lastStart.slice(0, 7) : '';
+      if (!rm) { var due = String(t.dueDate || '').slice(0, 7); rm = (due && due <= cur) ? due : cur; }
+      if (rm > cur) rm = cur;
+      map[rm] = (map[rm] || 0) + residual;
+    }
     return map;
   }
   // Tâches ayant du temps RÉELLEMENT TRAVAILLÉ sur le mois ym (part du mois),
