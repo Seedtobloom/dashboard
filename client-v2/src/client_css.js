@@ -538,6 +538,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .mx-input { flex:1; font-family:var(--font-micro); font-size:14px; color:var(--terre); background:#F8F6F2; border:1px solid var(--bone-d); border-radius:16px; padding:12px 16px; outline:none; resize:none; min-height:44px; max-height:160px; box-sizing:border-box; }
 .mx-input:focus { background:#fff; box-shadow:0 0 0 2px var(--glycine-700); }
 .mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#f6efe6; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
+.mx-attach { flex:none; width:44px; height:44px; border-radius:14px; border:1px solid var(--bone-d); background:#F8F6F2; color:var(--terre); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.mx-attach:hover { background:var(--brume); }
 @media (max-width:720px) { .mx-rail { width:120px; } .mx-conv__snip, .mx-conv__ctx { display:none; } }
 /* fade-up entrance */
 @media (prefers-reduced-motion:no-preference) { .fade-up { animation:fadeUp var(--dur) var(--ease) both; } }

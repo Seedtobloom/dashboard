@@ -559,6 +559,8 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .mx-input { flex:1; font-family:var(--font-micro); font-size:14px; color:var(--terre); background:#F8F6F2; border:1px solid var(--bone-d); border-radius:16px; padding:12px 16px; outline:none; resize:none; min-height:44px; max-height:160px; box-sizing:border-box; }
 .mx-input:focus { background:#fff; box-shadow:0 0 0 2px var(--glycine-700); }
 .mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#f6efe6; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
+.mx-attach { flex:none; width:44px; height:44px; border-radius:14px; border:1px solid var(--bone-d); background:#F8F6F2; color:var(--terre); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.mx-attach:hover { background:var(--brume); }
 @media (max-width:720px) { .mx-rail { width:120px; } .mx-conv__snip, .mx-conv__ctx { display:none; } }
 /* fade-up entrance */
 @media (prefers-reduced-motion:no-preference) { .fade-up { animation:fadeUp var(--dur) var(--ease) both; } }
@@ -10228,7 +10230,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div id="cp-inbox-msgs" class="mx-feed">'+stbInboxBubbles(pd, '', topic)+'</div>'+
       '<div class="mx-composer">'+
         '<div class="mx-tools">'+cpMsgToolbar('cp-inbox-input')+'</div>'+
+        '<div id="cp-inbox-atts" style="display:flex;flex-wrap:wrap;gap:7px"></div>'+
         '<div class="mx-composer__row">'+
+          '<input type="file" id="cp-inbox-file" multiple style="display:none" onchange="window.stbInboxAttachFiles(\''+p.id+'\')">'+
+          '<button class="mx-attach" title="Joindre un fichier" onclick="document.getElementById(\'cp-inbox-file\').click()">'+cpIcon('paperclip',16)+'</button>'+
           '<textarea id="cp-inbox-input" class="mx-input" placeholder="Écris ton message à Cindy…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.stbInboxSend(\''+p.id+'\');}"></textarea>'+
           '<button class="mx-send" onclick="window.stbInboxSend(\''+p.id+'\')">'+cpIcon('send',15)+' Envoyer</button>'+
         '</div>'+
@@ -10238,6 +10243,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var pd = getPD(pid); if (!pd) return;
     window._stbInboxPid = pid;
     window._stbInboxTopic = ''; // nouveau projet : on repart sur la discussion générale
+    window._stbInboxPending = [];
     if (typeof stbMarkRead === 'function') stbMarkRead(pid, false);
     stbInboxRenderList();
     var act = document.getElementById('cp-inbox-item-'+pid); if (act) act.classList.add('on');
@@ -10256,14 +10262,43 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var box = document.getElementById('cp-inbox-msgs'); if (box) box.scrollTop = box.scrollHeight;
     stbInboxRenderList();
   };
+  // Pièces jointes en attente d'envoi dans le composeur.
+  window._stbInboxPending = window._stbInboxPending || [];
+  window.stbInboxRenderPending = function(){
+    var box = document.getElementById('cp-inbox-atts'); if (!box) return;
+    var list = window._stbInboxPending || [];
+    box.innerHTML = list.map(function(a, i){
+      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11px;color:var(--terre);background:var(--brume);border-radius:999px;padding:6px 11px">'+(a.up?'⏳ ':'📎 ')+esc(a.name)+' <span onclick="window.stbInboxAttRemove('+i+')" style="cursor:pointer;font-weight:700;color:var(--terre-400)">×</span></span>';
+    }).join('');
+  };
+  window.stbInboxAttRemove = function(i){ (window._stbInboxPending||[]).splice(i,1); window.stbInboxRenderPending(); };
+  window.stbInboxAttachFiles = function(pid){
+    var inp = document.getElementById('cp-inbox-file'); if (!inp || !inp.files || !inp.files.length) return;
+    var files = Array.prototype.slice.call(inp.files); inp.value = '';
+    files.forEach(function(f){
+      if (f.size > 30*1024*1024){ toast('Fichier trop lourd (30 Mo max)'); return; }
+      var ph = { name: f.name, key: '', up: true };
+      window._stbInboxPending.push(ph); window.stbInboxRenderPending();
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', pid);
+      fetch('/api/client/' + TOKEN + '/files', { method:'POST', body: fd })
+        .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(res){ ph.key = res.key; ph.name = res.name || f.name; ph.up = false; window.stbInboxRenderPending(); })
+        .catch(function(){ var i = window._stbInboxPending.indexOf(ph); if (i>=0) window._stbInboxPending.splice(i,1); window.stbInboxRenderPending(); toast('Échec de l\'envoi du fichier'); });
+    });
+  };
   window.stbInboxSend = function(pid){
     var inp = document.getElementById('cp-inbox-input');
-    var v = ((inp && inp.value) || '').trim(); if (!v) return;
+    var v = ((inp && inp.value) || '').trim();
+    var pend = window._stbInboxPending || [];
+    if (pend.some(function(a){ return a.up; })) { toast('Un fichier est encore en cours d\'envoi…'); return; }
+    var atts = pend.filter(function(a){ return a.key; }).map(function(a){ return { key: a.key, name: a.name }; });
+    if (!v && !atts.length) return;
     var topic = window._stbInboxTopic || '';
-    fetch('/api/client/' + TOKEN + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, content: v, topic: topic }) })
+    fetch('/api/client/' + TOKEN + '/message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, content: v, topic: topic, attachments: atts }) })
       .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
       .then(function(res){
         var pd = getPD(pid); if (pd){ if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(res.message); }
+        window._stbInboxPending = []; window.stbInboxRenderPending();
         var box = document.getElementById('cp-inbox-msgs');
         if (box && pd) box.innerHTML = stbInboxBubbles(pd, '', window._stbInboxTopic || '');
         if (box) box.scrollTop = box.scrollHeight;
