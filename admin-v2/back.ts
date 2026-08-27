@@ -1364,7 +1364,11 @@ async function listFiles(env: Env, prefix: string): Promise<AnyObj[]> {
     const cm = (obj.customMetadata || {}) as AnyObj;
     out.push({ key: obj.key, name, folder, size: obj.size, type: (obj.httpMetadata && obj.httpMetadata.contentType) || guessType(name), category: cm.category || 'document', source: cm.source || 'cindy', uploadedAt: obj.uploaded });
   }
-  out.sort((a, b) => a.name.localeCompare(b.name));
+  out.sort((a, b) => {
+    const ta = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+    const tb = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+    return tb - ta;
+  });
   return out;
 }
 async function handleFilesList(env: Env, key: string, url: URL, data: AnyObj): Promise<Response> {
@@ -1416,7 +1420,13 @@ async function handleAllFilesList(env: Env, key: string, data: AnyObj): Promise<
     }
     cursor = (listed as AnyObj).truncated ? (listed as AnyObj).cursor : undefined;
   } while (cursor);
-  out.sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')));
+  // Tri par date d'ajout réelle (plus récent d'abord). obj.uploaded est un
+  // objet Date : on compare les timestamps, pas leur représentation texte.
+  out.sort((a, b) => {
+    const ta = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+    const tb = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+    return tb - ta;
+  });
   return json({ files: out });
 }
 function projectFolder(projectId: string): string {
