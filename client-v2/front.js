@@ -2150,7 +2150,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             (card.duration ? '<span>' + esc(card.duration) + '</span>' : '') +
           '</div>' +
           '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="cp-proj-card__pct"><span>' + pct + '% complete</span><span>' + totalDone + '/' + steps.length + ' etapes</span></div>' +
+          '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + totalDone + '/' + steps.length + ' étapes</span></div>' +
         '</div>' +
       '</button>';
     }).join('');
@@ -2479,7 +2479,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div style="font-size:17px;font-weight:600;color:#fff;font-family:\'Cormorant Garamond\',serif;font-style:italic">' + esc(qTitle) + '</div>' +
           (allAnswered
             ? '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">Complété ✓</span>'
-            : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">A compléter</span>') +
+            : '<span style="position:absolute;top:14px;right:14px;font-size:11px;background:rgba(255,200,0,0.25);color:#fff;padding:3px 10px;border-radius:999px;font-weight:600">À compléter</span>') +
         '</div>' +
         '<div style="background:#fff;padding:14px 20px;border:1.5px solid rgba(28,18,5,0.08);border-top:none;border-radius:0 0 14px 14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -2841,7 +2841,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     var progress = '<div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px;flex-wrap:wrap">' +
-        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les etapes une a une, cliquez pour ouvrir sa page.</p>' +
+        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les étapes une à une, cliquez pour ouvrir sa page.</p>' +
         svToggle +
       '</div>' +
       svStatusTabsHtml +
@@ -4997,7 +4997,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           added.push({ key:fileData.key, name:fileData.name||file.name });
           next();
         })
-        .catch(function(){ toast('Erreur lors du depot', true); window.cliReportError('upload-brief', 'Échec de l\'upload d\'un fichier sur une demande'); if (added.length) finish(); });
+        .catch(function(){ toast('Erreur lors du dépôt', true); window.cliReportError('upload-brief', 'Échec de l\'upload d\'un fichier sur une demande'); if (added.length) finish(); });
     }
     next();
   };
@@ -5033,7 +5033,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           window.cliSaveTaskProp(pid, taskId, propId, JSON.stringify({ key:fileData.key, name:fileData.name||file.name }));
           toast('Fichier ajouté ✓'); renderShell();
         })
-        .catch(function(){ toast('Erreur lors du depot', true); });
+        .catch(function(){ toast('Erreur lors du dépôt', true); });
     };
     input.click();
   };
@@ -5905,13 +5905,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     fetch(API_BASE + '/files', { method:'POST', headers: headers, body: fd })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(){
-        toast('Fichier deposé ✓');
+        toast('Fichier déposé ✓');
         // Reload project data
         fetch(API_BASE, { headers: headers })
           .then(function(r){ return r.ok ? r.json() : null; })
           .then(function(data){ if(data && !data.locked) renderApp(data); });
       })
-      .catch(function(){ toast('Erreur lors du depot', true); });
+      .catch(function(){ toast('Erreur lors du dépôt', true); });
   };
 
   var _cliDragId = null;
@@ -5987,7 +5987,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             toast('Livrable depose ✓'); renderShell();
           });
       })
-      .catch(function(){ toast('Erreur lors du depot', true); renderShell(); });
+      .catch(function(){ toast('Erreur lors du dépôt', true); renderShell(); });
   }
 
   window.cliDeleteTask = function(pid, taskId) {
@@ -7551,7 +7551,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       ? 'Ouvrez un ticket en decrivant votre besoin, suivez son statut et gardez un oeil sur votre quota d\'heures du mois.'
       : clientType === 'site'
       ? 'Parcourez les phases de votre site ; cliquez-en une pour voir sa checklist, cocher ce qui est fait et suivre l\'avancement.'
-      : 'Suivez les etapes une a une ; cliquez-en une pour ouvrir sa page detaillee et voir son statut.';
+      : 'Suivez les étapes une à une ; cliquez-en une pour ouvrir sa page détaillée et voir son statut.';
     var GUIDE_BY_TYPE = {
       partenaire: [
         { icon:'flower', title:'Votre espace partenaire', text:'Bienvenue ! Cet espace est votre tableau de bord créatif. Chaque mois, vos demandes y sont planifiées, suivies et livrées. Ce guide vous présente chaque section en détail.' },
@@ -7856,15 +7856,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '</div>';
     }
     return '<div class="cp-card">' +
-      '<div class="cp-card__hd"><h2 class="cp-card__title">Documents partages</h2></div>' +
+      '<div class="cp-card__hd"><h2 class="cp-card__title">Documents partagés</h2></div>' +
       (adminFiles.length
         ? '<div style="margin-bottom:20px">' + adminFiles.map(fileRow).join('') + '</div>'
         : '<div style="color:var(--muted);font-size:13px;margin-bottom:20px">Aucun document partage pour le moment.</div>') +
       '<div style="border-top:1px solid var(--border);padding-top:16px">' +
-        '<div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:10px">Vos depots</div>' +
+        '<div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:10px">Vos dépôts</div>' +
         (clientFiles.length ? '<div style="margin-bottom:12px">' + clientFiles.map(fileRow).join('') + '</div>' : '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">Aucun fichier deposé.</div>') +
         '<label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:2px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px" for="cli-file-up-' + pid + '">' +
-          cpIcon('upload',13) + ' Deposer un fichier' +
+          cpIcon('upload',13) + ' Déposer un fichier' +
           '<input type="file" id="cli-file-up-' + pid + '" style="display:none" onchange="cliUploadClientFile(\'' + pid + '\',this)">' +
         '</label>' +
       '</div>' +
@@ -10065,8 +10065,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var pd = getPD(pid); if (!pd) return;
     fetch('/api/client/' + TOKEN + '/folders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-      .then(function(res){ if (res.ok && res.d && res.d.name){ if (!pd.project.folders) pd.project.folders = []; if (pd.project.folders.indexOf(res.d.name)===-1) pd.project.folders.push(res.d.name); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Erreur'); })
-      .catch(function(){ alert('Erreur'); });
+      .then(function(res){ if (res.ok && res.d && res.d.name){ if (!pd.project.folders) pd.project.folders = []; if (pd.project.folders.indexOf(res.d.name)===-1) pd.project.folders.push(res.d.name); window.stbFilesSelect(pid); } else toast((res.d && res.d.error) || 'Erreur', true); })
+      .catch(function(){ toast('Erreur', true); });
   };
   window.stbFolderDel = function(pid, encName){
     var name = decodeURIComponent(encName);
@@ -10074,8 +10074,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var pd = getPD(pid); if (!pd) return;
       fetch('/api/client/' + TOKEN + '/folders', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-        .then(function(res){ if (res.ok){ pd.project.folders = (pd.project.folders||[]).filter(function(x){ return x !== name; }); pd.files = (pd.files||[]).filter(function(f){ return f.folder !== name; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Erreur'); })
-        .catch(function(){ alert('Erreur'); });
+        .then(function(res){ if (res.ok){ pd.project.folders = (pd.project.folders||[]).filter(function(x){ return x !== name; }); pd.files = (pd.files||[]).filter(function(f){ return f.folder !== name; }); window.stbFilesSelect(pid); } else toast((res.d && res.d.error) || 'Erreur', true); })
+        .catch(function(){ toast('Erreur', true); });
     });
   };
   window.cpConfirmDA = function(message, confirmLabel, onConfirm){
@@ -10099,8 +10099,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var pd = getPD(pid); if (!pd) return;
       fetch('/api/client/' + TOKEN + '/files?key=' + encodeURIComponent(key) + '&projectId=' + encodeURIComponent(pid), { method:'DELETE' })
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-        .then(function(res){ if (res.ok){ pd.files = (pd.files||[]).filter(function(x){ return x.key !== key; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Suppression impossible'); })
-        .catch(function(){ alert('Erreur'); });
+        .then(function(res){ if (res.ok){ pd.files = (pd.files||[]).filter(function(x){ return x.key !== key; }); window.stbFilesSelect(pid); } else toast((res.d && res.d.error) || 'Suppression impossible', true); })
+        .catch(function(){ toast('Erreur', true); });
     });
   };
   window.stbFilesUpload = function(pid, files){

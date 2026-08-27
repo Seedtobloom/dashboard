@@ -52,8 +52,8 @@
     var pd = getPD(pid); if (!pd) return;
     fetch('/api/client/' + TOKEN + '/folders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-      .then(function(res){ if (res.ok && res.d && res.d.name){ if (!pd.project.folders) pd.project.folders = []; if (pd.project.folders.indexOf(res.d.name)===-1) pd.project.folders.push(res.d.name); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Erreur'); })
-      .catch(function(){ alert('Erreur'); });
+      .then(function(res){ if (res.ok && res.d && res.d.name){ if (!pd.project.folders) pd.project.folders = []; if (pd.project.folders.indexOf(res.d.name)===-1) pd.project.folders.push(res.d.name); window.stbFilesSelect(pid); } else toast((res.d && res.d.error) || 'Erreur', true); })
+      .catch(function(){ toast('Erreur', true); });
   };
   window.stbFolderDel = function(pid, encName){
     var name = decodeURIComponent(encName);
@@ -61,8 +61,8 @@
       var pd = getPD(pid); if (!pd) return;
       fetch('/api/client/' + TOKEN + '/folders', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-        .then(function(res){ if (res.ok){ pd.project.folders = (pd.project.folders||[]).filter(function(x){ return x !== name; }); pd.files = (pd.files||[]).filter(function(f){ return f.folder !== name; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Erreur'); })
-        .catch(function(){ alert('Erreur'); });
+        .then(function(res){ if (res.ok){ pd.project.folders = (pd.project.folders||[]).filter(function(x){ return x !== name; }); pd.files = (pd.files||[]).filter(function(f){ return f.folder !== name; }); window.stbFilesSelect(pid); } else toast((res.d && res.d.error) || 'Erreur', true); })
+        .catch(function(){ toast('Erreur', true); });
     });
   };
   window.cpConfirmDA = function(message, confirmLabel, onConfirm){
@@ -86,8 +86,8 @@
       var pd = getPD(pid); if (!pd) return;
       fetch('/api/client/' + TOKEN + '/files?key=' + encodeURIComponent(key) + '&projectId=' + encodeURIComponent(pid), { method:'DELETE' })
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
-        .then(function(res){ if (res.ok){ pd.files = (pd.files||[]).filter(function(x){ return x.key !== key; }); window.stbFilesSelect(pid); } else alert((res.d && res.d.error) || 'Suppression impossible'); })
-        .catch(function(){ alert('Erreur'); });
+        .then(function(res){ if (res.ok){ pd.files = (pd.files||[]).filter(function(x){ return x.key !== key; }); window.stbFilesSelect(pid); } else toast((res.d && res.d.error) || 'Suppression impossible', true); })
+        .catch(function(){ toast('Erreur', true); });
     });
   };
   window.stbFilesUpload = function(pid, files){
