@@ -2248,16 +2248,20 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var blocksHtml = '';
     if (step.pageBlocks && step.pageBlocks.length) {
       blocksHtml = step.pageBlocks.map(function(blk) {
-        var delBtn = '<button onclick="cliDeleteStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\')" style="margin-left:auto;flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--bone-d);background:transparent;color:var(--terre-400);font-size:14px;line-height:1;cursor:pointer;display:grid;place-items:center;opacity:0.7" title="Supprimer">×</button>';
+        // Les affordances d'édition (supprimer, contenteditable, ajouter) ne sont
+        // montrées qu'en mode admin (?edit=1). Côté cliente : lecture seule.
+        var ed = _isAdminEdit;
+        var editAttrs = ed ? ' contenteditable="true" onblur="cliSaveStepBlockContent(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\',this.innerText)" onfocus="this.style.borderBottomColor=\'var(--terre-300)\'" onfocusout="this.style.borderBottomColor=\'transparent\'"' : '';
+        var delBtn = ed ? '<button onclick="cliDeleteStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\')" style="margin-left:auto;flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--bone-d);background:transparent;color:var(--terre-400);font-size:14px;line-height:1;cursor:pointer;display:grid;place-items:center;opacity:0.7" title="Supprimer">×</button>' : '';
         if (blk.type === 'title') {
           return '<div style="display:flex;align-items:flex-start;gap:8px">' +
-            '<h2 contenteditable="true" onblur="cliSaveStepBlockContent(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\',this.innerText)" style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);font-weight:400;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px" onfocus="this.style.borderBottomColor=\'var(--terre-300)\'" onfocusout="this.style.borderBottomColor=\'transparent\'">' + esc(blk.content || '') + '</h2>' +
+            '<h2' + editAttrs + ' style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);font-weight:400;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px">' + esc(blk.content || '') + '</h2>' +
             delBtn +
           '</div>';
         }
         if (blk.type === 'text') {
           return '<div style="display:flex;align-items:flex-start;gap:8px">' +
-            '<p contenteditable="true" onblur="cliSaveStepBlockContent(\'' + pid + '\',\'' + stepId + '\',\'' + blk.id + '\',this.innerText)" style="font-size:14.5px;color:var(--terre-600);line-height:1.6;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px" onfocus="this.style.borderBottomColor=\'var(--terre-300)\'" onfocusout="this.style.borderBottomColor=\'transparent\'">' + esc(blk.content || '') + '</p>' +
+            '<p' + editAttrs + ' style="font-size:14.5px;color:var(--terre-600);line-height:1.6;margin:0;flex:1;outline:none;border-bottom:1.5px dashed transparent;padding-bottom:2px">' + esc(blk.content || '') + '</p>' +
             delBtn +
           '</div>';
         }
@@ -2341,12 +2345,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<hr style="border:none;border-top:1px solid var(--bone-d);margin:0">' +
         (step.description ? '<p style="font-size:15px;color:var(--terre-600);font-style:italic;line-height:1.6;margin:0">' + esc(step.description) + '</p>' : '') +
         (blocksHtml ? '<div style="display:flex;flex-direction:column;gap:14px">' + blocksHtml + '</div>' : '') +
-        addBlockBtn +
-        addBlockMenu +
+        (_isAdminEdit ? addBlockBtn + addBlockMenu : '') +
       '</div>' +
       // Footer
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
-        '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' +
+      '<div style="display:flex;align-items:center;justify-content:' + (_isAdminEdit ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
+        (_isAdminEdit ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' : '') +
         '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
       '</div>' +
     '</div>';
