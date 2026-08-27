@@ -6111,59 +6111,100 @@
   }
 
   /* documents */
-  var ADM_FILES_CLIENTONLY = true;
+  var ADM_FILES_CACHE = [], ADM_FILES_Q = '', ADM_FILES_FILTER = 'all', ADM_FILES_CTX = '', ADM_DOC_FILTERS = [];
+  function admFileEmoji(name) {
+    var n = (name || '').toLowerCase();
+    if (/\.(jpe?g|png|webp|gif|avif|svg|heic)$/.test(n)) return '🖼️';
+    if (/\.pdf$/.test(n)) return '📕';
+    if (/\.(docx?|odt|rtf|pages)$/.test(n)) return '📄';
+    if (/\.(xlsx?|csv|numbers)$/.test(n)) return '📊';
+    if (/\.(pptx?|key)$/.test(n)) return '📈';
+    if (/\.(zip|rar|7z)$/.test(n)) return '🗜️';
+    if (/\.(ai|psd|indd|eps|sketch|fig|xd)$/.test(n)) return '🎨';
+    if (/\.(mp4|mov|avi|webm)$/.test(n)) return '🎬';
+    return '📎';
+  }
   function renderDocuments(body) {
     var projects = [];
     CUR.domains.forEach(function (dn) { projects.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label]); });
     CUR.supports.forEach(function (s) { projects.push([s.id, s.label]); });
     var opts = projects.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('');
     body.innerHTML =
-      '<div class="card"><div class="between"><h3>Tous les fichiers reçus</h3>' +
-        '<label class="checkbox" style="white-space:nowrap"><input type="checkbox" id="af-clientonly"' + (ADM_FILES_CLIENTONLY ? ' checked' : '') + ' onchange="ADM.listAllDocs()"> déposés par la cliente</label>' +
-      '</div>' +
-      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Tous les documents de cette cliente, où qu\'ils aient été déposés (messagerie, créations, tâches, dépôts), du plus récent au plus ancien.</div>' +
-      '<div id="allfiles"><div class="empty"><div class="spin" style="margin:16px auto"></div></div></div></div>' +
-      '<div class="card"><h3>Déposer un document</h3>' +
-      '<div class="row">' +
-      '<select class="inp" id="up-proj" style="width:auto" onchange="ADM.listDocs()">' + opts + '</select>' +
-      '<label class="checkbox"><input type="checkbox" id="up-liv"> livrable (validable par le client)</label>' +
-      '</div>' +
-      '<div class="row mt"><input class="inp" type="file" id="up-file"><button class="btn btn--dark btn--sm" id="up-btn" onclick="ADM.upload()">Uploader</button></div>' +
-      '<div class="micro mt">Décochez « livrable » pour un document administratif (devis, facture, contrat…).</div></div>' +
-      '<div class="card"><h3>Gérer par projet</h3><div id="doclist"><div class="empty">·</div></div></div>';
-    listDocs();
-    listAllDocs();
+      '<div class="card">' +
+        '<div class="between"><h3>Fichiers de la cliente</h3>' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.docUploadToggle()">+ Déposer un document</button></div>' +
+        '<div id="up-panel" style="display:none;background:var(--surface-2,#f4efe6);border-radius:12px;padding:14px 16px;margin-top:12px">' +
+          '<div class="row" style="flex-wrap:wrap;gap:10px;align-items:center">' +
+            '<select class="inp" id="up-proj" style="width:auto">' + opts + '</select>' +
+            '<label class="checkbox"><input type="checkbox" id="up-liv"> livrable (validable)</label>' +
+            '<input class="inp" type="file" id="up-file"><button class="btn btn--dark btn--sm" id="up-btn" onclick="ADM.upload()">Uploader</button>' +
+          '</div>' +
+          '<div class="micro mt" style="text-transform:none;letter-spacing:0">Choisis le projet de rattachement. Décoche « livrable » pour un document administratif.</div>' +
+        '</div>' +
+        '<div style="margin:14px 0 10px"><input class="inp" id="af-q" placeholder="🔍 Rechercher un fichier par nom…" oninput="ADM.filterAllDocs()" style="width:100%;box-sizing:border-box"></div>' +
+        '<div id="af-chips" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px"></div>' +
+        '<div id="allfiles"><div class="empty"><div class="spin" style="margin:16px auto"></div></div></div>' +
+      '</div>';
+    loadAllDocs();
   }
-  function listAllDocs() {
-    var co = el('af-clientonly'); ADM_FILES_CLIENTONLY = co ? co.checked : ADM_FILES_CLIENTONLY;
+  function docUploadToggle() { var p = el('up-panel'); if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none'; }
+  // Dossier R2 → identifiant de projet (pour verrouiller/supprimer).
+  function folderToProject(folder) {
+    if (!folder) return '';
+    var seg = String(folder).split('/');
+    if (seg[0] === 'supportsDeCom') return 'support-' + (seg[1] || '');
+    var map = { partenaireCreative: 'partner', siteWeb: 'website', identiteVisuelle: 'branding' };
+    return map[seg[0]] || '';
+  }
+  function loadAllDocs() {
     api('/api/clients/' + CURKEY + '/files-all').then(function (r) { return r.json(); }).then(function (d) {
-      var clientOnly = ADM_FILES_CLIENTONLY;
-      var files = (d.files || []).filter(function (f) { return clientOnly ? f.source === 'client' : true; });
-      var rows = files.map(function (f) {
-        var when = f.uploadedAt ? fmtDate(f.uploadedAt) : '';
-        return '<div class="file"><span class="nm">' + esc(f.name) +
-          ' <span class="pill">' + esc(f.context || 'Espace') + '</span>' +
-          (f.source === 'client' ? ' <span class="pill pill--a_valider">déposé cliente</span>' : '') +
-          (when ? ' <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">· ' + when + '</span>' : '') +
-          '</span>' +
-          '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" title="Télécharger">↓</a>' +
-        '</div>';
-      }).join('') || '<div class="empty">Aucun fichier' + (clientOnly ? ' déposé par la cliente' : '') + ' pour le moment.</div>';
-      var box = el('allfiles'); if (box) box.innerHTML = rows;
+      ADM_FILES_CACHE = d.files || [];
+      renderDocChips();
+      renderAllDocsList();
     }).catch(function () { var box = el('allfiles'); if (box) box.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
   }
-  function listDocs() {
-    var pid = el('up-proj').value;
-    api('/api/clients/' + CURKEY + '/files?projectId=' + encodeURIComponent(pid)).then(function (r) { return r.json(); }).then(function (d) {
-      var pid2 = el('up-proj').value;
-      var list = (d.files || []).map(function (f) {
-        return '<div class="file"><span class="nm">' + esc(f.name) + ' ' + pill(f.category === 'deliverable' ? 'a_valider' : 'todo', f.category === 'deliverable' ? 'livrable' : 'document') + (f.source === 'client' ? ' <span class="pill">déposé client</span>' : '') + (f.locked ? ' <span class="pill pill--done">verrouillé</span>' : '') + '</span>' +
-          '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download">↓</a>' +
-          '<button class="btn btn--outline btn--sm" onclick="ADM.lockDoc(\'' + encodeURIComponent(f.key) + '\',\'' + pid2 + '\',' + (f.locked ? 'false' : 'true') + ')">' + (f.locked ? 'Déverrouiller' : 'Verrouiller') + '</button>' +
-          '<button class="btn btn--danger btn--sm" onclick="ADM.delDoc(\'' + encodeURIComponent(f.key) + '\')">Suppr.</button></div>';
-      }).join('') || '<div class="empty">Aucun document.</div>';
-      var dl = el('doclist'); if (dl) dl.innerHTML = list;
+  function renderDocChips() {
+    var box = el('af-chips'); if (!box) return;
+    var nClient = ADM_FILES_CACHE.filter(function (f) { return f.source === 'client'; }).length;
+    ADM_DOC_FILTERS = [{ v: 'all', lbl: 'Tout · ' + ADM_FILES_CACHE.length }, { v: 'client', lbl: 'Déposés par la cliente · ' + nClient }];
+    var seen = {};
+    ADM_FILES_CACHE.forEach(function (f) { var c = f.context || 'Espace'; if (!seen[c]) { seen[c] = 1; ADM_DOC_FILTERS.push({ v: 'ctx', ctx: c, lbl: c }); } });
+    box.innerHTML = ADM_DOC_FILTERS.map(function (f, i) {
+      var on = (f.v === 'ctx') ? (ADM_FILES_FILTER === 'ctx' && ADM_FILES_CTX === f.ctx) : (ADM_FILES_FILTER === f.v);
+      return '<button class="filt' + (on ? ' is-active' : '') + '" onclick="ADM.setDocFilter(' + i + ')">' + esc(f.lbl) + '</button>';
+    }).join('');
+  }
+  function setDocFilter(i) { var f = ADM_DOC_FILTERS[i]; if (!f) return; ADM_FILES_FILTER = f.v; ADM_FILES_CTX = f.ctx || ''; renderDocChips(); renderAllDocsList(); }
+  function filterAllDocs() { var q = el('af-q'); ADM_FILES_Q = q ? q.value : ''; renderAllDocsList(); }
+  function docRow(f) {
+    var url = '/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download';
+    var isImg = /\.(jpe?g|png|webp|gif|avif|svg)$/i.test(f.name || '');
+    var thumb = isImg
+      ? '<a href="' + url + '" target="_blank" class="doc-thumb"><img src="' + url + '" loading="lazy" alt=""></a>'
+      : '<span class="doc-thumb doc-thumb--ic">' + admFileEmoji(f.name) + '</span>';
+    var when = f.uploadedAt ? fmtDate(f.uploadedAt) : '';
+    var pid = folderToProject(f.folder);
+    var ek = encodeURIComponent(f.key);
+    return '<div class="docrow">' + thumb +
+      '<div class="docrow__m"><div class="docrow__n">' + esc(f.name) + (f.locked ? ' <span class="pill pill--done">verrouillé</span>' : '') + '</div>' +
+        '<div class="docrow__meta"><span class="pill">' + esc(f.context || 'Espace') + '</span>' + (f.source === 'client' ? ' <span class="pill pill--a_valider">déposé cliente</span>' : '') + (when ? ' <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">' + when + '</span>' : '') + '</div></div>' +
+      '<div class="docrow__act">' +
+        '<a class="btn btn--outline btn--sm" href="' + url + '" target="_blank" title="Télécharger">↓</a>' +
+        (pid ? '<button class="btn btn--outline btn--sm" onclick="ADM.lockDoc(\'' + ek + '\',\'' + pid + '\',' + (f.locked ? 'false' : 'true') + ')" title="' + (f.locked ? 'Déverrouiller' : 'Verrouiller pour la cliente') + '">' + (f.locked ? '🔓' : '🔒') + '</button>' : '') +
+        '<button class="btn btn--danger btn--sm" onclick="ADM.delDoc(\'' + ek + '\')" title="Supprimer">✕</button>' +
+      '</div>' +
+    '</div>';
+  }
+  function renderAllDocsList() {
+    var box = el('allfiles'); if (!box) return;
+    var q = (ADM_FILES_Q || '').toLowerCase();
+    var files = ADM_FILES_CACHE.filter(function (f) {
+      if (ADM_FILES_FILTER === 'client' && f.source !== 'client') return false;
+      if (ADM_FILES_FILTER === 'ctx' && (f.context || 'Espace') !== ADM_FILES_CTX) return false;
+      if (q && (f.name || '').toLowerCase().indexOf(q) === -1) return false;
+      return true;
     });
+    box.innerHTML = files.length ? files.map(docRow).join('') : '<div class="empty">Aucun fichier' + (q ? ' pour « ' + esc(q) + ' »' : '') + '.</div>';
   }
   function upload() {
     var f = el('up-file').files[0]; if (!f) { toast('Choisis un fichier'); return; }
@@ -6171,15 +6212,15 @@
     var fd = new FormData(); fd.append('file', f); fd.append('projectId', el('up-proj').value); if (el('up-liv').checked) fd.append('deliverable', '1');
     var btn = el('up-btn'); btn.disabled = true; btn.textContent = 'Envoi…';
     api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
-      .then(function (res) { btn.disabled = false; btn.textContent = 'Uploader'; if (res.ok) { toast('Document déposé'); el('up-file').value = ''; listDocs(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+      .then(function (res) { btn.disabled = false; btn.textContent = 'Uploader'; if (res.ok) { toast('Document déposé'); el('up-file').value = ''; loadAllDocs(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
       .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur — envoi impossible (fichier volumineux ? envoie-le en lien).'); });
   }
   function delDoc(k) {
     admConfirm({ title: 'Supprimer ce document ?', message: 'Le fichier sera supprimé pour vous et pour le client.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
-      jpost('/api/clients/' + CURKEY + '/files', { key: decodeURIComponent(k) }, 'DELETE').then(function (r) { if (r.ok) { toast('Supprimé'); listDocs(); } else toast('Erreur'); });
+      jpost('/api/clients/' + CURKEY + '/files', { key: decodeURIComponent(k) }, 'DELETE').then(function (r) { if (r.ok) { toast('Supprimé'); loadAllDocs(); } else toast('Erreur'); });
     });
   }
-  function lockDoc(k, pid, lock) { jpost('/api/clients/' + CURKEY + '/files/lock', { key: decodeURIComponent(k), projectId: pid, locked: lock }, 'PATCH').then(function (r) { if (r.ok) { toast(lock ? 'Fichier verrouillé' : 'Fichier déverrouillé'); listDocs(); } else toast('Erreur'); }); }
+  function lockDoc(k, pid, lock) { jpost('/api/clients/' + CURKEY + '/files/lock', { key: decodeURIComponent(k), projectId: pid, locked: lock }, 'PATCH').then(function (r) { if (r.ok) { toast(lock ? 'Fichier verrouillé' : 'Fichier déverrouillé'); loadAllDocs(); } else toast('Erreur'); }); }
 
   /* ── Messagerie globale : clients -> projet -> fil ── */
   function renderChat() {
@@ -7061,7 +7102,7 @@
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
-    sendMsg: sendMsg, listDocs: listDocs, listAllDocs: listAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
+    sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgEdit: msgEdit, msgMove: msgMove, msgMoveTo: msgMoveTo, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
     msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
     msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
