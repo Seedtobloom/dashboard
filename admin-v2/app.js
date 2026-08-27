@@ -1720,8 +1720,6 @@
   // [clé, emoji, libellé, minutes indicatives]
   var MT_ENERGY = [['quick', '🟢', '10 min', 10], ['short', '🟡', '30 min', 30], ['medium', '🟠', '1 h', 60], ['deep', '🔴', 'Demi-journée', 240]];
   function mtEnergy(e) { for (var i = 0; i < MT_ENERGY.length; i++) if (MT_ENERGY[i][0] === e) return MT_ENERGY[i]; return null; }
-  function mtEnergyDot(e) { var x = mtEnergy(e); return x ? '<span title="Énergie : ' + x[2] + '" style="font-size:11px">' + x[1] + '</span>' : ''; }
-  function mtImpactLabel(i) { return { faible: 'Impact faible', moyen: 'Impact moyen', fort: 'Impact fort' }[i] || ''; }
   // Durée retenue pour la charge du jour : estimation explicite, sinon l'énergie.
   function mtTaskMinutes(t) { if (t.estMinutes) return t.estMinutes; var x = mtEnergy(t.energy); return x ? x[3] : 0; }
   // Aujourd'hui = tâches que tu as épinglées (doDate == aujourd'hui, en local).
@@ -2115,29 +2113,6 @@
     };
     document.body.appendChild(ov);
     var f = el('mte-title'); if (f) f.focus();
-  }
-  function mtRow(t) {
-    var pcol = { haute: 'var(--red)', normale: 'var(--glycine-900)', basse: '#c3b9a6' }[t.priority] || 'var(--glycine-900)';
-    var plabel = { haute: 'Priorité haute', normale: 'Priorité normale', basse: 'Priorité basse' }[t.priority] || t.priority;
-    var est = t.estMinutes ? ('estimé ' + (t.estMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
-    var dn = t.status === 'done';
-    var running = MT_TIMER && MT_TIMER.id === t.id;
-    var spent = t.timeSpentSeconds || 0;
-    var tcColor = running ? 'var(--green)' : (spent ? 'var(--terre)' : '#c3b9a6');
-    var timecode = '<span id="mt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;letter-spacing:0.02em;color:' + tcColor + ';min-width:74px;text-align:right">' + mtClock(spent) + '</span>';
-    var timerBtn = dn ? '' : (running
-      ? '<button class="pbtn" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.mtPause(\'' + t.id + '\')">⏸ Pause</button>'
-      : '<button class="pbtn" onclick="ADM.mtStart(\'' + t.id + '\')">▶ Démarrer</button>');
-    return '<div class="prow">' +
-      '<span class="pdot" style="background:' + pcol + ';align-self:center"></span>' +
-      '<div class="prow__main"><div class="prow__el" style="' + (dn ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + esc(t.title) + '</div>' +
-        '<div class="prow__meta">' + plabel + (est ? ' · ' + est : '') + (t.doDate ? ' · à faire le ' + fmtDate(t.doDate) : '') + (t.dueDate ? ' · échéance ' + fmtDate(t.dueDate) : '') + '</div>' +
-        '<div id="mt-note-' + t.id + '" style="margin-top:4px">' + mtNoteInner(t) + '</div></div>' +
-      '<div class="prow__act">' + timecode + timerBtn +
-        (dn ? '<button class="pbtn" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'todo\')">Rouvrir</button>'
-            : '<button class="pbtn pbtn--ok" onclick="ADM.myTaskStatus(\'' + t.id + '\',\'done\')">Fait</button>') +
-        '<button class="pbtn" onclick="ADM.myTaskDel(\'' + t.id + '\')" style="color:var(--red);border-color:#f0c9c4">Suppr.</button>' +
-      '</div></div>';
   }
   function mtStart(id) {
     if (MT_TIMER && MT_TIMER.id !== id) mtPause(MT_TIMER.id, true);
@@ -3016,38 +2991,6 @@
       (t.clientName ? '<span class="cli" title="' + esc(t.clientName) + '" onclick="ADM.openClient(\'' + esc(t.clientKey) + '\')">' + esc(t.clientName) + '</span>' : '') +
       '<span class="tacts">' + moveBtn + timerBtn + toggleBtn + '</span>' +
     '</div>';
-  }
-  function mtSectionHead(emoji, label, color, count, hint) {
-    return '<div style="display:flex;align-items:baseline;gap:9px;margin:22px 2px 9px">' +
-      '<span style="font-family:var(--font-display);font-style:italic;font-size:20px;color:' + color + '">' + emoji + ' ' + esc(label) + '</span>' +
-      '<span class="micro" style="color:var(--muted)">' + count + '</span>' +
-      (hint ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-left:auto">' + hint + '</span>' : '') +
-    '</div>';
-  }
-  function mtCapacityBar(todayTasks) {
-    var planned = todayTasks.reduce(function (s, t) { return s + mtTaskMinutes(t); }, 0);
-    var cap = MT_TODAY_CAP;
-    if (!cap) {
-      return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:12px 15px;margin-bottom:6px">' +
-        '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)"><strong style="color:var(--terre)">' + fmtMin(planned) + '</strong> prévues aujourd\'hui · <a href="javascript:ADM.nav(\'planning\')">règle ta capacité</a> pour voir si ta journée est réaliste.</span></div>';
-    }
-    var over = planned > cap;
-    var pct = Math.min(100, Math.round(planned / cap * 100));
-    var barCol = over ? '#a23c28' : (pct >= 80 ? '#c9952f' : '#4f6a46');
-    var free = Math.max(0, cap - planned);
-    return '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:13px 15px;margin-bottom:6px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
-        '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre)"><strong>' + fmtMin(planned) + '</strong> prévues</span>' +
-        '<span class="micro" style="text-transform:none;letter-spacing:0;color:' + (over ? '#a23c28' : 'var(--muted)') + '">' + (over ? '+' + fmtMin(planned - cap) + ' au-delà de ta capacité' : fmtMin(free) + ' encore dispo') + '</span>' +
-      '</div>' +
-      '<div style="height:9px;background:var(--surface-2);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + barCol + ';border-radius:999px;transition:width .2s"></div></div>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Capacité du jour : ' + fmtMin(cap) + '</div>' +
-    '</div>';
-  }
-  function mtStratChip(n, label, target) {
-    return '<button onclick="ADM.mtScrollTo(\'' + target + '\')" style="cursor:pointer;border:1px solid var(--bone-d);background:var(--card);border-radius:12px;padding:10px 14px;text-align:left;min-width:98px;flex:1">' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:' + (n > 0 ? 'var(--terre)' : 'var(--muted)') + ';line-height:1">' + n + '</div>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px">' + label + '</div></button>';
   }
   function mtFocusView(todo) {
     var today = todo.filter(mtIsToday);
@@ -4548,39 +4491,6 @@
     return '<div class="row" style="gap:7px;align-items:center;flex-wrap:wrap"><span class="micro" style="color:var(--muted)">Bannière</span>' + auto + sw + '</div>';
   }
   function crOpts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); }
-  function supportCreationsBlock(s) {
-    var pid = s.pid;
-    var creations = (s.content && Array.isArray(s.content.creations)) ? s.content.creations : [];
-    var livr = (s.content && Array.isArray(s.content.livrables)) ? s.content.livrables : [];
-    var crRows = creations.map(function (c) {
-      var vs = livr.filter(function (l) { return l.creationId === c.id; }).slice().sort(function (a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); });
-      var vHtml = vs.map(function (l, i) {
-        var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
-        return '<div class="file" style="gap:8px;font-size:12.5px"><span class="nm"><strong style="font-family:var(--font-micro);font-size:10px">V' + (i + 1) + '</strong> ' + esc(l.name) + ' ' + pill(l.status, ({ a_valider: 'à valider', valide: 'validé', refuse: 'à revoir', revision: 'à revoir' })[l.status] || l.status) + '</span>' +
-          (l.fileKey ? '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(l.fileKey) + '/download">↓</a>' : '') +
-          (lnk ? '<a class="btn btn--outline btn--sm" href="' + esc(lnk) + '" target="_blank" rel="noopener">🔗</a>' : '') +
-          '<button class="btn btn--danger btn--sm" onclick="ADM.crDelVersion(\'' + pid + '\',\'' + l.id + '\')">✕</button></div>';
-      }).join('');
-      return '<div style="border:1px solid var(--bone-d);border-radius:10px;padding:11px;margin-top:8px;background:#faf7f0">' +
-        '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">' +
-          '<input class="inp" value="' + esc(c.name) + '" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'name\',this.value)" style="flex:1;min-width:140px" title="Nom de la création">' +
-          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'type\',this.value)" style="width:auto" title="Catégorie">' + crOpts(CR_TYPES, c.type) + '</select>' +
-          '<select class="inp" onchange="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'status\',this.value)" style="width:auto" title="Statut">' + crOpts(CR_STATUSES, c.status) + '</select>' +
-          '<button class="btn btn--danger btn--sm" onclick="ADM.crDel(\'' + pid + '\',\'' + c.id + '\')">Suppr.</button>' +
-        '</div>' +
-        (vHtml ? '<div style="margin-top:8px">' + vHtml + '</div>' : '') +
-        '<div class="row" style="gap:6px;margin-top:8px">' +
-          '<button class="btn btn--dark btn--sm" onclick="ADM.crAddVersion(\'' + pid + '\',\'' + c.id + '\')">+ Version (fichier)</button>' +
-          '<button class="btn btn--outline btn--sm" onclick="ADM.crAddVersionLink(\'' + pid + '\',\'' + c.id + '\')">🔗 Version (lien)</button>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    return '<div style="margin-top:10px">' +
-      '<div class="micro" style="text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">Créations</div>' +
-      (crRows || '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Aucune création. Ajoutez-en une (flyer, carte de visite, brochure…).</div>') +
-      '<div class="row" style="gap:6px;margin-top:8px"><input class="inp" id="cr-new-' + pid + '" placeholder="Nom de la création (ex. Flyer)" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.crAdd(\'' + pid + '\');}"><button class="btn btn--dark btn--sm" onclick="ADM.crAdd(\'' + pid + '\')">+ Créer</button></div>' +
-    '</div>';
-  }
   var CR_ST_COL = { a_preparer: '#8a7d6b', en_creation: '#35608f', attente_client: '#c9952f', revision: '#c0533b', valide: '#3f8f5b', archive: '#8a7d6b' };
   function crStatusLabel(st) { for (var i = 0; i < CR_STATUSES.length; i++) if (CR_STATUSES[i][0] === st) return CR_STATUSES[i][1]; return st; }
   // Galerie des créations d'un projet de com (onglet « Support de com »).
@@ -4783,15 +4693,6 @@
   function pjToggle(id, open) { if (open) PJ_OPEN[id] = 1; else delete PJ_OPEN[id]; }
   // Bloc « planning prévisionnel » propre à une création, replié par défaut.
   // pid = pid brut du support (d.pid) ; la route /planning attend l'id projet complet « support-<pid> ».
-  function crPlanBlock(pid, c) {
-    var fullPid = 'support-' + pid;
-    var n = Array.isArray(c.planning) ? c.planning.length : 0;
-    var did = 'crplan-' + fullPid + (c.id ? '-' + c.id : '');
-    return '<details id="' + did + '"' + (PJ_OPEN[did] ? ' open' : '') + ' ontoggle="ADM.pjToggle(\'' + did + '\',this.open)" style="border-top:1px solid var(--bone-d);padding-top:14px">' +
-      '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);list-style:none">📅 Planning prévisionnel' + (n ? ' · ' + n + ' jalon' + (n > 1 ? 's' : '') : ' · vide') + '</summary>' +
-      '<div id="planwrap-' + fullPid + '-' + c.id + '" style="margin-top:14px">' + planningEditor(fullPid, c.planning, c.planningStart, c.id) + '</div>' +
-    '</details>';
-  }
   function planningTab(d) {
     var pid = d.id;
     return '<div class="card infocard" style="background:var(--card)"><h3><span class="infocard__dot" style="background:#35608f"></span>Planning éditorial</h3>' +
@@ -6367,7 +6268,6 @@
     ['rating', 'Note (étoiles)', '★'], ['slider', 'Curseur', '⇔'], ['url', 'Lien / URL', '🔗'], ['file', 'Fichier', '📎'],
   ];
   function qnrCatMeta(cat) { for (var i = 0; i < QNR_CATS.length; i++) if (QNR_CATS[i][0] === cat) return QNR_CATS[i]; return QNR_CATS[QNR_CATS.length - 1]; }
-  function qnrBlockLabel(type) { for (var i = 0; i < QNR_BLOCKS.length; i++) if (QNR_BLOCKS[i][0] === type) return QNR_BLOCKS[i][1]; return type; }
   function qnrHasOptions(type) { return type === 'single' || type === 'multi' || type === 'dropdown' || type === 'ranking'; }
   function qnrIsStatic(type) { return type === 'title' || type === 'paragraph'; }
   var QNR_SEQ = 0;
