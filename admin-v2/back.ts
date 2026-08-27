@@ -961,6 +961,7 @@ async function handleClientApi(
   }
 
   // Documents R2
+  if (method === 'GET' && sub === '/files-all') return handleAllFilesList(env, key, data);
   if (method === 'GET' && sub === '/files') return handleFilesList(env, key, url, data);
   if (method === 'POST' && sub === '/files') return handleUpload(request, env, key, data);
   const dl = sub.match(/^\/files\/(.+)\/download$/);
@@ -1375,6 +1376,48 @@ async function handleFilesList(env: Env, key: string, url: URL, data: AnyObj): P
   const lk = container && Array.isArray(container.lockedKeys) ? container.lockedKeys : [];
   files.forEach((f: AnyObj) => { f.locked = lk.indexOf(f.key) !== -1; });
   return json({ files });
+}
+// Vue unifiée : TOUS les fichiers d'une cliente (déposés n'importe où — messages,
+// créations, tâches, onglet Fichiers) sous son préfixe R2, avec leur origine.
+async function handleAllFilesList(env: Env, key: string, data: AnyObj): Promise<Response> {
+  const prefix = `${key}/`;
+  const out: AnyObj[] = [];
+  let cursor: string | undefined;
+  // Noms lisibles des dossiers R2 → contexte.
+  const supports = getEspace(data);
+  const ctxFor = (folder: string): string => {
+    if (!folder) return 'Espace';
+    const seg = folder.split('/');
+    if (seg[0] === 'supportsDeCom') {
+      const pid = seg[1] || '';
+      let label = 'Support de com';
+      try {
+        const arr = (supports.supportsDeCom || []) as AnyObj[];
+        const s = arr.find((x: AnyObj) => String(x.id) === pid);
+        if (s && s.label) label = String(s.label);
+      } catch (e) { /* ignore */ }
+      return label;
+    }
+    if (DOMAINS[seg[0]]) return DOMAINS[seg[0]].label;
+    return folder;
+  };
+  do {
+    const listed = await env.R2_FILES.list({ prefix, include: ['httpMetadata', 'customMetadata'], cursor } as R2ListOptions);
+    for (const obj of listed.objects) {
+      if (obj.size === 0) continue;
+      const rel = obj.key.slice(prefix.length);
+      if (!rel) continue;
+      const parts = rel.split('/');
+      const name = parts[parts.length - 1];
+      if (!name) continue;
+      const folder = parts.slice(0, parts.length - 1).join('/');
+      const cm = (obj.customMetadata || {}) as AnyObj;
+      out.push({ key: obj.key, name, folder, context: ctxFor(folder), size: obj.size, type: (obj.httpMetadata && obj.httpMetadata.contentType) || guessType(name), category: cm.category || 'document', source: cm.source || 'cindy', uploadedAt: obj.uploaded });
+    }
+    cursor = (listed as AnyObj).truncated ? (listed as AnyObj).cursor : undefined;
+  } while (cursor);
+  out.sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')));
+  return json({ files: out });
 }
 function projectFolder(projectId: string): string {
   if (DOMAINS[projectId]) return DOMAINS[projectId].folder;

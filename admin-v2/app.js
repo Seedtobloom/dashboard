@@ -6111,20 +6111,46 @@
   }
 
   /* documents */
+  var ADM_FILES_CLIENTONLY = true;
   function renderDocuments(body) {
     var projects = [];
     CUR.domains.forEach(function (dn) { projects.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label]); });
     CUR.supports.forEach(function (s) { projects.push([s.id, s.label]); });
     var opts = projects.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('');
-    body.innerHTML = '<div class="card"><h3>Déposer un document</h3>' +
+    body.innerHTML =
+      '<div class="card"><div class="between"><h3>Tous les fichiers reçus</h3>' +
+        '<label class="checkbox" style="white-space:nowrap"><input type="checkbox" id="af-clientonly"' + (ADM_FILES_CLIENTONLY ? ' checked' : '') + ' onchange="ADM.listAllDocs()"> déposés par la cliente</label>' +
+      '</div>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Tous les documents de cette cliente, où qu\'ils aient été déposés (messagerie, créations, tâches, dépôts), du plus récent au plus ancien.</div>' +
+      '<div id="allfiles"><div class="empty"><div class="spin" style="margin:16px auto"></div></div></div></div>' +
+      '<div class="card"><h3>Déposer un document</h3>' +
       '<div class="row">' +
       '<select class="inp" id="up-proj" style="width:auto" onchange="ADM.listDocs()">' + opts + '</select>' +
       '<label class="checkbox"><input type="checkbox" id="up-liv"> livrable (validable par le client)</label>' +
       '</div>' +
       '<div class="row mt"><input class="inp" type="file" id="up-file"><button class="btn btn--dark btn--sm" id="up-btn" onclick="ADM.upload()">Uploader</button></div>' +
       '<div class="micro mt">Décochez « livrable » pour un document administratif (devis, facture, contrat…).</div></div>' +
-      '<div class="card"><h3>Documents du projet</h3><div id="doclist"><div class="empty">·</div></div></div>';
+      '<div class="card"><h3>Gérer par projet</h3><div id="doclist"><div class="empty">·</div></div></div>';
     listDocs();
+    listAllDocs();
+  }
+  function listAllDocs() {
+    var co = el('af-clientonly'); ADM_FILES_CLIENTONLY = co ? co.checked : ADM_FILES_CLIENTONLY;
+    api('/api/clients/' + CURKEY + '/files-all').then(function (r) { return r.json(); }).then(function (d) {
+      var clientOnly = ADM_FILES_CLIENTONLY;
+      var files = (d.files || []).filter(function (f) { return clientOnly ? f.source === 'client' : true; });
+      var rows = files.map(function (f) {
+        var when = f.uploadedAt ? fmtDate(f.uploadedAt) : '';
+        return '<div class="file"><span class="nm">' + esc(f.name) +
+          ' <span class="pill">' + esc(f.context || 'Espace') + '</span>' +
+          (f.source === 'client' ? ' <span class="pill pill--a_valider">déposé cliente</span>' : '') +
+          (when ? ' <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">· ' + when + '</span>' : '') +
+          '</span>' +
+          '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank" title="Télécharger">↓</a>' +
+        '</div>';
+      }).join('') || '<div class="empty">Aucun fichier' + (clientOnly ? ' déposé par la cliente' : '') + ' pour le moment.</div>';
+      var box = el('allfiles'); if (box) box.innerHTML = rows;
+    }).catch(function () { var box = el('allfiles'); if (box) box.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
   }
   function listDocs() {
     var pid = el('up-proj').value;
@@ -7035,7 +7061,7 @@
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
-    sendMsg: sendMsg, listDocs: listDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
+    sendMsg: sendMsg, listDocs: listDocs, listAllDocs: listAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
     chatClient: chatClient, chatProject: chatProject, gsend: gsend, chatSearch: chatSearch, chatCardSearch: chatCardSearch, chatSetTopic: chatSetTopic, pinMsg: pinMsg, delMsg: delMsg, msgEdit: msgEdit, msgMove: msgMove, msgMoveTo: msgMoveTo, msgUnread: msgUnread, chatKey: chatKey, taGrow: taGrow,
     msgWrap: admMsgWrap, msgIns: admMsgIns, msgBullet: admMsgBullet, emojiToggle: admEmojiToggle,
     msgAttPick: admMsgAttPick, msgAttRemove: admMsgAttRemove,
