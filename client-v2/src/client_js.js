@@ -179,40 +179,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var appData = null;
   var cpHolidays = []; // conges du studio (depuis les reglages)
   var convData = []; // fil de conversation unifié (espace client)
-  var cpConvThread = '_general'; // fil sélectionné dans la messagerie (général ou support)
-  var cpConvAtt = []; // fichiers joints en attente d'envoi dans la messagerie
-  // Rendu des fichiers joints d'un message (liens de téléchargement).
-  function cpAttChips(atts) {
-    if (!atts || !atts.length) return '';
-    return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function(a){
-      return '<a href="' + API_BASE + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#128206;</span>' + esc(a.name || 'fichier') + '</a>';
-    }).join('') + '</div>';
-  }
-  // Projet-cible pour stocker un fichier joint (les fichiers sont récupérables par
-  // clé quel que soit le dossier ; pour le fil général on prend le 1er projet actif).
-  function cpConvUploadPid() {
-    if (cpConvThread && cpConvThread !== '_general') return cpConvThread;
-    var ps = (appData && appData.projects) || [];
-    return ps.length ? ps[0].project.id : 'partner';
-  }
-  function cpConvAttRender() {
-    var box = document.getElementById('cp-convo-att'); if (!box) return;
-    box.innerHTML = cpConvAtt.map(function(a, i){
-      return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px"><span style="font-size:12px;line-height:1">&#128206;</span>' + esc(a.name) + '<button onclick="cpConvAttRemove(' + i + ')" title="Retirer" style="border:none;background:none;color:#8d2b21;cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
-    }).join('');
-  }
-  window.cpConvAttRemove = function(i){ cpConvAtt.splice(i, 1); cpConvAttRender(); };
-  window.cpConvAttachPick = function(input){
-    var list = input.files; if (!list || !list.length) return;
-    var arr = Array.prototype.slice.call(list);
-    var tooBig = cliAnyTooBig(arr); if (tooBig){ toast(cliBigMsg(tooBig), true); input.value = ''; return; }
-    toast('Envoi du fichier…');
-    Promise.all(arr.map(function(f){ return cliUploadFile(f, cpConvUploadPid()); })).then(function(res){
-      res.forEach(function(r){ if (r && r.key) cpConvAtt.push({ key: r.key, name: r.name }); });
-      cpConvAttRender(); toast('Fichier ajouté');
-    }).catch(function(){ toast('Erreur lors de l\'envoi du fichier', true); });
-    input.value = '';
-  };
   var cpNewTaskFiles = []; // fichiers ajoutés un à un dans le formulaire de nouvelle tâche
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages' | 'questionnaires'
@@ -1534,7 +1500,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     } else if (appData.projects[0]) {
       pills.push(mPill('Projet', 'cpSel(\'' + appData.projects[0].project.id + '\')', currentView === 'project', 0));
     }
-    pills.push(mPill('Messages', 'cpOpenMessages()', currentView === 'messages', unreadAll));
+    pills.push(mPill('Messages', 'cpOpenMessages()', false, unreadAll));
     if (hasDeliverablesTb) pills.push(mPill('Livrables', 'cpGoLivrables()', currentView === 'livrables', dlvToValidateTb));
     var qnrListTb = (appData.questionnaires || []);
     var qnrPendingTb = qnrListTb.filter(function(q){ return q.status !== 'completed'; }).length;
@@ -4097,7 +4063,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cliHiddenProp(id){ return id==='p_realisation' || id==='p_mois'; }
 
   // ── Drawer tâche partenaire ───────────────────────────────────────────────
-  function buildPartTaskDrawer(pid, tasks, files, project) {
+function buildPartTaskDrawer(pid, tasks, files, project) {
     var taskId = cliSelTask[pid];
     if (!taskId) return '';
     var t = (tasks||[]).find(function(x){return x.id===taskId;});
@@ -4228,6 +4194,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>' +
     '</div>';
   }
+  
 
   window.cliOpenTaskDrawer = function(pid, taskId) { if (typeof cliTaskFlushAll === 'function') cliTaskFlushAll(); cliSelTask[pid] = taskId; renderShell(); };
   window.cliOpenTaskFromHome = function(pid, taskId) { cliSelTask[pid] = taskId; cliPartTab[pid] = 'cal'; cpSel(pid); };
@@ -4599,92 +4566,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   // ── Onglet Factures & Devis ───────────────────────────────────────────────
-  function buildPartInvoices(pid) {
-    var inv = cliInvoices[pid];
-    if (inv === undefined) {
-      fetch(API_BASE + '/invoices').then(function(r){ return r.ok ? r.json() : []; }).then(function(list){
-        cliInvoices[pid] = Array.isArray(list) ? list : [];
-        renderShell();
-      }).catch(function(){ cliInvoices[pid] = []; renderShell(); });
-      return '<div style="padding:40px;text-align:center;color:var(--muted);font-size:14px">Chargement des factures…</div>';
-    }
-    if (!inv.length) {
-      return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">💳 Factures & Devis</h2>' +
-        '<button class="cp-btn cp-btn--outline" onclick="cliRefreshInvoices(\''+pid+'\')">↻ Actualiser</button></div>' +
-        '<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Aucune facture ou devis pour le moment.</div></div>';
-    }
-    var INV_STATUS = { sent:'Envoyé', signed:'Signé', paid:'Payé', overdue:'En retard', cancelled:'Annulé', pending:'En attente' };
-    var INV_COLOR  = { sent:'#E4D1FE', signed:'#E4D1FE', paid:'#412F21', overdue:'#9b3a2e', cancelled:'#aaa', pending:'#e8a87c' };
-    var INV_TXT    = { sent:'#5c4633', signed:'#6c4ea4', paid:'#F2E5C2', overdue:'#fff', cancelled:'#555', pending:'#5a2c0e' };
-    var devisItems = inv.filter(function(i){ return i.type === 'devis'; });
-    var factItems  = inv.filter(function(i){ return i.type !== 'devis'; });
-    function invRow(i) {
-      var bg = INV_COLOR[i.status] || '#aaa';
-      var fg = INV_TXT[i.status]  || '#222';
-      var badge = '<span style="display:inline-flex;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:'+bg+';color:'+fg+'">'+(INV_STATUS[i.status]||i.status)+'</span>';
-      var amtStr = i.amountTTC != null ? (i.amountTTC/100).toFixed(2)+' €' : i.amount != null ? (i.amount/100).toFixed(2)+' € HT' : '';
-      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border-radius:12px;border:1px solid var(--border);flex-wrap:wrap">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:700;font-size:14px;color:var(--navy)">' +
-            (i.number ? '<span style="font-size:11px;color:var(--muted);margin-right:6px">'+esc(i.number)+'</span>' : '') +
-            esc(i.title||'Sans titre') +
-          '</div>' +
-          '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
-            (i.issueDate ? 'Émis le '+fmtDate(i.issueDate) : '') +
-            (i.dueDate   ? ' · Échéance '+fmtDate(i.dueDate) : '') +
-          '</div>' +
-        '</div>' +
-        '<div style="text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
-          (amtStr ? '<div style="font-weight:700;font-size:15px;color:var(--navy)">'+esc(amtStr)+'</div>' : '') +
-          badge +
-        '</div>' +
-        (i.pdfUrl ? '<a href="'+esc(i.pdfUrl)+'" target="_blank" rel="noopener" class="cp-btn cp-btn--outline" style="padding:4px 12px;font-size:12px">→ PDF</a>' : '') +
-      '</div>';
-    }
-    var devisHtml = devisItems.length
-      ? '<div style="margin-bottom:24px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Devis</div><div style="display:flex;flex-direction:column;gap:8px">'+devisItems.map(invRow).join('')+'</div></div>'
-      : '';
-    var factHtml = factItems.length
-      ? '<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Factures</div><div style="display:flex;flex-direction:column;gap:8px">'+factItems.map(invRow).join('')+'</div></div>'
-      : '';
-    return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">💳 Factures & Devis</h2>' +
-      '<button class="cp-btn cp-btn--outline" onclick="cliRefreshInvoices(\''+pid+'\')">↻ Actualiser</button></div>' +
-      devisHtml + factHtml + '</div>';
-  }
+  
 
   // ── Onglet Notes & Ressources ─────────────────────────────────────────────
-  function buildPartNotes(pid, project) {
-    var notes = project.notes || '';
-    var resources = Array.isArray(project.resources) ? project.resources : [];
-
-    return '<div class="cp-card">' +
-      '<div class="cp-card__hd"><h2 class="cp-card__title">📝 Notes & Ressources</h2>' +
-        '<button class="cp-btn cp-btn--dark" onclick="cliAddResource(\''+pid+'\')">+ Ajouter un lien</button>' +
-      '</div>' +
-      '<div style="margin-bottom:16px">' +
-        '<label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Notes libres</label>' +
-        '<textarea id="cli-notes-'+pid+'" style="width:100%;min-height:140px;font-family:\'Inter Tight\',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;resize:vertical;color:var(--navy);background:#fff;line-height:1.6" placeholder="Vos notes, idées, points de suivi…">'+esc(notes)+'</textarea>' +
-        '<div style="margin-top:8px;display:flex;justify-content:flex-end">' +
-          '<button class="cp-btn cp-btn--sage" onclick="cliSaveNotes(\''+pid+'\')">Enregistrer les notes</button>' +
-        '</div>' +
-      '</div>' +
-      (resources.length ? '<div>' +
-        '<label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">Liens & ressources</label>' +
-        '<div style="display:flex;flex-direction:column;gap:8px">' +
-          resources.map(function(r, i){
-            return '<div style="display:flex;align-items:center;gap:10px;background:var(--surface);padding:10px 14px;border-radius:10px;border:1px solid var(--border)">' +
-              '<span style="font-size:18px">🔗</span>' +
-              '<div style="flex:1;min-width:0">' +
-                '<div style="font-weight:600;font-size:13px;color:var(--navy)">'+esc(r.title||r.url)+'</div>' +
-                '<a href="'+esc(r.url)+'" target="_blank" rel="noopener" style="font-size:12px;color:var(--sage);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.url)+'</a>' +
-              '</div>' +
-              '<button onclick="cliDeleteResource(\''+pid+'\','+i+')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px">✕</button>' +
-            '</div>';
-          }).join('') +
-        '</div>' +
-      '</div>' : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Aucune ressource. Cliquez "+ Ajouter un lien".</div>') +
-    '</div>';
-  }
+  
 
   // ── Onglet Forfait ────────────────────────────────────────────────────────
   function buildPartForfait(pid, tasks, project) {
@@ -5681,217 +5566,24 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   // ── Vue conversation unifiée espace client (un seul fil) ─────────────────────
-  function convoMsgHtml(m) {
-    var isC = m.author === 'cindy';
-    var name = isC ? 'Cindy' : 'Vous';
-    var timeStr = fmtShort(m.createdAt);
-    var pin = m.pinned === true;
-    var pinBadge = pin ? '<div style="display:inline-flex;align-items:center;gap:4px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine);margin-bottom:5px">&#128204; Épinglé par Cindy</div>' : '';
-    var bubbleStyle = pin ? ' style="box-shadow:inset 0 0 0 1.5px var(--glycine);background:var(--glycine-50,#f7efff)"' : '';
-    // Lien bascule « marquer comme non lu / comme lu » sur les messages de Cindy.
-    var isUnread = m.readByClient === false;
-    var unreadLink = (isC && m.id) ? ' · <span style="cursor:pointer;text-decoration:underline" onclick="cpMsgToggleUnread(\'' + m.id + '\',' + (isUnread ? 'false' : 'true') + ')">' + (isUnread ? 'marquer comme lu' : 'marquer comme non lu') + '</span>' : '';
-    var unreadDot = (isC && isUnread) ? '<span title="Non lu" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--glycine);margin-right:6px;vertical-align:middle"></span>' : '';
-    return '<div class="cp-msg cp-msg--' + (isC?'cindy':'client') + (pin?' cp-msg--pinned':'') + '">' +
-      cpAvatar(isC?'Cindy':appData.clientName||'Client', isC?'cindy':'client', 30) +
-      '<div>' +
-        '<div class="cp-msg__bubble"' + bubbleStyle + '>' + pinBadge + (m.content ? '<div class="cp-msg__text">' + unreadDot + fmtMsg(m.content) + '</div>' : '') + cpAttChips(m.attachments) + '</div>' +
-        '<div class="cp-msg__date" style="text-align:' + (isC?'left':'right') + '">' + name + ' · ' + timeStr + unreadLink + '</div>' +
-      '</div>' +
-    '</div>';
-  }
+  
   // Messages épinglés d'abord, en conservant l'ordre chronologique dans chaque groupe.
-  function convOrder(arr) {
-    if (!Array.isArray(arr)) return [];
-    var pinned = arr.filter(function(m){ return m.pinned === true; });
-    if (!pinned.length) return arr;
-    var rest = arr.filter(function(m){ return m.pinned !== true; });
-    return pinned.concat(rest);
-  }
+  
 
-  function convThreads() {
-    var list = [{ id: '_general', label: 'Cindy · Général', kind: 'general' }];
-    (appData.projects || []).forEach(function(pd) {
-      if (pd.project && pd.project.type === 'support') {
-        var supId = pd.project.id;
-        list.push({ id: supId, label: pd.project.projectTitle || 'Support de com', kind: 'support', supId: supId });
-        // Une sous-discussion par création (hors créations archivées).
-        (pd.project.creations || []).forEach(function(c) {
-          if (c.status === 'archive') return;
-          list.push({ id: 'crchat:' + supId + ':' + c.id, label: c.name || 'Création', kind: 'creation', supId: supId, cid: c.id });
-        });
-      }
-    });
-    return list;
-  }
-  function convThreadMsgs(thread) {
-    if (!thread || thread.kind === 'general') return convData;
-    var pd = getPD(thread.supId || thread.id);
-    var msgs = (pd && Array.isArray(pd.messages)) ? pd.messages : [];
-    if (thread.kind === 'creation') return msgs.filter(function(m){ return m.topic === thread.cid; });
-    // Fil général du support : messages sans topic (ou dont la création n'existe plus).
-    var creaIds = (pd && pd.project && Array.isArray(pd.project.creations)) ? pd.project.creations.map(function(c){ return c.id; }) : [];
-    return msgs.filter(function(m){ return !m.topic || creaIds.indexOf(m.topic) === -1; });
-  }
-  function convThreadUnread(thread) {
-    return convThreadMsgs(thread).filter(function(m){ return m.author === 'cindy' && !m.readByClient; }).length;
-  }
-  window.cpConvSetThread = function(id) {
-    cpConvThread = id;
-    cpConvAtt = []; // les pièces jointes ne suivent pas d'un fil à l'autre
-    var threads = convThreads();
-    var t = threads.filter(function(x){ return x.id === id; })[0];
-    // Ouvrir un fil = tout marquer lu (lève aussi le « non lu » manuel), côté support ou général.
-    if (t) {
-      var msgs = convThreadMsgs(t);
-      if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.author === 'cindy') { m.readByClient = true; m.manualUnread = false; } });
-      if (t.kind !== 'general') {
-        var body = { projectId: t.supId || t.id };
-        // Marquer lu seulement la sous-discussion ouverte (topic = création, ou '' pour le fil général).
-        body.topic = t.kind === 'creation' ? t.cid : '';
-        fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }).catch(function(){});
-      } else {
-        fetch(API_BASE + '/message/read', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: '_general' }) }).catch(function(){});
-      }
-    }
-    renderShell();
-  };
+  
+  
+  
+  
   // Cliente : bascule un message de Cindy entre « non lu » et « lu ».
-  window.cpMsgToggleUnread = function(id, makeUnread) {
-    var threadId = cpConvThread || '_general';
-    // Optimiste : on met à jour l'état localement sans ré-ouvrir le fil.
-    var t = convThreads().filter(function(x){ return x.id === threadId; })[0];
-    var projId = (t && t.kind !== 'general') ? (t.supId || t.id) : '_general';
-    var msgs = t ? convThreadMsgs(t) : convData;
-    if (Array.isArray(msgs)) msgs.forEach(function(m){ if (m.id === id) { m.readByClient = !makeUnread; m.manualUnread = !!makeUnread; } });
-    fetch(API_BASE + '/message/unread', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: projId, id: id, unread: !!makeUnread }) }).catch(function(){});
-    toast(makeUnread ? 'Message marqué comme non lu' : 'Message marqué comme lu');
-    if (typeof cpRefreshBadge === 'function') cpRefreshBadge();
-    var list = document.getElementById('cp-convo-list');
-    if (list) { var cur = convThreads().filter(function(x){ return x.id === cpConvThread; })[0] || convThreads()[0]; list.innerHTML = convOrder(convThreadMsgs(cur)).map(convoMsgHtml).join(''); }
-  };
+  
 
-  function buildConversation() {
-    var threads = convThreads();
-    var multi = threads.length > 1;
-    if (!threads.some(function(t){ return t.id === cpConvThread; })) cpConvThread = '_general';
-    var cur = threads.filter(function(t){ return t.id === cpConvThread; })[0] || threads[0];
-    var arr = convOrder(convThreadMsgs(cur));
-    var msgs = arr.length
-      ? arr.map(convoMsgHtml).join('')
-      : '<div style="padding:60px 24px;text-align:center">' +
-          '<div style="font-size:40px;margin-bottom:12px;opacity:0.3">💬</div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:8px">Pas encore de messages</div>' +
-          '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em;margin-bottom:20px">Posez votre première question à Cindy, elle répond en général sous 24h</div>' +
-          '<button class="cp-btn" onclick="document.getElementById(\'cp-convo-draft\')&&document.getElementById(\'cp-convo-draft\').focus()">Écrire un message</button>' +
-        '</div>';
+  
 
-    function convPill(t, label, active, small) {
-      var u = convThreadUnread(t);
-      var pad = small ? '6px 13px' : '7px 15px';
-      var fs = small ? '10px' : '10.5px';
-      var bg = active ? 'var(--terre)' : (small ? 'var(--brume)' : 'var(--glycine-50)');
-      var col = active ? 'var(--paille)' : 'var(--terre-600)';
-      return '<button onclick="cpConvSetThread(\'' + esc(t.id) + '\')" style="padding:' + pad + ';border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:' + fs + ';font-weight:600;letter-spacing:0.04em;background:' + bg + ';color:' + col + '">' + esc(label) + (u ? ' · ' + u : '') + '</button>';
-    }
-    var topThreads = threads.filter(function(t){ return t.kind === 'general' || t.kind === 'support'; });
-    // Le support dans lequel la cliente se trouve réellement (pour la surbrillance).
-    var curSup = cur.kind === 'support' ? cur.id : (cur.kind === 'creation' ? cur.supId : '');
-    // Le support dont on affiche les créations : à défaut, le premier support (pour qu'elles soient toujours visibles).
-    var firstSup = topThreads.filter(function(t){ return t.kind === 'support'; })[0];
-    var displaySup = curSup || (firstSup ? firstSup.id : '');
-    var row1html = topThreads.length > 1 ? topThreads.map(function(t){ var active = (t.id === cur.id) || (t.kind === 'support' && t.id === curSup); return convPill(t, t.label, active, false); }).join('') : '';
-    var subhtml = '';
-    if (displaySup) {
-      var supThread = threads.filter(function(t){ return t.id === displaySup; })[0];
-      var subs = threads.filter(function(t){ return t.kind === 'creation' && t.supId === displaySup; });
-      // On n'affiche la rangée que s'il y a au moins une création à séparer.
-      if (subs.length) {
-        if (supThread) subhtml += convPill(supThread, 'Discussion générale', cur.id === displaySup, true);
-        subhtml += subs.map(function(t){ return convPill(t, t.label, cur.id === t.id, true); }).join('');
-      }
-    }
-    var selector = (row1html || subhtml)
-      ? '<div style="padding:14px 24px 2px;flex-shrink:0">'
-        + (row1html ? '<div style="display:flex;gap:7px;flex-wrap:wrap">' + row1html + '</div>' : '')
-        + (subhtml ? '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px">' + '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-400);margin-right:3px">Créations</span>' + subhtml + '</div>' : '')
-        + '</div>'
-      : '';
+  
 
-    var subtitle = cur.kind === 'general' ? 'Répond en général sous 24 h' : (cur.kind === 'creation' ? 'Sous-discussion dédiée à cette création' : 'Fil général de ce support');
-    var headTitle = cur.kind === 'general' ? 'Cindy · Seed to Bloom' : esc(cur.label);
-    var placeholder = cur.kind === 'general' ? 'Écrire un message à Cindy…' : (cur.kind === 'creation' ? 'Écrire au sujet de « ' + esc(cur.label) + ' »…' : 'Écrire au sujet de ce support…');
+  
 
-    var convoHtml = '<div class="card fade-up" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:480px">' +
-      selector +
-      '<div style="padding:18px 24px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:12px;flex-shrink:0">' +
-        cpAvatar('Cindy', 'cindy', 38) +
-        '<div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)">' + headTitle + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.06em">' + subtitle + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="cp-msgs" id="cp-convo-list" style="padding:24px;flex:1;overflow-y:auto;margin-bottom:0;gap:14px">' + msgs + '</div>' +
-      '<div style="padding:12px 20px 10px;border-top:1px solid var(--bone-d);display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
-        cpMsgToolbar('cp-convo-draft') +
-        '<div id="cp-convo-att" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
-        '<div style="display:flex;gap:10px;align-items:flex-end">' +
-          '<label title="Joindre un fichier" style="height:46px;flex-shrink:0;display:inline-flex;align-items:center;gap:7px;padding:0 16px;border:1px solid var(--bone-d);border-radius:var(--radius-pill);cursor:pointer;color:var(--terre);font-family:var(--font-micro);font-size:12px;font-weight:600"><span style="font-size:15px;line-height:1">&#128206;</span>Joindre<input type="file" multiple style="display:none" onchange="cpConvAttachPick(this)"></label>' +
-          '<textarea id="cp-convo-draft" placeholder="' + placeholder + '" rows="1" style="flex:1;resize:none;min-height:46px;max-height:320px;padding:12px 14px;border:1px solid var(--bone-d);border-radius:var(--radius-2);font-family:var(--font-body);font-size:var(--fs-small);color:var(--terre);background:var(--card);outline:none;overflow-y:auto;line-height:1.5" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,320)+\'px\'" onkeydown="cpConvoKey(event)"></textarea>' +
-          '<button class="cp-btn" onclick="cpConvoSend()" style="height:46px;border-radius:var(--radius-pill);padding:0 18px">'+cpIcon('send',15)+' Envoyer</button>' +
-        '</div>' +
-        '<div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.04em;color:var(--terre-600);opacity:0.75;padding-left:2px"><strong>Entrée</strong> pour envoyer · <strong>Maj + Entrée</strong> pour un retour à la ligne</div>' +
-      '</div>' +
-    '</div>';
-
-    return '<div class="cp-content cp-content--wide" style="padding-top:0">' + convoHtml + '</div>';
-  }
-
-  function attachConvoForm() {
-    // scroll to bottom on load
-    var list = document.getElementById('cp-convo-list');
-    if (list) list.scrollTop = list.scrollHeight;
-    cpConvAttRender();
-  }
-
-  window.cpConvoKey = function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.cpConvoSend(); }
-  };
-
-  window.cpConvoSend = function() {
-    var ta = document.getElementById('cp-convo-draft');
-    if (!ta) return;
-    var content = ta.value.trim();
-    if (!content && !cpConvAtt.length) return;
-    var threads = convThreads();
-    var t = threads.filter(function(x){ return x.id === cpConvThread; })[0] || threads[0];
-    var isGeneral = !t || t.kind === 'general';
-    var url = isGeneral ? (API_BASE + '/conversation') : (API_BASE + '/message');
-    var atts = cpConvAtt.slice();
-    var payload;
-    if (isGeneral) { payload = { content: content, attachments: atts }; }
-    else { payload = { projectId: t.supId || t.id, content: content, attachments: atts }; if (t.kind === 'creation') payload.topic = t.cid; }
-    ta.disabled = true;
-    fetch(url, { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ' ' + (t||'').slice(0,120)); }); return r.json(); })
-      .then(function(d) {
-        var msg = d.message || d;
-        if (isGeneral) { convData.push(msg); }
-        else { var pd = getPD(t.supId || t.id); if (pd) { if (!Array.isArray(pd.messages)) pd.messages = []; pd.messages.push(msg); } }
-        var list = document.getElementById('cp-convo-list');
-        var empty = list && list.querySelector('.cp-empty');
-        if (empty) empty.remove();
-        var div = document.createElement('div');
-        div.innerHTML = convoMsgHtml(msg);
-        var node = div.firstChild;
-        if (list && node) { list.appendChild(node); node.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-        ta.value = '';
-        cpConvAtt = []; cpConvAttRender();
-        toast('Message envoye ✓');
-      })
-      .catch(function(err){ console.error('envoi message', err); toast('Erreur, réessayez.'); })
-      .finally(function(){ ta.disabled = false; ta.focus(); });
-  };
+  
 
   function buildHubView() {
     if (!_hubCache) return '<div class="fade-up" style="text-align:center;padding:60px 0;color:var(--terre-600)">Chargement…</div>';
@@ -6288,7 +5980,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
 
   function mainForView() {
-    if (currentView === 'messages') return '<div class="cp-portal-main">' + buildConversation() + '</div>';
     if (currentView === 'project') return buildProjectView(getPD(currentId));
     if (currentView === 'hub') return '<div class="cp-portal-main">' + buildHubView() + '</div>';
     if (currentView === 'fichiers') return '<div class="cp-portal-main">' + buildFichiersView() + '</div>';
@@ -6770,7 +6461,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         }
       }
       if (currentView === 'project') attachForm();
-      if (currentView === 'messages') attachConvoForm();
       if (window.stbSizeAll) setTimeout(window.stbSizeAll, 0);
       window.scrollTo(0, scrollY);
       return;
@@ -6791,7 +6481,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-main" id="cp-main">' + buildCongesBanner() + buildTopbar() + mainForView() + '</div>' +
       '</div>' + adminBar + '<div class="cp-toast" id="cp-toast"></div>';
     if (currentView === 'project') attachForm();
-    if (currentView === 'messages') attachConvoForm();
     if (window.stbSizeAll) setTimeout(window.stbSizeAll, 0);
     window.scrollTo(0, scrollY);
   }
@@ -6918,7 +6607,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (_lv && _lv.v) {
         if (_lv.v === 'project') {
           if (_lv.id && appData.projects.some(function(pd){ return pd.project.id === _lv.id; })) { currentView = 'project'; currentId = _lv.id; }
-        } else if (['home','messages','questionnaires','livrables','fichiers','hub','stats','interventions','cal'].indexOf(_lv.v) !== -1) {
+        } else if (['home','questionnaires','livrables','fichiers','hub','stats','interventions','cal'].indexOf(_lv.v) !== -1) {
           if (_lv.v !== 'home' || portal) { currentView = _lv.v; if (_lv.id) currentId = _lv.id; }
         }
       }
@@ -7164,11 +6853,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   window.cpOpenStepModal = function(stepId) { cpOpenStepId = stepId; renderShell(); };
   window.cpCloseStepModal = function() { cpOpenStepId = null; renderShell(); };
 
-  window.cpOpenMessages = function() {
-    currentView = 'messages';
-    renderShell({ resetScroll: true });
-    markConvoRead();
-  };
+  
 
   window.cpOpenInterventions = function() { currentView = 'interventions'; renderShell({ resetScroll: true }); };
   window.cpOpenCal = function() { currentView = 'cal'; renderShell({ resetScroll: true }); };
@@ -7385,19 +7070,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   // Bouton actualiser dans la messagerie — pas de polling automatique.
-  window.refreshConvo = function() {
-    fetch(API_BASE + '/conversation')
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(list){
-        if (!Array.isArray(list)) return;
-        convData = list;
-        var newCount = list.filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-        renderShell();
-        if (newCount > 0) toast(newCount + ' nouveau' + (newCount>1?'x':'') + ' message' + (newCount>1?'s':''));
-        else toast('Messagerie à jour ✓');
-      })
-      .catch(function(){ toast('Erreur de connexion', true); });
-  };
+  
 
   window.cpOpenQuestionnaire = function(projectId) {
     var pd = appData.projects.find(function(x) { return x.project.id === projectId; });
@@ -7436,13 +7109,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
   };
 
-  function markConvoRead() {
-    // GET /conversation marque les messages de Cindy comme lus côté serveur
-    convData.forEach(function(m) { if (m.author === 'cindy') m.readByClient = true; });
-    fetch(API_BASE + '/conversation').then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(list){ if (Array.isArray(list)) convData = list; })
-      .catch(function(){});
-  }
+  
 
   window.cpSaveQuestionnaire = async function(projectId) {
     var overlay = document.getElementById('cp-q-overlay');
@@ -7524,28 +7191,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
   }
 
-  function poll() {
-    if (!API_BASE) return;
-    // Rafraîchit le fil de conversation unifié.
-    fetch(API_BASE + '/conversation').then(function(r) { return r.ok ? r.json() : null; }).then(function(list) {
-      if (!Array.isArray(list)) return;
-      if (list.length <= convData.length) { convData = list; return; }
-      var newMsgs = list.slice(convData.length);
-      convData = list;
-      newMsgs.filter(function(m) { return m.author==='cindy'; }).forEach(function(msg) {
-        var el = document.getElementById('cp-convo-list') || document.getElementById('cp-msgs-list');
-        if (!el) return;
-        var empty = el.querySelector('.cp-empty');
-        if (empty) empty.remove();
-        var div = document.createElement('div');
-        div.className = 'cp-msg cp-msg--cindy';
-        div.innerHTML = '<div class="cp-msg__av cp-msg__av--cindy">C</div>' +
-          '<div class="cp-msg__bubble">' + (msg.content ? '<div class="cp-msg__text">' + fmtMsg(msg.content) + '</div>' : '') + cpAttChips(msg.attachments) + '</div>' +
-          '<div class="cp-msg__date">Cindy · maintenant</div></div>';
-        el.appendChild(div);
-      });
-    }).catch(function() {});
-  }
+  
 
   function cpRefreshBadge() {
     var unreadNow = totalUnread();
@@ -7574,22 +7220,6 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           cpRefreshBadge();
           // Messagerie ouverte : mise à jour en direct (messages + fichiers reçus).
           if (typeof window.stbInboxRefresh === 'function') { try { window.stbInboxRefresh(); } catch(e){} }
-          if (currentView === 'messages') {
-            var list = document.getElementById('cp-convo-list');
-            if (list) {
-              var threads = convThreads();
-              var cur = threads.filter(function(t){ return t.id === cpConvThread; })[0] || threads[0];
-              var arr = cur ? convOrder(convThreadMsgs(cur)) : [];
-              if (arr.length) {
-                var html = arr.map(convoMsgHtml).join('');
-                if (list.innerHTML !== html) {
-                  var atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
-                  list.innerHTML = html;
-                  if (atBottom) list.scrollTop = list.scrollHeight;
-                }
-              }
-            }
-          }
         })
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
