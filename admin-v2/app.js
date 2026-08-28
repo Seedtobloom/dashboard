@@ -1070,6 +1070,7 @@
     var actions =
       '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
+      '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
       '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
       '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
     return inboxChrome(it, body, actions, urg ? '#a23c28' : '');
@@ -1108,6 +1109,32 @@
     };
     if (action === 'refuse') { doIt(false); return; }
     notifyConfirm(labels[action], function (notify) { doIt(notify); });
+  }
+  // Depuis l'inbox : proposer une AUTRE date que celle souhaitée par la cliente
+  // (elle la voit dans son espace et l'accepte ou non). Réutilise le mécanisme
+  // proposedDueDate des tâches, mais par clé cliente (l'inbox est multi-clientes).
+  function inboxProposeDate(key, id, curDue) {
+    var ov = document.createElement('div');
+    ov.className = 'admconfirm';
+    var souhait = curDue ? '<strong>' + esc(String(curDue).slice(0, 10).split('-').reverse().join('/')) + '</strong>' : 'une date';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:440px">' +
+      '<div class="admconfirm__title">Proposer une autre date</div>' +
+      '<div class="admconfirm__msg">La cliente souhaitait ' + souhait + '. Proposez la date qui vous convient — elle sera prévenue et pourra l\'accepter depuis son espace.</div>' +
+      '<div class="field mt"><label>Nouvelle date proposée</label><input id="ipd-date" class="inp" type="date" value="' + esc((curDue || '').slice(0, 10)) + '"></div>' +
+      '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--dark btn--sm" data-yes>Proposer</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('[data-no]').onclick = function () { ov.remove(); };
+    ov.querySelector('[data-yes]').onclick = function () {
+      var date = (el('ipd-date') || {}).value || '';
+      if (!date) { toast('Choisis une date'); return; }
+      ov.remove();
+      notifyConfirm('Proposer cette date à la cliente et la prévenir par e-mail ?', function (notify) {
+        jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', proposedDueDate: date, notify: notify }, 'PATCH').then(function (r) {
+          if (r.ok) { toast('Date proposée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); } else toast('Erreur');
+        }).catch(function () { toast('Erreur'); });
+      });
+    };
   }
 
   // Charge une fois la liste des catégories/types de mission (pour l'édition sur les cartes).
@@ -6800,7 +6827,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
