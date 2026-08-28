@@ -7246,7 +7246,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         })
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
-    }, 40000);
+    }, 90000);
     wireReturnRefresh();
   }
 

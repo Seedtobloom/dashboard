@@ -228,7 +228,7 @@
   var _poll = null;
   function startPoll() {
     if (_poll) return;
-    _poll = setInterval(refreshUnread, 60000); setInterval(refreshOpenChat, 15000);
+    _poll = setInterval(refreshUnread, 120000); setInterval(refreshOpenChat, 30000);
     // Rafraîchit à la volée quand on revient sur l'onglet (les intervalles
     // ne tournent pas quand l'onglet est masqué → on économise le quota KV).
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshUnread(); });
