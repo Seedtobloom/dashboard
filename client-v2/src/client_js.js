@@ -5814,7 +5814,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var metaCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
       var sub = (cindy ? 'Reçu de Cindy' : 'Déposé par vous') + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
       var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
-      var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:#a8593a;cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
+      var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:var(--terre-400);cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
       return '<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:12px;background:' + bg + '">' +
         '<span style="width:36px;height:36px;border-radius:9px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon('file', 17) + '</span>' +
         '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">' + esc(f.name || 'Fichier') + '</div>' +
@@ -5825,7 +5825,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function folderBlock(pd, name, files, isFolder){
       var pid = pd.project.id;
       var rows = files.length ? files.map(function(f){ return fRow(pd, f); }).join('') : '<div style="font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-400);padding:2px 4px 6px">Vide pour l\'instant.</div>';
-      var del = isFolder ? '<button onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(name) + '\')" style="margin-left:auto;font-family:var(--font-micro);font-size:11px;color:#a8593a;background:none;border:none;cursor:pointer">Supprimer</button>' : '';
+      var del = isFolder ? '<button onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(name) + '\')" style="margin-left:auto;font-family:var(--font-micro);font-size:11px;color:var(--terre-400);background:none;border:none;cursor:pointer">Supprimer</button>' : '';
       return '<div style="margin-bottom:12px">' +
         '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F4EFe7);margin-bottom:9px">' +
           cpIcon('folder', 14, 'color:var(--terre-400)') +
@@ -5864,8 +5864,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var byTask = {};
     projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
     var demKeys = Object.keys(byTask).sort();
-    var demSection = demKeys.length ? '<section style="background:#F7D9C4;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:#a8593a;margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
-      demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#a8593a;margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
+    var demSection = demKeys.length ? '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
+      demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
       '</section>' : '';
 
     var hasAny = projects.some(function(pd){ return (pd.files || []).length; });
@@ -5899,10 +5899,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
     ov.onclick = function(e){ if (e.target === ov && ov.parentNode) ov.parentNode.removeChild(ov); };
     ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#fffefb);border-radius:16px;padding:26px 24px;text-align:center">' +
-      cpIcon('trash', 26, 'color:#c0533b;margin:0 auto 12px') +
+      cpIcon('trash', 26, 'color:var(--terre);margin:0 auto 12px') +
       '<div style="font-size:14.5px;color:var(--terre,#412F21);line-height:1.55;margin-bottom:20px">' + esc(message) + '</div>' +
       '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--surface,#F4EFe7);color:var(--terre,#412F21);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>' +
-      '<button id="cp-confirm-yes" style="flex:1;padding:11px;border:none;border-radius:10px;background:#c0533b;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + esc(confirmLabel || 'Supprimer') + '</button></div>' +
+      '<button id="cp-confirm-yes" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--terre);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + esc(confirmLabel || 'Supprimer') + '</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.querySelector('#cp-confirm-no').onclick = function(){ if (ov.parentNode) ov.parentNode.removeChild(ov); };
