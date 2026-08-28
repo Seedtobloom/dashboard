@@ -984,7 +984,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
             (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
           '</div>' +
-          '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none;flex-shrink:0" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir &amp; valider ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
+          '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none;flex-shrink:0" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir & répondre ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
         '</div>'
         : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#F2E5C2);background:var(--paille-50,#FBF3DC)">' +
           partDiamond(nextTask.urgency) +
@@ -1007,7 +1007,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">' +
-              '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir &amp; valider ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
+              '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir & répondre ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
             '</div>' +
           '</div>';
         } else if (inProgressStep) {
@@ -1779,9 +1779,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (_isAdminEdit ? addBlockBtn + addBlockMenu : '') +
       '</div>' +
       // Footer
-      '<div style="display:flex;align-items:center;justify-content:' + (_isAdminEdit ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
+      '<div style="display:flex;align-items:center;justify-content:' + ((_isAdminEdit || (!_isAdminEdit && step.status === 'waiting_client')) ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
         (_isAdminEdit ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' : '') +
-        '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
+        // Côté cliente : quand l'étape attend son retour, un vrai bouton d'action.
+        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#a06a1a);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#a06a1a)') + ' Cette étape attend votre retour</span>' : '') +
+        '<div style="display:flex;gap:10px;align-items:center">' +
+          '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
+          ((!_isAdminEdit && step.status === 'waiting_client') ? '<button onclick="cpValidateStep(\'' + pid + '\',\'' + stepId + '\')" style="padding:9px 22px;border-radius:8px;border:none;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">J\'ai fait ma part</button>' : '') +
+        '</div>' +
       '</div>' +
     '</div>';
 
@@ -6894,15 +6899,22 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   };
 
   window.cpValidateStep = function(pid, stepId, stepTitle) {
+    var pd = getPD(pid);
+    var step = pd && (pd.project.steps || []).find(function(s){ return s.id === stepId; });
+    stepTitle = stepTitle || (step && step.title) || '';
+    var ask = step && step.clientAction ? step.clientAction : '';
+    var desc = step && step.description ? step.description : '';
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:8px">Confirmer votre action</div>' +
-      '<p style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-bottom:16px">Vous confirmez avoir complété : <strong>' + esc(stepTitle) + '</strong> ?<br><span style="font-size:12px;opacity:0.8">Cindy sera notifiée et validera l\'étape de son côté.</span></p>' +
-      '<textarea id="_cpval-comment" placeholder="Laisser un message à Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:460px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:6px">' + esc(stepTitle) + '</div>' +
+      (ask ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.55;margin-bottom:' + (desc ? '8' : '14') + 'px"><strong style="color:var(--terre)">Ce qui vous est demandé :</strong> ' + esc(ask) + '</div>' : '') +
+      (desc ? '<div style="font-size:13px;color:var(--terre-400);line-height:1.5;margin-bottom:14px">' + esc(desc) + '</div>' : '') +
+      '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin:6px 0 14px">Confirmez que vous avez fait votre part. Cindy est prévenue et reprend la suite — cette étape n\'attendra plus votre retour.</p>' +
+      '<textarea id="_cpval-comment" placeholder="Un message pour Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
-        '<button id="_cpval-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:var(--terre);color:var(--paille)">✓ Confirmer</button>' +
+        '<button id="_cpval-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:var(--terre);color:var(--paille)">✓ J\'ai fait ma part</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -6911,12 +6923,19 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.querySelector('#_cpval-ok').onclick = function() {
       var comment = (document.getElementById('_cpval-comment')||{}).value || '';
       comment = comment.trim();
-      var msg = '✅ J\'ai terminé l\'étape : **' + stepTitle + '**' + (comment ? '\n\n' + comment : '');
-      ov.querySelector('#_cpval-ok').disabled = true;
+      var msg = '✅ J\'ai fait ma part sur : **' + stepTitle + '**' + (comment ? '\n\n' + comment : '');
+      this.disabled = true;
+      // 1) Fait avancer l'étape (waiting_client → in_progress) côté serveur ET local,
+      //    pour que le bandeau « à vous de jouer » disparaisse tout de suite.
+      fetch(API_BASE + '/steps/' + stepId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, clientResponded: true }) }).catch(function(){});
+      if (step) step.status = 'in_progress';
+      cpOpenStepId = null; // ferme aussi la fenêtre d'étape si elle était ouverte
+      // 2) Prévient Cindy via la messagerie.
       fetch(API_BASE + '/conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: msg }) })
         .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
-        .then(function(d){ convData.push(d.message); close(); toast('Message envoyé à Cindy ✓'); })
-        .catch(function(){ close(); toast('Erreur, réessayez.'); });
+        .then(function(d){ if (d && d.message) convData.push(d.message); })
+        .catch(function(){});
+      close(); toast('C\'est envoyé à Cindy ✓'); renderShell();
     };
     ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
   };

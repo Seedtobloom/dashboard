@@ -1291,6 +1291,13 @@ async function handleStepPatch(request: Request, env: Env, masterKey: string, da
   const step = steps.find((s: AnyObj) => s.id === stepId);
   if (!step) return json({ error: 'Step not found' }, 404);
   if (body.pageBlocks !== undefined) step.pageBlocks = body.pageBlocks;
+  // Transition contrôlée déclenchée par la cliente : quand elle a fait sa part,
+  // l'étape sort de « en attente de vous » et repasse à Cindy (« en cours »).
+  // On n'autorise QUE cette transition — la cliente ne peut pas fixer un statut arbitraire.
+  if (body.clientResponded === true && step.status === 'waiting_client') {
+    step.status = 'in_progress';
+    step.clientRespondedAt = new Date().toISOString();
+  }
   await save(env, masterKey, data);
   return json(step);
 }
