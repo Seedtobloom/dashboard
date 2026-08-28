@@ -5978,45 +5978,63 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (aa !== bb) return aa - bb;
       return ts(b) - ts(a);
     });
-    function statusBadge(st) {
-      var m = { a_valider: ['À valider', '#8a5a00', '#fbf0d8'], revision: ['En révision', '#8a3a2c', '#fbeae5'], refuse: ['Révision demandée', '#8a3a2c', '#fbeae5'], valide: ['Validé', '#3f6b3a', '#e7f0e3'], validated: ['Validé', '#3f6b3a', '#e7f0e3'], recu: ['Reçu', '#5a4632', '#f0ece3'] };
-      var c = m[st] || m.recu;
-      return '<span style="font-family:var(--font-micro);font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[2] + ';color:' + c[1] + '">' + c[0] + '</span>';
+    // Un seul lien "Voir/Télécharger" — réutilisé comme secondaire (à valider)
+    // ou comme bouton principal neutre (déjà traités).
+    function openBtn(it, primary) {
+      var pri = primary
+        ? 'padding:11px 20px;font-weight:700;font-size:10.5px;background:var(--terre);color:var(--paille)'
+        : 'padding:9px 15px;font-weight:600;font-size:10px;background:#EFE3FE;color:#4a2f80';
+      var base = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;text-decoration:none;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;';
+      if (it.dlUrl) return '<a href="' + esc(it.dlUrl) + '" target="_blank" style="' + base + pri + '">' + cpIcon('download', 14) + ' Télécharger</a>';
+      if (it.reviewLink) return '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="' + base + pri + '">' + cpIcon('external', 13) + ' Voir</a>';
+      return '';
     }
     function row(it) {
+      var todo = it.status === 'a_valider' && it.id;
+      var tone = todo ? 'todo' : 'ok';
+      var cardBg = todo ? '#FBEFCF' : '#DFEBD3';
+      var icBg = todo ? '#F6E4B8' : '#CFE0C0';
+      var icCol = todo ? '#7a5a1e' : '#4d6b3d';
+      var metaCol = todo ? '#5f4515' : '#2f4526';
+      var pillBg = todo ? '#F6E4B8' : '#CFE0C0';
+      var pillCol = todo ? '#5a4210' : '#2f4526';
       var validated = it.status === 'valide' || it.status === 'validated';
+      var pillTxt = todo ? 'À valider' : (validated ? '✓ Validé' : 'Reçu');
       var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
       var line1 = [it.projLabel, dateLbl].filter(Boolean).join(' · ');
-      var vTag = it.version > 0 ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:6px;background:var(--surface-2,#f0ece3);color:var(--terre-600);margin-left:8px;vertical-align:2px">V' + it.version + '</span>' : '';
-      var action = it.dlUrl
-        ? '<a href="' + esc(it.dlUrl) + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--terre);color:var(--paille);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('download', 14, 'color:var(--paille)') + ' Télécharger</a>'
-        : (it.reviewLink ? '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--brume);color:var(--nuit);text-decoration:none;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">' + cpIcon('external', 13) + ' Voir</a>' : '');
-      // Livrable-lien : on doit d'abord ouvrir le lien pour pouvoir décider.
+      var vTag = it.version > 0 ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.6);color:var(--terre);margin-left:8px;vertical-align:2px">V' + it.version + '</span>' : '';
+      // À valider : on invite à ouvrir le livrable, sans jamais bloquer la validation.
       var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
-      var decideBtns = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
-            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="padding:9px 18px;border:none;border-radius:999px;background:#3f6b3a;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Valider ce livrable</button>' +
-            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="padding:9px 18px;border:1px solid var(--bone-d);border-radius:999px;background:var(--card);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Demander une révision</button>' +
-          '</div>';
-      // On invite à ouvrir le livrable, mais sans jamais bloquer la validation :
-      // les boutons restent toujours disponibles pour un livrable « à valider ».
-      var consultHint = needConsult
-        ? '<div style="margin-top:12px;margin-bottom:2px;font-family:var(--font-body);font-size:12.5px;color:var(--terre-600);background:#fbf3d9;border:1px solid #f0e2b0;border-radius:10px;padding:9px 13px">👀 Pensez à ouvrir le livrable via « Voir » ci-dessus avant de vous prononcer.</div>'
+      var hint = (todo && needConsult)
+        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#5f4515;background:rgba(255,255,255,0.55);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
         : '';
-      var decide = (it.status === 'a_valider' && it.id) ? (consultHint + decideBtns) : '';
+      var priBtn = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:11px 20px;font-weight:700;font-size:10.5px;';
+      var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F4EFe7);color:var(--terre);';
+      var actions;
+      if (todo) {
+        actions = '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' +
+            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="' + priBtn + 'background:#38562c;color:#fff">' + cpIcon('check', 14, 'color:#fff') + ' Valider</button>' +
+            openBtn(it, false) +
+            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="' + secBeige + '">Demander une révision</button>' +
+          '</div>';
+      } else {
+        var ob = openBtn(it, true);
+        actions = ob ? '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' + ob + '</div>' : '';
+      }
       var comment = (it.status === 'refuse' && it.clientComment)
         ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8d2b21;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
         : '';
-      return '<div style="padding:20px 22px;background:#F5F0E7;border-radius:16px;margin-bottom:14px">' +
+      return '<div style="background:' + cardBg + ';border-radius:16px;padding:20px 22px;margin-bottom:12px">' +
         '<div style="display:flex;align-items:flex-start;gap:14px">' +
-        '<span style="width:42px;height:42px;border-radius:12px;background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0">' + cpIcon('download', 18) + '</span>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.3">' + esc(it.name) + vTag + '</div>' +
-          (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);margin-top:4px;letter-spacing:0.05em;text-transform:uppercase">' + esc(line1) + '</div>' : '') +
-          (it.taskTitle ? '<div style="font-family:var(--font-body);font-size:12.5px;font-style:italic;color:var(--terre-400);margin-top:3px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
-          comment +
-        '</div>' +
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">' + statusBadge(it.status) + action + '</div>' +
-        '</div>' + decide +
+          '<span style="width:44px;height:44px;border-radius:12px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon(it.dlUrl ? 'file' : 'link', 18) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.25">' + esc(it.name) + vTag + '</div>' +
+            (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:5px;font-weight:600;color:' + metaCol + '">' + esc(line1) + '</div>' : '') +
+            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#574433;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
+            comment +
+          '</div>' +
+          '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + pillBg + ';color:' + pillCol + ';flex-shrink:0">' + pillTxt + '</span>' +
+        '</div>' + hint + actions +
       '</div>';
     }
     function chip(v, lbl) {
@@ -6024,12 +6042,33 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       return '<button onclick="cpLivrSetFilter(\'' + esc(v) + '\')" style="padding:6px 14px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:' + (on ? 'var(--terre)' : 'var(--glycine-50)') + ';color:' + (on ? 'var(--paille)' : 'var(--terre-600)') + '">' + esc(lbl) + '</button>';
     }
     var chips = multi ? '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px">' + chip('all', 'Tous') + projects.map(function(pd) { return chip(pd.project.id, pd.project.projectTitle || 'Projet'); }).join('') + '</div>' : '';
-    var listHtml = visible.length ? visible.map(row).join('')
+    // Deux sections : à valider (chaud) en premier, puis déjà traités (sauge).
+    var toValidate = visible.filter(function(it){ return it.status === 'a_valider' && it.id; });
+    var done = visible.filter(function(it){ return !(it.status === 'a_valider' && it.id); });
+    function sectionHead(tone, title, n) {
+      var todo = tone === 'todo';
+      var icBg = todo ? '#F6E4B8' : '#CFE0C0';
+      var icCol = todo ? '#7a5a1e' : '#4d6b3d';
+      var nBg = todo ? '#F6E4B8' : '#CFE0C0';
+      var nCol = todo ? '#5a4210' : '#2f4526';
+      var ic = todo
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="14" r="7"/><path d="M9 14l2 2 4-4"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg>';
+      return '<div style="display:flex;align-items:center;gap:11px;margin-bottom:14px">' +
+        '<span style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;background:' + icBg + ';color:' + icCol + '">' + ic + '</span>' +
+        '<span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre)">' + title + '</span>' +
+        '<span style="font-family:var(--font-micro);font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:' + nBg + ';color:' + nCol + '">' + n + '</span>' +
+      '</div>';
+    }
+    var sections = '';
+    if (toValidate.length) sections += '<section style="margin-bottom:30px">' + sectionHead('todo', 'À valider', toValidate.length) + toValidate.map(row).join('') + '</section>';
+    if (done.length) sections += '<section style="margin-bottom:30px">' + sectionHead('ok', 'Reçus et validés', done.length) + done.map(row).join('') + '</section>';
+    var listHtml = visible.length ? sections
       : '<div style="padding:50px 24px;text-align:center"><div style="font-size:38px;margin-bottom:12px;opacity:0.3">📦</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:6px">Pas encore de livrable</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Vos livrables apparaîtront ici dès que Cindy les dépose.</div></div>';
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Les éléments à valider apparaissent en premier.</p>' +
+      '<p style="font-size:16px;color:#47341f;line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Ce qui attend votre validation est mis en avant, tout en haut.</p>' +
       chips + listHtml +
     '</div>';
   }
