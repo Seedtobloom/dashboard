@@ -5815,8 +5815,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var sub = (cindy ? 'Reçu de Cindy' : 'Déposé par vous') + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
       var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
       var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:var(--terre-400);cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
+      var isImg = /\.(jpe?g|png|webp|gif|avif|svg)$/i.test(f.name || '');
+      var visual = isImg
+        ? '<a href="' + dl + '" target="_blank" title="Ouvrir" style="width:40px;height:40px;border-radius:9px;overflow:hidden;flex-shrink:0;line-height:0;display:block"><img src="' + dl + '" loading="lazy" alt="" style="width:40px;height:40px;object-fit:cover;display:block"></a>'
+        : '<span style="width:36px;height:36px;border-radius:9px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon('file', 17) + '</span>';
       return '<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:12px;background:' + bg + '">' +
-        '<span style="width:36px;height:36px;border-radius:9px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon('file', 17) + '</span>' +
+        visual +
         '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">' + esc(f.name || 'Fichier') + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;color:' + metaCol + ';margin-top:2px">' + esc(sub) + '</div></div>' +
         '<a href="' + dl + '" target="_blank" title="Télécharger" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,0.6);color:var(--terre-600);text-decoration:none;flex-shrink:0">' + cpIcon('download', 16) + '</a>' + del +
