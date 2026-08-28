@@ -3615,18 +3615,20 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var done = tasks.filter(function(t){ return t.status === 'done' && !t.archived; });
     var archived = tasks.filter(function(t){ return t.archived; });
 
+    // Chaque tuile a sa propre couleur (contraste), avec pastille d'icône saturée :
+    // glycine (heures), doré (actives), vert (livrées), marron clair (archivées).
     var tiles = [
-      { v: hmm(Math.round(monthReel * 60)), label: 'Heures du mois', icon: 'timer' },
-      { v: active.length, label: 'Taches actives', icon: 'tasks' },
-      { v: done.length, label: 'Livrees', icon: 'check' },
-      { v: archived.length, label: 'Archivees', icon: 'archive' },
+      { v: hmm(Math.round(monthReel * 60)), label: 'Heures du mois', icon: 'timer',  bg: '#EFE3FE', ic: '#E4D1FE', ink: '#573b8a' },
+      { v: active.length,                   label: 'Taches actives',  icon: 'tasks',  bg: '#FBEFCF', ic: '#F6E4B8', ink: '#7a5a1e' },
+      { v: done.length,                     label: 'Livrees',         icon: 'check',  bg: '#DFEBD3', ic: '#CFE0C0', ink: '#4d6b3d' },
+      { v: archived.length,                 label: 'Archivees',       icon: 'archive',bg: '#ECE2D6', ic: '#DAC7B4', ink: '#6b4a2e' },
     ];
     var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
       tiles.map(function(t){
-        return '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:22px 24px">' +
-          '<div style="color:var(--glycine-900);margin-bottom:12px">' + cpIcon(t.icon,20) + '</div>' +
+        return '<div style="background:' + t.bg + ';border-radius:var(--radius-3);padding:22px 24px">' +
+          '<div style="width:38px;height:38px;border-radius:11px;background:' + t.ic + ';color:' + t.ink + ';display:grid;place-items:center;margin-bottom:14px">' + cpIcon(t.icon,19) + '</div>' +
           '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">' + t.label + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:' + t.ink + '">' + t.label + '</div>' +
         '</div>';
       }).join('') +
     '</div>';
@@ -3653,7 +3655,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       }).join('') +
     '</div>';
 
-    var chartCard = '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
+    var chartCard = '<div style="background:#EFE3FE;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' +
         cpIcon('chart',16,'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Pour scaler</span>' +
@@ -3670,9 +3672,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var cats = Object.keys(catMap).map(function(k){ return { name:k, min:catMap[k].min, n:catMap[k].n }; })
       .filter(function(c){ return c.min > 0; }).sort(function(a,b){ return b.min - a.min; });
     var maxCatMin = cats.length ? Math.max.apply(null, cats.map(function(c){ return c.min; })) : 1;
-    var catCard = cats.length ? '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
+    var catCard = cats.length ? '<div style="background:#FBEFCF;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' +
-        cpIcon('chart',16,'color:var(--brume-700)') +
+        cpIcon('chart',16,'color:#a8701a') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">En moyenne, combien de temps ça prend</span>' +
       '</div>' +
       '<p style="font-family:var(--font-body);font-size:13px;color:var(--terre-600);line-height:1.5;margin-bottom:18px">Le temps que je consacre en moyenne à chaque type de mission, pour vous donner un repère.</p>' +
@@ -3684,7 +3686,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + c.n + ' tâche' + (c.n>1?'s':'') + ' · ' + partFmtH(c.min) + ' au total</div>' +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0">' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--brume-900,#6c4ea4);line-height:1">' + partFmtH(avg) + '</div>' +
+            '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:#a8701a;line-height:1">' + partFmtH(avg) + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">en moyenne / tâche</div>' +
           '</div>' +
         '</div>';
@@ -3790,17 +3792,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var doneT = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
 
     var tiles = [
-      { v: fmtH(monthReel), label: 'Heures du mois', icon: 'timer' },
-      { v: openT.length, label: 'Demandes ouvertes', icon: 'tasks' },
-      { v: doneT.length, label: 'Résolues', icon: 'check' },
-      { v: String(tickets.length), label: 'Au total', icon: 'archive' },
+      { v: fmtH(monthReel),        label: 'Heures du mois',     icon: 'timer',  bg: '#EFE3FE', ic: '#E4D1FE', ink: '#573b8a' },
+      { v: openT.length,           label: 'Demandes ouvertes',  icon: 'tasks',  bg: '#FBEFCF', ic: '#F6E4B8', ink: '#7a5a1e' },
+      { v: doneT.length,           label: 'Résolues',           icon: 'check',  bg: '#DFEBD3', ic: '#CFE0C0', ink: '#4d6b3d' },
+      { v: String(tickets.length), label: 'Au total',           icon: 'archive',bg: '#ECE2D6', ic: '#DAC7B4', ink: '#6b4a2e' },
     ];
     var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
       tiles.map(function(t){
-        return '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:22px 24px">' +
-          '<div style="color:var(--glycine-900);margin-bottom:12px">' + cpIcon(t.icon, 20) + '</div>' +
+        return '<div style="background:' + t.bg + ';border-radius:var(--radius-3);padding:22px 24px">' +
+          '<div style="width:38px;height:38px;border-radius:11px;background:' + t.ic + ';color:' + t.ink + ';display:grid;place-items:center;margin-bottom:14px">' + cpIcon(t.icon, 19) + '</div>' +
           '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600)">' + t.label + '</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:' + t.ink + '">' + t.label + '</div>' +
         '</div>';
       }).join('') +
     '</div>';
@@ -3823,7 +3825,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>';
       }).join('') +
     '</div>';
-    var chartCard = '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
+    var chartCard = '<div style="background:#EFE3FE;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Temps par mois</span>' +
         '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
@@ -3834,7 +3836,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var catMap = {};
     tickets.forEach(function(t){ var c = (t.category && String(t.category).trim()) || 'Autre'; if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += tkMin(t); catMap[c].n += 1; });
     var cats = Object.keys(catMap).map(function(k){ return { name: k, min: catMap[k].min, n: catMap[k].n }; }).filter(function(c){ return c.min > 0; }).sort(function(a, b){ return b.min - a.min; });
-    var catCard = cats.length ? '<div style="background:#F4EFE6;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
+    var catCard = cats.length ? '<div style="background:#FBEFCF;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
       '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
         '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Par type de demande</span></div>' +
       cats.map(function(c){
