@@ -5039,9 +5039,7 @@
         var rows = Array.isArray(b.rows) ? b.rows : [];
         if (!rows.length) return '';
         var cols = rows[0] || [];
-        var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:7px 10px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);vertical-align:top;min-width:120px">' + esc(c || '') + '</th>'; }).join('') + '</tr>';
-        var body = rows.slice(1).map(function (row) { return '<tr>' + cols.map(function (_c, ci) { return '<td style="border:' + bd + ';padding:7px 10px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:120px;max-width:420px">' + admRichSafe((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
-        return '<div style="margin:10px 0;overflow-x:auto"><table style="border-collapse:collapse;width:100%">' + head + body + '</table></div>';
+        return admPrettyTable(cols, rows.slice(1));
       }
       return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
     }
@@ -5053,9 +5051,13 @@
   // quelle, mais embelli — aucune bordure, en-tête marron foncé, lignes
   // alternées en teintes chaudes, colonne « Visuel » en lavande, colonne
   // « Titre » en serif, et 1re colonne courte (n° de slide) en pastille.
-  function briefTableHtml(table) {
-    if (!table || !Array.isArray(table.cols) || !table.cols.length) return '';
-    var cols = table.cols, rows = Array.isArray(table.rows) ? table.rows : [];
+  // Rendu embelli d'un tableau du client (carrousel de Marie, etc.) : structure
+  // GARDÉE, mais sans bordure — en-tête marron foncé, lignes alternées chaudes,
+  // colonne « Visuel » en lavande, « Titre » en serif, 1re colonne courte en pastille.
+  function admPrettyTable(cols, dataRows) {
+    cols = Array.isArray(cols) ? cols : [];
+    dataRows = Array.isArray(dataRows) ? dataRows : [];
+    if (!cols.length) return '';
     var visIdx = -1, titIdx = -1;
     cols.forEach(function (c, i) {
       var h = String(c || '').toLowerCase();
@@ -5064,10 +5066,10 @@
     });
     var head = '<tr>' + cols.map(function (c, i) {
       var rnd = (i === 0 ? 'border-top-left-radius:13px;' : '') + (i === cols.length - 1 ? 'border-top-right-radius:13px;' : '');
-      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c) + '</th>';
+      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
     }).join('') + '</tr>';
-    var bodyR = rows.map(function (row, ri) {
-      var even = ri % 2 === 1, last = ri === rows.length - 1;
+    var bodyR = dataRows.map(function (row, ri) {
+      var even = ri % 2 === 1, last = ri === dataRows.length - 1;
       var rowBg = even ? '#FBF4E7' : 'var(--card)';
       return '<tr>' + cols.map(function (c, ci) {
         var val = (row && row[ci] != null) ? row[ci] : '';
@@ -5080,10 +5082,14 @@
         }
         var col = vis ? '#5b3f96' : 'var(--terre)';
         var extra = vis ? 'font-style:italic;font-size:13px;' : (ci === titIdx ? "font-family:var(--font-display);font-size:17px;line-height:1.25;" : 'font-size:13.5px;line-height:1.55;');
-        return '<td style="padding:14px 15px;vertical-align:top;color:' + col + ';white-space:pre-wrap;word-break:break-word;min-width:150px;max-width:340px;background:' + cellBg + ';' + extra + rnd + '">' + admRichSafe(val) + '</td>';
+        return '<td style="padding:14px 15px;vertical-align:top;color:' + col + ';white-space:pre-wrap;word-break:break-word;min-width:130px;max-width:340px;background:' + cellBg + ';' + extra + rnd + '">' + admRichSafe(val) + '</td>';
       }).join('') + '</tr>';
     }).join('');
-    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto;border-radius:13px"><table style="border-collapse:separate;border-spacing:0;width:100%;min-width:600px">' + head + bodyR + '</table></div></div>';
+    return '<div style="margin:12px 0;overflow-x:auto;border-radius:13px"><table style="border-collapse:separate;border-spacing:0;width:100%;min-width:600px">' + head + bodyR + '</table></div>';
+  }
+  function briefTableHtml(table) {
+    if (!table || !Array.isArray(table.cols) || !table.cols.length) return '';
+    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div>' + admPrettyTable(table.cols, Array.isArray(table.rows) ? table.rows : []) + '</div>';
   }
   function partnerTasks(d) {
     var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
