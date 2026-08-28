@@ -26,7 +26,6 @@ const taskDlvPatch = read('_task_dlv_patch.js');
 const blocksPatch = read('_blocks_patch.js');
 const drawerPatch = read('_drawer_patch.js');
 const inboxPatch = read('_inbox_patch.js');
-const filesPatch = read('_files_patch.js');
 const feedbackPatch = read('_feedback_patch.js');
 const maintenancePatch = read('_maintenance_patch.js');
 
@@ -128,9 +127,8 @@ js = js.replace("'<div class=\"cp-action__icon\">'+cpIcon('arrow',18,'color:var(
 // ── Retrait de l'onglet "Ressources" (sidebar) ──
 must(js.indexOf("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +") !== -1, 'ressources nav');
 js = js.replace("(portal ? navBtn('hub','folder','Ressources','cpGoHub()','') : '') +", "'' +");
-// Le bouton « Fichiers » existant ouvre la vue regroupée par projet (overlay), pas de doublon
-must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +") !== -1, 'fichiers nav -> overlay');
-js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +");
+// « Fichiers » ouvre la page unifiée (cpGoFichiers) sur TOUS les appareils.
+// Plus d'overlay séparé sur ordi : une seule surface, avec dossiers.
 
 // ── Doublon Livrables : on retire le groupe "Livrables" du panneau Fichiers (gardé dans l'onglet Livrables) ──
 must(js.indexOf("filesGroup('Livrables', adminBycat.deliverable) + filesGroup('Documents', adminBycat.document) + filesGroup('References', adminBycat.reference) +") !== -1, 'livrables dedup');
@@ -240,15 +238,15 @@ js = js.replace(
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)
 const anchor = js.match(/\n[ \t]*loadCpColors\(\);/);
 must(!!anchor, 'anchor loadCpColors');
-js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + filesPatch + '\n' + feedbackPatch + '\n' + maintenancePatch + anchor[0]);
+js = js.replace(anchor[0], '\n' + patch + '\n' + chatPatch + '\n' + livPatch + '\n' + taskDlvPatch + '\n' + blocksPatch + '\n' + drawerPatch + '\n' + inboxPatch + '\n' + feedbackPatch + '\n' + maintenancePatch + anchor[0]);
 
 // ── Verrou « en préparation » : le contenu du projet est remplacé par un message ──
 must(js.indexOf("var project = pd.project, messages = pd.messages, files = pd.files;") !== -1, 'project view maintenance');
 js = js.replace("var project = pd.project, messages = pd.messages, files = pd.files;", "var project = pd.project, messages = pd.messages, files = pd.files;\n    if (project && project.status === 'maintenance') return cpMaintenanceView(project);");
 
 // ── Onglet « Bilan » (sidebar Échanges) quand Cindy sollicite un retour + « Votre avis » permanent ──
-must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +") !== -1, 'fichiers nav present pour bilan');
-js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') +", "navBtn('fichiers','paperclip','Fichiers','cpOpenFiles()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
+must(js.indexOf("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +") !== -1, 'fichiers nav present pour bilan');
+js = js.replace("navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') +", "navBtn('fichiers','paperclip','Fichiers','cpGoFichiers()','') + navBtn('avis','pencil','Votre avis','cpOpenAvis()','') + ((appData.bilan && appData.bilan.requestedAt) ? navBtn('bilan','star','Bilan','cpOpenBilan()', (appData.bilan.submittedAt ? '' : '1')) : '') +");
 
 // ── Statut « En préparation » (maintenance) : désormais directement dans la source (STATUS_LABELS / STATUS_COLORS). ──
 

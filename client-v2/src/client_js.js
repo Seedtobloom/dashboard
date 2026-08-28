@@ -5792,102 +5792,149 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     renderShell();
   };
 
+  // ── Vue « Fichiers » UNIFIÉE : par projet, par dossier, sans contour, teintée
+  //    par source (Cindy = glycine, cliente = doré). Remplace l'ancien panneau. ──
   function buildFichiersView() {
-    var allFiles = [];
-    // fichier -> titre de la tâche à laquelle il est joint (pièces des demandes)
+    var projects = (appData && appData.projects) ? appData.projects.slice() : [];
+    projects.sort(function(a, b){ return (a.project.id === 'branding' ? 0 : 1) - (b.project.id === 'branding' ? 0 : 1); });
+    // fichier -> titre de la demande à laquelle il est joint
     var taskOfFile = {};
-    appData.projects.forEach(function(pd) {
-      ((pd.project && pd.project.tasks) || []).forEach(function(t) {
-        (Array.isArray(t.attachments) ? t.attachments : []).forEach(function(a) {
-          var k = a.fileKey || a.key || '';
-          if (k) taskOfFile[k] = t.title || 'Tâche';
-        });
-        // Fichiers ajoutés ensuite via « Lien & fichiers » de la tâche (p_elements)
+    projects.forEach(function(pd){
+      ((pd.project && pd.project.tasks) || []).forEach(function(t){
+        (Array.isArray(t.attachments) ? t.attachments : []).forEach(function(a){ var k = a.fileKey || a.key || ''; if (k) taskOfFile[k] = t.title || 'Demande'; });
         var bv = briefVal((t.properties || {}).p_elements);
-        (bv.files || []).forEach(function(fx) { if (fx && fx.key) taskOfFile[fx.key] = t.title || 'Tâche'; });
+        (bv.files || []).forEach(function(fx){ if (fx && fx.key) taskOfFile[fx.key] = t.title || 'Demande'; });
       });
-      (pd.files || []).forEach(function(f) { allFiles.push({ f: f, proj: pd.project, task: taskOfFile[f.key] || '' }); });
     });
-
-    function fileTypeIcon(f) {
-      var name = (f.name||f.filename||'').toLowerCase();
-      var type = (f.type||f.contentType||'').toLowerCase();
-      if (type.startsWith('image/') || /\.(png|jpg|jpeg|gif|webp|svg)$/.test(name)) return { icon:'image', bg:'var(--glycine-50)', col:'var(--glycine-900)' };
-      if (type==='application/pdf' || name.endsWith('.pdf')) return { icon:'file', bg:'#fdf3e8', col:'#c46a1a' };
-      if (/zip|rar|tar|gz/.test(type+name)) return { icon:'file', bg:'var(--brume-50)', col:'var(--brume-900)' };
-      if (/figma|sketch/.test(name)) return { icon:'external', bg:'var(--glycine-50)', col:'var(--glycine-900)' };
-      return { icon:'file', bg:'var(--bone)', col:'var(--terre-600)' };
-    }
-
-    function fileRow(item) {
-      var f = item.f;
-      var isCindy = f.source !== 'client';
-      var ti = fileTypeIcon(f);
-      var iconBg = isCindy ? 'var(--glycine-50)' : 'var(--brume-50)';
-      var iconCol = isCindy ? 'var(--glycine-900)' : 'var(--brume-900)';
-      var sub = isCindy
-        ? 'Livré par Cindy' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '')
-        : 'Déposé par vous' + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
-      if (item.task) sub += ' · tâche « ' + item.task + ' »';
-      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border:1px solid var(--bone-d);border-radius:var(--radius-2);margin-bottom:8px">' +
-        '<span style="width:38px;height:38px;border-radius:var(--radius-2);background:'+iconBg+';color:'+iconCol+';display:grid;place-items:center;flex-shrink:0">' + cpIcon(ti.icon,17) + '</span>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name||f.filename||'Fichier') + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-600);margin-top:2px;letter-spacing:0.07em;text-transform:uppercase">' + esc(sub) + '</div>' +
-        '</div>' +
-        (f.url ? '<a href="'+esc(f.url)+'" target="_blank" style="width:34px;height:34px;display:grid;place-items:center;color:var(--terre-600);background:var(--bone);border:1px solid var(--bone-d);border-radius:var(--radius-2);text-decoration:none;flex-shrink:0" title="Télécharger">' + cpIcon('external',14) + '</a>' : '') +
+    function fRow(pd, f){
+      var pid = pd.project.id;
+      var cindy = f.source !== 'client';
+      var bg = cindy ? 'var(--glycine-50,#f4ecff)' : '#fbefcf';
+      var icBg = cindy ? 'var(--glycine,#E4D1FE)' : '#F6E4B8';
+      var icCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
+      var metaCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
+      var sub = (cindy ? 'Reçu de Cindy' : 'Déposé par vous') + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
+      var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
+      var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:#a8593a;cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:12px;background:' + bg + '">' +
+        '<span style="width:36px;height:36px;border-radius:9px;background:' + icBg + ';color:' + icCol + ';display:grid;place-items:center;flex-shrink:0">' + cpIcon('file', 17) + '</span>' +
+        '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">' + esc(f.name || 'Fichier') + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;color:' + metaCol + ';margin-top:2px">' + esc(sub) + '</div></div>' +
+        '<a href="' + dl + '" target="_blank" title="Télécharger" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,0.6);color:var(--terre-600);text-decoration:none;flex-shrink:0">' + cpIcon('download', 16) + '</a>' + del +
       '</div>';
     }
-
-    var cindyFiles = allFiles.filter(function(x){ return x.f.source !== 'client'; });
-    var clientFiles = allFiles.filter(function(x){ return x.f.source === 'client' && !x.task; });
-    var taskFiles = allFiles.filter(function(x){ return x.f.source === 'client' && x.task; });
+    function folderBlock(pd, name, files, isFolder){
+      var pid = pd.project.id;
+      var rows = files.length ? files.map(function(f){ return fRow(pd, f); }).join('') : '<div style="font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-400);padding:2px 4px 6px">Vide pour l\'instant.</div>';
+      var del = isFolder ? '<button onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(name) + '\')" style="margin-left:auto;font-family:var(--font-micro);font-size:11px;color:#a8593a;background:none;border:none;cursor:pointer">Supprimer</button>' : '';
+      return '<div style="margin-bottom:12px">' +
+        '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F4EFe7);margin-bottom:9px">' +
+          cpIcon('folder', 14, 'color:var(--terre-400)') +
+          '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">' + esc(name) + '</span>' +
+          '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400)">' + files.length + '</span>' + del +
+        '</div><div style="display:flex;flex-direction:column;gap:8px">' + rows + '</div></div>';
+    }
+    function projBlock(pd){
+      var p = pd.project; var pid = p.id;
+      var common = pid === 'branding';
+      var files = (pd.files || []).filter(function(f){ return !taskOfFile[f.key]; });
+      var folders = (p.folders || []).slice();
+      var body = folderBlock(pd, 'Général', files.filter(function(f){ return !f.folder; }), false);
+      folders.forEach(function(fn){ body += folderBlock(pd, fn, files.filter(function(f){ return f.folder === fn; }), true); });
+      var folderOpts = '<option value="">Général</option>' + folders.map(function(fn){ return '<option value="' + esc(fn) + '">' + esc(fn) + '</option>'; }).join('');
+      var inS = 'border:none;border-radius:9px;padding:10px 13px;font-family:var(--font-micro);font-size:13px;color:var(--terre);background:var(--card,#fffefb)';
+      var ctl = '<div style="background:var(--surface,#F4EFe7);border-radius:14px;padding:16px 18px;margin-top:6px">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center">' +
+          '<input id="cpf-newfolder-' + pid + '" placeholder="Créer un dossier…" style="' + inS + ';flex:1;min-width:170px">' +
+          '<button onclick="window.stbFolderAdd(\'' + pid + '\')" style="border:none;border-radius:9px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;padding:10px 16px;cursor:pointer">+ Dossier</button>' +
+        '</div>' +
+        '<label style="display:block;margin-top:11px;border-radius:12px;padding:20px;text-align:center;color:var(--glycine-900,#573b8a);font-family:var(--font-micro);font-size:13px;background:var(--glycine-50,#f4ecff);cursor:pointer" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
+          cpIcon('upload', 18, 'color:var(--glycine-900,#573b8a);display:block;margin:0 auto 6px') +
+          '<span style="font-weight:600">Déposez un fichier ici</span> ou cliquez' +
+          '<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400)">Déposer dans</span><select id="cpf-folder-' + pid + '" style="' + inS + '">' + folderOpts + '</select></div>' +
+      '</div>';
+      return '<section style="background:var(--card,#fffefb);border-radius:18px;padding:22px 24px;margin-bottom:20px;box-shadow:0 10px 30px -22px rgba(28,18,5,0.45)">' +
+        '<div style="display:flex;align-items:center;gap:11px;margin-bottom:2px"><span style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre)">' + esc(p.projectTitle || pid) + '</span>' +
+        (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#E4D1FE);color:var(--glycine-900,#573b8a)">Commun</span>' : '') + '</div>' +
+        '<p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">' + (common ? 'Partagé pour l\'ensemble de vos projets' : 'Vos fichiers pour ce projet') + '</p>' +
+        body + ctl +
+      '</section>';
+    }
+    // Demandes : pièces jointes des tâches, tous projets confondus.
     var byTask = {};
-    taskFiles.forEach(function(x){ (byTask[x.task] = byTask[x.task] || []).push(x); });
-    var taskGroupsHtml = Object.keys(byTask).sort().map(function(tt){
-      var items = byTask[tt];
-      return '<div style="margin-bottom:18px">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
-          cpIcon('check',13,'color:var(--terre-400)') +
-          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--terre-600)">Tâche · ' + esc(tt) + '</span>' +
-          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">' + items.length + '</span>' +
-        '</div>' + items.map(fileRow).join('') +
-      '</div>';
-    }).join('');
-    var taskSection = taskGroupsHtml
-      ? '<div style="margin-bottom:28px">' +
-          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-            cpIcon('paperclip',16,'color:var(--terre-400)') +
-            '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">Fichiers de vos demandes</span>' +
-            '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em">' + taskFiles.length + '</span>' +
-          '</div>' + taskGroupsHtml +
-        '</div>'
-      : '';
+    projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
+    var demKeys = Object.keys(byTask).sort();
+    var demSection = demKeys.length ? '<section style="background:#F7D9C4;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:#a8593a;margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
+      demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#a8593a;margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
+      '</section>' : '';
 
-    function section(title, items, showUpload) {
-      return '<div style="margin-bottom:28px">' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-          cpIcon('folder',16,'color:var(--terre-400)') +
-          '<span style="font-family:var(--font-display);font-size:20px;color:var(--terre)">' + esc(title) + '</span>' +
-          '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em">' + items.length + '</span>' +
-        '</div>' +
-        items.map(fileRow).join('') +
-        (showUpload ? '<div style="border:1.5px dashed var(--terre-400);border-radius:var(--radius-2);padding:18px 20px;text-align:center;cursor:pointer;transition:all 180ms" onclick="cpUploadFile()" onmouseenter="this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondragover="event.preventDefault();this.style.background=\'var(--glycine-50)\';this.style.borderColor=\'var(--glycine-700)\'" ondragleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\'" ondrop="event.preventDefault();this.style.background=\'transparent\';this.style.borderColor=\'var(--terre-400)\';cpUploadFileInput({files:event.dataTransfer.files})">' +
-            '<input type="file" id="cp-file-input" style="display:none" onchange="cpUploadFileInput(this)">' +
-            cpIcon('upload',18,'color:var(--terre-400);display:inline-block;vertical-align:middle;margin-right:8px') +
-            '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600);letter-spacing:0.06em">+ Ajouter un fichier</span>' +
-          '</div>' : '') +
-        (items.length === 0 && !showUpload ? '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400);padding:8px 4px">Cindy n\'a pas encore partagé de fichiers ici.</div>' : '') +
-      '</div>';
-    }
-
+    var hasAny = projects.some(function(pd){ return (pd.files || []).length; });
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:28px;max-width:560px">Déposez vos éléments, récupérez les livrables — tout reste au même endroit.</p>' +
-      section('Fichiers du projet', cindyFiles, false) +
-      taskSection +
-      section('Mes documents', clientFiles, true) +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:24px;max-width:560px">Tout ce que Cindy vous partage et tout ce que vous déposez, au même endroit — par projet et par dossier.</p>' +
+      (hasAny ? projects.map(projBlock).join('') + demSection : '<div class="cp-empty">Aucun fichier pour le moment. Déposez-en un depuis un projet.</div>') +
     '</div>';
   }
+  // ── Dossiers & dépôt (relocalisés depuis l'ancien panneau, rafraîchissent la page) ──
+  window.stbFolderAdd = function(pid){
+    var inp = document.getElementById('cpf-newfolder-' + pid); var name = inp ? (inp.value || '').trim() : '';
+    if (!name) return;
+    var pd = getPD(pid); if (!pd) return;
+    fetch('/api/client/' + TOKEN + '/folders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){ if (res.ok && res.d && res.d.name){ if (!pd.project.folders) pd.project.folders = []; if (pd.project.folders.indexOf(res.d.name) === -1) pd.project.folders.push(res.d.name); renderShell(); } else toast((res.d && res.d.error) || 'Erreur', true); })
+      .catch(function(){ toast('Erreur', true); });
+  };
+  window.stbFolderDel = function(pid, encName){
+    var name = decodeURIComponent(encName);
+    window.cpConfirmDA('Supprimer le dossier « ' + name + ' » et les fichiers qu\'il contient ?', 'Supprimer', function(){
+      var pd = getPD(pid); if (!pd) return;
+      fetch('/api/client/' + TOKEN + '/folders', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ projectId: pid, name: name }) })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if (res.ok){ pd.project.folders = (pd.project.folders || []).filter(function(x){ return x !== name; }); pd.files = (pd.files || []).filter(function(f){ return f.folder !== name; }); renderShell(); } else toast((res.d && res.d.error) || 'Erreur', true); })
+        .catch(function(){ toast('Erreur', true); });
+    });
+  };
+  window.cpConfirmDA = function(message, confirmLabel, onConfirm){
+    var ov = document.createElement('div');
+    ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
+    ov.onclick = function(e){ if (e.target === ov && ov.parentNode) ov.parentNode.removeChild(ov); };
+    ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#fffefb);border-radius:16px;padding:26px 24px;text-align:center">' +
+      cpIcon('trash', 26, 'color:#c0533b;margin:0 auto 12px') +
+      '<div style="font-size:14.5px;color:var(--terre,#412F21);line-height:1.55;margin-bottom:20px">' + esc(message) + '</div>' +
+      '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--surface,#F4EFe7);color:var(--terre,#412F21);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>' +
+      '<button id="cp-confirm-yes" style="flex:1;padding:11px;border:none;border-radius:10px;background:#c0533b;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + esc(confirmLabel || 'Supprimer') + '</button></div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#cp-confirm-no').onclick = function(){ if (ov.parentNode) ov.parentNode.removeChild(ov); };
+    ov.querySelector('#cp-confirm-yes').onclick = function(){ if (ov.parentNode) ov.parentNode.removeChild(ov); onConfirm(); };
+  };
+  window.stbFileDelete = function(pid, encKey){
+    var key = decodeURIComponent(encKey);
+    window.cpConfirmDA('Voulez-vous vraiment supprimer ce fichier ? Cette action est définitive.', 'Supprimer', function(){
+      var pd = getPD(pid); if (!pd) return;
+      fetch('/api/client/' + TOKEN + '/files?key=' + encodeURIComponent(key) + '&projectId=' + encodeURIComponent(pid), { method:'DELETE' })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if (res.ok){ pd.files = (pd.files || []).filter(function(x){ return x.key !== key; }); renderShell(); } else toast((res.d && res.d.error) || 'Suppression impossible', true); })
+        .catch(function(){ toast('Erreur', true); });
+    });
+  };
+  window.stbFilesUpload = function(pid, files){
+    if (!files || !files.length) return;
+    var pd = getPD(pid); if (!pd) return;
+    var tooBig = cliAnyTooBig(Array.prototype.slice.call(files)); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
+    var folderSel = document.getElementById('cpf-folder-' + pid); var folder = folderSel ? folderSel.value : '';
+    toast('Envoi en cours…');
+    var arr = Array.prototype.slice.call(files); var done = 0;
+    arr.forEach(function(f){
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', pid); if (folder) fd.append('folder', folder);
+      fetch('/api/client/' + TOKEN + '/files', { method:'POST', body: fd })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if (res.ok && res.d && res.d.key){ if (!pd.files) pd.files = []; pd.files.push(res.d); } done++; if (done === arr.length){ renderShell(); toast('Fichier ajouté ✓'); } })
+        .catch(function(){ done++; if (done === arr.length) renderShell(); });
+    });
+  };
+
 
   function buildLivrablesView() {
     var projects = appData.projects || [];
