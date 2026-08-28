@@ -4220,7 +4220,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var _wPct = _availMin > 0 ? Math.max(0, Math.min(100 - _dPct, _fwip / _availMin * 100)) : 0;
 
     // helpers markup
-    function card(inner, extra) { return '<section style="background:var(--card,#fffefb);border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
+    function card(inner, extra) { return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
     function cardHead(title, ic, col) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:' + (col || 'var(--glycine-900)')) : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
     function chip(bg, col, txt) { return '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + bg + ';color:' + col + '">' + txt + '</span>'; }
@@ -4371,7 +4371,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var mwPct = availMin > 0 ? Math.max(0, Math.min(100 - mdPct, mWip / availMin * 100)) : 0;
 
     // helpers markup
-    function card(inner) { return '<section style="background:var(--card,#fffefb);border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
+    function card(inner) { return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
     function cardHead(title, ic) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:var(--glycine-900)') : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
 
@@ -6429,7 +6429,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400)">Déposer dans</span><select id="cpf-folder-' + pid + '" style="' + inS + '">' + folderOpts + '</select></div>' +
       '</div>';
-      return '<section style="background:var(--card,#fffefb);border-radius:18px;padding:22px 24px;margin-bottom:20px;box-shadow:0 10px 30px -22px rgba(28,18,5,0.45)">' +
+      return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px;box-shadow:0 10px 30px -22px rgba(28,18,5,0.45)">' +
         '<div style="display:flex;align-items:center;gap:11px;margin-bottom:2px"><span style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre)">' + esc(p.projectTitle || pid) + '</span>' +
         (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#E4D1FE);color:var(--glycine-900,#573b8a)">Commun</span>' : '') + '</div>' +
         '<p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">' + (common ? 'Partagé pour l\'ensemble de vos projets' : 'Vos fichiers pour ce projet') + '</p>' +
