@@ -4174,181 +4174,147 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   }
 
   // ── Stats partenaire ──────────────────────────────────────────────────────
+  // ── Temps passé : DASHBOARD (grille 2 colonnes, bloc forfait dominant,
+  //    graphe empilé par catégorie, détail épuré). Sans «, » (le build les
+  //    remplace de toute façon). ──
   function buildPartStats(pd) {
     var project = pd.project;
     var tasks = Array.isArray(project.tasks) ? project.tasks : [];
     var forfaitH = project.monthlyHours || 0;
-    var todayStr0 = _todayStr();
-    var curMonthKey = todayStr0.slice(0,7);
-    function fmtH(h){ return Math.floor(h)+'h'+(Math.round((h-Math.floor(h))*60)||''); }
-
-    // Heures du mois = temps RÉELLEMENT travaillé ce mois (même règle que le
-    // forfait), pour que la tuile, le graphe et le forfait affichent la même chose.
-    var monthReel = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
-    var active = tasks.filter(function(t){ return t.status !== 'done' && !t.archived; });
-    var done = tasks.filter(function(t){ return t.status === 'done' && !t.archived; });
-    var archived = tasks.filter(function(t){ return t.archived; });
-
-    // Chaque tuile a sa propre couleur (contraste), avec pastille d'icône saturée :
-    // glycine (heures), doré (actives), vert (livrées), marron clair (archivées).
-    var tiles = [
-      { v: hmm(Math.round(monthReel * 60)), label: 'Heures du mois', icon: 'timer',  bg: '#EFE3FE', ic: '#E4D1FE', ink: '#573b8a' },
-      { v: active.length,                   label: 'Taches actives',  icon: 'tasks',  bg: '#FBEFCF', ic: '#F6E4B8', ink: '#7a5a1e' },
-      { v: done.length,                     label: 'Livrees',         icon: 'check',  bg: '#DFEBD3', ic: '#CFE0C0', ink: '#4d6b3d' },
-      { v: archived.length,                 label: 'Archivees',       icon: 'archive',bg: '#ECE2D6', ic: '#DAC7B4', ink: '#6b4a2e' },
-    ];
-    var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
-      tiles.map(function(t){
-        return '<div style="background:' + t.bg + ';border-radius:var(--radius-3);padding:22px 24px">' +
-          '<div style="width:38px;height:38px;border-radius:11px;background:' + t.ic + ';color:' + t.ink + ';display:grid;place-items:center;margin-bottom:14px">' + cpIcon(t.icon,19) + '</div>' +
-          '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:' + t.ink + '">' + t.label + '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>';
-
+    var curMonthKey = _todayStr().slice(0, 7);
     var now = new Date();
     var monthLbl2 = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    function hmm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
+    function catOf(t) { var c = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || ''; return c || 'Autre'; }
+
+    var monthReel = tasks.reduce(function (s, t) { return s + (cpTaskMinByMonth(t)[curMonthKey] || 0) / 60; }, 0);
+    var archived = tasks.filter(function (t) { return t.archived; });
+
+    // ── Catégories : couleurs STABLES (mêmes dans le graphe et les moyennes),
+    //    triées par total travaillé ; au-delà de 5, regroupées en « Autres ». ──
+    var CAT_PAL = ['#b491ea', '#e6b053', '#8fb573', '#7bb0c4', '#c98aa6', '#b98a3f'];
+    var catTot = {};
+    tasks.forEach(function (t) { var c = catOf(t); var bm = cpTaskMinByMonth(t); var s = 0; for (var k in bm) s += bm[k]; catTot[c] = (catTot[c] || 0) + s; });
+    var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
+    var MAXCATS = 5;
+    var catColor = { 'Autres': '#c3b6a3' };
+    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#c3b6a3'; });
+    function colOf(c) { return catColor[c] || '#c3b6a3'; }
+    function catShown(c) { return catOrder.indexOf(c) < MAXCATS ? c : 'Autres'; }
+    var stackOrder = catOrder.slice(0, MAXCATS).concat(catOrder.length > MAXCATS ? ['Autres'] : []);
+
+    // ── 5 mois : total + répartition par catégorie ──
     var months = [];
-    for (var i=4; i>=0; i--) {
-      var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-      var key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      var h = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[key]||0)/60; }, 0);
-      months.push({ key:key, label:d.toLocaleDateString('fr-FR',{month:'short'}).toUpperCase(), h:h });
-    }
-    var maxH = Math.max.apply(null, months.map(function(m){return m.h;})) || 1;
-    var barsHtml = '<div style="display:flex;align-items:flex-end;gap:14px;height:140px;margin-top:16px;padding-bottom:24px;border-bottom:1px solid var(--bone-d)">' +
-      months.map(function(m){
-        var pct = Math.round(m.h/maxH*100);
-        var isCurrent = m.key===curMonthKey;
-        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">' + (m.h ? fmtH(m.h).toUpperCase() : '') + '</div>' +
-          '<div style="width:100%;height:'+(m.h?pct:4)+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(isCurrent?'var(--brume-700)':'rgba(228,209,254,0.5)')+'"></div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;color:var(--terre-400)">' + m.label + '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>';
+    for (var i = 4; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); months.push({ key: key, label: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase().replace('.', ''), min: 0, byCat: {} }); }
+    tasks.forEach(function (t) { var c = catShown(catOf(t)); var bm = cpTaskMinByMonth(t); months.forEach(function (m) { var mn = bm[m.key] || 0; if (mn) { m.min += mn; m.byCat[c] = (m.byCat[c] || 0) + mn; } }); });
+    var maxMonthMin = Math.max.apply(null, months.map(function (m) { return m.min; })) || 1;
+    var CHART_H = 150;
 
-    var chartCard = '<div style="background:#EFE3FE;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
-      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' +
-        cpIcon('chart',16,'color:var(--brume-700)') +
-        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Pour scaler</span>' +
-        '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
-      '</div>' +
-      barsHtml +
-      '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Heures travaillees par mois, pour ajuster le forfait quand l\'activite grandit.</p>' +
-    '</div>';
-
-    // Temps par catégorie (type de mission)
-    function catOf(t){ var c = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || ''; return c || 'Autre'; }
-    var catMap = {};
-    tasks.forEach(function(t){ var c = catOf(t); if (!catMap[c]) catMap[c] = { min:0, n:0 }; catMap[c].min += (t.timeSpentMinutes||0); catMap[c].n += 1; });
-    var cats = Object.keys(catMap).map(function(k){ return { name:k, min:catMap[k].min, n:catMap[k].n }; })
-      .filter(function(c){ return c.min > 0; }).sort(function(a,b){ return b.min - a.min; });
-    var maxCatMin = cats.length ? Math.max.apply(null, cats.map(function(c){ return c.min; })) : 1;
-    var catCard = cats.length ? '<div style="background:#FBEFCF;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
-      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' +
-        cpIcon('chart',16,'color:#a8701a') +
-        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">En moyenne, combien de temps ça prend</span>' +
-      '</div>' +
-      '<p style="font-family:var(--font-body);font-size:13px;color:var(--terre-600);line-height:1.5;margin-bottom:18px">Le temps que je consacre en moyenne à chaque type de mission, pour vous donner un repère.</p>' +
-      cats.map(function(c){
-        var avg = c.n ? Math.round(c.min/c.n) : 0;
-        return '<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--bone-d)">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-family:var(--font-body);font-size:15px;color:var(--terre);line-height:1.35">' + esc(c.name) + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + c.n + ' tâche' + (c.n>1?'s':'') + ' · ' + partFmtH(c.min) + ' au total</div>' +
-          '</div>' +
-          '<div style="text-align:right;flex-shrink:0">' +
-            '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:#a8701a;line-height:1">' + partFmtH(avg) + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">en moyenne / tâche</div>' +
-          '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>' : '';
-
+    // ── Forfait ──
     var _pf = cpForfaitState(project);
-    // Répartition terminé / en cours du temps travaillé ce mois.
     var _fdone = 0, _fwip = 0;
-    tasks.forEach(function(t){ var m = cpTaskMinByMonth(t)[curMonthKey]||0; if(!m) return; if(t.status==='done') _fdone+=m; else _fwip+=m; });
-    var _availMin = Math.round(_pf.available*60), _usedMin = _fdone+_fwip, _restMin = _availMin-_usedMin;
-    var _baseMin = Math.round(_pf.base*60), _carryMin = Math.round(_pf.carryIn*60);
-    function hmm(min){ min=Math.round(min); var neg=min<0; min=Math.abs(min); var h=Math.floor(min/60), m=min%60; return (neg?'−':'')+(m?(h+'h'+String(m).padStart(2,'0')):(h+' h')); }
-    var _dPct = _availMin>0?Math.max(0,Math.min(100,_fdone/_availMin*100)):0;
-    var _wPct = _availMin>0?Math.max(0,Math.min(100-_dPct,_fwip/_availMin*100)):0;
-    function _flg(c,txt){ return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:'+c+';flex-shrink:0"></i>'+txt+'</span>'; }
-    function _row(lbl,val,cls){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0'+(cls==='add'?';padding-left:12px':'')+'"><span style="font-family:var(--font-micro);font-size:12.5px;color:#e7dcc6">'+lbl+'</span><span style="font-family:var(--font-micro);font-weight:600;font-size:13.5px;color:'+(cls==='wip'?'#E4D1FE':'#FBFAF6')+';font-variant-numeric:tabular-nums">'+val+'</span></div>'; }
-    function _sum(lbl,val){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:6px;padding-top:9px;border-top:1px solid rgba(251,250,246,.22)"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#FBFAF6">'+lbl+'</span><span style="font-family:var(--font-display);font-style:italic;font-size:21px;color:#E4D1FE;font-variant-numeric:tabular-nums">'+val+'</span></div>'; }
-    var forfaitCard = forfaitH ? '<div style="background:#2A1D10;border-radius:20px;padding:24px 26px;color:#F2E5C2">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(monthLbl2) + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 16px"><span style="font-family:var(--font-display);font-style:italic;font-size:38px;line-height:.9;color:'+(_restMin<0?'#e79a8a':'#FBFAF6')+'">'+hmm(Math.abs(_restMin))+'</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">'+(_restMin<0?'de dépassement':'restantes sur '+hmm(_availMin))+'</span></div>' +
-      '<div style="height:13px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;margin-bottom:12px;display:flex"><span style="height:100%;width:'+_dPct+'%;background:#F4E7C0"></span><span style="height:100%;width:'+_wPct+'%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:9px 20px;margin-bottom:20px">'+_flg('#F4E7C0',hmm(_fdone)+' terminé')+(_fwip>0?_flg('#9a72d6',hmm(_fwip)+' en cours'):'')+_flg('rgba(251,250,246,.22)',hmm(Math.max(0,_restMin))+' restantes')+'</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce dont vous disposez</div>'+_row('Forfait de base',hmm(_baseMin))+(_carryMin!==0?_row((_carryMin>0?'+ Report du mois dernier':'− Dépassement reporté'),(_carryMin>0?'+':'−')+hmm(Math.abs(_carryMin)),'add'):'')+_sum('Disponible ce mois',hmm(_availMin))+'</div>' +
-        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce qui est consommé</div>'+_row('Temps terminé',hmm(_fdone))+(_fwip>0?_row('+ Temps en cours',hmm(_fwip),'wip'):'')+_sum('Total consommé',hmm(_usedMin))+'</div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:rgba(228,209,254,.14);border-radius:14px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e7dcc6">Reste réel</span><span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:'+(_restMin<0?'#e79a8a':'#c8ecb0')+';font-variant-numeric:tabular-nums">'+hmm(_restMin)+'</span></div>' +
-      '</div>' +
-      (_pf.remaining<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#e79a8a;margin-top:14px;line-height:1.45">Dépassement facturé '+_pf.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
-    '</div>' : '';
+    tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[curMonthKey] || 0; if (!m) return; if (t.status === 'done') _fdone += m; else _fwip += m; });
+    var _availMin = Math.round(_pf.available * 60), _usedMin = _fdone + _fwip, _restMin = _availMin - _usedMin;
+    var _baseMin = Math.round(_pf.base * 60), _carryMin = Math.round(_pf.carryIn * 60);
+    var _dPct = _availMin > 0 ? Math.max(0, Math.min(100, _fdone / _availMin * 100)) : 0;
+    var _wPct = _availMin > 0 ? Math.max(0, Math.min(100 - _dPct, _fwip / _availMin * 100)) : 0;
 
-    var archivedHtml = '<div style="margin-top:28px">' +
-      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">' +
-        cpIcon('archive',15,'color:var(--terre-600)') +
-        '<h2 style="font-family:var(--font-display);font-size:22px;font-style:italic;color:var(--terre);font-weight:400">Taches archivees</h2>' +
-      '</div>' +
-      (archived.length ? archived.map(function(t){
-        return '<div style="padding:12px 16px;background:#F4EFE6;border-radius:var(--radius-2);margin-bottom:8px;opacity:0.7">' +
-          '<div style="font-size:15px;color:var(--terre);text-decoration:line-through">' + esc(t.title) + '</div>' +
-        '</div>';
-      }).join('') : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune tache archivee pour le moment.</p>') +
-    '</div>';
+    // helpers markup
+    function card(inner, extra) { return '<section style="background:var(--card,#fffefb);border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
+    function cardHead(title, ic, col) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:' + (col || 'var(--glycine-900)')) : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
+    function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
+    function chip(bg, col, txt) { return '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + bg + ';color:' + col + '">' + txt + '</span>'; }
 
-    // Détail du mois : chaque tâche et son temps réellement passé ce mois,
-    // dont la somme = « Heures du mois » et le « consommé » du forfait. Rend
-    // le calcul transparent (« d'où vient le total »).
-    var monthTasks = tasks.map(function(t){ return { t:t, mins: cpTaskMinByMonth(t)[curMonthKey]||0 }; })
-      .filter(function(o){ return o.mins > 0; })
-      .sort(function(a,b){ return b.mins - a.mins; });
-    var detailRows = monthTasks.map(function(o){
-      var t = o.t;
-      var wip = t.status !== 'done';
-      var st = wip ? 'en cours · déjà comptée' : 'terminée';
-      var cat = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || '';
-      var wrap = wip
-        ? 'display:flex;justify-content:space-between;gap:14px;align-items:baseline;background:#EDE4FB;border-radius:12px;margin:6px 0;padding:13px 15px'
-        : 'display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--bone-d)';
-      return '<div style="' + wrap + '">' +
-        '<div style="min-width:0"><div style="font-size:14.5px;color:var(--terre);line-height:1.35">' + esc(t.title||'Tâche') + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:' + (wip?'700':'500') + ';letter-spacing:0.05em;text-transform:uppercase;color:' + (wip?'var(--glycine-900)':'var(--terre-400)') + ';margin-top:4px">' + st + (cat ? ' · ' + esc(cat) : '') + '</div></div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:21px;color:' + (wip?'var(--glycine-900)':'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</div>' +
+    // ── 1. Synthèse (catégorie dominante du mois) ──
+    var curM = months[months.length - 1], topCat = '', topMin = 0;
+    for (var cc in curM.byCat) { if (curM.byCat[cc] > topMin) { topMin = curM.byCat[cc]; topCat = cc; } }
+    var synthTxt = topCat
+      ? 'Ce mois-ci, votre temps est surtout allé à <b style="color:var(--warm-ink,#7a5a1e)">' + esc(topCat === 'Autres' ? 'plusieurs missions' : topCat) + '</b>' + (_restMin > 0 ? ', et il vous reste de la marge pour lancer une nouvelle demande.' : (_restMin < 0 ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
+      : 'Aucune heure travaillée ce mois-ci pour l\'instant. Dès que je bosse sur vos demandes, le détail apparaît ici.';
+    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#FBEFCF);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
+      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F6E4B8);color:var(--warm-ink,#7a5a1e);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
+      '<p style="margin:0;font-size:14.5px;color:var(--terre)">' + synthTxt + '</p></div>';
+
+    // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
+    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
+    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(monthLbl2) + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (_restMin < 0 ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(_restMin)) + '</span><span style="font-size:15px;color:#d8c6a8">' + (_restMin < 0 ? 'de dépassement' : 'restantes sur ' + hmm(_availMin) + ' ce mois') + '</span></div>' +
+      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + _wPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', hmm(_fdone) + ' terminé') + (_fwip > 0 ? flag('#9a72d6', hmm(_fwip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
+      '<div style="height:1px;background:rgba(251,250,246,.14);margin:26px 0"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px 40px">' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(_baseMin)) + (_carryMin !== 0 ? fRow((_carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (_carryMin > 0 ? '+' : '−') + hmm(Math.abs(_carryMin))) : '') + '</div>' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Tâches terminées', hmm(_fdone)) + (_fwip > 0 ? fRow('+ En cours (déjà compté)', hmm(_fwip), true) : '') + '</div>' +
+      '</div>' +
+      (_pf.remaining < 0 ? '<div style="font-size:12px;color:#e79a8a;margin-top:16px;line-height:1.45">Dépassement facturé ' + _pf.rate + ' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+    '</section>' : card(sub('Renseignez un forfait pour suivre la consommation.'));
+
+    // ── 3. Graphe empilé par catégorie ──
+    var chartBars = '<div style="display:flex;align-items:flex-end;gap:clamp(8px,2vw,18px);margin-top:16px">' + months.map(function (m) {
+      var isCur = m.key === curMonthKey;
+      var barH = m.min ? Math.max(8, Math.round(m.min / maxMonthMin * CHART_H)) : 6;
+      var segs = '';
+      if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
+        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#E7DCF7') + '">' + segs + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+    var chartLg = stackOrder.length ? '<div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">' + stackOrder.map(function (c) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:12px;color:var(--terre-600)"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c) + ';flex-shrink:0"></i>' + esc(c) + '</span>'; }).join('') + '</div>' : '';
+    var chartCard = card(cardHead('Par type de mission', 'chart') + sub('Où va votre temps, mois par mois.') + chartBars + chartLg);
+
+    // ── 4. Détail du mois (épuré : chips statut + catégorie) ──
+    var monthTasks = tasks.map(function (t) { return { t: t, mins: cpTaskMinByMonth(t)[curMonthKey] || 0 }; }).filter(function (o) { return o.mins > 0; }).sort(function (a, b) { return b.mins - a.mins; });
+    var detailRows = monthTasks.map(function (o) {
+      var t = o.t, wip = t.status !== 'done', cat = catOf(t);
+      var statusChip = wip ? chip('var(--glycine-50,#f4ecff)', 'var(--glycine-900,#573b8a)', 'En cours') : chip('#DFEBD3', '#4d6b3d', '✓ Terminée');
+      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#fbf0d8;color:var(--warm-ink,#7a5a1e)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
+      return '<div style="padding:14px 0' + (wip ? ';background:#EDE4FB;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
+        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || 'Tâche') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
     }).join('');
-    var detailCard = '<div style="background:#FFFDF9;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
-      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('timer',16,'color:var(--brume-700)') +
-        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Le détail de ' + esc(monthLbl2) + '</span></div>' +
-      '<p style="font-family:var(--font-body);font-size:13px;color:var(--terre-600);line-height:1.5;margin-bottom:8px">Chaque tâche et le temps que j\'y ai réellement passé ce mois-ci. C\'est ce total qui est décompté de votre forfait.</p>' +
+    var detailInner = cardHead('Le détail du mois', 'timer') +
+      sub(monthTasks.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</b> décomptées, tâche par tâche.' : 'Le temps travaillé ce mois apparaîtra ici, tâche par tâche.') +
       (monthTasks.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:15px 0 2px;border-top:2px solid var(--terre);margin-top:6px">' +
-            '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre)">Total travaillé · ' + esc(monthLbl2) + '</span>' +
-            '<span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span>' +
-          '</div>'
-        : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>') +
-      '<p style="font-family:var(--font-body);font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Les heures sont comptées dans le mois où le travail a réellement été fait (d\'après le suivi du temps), et non à la date de validation. Une tâche commencée un mois et validée le suivant reste comptée sur le mois où elle a été travaillée.</p>' +
-    '</div>';
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#FBEFCF);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#7a5a1e)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
+          '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté dans le mois où le travail est réellement fait, pas à la date de validation.</p>'
+        : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>');
+    var detailCard = card(detailInner);
 
-    // Mise en page : forfait en rail à droite ; à gauche le détail puis le
-    // graphe et les moyennes, pour remplir la colonne sans grand vide.
-    return tilesHtml +
-      '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:24px;align-items:start;margin-bottom:4px">' +
-        '<div>' + detailCard +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">' + chartCard + catCard + '</div>' +
-        '</div>' +
-        '<div>' + forfaitCard + '</div>' +
+    // ── 5. Moyennes par type (mêmes couleurs que le graphe) ──
+    var catMap = {};
+    tasks.forEach(function (t) { var c = catOf(t); if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += (t.timeSpentMinutes || 0); catMap[c].n += 1; });
+    var cats = Object.keys(catMap).map(function (k) { return { name: k, min: catMap[k].min, n: catMap[k].n }; }).filter(function (c) { return c.min > 0; }).sort(function (a, b) { return b.min - a.min; });
+    var catInner = cardHead('En moyenne, par type') + sub('Un repère du temps que je consacre à chaque type de mission.') +
+      cats.map(function (c, i) {
+        var avg = c.n ? Math.round(c.min / c.n) : 0;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #efe7db' : '') + '">' +
+          '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' tâche' + (c.n > 1 ? 's' : '') + ' · ' + partFmtH(c.min) + ' au total</div></div></div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#a8701a;flex-shrink:0">' + partFmtH(avg) + '</div>' +
+        '</div>';
+      }).join('');
+    var catCard = cats.length ? card(catInner) : '';
+
+    // ── 6. Archivées (repliées) ──
+    var archived2 = archived;
+    var archAccordion = '<details style="background:#ECE2D6;border-radius:14px;padding:2px 4px;margin-top:16px">' +
+      '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('archive', 14) + ' Voir les tâches archivées (' + archived2.length + ')</summary>' +
+      (archived2.length ? archived2.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600);text-decoration:line-through">' + esc(t.title || 'Tâche') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune tâche archivée.</div>') +
+    '</details>';
+
+    // ── Layout dashboard : forfait dominant en haut à gauche ──
+    return synth +
+      '<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:stretch">' +
+        hero + chartCard + detailCard + catCard +
       '</div>' +
-      archivedHtml;
+      archAccordion;
   }
+
 
   // Stats de l'espace maintenance (tickets) : miroir de buildPartStats, mais
   // basé sur les tickets et leur temps passé. Report de forfait inclus.
