@@ -2048,6 +2048,13 @@
   }
   function admRichSafe(v) {
     v = String(v == null ? '' : v);
+    // Répare l'ancien double-échappement : apostrophes devenues &#39;, gras
+    // devenu &lt;b&gt;… On décode les entités jusqu'à stabilité, puis
+    // admSerializeRich ré-échappe proprement UNE seule fois. Idempotent.
+    if (typeof document !== 'undefined' && /&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z]+);/.test(v)) {
+      var ta = document.createElement('textarea'), prev = null, guard = 0;
+      while (v !== prev && guard++ < 8) { prev = v; ta.innerHTML = v; v = ta.value; }
+    }
     if (!/<[a-z!/][\s\S]*>/i.test(v)) return mtLinkify(v); // texte simple
     var d = document.createElement('div'); d.innerHTML = v;
     return admSerializeRich(d);

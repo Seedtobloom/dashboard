@@ -132,6 +132,14 @@
   // (sans balise) : on l'échappe et on convertit les retours ligne en <br>. Les URL deviennent des liens.
   function stbCellToHtml(v){
     v = String(v == null ? '' : v);
+    // Répare et STOPPE l'ancien double-échappement : une valeur déjà encodée
+    // (apostrophes en &#39;, gras en &lt;b&gt;…) était ré-échappée à chaque
+    // ouverture, s'aggravant à chaque édition. On décode complètement d'abord,
+    // puis on ré-encode une seule fois. Idempotent → plus d'accumulation.
+    if (typeof document !== 'undefined' && /&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z]+);/.test(v)) {
+      var ta = document.createElement('textarea'), prev = null, guard = 0;
+      while (v !== prev && guard++ < 8) { prev = v; ta.innerHTML = v; v = ta.value; }
+    }
     var html = /<[a-z!/][\s\S]*>/i.test(v) ? stbSanitizeRich(v) : esc(v).replace(/\n/g, '<br>');
     return stbLinkify(html);
   }
