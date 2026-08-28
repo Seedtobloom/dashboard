@@ -5853,7 +5853,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400)">Déposer dans</span><select id="cpf-folder-' + pid + '" style="' + inS + '">' + folderOpts + '</select></div>' +
       '</div>';
-      return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px;box-shadow:0 10px 30px -22px rgba(28,18,5,0.45)">' +
+      return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px">' +
         '<div style="display:flex;align-items:center;gap:11px;margin-bottom:2px"><span style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre)">' + esc(p.projectTitle || pid) + '</span>' +
         (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#E4D1FE);color:var(--glycine-900,#573b8a)">Commun</span>' : '') + '</div>' +
         '<p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">' + (common ? 'Partagé pour l\'ensemble de vos projets' : 'Vos fichiers pour ce projet') + '</p>' +
@@ -5864,8 +5864,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var byTask = {};
     projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
     var demKeys = Object.keys(byTask).sort();
-    var demSection = demKeys.length ? '<section style="background:#ECE1CE;border-radius:18px;padding:22px 24px;margin-bottom:20px;border:1px solid #dccdb2"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
-      demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
+    var demSection = demKeys.length ? '<section style="background:var(--terre-200);border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
+      demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
       '</section>' : '';
 
     var hasAny = projects.some(function(pd){ return (pd.files || []).length; });
