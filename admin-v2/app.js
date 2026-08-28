@@ -4835,9 +4835,12 @@
     var now = new Date();
     var monthLbl = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     var mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    var setup = '<div class="card"><div class="between"><h3>Forfait Partenaire créative</h3>' +
-      '<div class="row"><input id="pf-h" class="inp" type="number" min="0" step="0.5" style="width:90px" value="' + (f.base || 0) + '"><span class="micro">h/mois</span>' +
-      '<button class="btn btn--sm" onclick="ADM.saveForfait()">OK</button></div></div>';
+    var setup = '<div class="card"><div class="between" style="flex-wrap:wrap;gap:12px"><h3 style="margin:0">Forfait Partenaire créative</h3>' +
+      '<div class="row" style="gap:14px;flex-wrap:wrap;align-items:center">' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)">Base <input id="pf-h" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.base || 0) + '"> h/mois</label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Heures non utilisées reportées au mois suivant. Par défaut 2 h — augmente-le si tu veux reporter plus.">Report max <input id="pf-cap" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.cap != null ? f.cap : 2) + '"> h</label>' +
+        '<button class="btn btn--sm" onclick="ADM.saveForfait()">OK</button>' +
+      '</div></div>';
     if (!f.configured) { return setup + '<div class="micro mt" style="text-transform:none;letter-spacing:0;color:var(--muted)">Renseigne un nombre d\'heures par mois pour activer le suivi de consommation et le report.</div></div>' + workSlotsSection(); }
     // Décompte visible : base + report = disponible, puis consommé et reste.
     var over = f.remaining < 0;
@@ -5519,7 +5522,7 @@
       api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); });
     });
   }
-  function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0 }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
+  function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0, rolloverCapHours: (el('pf-cap') ? el('pf-cap').value : '') }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
   function taskStatus(id, st) { if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); var lbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminée' }[st] || st; jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut : ' + lbl); loadClient(); } }); }
   function taskDuplicate(id) {
     jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/duplicate?projectId=partner', {}).then(function (r) {

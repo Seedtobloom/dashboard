@@ -522,6 +522,12 @@ async function handleClientApi(
     const { container } = resolveProject(esp, (body.projectId || '').toString());
     if (!container) return json({ error: 'Projet introuvable' }, 404);
     if (body.monthlyHours !== undefined) container.monthlyHours = Number(body.monthlyHours) || 0;
+    // Plafond de report (heures non utilisées reportées au mois suivant). Défaut 2 h ;
+    // Cindy peut l'augmenter par cliente. Vide/0 = valeur par défaut (2 h).
+    if (body.rolloverCapHours !== undefined) {
+      const rc = parseFloat(body.rolloverCapHours);
+      container.rolloverCapHours = (isFinite(rc) && rc >= 0) ? rc : '';
+    }
     if (body.forfaitOverrides && typeof body.forfaitOverrides === 'object') container.forfaitOverrides = body.forfaitOverrides;
     // Créneaux réservés : quand Cindy travaille pour ce client (récurrent).
     if (Array.isArray(body.workSlots)) {
