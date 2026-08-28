@@ -5049,13 +5049,41 @@
   }
   // Tableau « legacy » d'une tâche (t.table) — lecture seule, réutilisable
   // (fiche client ET boîte de réception).
+  // Tableau du client (ex. carrousel de Marie) : on GARDE sa structure telle
+  // quelle, mais embelli — aucune bordure, en-tête marron foncé, lignes
+  // alternées en teintes chaudes, colonne « Visuel » en lavande, colonne
+  // « Titre » en serif, et 1re colonne courte (n° de slide) en pastille.
   function briefTableHtml(table) {
     if (!table || !Array.isArray(table.cols) || !table.cols.length) return '';
     var cols = table.cols, rows = Array.isArray(table.rows) ? table.rows : [];
-    var bd = '1px solid var(--bone-d)';
-    var head = '<tr>' + cols.map(function (c) { return '<th style="border:' + bd + ';background:var(--surface-2);padding:8px 11px;text-align:left;font-family:var(--font-micro);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);min-width:180px;vertical-align:top">' + esc(c) + '</th>'; }).join('') + '</tr>';
-    var bodyR = rows.map(function (row) { return '<tr>' + cols.map(function (c, ci) { return '<td style="border:' + bd + ';padding:8px 11px;font-size:13px;line-height:1.5;color:var(--terre);white-space:pre-wrap;word-break:break-word;vertical-align:top;min-width:180px;max-width:460px">' + admRichSafe((row && row[ci] != null) ? row[ci] : '') + '</td>'; }).join('') + '</tr>'; }).join('');
-    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;max-width:100%">' + head + bodyR + '</table></div></div>';
+    var visIdx = -1, titIdx = -1;
+    cols.forEach(function (c, i) {
+      var h = String(c || '').toLowerCase();
+      if (visIdx < 0 && /visuel|image|réf|ref\b|illustr/.test(h)) visIdx = i;
+      if (titIdx < 0 && /titre|title|nom\b/.test(h)) titIdx = i;
+    });
+    var head = '<tr>' + cols.map(function (c, i) {
+      var rnd = (i === 0 ? 'border-top-left-radius:13px;' : '') + (i === cols.length - 1 ? 'border-top-right-radius:13px;' : '');
+      return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c) + '</th>';
+    }).join('') + '</tr>';
+    var bodyR = rows.map(function (row, ri) {
+      var even = ri % 2 === 1, last = ri === rows.length - 1;
+      var rowBg = even ? '#FBF4E7' : 'var(--card)';
+      return '<tr>' + cols.map(function (c, ci) {
+        var val = (row && row[ci] != null) ? row[ci] : '';
+        var vis = ci === visIdx;
+        var cellBg = vis ? (even ? '#E7DAFA' : '#EFE7FB') : rowBg;
+        var rnd = last ? ((ci === 0 ? 'border-bottom-left-radius:13px;' : '') + (ci === cols.length - 1 ? 'border-bottom-right-radius:13px;' : '')) : '';
+        var raw = String(val).replace(/<[^>]*>/g, '').trim();
+        if (ci === 0 && raw && raw.length <= 4) {
+          return '<td style="padding:14px 10px;text-align:center;vertical-align:top;background:' + cellBg + ';' + rnd + '"><span style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#F1DCA6;color:#7a5a1e;font-family:var(--font-display);font-style:italic;font-size:16px">' + esc(raw) + '</span></td>';
+        }
+        var col = vis ? '#5b3f96' : 'var(--terre)';
+        var extra = vis ? 'font-style:italic;font-size:13px;' : (ci === titIdx ? "font-family:var(--font-display);font-size:17px;line-height:1.25;" : 'font-size:13.5px;line-height:1.55;');
+        return '<td style="padding:14px 15px;vertical-align:top;color:' + col + ';white-space:pre-wrap;word-break:break-word;min-width:150px;max-width:340px;background:' + cellBg + ';' + extra + rnd + '">' + admRichSafe(val) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div><div style="overflow-x:auto;border-radius:13px"><table style="border-collapse:separate;border-spacing:0;width:100%;min-width:600px">' + head + bodyR + '</table></div></div>';
   }
   function partnerTasks(d) {
     var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
