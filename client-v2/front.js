@@ -6571,9 +6571,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var cardBg = todo ? '#FBEFCF' : '#DFEBD3';
       var icBg = todo ? '#F6E4B8' : '#CFE0C0';
       var icCol = todo ? '#7a5a1e' : '#4d6b3d';
-      var metaCol = todo ? '#5f4515' : '#2f4526';
+      var metaCol = todo ? '#3f2c08' : '#284020';
       var pillBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var pillCol = todo ? '#5a4210' : '#2f4526';
+      var pillCol = todo ? '#3f2c08' : '#284020';
       var validated = it.status === 'valide' || it.status === 'validated';
       var pillTxt = todo ? 'À valider' : (validated ? '✓ Validé' : 'Reçu');
       var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
@@ -6582,7 +6582,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       // À valider : on invite à ouvrir le livrable, sans jamais bloquer la validation.
       var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
       var hint = (todo && needConsult)
-        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#5f4515;background:rgba(255,255,255,0.55);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
+        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#3f2c08;background:rgba(255,255,255,0.7);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
         : '';
       var priBtn = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:11px 20px;font-weight:700;font-size:10.5px;';
       var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F4EFe7);color:var(--terre);';
@@ -6606,7 +6606,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<div style="flex:1;min-width:0">' +
             '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.25">' + esc(it.name) + vTag + '</div>' +
             (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:5px;font-weight:600;color:' + metaCol + '">' + esc(line1) + '</div>' : '') +
-            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#574433;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
+            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#3d2c1a;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
             comment +
           '</div>' +
           '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + pillBg + ';color:' + pillCol + ';flex-shrink:0">' + pillTxt + '</span>' +
@@ -6624,9 +6624,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function sectionHead(tone, title, n) {
       var todo = tone === 'todo';
       var icBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var icCol = todo ? '#7a5a1e' : '#4d6b3d';
+      var icCol = todo ? '#5c4210' : '#39512b';
       var nBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var nCol = todo ? '#5a4210' : '#2f4526';
+      var nCol = todo ? '#3f2c08' : '#284020';
       var ic = todo
         ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="14" r="7"/><path d="M9 14l2 2 4-4"/></svg>'
         : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg>';
