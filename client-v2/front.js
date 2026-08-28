@@ -732,10 +732,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var label = STATUS_LABELS[status] || status;
     return '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;background:' + bg + ';color:' + fg + '">' + esc(label) + '</span>';
   }
-  var STATUS_LABELS = { maintenance:'En préparation', discovery:'Decouverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En revision', delivered:'Livre', archived:'Archive' };
-  var STEP_LABELS  = { upcoming:'À venir', in_progress:'En cours', waiting_client:'Votre action requise', done:'Terminé' };
+  // Vocabulaire de statut unique (cycle projet / étape). « waiting_client » se dit
+  // « En attente de vous » PARTOUT ; « done »/« delivered » se disent « Terminé ».
+  var STATUS_LABELS = { maintenance:'En préparation', discovery:'Découverte', in_progress:'En cours', waiting_client:'En attente de vous', review:'En révision', delivered:'Terminé', archived:'Archivé' };
   var STEP_STATUS_COLORS = { in_progress:'var(--st-progress)', waiting_client:'var(--st-review)', done:'var(--st-done)', upcoming:'var(--terre-200)', todo:'var(--st-todo)', open:'var(--st-todo)', closed:'#ccc' };
-  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente', done:'Fait', upcoming:'À venir', todo:'À faire', review:'En révision', open:'À faire', closed:'Fermé' };
+  var STEP_STATUS_LABELS = { in_progress:'En cours', waiting_client:'En attente de vous', done:'Terminé', upcoming:'À venir', todo:'À faire', review:'En révision', open:'À faire', closed:'Fermé' };
   function cpStatusPill(status) {
     var col = STEP_STATUS_COLORS[status] || 'var(--bone-d)';
     var label = STEP_STATUS_LABELS[status] || status;
@@ -3583,12 +3584,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     size = size || 11;
     return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="'+d+'"/></svg>';
   }
-  var CLI_TSTATUS    = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
+  var CLI_TSTATUS    = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Terminée' };
   function cliTaskStatusMeta(s){
     var M = {
       inbox:        { label:"En attente d'analyse", color:'#8a6f2e', bg:'#fbf0d8' },
       out_of_scope: { label:'Hors forfait',         color:'#9b3a2e', bg:'#fbeae5' },
-      todo:        { label:'Planifiée',           color:'#35608f', bg:'#e3edfb' },
+      todo:        { label:'Pas commencé',        color:'#35608f', bg:'#e3edfb' },
       in_progress: { label:'En cours',            color:'#6c4ea4', bg:'#efe6ff' },
       review:      { label:'À valider chez vous', color:'#8a4a0e', bg:'#fdf3e8' },
       done:        { label:'Terminée',            color:'#3a6b4a', bg:'#e7f0e9' }
@@ -4662,7 +4663,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
-    var statusMap = {todo:'Planifiée',in_progress:'En cours',review:'À valider chez vous',done:'Terminée'};
+    var statusMap = {todo:'Pas commencé',in_progress:'En cours',review:'À valider chez vous',done:'Terminée'};
     var statusOpts = ['todo','in_progress','review','done'].map(function(s){
       return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+statusMap[s]+'</option>';
     }).join('');
@@ -4739,7 +4740,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '</div>';
         // Avancement = statut réel de la tâche. Modifiable par Cindy en mode
         // édition (synchronisé avec l'admin), lecture seule pour le client.
-        var _stMap = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
+        var _stMap = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Terminée' };
         var _stCur = t.status || 'todo';
         var prog;
         if (_isAdminEdit) {
