@@ -4318,117 +4318,148 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
   // Stats de l'espace maintenance (tickets) : miroir de buildPartStats, mais
   // basé sur les tickets et leur temps passé. Report de forfait inclus.
+  // ── Temps passé (maintenance) : même DASHBOARD que partenaire, basé sur les
+  //    tickets et leur temps passé. Report de forfait conservé. ──
   function buildMaintStats(pd) {
     var project = pd.project;
     var tickets = Array.isArray(project.tickets) ? project.tickets : [];
     var forfaitH = project.monthlyHours || 0;
     var curMonthKey = _todayStr().slice(0, 7);
-    function fmtH(h){ return Math.floor(h) + 'h' + (Math.round((h - Math.floor(h)) * 60) || ''); }
-    function tkMin(t){ return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
-    function tkMonth(t){ return String(t.resolvedAt || t.createdAt || '').slice(0, 7); }
+    var now = new Date();
+    var mMoisLbl = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    function hmm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
+    function tkMin(t) { return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
+    function tkMonth(t) { return String(t.resolvedAt || t.createdAt || '').slice(0, 7); }
+    function catOf(t) { return (t.category && String(t.category).trim()) || 'Autre'; }
 
-    var monthReel = tickets.reduce(function(s, t){ return tkMonth(t) === curMonthKey ? s + tkMin(t) / 60 : s; }, 0);
-    var openT = tickets.filter(function(t){ return t.status !== 'done' && t.status !== 'closed'; });
-    var doneT = tickets.filter(function(t){ return t.status === 'done' || t.status === 'closed'; });
+    var doneT = tickets.filter(function (t) { return t.status === 'done' || t.status === 'closed'; });
 
-    var tiles = [
-      { v: fmtH(monthReel),        label: 'Heures du mois',     icon: 'timer',  bg: '#EFE3FE', ic: '#E4D1FE', ink: '#573b8a' },
-      { v: openT.length,           label: 'Demandes ouvertes',  icon: 'tasks',  bg: '#FBEFCF', ic: '#F6E4B8', ink: '#7a5a1e' },
-      { v: doneT.length,           label: 'Résolues',           icon: 'check',  bg: '#DFEBD3', ic: '#CFE0C0', ink: '#4d6b3d' },
-      { v: String(tickets.length), label: 'Au total',           icon: 'archive',bg: '#ECE2D6', ic: '#DAC7B4', ink: '#6b4a2e' },
-    ];
-    var tilesHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">' +
-      tiles.map(function(t){
-        return '<div style="background:' + t.bg + ';border-radius:var(--radius-3);padding:22px 24px">' +
-          '<div style="width:38px;height:38px;border-radius:11px;background:' + t.ic + ';color:' + t.ink + ';display:grid;place-items:center;margin-bottom:14px">' + cpIcon(t.icon, 19) + '</div>' +
-          '<div style="font-family:var(--font-display);font-size:36px;font-style:italic;color:var(--terre);line-height:1;margin-bottom:4px">' + t.v + '</div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:' + t.ink + '">' + t.label + '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>';
+    // ── Catégories : couleurs stables (chart + moyennes), max 5 + « Autres ». ──
+    var CAT_PAL = ['#b491ea', '#e6b053', '#8fb573', '#7bb0c4', '#c98aa6', '#b98a3f'];
+    var catTot = {};
+    tickets.forEach(function (t) { var c = catOf(t); catTot[c] = (catTot[c] || 0) + tkMin(t); });
+    var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
+    var MAXCATS = 5;
+    var catColor = { 'Autres': '#c3b6a3' };
+    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#c3b6a3'; });
+    function colOf(c) { return catColor[c] || '#c3b6a3'; }
+    function catShown(c) { return catOrder.indexOf(c) < MAXCATS ? c : 'Autres'; }
+    var stackOrder = catOrder.slice(0, MAXCATS).concat(catOrder.length > MAXCATS ? ['Autres'] : []);
 
-    var now = new Date(); var months = [];
-    for (var i = 4; i >= 0; i--) {
-      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-      var h = tickets.reduce(function(s, t){ return tkMonth(t) === key ? s + tkMin(t) / 60 : s; }, 0);
-      months.push({ key: key, label: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase(), h: h });
-    }
-    var maxH = Math.max.apply(null, months.map(function(m){ return m.h; })) || 1;
-    var barsHtml = '<div style="display:flex;align-items:flex-end;gap:14px;height:140px;margin-top:16px;padding-bottom:24px;border-bottom:1px solid var(--bone-d)">' +
-      months.map(function(m){
-        var pct = Math.round(m.h / maxH * 100); var isCurrent = m.key === curMonthKey;
-        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600)">' + (m.h ? fmtH(m.h).toUpperCase() : '') + '</div>' +
-          '<div style="width:100%;height:' + (m.h ? pct : 4) + '%;min-height:4px;border-radius:6px 6px 0 0;background:' + (isCurrent ? 'var(--brume-700)' : 'rgba(228,209,254,0.5)') + '"></div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;color:var(--terre-400)">' + m.label + '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>';
-    var chartCard = '<div style="background:#EFE3FE;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
-      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
-        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Temps par mois</span>' +
-        '<span style="margin-left:auto;font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400)">5 derniers mois</span>' +
-      '</div>' + barsHtml +
-      '<p style="margin-top:14px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600);line-height:1.55">Le temps consacré à vos demandes chaque mois.</p>' +
-    '</div>';
+    // ── 5 mois : total + par catégorie ──
+    var months = [];
+    for (var i = 4; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); months.push({ key: key, label: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase().replace('.', ''), min: 0, byCat: {} }); }
+    tickets.forEach(function (t) { var mk = tkMonth(t), mn = tkMin(t); if (!mn) return; var m = null; for (var k = 0; k < months.length; k++) if (months[k].key === mk) { m = months[k]; break; } if (!m) return; var c = catShown(catOf(t)); m.min += mn; m.byCat[c] = (m.byCat[c] || 0) + mn; });
+    var maxMonthMin = Math.max.apply(null, months.map(function (m) { return m.min; })) || 1;
+    var CHART_H = 150;
 
-    var catMap = {};
-    tickets.forEach(function(t){ var c = (t.category && String(t.category).trim()) || 'Autre'; if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += tkMin(t); catMap[c].n += 1; });
-    var cats = Object.keys(catMap).map(function(k){ return { name: k, min: catMap[k].min, n: catMap[k].n }; }).filter(function(c){ return c.min > 0; }).sort(function(a, b){ return b.min - a.min; });
-    var catCard = cats.length ? '<div style="background:#FBEFCF;border-radius:var(--radius-3);padding:24px 28px;margin-bottom:24px">' +
-      '<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">' + cpIcon('chart', 16, 'color:var(--brume-700)') +
-        '<span style="font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--terre)">Par type de demande</span></div>' +
-      cats.map(function(c){
-        return '<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--bone-d)">' +
-          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-body);font-size:15px;color:var(--terre);line-height:1.35">' + esc(c.name) + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-top:3px">' + c.n + ' demande' + (c.n > 1 ? 's' : '') + '</div></div>' +
-          '<div style="text-align:right;flex-shrink:0"><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--brume-900,#6c4ea4);line-height:1">' + partFmtH(c.min) + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">au total</div></div>' +
-        '</div>';
-      }).join('') + '</div>' : '';
-
-    // Forfait du mois (report du dépassement / heures non utilisées).
+    // ── Forfait (report conservé) ──
     var mPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     var prevKey = mPrev.getFullYear() + '-' + String(mPrev.getMonth() + 1).padStart(2, '0');
-    function usedMinIn(ym){ return tickets.reduce(function(n, t){ return tkMonth(t) === ym ? n + tkMin(t) : n; }, 0); }
-    function activeIn(ym){ return tickets.some(function(t){ return tkMonth(t) === ym; }); }
+    function usedMinIn(ym) { return tickets.reduce(function (n, t) { return tkMonth(t) === ym ? n + tkMin(t) : n; }, 0); }
+    function activeIn(ym) { return tickets.some(function (t) { return tkMonth(t) === ym; }); }
     var baseMin = forfaitH * 60, carryMin = 0, billedMin = 0;
     if (baseMin && activeIn(prevKey)) {
       var diff = baseMin - usedMinIn(prevKey);
       if (diff >= 0) carryMin = Math.min(120, diff);
       else { var ov = -diff, ded = Math.min(ov, baseMin); carryMin = -ded; billedMin = Math.round(ov - ded); }
     }
-    var availMin = baseMin + carryMin, usedMin = usedMinIn(curMonthKey), remMin = availMin - usedMin;
-    // Répartition résolu / en cours du temps de ce mois.
+    var availMin = baseMin + carryMin, usedMin = usedMinIn(curMonthKey), remMin = availMin - usedMin, over = remMin < 0;
     var mDone = 0, mWip = 0;
-    tickets.forEach(function(t){ if (tkMonth(t) !== curMonthKey) return; var m = tkMin(t); if (t.status === 'done' || t.status === 'closed') mDone += m; else mWip += m; });
-    var mMoisLbl = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-    function hmm(min){ min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
+    tickets.forEach(function (t) { if (tkMonth(t) !== curMonthKey) return; var m = tkMin(t); if (t.status === 'done' || t.status === 'closed') mDone += m; else mWip += m; });
     var mdPct = availMin > 0 ? Math.max(0, Math.min(100, mDone / availMin * 100)) : 0;
     var mwPct = availMin > 0 ? Math.max(0, Math.min(100 - mdPct, mWip / availMin * 100)) : 0;
-    function mlg(c, txt){ return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
-    function mrow(lbl, val, cls){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0' + (cls === 'add' ? ';padding-left:12px' : '') + '"><span style="font-family:var(--font-micro);font-size:12.5px;color:#e7dcc6">' + lbl + '</span><span style="font-family:var(--font-micro);font-weight:600;font-size:13.5px;color:' + (cls === 'wip' ? '#E4D1FE' : '#FBFAF6') + ';font-variant-numeric:tabular-nums">' + val + '</span></div>'; }
-    function msum(lbl, val){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:6px;padding-top:9px;border-top:1px solid rgba(251,250,246,.22)"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#FBFAF6">' + lbl + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:21px;color:#E4D1FE;font-variant-numeric:tabular-nums">' + val + '</span></div>'; }
-    var forfaitCard = forfaitH ? '<div style="background:#2A1D10;border-radius:20px;padding:24px 26px;color:#F2E5C2">' +
-      '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 16px"><span style="font-family:var(--font-display);font-style:italic;font-size:38px;line-height:.9;color:' + (over ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin)) + '</span></div>' +
-      '<div style="height:13px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;margin-bottom:12px;display:flex"><span style="height:100%;width:' + mdPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + mwPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:9px 20px;margin-bottom:20px">' + mlg('#F4E7C0', hmm(mDone) + ' résolu') + (mWip > 0 ? mlg('#9a72d6', hmm(mWip) + ' en cours') : '') + mlg('rgba(251,250,246,.22)', hmm(Math.max(0, remMin)) + ' restantes') + '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:16px">' +
-        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce dont vous disposez</div>' + mrow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? mrow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin)), 'add') : '') + msum('Disponible ce mois', hmm(availMin)) + '</div>' +
-        '<div><div style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8916b;margin-bottom:2px">Ce qui est consommé</div>' + mrow('Temps résolu', hmm(mDone)) + (mWip > 0 ? mrow('+ Temps en cours', hmm(mWip), 'wip') : '') + msum('Total consommé', hmm(usedMin)) + '</div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:rgba(228,209,254,.14);border-radius:14px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e7dcc6">Reste réel</span><span style="font-family:var(--font-display);font-style:italic;font-size:24px;color:' + (over ? '#e79a8a' : '#c8ecb0') + ';font-variant-numeric:tabular-nums">' + hmm(remMin) + '</span></div>' +
-      '</div>' +
-      (billedMin > 0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#e79a8a;margin-top:14px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
-    '</div>' : '';
 
-    return tilesHtml +
-      '<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,0.92fr);gap:24px;align-items:start">' +
-        '<div>' + chartCard + catCard + '</div>' +
-        '<div>' + forfaitCard + '</div>' +
+    // helpers markup
+    function card(inner) { return '<section style="background:var(--card,#fffefb);border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
+    function cardHead(title, ic) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:var(--glycine-900)') : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
+    function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
+
+    // ── 1. Synthèse ──
+    var curM = months[months.length - 1], topCat = '', topMin = 0;
+    for (var cc in curM.byCat) { if (curM.byCat[cc] > topMin) { topMin = curM.byCat[cc]; topCat = cc; } }
+    var synthTxt = topCat
+      ? 'Ce mois-ci, l\'essentiel du temps est allé à <b style="color:var(--warm-ink,#7a5a1e)">' + esc(topCat === 'Autres' ? 'plusieurs types de demandes' : topCat) + '</b>' + (remMin > 0 ? ', et il vous reste de la marge sur votre forfait.' : (over ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
+      : 'Aucune heure sur vos demandes ce mois-ci pour l\'instant. Dès qu\'un ticket avance, le détail apparaît ici.';
+    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#FBEFCF);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
+      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F6E4B8);color:var(--warm-ink,#7a5a1e);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
+      '<p style="margin:0;font-size:14.5px;color:var(--terre)">' + synthTxt + '</p></div>';
+
+    // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
+    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
+    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#d8c6a8">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
+      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + mdPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + mwPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', hmm(mDone) + ' résolu') + (mWip > 0 ? flag('#9a72d6', hmm(mWip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
+      '<div style="height:1px;background:rgba(251,250,246,.14);margin:26px 0"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px 40px">' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? fRow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin))) : '') + '</div>' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Demandes résolues', hmm(mDone)) + (mWip > 0 ? fRow('+ En cours (déjà compté)', hmm(mWip), true) : '') + '</div>' +
+      '</div>' +
+      (billedMin > 0 ? '<div style="font-size:12px;color:#e79a8a;margin-top:16px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
+    '</section>' : card(sub('Renseignez un forfait pour suivre la consommation.'));
+
+    // ── 3. Graphe empilé par catégorie ──
+    var chartBars = '<div style="display:flex;align-items:flex-end;gap:clamp(8px,2vw,18px);margin-top:16px">' + months.map(function (m) {
+      var isCur = m.key === curMonthKey;
+      var barH = m.min ? Math.max(8, Math.round(m.min / maxMonthMin * CHART_H)) : 6;
+      var segs = '';
+      if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
+        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#E7DCF7') + '">' + segs + '</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
+    }).join('') + '</div>';
+    var chartLg = stackOrder.length ? '<div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">' + stackOrder.map(function (c) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:12px;color:var(--terre-600)"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c) + ';flex-shrink:0"></i>' + esc(c) + '</span>'; }).join('') + '</div>' : '';
+    var chartCard = card(cardHead('Par type de demande', 'chart') + sub('Où va le temps, mois par mois.') + chartBars + chartLg);
+
+    // ── 4. Détail du mois ──
+    var monthTk = tickets.filter(function (t) { return tkMonth(t) === curMonthKey && tkMin(t) > 0; }).map(function (t) { return { t: t, mins: tkMin(t) }; }).sort(function (a, b) { return b.mins - a.mins; });
+    var detailRows = monthTk.map(function (o) {
+      var t = o.t, wip = !(t.status === 'done' || t.status === 'closed'), cat = catOf(t);
+      var statusChip = wip ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--glycine-50,#f4ecff);color:var(--glycine-900,#573b8a)">En cours</span>' : '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#DFEBD3;color:#4d6b3d">✓ Résolue</span>';
+      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#fbf0d8;color:var(--warm-ink,#7a5a1e)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
+      return '<div style="padding:14px 0' + (wip ? ';background:#EDE4FB;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
+        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || t.subject || 'Demande') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
+      '</div>';
+    }).join('');
+    var detailInner = cardHead('Le détail du mois', 'timer') +
+      sub(monthTk.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(usedMin) + '</b> décomptées, demande par demande.' : 'Le temps sur vos demandes ce mois apparaîtra ici.') +
+      (monthTk.length
+        ? detailRows +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#FBEFCF);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#7a5a1e)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
+          '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté sur le mois où la demande a été traitée.</p>'
+        : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure sur vos demandes ce mois-ci pour l\'instant.</p>');
+    var detailCard = card(detailInner);
+
+    // ── 5. Par type (total, mêmes couleurs) ──
+    var cats = catOrder.map(function (name) { var n = tickets.filter(function (t) { return catOf(t) === name; }).length; return { name: name, min: catTot[name], n: n }; });
+    var catInner = cardHead('Par type de demande') + sub('Le temps consacré à chaque type de demande.') +
+      cats.map(function (c, i) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #efe7db' : '') + '">' +
+          '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' demande' + (c.n > 1 ? 's' : '') + '</div></div></div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#a8701a;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
+        '</div>';
+      }).join('');
+    var catCard = cats.length ? card(catInner) : '';
+
+    // ── 6. Demandes résolues (repliées) ──
+    var resolvedAccordion = '<details style="background:#ECE2D6;border-radius:14px;padding:2px 4px;margin-top:16px">' +
+      '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('check', 14) + ' Voir les demandes résolues (' + doneT.length + ')</summary>' +
+      (doneT.length ? doneT.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600)">' + esc(t.title || t.subject || 'Demande') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune demande résolue.</div>') +
+    '</details>';
+
+    return synth +
+      '<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:stretch">' +
+        hero + chartCard + detailCard + catCard +
+      '</div>' +
+      resolvedAccordion;
   }
+
 
   // ── Calendrier partenaire standalone ──────────────────────────────────────
   function buildPartCalStandalone(pid, tasks, files, project) {
