@@ -6440,7 +6440,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var byTask = {};
     projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
     var demKeys = Object.keys(byTask).sort();
-    var demSection = demKeys.length ? '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
+    var demSection = demKeys.length ? '<section style="background:#ECE1CE;border-radius:18px;padding:22px 24px;margin-bottom:20px;border:1px solid #dccdb2"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
       demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
       '</section>' : '';
 
