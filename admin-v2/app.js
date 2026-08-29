@@ -1048,7 +1048,7 @@
     var urg = x.urgency === 'haute' || x.urgency === 'urgent';
     var isProject = x.demandeType === 'project';
     var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
-    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8d2b21;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
+    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
     var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
@@ -1220,8 +1220,8 @@
         if (!c && !hasBlocks && !hasTable && !hasAtt && !hasLink) return '';
         var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
-        var sumBg = dark ? 'rgba(242,229,194,0.16)' : '#efe6fb';
-        var sumCol = dark ? 'var(--paille)' : '#5a3fa0';
+        var sumBg = dark ? 'rgba(242,229,194,0.16)' : '#E8F1FF';
+        var sumCol = dark ? 'var(--paille)' : '#2c4a72';
         // Le contenu déplié est TOUJOURS sur une carte claire (les blocs du
         // client ont un texte foncé, illisible sur le panneau « En retard »).
         var body = (hasBlocks || hasTable)
@@ -1274,7 +1274,7 @@
         return '<div class="prow"' + (brief ? ' style="flex-wrap:wrap"' : '') + '>' +
           '<div class="prow__date"><strong>' + fmtDate(x.dueDate) + '</strong><span style="color:' + whenCol(x._d) + '">' + whenLabel(x._d) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#3f5a37;background:#e3ecdd;padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus · à retravailler</span>' : '') +
-            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8d2b21;background:#fbeae5;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
+            (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' + (x.priority === 'haute' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '') + (x.status === 'in_progress' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#305277;background:#e3edfb;padding:3px 8px;border-radius:999px;vertical-align:middle">En cours</span>' : '') : '') + '</div>' +
             '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + '</div>' + prioClientLink(x, false) + '</div>' +
           (x.id ? '<div class="prow__act">' + prioTimer(x, false) +
             (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
@@ -1394,7 +1394,7 @@
       waitAll.sort(function (a, b) { return b.since - a.since; });
       function waitRow(w) {
         var x = w.x, s = w.since;
-        var flag = s >= 10 ? '#fbeae5' : (s >= 5 ? '#fbf5e6' : '');
+        var flag = s >= 10 ? '#F0E2D6' : (s >= 5 ? '#fbf5e6' : '');
         var ageCol = s >= 10 ? '#b5462f' : (s >= 5 ? '#b8871f' : 'var(--muted)');
         var ageLbl = s > 0 ? ('en attente depuis ' + s + ' j' + (s >= 5 ? ' · à relancer' : '')) : 'tout récent';
         var isReview = w.kind === 'review';
@@ -1515,7 +1515,7 @@
       function riskRow(r) {
         var x = r.x;
         var col = r.level === 'high' ? '#a23c28' : '#b8871f';
-        var bg = r.level === 'high' ? '#fbeae5' : '#fbf5e6';
+        var bg = r.level === 'high' ? '#F0E2D6' : '#fbf5e6';
         return '<div class="prow" style="background:' + bg + ';border-radius:9px">' +
           '<div class="prow__date"><strong>' + (x.dueDate ? fmtDate(x.dueDate) : '—') + '</strong><span style="color:' + col + ';font-weight:600">' + esc(r.reason) + '</span></div>' +
           '<div class="prow__main"><div class="prow__el">' + esc(x.title) + (x.kind === 'ticket' ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🎫 Ticket</span>' : '') + '</div><div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + '</div></div>' +
@@ -1538,7 +1538,7 @@
         var relance = e.oldest >= 5;
         var col = e.oldest >= 10 ? '#a23c28' : (relance ? '#b8871f' : 'var(--muted)');
         var ageLbl = e.oldest > 0 ? ('depuis ' + e.oldest + ' j') : 'tout récent';
-        return '<div class="prow"' + (relance ? ' style="background:' + (e.oldest >= 10 ? '#fbeae5' : '#fbf5e6') + ';border-radius:9px"' : '') + '>' +
+        return '<div class="prow"' + (relance ? ' style="background:' + (e.oldest >= 10 ? '#F0E2D6' : '#fbf5e6') + ';border-radius:9px"' : '') + '>' +
           '<div class="prow__main"><div class="prow__el"><a href="javascript:ADM.openClient(\'' + e.key + '\')">' + esc(e.client) + '</a></div>' +
             '<div class="prow__meta">' + e.count + ' élément' + (e.count > 1 ? 's' : '') + ' dans son camp · <span style="color:' + col + ';font-weight:600">' + esc(ageLbl) + '</span>' + (relance ? ' · à relancer' : '') + '</div></div>' +
           '<div class="prow__act"><button class="pbtn" onclick="ADM.openClient(\'' + e.key + '\')">Ouvrir</button></div>' +
@@ -3992,8 +3992,8 @@
     var chips = [];
     if (unread) chips.push(['Vous', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', '#fbf0d8', '#8a4a0e']);
     if (review) chips.push(['Vous', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', '#fbf0d8', '#8a4a0e']);
-    if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', '#efe6fb', '#6c4ea4']);
-    if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', '#efe6fb', '#6c4ea4']);
+    if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', '#E8F1FF', '#2c4a72']);
+    if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', '#E8F1FF', '#2c4a72']);
     if (!chips.length) return '<div class="card" style="background:#f0f6ee;border-color:#cfe0c6;max-width:none"><span class="micro" style="color:#456039;font-weight:700;letter-spacing:0.04em">✓ Tout est à jour pour ce client</span></div>';
     return '<div class="card" style="max-width:none"><div class="micro mb" style="font-weight:700;color:var(--terre);text-transform:uppercase;letter-spacing:0.05em">Ce qui attend</div><div class="row" style="gap:8px;flex-wrap:wrap">' +
       chips.map(function (ch) { return '<span style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:' + ch[2] + ';color:' + ch[3] + ';font-size:12.5px;font-weight:600"><span style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7">' + ch[0] + '</span>' + esc(ch[1]) + '</span>'; }).join('') + '</div></div>';
@@ -4863,7 +4863,7 @@
         '<span style="font-size:13px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
         '<span style="font-weight:600;font-size:13px;white-space:nowrap">' + fmtHrs(o.mins / 60) + '</span></div>';
     }).join('');
-    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#5a3fa0;background:#efe6fb;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
+    var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#2c4a72;background:#E8F1FF;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
       (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucun temps passé sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
     var breakdown = '<div class="card" style="margin-top:0">' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
@@ -4927,7 +4927,7 @@
       });
     var doneT = all.filter(function (t) { return t.status === 'done' || t.status === 'closed'; })
       .sort(function (a, b) { return String(b.resolvedAt || b.createdAt || '').localeCompare(String(a.resolvedAt || a.createdAt || '')); });
-    var prioMap = { haute: ['Urgent', '#9b3a2e', '#fbeae5'], moyenne: ['Normal', '#8a6f2e', '#fbf0d8'], basse: ['Faible', '#3f6b3a', '#e7f0e3'] };
+    var prioMap = { haute: ['Urgent', '#8a4a2c', '#F0E2D6'], moyenne: ['Normal', '#8a6f2e', '#fbf0d8'], basse: ['Faible', '#3f6b3a', '#e7f0e3'] };
     function card(t) {
       var done = t.status === 'done' || t.status === 'closed';
       var opts = TICKET_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
@@ -5111,7 +5111,7 @@
         : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">▶ Démarrer</button>';
       var stCol = { todo: '#a98bd6', in_progress: '#35608f', review: '#c9952f', done: '#5d7a52' }[t.status] || '#a98bd6';
       var stLbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' }[t.status] || t.status;
-      var stBg = { todo: '#efe6fb', in_progress: '#e3edfb', review: '#fbf0d8', done: '#e7f0e3' }[t.status] || '#efe6fb';
+      var stBg = { todo: '#E8F1FF', in_progress: '#e3edfb', review: '#fbf0d8', done: '#e7f0e3' }[t.status] || '#E8F1FF';
       var needsAction = t.status === 'review';
       var archBtn = t.archived
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
@@ -5130,8 +5130,8 @@
         var dm = {
           a_valider: ['📦 Livrable envoyé' + (lastDlv.createdAt ? ' le ' + fmtDate(lastDlv.createdAt) : '') + ' · en attente de validation', '#8a6f2e', '#fbf0d8'],
           valide: ['📦 Livrable validé' + (lastDlv.validatedAt ? ' le ' + fmtDate(lastDlv.validatedAt) : '') + ' ✓', '#3f6b3a', '#e7f0e3'],
-          refuse: ['📦 Révision demandée', '#9b3a2e', '#fbeae5'],
-          revision: ['📦 Révision demandée', '#9b3a2e', '#fbeae5']
+          refuse: ['📦 Révision demandée', '#8a4a2c', '#F0E2D6'],
+          revision: ['📦 Révision demandée', '#8a4a2c', '#F0E2D6']
         }[lastDlv.status || 'a_valider'] || null;
         if (dm) dlvBadge = '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + dm[1] + ';background:' + dm[2] + ';padding:4px 11px;border-radius:999px">' + dm[0] + (tls.length > 1 ? ' · V' + tls.length : '') + '</span>';
       }
@@ -5377,7 +5377,7 @@
           '<div style="font-size:13.5px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
         '</div></div>';
     }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
-    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#573b8a;background:#efe6fb;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
+    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#573b8a;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
     return '<div><div class="micro" style="margin-bottom:9px">Échanges sur la tâche' + flag + '</div>' + cs +
       '<div class="row mt" style="gap:8px"><input class="inp" style="flex:1" id="cm-' + t.id + '" placeholder="Répondre au client…" onkeydown="if(event.key===\'Enter\')ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')"><button class="btn btn--dark btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
