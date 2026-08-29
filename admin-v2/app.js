@@ -1186,7 +1186,7 @@
       var SL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', waiting_client: 'Attente client', upcoming: 'À venir', done: 'Terminé' };
       function ddiff(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); return Math.round((t - today) / 86400000); }
       function whenLabel(n) { return n < 0 ? ((-n) + ' j de retard') : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : ('dans ' + n + ' j'); }
-      function whenCol(n) { return n < 0 ? 'var(--red)' : n === 0 ? 'var(--orange)' : 'var(--muted)'; }
+      function whenCol(n) { return n < 0 ? '#8a4a2c' : n === 0 ? 'var(--orange)' : 'var(--muted)'; }
 
       var all = (d.deadlines || []).map(function (x) { x._d = x.dueDate ? ddiff(x.dueDate) : 99; return x; });
       // Les tâches « à valider » (review) attendent la révision du client :
@@ -3349,7 +3349,7 @@
     var poleRows = (pr.poles || []).map(function (p) {
       var r = p.est > 0 ? Math.round(p.real / p.est * 100) : 0;
       var over = r > 110, under = r < 90;
-      var col = over ? 'var(--red)' : (under ? '#3a6b4a' : 'var(--terre)');
+      var col = over ? '#8a4a2c' : (under ? '#4a6b43' : 'var(--terre)');
       return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(p.pole) + '</strong>' +
         '<span class="micro" style="color:' + col + ';font-weight:700">réel ' + r + '% de l\'estimé</span></div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">prévu ' + hh(p.est) + ' · réel ' + hh(p.real) + ' · ' + p.count + ' tâche' + (p.count > 1 ? 's' : '') + '</div></div>';
@@ -3358,8 +3358,8 @@
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Sur les ' + pr.estCount + ' tâche' + (pr.estCount > 1 ? 's' : '') + ' terminée' + (pr.estCount > 1 ? 's' : '') + ' avec une estimation.</div>' +
       '<div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">' +
         '<div><div class="micro">Prévu</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + estH + ' h</div></div>' +
-        '<div><div class="micro">Réel</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? 'var(--red)' : 'var(--terre)') + '">' + realH + ' h</div></div>' +
-        '<div><div class="micro">Écart</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? 'var(--red)' : (ratio < 90 ? '#3a6b4a' : 'var(--terre)')) + '">' + ratio + '%</div></div>' +
+        '<div><div class="micro">Réel</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : 'var(--terre)') + '">' + realH + ' h</div></div>' +
+        '<div><div class="micro">Écart</div><div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (ratio > 110 ? '#8a4a2c' : (ratio < 90 ? '#4a6b43' : 'var(--terre)')) + '">' + ratio + '%</div></div>' +
       '</div>' +
       '<h4 style="margin:6px 0 8px;font-size:14px">Par pôle</h4>' + (poleRows || '<div class="empty">—</div>') + '</div>';
   }
@@ -3431,7 +3431,7 @@
     }).join('') || '<tr><td colspan="4" class="empty">Aucun client partenaire.</td></tr>';
     var forf = (d.forfaits || []).filter(function (f) { return f.configured; }).map(function (f) {
       var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
-      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? 'var(--red)' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
+      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? '#8a4a2c' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
     }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
     var tabDefs = [['evol', 'Évolution', null], ['temps', 'Temps par type', null], ['rentabilite', 'Rentabilité', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
     if (!tabDefs.some(function (x) { return x[0] === KPI_TAB; })) KPI_TAB = 'evol';

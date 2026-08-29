@@ -75,7 +75,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .side{width:var(--sw);flex-shrink:0;background:var(--nuit);color:var(--paille);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 .notiffab{position:fixed;bottom:22px;right:22px;z-index:60;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--terre);color:var(--paille);align-items:center;justify-content:center;transition:transform .15s,filter .15s}
 .notiffab:hover{transform:translateY(-2px);filter:brightness(1.08)}
-.notiffab__c{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-family:var(--font-micro);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg,#fff)}
+.notiffab__c{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:var(--gold-chip);color:var(--gold-ink);font-family:var(--font-micro);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg,#fff)}
 .notifpanel{position:fixed;bottom:86px;right:22px;z-index:60;width:340px;max-width:calc(100vw - 44px);background:var(--card,#fff);border-radius:16px;overflow:hidden}
 @media(max-width:760px){.notiffab{bottom:16px;right:16px}.notifpanel{bottom:80px;right:16px}}
 .side__brand{padding:24px 22px}
@@ -216,15 +216,15 @@ th{font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-trans
 .pill--in_progress{background:var(--glycine-50);color:var(--glycine-900)}
 .pill--review,.pill--waiting_client{background:#faf1da;color:#6a4a0b}
 .pill--done{background:#eaf2e6;color:#35502a}
-.pill--late{background:#f4e9e8;color:var(--red)}
+.pill--late{background:#F0E2D6;color:#8a4a2c}
 .pill--a_valider{background:#faf1da;color:#6a4a0b}
 .pill--valide{background:#eaf2e6;color:#35502a}
-.pill--refuse{background:#f4e9e8;color:var(--red)}
+.pill--refuse{background:#F0E2D6;color:#8a4a2c}
 
 /* forfait bar */
 .bar{height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin-top:6px}
 .bar>span{display:block;height:100%;background:var(--glycine-700);border-radius:999px}
-.bar.over>span{background:var(--red)}
+.bar.over>span{background:var(--gold-chip)}
 
 /* chat — messagerie (design Écrin : entrant blanc, moi lavande, noms Inter) */
 .msgs{display:flex;flex-direction:column;gap:12px;max-height:440px;overflow-y:auto;padding:6px 2px;margin-bottom:14px}
