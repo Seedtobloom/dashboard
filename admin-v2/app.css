@@ -1,15 +1,16 @@
 /* Admin v2 — Seed to Bloom — charte Écrin (refonte : aéré, sans bordures, marron) */
 :root{
-  --terre:#412F21; --terre-600:#6b533b; --terre-400:#8a6f54; --terre-200:#c8b29a;
-  --nuit:#1C1205; --nuit-700:#2a1d10;
-  --glycine:#E4D1FE; --glycine-50:#f7efff; --glycine-700:#a98bd6; --glycine-900:#573b8a;
-  --brume:#F0E8FF; --paille:#F2E5C2; --paille-200:#fbf3d8;
-  --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb; --surface:#efe7d7; --surface-2:#f6f1e7;
+  --terre:#110704; --terre-600:#5A2A11; --terre-400:#8a5c3f; --terre-200:#d8b9a2;
+  --nuit:#110704; --nuit-700:#3a291b;
+  /* accent bleu clair (remplace l'ancien violet glycine) — noms conservés pour compat */
+  --glycine:#C5DEFF; --glycine-50:#E8F1FF; --glycine-700:#7fa8d0; --glycine-900:#2c4a72;
+  --brume:#E4F0FF; --paille:#F0E9D6; --paille-200:#efe7cf;
+  --bone:#ffffff; --bone-d:#e0d6c4; --card:#F7F3EC; --surface:#EDE5D7; --surface-2:#E4D9C5;
   --page:#ffffff;
-  --text:#412F21; --muted:#675334; --border:#eae5dc;
+  --text:#241609; --muted:#7a5540; --border:#e6ddcd;
   --red:#8d2b21; --orange:#c9952f; --green:#456039;
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
-  --font-body:'Alegreya',Georgia,serif;
+  --font-body:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   --radius:18px; --sw:248px;
   --shadow-1:none;
@@ -75,7 +76,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .notiffab{position:fixed;bottom:22px;right:22px;z-index:60;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--terre);color:var(--paille);align-items:center;justify-content:center;transition:transform .15s,filter .15s}
 .notiffab:hover{transform:translateY(-2px);filter:brightness(1.08)}
 .notiffab__c{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-family:var(--font-micro);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg,#fff)}
-.notifpanel{position:fixed;bottom:86px;right:22px;z-index:60;width:340px;max-width:calc(100vw - 44px);background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:16px;overflow:hidden}
+.notifpanel{position:fixed;bottom:86px;right:22px;z-index:60;width:340px;max-width:calc(100vw - 44px);background:var(--card,#fff);border-radius:16px;overflow:hidden}
 @media(max-width:760px){.notiffab{bottom:16px;right:16px}.notifpanel{bottom:80px;right:16px}}
 .side__brand{padding:24px 22px}
 .side__brand .n{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--paille)}
@@ -89,7 +90,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .navitem.active{background:rgba(242,229,194,0.14);color:var(--paille);font-weight:600}
 .side__foot{padding:16px}
 .main{flex:1;min-width:0;background:var(--page)}
-.topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,0.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--bone-d);padding:22px 40px 16px;display:flex;align-items:center;gap:12px}
+.topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,0.85);backdrop-filter:blur(10px);padding:22px 40px 16px;display:flex;align-items:center;gap:12px}
 .topbar__head{display:flex;flex-direction:column;gap:3px;min-width:0}
 .topbar h1{font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);font-weight:400;line-height:1.05}
 .topbar__sub{font-family:var(--font-micro);font-size:11.5px;letter-spacing:0.02em;color:var(--muted);line-height:1.3}
@@ -97,7 +98,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .wrap{padding:14px 40px 90px;max-width:1120px;margin:0 auto}
 
 /* cards / grid */
-.card{background:var(--card);border-radius:var(--radius);padding:26px 28px;margin-bottom:22px;border:1px solid var(--bone-d)}
+.card{background:var(--card);border-radius:var(--radius);padding:26px 28px;margin-bottom:22px}
 .card h3{font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);font-weight:400;margin-bottom:14px}
 .infocard h3{display:flex;align-items:center;gap:0}
 .infocard__dot{display:none}
@@ -105,7 +106,7 @@ textarea.inp{resize:vertical;min-height:64px;font-family:var(--font-body)}
 .infocard__act.is-on{color:#5d7a52}
 .admconfirm{position:fixed;inset:0;z-index:1000;background:rgba(28,18,5,0.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:admcf 140ms ease}
 @keyframes admcf{from{opacity:0}to{opacity:1}}
-.admconfirm__box{background:var(--card);border-radius:20px;border:1px solid var(--bone-d);padding:26px 28px;max-width:420px;width:100%}
+.admconfirm__box{background:var(--card);border-radius:20px;padding:26px 28px;max-width:420px;width:100%}
 .admconfirm__title{font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);margin-bottom:8px}
 .admconfirm__msg{font-family:var(--font-body);font-size:14px;line-height:1.5;color:var(--terre-600)}
 .admconfirm__detail{margin-top:12px;padding:11px 14px;background:var(--surface-2);border-radius:12px;font-family:var(--font-micro);font-size:12px;color:var(--terre)}
