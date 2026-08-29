@@ -879,9 +879,9 @@
     task:      { icon: 'stepClient',      label: 'Nouvelle tâche',         ic: '#8a6f2e', bg: '#fbf5e6' },
     ticket:    { icon: 'maint',           label: 'Ticket de maintenance',  ic: '#8a6f2e', bg: '#fbf5e6' },
     rework:    { icon: 'stepStudio',      label: 'Retours reçus',          ic: '#3f5a37', bg: '#f3f6f0' },
-    comment:   { icon: 'chat',            label: 'Nouveau commentaire',    ic: '#6c4ea4', bg: '#f4f1fa' },
+    comment:   { icon: 'chat',            label: 'Nouveau commentaire',    ic: '#2c4a72', bg: '#E8F1FF' },
     validated: { icon: 'stepValid',       label: 'Livrable validé',        ic: '#2f8f57', bg: '#edf6ef' },
-    revision:  { icon: 'stepStudio',      label: 'Livrable à revoir',      ic: '#a8432f', bg: '#fbeae5' }
+    revision:  { icon: 'stepStudio',      label: 'Livrable à revoir',      ic: '#8a4a2c', bg: '#F0E2D6' }
   };
   function renderInbox() {
     setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes — traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -1483,14 +1483,14 @@
       var dayCapMin = weekCapH ? (weekCapH * 60 / 5) : 0; // seuil « journée pleine »
       var maxLoad = Math.max.apply(null, weekLoad.map(function (w) { return w.mins; }).concat([dayCapMin, 60])) || 60;
       function hLabel(m) { m = Math.round(m); if (!m) return '·'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
-      var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Charge de la semaine</h3>' +
+      var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#2c4a72"></span>Charge de la semaine</h3>' +
         '<div class="between" style="align-items:baseline;margin-bottom:10px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Temps prévu, estimé par jour</span>' +
           '<span style="font-weight:700;font-size:15px;color:' + (weekCapH && weekMinTotal > weekCapH * 60 ? 'var(--red)' : 'var(--terre)') + '">' + hLabel(weekMinTotal) + (weekCapH ? ' <span style="font-weight:400;font-size:12px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : '') + '</span></div>' +
         '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px;min-height:78px">' +
         weekLoad.map(function (w) {
           var barH = w.mins ? Math.max(Math.round(w.mins / maxLoad * 60), 6) : 3;
           var heavy = dayCapMin ? w.mins > dayCapMin : w.mins >= 240;
-          var col = heavy ? '#a23c28' : (w.mins ? '#5e3fa0' : 'var(--bone-d)');
+          var col = heavy ? '#a23c28' : (w.mins ? '#2c4a72' : 'var(--bone-d)');
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">' +
             '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;color:' + (heavy ? '#a23c28' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
             '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '" title="' + w.count + ' tâche' + (w.count > 1 ? 's' : '') + '"></div>' +
@@ -1729,7 +1729,7 @@
   /* ── Mes tâches (perso admin) + timer ── */
   var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'focus', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {};
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
-  var MT_TAG_COLORS = [['#f2ebff', '#5e3fa0'], ['#eaf1fb', '#35608f'], ['#f6ecd5', '#9c6f18'], ['#eaf1e6', '#4f6a46'], ['#f7ece7', '#a23c28'], ['#efe7d7', '#6b533b']];
+  var MT_TAG_COLORS = [['#E8F1FF', '#2c4a72'], ['#F0E2D6', '#8a4a2c'], ['#f6ecd5', '#8a6414'], ['#eef1e6', '#4f6a46'], ['#EDE5D7', '#5A2A11'], ['#e6ddce', '#8a5c3f']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
   function mtTagPill(tg) { var c = mtTagColor(tg); return '<span style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:' + c[0] + ';color:' + c[1] + '">' + esc(tg) + '</span>'; }
   // ── Refonte « Studio OS » : mode de travail (axe d'organisation) + énergie ──
@@ -1737,7 +1737,7 @@
   var MT_MODES = [
     ['client', 'Client', '👤', '#a35a1a', '#fdf3e8'],
     ['studio', 'Studio', '🚀', '#35608f', '#eaf1fb'],
-    ['marketing', 'Marketing', '📣', '#6c4ea4', '#f4f1fa'],
+    ['marketing', 'Marketing', '📣', '#8a4a2c', '#F0E2D6'],
     ['organisation', 'Organisation', '⚙️', '#4f6a46', '#eaf1e6'],
     ['admin', 'Admin', '💰', '#9c6f18', '#f6ecd5'],
     ['idee', 'Idée', '💡', '#8a6f2e', '#fbf5e6']
@@ -1866,7 +1866,7 @@
   }
   // Ligne de checklist (vue Liste) : coche pour terminer.
   function mtListRow(t) {
-    var pc = { haute: '#b83f29', normale: '#6c4ea4', basse: '#8a7355' }[t.priority || 'normale'];
+    var pc = { haute: '#8a4a2c', normale: '#2c4a72', basse: '#8a5c3f' }[t.priority || 'normale'];
     var hasNote = !!(t.notes && String(t.notes).trim());
     var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
     var noteMark = (hasNote || subs.length)
@@ -3142,7 +3142,7 @@
           '<select class="inp" id="mt-recur" style="flex:1;min-width:160px" title="Répéter la tâche automatiquement">' + recOptsAdd + '</select>' +
         '</div>' +
         '<div class="micro mt">Le <b>mode</b> range la tâche dans le bon espace de ta page Focus. L\'<b>énergie</b> et la <b>durée</b> servent à savoir si ta journée est réaliste.</div></div>' : '';
-      var cols = [['haute', 'Haute', '#b83f29', '#f6f2ea'], ['normale', 'Normale', '#6c4ea4', '#f6f2ea'], ['basse', 'Basse', '#8a7355', '#f6f2ea']];
+      var cols = [['haute', 'Haute', '#8a4a2c', '#F0E2D6'], ['normale', 'Normale', '#2c4a72', '#E8F1FF'], ['basse', 'Basse', '#8a5c3f', '#EDE5D7']];
       var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
         var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
         return '<div class="mtcol" data-prio="' + c[0] + '" ondragover="ADM.mtDragOver(event)" ondragleave="ADM.mtDragLeave(event)" ondrop="ADM.mtDrop(event,\'' + c[0] + '\')" style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px;transition:background 120ms">' +
@@ -3279,12 +3279,12 @@
     if (satis) tiles.push(['avis', (Math.round(satis * 10) / 10) + '/5', 'satisfaction']);
     var body = tiles.map(function (t) {
       return '<div style="min-width:130px;padding:6px 20px 6px 0">' +
-        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#5e3fa0);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#5e3fa0)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--glycine-900,#2c4a72);margin-bottom:5px"><span style="display:inline-flex;color:var(--glycine-900,#2c4a72)">' + admIcon(t[0]) + '</span>' + esc(t[2]) + '</div>' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
       '</div>';
     }).join('');
     return '<div class="card" style="background:var(--card);border:1px solid var(--bone-d);padding:18px 20px;margin-bottom:18px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#5e3fa0)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#2c4a72)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' + body + '</div>' +
     '</div>';
   }
@@ -4016,7 +4016,7 @@
           if (t.proposedDueDate && t.proposedAt) add(t.proposedAt, '📅', 'Report de date proposé · ' + (t.title || ''), lbl, '#8a4a0e');
         });
         (c.livrables || []).forEach(function (l) {
-          add(l.createdAt, '📦', 'Livrable envoyé · ' + (l.name || ''), lbl, '#5e3fa0');
+          add(l.createdAt, '📦', 'Livrable envoyé · ' + (l.name || ''), lbl, '#2c4a72');
           if (l.validatedAt) {
             if (l.status === 'valide') add(l.validatedAt, '🎉', 'Livrable validé · ' + (l.name || ''), lbl, '#3f6b3a');
             else if (l.status === 'refuse' || l.status === 'revision') add(l.validatedAt, '↩️', 'Révision demandée · ' + (l.name || ''), l.clientComment || lbl, '#a23c28');
@@ -4029,7 +4029,7 @@
     }
     scan(CUR.domains); scan(CUR.supports);
     (CUR.questionnaires || []).forEach(function (q) {
-      add(q.assignedAt, '📋', 'Questionnaire envoyé · ' + (q.name || ''), '', '#5e3fa0');
+      add(q.assignedAt, '📋', 'Questionnaire envoyé · ' + (q.name || ''), '', '#2c4a72');
       if (q.completedAt) add(q.completedAt, '✨', 'Questionnaire complété · ' + (q.name || ''), '', '#3f6b3a');
     });
     ev.sort(function (a, b) { return b.at.localeCompare(a.at); });
@@ -4156,7 +4156,7 @@
     var nQ = items.filter(function (q) { return q.type !== 'section'; }).length;
     var nAns = items.filter(function (q) { return q.type !== 'section' && qnAnsText(answers[q.id]).trim(); }).length;
     var head = '<div class="card" style="background:var(--card);padding:18px 20px;margin-bottom:14px">' +
-      '<div class="between"><h3 style="margin:0"><span class="infocard__dot" style="background:#5e3fa0"></span>Questionnaire</h3>' +
+      '<div class="between"><h3 style="margin:0"><span class="infocard__dot" style="background:#2c4a72"></span>Questionnaire</h3>' +
         '<div class="row" style="gap:8px;flex-wrap:wrap">' +
           (items.length ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnPreview(\'' + d.id + '\')">👁 Prévisualiser</button>' : '') +
           '<button class="btn btn--outline btn--sm" onclick="ADM.qnBulk(\'' + d.id + '\')">📋 Coller</button>' +
@@ -4246,7 +4246,7 @@
     var c = CUR.client, e = CUR.entreprise;
     var active = CUR.isActive;
     var coord = '<div class="card infocard" style="background:var(--card)">' +
-      '<div class="between mb"><h3><span class="infocard__dot" style="background:#5e3fa0"></span>Coordonnées</h3>' +
+      '<div class="between mb"><h3><span class="infocard__dot" style="background:#2c4a72"></span>Coordonnées</h3>' +
       '<label class="checkbox infocard__act' + (active ? ' is-on' : '') + '"><input type="checkbox" id="inf-active"' + (active ? ' checked' : '') + ' onchange="ADM.saveInfos()"> ' + (active ? 'espace actif' : 'espace inactif') + '</label></div>' +
       '<div class="grid grid--2">' +
       fld('inf-prenom', 'Prénom', c.prenom) + fld('inf-nom', 'Nom', c.nom) +
@@ -4313,9 +4313,9 @@
   var CR_TYPES = [['print', 'Print'], ['digital', 'Digital'], ['reseaux', 'Réseaux sociaux'], ['evenementiel', 'Événementiel'], ['autre', 'Autre']];
   var CR_STATUSES = [['a_preparer', 'À préparer'], ['en_creation', 'En création'], ['attente_client', 'Attente cliente'], ['revision', 'En révision'], ['valide', 'Validé'], ['archive', 'Archivé']];
   // Couleur d'identité par catégorie : [encre, fond teinté] pour différencier les cards.
-  var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#6c4ea4', '#f1ecfa'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#6b533b', '#efe9e2'] };
+  var CR_TYCOL = { print: ['#a35a1a', '#fbeee0'], digital: ['#35608f', '#e7eff9'], reseaux: ['#2c4a72', '#E8F1FF'], evenementiel: ['#4f6a46', '#e8f0e3'], autre: ['#6b533b', '#efe9e2'] };
   // Palette de bannière (charte, sans jaune) proposée à Cindy pour personnaliser une création.
-  var CR_BANNERS = ['#6b533b', '#6c4ea4', '#35608f', '#4f6a46', '#a35a1a', '#8a5a6e'];
+  var CR_BANNERS = ['#6b533b', '#CD8F6E', '#35608f', '#4f6a46', '#a35a1a', '#8a5a6e'];
   function crBannerRow(pid, c) {
     var sw = CR_BANNERS.map(function (bc) {
       var on = (c.bannerColor || '').toLowerCase() === bc;
@@ -5373,7 +5373,7 @@
       var who = mine ? 'Vous' : 'Client';
       return '<div style="display:flex;flex-direction:column;align-items:' + (mine ? 'flex-end' : 'flex-start') + ';margin-bottom:7px">' +
         '<div style="max-width:88%;background:' + bg + ';border-radius:12px;padding:8px 12px">' +
-          '<div class="micro" style="text-transform:none;letter-spacing:0;color:' + (mine ? 'var(--muted)' : '#6c4ea4') + ';font-weight:700;margin-bottom:2px">' + who + (c.createdAt ? ' · ' + fmtDate(c.createdAt) : '') + '</div>' +
+          '<div class="micro" style="text-transform:none;letter-spacing:0;color:' + (mine ? 'var(--muted)' : '#2c4a72') + ';font-weight:700;margin-bottom:2px">' + who + (c.createdAt ? ' · ' + fmtDate(c.createdAt) : '') + '</div>' +
           '<div style="font-size:13.5px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
         '</div></div>';
     }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
@@ -6124,7 +6124,7 @@
    * ──────────────────────────────────────────────────────────────────────── */
   var QNR = [], QNR_LOADED = false, QNR_SEL = null, QNR_SHOW_ARCH = false;
   var QNR_CATS = [
-    ['demarrage', 'Démarrage', '#5e3fa0'], ['strategie', 'Stratégie', '#2f6b8a'],
+    ['demarrage', 'Démarrage', '#2c4a72'], ['strategie', 'Stratégie', '#2f6b8a'],
     ['seo', 'SEO', '#3f8a5e'], ['ux', 'UX / UI', '#8a5e2f'], ['branding', 'Branding', '#a03f7a'],
     ['copywriting', 'Copywriting', '#8a2f4a'], ['projet', 'Projet', '#3f5aa0'],
     ['livraison', 'Livraison', '#2f8a8a'], ['support', 'Support', '#6b6b2f'], ['autre', 'Autre', '#6b5e4a'],
@@ -6478,7 +6478,7 @@
   function qnrPreviewRender() {
     var ex = el('qnr-preview-ov'); if (ex) ex.remove();
     var t = qnrTpl(QNR_PREV_ID); if (!t) return;
-    var col = t.color || '#5e3fa0';
+    var col = t.color || '#2c4a72';
     var steps = t.steps || [];
     if (!steps.length) steps = [{ title: '', help: '', blocks: [] }];
     var header = '<div class="between" style="margin-bottom:12px"><div class="micro" style="color:var(--muted)">Aperçu · ' + esc(t.name || '') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>';
@@ -6606,7 +6606,7 @@
     body.innerHTML = grid + archBtn + archGrid;
   }
   function prjCardHtml(t) {
-    var col = t.color || '#5e3fa0';
+    var col = t.color || '#2c4a72';
     var nP = (t.phases || []).length, nS = prjCountSteps(t), nD = prjCountDeliv(t);
     var wk = t.totalWeeks ? esc(t.totalWeeks) + ' sem. · ' : '';
     var head = (t.icon ? '<span style="font-size:18px;line-height:1">' + esc(t.icon) + '</span>' : admIcon('projtpl'));
@@ -6632,7 +6632,7 @@
   }
   function prjToggleArch() { PRJ_SHOW_ARCH = !PRJ_SHOW_ARCH; renderPrjBody(); }
   function prjAdd() {
-    var t = { id: prjId('t'), name: '', offer: 'website', icon: '', color: '#5e3fa0', totalWeeks: 0, archived: false, phases: [{ id: prjId('ph'), title: '', help: '', steps: [], deliverables: [] }] };
+    var t = { id: prjId('t'), name: '', offer: 'website', icon: '', color: '#2c4a72', totalWeeks: 0, archived: false, phases: [{ id: prjId('ph'), title: '', help: '', steps: [], deliverables: [] }] };
     PRJ.unshift(t); prjSave(); renderPrjBody(); prjOpen(t.id);
   }
   function prjDup(id) {
@@ -6663,10 +6663,10 @@
     if (keepScroll) d.scrollTop = keepScroll;
   }
   function prjDrawerHtml(t) {
-    var col = t.color || '#5e3fa0';
+    var col = t.color || '#2c4a72';
     var offSel = '<select class="inp" style="width:auto" onchange="ADM.prjSet(\'' + t.id + '\',\'offer\',this.value)">' +
       PRJ_OFFERS.map(function (o) { return '<option value="' + o[0] + '"' + (t.offer === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
-    var swatches = ['#5e3fa0', '#8267ab', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
+    var swatches = ['#2c4a72', '#8267ab', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
     var colorDots = swatches.map(function (c) { return '<button title="' + esc(c) + '" onclick="ADM.prjSet(\'' + t.id + '\',\'color\',\'' + c + '\')" style="width:22px;height:22px;border-radius:50%;background:' + c + ';border:2px solid ' + (col === c ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
     var phasesHtml = (t.phases || []).map(function (p, i) { return prjPhaseHtml(t, p, i, (t.phases || []).length); }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
@@ -6730,7 +6730,7 @@
   }
   function prjDelivHtml(t, p, d) {
     return '<div class="row" style="gap:7px;align-items:center;margin-bottom:6px">' +
-      '<span style="color:' + esc(t.color || '#5e3fa0') + ';display:flex;flex-shrink:0">' + admIcon('deliv') + '</span>' +
+      '<span style="color:' + esc(t.color || '#2c4a72') + ';display:flex;flex-shrink:0">' + admIcon('deliv') + '</span>' +
       '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:13px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">révisions</span>' +
       '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:12px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +
