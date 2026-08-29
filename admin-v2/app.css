@@ -759,3 +759,13 @@ select.cg-in{cursor:pointer}
 .cg-addj{display:flex;gap:8px;margin-top:12px}
 .cg-newcr{background:#F8F6F2;border:1px dashed var(--terre-200);border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
 .cg-newcr .cg-lbl{margin:0;flex-shrink:0}
+
+/* Réglages — Types de mission façon maquette (pastilles épurées) */
+.setline{display:flex;align-items:center;gap:11px;background:var(--surface-2);border-radius:12px;padding:9px 13px;margin-bottom:8px}
+.setline__dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.setline .inp{flex:1;background:transparent;border:none;padding:4px 2px;font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre)}
+.setline .inp:focus{background:var(--bone);box-shadow:none;border-radius:7px;padding:4px 8px}
+.setline__x{flex-shrink:0;border:none;background:none;color:var(--terre-400);cursor:pointer;font-size:14px;line-height:1;padding:4px 6px;border-radius:7px}
+.setline__x:hover{background:var(--bone);color:var(--terre)}
+.setadd{display:flex;gap:8px;margin-top:12px}
+.setadd .inp{flex:1}

@@ -829,14 +829,18 @@
       .catch(function () { toast('Erreur'); });
   }
   function missionReadInputs() { return MISSION_LIST.map(function (_, i) { var e = el('mt-type-' + i); return e ? e.value : MISSION_LIST[i]; }); }
+  var MT_DOTS = ['#5A2A11', '#CD8F6E', '#2c4a72', '#8a5c3f', '#8fb0d8', '#d8b9a2', '#8a6414'];
   function missionBody() {
     var rows = MISSION_LIST.map(function (t, i) {
-      return '<div class="row" style="gap:8px;margin-bottom:8px"><input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '" style="flex:1"><button class="btn btn--danger btn--sm" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
+      return '<div class="setline">' +
+        '<span class="setline__dot" style="background:' + MT_DOTS[i % MT_DOTS.length] + '"></span>' +
+        '<input class="inp" id="mt-type-' + i + '" value="' + esc(t) + '">' +
+        '<button class="setline__x" onclick="ADM.missionTypeDel(' + i + ')" title="Retirer">✕</button></div>';
     }).join('');
     return '<div class="card infocard" style="background:var(--card)"><h3>Types de mission</h3>' +
       '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces catégories sont proposées au client quand il crée une tâche, et servent au suivi du temps par type. Modifie, ajoute ou retire selon tes besoins, puis enregistre.</div>' +
       (rows || '<div class="empty">Aucun type. Ajoutez-en un ci-dessous.</div>') +
-      '<div class="row mt" style="gap:8px"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
+      '<div class="setadd"><input class="inp" id="mt-type-new" placeholder="Nouveau type de mission" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.missionTypeAdd();}"><button class="btn btn--outline btn--sm" onclick="ADM.missionTypeAdd()">+ Ajouter</button></div>' +
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
   }
   function renderReglagesBody() { var b = el('regl-body'); if (b) b.innerHTML = missionBody(); }
