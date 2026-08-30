@@ -4029,25 +4029,18 @@
   function renderClient() {
     if (!CUR || CUR.key !== CURKEY) { setMain(topbar('Client') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>'); if (!CUR || CUR.key !== CURKEY) { loadClient(); } return; }
     var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || (CUR.entreprise.nom) || CUR.client.email || CUR.key;
-    var tabs = [['apercu', 'Vue d\'ensemble', 0, true], ['infos', 'Infos', 0, true]];
-    CUR.domains.forEach(function (dn) { tabs.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.unread || 0, dn.isActive !== false]); });
-    CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
-    tabs.push(['journal', 'Journal', 0, true]);
-    tabs.push(['documents', 'Documents', 0, true]);
-    // Questionnaires envoyés à cette cliente. Badge = nb en attente de réponse.
-    var qnrPending = (CUR.questionnaires || []).filter(function (q) { return q.status !== 'completed'; }).length;
-    tabs.push(['qnranswers', 'Questionnaires', qnrPending, true]);
-    // Le bilan ne concerne que la fin de collaboration : la section reste grisée
-    // (mais accessible) tant que l'invitation au bilan n'a pas été demandée.
-    var _partnerB = (CUR.domains || []).filter(function (x) { return x.id === 'partner'; })[0];
-    var _bil = _partnerB && _partnerB.content && _partnerB.content.bilan;
-    var bilanStarted = !!(_bil && (_bil.requestedAt || _bil.submittedAt));
-    tabs.push(['bilanavis', 'Bilan & avis', 0, true, !bilanStarted]);
+    // Fiche cliente = 5 onglets de la maquette, exactement.
+    var _domUnread = 0; (CUR.domains || []).concat(CUR.supports || []).forEach(function (x) { _domUnread += x.unread || 0; });
+    var tabs = [
+      ['apercu', 'Vue d\'ensemble', 0],
+      ['etapes', 'Étapes', _domUnread],
+      ['fichiers', 'Fichiers', 0],
+      ['echanges', 'Échanges', 0],
+      ['forfait', 'Forfait', 0]
+    ];
     var tabsHtml = tabs.map(function (t) {
-      var muted = t[4];
-      var st = !t[3] ? ' title="offre inactive" style="opacity:0.55"'
-        : (muted ? ' title="Le bilan s\'active en fin de collaboration" style="opacity:0.5"' : '');
-      return '<button class="tab' + (TAB === t[0] ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')"' + st + '>' + esc(t[1]) + (t[3] ? '' : ' ·') + badge(t[2]) + '</button>';
+      var active = (TAB === t[0]) || (t[0] === 'etapes' && !!findDomain(TAB));
+      return '<button class="tab' + (active ? ' active' : '') + '" onclick="ADM.tab(\'' + t[0] + '\')">' + esc(t[1]) + badge(t[2]) + '</button>';
     }).join('');
     var ml = (CUR.meetingLink || '').trim();
     var visioBtn = ml ? '<a class="btn btn--dark btn--sm" href="' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Ouvrir la salle de visioconférence">' + admIcon('video') + ' Rejoindre la visio</a>' : '';
@@ -4175,13 +4168,14 @@
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
     if (TAB === 'apercu') return body.innerHTML = apercuTab();
-    if (TAB === 'infos') return body.innerHTML = tabInfos();
-    if (TAB === 'journal') return body.innerHTML = journalTab();
-    if (TAB === 'documents') return renderDocuments(body);
-    if (TAB === 'qnranswers') { qnrMarkSeen(); return body.innerHTML = qnrAnswersTab(); }
-    if (TAB === 'bilanavis') return body.innerHTML = bilanAvisTab();
-    var d = findDomain(TAB);
-    if (!d) { body.innerHTML = '<div class="empty">·</div>'; return; }
+    if (TAB === 'fichiers') return renderDocuments(body);
+    if (TAB === 'echanges') return body.innerHTML = journalTab();
+    if (TAB === 'forfait') return body.innerHTML = tabInfos();
+    // Étapes = les projets de la cliente (domaines + supports), avec sélecteur si plusieurs.
+    var _doms = (CUR.domains || []).concat(CUR.supports || []);
+    var d = findDomain(TAB) || (TAB === 'etapes' ? _doms[0] : null);
+    if (!d) { body.innerHTML = '<div class="empty">Aucun projet actif pour cette cliente.</div>'; return; }
+    var _projNav = _doms.length > 1 ? '<div class="subtabs" style="margin-bottom:14px">' + _doms.map(function (x) { return '<button class="subtab' + (x.id === d.id ? ' active' : '') + '" onclick="ADM.tab(\'' + x.id + '\')">' + esc(DOMAIN_LABELS[x.id] || x.label) + '</button>'; }).join('') + '</div>' : '';
     var secs = sectionsFor(d);
     var keys = secs.map(function (x) { return x[0]; });
     var cur = SUBTAB[d.id]; if (keys.indexOf(cur) === -1) cur = keys[0];
@@ -4200,7 +4194,7 @@
     else if (cur === 'suivi') content = suiviCard(d);
     else if (cur === 'liv') content = livrablesCard(d);
     else content = chatCard(d);
-    body.innerHTML = subnav + content;
+    body.innerHTML = _projNav + subnav + content;
     var box = el('chat-' + d.id); if (box) box.scrollTop = box.scrollHeight;
     if (cur === 'msg' && d.unread > 0) { jpost('/api/clients/' + CURKEY + '/message/read', { projectId: d.id }, 'POST'); d.unread = 0; renderClient(); }
     if (cur === 'tickets' && Array.isArray(d.content.tickets) && d.content.tickets.some(function (t) { return t.seenByAdmin === false; })) {
