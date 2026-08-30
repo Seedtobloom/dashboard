@@ -1248,3 +1248,41 @@ select.cg-in{cursor:pointer}
 .rep__track{width:38%;height:8px;border-radius:999px;background:var(--surface);overflow:hidden;flex-shrink:0}
 .rep__track i{display:block;height:100%;border-radius:999px}
 .rep__v{font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre);width:52px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+
+/* ═══════════ Questionnaires & Visios — maquette ═══════════ */
+.secmark2{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400);margin:24px 0 12px}
+.secmark2:first-child{margin-top:0}
+.ibbtn{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:8px 13px;border-radius:999px;border:none;cursor:pointer;background:var(--beige);color:var(--terre);flex-shrink:0}
+.ibbtn--dark{background:var(--terre);color:var(--paille)}
+.ibbtn--del{color:#9a4a2a}
+.qtabs{display:inline-flex;gap:4px;background:var(--card);padding:5px;border-radius:12px}
+.qtab{font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--terre-600);padding:8px 15px;border-radius:9px;border:none;cursor:pointer;background:none}
+.qtab:hover:not(.on){background:var(--beige)}
+.qtab.on{background:var(--terre);color:var(--paille);font-weight:700}
+.qbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.qrow{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:13px;padding:14px 16px;margin-bottom:9px}
+.qrow__a{width:38px;height:38px;border-radius:11px;background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:17px;flex-shrink:0}
+.qrow__m{flex:1;min-width:0}
+.qrow__n{font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.2}
+.qrow__s{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.qrow__st{font-family:var(--font-body);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;flex-shrink:0}
+.qrow__st--done{background:var(--glycine);color:var(--glycine-900)}
+.qrow__st--wait{background:var(--gold-chip);color:var(--gold-ink)}
+.tplcard{background:var(--card);border-radius:15px;padding:18px 20px;margin-bottom:11px}
+.tplcard__top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tplcard__n{font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);line-height:1.15}
+.tplcard__s{font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.tplcard__types{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tpltype{font-family:var(--font-body);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);background:var(--beige);padding:3px 9px;border-radius:999px}
+.tplcard__act{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.viorow{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.viorow--soon{background:var(--glycine-50)}
+.vio__d{text-align:center;flex-shrink:0;width:62px}
+.vio__d b{font-family:var(--font-display);font-style:italic;font-size:17px;color:var(--terre);display:block;line-height:1.05}
+.viorow--soon .vio__d b{color:var(--glycine-900)}
+.vio__d span{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;color:var(--terre-400)}
+.vio__a{width:36px;height:36px;border-radius:11px;background:var(--glycine);color:var(--glycine-900);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:16px;flex-shrink:0}
+.vio__m{flex:1;min-width:0}
+.vio__t{font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.2}
+.vio__s{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.caltag{font-family:var(--font-body);font-size:8.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--glycine-900);background:var(--glycine-50);padding:3px 8px;border-radius:6px;flex-shrink:0}

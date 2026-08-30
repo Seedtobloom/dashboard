@@ -2255,8 +2255,7 @@
   // ── Visios : préparation des rendez-vous — cards + panneau + déroulé ──
   var VISIOS = { cards: [], templates: [] }, VISIOS_LOADED = false, VIS_TAB = 'cards', VIS_SEL = null;
   function renderVisios() {
-    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'suivi\')">+ Client suivi</button><button class="btn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau client</button>';
-    setMain(topbar('Visios', right, 'Prépare tes rendez-vous : un déroulé étape par étape et tes questions') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
@@ -2274,12 +2273,13 @@
   function visTpl(id) { return VISIOS.templates.filter(function (t) { return t.id === id; })[0]; }
   function renderVisiosBody() {
     var body = el('vis-body'); if (!body) return;
-    var tabs = '<div class="subtabs" style="margin-bottom:18px">' +
-      '<button class="subtab' + (VIS_TAB === 'cards' ? ' active' : '') + '" onclick="ADM.visTab(\'cards\')">Rendez-vous · ' + VISIOS.cards.length + '</button>' +
-      '<button class="subtab' + (VIS_TAB === 'templates' ? ' active' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles · ' + VISIOS.templates.length + '</button>' +
-      '<button class="subtab' + (VIS_TAB === 'fiche' ? ' active' : '') + '" onclick="ADM.visTab(\'fiche\')">🌱 Fiche d\'appel</button>' +
+    var head = '<div class="clhead"><div><p class="hello">Visios</p><p class="hello__s">Tes rendez-vous avec tes clientes, à venir et passés.</p></div></div>';
+    var tabs = '<div class="ttabs">' +
+      '<button class="ttab' + (VIS_TAB === 'cards' ? ' is-on' : '') + '" onclick="ADM.visTab(\'cards\')">Rendez-vous</button>' +
+      '<button class="ttab' + (VIS_TAB === 'templates' ? ' is-on' : '') + '" onclick="ADM.visTab(\'templates\')">Modèles de déroulé</button>' +
+      '<button class="ttab' + (VIS_TAB === 'fiche' ? ' is-on' : '') + '" onclick="ADM.visTab(\'fiche\')">Fiche d\'appel</button>' +
     '</div>';
-    body.innerHTML = tabs + (VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
+    body.innerHTML = head + tabs + (VIS_TAB === 'fiche' ? visFicheHtml() : VIS_TAB === 'templates' ? visTemplatesHtml() : visCardsHtml());
   }
   function visTab(t) { VIS_TAB = t; renderVisiosBody(); }
 
@@ -2534,30 +2534,33 @@
     return '<div style="display:grid;grid-template-columns:210px minmax(0,1fr) 560px;gap:18px;align-items:start">' + list + editor + right + '</div>';
   }
   function visCardsHtml() {
-    function section(cat, label, col) {
-      var cards = VISIOS.cards.filter(function (c) { return (c.category || 'nouveau') === cat; })
-        .sort(function (a, b) { var ad = a.done ? 1 : 0, bd = b.done ? 1 : 0; if (ad !== bd) return ad - bd; return String(a.date || '9999').localeCompare(String(b.date || '9999')); });
-      var grid = cards.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px">' + cards.map(visCardTile).join('') + '</div>' : '<div class="empty">Aucune visio ici pour le moment.</div>';
-      return '<div style="margin-bottom:28px"><div class="between mb"><h3 style="margin:0"><span class="infocard__dot" style="background:' + col + '"></span>' + label + ' · ' + cards.length + '</h3><button class="btn btn--outline btn--sm" onclick="ADM.visAdd(\'' + cat + '\')">+ Ajouter</button></div>' + grid + '</div>';
+    var now = Date.now();
+    function ts(c) { var t = c.date ? +new Date(c.date) : NaN; return isNaN(t) ? null : t; }
+    var upcoming = VISIOS.cards.filter(function (c) { return !c.done && (ts(c) == null || ts(c) >= now); })
+      .sort(function (a, b) { return (ts(a) || 8.64e15) - (ts(b) || 8.64e15); });
+    var past = VISIOS.cards.filter(function (c) { return c.done || (ts(c) != null && ts(c) < now); })
+      .sort(function (a, b) { return (ts(b) || 0) - (ts(a) || 0); });
+    function row(c, soon) {
+      var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
+      var ini = (name.trim().charAt(0) || '?').toUpperCase();
+      var dt = c.date ? new Date(c.date) : null;
+      var dayB = dt ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
+      var hourS = dt ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+      var catLbl = c.category === 'suivi' ? 'Cliente suivie' : 'Nouveau contact';
+      var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
+      var hasContent = nSteps || nQ;
+      var actions = (hasContent && !c.done ? '<button class="ibbtn ibbtn--dark" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
+        '<button class="ibbtn" onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')">' + (c.done ? 'Compte-rendu' : 'Détails') + '</button>';
+      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '" style="cursor:pointer' + (c.done ? ';opacity:0.7' : '') + '" onclick="ADM.visOpen(\'' + c.id + '\')">' +
+        '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
+        '<span class="vio__a">' + esc(ini) + '</span>' +
+        '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + '</div></div>' +
+        actions + '</div>';
     }
-    return section('nouveau', 'Nouveaux clients', '#9c6f18') + section('suivi', 'Clients suivis', '#4f6a46');
-  }
-  function visCardTile(c) {
-    var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
-    var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
-    var pill = function (txt) { return '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;color:var(--terre-600);background:var(--surface-2,#f3ede1);padding:3px 9px;border-radius:999px">' + txt + '</span>'; };
-    return '<div onclick="ADM.visOpen(\'' + c.id + '\')" style="cursor:pointer;background:var(--card);border:none;border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:9px' + (c.done ? ';opacity:0.66' : '') + '" onmouseover="this.style.boxShadow=\'var(--shadow-2)\'" onmouseout="this.style.boxShadow=\'none\'">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
-        '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.2">' + esc(name) + '</div>' +
-        (c.done ? '<span title="Fait" style="color:#3f5a37;flex-shrink:0">✓</span>' : '') +
-      '</div>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + (c.date ? '🗓️ ' + fmtDT(c.date) : 'Sans date') + '</div>' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap">' + pill(nSteps + ' étape' + (nSteps > 1 ? 's' : '')) + (nQ ? pill(nQ + ' question' + (nQ > 1 ? 's' : '')) : '') + '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:4px">' +
-        ((nSteps || nQ) ? '<button onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')" class="btn btn--dark btn--sm" style="flex:1">▶ Lancer</button>' : '') +
-        '<button onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')" class="btn btn--outline btn--sm" style="flex:1">Ouvrir</button>' +
-      '</div>' +
-    '</div>';
+    var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>';
+    var up = upcoming.length ? upcoming.map(function (c, i) { return row(c, i === 0); }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
+    var pa = past.length ? '<div class="secmark2">Passées</div>' + past.map(function (c) { return row(c, false); }).join('') : '';
+    return addBar + '<div class="secmark2">À venir</div>' + up + pa;
   }
   // Champ « nom » : sélecteur de cliente (suivi) ou texte libre (prospect).
   function visNameField(c) {
@@ -6568,8 +6571,7 @@
   function qnrCountBlocks(t) { var n = 0; (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type)) n++; }); }); return n; }
 
   function renderQuestionnaires() {
-    var right = '<button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau questionnaire</button>';
-    setMain(topbar('Questionnaires', right, 'Crée des questionnaires réutilisables et envoie-les à tes clientes') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain(topbar('') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     if (QNR_LOADED) { renderQnrBody(); return; }
     api('/api/questionnaires').then(function (r) { return r.json(); }).then(function (d) { QNR = (d && d.questionnaires) || []; QNR_LOADED = true; renderQnrBody(); }).catch(showError);
@@ -6580,36 +6582,35 @@
     var body = el('qnr-body'); if (!body) return;
     var active = QNR.filter(function (t) { return !t.archived; });
     var archived = QNR.filter(function (t) { return t.archived; });
-    var grid = active.length
-      ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">' + active.map(qnrTplCardHtml).join('') + '</div>'
+    var head = '<div class="clhead"><div><p class="hello">Questionnaires</p><p class="hello__s">Tes questionnaires-types, prêts à assigner à tes clientes.</p></div></div>' +
+      '<div class="qbar"><p style="font-family:var(--font-body);font-size:12.5px;color:var(--muted);margin:0">Crée un modèle, envoie-le, consulte les réponses dans chaque fiche cliente.</p><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div>';
+    var list = active.length
+      ? active.map(qnrTplCardHtml).join('')
       : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
-    var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:22px" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
-    var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:14px;opacity:0.75">' + archived.map(qnrTplCardHtml).join('') + '</div>' : '';
-    body.innerHTML = grid + archBtn + archGrid;
+    var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:14px" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
+    var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div style="margin-top:14px;opacity:0.75">' + archived.map(qnrTplCardHtml).join('') + '</div>' : '';
+    body.innerHTML = head + list + archBtn + archGrid;
   }
   function qnrTplCardHtml(t) {
-    var cm = qnrCatMeta(t.category || 'autre');
-    var col = t.color || cm[2];
     var nQ = qnrCountBlocks(t), nS = (t.steps || []).length;
-    return '<div class="card" style="padding:0;overflow:hidden;border:none;border-radius:14px;display:flex;flex-direction:column">' +
-      '<div style="height:6px;background:' + esc(col) + '"></div>' +
-      '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
-        '<div class="between" style="align-items:flex-start;gap:8px">' +
-          '<strong style="font-size:15.5px;line-height:1.3;cursor:pointer" onclick="ADM.qnrOpen(\'' + t.id + '\')">' + esc(t.name || 'Sans titre') + '</strong>' +
-          '<span style="font-family:var(--font-micro);font-size:9.5px;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + esc(col) + ';padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0">' + esc(cm[1]) + '</span>' +
-        '</div>' +
-        (t.description ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);line-height:1.45">' + esc(t.description) + '</div>' : '') +
-        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</div>' +
-      '</div>' +
-      '<div style="display:flex;gap:4px;padding:9px 12px;border:none;flex-wrap:wrap">' +
-        '<button class="pbtn" onclick="ADM.qnrOpen(\'' + t.id + '\')">Éditer</button>' +
-        '<button class="pbtn" onclick="ADM.qnrPreview(\'' + t.id + '\')">Aperçu</button>' +
-        '<button class="pbtn pbtn--ok" onclick="ADM.qnrAssignOpen(\'' + t.id + '\')">Envoyer</button>' +
-        '<span style="margin-left:auto;display:flex;gap:4px">' +
-          '<button class="pbtn" title="Dupliquer" onclick="ADM.qnrDup(\'' + t.id + '\')">⧉</button>' +
-          '<button class="pbtn" title="' + (t.archived ? 'Désarchiver' : 'Archiver') + '" onclick="ADM.qnrArchive(\'' + t.id + '\')">' + (t.archived ? '↩' : '🗄') + '</button>' +
-          '<button class="pbtn" style="color:#8d2b21" title="Supprimer" onclick="ADM.qnrDel(\'' + t.id + '\')">×</button>' +
-        '</span>' +
+    var used = (typeof t.usedCount === 'number') ? t.usedCount : ((t.assignments || []).length || 0);
+    // Chips des types de questions présents (maquette tpltype).
+    var typeLbl = {}; QNR_BLOCKS.forEach(function (b) { typeLbl[b[0]] = b[1]; });
+    var seen = {}, chips = [];
+    (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type) && !seen[b.type]) { seen[b.type] = 1; chips.push(typeLbl[b.type] || b.type); } }); });
+    var typesHtml = chips.length ? '<div class="tplcard__types">' + chips.slice(0, 6).map(function (c) { return '<span class="tpltype">' + esc(c) + '</span>'; }).join('') + '</div>' : '';
+    return '<div class="tplcard">' +
+      '<div class="tplcard__top"><div><div class="tplcard__n" style="cursor:pointer" onclick="ADM.qnrOpen(\'' + t.id + '\')">' + esc(t.name || 'Sans titre') + '</div>' +
+        '<div class="tplcard__s">' + nQ + ' question' + (nQ > 1 ? 's' : '') + ' · ' + nS + ' section' + (nS > 1 ? 's' : '') + (used ? ' · envoyé ' + used + ' fois' : '') + '</div></div>' +
+        '<button class="ibbtn ibbtn--dark" onclick="ADM.qnrAssignOpen(\'' + t.id + '\')">Assigner</button></div>' +
+      typesHtml +
+      (t.description ? '<p class="tnote" style="margin:12px 0 0">' + esc(t.description) + '</p>' : '') +
+      '<div class="tplcard__act">' +
+        '<button class="ibbtn" onclick="ADM.qnrOpen(\'' + t.id + '\')">Modifier</button>' +
+        '<button class="ibbtn" onclick="ADM.qnrPreview(\'' + t.id + '\')">Aperçu</button>' +
+        '<button class="ibbtn" onclick="ADM.qnrDup(\'' + t.id + '\')">Dupliquer</button>' +
+        '<button class="ibbtn" onclick="ADM.qnrArchive(\'' + t.id + '\')">' + (t.archived ? 'Désarchiver' : 'Archiver') + '</button>' +
+        '<button class="ibbtn ibbtn--del" onclick="ADM.qnrDel(\'' + t.id + '\')">Supprimer</button>' +
       '</div>' +
     '</div>';
   }
