@@ -1529,18 +1529,14 @@
       var P2_today = mine.filter(function (x) { return x._d === 0; });
       var P2_week = mine.filter(function (x) { return x._d > 0 && x._d <= 7; });
       function p2Meta(x) { return esc(x.kind) + ' · ' + esc(x.projectLabel) + ' · ' + esc(x.client); }
+      // Actions de la ligne « semaine » : volontairement compactes (planifier, pas
+      // livrer). Le chrono + Fait suffisent ici ; « Ouvrir » donne accès à tout le
+      // reste (révision, livrable, report…) sur la fiche de la cliente.
       function p2Acts(x, dark) {
         if (!x.id) return pill(x.status, SL[x.status] || x.status);
-        var iso = (x.dueDate || '').slice(0, 10);
         return prioTimer(x, dark) +
-          (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" title="Passer le ticket en cours" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
-          (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
-          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
-          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
           '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
-          ((x.kind === 'tâche' || x.kind === 'ticket')
-            ? '<button class="pbtn" title="Proposer un report" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
-            : '<button class="pbtn" title="Reporter" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>');
+          '<button class="pbtn" title="Ouvrir la fiche (toutes les actions)" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir</button>';
       }
       function p2Drow(x, dark, whenCol, drag) {
         var col = whenCol || (x._d < 0 ? '#8a4a2c' : (x._d === 0 ? 'var(--orange)' : 'inherit'));

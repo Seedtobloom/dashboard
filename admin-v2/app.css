@@ -661,7 +661,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .drow__d span{display:block;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;margin-top:3px;opacity:.85}
 .prio2 .drow__t{font-family:var(--font-micro);font-weight:500;font-size:clamp(15.5px,1.6vw,18px);line-height:1.35;letter-spacing:0}
 .prio2 .drow__m{font-family:var(--font-micro);font-weight:400;font-size:12.5px;letter-spacing:0;text-transform:none;margin-top:5px;opacity:.78}
-.prio2 .dayhead{font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--brun);margin:16px 0 2px;opacity:.85}
+.prio2 .dayhead{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--brun);margin:9px 0 1px;opacity:.7}
 .prio2 .rvtag{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 9px;border-radius:99px;background:#e6d1ac;color:#7a4f1f;margin-left:7px;vertical-align:middle;white-space:nowrap}
 @media(max-width:680px){.prio2 .drow{grid-template-columns:1fr;gap:6px}.prio2 .rowacts{justify-content:flex-start}}
 /* Cette semaine : glisser-déposer sur un jour + catégorie */
@@ -671,9 +671,9 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .prio2 .drow--drag:hover .drow__grip{opacity:.85}
 .prio2 .drow__do{display:block;font-family:var(--font-micro);font-size:9px;letter-spacing:.04em;text-transform:uppercase;margin-top:4px;color:#8a5a2b}
 .prio2 .drow__do a{color:#8a5a2b;text-decoration:underline}
-.prio2 .daycol{border-radius:12px;padding:2px 10px 8px;transition:background .12s,box-shadow .12s;margin-top:2px}
+.prio2 .daycol{border-radius:10px;padding:1px 10px 3px;transition:background .12s,box-shadow .12s;margin-top:0}
 .prio2 .daycol--over{background:rgba(28,18,5,.06);box-shadow:inset 0 0 0 2px var(--brun)}
-.prio2 .daycol__empty{font-family:var(--font-micro);font-size:11px;letter-spacing:.02em;color:var(--brun);opacity:.4;padding:9px 2px;font-style:italic}
+.prio2 .daycol__empty{font-family:var(--font-micro);font-size:10px;letter-spacing:.02em;color:var(--brun);opacity:.32;padding:3px 2px;font-style:italic}
 .prio2 .panel__hint{font-family:var(--font-micro);font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--brun);opacity:.75;margin:-4px 0 8px}
 .prio2 .pcat{font-family:var(--font-micro);font-size:11px;color:var(--brun);background:rgba(28,18,5,.05);border:1px solid var(--line);border-radius:8px;padding:4px 8px;max-width:150px;cursor:pointer}
 @media(max-width:680px){.prio2 .drow--drag{grid-template-columns:1fr}.prio2 .drow__grip{display:none}}
