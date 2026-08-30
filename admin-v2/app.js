@@ -862,6 +862,12 @@
   }
   var PRIO_GROUP = 'date', PRIO_FILTER = 'all', PRIO_D = null, PRIO_TAB = 'todo', PRIO_MAINTAB = 'jour';
   function prioMainTab(v) { PRIO_MAINTAB = v; if (PRIO_D) renderPrioBody(PRIO_D); }
+  // Sélecteur de vues de « La semaine » (Agenda / Grille / Liste / Planifier) — bascule sans recharger.
+  function prioWkView(v) {
+    var views = { agenda: 'wk-agenda', grid: 'wk-grid', list: 'wk-list', plan: 'wk-plan' };
+    Object.keys(views).forEach(function (k) { var e = document.getElementById(views[k]); if (e) e.hidden = (k !== v); });
+    document.querySelectorAll('.prio2 .vbtn').forEach(function (b) { b.classList.toggle('on', (b.getAttribute('onclick') || '').indexOf("prioWkView('" + v + "')") >= 0); });
+  }
   function prioSetGroup(v) { PRIO_GROUP = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function prioSetFilter(v) { PRIO_FILTER = v; if (PRIO_D) renderPrioBody(PRIO_D); }
   function prioSetTab(v) { PRIO_TAB = v; if (PRIO_D) renderPrioBody(PRIO_D); }
@@ -1561,8 +1567,10 @@
       // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
       var P2_days = {};
       function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
+      var P2_dayRaw = {};
+      function p2RawPush(k, o) { (P2_dayRaw[k] = P2_dayRaw[k] || []).push(o); }
       // Placement par jour de travail perso (doDate) si posé, sinon par échéance.
-      P2_week.forEach(function (x) { var pd = ((x.doDate || x.dueDate) || '').slice(0, 10); p2DayPush(pd, p2Drow(x, false, null, true)); });
+      P2_week.forEach(function (x) { var pd = ((x.doDate || x.dueDate) || '').slice(0, 10); p2DayPush(pd, p2Drow(x, false, null, true)); p2RawPush(pd, { t: x.title, c: x.client || x.projectLabel || '', rev: false, key: x.key, id: x.id, kind: x.kind, est: x.estMinutes }); });
       (revs || []).forEach(function (r) {
         var wk = (r.wishDate || '').slice(0, 10);
         var acts = (r.taskId ? '<button class="pbtn pbtn--ok" title="Déposer la nouvelle version" onclick="ADM.prioAddDlv(\'' + r.key + '\',\'' + r.taskId + '\')">+ Nouvelle version</button>' : '') + '<button class="pbtn" onclick="ADM.openClient(\'' + r.key + '\')">Ouvrir</button>' + '<button class="pbtn" title="Classer cette révision (déjà traitée)" onclick="ADM.revResolve(\'' + r.key + '\',\'' + r.id + '\',\'' + (r.project || 'partner') + '\')">✓ Traité</button>';
@@ -1570,6 +1578,7 @@
           '<div><div class="drow__t">' + esc(r.name || r.taskTitle || 'Révision') + ' <span class="rvtag">Révision</span></div><div class="drow__m">' + esc(r.projectLabel || '') + ' · ' + esc(r.client || '') + (r.comment ? ' · « ' + esc(String(r.comment).slice(0, 70)) + ' »' : '') + '</div></div>' +
           '<div class="rowacts">' + acts + '</div></div>';
         p2DayPush(wk || 'zzz', row);
+        p2RawPush(wk || 'zzz', { t: r.name || r.taskTitle || 'Révision', c: r.client || r.projectLabel || '', rev: true, key: r.key, id: r.id });
       });
       // Colonnes = les 7 prochains jours (toujours présents comme cibles de dépôt) + tout jour déjà utilisé.
       function isoAddDays(n) { var dt = new Date(); dt.setHours(0, 0, 0, 0); dt.setDate(dt.getDate() + n); return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
@@ -1588,9 +1597,55 @@
         // Jour vide : une seule ligne fine (reste une cible de dépôt).
         return '<div class="wday wday--empty"' + drop + '><span class="wday__h">' + p2DayLabel(k) + '</span><span class="wday__free">libre — dépose une tâche</span></div>';
       }
-      var hasWeek = (P2_week.length + (revs ? revs.length : 0)) > 0;
-      var blockWeekBody = '<div class="wcal">' + colKeys.map(p2DayCol).join('') + '</div>';
-      var blockWeek = hasWeek ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div><div class="panel__hint">Glisse une tâche par la poignée ⠿ sur le jour où tu comptes la faire. Ça n\'affecte pas l\'échéance de la cliente.</div>' + blockWeekBody + '</section>' : '';
+      // ── « La semaine » reconstruite a l'identique de la maquette ──
+      var wcap = d.weeklyCapacity || 0;
+      var capLine = '<div class="pj-dayload" style="margin-top:14px"><span class="pj-dayload__l">Ma capacité</span>' +
+        '<input class="inp" type="number" min="0" step="1" value="' + wcap + '" style="width:78px;flex:0 0 auto" onchange="ADM.capSave(this.value)">' +
+        '<span class="pj-dayload__l" style="text-transform:none;letter-spacing:0">h / semaine</span></div>';
+      var todayIso = isoAddDays(0);
+      function dShort(k) {
+        if (k === 'zzz' || !k) return { wd: 'À planifier', d: '', today: false };
+        var dt = new Date(k); var wd = dt.toLocaleDateString('fr-FR', { weekday: 'short' }); wd = wd.charAt(0).toUpperCase() + wd.slice(1).replace('.', '') + '.';
+        return { wd: wd, d: String(dt.getDate()), today: k === todayIso };
+      }
+      // Libellé de la semaine en cours (lundi → dimanche)
+      var _mon = new Date(); _mon.setHours(0, 0, 0, 0); _mon.setDate(_mon.getDate() - ((_mon.getDay() + 6) % 7));
+      var _sun = new Date(_mon); _sun.setDate(_sun.getDate() + 6);
+      var wnRange = _mon.getDate() + ' – ' + _sun.getDate() + ' ' + _sun.toLocaleDateString('fr-FR', { month: 'long' });
+      function wkTaskChip(o) {
+        var dragA = (!o.rev && o.id) ? ' draggable="true" ondragstart="ADM.prioDragStart(\'' + o.key + '\',\'' + o.id + '\')" ondragend="ADM.prioDragEnd()"' : '';
+        return '<span class="wtask' + (o.rev ? ' wtask--rev' : '') + '"' + dragA + ' onclick="ADM.openClient(\'' + o.key + '\')"><span>' + esc(o.t) + '</span>' + (o.c ? ' <em>' + esc(o.c) + '</em>' : '') + (o.est ? ' <span class="tchip">' + fmtMin(o.est) + '</span>' : '') + '</span>';
+      }
+      var wkAgenda = colKeys.map(function (k) {
+        var s = dShort(k), items = P2_dayRaw[k] || [];
+        var drop = k === 'zzz' ? '' : ' ondragover="ADM.prioDayOver(event,this)" ondragleave="ADM.prioDayLeave(this)" ondrop="ADM.prioDropDay(event,\'' + k + '\')"';
+        var chips = items.length ? items.map(wkTaskChip).join('') : '<span class="wa__empty">Rien de prévu</span>';
+        return '<div class="wa' + (s.today ? ' wa--today' : '') + '"' + drop + '><div class="wa__d"><b>' + s.wd + '</b>' + (s.d ? '<span>' + s.d + '</span>' : '') + '</div><div class="wa__x">' + chips + '</div></div>';
+      }).join('');
+      var wkGrid = colKeys.map(function (k) {
+        var s = dShort(k), items = P2_dayRaw[k] || [];
+        var body = items.length ? items.map(function (o) { return '<div class="gtask" onclick="ADM.openClient(\'' + o.key + '\')"><div class="gtask__t">' + esc(o.t) + '</div><div class="gtask__m">' + esc(o.c) + '</div></div>'; }).join('') : '<div class="gcol__empty">Rien de prévu</div>';
+        return '<div class="gcol' + (s.today ? ' gcol--today' : '') + '"><div class="gcol__h">' + s.wd + (s.d ? ' ' + s.d : '') + '</div>' + body + '</div>';
+      }).join('');
+      var wkList = '';
+      colKeys.forEach(function (k) { var s = dShort(k); (P2_dayRaw[k] || []).forEach(function (o) { wkList += '<div class="li' + (s.today ? ' li--today' : '') + '" onclick="ADM.openClient(\'' + o.key + '\')"><span class="li__d">' + s.wd + (s.d ? ' ' + s.d : '') + '</span><span class="li__t">' + esc(o.t) + '</span><span class="li__c">' + esc(o.c) + '</span></div>'; }); });
+      if (!wkList) wkList = '<div class="wa__empty" style="padding:8px 2px">Rien de prévu cette semaine.</div>';
+      var hasWeek = true;
+      var blockWeek =
+        '<div class="weeknav"><button class="wnbtn" type="button" disabled>‹</button>' +
+        '<div class="wnlabel"><b>Cette semaine</b><span>' + wnRange + '</span></div>' +
+        '<button class="wnbtn" type="button" disabled>›</button>' +
+        '<button class="wntoday" type="button" disabled>Aujourd\'hui</button></div>' +
+        '<div class="viewswitch" role="tablist">' +
+        '<button class="vbtn on" type="button" onclick="ADM.prioWkView(\'agenda\')">Agenda</button>' +
+        '<button class="vbtn" type="button" onclick="ADM.prioWkView(\'grid\')">Grille</button>' +
+        '<button class="vbtn" type="button" onclick="ADM.prioWkView(\'list\')">Liste</button>' +
+        '<button class="vbtn" type="button" onclick="ADM.prioWkView(\'plan\')">Planifier</button>' +
+        '</div>' +
+        '<div class="wkview" id="wk-agenda"><div class="weekagenda">' + wkAgenda + '</div></div>' +
+        '<div class="wkview" id="wk-grid" hidden><div class="weekgrid">' + wkGrid + '</div></div>' +
+        '<div class="wkview" id="wk-list" hidden><div class="weeklist">' + wkList + '</div></div>' +
+        '<div class="wkview" id="wk-plan" hidden>' + meteo + capLine + '</div>';
       // Accueil (les compteurs sont désormais dans « Le jour » via pj-daystat)
       var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';
 
@@ -1708,14 +1763,23 @@
         pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>', 'Ma semaine', 'La suite, jour par jour', nWeek || '', 'pj-indic__b--calm', "ADM.prioMainTab('semaine')") +
         '</div></div>';
       var P2_jour = pjStat + pjLoad + '<div class="stackblocks">' + pjDom + pjAvoir + '</div>';
-      var wcap = d.weeklyCapacity || 0;
-      var capLine = '<div class="pj-dayload" style="margin-top:14px"><span class="pj-dayload__l">Ma capacité</span>' +
-        '<input class="inp" type="number" min="0" step="1" value="' + wcap + '" style="width:78px;flex:0 0 auto" onchange="ADM.capSave(this.value)">' +
-        '<span class="pj-dayload__l" style="text-transform:none;letter-spacing:0">h / semaine</span></div>';
-      var P2_semaine = '<div class="board">' +
-        (blockWeek || '<div class="prioempty" style="margin:8px 0">Rien de planifié cette semaine pour l\'instant.</div>') +
-        (blockWait || '') + meteo + capLine +
-        '</div>';
+      // Projets en cours (cartes .cc) — présents dans la maquette « La semaine »
+      var P2_projs = d.activeProjects || [];
+      function p2CcCol(cat) { return cat === 'partner' ? 'cc--brun' : (cat === 'branding' ? 'cc--nuit' : 'cc--lav'); }
+      function p2ProjCard(p) {
+        return '<button class="cc ' + p2CcCol(p.category) + '" onclick="ADM.openClient(\'' + p.key + '\')">' +
+          '<div class="cc__top"><span class="cc__mk">' + esc((String(p.client || '?').trim().charAt(0) || '?').toUpperCase()) + '</span>' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><span class="cc__cat">' + esc(p.projectLabel) + '</span><span class="cc__pct tnum">' + p.pct + '%</span></div>' +
+          '<span class="cc__t">' + esc(p.client) + '</span></div>' +
+          '<div class="cbar"><i style="width:' + p.pct + '%"></i></div><div class="cc__b">' +
+          (p.currentStep ? '<div class="cline"><span class="k">En cours</span>' + esc(p.currentStep) + '</div>' : '') +
+          (p.nextStep ? '<div class="cline"><span class="k">Ensuite</span>' + esc(p.nextStep) + '</div>' : '') +
+          (p.delivery ? '<div class="cline"><span class="k">Livraison</span>' + fmtDate(p.delivery) + '</div>' : '') +
+          '</div></button>';
+      }
+      var blockProjects = P2_projs.length ? '<section><div class="secmark" style="margin-top:0">Tes projets en cours · ' + P2_projs.length + '</div><div class="covers">' + P2_projs.map(p2ProjCard).join('') + '</div></section>' : '';
+      var _wsGap = '<div style="height:clamp(18px,2.4vw,30px)"></div>';
+      var P2_semaine = blockWeek + (blockWait ? _wsGap + blockWait : '') + (blockProjects ? _wsGap + blockProjects : '');
       var P2_pilotage = qnrDoneCard +
         (tabDefs.length ? '<div class="secmark" style="margin-top:0">Pilotage &amp; forfaits</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>'
                         : '<div class="prioempty" style="margin:8px 0">Rien à piloter pour l\'instant.</div>');
@@ -6868,7 +6932,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

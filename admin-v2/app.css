@@ -882,3 +882,52 @@ select.cg-in{cursor:pointer}
 .prio2 .wday__free{font-family:var(--font-micro);font-size:10px;font-style:italic;letter-spacing:.02em;color:var(--brun);opacity:.28;white-space:nowrap}
 .prio2 .wday__body{margin-top:3px}
 .prio2 .wday.daycol--over{background:rgba(28,18,5,.06);box-shadow:inset 0 0 0 2px var(--brun)}
+
+/* ═══ Priorités « La semaine » — reconstruction exacte maquette (weeknav + vues) ═══ */
+.prio2 .weeknav{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.prio2 .wnbtn{width:36px;height:36px;border-radius:10px;border:none;cursor:pointer;background:var(--card);color:var(--terre);font-size:18px;display:grid;place-items:center}
+.prio2 .wnbtn:hover:not([disabled]){background:var(--beige)}
+.prio2 .wnbtn[disabled]{opacity:.4;cursor:default}
+.prio2 .wnlabel{text-align:center}
+.prio2 .wnlabel b{display:block;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre)}
+.prio2 .wnlabel span{font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--terre-400)}
+.prio2 .wntoday{margin-left:auto;border:none;cursor:pointer;background:var(--card);color:var(--terre);font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:9px 15px;border-radius:999px}
+.prio2 .wntoday[disabled]{opacity:.5;cursor:default}
+.prio2 .viewswitch{display:flex;gap:8px;background:var(--card);padding:6px;border-radius:14px;margin-bottom:16px;width:fit-content}
+.prio2 .vbtn{font-family:var(--font-micro);font-size:12.5px;font-weight:600;color:var(--terre-600);padding:8px 15px;border-radius:9px;border:none;cursor:pointer;background:none}
+.prio2 .vbtn:hover:not(.on){background:var(--beige)}
+.prio2 .vbtn.on{background:var(--terre);color:var(--paille);font-weight:700}
+.prio2 .wkview[hidden]{display:none}
+.prio2 .weekagenda{display:flex;flex-direction:column;gap:11px}
+.prio2 .wa{display:flex;gap:16px;align-items:center;background:var(--card);border-radius:14px;padding:14px 16px}
+.prio2 .wa--today{background:var(--glycine-50)}
+.prio2 .wa__d{flex-shrink:0;width:46px;text-align:center}
+.prio2 .wa__d b{display:block;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400)}
+.prio2 .wa--today .wa__d b{color:var(--glycine-900)}
+.prio2 .wa__d span{font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1}
+.prio2 .wa__x{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.prio2 .wtask{display:inline-flex;align-items:center;gap:8px;background:var(--beige);border-radius:10px;padding:8px 12px;font-family:var(--font-micro);font-size:13px;font-weight:600;color:var(--terre);cursor:pointer}
+.prio2 .wa--today .wtask{background:var(--card)}
+.prio2 .wtask em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-400)}
+.prio2 .wtask--rev em{color:var(--gold-ink)}
+.prio2 .tchip{font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;background:var(--surface);color:var(--terre-400);padding:2px 7px;border-radius:999px}
+.prio2 .wa__empty{font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-200)}
+.prio2 .weekgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:12px}
+.prio2 .gcol{background:var(--card);border-radius:14px;padding:14px;min-height:108px}
+.prio2 .gcol--today{background:var(--glycine-50)}
+.prio2 .gcol__h{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-bottom:10px}
+.prio2 .gcol--today .gcol__h{color:var(--glycine-900)}
+.prio2 .gtask{background:var(--beige);border-radius:10px;padding:9px 11px;margin-bottom:8px;cursor:pointer}
+.prio2 .gcol--today .gtask{background:var(--card)}
+.prio2 .gtask:last-child{margin-bottom:0}
+.prio2 .gtask__t{font-family:var(--font-micro);font-size:12.5px;font-weight:600;color:var(--terre);line-height:1.25}
+.prio2 .gtask__m{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.prio2 .gcol__empty{font-family:var(--font-display);font-style:italic;font-size:13px;color:var(--terre-200)}
+.prio2 .weeklist{display:flex;flex-direction:column;gap:8px}
+.prio2 .li{display:grid;grid-template-columns:96px 1fr auto;gap:14px;align-items:center;background:var(--card);border-radius:12px;padding:12px 16px;cursor:pointer}
+.prio2 .li--today{background:var(--glycine-50)}
+.prio2 .li__d{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-400)}
+.prio2 .li--today .li__d{color:var(--glycine-900)}
+.prio2 .li__t{font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre)}
+.prio2 .li__c{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.prio2 .wa.daycol--over,.prio2 .gcol.daycol--over{box-shadow:inset 0 0 0 2px var(--brun)}
