@@ -5805,7 +5805,21 @@
         '<td><div class="row" style="gap:5px;flex-wrap:nowrap"><button class="pbtn" onclick="ADM.stepEditOpen(\'' + d.id + '\',\'' + s.id + '\')" title="Modifier l\'étape">Modifier</button>' +
         '<button class="btn btn--danger btn--sm" onclick="ADM.stepDelete(\'' + d.id + '\',\'' + s.id + '\')">Suppr.</button></div></td></tr>';
     }).join('') : '<tr><td colspan="4" class="empty">Aucune étape pour l\'instant. Ajoutez la première ci-dessous, elle s\'affichera dans l\'espace du client.</td></tr>';
-    return '<div class="card"><h3>Étapes du projet</h3>' +
+    // Frise visuelle (maquette) : ce que la cliente voit dans son espace.
+    var check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M5 12l4 4 10-10"/></svg>';
+    var n = 0;
+    var friseRows = steps.map(function (s) {
+      n++;
+      var cls, sub, icon;
+      if (s.status === 'done') { cls = 'step--done'; sub = 'Terminé'; icon = check; }
+      else if (s.status === 'in_progress') { cls = 'step--now'; sub = 'En cours'; icon = String(n); }
+      else if (s.status === 'waiting_client') { cls = 'step--now'; sub = 'Action cliente'; icon = String(n); }
+      else { cls = 'step--todo'; sub = 'À venir'; icon = String(n); }
+      return '<div class="step ' + cls + '"><span class="step__i">' + icon + '</span>' +
+        '<span class="step__t">' + esc(s.title) + '</span><span class="step__s">' + sub + '</span></div>';
+    }).join('');
+    var frise = steps.length ? '<div class="steps" style="margin-bottom:22px">' + friseRows + '</div>' : '';
+    return '<div class="card">' + frise + '<h3>Étapes du projet</h3>' +
       '<div class="micro mb">Les étapes jalonnent le projet et sont visibles par le client (par exemple « Brief », « Maquettes », « Livraison »).</div>' +
       '<table><thead><tr><th>Étape</th><th>Date</th><th>Statut</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<div style="background:var(--surface);border:none;border-radius:10px;padding:12px 14px;margin-top:14px">' +
