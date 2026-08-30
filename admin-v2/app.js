@@ -7,7 +7,7 @@
   var VIEW = 'priorities';   // priorities | clients | newclient | client | chat
   var CURKEY = null;         // client courant
   var CUR = null;            // détail client courant
-  var TAB = 'infos';         // onglet du détail client
+  var TAB = 'apercu';       // onglet du détail client
   var SUBTAB = {};           // sous-onglet actif par domaine
   var CHAT = { key: null, project: null }; // vue chat globale
 
@@ -375,7 +375,7 @@
   function navClientTab(key, tab) {
     var sameClient = CUR && CUR.key === key;
     CURKEY = key; VIEW = 'client'; NAV_OPEN[key] = true;
-    TAB = tab || TAB_BY_CLIENT[key] || 'infos';
+    TAB = tab || TAB_BY_CLIENT[key] || 'apercu';
     if (tab) TAB_BY_CLIENT[key] = tab;
     renderShell(); // renderClient charge le client si besoin
     if (sameClient) loadClient(); // même client : on rafraîchit en arrière-plan
@@ -4017,7 +4017,7 @@
   }
 
   /* ── Détail client ── */
-  function openClient(key) { CURKEY = key; VIEW = 'client'; TAB = 'infos'; renderShell(); loadClient(); }
+  function openClient(key) { CURKEY = key; VIEW = 'client'; TAB = 'apercu'; renderShell(); loadClient(); }
   function loadClient(cb) {
     api('/api/clients/' + CURKEY).then(function (r) { return r.json(); }).then(function (d) { CUR = d; if (cb) cb(); else renderClient(); }).catch(showError);
   }
@@ -4029,7 +4029,7 @@
   function renderClient() {
     if (!CUR || CUR.key !== CURKEY) { setMain(topbar('Client') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>'); if (!CUR || CUR.key !== CURKEY) { loadClient(); } return; }
     var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || (CUR.entreprise.nom) || CUR.client.email || CUR.key;
-    var tabs = [['infos', 'Infos', 0, true]];
+    var tabs = [['apercu', 'Vue d\'ensemble', 0, true], ['infos', 'Infos', 0, true]];
     CUR.domains.forEach(function (dn) { tabs.push([dn.id, DOMAIN_LABELS[dn.id] || dn.label, dn.unread || 0, dn.isActive !== false]); });
     CUR.supports.forEach(function (s) { tabs.push([s.id, s.label, s.unread || 0, s.isActive !== false]); });
     tabs.push(['journal', 'Journal', 0, true]);
@@ -4140,8 +4140,41 @@
 
   function findDomain(id) { if (!CUR) return null; var d = (CUR.domains || []).filter(function (x) { return x.id === id; })[0]; if (d) return d; return (CUR.supports || []).filter(function (x) { return x.id === id; })[0] || null; }
 
+  // Vue d'ensemble (onglet par défaut, style maquette) : là où on en est + activité récente.
+  function apercuTab() {
+    var doms = (CUR.domains || []).concat(CUR.supports || []);
+    var main = doms.filter(function (x) { return x.isActive !== false && x.content; })[0] || doms.filter(function (x) { return x.content; })[0];
+    var cur = '', next = '', pend = 0, unread = 0;
+    doms.forEach(function (d) {
+      unread += d.unread || 0;
+      var c = d.content || {};
+      (c.livrables || []).forEach(function (l) { if (l.status === 'a_valider') pend++; });
+    });
+    if (main && main.content) {
+      var suivi = main.content.suivi || main.content.taches || [];
+      var ip = suivi.filter(function (s) { return s.status === 'in_progress'; })[0];
+      var up = suivi.filter(function (s) { return s.status === 'upcoming' || s.status === 'todo'; })[0];
+      if (ip) cur = ip.title || ip.label || '';
+      if (up) next = up.title || up.label || '';
+    }
+    var mainLbl = main ? (DOMAIN_LABELS[main.id] || main.label || '') : '';
+    var ovRows = '';
+    if (mainLbl) ovRows += '<div class="ov"><span class="ov__k">Projet</span><span class="ov__v">' + esc(mainLbl) + '</span></div>';
+    if (cur) ovRows += '<div class="ov"><span class="ov__k">En cours</span><span class="ov__v">' + esc(cur) + '</span></div>';
+    if (next) ovRows += '<div class="ov"><span class="ov__k">Ensuite</span><span class="ov__v">' + esc(next) + '</span></div>';
+    if (!ovRows) ovRows = '<div class="ov"><span class="ov__k">Statut</span><span class="ov__v">Collaboration en cours</span></div>';
+    var note = pend ? '<div class="ovnote">' + pend + ' livrable' + (pend > 1 ? 's' : '') + ' attend' + (pend > 1 ? 'ent' : '') + ' ta validation.</div>' : '';
+    var overview = '<div class="ovcard"><h2>Là où on en est</h2>' + ovRows + note + '</div>';
+    var pr = presence(CUR.lastSeen);
+    var acts = '';
+    if (unread) acts += '<div class="inrow inrow--recu"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg></span><div class="inrow__m"><div class="inrow__t">' + unread + ' message' + (unread > 1 ? 's' : '') + ' non lu' + (unread > 1 ? 's' : '') + '</div><div class="inrow__s">Messagerie</div></div></div>';
+    acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(pr.label) + '</div><div class="inrow__s">Dernière connexion</div></div></div>';
+    var activity = '<div class="ovcard"><h2>Activité récente</h2>' + acts + '</div>';
+    return '<div class="ovgrid">' + overview + activity + '</div>';
+  }
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
+    if (TAB === 'apercu') return body.innerHTML = apercuTab();
     if (TAB === 'infos') return body.innerHTML = tabInfos();
     if (TAB === 'journal') return body.innerHTML = journalTab();
     if (TAB === 'documents') return renderDocuments(body);

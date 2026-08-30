@@ -964,3 +964,22 @@ select.cg-in{cursor:pointer}
 .cdhead__pres{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .cdhead__pres i{width:8px;height:8px;border-radius:50%;background:var(--terre-200)}
 .cdhead__pres i.on{background:var(--green)}
+
+/* ═══ Fiche cliente — Vue d'ensemble (maquette) ═══ */
+.ovgrid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+@media(max-width:820px){.ovgrid{grid-template-columns:1fr}}
+.ovcard{background:var(--card);border-radius:16px;padding:20px 22px}
+.ovcard h2{font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);margin:0 0 13px}
+.ov{display:flex;gap:12px;align-items:baseline;padding:7px 0}
+.ov__k{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400);width:74px;flex-shrink:0}
+.ov__v{font-family:var(--font-display);font-size:18px;color:var(--terre)}
+.ovnote{margin-top:12px;font-family:var(--font-micro);font-size:12.5px;color:var(--gold-ink);background:var(--beige);border-radius:10px;padding:10px 13px}
+.ovnote::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold-chip);margin-right:8px;vertical-align:1px}
+.inrow{display:flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:12px;padding:11px 14px;margin-bottom:9px}
+.inrow:last-child{margin-bottom:0}
+.inrow--recu{background:var(--glycine-50)}
+.inrow__ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;background:var(--beige);color:var(--terre-600)}
+.inrow--recu .inrow__ic{background:var(--glycine);color:var(--glycine-900)}
+.inrow__m{flex:1;min-width:0}
+.inrow__t{font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre)}
+.inrow__s{font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:2px}
