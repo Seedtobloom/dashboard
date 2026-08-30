@@ -1724,8 +1724,60 @@
         }).join('') + '</div>' : '';
       // ── Onglets principaux (maquette) : Le jour / La semaine / Pilotage ──
       // Casse la longueur : chaque onglet ne montre que sa partie.
-      var P2_jour = '<div class="board">' + blockToday + (blockLate || '') + (blockPlan || '') + (blockWait || '') + '</div>';
+      // ══ « Le jour » reconstruit à l'identique de la maquette finale ══
+      var pjStat = '<div class="pj-daystat">' +
+        '<span class="em"><b>' + nLate + '</b> en retard</span><i>·</i>' +
+        '<span><b>' + nToday + '</b> aujourd\'hui</span><i>·</i>' +
+        '<span><b>' + nWeek + '</b> cette semaine</span><i>·</i>' +
+        '<span><b>' + nWait + '</b> en attente</span></div>';
+      var todayMin = P2_today.reduce(function (s, x) { return s + (x.estMinutes > 0 ? x.estMinutes : 45); }, 0);
+      var dayCapMin = (typeof weeklyCap === 'number' && weeklyCap > 0) ? Math.round(weeklyCap / 5 * 60) : 0;
+      function hLbl(m) { m = Math.round(m); var h = Math.floor(m / 60), r = m % 60; return h ? (h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : '')) : (m + ' min'); }
+      var pjLoad = todayMin ? '<div class="pj-dayload"><span class="pj-dayload__l">Charge du jour</span>' +
+        '<span class="pj-dayload__bar"><i style="width:' + (dayCapMin ? Math.min(100, Math.round(todayMin / dayCapMin * 100)) : 40) + '%"></i></span>' +
+        '<span class="pj-dayload__v">' + hLbl(todayMin) + (dayCapMin ? ' <span style="font-size:12px;color:var(--terre-400)">/ ' + hLbl(dayCapMin) + '</span>' : '') + '</span></div>' : '';
+      function pjFlags(x) {
+        var f = '', nAtt = (x.attachments && x.attachments.length) || x.attCount || 0;
+        if (nAtt) f += '<span class="pj-flag"><svg viewBox="0 0 24 24"><path d="M21.4 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L10.12 18.12a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49"/></svg>' + nAtt + '</span>';
+        if (x.clientLink) f += '<span class="pj-flag pj-flag--new"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg>lien</span>';
+        return f ? '<div class="pj-flags">' + f + '</div>' : '';
+      }
+      function pjActs(x) {
+        if (!x.id) return '';
+        var iso = (x.dueDate || '').slice(0, 10);
+        return '<div class="prow__act">' + prioTimer(x, true) +
+          (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
+          (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
+          '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
+          '</div>';
+      }
+      function pjRow(x, late) {
+        return '<div class="pj-drow' + (late ? ' pj-drow--late' : '') + '">' +
+          '<span class="pj-grip">⠿</span>' +
+          '<div><div class="pj-dt">' + esc(x.title) + '</div><div class="pj-dm">' + esc(x.projectLabel || x.project || '') + ' · ' + esc(x.client || '') + '</div>' + pjFlags(x) + '</div>' +
+          '<div class="pj-rowr">' + (late ? '<span class="pj-late">' + whenLabel(x._d) + '</span>' : (x.client ? '<span class="pj-cli">' + esc(x.client) + '</span>' : '')) + pjActs(x) + '</div>' +
+          '</div>';
+      }
+      var pjDomRows = P2_late.map(function (x) { return pjRow(x, true); }).join('') + P2_today.map(function (x) { return pjRow(x, false); }).join('');
+      var pjDom = '<div class="pj-dom"><div class="pj-dom__h"><span class="pj-hic"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><h2>À faire aujourd\'hui</h2><span class="n">' + (P2_late.length + P2_today.length) + '</span></div>' +
+        (pjDomRows ? '<p class="pj-hint">Dans l\'ordre, du haut vers le bas : commence par le retard, puis le reste de ta journée.</p>' + pjDomRows
+                   : '<div class="pj-empty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>') + '</div>';
+      var nInbox = (d.inbox || []).length, nTickets = mine.filter(function (x) { return x.kind === 'ticket'; }).length;
+      function pjIndic(cls, ic, title, sub, badge, bcls, onclick) {
+        return '<button class="pj-indic' + (cls ? ' ' + cls : '') + '" type="button"' + (onclick ? ' onclick="' + onclick + '"' : '') + '>' +
+          '<span class="pj-indic__ic">' + ic + '</span><span class="pj-indic__m"><b>' + title + '</b><small>' + sub + '</small></span>' +
+          (badge ? '<span class="pj-indic__b' + (bcls ? ' ' + bcls : '') + '">' + badge + '</span>' : '') + '</button>';
+      }
+      var pjAvoir = '<div class="pj-avoir"><div class="pj-avoir__h">À aller voir</div><div class="pj-indics">' +
+        pjIndic('pj-indic--new', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg>', 'Inbox', 'Documents &amp; commentaires', nInbox || '', '', "ADM.nav('inbox')") +
+        pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>', 'En attente client', 'Chez tes clientes', nWait || '', 'pj-indic__b--calm', "ADM.prioMainTab('semaine')") +
+        pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px;stroke-width:2"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>', 'Incidents', 'Tickets ouverts', nTickets || '', 'pj-indic__b--attn', "ADM.nav('incidents')") +
+        pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>', 'Ma semaine', 'La suite, jour par jour', nWeek || '', 'pj-indic__b--calm', "ADM.prioMainTab('semaine')") +
+        '</div></div>';
+      var P2_jour = pjStat + pjLoad + '<div class="stackblocks">' + pjDom + pjAvoir + '</div>';
       var P2_semaine = (blockWeek || '<div class="prioempty" style="margin:8px 0">Rien de planifié cette semaine pour l\'instant.</div>') +
+        (blockPlan || '') + (blockWait || '') +
         '<div style="margin-top:clamp(20px,3vw,34px)">' + meteo + '</div>' + blockProjects;
       var P2_pilotage = qnrDoneCard +
         (tabDefs.length ? '<div class="secmark" style="margin-top:0">Pilotage &amp; forfaits</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>'
@@ -1737,7 +1789,7 @@
       var mainTabs = '<div class="pmtabs" role="tablist">' + pmtab('jour', 'Le jour', nLate + nToday) + pmtab('semaine', 'La semaine', nWeek) + pmtab('pilotage', 'Pilotage', 0) + '</div>';
       var activePanel = PRIO_MAINTAB === 'semaine' ? P2_semaine : (PRIO_MAINTAB === 'pilotage' ? P2_pilotage : P2_jour);
       setMain(topbar('Priorités', right, 'Ce qui compte aujourd\'hui, tous clients confondus') + '<div class="wrap prio2">' +
-        P2_hello + upcomingBanner(d.upcoming) + P2_summary + mainTabs + activePanel +
+        P2_hello + upcomingBanner(d.upcoming) + mainTabs + activePanel +
         '</div>');
   }
 
