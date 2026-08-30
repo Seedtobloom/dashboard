@@ -769,3 +769,11 @@ select.cg-in{cursor:pointer}
 .setline__x:hover{background:var(--bone);color:var(--terre)}
 .setadd{display:flex;gap:8px;margin-top:12px}
 .setadd .inp{flex:1}
+
+/* Priorités — onglets principaux Le jour / La semaine / Pilotage (maquette) */
+.prio2 .pmtabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);padding:6px;border-radius:15px;margin:clamp(16px,2.2vw,26px) 0 clamp(14px,2vw,22px)}
+.prio2 .pmtab{position:relative;background:none;border:none;cursor:pointer;font-family:var(--font-micro);font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600);padding:11px 20px;border-radius:11px;transition:background .15s,color .15s}
+.prio2 .pmtab:hover{background:var(--beige)}
+.prio2 .pmtab.is-on{background:var(--terre);color:var(--paille);font-weight:700}
+.prio2 .pmtab__n{margin-left:7px;font-size:10px;font-weight:700;background:var(--gold-chip);color:var(--gold-ink);border-radius:999px;padding:1px 7px;vertical-align:1px}
+.prio2 .pmtab.is-on .pmtab__n{background:var(--paille);color:var(--terre)}
