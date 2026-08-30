@@ -69,10 +69,10 @@
   // Barre d'outils de mise en forme au-dessus d'une zone de saisie (textarea #id).
   var ADM_EMOJIS = ['😊', '🙂', '🥳', '👍', '🙏', '✨', '🎉', '❤️', '🔥', '✅', '⚠️', '📌', '🗓️', '⏰', '💡', '🎨', '👀', '🙌', '💜', '🌿'];
   function admMsgToolbar(id) {
-    function b(html, title, on) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault()" onclick="' + on + '" style="border:1px solid var(--bone-d);background:#fff;border-radius:8px;min-width:28px;height:28px;padding:0 7px;cursor:pointer;font-size:13px;color:var(--terre);display:inline-flex;align-items:center;justify-content:center">' + html + '</button>'; }
+    function b(html, title, on) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault()" onclick="' + on + '" style="border:none;background:#fff;border-radius:8px;min-width:28px;height:28px;padding:0 7px;cursor:pointer;font-size:13px;color:var(--terre);display:inline-flex;align-items:center;justify-content:center">' + html + '</button>'; }
     function sw(col, nom) { return '<button type="button" title="Couleur ' + nom + '" onmousedown="event.preventDefault()" onclick="ADM.msgWrap(\'' + id + '\',\'[' + nom + ']\',\'[/]\')" style="width:19px;height:19px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--bone-d);background:' + col + ';cursor:pointer;padding:0"></button>'; }
     var sep = '<span style="width:1px;height:18px;background:var(--bone-d);margin:0 3px"></span>';
-    var pal = '<div id="' + id + '-emoji" style="display:none;flex-wrap:wrap;gap:2px;padding:7px;border:1px solid var(--bone-d);border-radius:10px;background:#fff;margin-top:4px;max-width:280px">' +
+    var pal = '<div id="' + id + '-emoji" style="display:none;flex-wrap:wrap;gap:2px;padding:7px;border:none;border-radius:10px;background:#fff;margin-top:4px;max-width:280px">' +
       ADM_EMOJIS.map(function (e) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgIns(\'' + id + '\',\'' + e + '\')" style="border:none;background:none;font-size:17px;cursor:pointer;width:28px;height:28px;border-radius:6px">' + e + '</button>'; }).join('') + '</div>';
     return '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px">' +
       b('<strong>B</strong>', 'Gras', 'ADM.msgWrap(\'' + id + '\',\'**\',\'**\')') +
@@ -117,13 +117,13 @@
     if (!atts || !atts.length) return '';
     var k = admChatKey();
     return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + atts.map(function (a) {
-      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">' + admIcon('clip') + ' ' + esc(a.name || 'fichier') + '</a>';
+      return '<a href="/api/clients/' + k + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">' + admIcon('clip') + ' ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   function admMsgAttRender(cid) {
     var box = el(cid + '-att'); if (!box) return;
     box.innerHTML = (ADM_MSG_ATT[cid] || []).map(function (a, i) {
-      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:1px solid var(--bone-d);border-radius:8px;padding:4px 9px">' + admIcon('clip') + ' ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
+      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--terre);background:var(--surface-2,#f6f1e7);border:none;border-radius:8px;padding:4px 9px">' + admIcon('clip') + ' ' + esc(a.name) + '<button onclick="ADM.msgAttRemove(\'' + cid + '\',' + i + ')" title="Retirer" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px;padding:0;line-height:1">&#x2715;</button></span>';
     }).join('');
   }
   function admMsgAttRemove(cid, i) { if (ADM_MSG_ATT[cid]) { ADM_MSG_ATT[cid].splice(i, 1); admMsgAttRender(cid); } }
@@ -143,7 +143,7 @@
   }
   // Bouton « joindre » : label + input caché, à placer dans une zone de saisie.
   function admAttachBtn(cid, projectId) {
-    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:1px solid var(--bone-d);border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:12.5px;font-weight:600;white-space:nowrap">' + admIcon('clip') + ' Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
+    return '<label title="Joindre un fichier" style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:none;border-radius:10px;cursor:pointer;color:var(--terre);background:#fff;font-size:12.5px;font-weight:600;white-space:nowrap">' + admIcon('clip') + ' Joindre<input type="file" multiple style="display:none" onchange="ADM.msgAttPick(this,\'' + cid + '\',\'' + projectId + '\')"></label>';
   }
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
@@ -415,7 +415,7 @@
     var commentRows = COMMENT_TASKS.map(function (t) {
       var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       var txt = (t.text || '').trim();
-      return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d);background:#f4f1fa">' +
+      return '<div style="padding:13px 15px;border:none;background:#f4f1fa">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
           '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
@@ -429,7 +429,7 @@
     }).join('');
     var reworkRows = REWORK_TASKS.map(function (t) {
       var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
-      return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d);background:#f3f6f0">' +
+      return '<div style="padding:13px 15px;border:none;background:#f3f6f0">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
           '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
@@ -448,10 +448,10 @@
       var att = t.attCount ? '<span style="font-size:11px;color:var(--muted);margin-left:8px">📎 ' + t.attCount + '</span>' : '';
       var attDl = (Array.isArray(t.attachments) && t.attachments.length)
         ? '<div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px">' + t.attachments.map(function (a) {
-            return '<a href="/api/clients/' + t.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+            return '<a href="/api/clients/' + t.key + '/files/' + encodeURIComponent(a.key) + '/download" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
           }).join('') + '</div>'
         : '';
-      return '<div style="padding:13px 15px;border-bottom:1px solid var(--bone-d)">' +
+      return '<div style="padding:13px 15px;border:none">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
           '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + (t.kind === 'ticket' ? '<span title="Ticket de maintenance">🎫 </span>' : '') + esc(t.title || 'Sans titre') + att + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
@@ -463,7 +463,7 @@
           '<button class="btn btn--outline btn--sm" onclick="ADM.notifAck(\'' + t.key + '\',\'' + t.id + '\')">Vu</button>' +
         '</div></div>';
     }).join('');
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border-bottom:1px solid var(--bone-d)">' +
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border:none">' +
       '<strong style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);font-weight:400">À traiter</strong>' +
       '<button onclick="ADM.notifToggle()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1">×</button></div>' +
       '<div style="max-height:60vh;overflow-y:auto">' + commentRows + reworkRows + rows + '</div>';
@@ -712,7 +712,7 @@
         '<div class="admconfirm__title">Insérer une réponse rapide</div>' +
         '<div style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0">' +
           QREPLIES.map(function (r, i) {
-            return '<button class="qr-pick" data-i="' + i + '" style="text-align:left;padding:11px 13px;border:1px solid var(--bone-d);border-radius:10px;background:var(--card);cursor:pointer">' +
+            return '<button class="qr-pick" data-i="' + i + '" style="text-align:left;padding:11px 13px;border:none;border-radius:10px;background:var(--card);cursor:pointer">' +
               '<div style="font-weight:600;font-size:13.5px;color:var(--terre)">' + esc(r.label || '(sans titre)') + '</div>' +
               '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">' + esc((r.text || '').slice(0, 90)) + '</div>' +
             '</button>';
@@ -805,7 +805,7 @@
   function renderCongesBody() {
     var b = el('regl-body'); if (!b) return;
     var rows = HOLIDAYS.map(function (h, i) {
-      return '<div style="border:1px solid var(--bone-d);border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
+      return '<div style="border:none;border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
         '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">' +
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">Du <input class="inp" type="date" id="cg-from-' + i + '" value="' + esc(h.from || '') + '" style="width:auto"></label>' +
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0">au <input class="inp" type="date" id="cg-to-' + i + '" value="' + esc(h.to || '') + '" style="width:auto"></label>' +
@@ -963,9 +963,9 @@
       var url = '/api/clients/' + x.key + '/files/' + encodeURIComponent(a.key) + '/download';
       var isImg = /\.(jpe?g|png|webp|gif|avif|svg)$/i.test(a.name || '');
       if (isImg) {
-        return '<a href="' + url + '" target="_blank" rel="noopener" title="' + esc(a.name || 'image') + '" style="display:block;border-radius:10px;overflow:hidden;border:1px solid var(--bone-d);line-height:0"><img src="' + url + '" alt="' + esc(a.name || '') + '" loading="lazy" style="max-height:140px;max-width:220px;display:block;object-fit:cover"></a>';
+        return '<a href="' + url + '" target="_blank" rel="noopener" title="' + esc(a.name || 'image') + '" style="display:block;border-radius:10px;overflow:hidden;border:none;line-height:0"><img src="' + url + '" alt="' + esc(a.name || '') + '" loading="lazy" style="max-height:140px;max-width:220px;display:block;object-fit:cover"></a>';
       }
-      return '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 10px;border-radius:8px;border:1px solid var(--bone-d);color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
+      return '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 10px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
   function inboxCard(it) {
@@ -987,10 +987,10 @@
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
     } else if (it.type === 'revision') {
       var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a></div>' : '';
-      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:12px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
+      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:12px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
       body = '<div style="font-size:14.5px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
         (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
-        (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:1px solid #f0c9bd;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
+        (x.comment ? '<div style="font-size:13px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:none;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
         rwish + inboxAtts(x) + rlink;
     }
     if (it.type === 'revision') {
@@ -1236,9 +1236,9 @@
         // Le contenu déplié est TOUJOURS sur une carte claire (les blocs du
         // client ont un texte foncé, illisible sur le panneau « En retard »).
         var body = (hasBlocks || hasTable)
-          ? '<div style="background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box;color:var(--terre)">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
+          ? '<div style="background:var(--card);border:none;border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box;color:var(--terre)">' + ptBlocksHtml(x, x.key, 'Le brief du client') + briefTableHtml(x.table) + '</div>'
           : (c
-            ? '<div style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--terre);background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box">' + mtLinkify(c) + '</div>'
+            ? '<div style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--terre);background:var(--card);border:none;border-radius:12px;padding:14px 18px;margin-top:8px;width:100%;box-sizing:border-box">' + mtLinkify(c) + '</div>'
             : '');
         var att = atts.length
           ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + atts.map(function (a) {
@@ -1362,7 +1362,7 @@
             '<div style="font-weight:600;color:var(--terre);font-size:14.5px">' + esc(r.name) + (r.taskTitle ? ' <span style="font-family:var(--font-micro);font-size:10px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted)">(' + esc(r.taskTitle) + ')</span>' : '') + '</div>' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:3px"><a href="javascript:ADM.openClient(\'' + r.key + '\')">' + esc(r.client) + '</a> · ' + esc(r.projectLabel) + (r.at ? ' · demandé le ' + fmtDate(r.at) : '') + '</div>' +
             (r.comment ? '<div style="font-family:var(--font-body);font-style:italic;font-size:13px;color:var(--terre);margin-top:6px;line-height:1.45">« ' + esc(r.comment) + ' »</div>' : '') +
-            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:1px solid #eddcae;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
+            (r.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:11.5px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:5px 9px;display:inline-block">📅 Souhaitée pour le ' + esc((r.wishDate || '').split('-').reverse().join('/')) + '</div>' : '') +
             filesHtml +
           '</div>' +
           '<div class="prow__act" style="flex-shrink:0">' +
@@ -1942,7 +1942,7 @@
       : '';
     // Ligne dépliable : cliquer le titre (ou « Détails ») ouvre les détails
     // (note, lien, sous-tâches) directement sous la tâche, sans quitter la liste.
-    return '<div style="border-bottom:1px solid var(--bone-d)">' +
+    return '<div style="border:none">' +
       '<div style="display:flex;align-items:center;gap:12px;padding:11px 16px">' +
         '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
         '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
@@ -2544,7 +2544,7 @@
     var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
     var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
     var pill = function (txt) { return '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;color:var(--terre-600);background:var(--surface-2,#f3ede1);padding:3px 9px;border-radius:999px">' + txt + '</span>'; };
-    return '<div onclick="ADM.visOpen(\'' + c.id + '\')" style="cursor:pointer;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:9px' + (c.done ? ';opacity:0.66' : '') + '" onmouseover="this.style.boxShadow=\'var(--shadow-2)\'" onmouseout="this.style.boxShadow=\'none\'">' +
+    return '<div onclick="ADM.visOpen(\'' + c.id + '\')" style="cursor:pointer;background:var(--card);border:none;border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:9px' + (c.done ? ';opacity:0.66' : '') + '" onmouseover="this.style.boxShadow=\'var(--shadow-2)\'" onmouseout="this.style.boxShadow=\'none\'">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
         '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.2">' + esc(name) + '</div>' +
         (c.done ? '<span title="Fait" style="color:#3f5a37;flex-shrink:0">✓</span>' : '') +
@@ -2592,7 +2592,7 @@
         '<button onclick="ADM.visQDel(\'' + c.id + '\',\'' + q.id + '\')" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
-    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
         '<button onclick="ADM.visCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
         (hasContent ? '<button onclick="ADM.visPresent(\'' + c.id + '\')" class="btn btn--dark btn--sm">▶ Lancer le déroulé</button>' : '') +
         '<span style="margin-left:auto"></span>' +
@@ -2649,20 +2649,20 @@
     function render() {
       var st = steps[i];
       var content = st.questions
-        ? '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border-bottom:1px solid var(--bone-d)"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
+        ? '<div style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);margin-bottom:16px">Questions à poser</div>' + st.questions.map(function (q) { return '<label style="display:flex;align-items:flex-start;gap:11px;padding:9px 0;font-size:19px;line-height:1.5;color:var(--terre);cursor:pointer;border:none"><input type="checkbox"' + (q.done ? ' checked' : '') + ' onchange="ADM.visQToggle(\'' + id + '\',\'' + q.id + '\')" style="width:19px;height:19px;margin-top:3px;flex-shrink:0">' + esc(q.text) + '</label>'; }).join('')
         : ((st.title ? '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;color:var(--terre);margin-bottom:16px">' + esc(st.title) + '</div>' : '') + '<div style="font-size:21px;line-height:1.8;color:var(--terre)">' + (st.html || '') + '</div>');
       ov.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:none">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bone-d)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border:none">' +
           '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">' + esc(c.client || 'Visio') + ' · Étape ' + (i + 1) + ' / ' + steps.length + '</div>' +
           '<button id="vp-close" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;line-height:1">×</button>' +
         '</div>' +
         '<div style="height:4px;background:var(--bone-d)"><div style="height:100%;width:' + Math.round((i + 1) / steps.length * 100) + '%;background:var(--terre);transition:width .25s"></div></div>' +
         '<div style="padding:30px 34px;overflow-y:auto;flex:1">' + content + '</div>' +
-        '<div style="padding:10px 24px 6px;border-top:1px solid var(--bone-d)">' +
+        '<div style="padding:10px 24px 6px;border:none">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">📝 Vos notes</div>' +
-          '<textarea id="vp-notes" onchange="ADM.visNoteSave(\'' + id + '\',this.value)" placeholder="Notez ce qui se dit pendant l\'appel…" style="width:100%;box-sizing:border-box;min-height:54px;resize:vertical;font-size:15px;line-height:1.5;border:1px solid var(--bone-d);border-radius:8px;padding:8px 10px;font-family:inherit;color:var(--terre)">' + esc(c.notes || '') + '</textarea>' +
+          '<textarea id="vp-notes" onchange="ADM.visNoteSave(\'' + id + '\',this.value)" placeholder="Notez ce qui se dit pendant l\'appel…" style="width:100%;box-sizing:border-box;min-height:54px;resize:vertical;font-size:15px;line-height:1.5;border:none;border-radius:8px;padding:8px 10px;font-family:inherit;color:var(--terre)">' + esc(c.notes || '') + '</textarea>' +
         '</div>' +
-        '<div style="display:flex;justify-content:space-between;gap:10px;padding:14px 24px 16px;border-top:1px solid var(--bone-d)">' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;padding:14px 24px 16px;border:none">' +
           '<button id="vp-prev" class="btn btn--outline"' + (i === 0 ? ' disabled style="opacity:0.4"' : '') + '>← Précédent</button>' +
           '<button id="vp-next" class="btn btn--dark">' + (i >= steps.length - 1 ? 'Terminer' : 'Suite →') + '</button>' +
         '</div>' +
@@ -2699,7 +2699,7 @@
       sw + sep + b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur');
   }
   function visRichEditor(domId, html, blurCall, minH) {
-    var tb = '<div style="position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px;background:var(--surface-2,#f3ede1);border:1.5px solid var(--bone-d);border-bottom:none;border-radius:10px 10px 0 0">' + visBtns(false) + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:24px;border:1px solid var(--bone-d);border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée"></div>';
+    var tb = '<div style="position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px;background:var(--surface-2,#f3ede1);border:1.5px solid var(--bone-d);border-bottom:none;border-radius:10px 10px 0 0">' + visBtns(false) + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:24px;border:none;border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée"></div>';
     var ed = '<div id="' + domId + '" contenteditable="true" onblur="' + blurCall + '" onfocus="ADM.visEdActive(this)" onmouseup="ADM.visEdActive(this)" onkeyup="ADM.visEdActive(this)" style="border:1.5px solid var(--bone-d);border-top:none;border-radius:0 0 10px 10px;padding:14px 16px;min-height:' + (minH || 150) + 'px;font-size:16px;line-height:1.7;color:var(--terre);background:#fff;overflow-wrap:anywhere">' + (html || '') + '</div>';
     return '<div>' + tb + ed + '</div>';
   }
@@ -2755,7 +2755,7 @@
   function visTplHtml(t) {
     var steps = Array.isArray(t.steps) ? t.steps : [];
     var stepsHtml = steps.map(function (s, idx) {
-      return '<div style="border:1px solid var(--bone-d);border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
+      return '<div style="border:none;border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:6px">' +
           '<span style="font-family:var(--font-micro);font-size:11px;color:var(--muted);flex-shrink:0">Étape ' + (idx + 1) + '</span>' +
           '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape" style="flex:1;font-weight:600" onchange="ADM.visTplStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
@@ -3035,7 +3035,7 @@
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     function btn(key, emoji, label) {
       var on = (t.mode || '') === key;
-      return '<button data-mode="' + key + '" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:' + (on ? 'var(--surface-2)' : 'var(--card)') + ';border:1px solid var(--bone-d);border-radius:10px;padding:11px 13px;cursor:pointer;margin-bottom:7px;font-size:14px;color:var(--terre)"><span style="font-size:18px">' + emoji + '</span><span style="flex:1">' + label + '</span>' + (on ? '<span class="micro" style="color:var(--muted)">actuel</span>' : '') + '</button>';
+      return '<button data-mode="' + key + '" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:' + (on ? 'var(--surface-2)' : 'var(--card)') + ';border:none;border-radius:10px;padding:11px 13px;cursor:pointer;margin-bottom:7px;font-size:14px;color:var(--terre)"><span style="font-size:18px">' + emoji + '</span><span style="flex:1">' + label + '</span>' + (on ? '<span class="micro" style="color:var(--muted)">actuel</span>' : '') + '</button>';
     }
     var opts = MT_MODES.map(function (m) { return btn(m[0], m[2], m[1]); }).join('');
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:400px;text-align:left"><div class="admconfirm__title">Ranger « ' + esc((t.title || '').slice(0, 46)) + ' »</div>' +
@@ -3153,7 +3153,7 @@
   function mtCreatePick() {
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     function opt(kind, emoji, label, sub) {
-      return '<button data-kind="' + kind + '" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--bone-d);border-radius:12px;padding:13px 15px;cursor:pointer;margin-bottom:8px">' +
+      return '<button data-kind="' + kind + '" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:none;border-radius:12px;padding:13px 15px;cursor:pointer;margin-bottom:8px">' +
         '<span style="font-size:22px">' + emoji + '</span><span><span style="display:block;font-weight:600;color:var(--terre)">' + label + '</span><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span></span></button>';
     }
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:420px;text-align:left"><div class="admconfirm__title">Que veux-tu créer ?</div>' +
@@ -3351,7 +3351,7 @@
         '<div style="font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--terre);line-height:1">' + t[1] + '</div>' +
       '</div>';
     }).join('');
-    return '<div class="card" style="background:var(--card);border:1px solid var(--bone-d);padding:18px 20px;margin-bottom:18px">' +
+    return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--glycine-900,#2c4a72)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Depuis le 1er janvier ' + year + '</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' + body + '</div>' +
     '</div>';
@@ -3377,7 +3377,7 @@
         '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
       '</div>';
     }
-    return '<div class="card" style="background:var(--card);border:1px solid var(--bone-d);padding:18px 20px;margin-bottom:18px">' +
+    return '<div class="card" style="background:var(--card);border:none;padding:18px 20px;margin-bottom:18px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:7px;height:7px;border-radius:50%;background:var(--terre)"></span><span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">Santé des collaborations</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 0">' +
         tile('mytasks', nYou, 'en attente de toi', false) +
@@ -3458,7 +3458,7 @@
     var scoreLbl = score >= 80 ? 'Tout est sous contrôle' : (score >= 55 ? 'Quelques points à surveiller' : 'À réorganiser cette semaine');
     var chargeOver = weekCapH && weekMin > weekCapH * 60;
     function card(icon, big, label, sub, onclick) {
-      return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:1px solid var(--bone-d);border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
+      return '<button onclick="' + onclick + '" style="text-align:left;background:var(--card);border:none;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s" onmouseenter="this.style.boxShadow=\'0 3px 14px rgba(28,18,5,0.08)\'" onmouseleave="this.style.boxShadow=\'\'">' +
         '<span style="display:flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)"><span style="color:var(--terre-400,#8a7d6b);display:inline-flex">' + admIcon(icon) + '</span>' + esc(label) + '</span>' +
         '<span style="font-family:var(--font-display);font-style:italic;font-size:26px;color:var(--terre);line-height:1.05">' + big + '</span>' +
         (sub ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + sub + '</span>' : '') +
@@ -4111,7 +4111,7 @@
         lastDay = day;
         out += '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">' + esc(fmtDate(e.at)) + '</div>';
       }
-      out += '<div style="display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--bone-d)">' +
+      out += '<div style="display:flex;gap:12px;padding:9px 0;border:none">' +
         '<div style="flex-shrink:0;font-size:16px;width:26px;text-align:center;line-height:1.4">' + e.icon + '</div>' +
         '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--terre);font-weight:500;line-height:1.35">' + esc(e.title) + '</div>' +
           (e.sub ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px">' + esc(e.sub) + '</div>' : '') + '</div>' +
@@ -4452,9 +4452,9 @@
           '<div class="cg-rev" title="Allers-retours utilisés : comptés automatiquement dans l\'espace + ajustés à la main pour ceux faits ailleurs (mail, appel…). − / +">' +
             '<span class="cg-rev__lb">↩ Utilisés' + (crRevExtra ? ' (dont ' + (crRevExtra > 0 ? '+' : '') + crRevExtra + ' manuel)' : '') + '</span>' +
             '<span style="display:inline-flex;align-items:center;gap:6px">' +
-              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra - 1) + ')" title="Retirer un aller-retour" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bone-d);background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">−</button>' +
+              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra - 1) + ')" title="Retirer un aller-retour" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">−</button>' +
               '<span style="font-family:var(--font-micro);font-size:13px;font-weight:700;color:' + (crRevUsed > crRevMax ? '#b23b2a' : 'var(--terre)') + ';min-width:36px;text-align:center">' + crRevUsed + ' / ' + crRevMax + '</span>' +
-              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bone-d);background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">+</button>' +
+              '<button type="button" onclick="ADM.crSet(\'' + pid + '\',\'' + c.id + '\',\'revExtra\',' + (crRevExtra + 1) + ')" title="Ajouter un aller-retour fait hors espace" style="width:24px;height:24px;border-radius:7px;border:none;background:#fff;cursor:pointer;font-size:15px;line-height:1;color:var(--terre)">+</button>' +
             '</span>' +
           '</div>' +
           '<span class="cg-status cg-pill" style="background:' + col + '1f;color:' + col + '">' + esc(crStatusLabel(c.status)) + '</span>' +
@@ -4771,7 +4771,7 @@
         '<label class="checkbox"><input type="checkbox"' + (o[2] ? ' checked' : '') + ' onchange="ADM.toggleOffer(\'' + o[0] + '\',this.checked)"> visible</label>' +
         '<label class="checkbox"><input type="checkbox"' + (o[4] ? ' checked' : '') + ' onchange="ADM.setMaintenance(\'' + o[0] + '\',this.checked)"> en préparation</label>' +
         '<span class="row" style="gap:5px;align-items:center;flex-wrap:wrap"><span class="micro">Bannière</span>' + swatches +
-          '<input type="color" value="' + (o[3] || '#8a6f54') + '" onchange="ADM.setBanner(\'' + o[0] + '\',this.value)" style="width:30px;height:22px;border:1px solid var(--bone-d);border-radius:6px;padding:1px;cursor:pointer" title="Couleur personnalisée">' +
+          '<input type="color" value="' + (o[3] || '#8a6f54') + '" onchange="ADM.setBanner(\'' + o[0] + '\',this.value)" style="width:30px;height:22px;border:none;border-radius:6px;padding:1px;cursor:pointer" title="Couleur personnalisée">' +
           (o[3] ? '<button class="btn btn--outline btn--sm" onclick="ADM.setBanner(\'' + o[0] + '\',\'\')">Auto</button>' : '') +
         '</span></div>';
     }).join('') : '<div class="empty">Aucune offre pour ce client. Ajoutez-en une ci-dessous.</div>';
@@ -4784,7 +4784,7 @@
     // « Support de com » : offre à part (on peut en avoir plusieurs), ajoutée
     // ici pour qu'elle soit cochable comme les autres, puis renommable.
     addBtns += '<button class="btn btn--outline btn--sm" onclick="ADM.addSupportQuick()">+ Support de com</button>';
-    var addSection = '<div class="mt" style="border-top:1px solid var(--bone-d);padding-top:12px">' +
+    var addSection = '<div class="mt" style="border:none;padding-top:12px">' +
       '<div class="micro mb">Ajouter une offre</div>' +
       '<div class="row" style="gap:8px;flex-wrap:wrap">' + addBtns + '</div>' +
       '<div class="micro" style="color:var(--muted);margin-top:7px">Un « support de com » est un projet de support (réseaux sociaux, flyer, brochure…). Tu peux en ajouter plusieurs ; renomme-les ensuite dans la carte « Supports de com ».</div>' +
@@ -4927,7 +4927,7 @@
       var t = o.t;
       var validated = !!t.completedAt;
       var note = validated ? ('validée le ' + fmtDate(t.completedAt)) : (t.status === 'done' ? 'terminée' : 'en cours');
-      return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--bone-d)">' +
+      return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:6px 0;border:none">' +
         '<span style="font-size:13px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
         '<span style="font-weight:600;font-size:13px;white-space:nowrap">' + fmtHrs(o.mins / 60) + '</span></div>';
     }).join('');
@@ -4937,7 +4937,7 @@
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
       line('Forfait de base', fmtHrs(f.base) + ' <span class="micro" style="color:var(--muted)">/ mois</span>') +
       carryLine +
-      '<div style="border-top:1px solid var(--bone-d);margin:4px 0"></div>' +
+      '<div style="border:none;margin:4px 0"></div>' +
       line('= Disponible ce mois', fmtHrs(f.available), 'var(--terre)', true) +
       line('Temps travaillé ce mois', fmtHrs(f.used), 'var(--terre)') +
       '<div class="bar' + (over ? ' over' : '') + '" style="margin:6px 0 8px"><span style="width:' + pct + '%"></span></div>' +
@@ -5260,7 +5260,7 @@
       var histHtml = histArr.length
         ? '<div style="margin-top:12px"><div class="micro" style="margin-bottom:4px">Historique des révisions · ' + histArr.length + '</div>' +
           histArr.map(function (h, i) {
-            return '<div style="display:flex;gap:9px;align-items:baseline;font-size:12.5px;padding:6px 0;border-top:1px solid var(--bone-d)">' +
+            return '<div style="display:flex;gap:9px;align-items:baseline;font-size:12.5px;padding:6px 0;border:none">' +
               '<span class="micro" style="color:var(--terre);text-transform:none;letter-spacing:0;flex-shrink:0">R' + (histArr.length - i) + '</span>' +
               '<a href="' + esc(h.url) + '" target="_blank" rel="noopener" style="color:var(--glycine-900);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(h.url) + '</a>' +
               '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">' + fmtDate(h.at) + '</span></div>';
@@ -5269,7 +5269,7 @@
           ? '<div style="margin-top:9px;font-size:12.5px"><a href="' + esc(t.reviewLink) + '" target="_blank" rel="noopener" style="color:var(--glycine-900)">' + esc(t.reviewLink) + '</a> <span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">— enregistré, pas encore envoyé</span></div>'
           : '');
       var reviewSaved = histHtml;
-      var review = '<div style="background:#faf6ee;border:1px solid var(--bone-d);border-radius:13px;padding:14px 16px;margin-top:14px">' +
+      var review = '<div style="background:#faf6ee;border:none;border-radius:13px;padding:14px 16px;margin-top:14px">' +
         '<div class="micro" style="margin-bottom:9px">Lien de révision à faire vérifier par le client</div>' +
         '<div class="row" style="gap:8px;flex-wrap:wrap">' +
           '<input id="trl-' + t.id + '" class="inp" style="flex:1;min-width:180px" placeholder="https://… (Figma, proofing, Drive…)" value="' + esc(t.reviewLink || '') + '">' +
@@ -5738,7 +5738,7 @@
     return '<div class="card"><h3>Étapes du projet</h3>' +
       '<div class="micro mb">Les étapes jalonnent le projet et sont visibles par le client (par exemple « Brief », « Maquettes », « Livraison »).</div>' +
       '<table><thead><tr><th>Étape</th><th>Date</th><th>Statut</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<div style="background:var(--surface);border:1px solid var(--bone-d);border-radius:10px;padding:12px 14px;margin-top:14px">' +
+      '<div style="background:var(--surface);border:none;border-radius:10px;padding:12px 14px;margin-top:14px">' +
       '<div class="micro mb"><strong>Ajouter une étape</strong></div>' +
       '<div class="row" style="gap:8px;align-items:flex-end"><input class="inp" id="st-title-' + d.id + '" placeholder="Intitulé (ex. Maquettes)" style="flex:1;min-width:150px"><input class="inp" type="date" style="width:auto" id="st-date-' + d.id + '">' +
       '<input class="inp" id="st-action-' + d.id + '" placeholder="Action attendue du client (optionnel)" style="flex:1;min-width:150px"><button class="btn btn--dark btn--sm" onclick="ADM.stepAdd(\'' + d.id + '\')">+ Ajouter l\'étape</button></div></div></div>';
@@ -5856,7 +5856,7 @@
       cr.forEach(function (c) { targets.push({ pid: s.id, topic: c.id, label: (s.label || 'Support') + ' · ' + (c.name || 'Création') }); });
     });
     var pop = document.createElement('div'); pop.id = 'adm-msgmove';
-    pop.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid var(--bone-d);border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;max-height:340px;overflow-y:auto;min-width:240px';
+    pop.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:none;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;max-height:340px;overflow-y:auto;min-width:240px';
     pop.innerHTML = '<div style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 9px 4px">Déplacer vers…</div>' +
       targets.map(function (t) { return '<button type="button" onmousedown="event.preventDefault()" onclick="ADM.msgMoveTo(\'' + fromPid + '\',\'' + msgId + '\',\'' + t.pid + '\',\'' + esc(t.topic) + '\')" style="display:block;width:100%;text-align:left;border:none;background:none;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--terre)" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">' + esc(t.label) + '</button>'; }).join('');
     document.body.appendChild(pop);
@@ -6244,7 +6244,7 @@
     var cm = qnrCatMeta(t.category || 'autre');
     var col = t.color || cm[2];
     var nQ = qnrCountBlocks(t), nS = (t.steps || []).length;
-    return '<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--bone-d);border-radius:14px;display:flex;flex-direction:column">' +
+    return '<div class="card" style="padding:0;overflow:hidden;border:none;border-radius:14px;display:flex;flex-direction:column">' +
       '<div style="height:6px;background:' + esc(col) + '"></div>' +
       '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
         '<div class="between" style="align-items:flex-start;gap:8px">' +
@@ -6254,7 +6254,7 @@
         (t.description ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);line-height:1.45">' + esc(t.description) + '</div>' : '') +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:4px;padding:9px 12px;border-top:1px solid var(--bone-d);flex-wrap:wrap">' +
+      '<div style="display:flex;gap:4px;padding:9px 12px;border:none;flex-wrap:wrap">' +
         '<button class="pbtn" onclick="ADM.qnrOpen(\'' + t.id + '\')">Éditer</button>' +
         '<button class="pbtn" onclick="ADM.qnrPreview(\'' + t.id + '\')">Aperçu</button>' +
         '<button class="pbtn pbtn--ok" onclick="ADM.qnrAssignOpen(\'' + t.id + '\')">Envoyer</button>' +
@@ -6308,7 +6308,7 @@
     var swatches = QNR_CATS.map(function (c) { return c[2]; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
     var colorDots = swatches.map(function (col) { return '<button title="' + esc(col) + '" onclick="ADM.qnrSet(\'' + t.id + '\',\'color\',\'' + col + '\')" style="width:22px;height:22px;border-radius:50%;background:' + col + ';border:2px solid ' + ((t.color || cm[2]) === col ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
     var stepsHtml = (t.steps || []).map(function (s, i) { return qnrStepHtml(t, s, i, (t.steps || []).length); }).join('');
-    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
         '<button onclick="ADM.qnrCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
         '<button onclick="ADM.qnrSmartImport(\'' + t.id + '\')" class="btn btn--sm" title="Coller un texte et le mettre en forme automatiquement">✨ Mettre en forme un texte</button>' +
         '<button onclick="ADM.qnrPreview(\'' + t.id + '\')" class="btn btn--sm">👁 Aperçu</button>' +
@@ -6333,7 +6333,7 @@
     var blocksHtml = blocks.map(function (b, i) { return qnrBlockHtml(t, s, b, i, blocks.length); }).join('');
     var addSel = '<select class="inp" style="width:auto" onchange="if(this.value){ADM.qnrBlockAdd(\'' + t.id + '\',\'' + s.id + '\',this.value);this.value=\'\';}"><option value="">+ Ajouter une question…</option>' +
       QNR_BLOCKS.map(function (bt) { return '<option value="' + bt[0] + '">' + esc(bt[2] + '  ' + bt[1]) + '</option>'; }).join('') + '</select>';
-    return '<div class="card" style="background:var(--card);padding:14px 15px;margin-bottom:14px;border:1px solid var(--bone-d);border-radius:12px">' +
+    return '<div class="card" style="background:var(--card);padding:14px 15px;margin-bottom:14px;border:none;border-radius:12px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:10px">' +
         '<span style="font-family:var(--font-micro);font-size:10px;color:var(--muted);flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em">Étape ' + (idx + 1) + '</span>' +
         '<input class="inp" value="' + esc(s.title || '') + '" placeholder="Titre de l\'étape (ex. Votre projet)" style="flex:1;font-weight:600" onchange="ADM.qnrStepSet(\'' + t.id + '\',\'' + s.id + '\',\'title\',this.value)">' +
@@ -6372,7 +6372,7 @@
       }
       extra += '<label class="checkbox" style="margin-top:8px;font-size:13px"><input type="checkbox"' + (b.required ? ' checked' : '') + ' onchange="ADM.qnrBlockSet(\'' + t.id + '\',\'' + s.id + '\',\'' + b.id + '\',\'required\',this.checked)"> Réponse obligatoire</label>';
     }
-    return '<div style="background:var(--bg,#faf7f1);border:1px solid var(--bone-d);border-radius:10px;padding:11px 12px;margin-bottom:9px">' + head + labelField + extra + '</div>';
+    return '<div style="background:var(--bg,#faf7f1);border:none;border-radius:10px;padding:11px 12px;margin-bottom:9px">' + head + labelField + extra + '</div>';
   }
   function qnrStepAdd(id) { var t = qnrTpl(id); if (!t) return; if (!Array.isArray(t.steps)) t.steps = []; t.steps.push({ id: qnrId('s'), title: '', help: '', blocks: [] }); qnrSave(); renderQnrDrawer(); renderQnrBody(); }
   // Action rapide : toutes les questions obligatoires + réponse « Autre » sur
@@ -6520,15 +6520,15 @@
     var inpBox = 'width:100%;box-sizing:border-box;background:#fff;border:1.5px solid var(--bone-d);border-radius:10px;padding:10px 12px;font-family:inherit';
     var chip = 'display:flex;gap:9px;align-items:center;padding:10px 12px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:7px;background:#fff;cursor:pointer';
     if (b.type === 'long') f = '<textarea style="' + inpBox + ';min-height:70px;resize:vertical"></textarea>';
-    else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:1px solid var(--bone-d);border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
-    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:1px solid var(--bone-d);border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer — 1 = priorité.</div>';
+    else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:none;border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
+    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:none;border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer — 1 = priorité.</div>';
     else if (b.type === 'dropdown') f = '<select style="' + inpBox + '"><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option>Autre…</option>' : '') + '</select>';
     else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
     else if (b.type === 'slider') f = '<input type="range" min="0" max="' + (b.max || 10) + '" style="width:100%">';
     else if (b.type === 'file') f = '<button type="button" class="btn btn--outline btn--sm" onclick="return false">📎 Joindre un fichier</button>';
     else { var it = b.type === 'date' ? 'date' : (b.type === 'time' ? 'time' : (b.type === 'number' ? 'number' : (b.type === 'email' ? 'email' : 'text'))); f = '<input type="' + it + '" style="' + inpBox + '" placeholder="' + esc(b.placeholder || '') + '">'; }
     // Carte crème = énoncé ; réponse à l'intérieur → même hiérarchie que la cliente.
-    return '<div style="background:var(--surface,#F5F2EC);border:1px solid var(--bone-d);border-radius:14px;padding:16px 18px;margin-bottom:14px">' + lab + '<div style="margin-top:14px">' + f + '</div></div>';
+    return '<div style="background:var(--surface,#F5F2EC);border:none;border-radius:14px;padding:16px 18px;margin-bottom:14px">' + lab + '<div style="margin-top:14px">' + f + '</div></div>';
   }
   // Aperçu fidèle : on parcourt le questionnaire étape par étape, comme la cliente.
   var QNR_PREV_ID = null, QNR_PREV_STEP = 0, QNR_PREV_COVER = true;
@@ -6586,7 +6586,7 @@
         (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
         (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
-      var testHint = '<div class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;margin-bottom:14px;padding:8px 11px;background:var(--card);border:1px solid var(--bone-d);border-radius:9px">Aperçu interactif — tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
+      var testHint = '<div class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;margin-bottom:14px;padding:8px 11px;background:var(--card);border:none;border-radius:9px">Aperçu interactif — tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
       body = progress + whyBlock + testHint +
         (s.title ? '<h2 style="margin:2px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(s.title) + '</h2>' : '') +
         (s.help ? '<div style="color:var(--muted);margin-bottom:10px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
@@ -6614,7 +6614,7 @@
       ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
         '<div class="admconfirm__title">Envoyer « ' + esc(t.name) + ' »</div>' +
         '<div class="admconfirm__msg">Choisis la ou les clientes qui recevront ce questionnaire dans leur espace.</div>' +
-        '<div style="max-height:230px;overflow-y:auto;border:1px solid var(--bone-d);border-radius:10px;padding:6px 10px;margin:6px 0 12px">' + clientRows + '</div>' +
+        '<div style="max-height:230px;overflow-y:auto;border:none;border-radius:10px;padding:6px 10px;margin:6px 0 12px">' + clientRows + '</div>' +
         '<div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="micro">Échéance (optionnel)</span><input class="inp" id="qnr-asg-due" type="date" style="width:auto"></div>' +
         '<label class="checkbox" style="font-size:13px"><input type="checkbox" id="qnr-asg-notify" checked> Prévenir la cliente par e-mail</label>' +
         '<div class="admconfirm__row" style="margin-top:14px">' +
@@ -6681,7 +6681,7 @@
     var nP = (t.phases || []).length, nS = prjCountSteps(t), nD = prjCountDeliv(t);
     var wk = t.totalWeeks ? esc(t.totalWeeks) + ' sem. · ' : '';
     var head = (t.icon ? '<span style="font-size:18px;line-height:1">' + esc(t.icon) + '</span>' : admIcon('projtpl'));
-    return '<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--bone-d);border-radius:14px;display:flex;flex-direction:column">' +
+    return '<div class="card" style="padding:0;overflow:hidden;border:none;border-radius:14px;display:flex;flex-direction:column">' +
       '<div style="height:6px;background:' + esc(col) + '"></div>' +
       '<div style="padding:15px 16px;flex:1;display:flex;flex-direction:column;gap:8px">' +
         '<div class="between" style="align-items:flex-start;gap:8px">' +
@@ -6690,7 +6690,7 @@
         '</div>' +
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:auto">' + wk + nP + ' phase' + (nP > 1 ? 's' : '') + ' · ' + nS + ' étape' + (nS > 1 ? 's' : '') + ' · ' + nD + ' livrable' + (nD > 1 ? 's' : '') + '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:4px;padding:9px 12px;border-top:1px solid var(--bone-d);flex-wrap:wrap">' +
+      '<div style="display:flex;gap:4px;padding:9px 12px;border:none;flex-wrap:wrap">' +
         '<button class="pbtn" onclick="ADM.prjOpen(\'' + t.id + '\')">Éditer</button>' +
         '<button class="pbtn pbtn--ok" onclick="ADM.prjAssignOpen(\'' + t.id + '\')">Instancier</button>' +
         '<span style="margin-left:auto;display:flex;gap:4px">' +
@@ -6740,7 +6740,7 @@
     var swatches = ['#2c4a72', '#8267ab', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
     var colorDots = swatches.map(function (c) { return '<button title="' + esc(c) + '" onclick="ADM.prjSet(\'' + t.id + '\',\'color\',\'' + c + '\')" style="width:22px;height:22px;border-radius:50%;background:' + c + ';border:2px solid ' + (col === c ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
     var phasesHtml = (t.phases || []).map(function (p, i) { return prjPhaseHtml(t, p, i, (t.phases || []).length); }).join('');
-    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border-bottom:1px solid var(--bone-d);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
         '<button onclick="ADM.prjCloseDrawer()" class="btn btn--outline btn--sm">← Fermer</button>' +
         '<button onclick="ADM.prjAssignOpen(\'' + t.id + '\')" class="btn btn--dark btn--sm">Instancier dans un espace</button>' +
         '<span style="margin-left:auto"></span>' +
@@ -6768,7 +6768,7 @@
     var delivHtml = (p.deliverables || []).map(function (d) { return prjDelivHtml(t, p, d); }).join('');
     var up = i > 0 ? '<button class="pbtn" title="Monter" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',-1)">↑</button>' : '';
     var down = i < total - 1 ? '<button class="pbtn" title="Descendre" onclick="ADM.prjPhaseMove(\'' + t.id + '\',\'' + p.id + '\',1)">↓</button>' : '';
-    return '<div class="card" style="padding:14px;margin-bottom:14px;border:1px solid var(--bone-d);border-radius:12px;background:var(--card)">' +
+    return '<div class="card" style="padding:14px;margin-bottom:14px;border:none;border-radius:12px;background:var(--card)">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">' +
         '<span class="micro" style="background:var(--terre);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i + 1) + '</span>' +
         '<input class="inp" value="' + esc(p.title || '') + '" placeholder="Nom de la phase (ex. Maquette page d\'accueil)" style="flex:1;font-weight:600" onchange="ADM.prjPhaseSet(\'' + t.id + '\',\'' + p.id + '\',\'title\',this.value)">' +
