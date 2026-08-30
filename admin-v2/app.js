@@ -1562,9 +1562,6 @@
       var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div><div class="wgrid">' + waitHtml + '</div></section>' : '';
       // Tout ce qui est actionnable au-delà de cette semaine : sans date (tickets de
       // maintenance surtout, _d=99) OU daté plus tard (_d>7). Sinon ça passait inaperçu.
-      var P2_later = mine.filter(function (x) { return x._d > 7; });
-      var blockPlan = P2_later.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">À planifier · ' + P2_later.length + '</span><h2>À venir &amp; sans échéance</h2></div>' +
-        P2_later.map(function (x) { return p2Drow(x, false); }).join('') + '</section>' : '';
       // Cette semaine : tâches + révisions replanifiées à leur date souhaitée
       var P2_days = {};
       function p2DayPush(k, html) { (P2_days[k] = P2_days[k] || []).push(html); }
@@ -1598,22 +1595,6 @@
       // Accueil (les compteurs sont désormais dans « Le jour » via pj-daystat)
       var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';
 
-      // Tes projets en cours (cartes avec % d'avancement) — repris du prototype
-      var P2_projs = d.activeProjects || [];
-      function p2CcCol(cat) { return cat === 'partner' ? 'cc--brun' : (cat === 'branding' ? 'cc--nuit' : 'cc--lav'); }
-      function p2ProjCard(p) {
-        return '<button class="cc ' + p2CcCol(p.category) + '" onclick="ADM.openClient(\'' + p.key + '\')">' +
-          '<div class="cc__top"><span class="cc__mk">' + esc((String(p.client || '?').trim().charAt(0) || '?').toUpperCase()) + '</span>' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><span class="cc__cat">' + esc(p.projectLabel) + '</span><span class="cc__pct tnum">' + p.pct + '%</span></div>' +
-            '<span class="cc__t">' + esc(p.client) + '</span></div>' +
-          '<div class="cbar"><i style="width:' + p.pct + '%"></i></div>' +
-          '<div class="cc__b">' +
-            (p.currentStep ? '<div class="cline"><span class="k">En cours</span>' + esc(p.currentStep) + '</div>' : '') +
-            (p.nextStep ? '<div class="cline"><span class="k">Ensuite</span>' + esc(p.nextStep) + '</div>' : '') +
-            (p.delivery ? '<div class="cline"><span class="k">Livraison</span>' + fmtDate(p.delivery) + '</div>' : '') +
-          '</div></button>';
-      }
-      var blockProjects = P2_projs.length ? '<section style="margin-top:clamp(26px,3.4vw,44px)"><div class="secmark" style="margin-top:0">Tes projets en cours · ' + P2_projs.length + '</div><div class="covers">' + P2_projs.map(p2ProjCard).join('') + '</div></section>' : '';
 
       // ── Onglets analytiques (sous la composition) : Risques / Engagement / Charge ──
       var tabDefs = [];
@@ -1733,8 +1714,8 @@
         '<input class="inp" type="number" min="0" step="1" value="' + wcap + '" style="width:78px;flex:0 0 auto" onchange="ADM.capSave(this.value)">' +
         '<span class="pj-dayload__l" style="text-transform:none;letter-spacing:0">h / semaine</span></div>';
       var P2_semaine = (blockWeek || '<div class="prioempty" style="margin:8px 0">Rien de planifié cette semaine pour l\'instant.</div>') +
-        (blockPlan || '') + (blockWait || '') +
-        '<div style="margin-top:clamp(20px,3vw,34px)">' + meteo + '</div>' + capLine + blockProjects;
+        (blockWait || '') +
+        '<div style="margin-top:clamp(20px,3vw,34px)">' + meteo + '</div>' + capLine;
       var P2_pilotage = qnrDoneCard +
         (tabDefs.length ? '<div class="secmark" style="margin-top:0">Pilotage &amp; forfaits</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>'
                         : '<div class="prioempty" style="margin:8px 0">Rien à piloter pour l\'instant.</div>');
