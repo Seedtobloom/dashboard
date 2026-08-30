@@ -1709,9 +1709,10 @@
       var capLine = '<div class="pj-dayload" style="margin-top:14px"><span class="pj-dayload__l">Ma capacité</span>' +
         '<input class="inp" type="number" min="0" step="1" value="' + wcap + '" style="width:78px;flex:0 0 auto" onchange="ADM.capSave(this.value)">' +
         '<span class="pj-dayload__l" style="text-transform:none;letter-spacing:0">h / semaine</span></div>';
-      var P2_semaine = (blockWeek || '<div class="prioempty" style="margin:8px 0">Rien de planifié cette semaine pour l\'instant.</div>') +
-        (blockWait || '') +
-        '<div style="margin-top:clamp(20px,3vw,34px)">' + meteo + '</div>' + capLine;
+      var P2_semaine = '<div class="board">' +
+        (blockWeek || '<div class="prioempty" style="margin:8px 0">Rien de planifié cette semaine pour l\'instant.</div>') +
+        (blockWait || '') + meteo + capLine +
+        '</div>';
       var P2_pilotage = qnrDoneCard +
         (tabDefs.length ? '<div class="secmark" style="margin-top:0">Pilotage &amp; forfaits</div>' + tabBar + '<div id="priobody">' + tabBody + '</div>'
                         : '<div class="prioempty" style="margin:8px 0">Rien à piloter pour l\'instant.</div>');
