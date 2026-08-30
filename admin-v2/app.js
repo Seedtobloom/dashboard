@@ -12,7 +12,7 @@
   var CHAT = { key: null, project: null }; // vue chat globale
 
   var DOMAIN_LABELS = { partner: 'Partenaire créative', website: 'Site web', branding: 'Identité visuelle', maintenance: 'Espace tickets' };
-  var DA_BANNER = [['#412F21', 'Terre'], ['#1C1205', 'Nuit'], ['#8B6F52', 'Argile'], ['#E4D1FE', 'Glycine'], ['#F2E5C2', 'Paille'], ['#F0E8FF', 'Brume']];
+  var DA_BANNER = [['#110704', 'Nuit'], ['#5A2A11', 'Terre'], ['#8B6F52', 'Argile'], ['#CD8F6E', 'Terracotta'], ['#C5DEFF', 'Bleu clair'], ['#F0E9D6', 'Paille']];
   var ADM_ICONS = {
     priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
     mytasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
@@ -215,7 +215,7 @@
     });
   }
   function badge(n) { return n > 0 ? '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--glycine);color:var(--terre);font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
-  function badgeAlert(n) { return n > 0 ? '<span title="Révision(s) à faire" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#a23c28;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
+  function badgeAlert(n) { return n > 0 ? '<span title="Révision(s) à faire" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#8a4a2c;color:#fff;font-family:var(--font-micro);font-size:10px;font-weight:700;margin-left:6px">' + n + '</span>' : ''; }
 
   /* ── boot / auth ── */
   function boot() {
@@ -1054,7 +1054,7 @@
     var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
     var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
     var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
-    var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? 'var(--red)' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
+    var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? '#8a4a2c' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien</a>' : '';
     var body =
       '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
@@ -1077,7 +1077,7 @@
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
       '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
       '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
-    return inboxChrome(it, body, actions, urg ? '#a23c28' : '');
+    return inboxChrome(it, body, actions, urg ? '#8a4a2c' : '');
   }
   // Retire l'élément de toutes les listes et rafraîchit le badge de nav.
   function inboxDrop(key, id) {
@@ -1312,14 +1312,14 @@
         mineBody = clientNames.map(function (nm) {
           var items = byClient[nm].slice().sort(function (a, b) { return a._d - b._d; });
           var urgent = items.some(function (x) { return x._d <= 0; });
-          return group(nm, urgent ? 'var(--red)' : 'var(--glycine-900)', items);
+          return group(nm, urgent ? '#8a4a2c' : 'var(--glycine-900)', items);
         }).join('');
       } else {
         var late = mineF.filter(function (x) { return x._d < 0; });
         var tdy = mineF.filter(function (x) { return x._d === 0; });
         var week = mineF.filter(function (x) { return x._d > 0 && x._d <= 7; });
         var later = mineF.filter(function (x) { return x._d > 7; });
-        mineBody = group('En retard', 'var(--red)', late) + group("Aujourd'hui", 'var(--orange)', tdy) + group('Cette semaine', 'var(--glycine-900)', week) + group('Plus tard', 'var(--bone-d)', later);
+        mineBody = group('En retard', '#8a4a2c', late) + group("Aujourd'hui", 'var(--orange)', tdy) + group('Cette semaine', 'var(--glycine-900)', week) + group('Plus tard', 'var(--bone-d)', later);
       }
       function prioChip(kind, cur, lbl, onclick) {
         var on = cur === kind;
@@ -1456,7 +1456,7 @@
         var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0;
         var over = f.remaining < 0;
         var low = !over && f.remaining <= f.base * 0.2;
-        var restCol = over ? 'var(--red)' : (low ? 'var(--orange)' : 'var(--green)');
+        var restCol = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
         var restLabel = over ? ('dépassé de ' + Math.abs(f.remaining) + ' h') : ('reste ' + f.remaining + ' h');
         return '<div class="prow" style="display:block;padding:12px 4px">' +
           '<div class="between" style="align-items:baseline">' + nameLink +
@@ -1489,14 +1489,14 @@
       function hLabel(m) { m = Math.round(m); if (!m) return '·'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
       var meteo = '<div class="card infocard"><h3><span class="infocard__dot" style="background:#2c4a72"></span>Charge de la semaine</h3>' +
         '<div class="between" style="align-items:baseline;margin-bottom:10px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Temps prévu, estimé par jour</span>' +
-          '<span style="font-weight:700;font-size:15px;color:' + (weekCapH && weekMinTotal > weekCapH * 60 ? 'var(--red)' : 'var(--terre)') + '">' + hLabel(weekMinTotal) + (weekCapH ? ' <span style="font-weight:400;font-size:12px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : '') + '</span></div>' +
+          '<span style="font-weight:700;font-size:15px;color:' + (weekCapH && weekMinTotal > weekCapH * 60 ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(weekMinTotal) + (weekCapH ? ' <span style="font-weight:400;font-size:12px;color:var(--muted)">/ ' + weekCapH + 'h</span>' : '') + '</span></div>' +
         '<div style="display:flex;align-items:flex-end;gap:10px;padding-top:6px;min-height:78px">' +
         weekLoad.map(function (w) {
           var barH = w.mins ? Math.max(Math.round(w.mins / maxLoad * 60), 6) : 3;
           var heavy = dayCapMin ? w.mins > dayCapMin : w.mins >= 240;
-          var col = heavy ? '#a23c28' : (w.mins ? '#2c4a72' : 'var(--bone-d)');
+          var col = heavy ? '#8a4a2c' : (w.mins ? '#2c4a72' : 'var(--bone-d)');
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">' +
-            '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;color:' + (heavy ? '#a23c28' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
+            '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;color:' + (heavy ? '#8a4a2c' : 'var(--terre)') + '">' + hLabel(w.mins) + '</div>' +
             '<div style="width:100%;height:' + barH + 'px;border-radius:5px 5px 0 0;background:' + col + '" title="' + w.count + ' tâche' + (w.count > 1 ? 's' : '') + '"></div>' +
             '<div style="font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)">' + esc(w.label) + '</div>' +
           '</div>';
@@ -1518,7 +1518,7 @@
       var nRiskHigh = riskItems.filter(function (r) { return r.level === 'high'; }).length;
       function riskRow(r) {
         var x = r.x;
-        var col = r.level === 'high' ? '#a23c28' : '#b8871f';
+        var col = r.level === 'high' ? '#8a4a2c' : '#b8871f';
         var bg = r.level === 'high' ? '#F0E2D6' : '#fbf5e6';
         return '<div class="prow" style="background:' + bg + ';border-radius:9px">' +
           '<div class="prow__date"><strong>' + (x.dueDate ? fmtDate(x.dueDate) : '—') + '</strong><span style="color:' + col + ';font-weight:600">' + esc(r.reason) + '</span></div>' +
@@ -1540,7 +1540,7 @@
       var engRelance = engList.filter(function (e) { return e.oldest >= 5; }).length;
       function engRow(e) {
         var relance = e.oldest >= 5;
-        var col = e.oldest >= 10 ? '#a23c28' : (relance ? '#b8871f' : 'var(--muted)');
+        var col = e.oldest >= 10 ? '#8a4a2c' : (relance ? '#b8871f' : 'var(--muted)');
         var ageLbl = e.oldest > 0 ? ('depuis ' + e.oldest + ' j') : 'tout récent';
         return '<div class="prow"' + (relance ? ' style="background:' + (e.oldest >= 10 ? '#F0E2D6' : '#fbf5e6') + ';border-radius:9px"' : '') + '>' +
           '<div class="prow__main"><div class="prow__el"><a href="javascript:ADM.openClient(\'' + e.key + '\')">' + esc(e.client) + '</a></div>' +
@@ -1576,7 +1576,7 @@
           (brief ? '<div class="rowbrief">' + brief + '</div>' : '') + '</div>';
       }
       function p2Drow(x, dark, whenCol, drag) {
-        var col = whenCol || (x._d < 0 ? '#a23c28' : (x._d === 0 ? 'var(--orange)' : 'inherit'));
+        var col = whenCol || (x._d < 0 ? '#8a4a2c' : (x._d === 0 ? 'var(--orange)' : 'inherit'));
         var isTask = drag && x.kind === 'tâche' && x.id;
         var dragAttr = isTask ? ' draggable="true" ondragstart="ADM.prioDragStart(\'' + x.key + '\',\'' + x.id + '\')" ondragend="ADM.prioDragEnd()"' : '';
         var grip = isTask ? '<span class="drow__grip" title="Glisser sur un autre jour">⠿</span>' : '';
@@ -1683,11 +1683,11 @@
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Qui a des éléments « dans son camp » (à valider, à réviser, à renvoyer) et depuis combien de temps. Celles au-delà de 5 jours méritent une relance plus personnelle.</div>' +
           (engList.map(engRow).join('') || '<div class="empty">Aucune cliente n\'a d\'action en attente — tout est de ton côté.</div>') + '</div>';
       } else if (PRIO_TAB === 'risks') {
-        tabBody = '<div class="card"><h3 style="color:#8d2b21">Risques · 7 jours</h3>' +
+        tabBody = '<div class="card"><h3 style="color:#8a4a2c">Risques · 7 jours</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ce qui menace de glisser : en retard, ou pas encore démarré avec une échéance proche. Anticipe pour éviter le coup de feu.</div>' +
           (riskItems.map(riskRow).join('') || '<div class="empty">Aucun risque — tout est sous contrôle.</div>') + '</div>';
       } else if (PRIO_TAB === 'revisions') {
-        tabBody = '<div class="card"><h3 style="color:#8d2b21">Révisions demandées</h3>' +
+        tabBody = '<div class="card"><h3 style="color:#8a4a2c">Révisions demandées</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
           (revs.map(revRow).join('') || '<div class="empty">Aucune révision en attente.</div>') + '</div>';
       } else if (PRIO_TAB === 'load') {
@@ -1700,9 +1700,9 @@
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Les heures qu\'il te reste à livrer sur les forfaits ce mois, face à ta capacité.</div>' +
           '<div class="row" style="gap:8px;align-items:center;margin-bottom:14px"><span class="micro">Ma capacité</span><input class="inp" type="number" min="0" step="1" value="' + weeklyCap + '" style="width:80px" onchange="ADM.capSave(this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">h/semaine' + (monthlyCap ? ' · ~' + monthlyCap + ' h/mois' : '') + '</span></div>' +
           (monthlyCap > 0
-            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:' + (capOver ? 'var(--red)' : 'var(--terre)') + '">' + engagedMonthly + ' h</span><span class="micro" style="text-transform:none;letter-spacing:0">engagées sur ~' + monthlyCap + ' h · ' + capPct + '%</span></div>' +
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:' + (capOver ? '#8a4a2c' : 'var(--terre)') + '">' + engagedMonthly + ' h</span><span class="micro" style="text-transform:none;letter-spacing:0">engagées sur ~' + monthlyCap + ' h · ' + capPct + '%</span></div>' +
               '<div class="bar' + (capOver ? ' over' : '') + '"><span style="width:' + capPct + '%"></span></div>' +
-              (capOver ? '<div class="micro" style="color:var(--red);margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité — prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
+              (capOver ? '<div class="micro" style="color:#8a4a2c;margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité — prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
             : '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + engagedMonthly + ' h engagées ce mois</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Renseigne ta capacité hebdomadaire pour voir ta marge.</div>') +
         '</div>';
         tabBody = '<div class="pcols">' + capCard +
@@ -1788,7 +1788,7 @@
     var chipsHtml = (chips || (Array.isArray(t.tags) && t.tags.length)) ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">' + chips + ((Array.isArray(t.tags) && t.tags.length) ? t.tags.map(mtTagPill).join('') : '') + '</div>' : '';
     return '<div class="mtcard"' + (canDrag ? ' draggable="true" ondragstart="ADM.mtDragStart(event,\'' + t.id + '\')" ondragend="ADM.mtDragEnd(event)" style="cursor:grab"' : '') + '>' +
       '<div class="mtcard__t" style="color:' + (dn ? 'var(--muted)' : 'var(--terre)') + (dn ? ';text-decoration:line-through' : '') + '">' + esc(t.title) + '</div>' +
-      (meta ? '<div class="micro" style="margin-top:4px;color:' + (overdue ? '#a23c28' : 'var(--muted)') + '">' + meta + '</div>' : '') +
+      (meta ? '<div class="micro" style="margin-top:4px;color:' + (overdue ? '#8a4a2c' : 'var(--muted)') + '">' + meta + '</div>' : '') +
       chipsHtml +
       '<div id="mt-note-' + t.id + '" style="margin-top:5px">' + mtNoteInner(t) + '</div>' +
       subsHtml + subAdd + sessionsBlock(t) +
@@ -2292,7 +2292,7 @@
       CALL_REBONDS.map(function (r) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.5;margin-bottom:5px">' + r[0] + ' <b style="font-weight:600">' + esc(r[1]) + '</b><br>' + esc(r[2]) + '</div>'; }).join('') + '</div>';
     var sec = '<div style="' + SC + ';margin-bottom:0"><div style="' + HD + ';margin-bottom:8px">Secours</div>' +
       CALL_SECOURS.map(function (p) { return '<div style="font-family:var(--font-micro);font-size:13px;color:var(--terre);line-height:1.45;margin-bottom:6px">' + esc(p) + '</div>'; }).join('') + '</div>';
-    return '<div style="background:#F0E8FF;border-radius:14px;padding:12px;column-count:2;column-gap:12px">' + steps + reb + sec + '</div>';
+    return '<div style="background:#E8F1FF;border-radius:14px;padding:12px;column-count:2;column-gap:12px">' + steps + reb + sec + '</div>';
   }
 
   // ── Trames d'appel : scripts que Cindy crée/édite et suit pendant la visio ──
@@ -3012,7 +3012,7 @@
     var cap = MT_TODAY_CAP;
     if (!cap) return '<div class="cap"><b>' + fmtMin(planned) + '</b> prévues aujourd\'hui · <a href="javascript:ADM.nav(\'planning\')" style="color:inherit;text-decoration:underline">règle ta capacité</a> pour voir si ta journée est réaliste.</div>';
     var over = planned > cap, pct = Math.min(100, Math.round(planned / cap * 100)), free = Math.max(0, cap - planned);
-    return '<div class="cap"><b>' + fmtMin(planned) + '</b> prévues · ' + (over ? ('<b style="color:#a23c28">+' + fmtMin(planned - cap) + '</b> au-delà de ta capacité') : ('<b>' + fmtMin(free) + '</b> encore dispo')) + '<div class="track"><i style="width:' + pct + '%' + (over ? ';background:#a23c28' : '') + '"></i></div></div>';
+    return '<div class="cap"><b>' + fmtMin(planned) + '</b> prévues · ' + (over ? ('<b style="color:#8a4a2c">+' + fmtMin(planned - cap) + '</b> au-delà de ta capacité') : ('<b>' + fmtMin(free) + '</b> encore dispo')) + '<div class="track"><i style="width:' + pct + '%' + (over ? ';background:#8a4a2c' : '') + '"></i></div></div>';
   }
   function mtFocusRow(t, showMode) {
     var dn = t.status === 'done';
@@ -3038,7 +3038,7 @@
       mtEnergyBars(t.energy) +
       '<span class="trow__t" onclick="ADM.mtEditOpen(\'' + t.id + '\')">' + esc(t.title) +
         (showMode && t.mode ? mtFocusPill(t.mode) : '') +
-        (meta ? '<span class="trow__m" style="margin-left:8px' + (overdue ? ';color:#a23c28;opacity:1' : '') + '">' + meta + '</span>' : '') +
+        (meta ? '<span class="trow__m" style="margin-left:8px' + (overdue ? ';color:#8a4a2c;opacity:1' : '') + '">' + meta + '</span>' : '') +
       '</span>' +
       (t.clientName ? '<span class="cli" title="' + esc(t.clientName) + '" onclick="ADM.openClient(\'' + esc(t.clientKey) + '\')">' + esc(t.clientName) + '</span>' : '') +
       '<span class="tacts">' + moveBtn + timerBtn + toggleBtn + '</span>' +
@@ -3310,7 +3310,7 @@
     function tile(icon, big, label, danger) {
       return '<div style="min-width:150px;padding:6px 20px 6px 0">' +
         '<div style="display:flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px"><span style="display:inline-flex;color:var(--terre-400,#8a7d6b)">' + admIcon(icon) + '</span>' + esc(label) + '</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? 'var(--red)' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
+        '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:' + (danger ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + big + '</div>' +
       '</div>';
     }
     return '<div class="card" style="background:var(--card);border:1px solid var(--bone-d);padding:18px 20px;margin-bottom:18px">' +
@@ -3390,7 +3390,7 @@
     score -= Math.min(Math.max(inboxN - 3, 0) * 3, 15);
     score -= Math.min(Math.max(waitClient - 3, 0) * 2, 12);
     score = Math.max(0, Math.min(100, Math.round(score)));
-    var scoreCol = score >= 80 ? '#3a6b4a' : (score >= 55 ? '#b8871f' : '#a23c28');
+    var scoreCol = score >= 80 ? '#3a6b4a' : (score >= 55 ? '#b8871f' : '#8a4a2c');
     var scoreLbl = score >= 80 ? 'Tout est sous contrôle' : (score >= 55 ? 'Quelques points à surveiller' : 'À réorganiser cette semaine');
     var chargeOver = weekCapH && weekMin > weekCapH * 60;
     function card(icon, big, label, sub, onclick) {
@@ -3858,7 +3858,7 @@
       var over = rem < 0;
       var low = !over && avail && rem <= avail * 0.2;
       var pctU = avail > 0 ? Math.min(100, Math.round(used / avail * 100)) : (used > 0 ? 100 : 0);
-      var barc = over ? 'var(--red)' : (low ? 'var(--orange)' : 'var(--green)');
+      var barc = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
       var restLbl = over ? ('dépassé de ' + fmtHrs(-rem)) : ('reste ' + fmtHrs(rem));
       forfHtml = '<div class="ctile__forf">' +
         '<div class="ctile__forfh"><span>Forfait</span><span style="color:' + barc + ';font-weight:700">' + restLbl + '</span></div>' +
@@ -4016,14 +4016,14 @@
           add(t.createdAt, '📝', 'Tâche créée · ' + (t.title || ''), lbl, '#35608f');
           if (t.completedAt) add(t.completedAt, '✅', 'Tâche terminée · ' + (t.title || ''), lbl, '#3f6b3a');
           (t.reviewHistory || []).forEach(function (h) { add(h.at, '🔗', 'Lien de révision envoyé · ' + (t.title || ''), lbl, '#8a6f2e'); });
-          (t.comments || []).forEach(function (cm) { add(cm.at || cm.date || cm.createdAt, '💬', 'Commentaire' + (cm.author === 'client' ? ' de la cliente' : ''), t.title || '', '#6c4ea4'); });
+          (t.comments || []).forEach(function (cm) { add(cm.at || cm.date || cm.createdAt, '💬', 'Commentaire' + (cm.author === 'client' ? ' de la cliente' : ''), t.title || '', '#2c4a72'); });
           if (t.proposedDueDate && t.proposedAt) add(t.proposedAt, '📅', 'Report de date proposé · ' + (t.title || ''), lbl, '#8a4a0e');
         });
         (c.livrables || []).forEach(function (l) {
           add(l.createdAt, '📦', 'Livrable envoyé · ' + (l.name || ''), lbl, '#2c4a72');
           if (l.validatedAt) {
             if (l.status === 'valide') add(l.validatedAt, '🎉', 'Livrable validé · ' + (l.name || ''), lbl, '#3f6b3a');
-            else if (l.status === 'refuse' || l.status === 'revision') add(l.validatedAt, '↩️', 'Révision demandée · ' + (l.name || ''), l.clientComment || lbl, '#a23c28');
+            else if (l.status === 'refuse' || l.status === 'revision') add(l.validatedAt, '↩️', 'Révision demandée · ' + (l.name || ''), l.clientComment || lbl, '#8a4a2c');
           }
         });
         (c.suivi || []).forEach(function (s) { if (s.completedAt) add(s.completedAt, '✅', 'Étape terminée · ' + (s.title || ''), lbl, '#3f6b3a'); });
@@ -4266,7 +4266,7 @@
       '<div class="row mt" style="align-items:center;gap:10px"><button class="btn btn--outline btn--sm" onclick="ADM.editToken()">Copier le code du mode édition (24 h)</button>' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">À coller à la fin de l\'adresse de l\'espace client pour activer le mode édition.</span></div></div>';
     var danger = '<div class="card infocard" style="background:#fbf1ee">' +
-      '<h3 style="color:#8d2b21"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
+      '<h3 style="color:#8a4a2c"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
       '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
     return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +
@@ -4337,7 +4337,7 @@
     var pid = d.pid;
     var creations = Array.isArray(d.content.creations) ? d.content.creations : [];
     var livr = Array.isArray(d.content.livrables) ? d.content.livrables : [];
-    var CG_VST = { a_valider: ['À valider', '#efe1ff', '#59409a'], valide: ['Validé', '#e3f0e7', '#2f7d4e'], refuse: ['À revoir', '#f6e4de', '#8d2b21'], revision: ['À revoir', '#f6e4de', '#8d2b21'] };
+    var CG_VST = { a_valider: ['À valider', '#E8F1FF', '#2c4a72'], valide: ['Validé', '#e3f0e7', '#2f7d4e'], refuse: ['À revoir', '#F0E2D6', '#8a4a2c'], revision: ['À revoir', '#F0E2D6', '#8a4a2c'] };
     function verRow(l, i) {
       var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
       var sc = CG_VST[l.status] || [l.status, '#efe7d7', '#675334'];
@@ -4424,7 +4424,7 @@
         }
         return '<a href="' + furl + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d,#eae5dc);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cgIcon('download', 12) + esc(f.name || 'fichier') + '</a>';
       }).join('') + '</div>' : '';
-      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtDT(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:13px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#F0E8FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
+      var commentsHtml = comments.length ? comments.map(function (m) { var mine = m.author === 'cindy'; return '<div style="margin-bottom:8px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">' + (mine ? 'Vous' : 'Cliente') + ' · ' + (m.createdAt ? fmtDT(m.createdAt) : '') + '</div><div style="font-family:var(--font-micro);font-size:13px;line-height:1.5;color:var(--terre);background:' + (mine ? 'var(--brume,#E4F0FF)' : '#F8F6F2') + ';border-radius:10px;padding:8px 12px">' + esc(m.text || '') + '</div></div>'; }).join('') : '';
       return '<div style="border-top:1px solid var(--line,#eee);margin-top:14px;padding-top:12px">' +
         '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--terre-600,#6b533b);margin-bottom:10px;display:flex;align-items:center;gap:7px">' + cgIcon('image', 13) + ' Échanges cliente' + (c.clientNotif ? '<span style="width:8px;height:8px;border-radius:50%;background:#c0533b;display:inline-block"></span>' : '') + '</div>' +
         filesHtml + commentsHtml +
@@ -4849,12 +4849,12 @@
     // Décompte visible : base + report = disponible, puis consommé et reste.
     var over = f.remaining < 0;
     var low = !over && f.remaining <= f.base * 0.2;
-    var restCol = over ? 'var(--red)' : (low ? 'var(--orange)' : 'var(--green)');
+    var restCol = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
     var pct = f.available > 0 ? Math.min(100, Math.round(f.used / f.available * 100)) : (f.used > 0 ? 100 : 0);
     function line(lbl, val, col, strong) { return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">' + lbl + '</span><span style="font-weight:' + (strong ? '700' : '600') + ';font-size:' + (strong ? '15px' : '13.5px') + ';color:' + (col || 'var(--terre)') + '">' + val + '</span></div>'; }
     var carryLine = '';
     if (f.carryIn > 0) carryLine = line('+ Report du mois dernier <span style="color:var(--muted)">(heures non utilisées)</span>', '+ ' + fmtHrs(f.carryIn), 'var(--green)');
-    else if (f.carryIn < 0) carryLine = line('− Dépassement du mois dernier <span style="color:var(--muted)">(déduit)</span>', '− ' + fmtHrs(-f.carryIn), 'var(--red)');
+    else if (f.carryIn < 0) carryLine = line('− Dépassement du mois dernier <span style="color:var(--muted)">(déduit)</span>', '− ' + fmtHrs(-f.carryIn), '#8a4a2c');
     else carryLine = line('Report du mois dernier', '0 h', 'var(--muted)');
     var billed = f.billedCarry > 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;border-radius:8px;padding:7px 11px;margin-top:8px">⚠️ ' + fmtHrs(f.billedCarry) + ' de dépassement au-delà d\'un mois de forfait le mois dernier → à facturer (non reporté).</div>' : '';
     // Liste des tâches ayant du temps travaillé ce mois-ci (part du mois).
@@ -5029,7 +5029,7 @@
       if (b.type === 'heading') return '<div style="font-size:17px;font-weight:700;color:var(--terre);margin:14px 0 4px">' + esc(b.text || '') + '</div>';
       if (b.type === 'subheading') return '<div style="font-size:15px;font-weight:700;color:var(--terre);margin:11px 0 3px">' + esc(b.text || '') + '</div>';
       if (b.type === 'quote') return '<div style="border-left:3px solid var(--bone-d);padding:3px 0 3px 12px;margin:8px 0;font-style:italic;color:var(--terre-600);white-space:pre-wrap">' + admRichSafe(b.text || '') + '</div>';
-      if (b.type === 'callout') return '<div style="background:#F0E8FF;border-radius:10px;padding:10px 13px;margin:8px 0;color:var(--terre);white-space:pre-wrap">' + (b.icon ? '<span style="margin-right:7px">' + esc(b.icon) + '</span>' : '') + admRichSafe(b.text || '') + '</div>';
+      if (b.type === 'callout') return '<div style="background:#E8F1FF;border-radius:10px;padding:10px 13px;margin:8px 0;color:var(--terre);white-space:pre-wrap">' + (b.icon ? '<span style="margin-right:7px">' + esc(b.icon) + '</span>' : '') + admRichSafe(b.text || '') + '</div>';
       if (b.type === 'todo') return '<div style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><span style="flex-shrink:0">' + (b.done ? '☑' : '☐') + '</span><span style="white-space:pre-wrap;' + (b.done ? 'text-decoration:line-through;color:var(--muted)' : '') + '">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'list') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">•</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
       if (b.type === 'numbered') return '<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#b08968;flex-shrink:0">' + num + '.</span><span style="white-space:pre-wrap">' + mtLinkify(b.text || '') + '</span></div>';
@@ -6842,7 +6842,7 @@
         '<div class="between" style="align-items:flex-start;gap:12px">' +
           '<div style="min-width:0">' +
             '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-              (isNew?'<span style="width:8px;height:8px;border-radius:50%;background:#9b3a2e;flex-shrink:0"></span>':'') +
+              (isNew?'<span style="width:8px;height:8px;border-radius:50%;background:#8a4a2c;flex-shrink:0"></span>':'') +
               '<span style="font-weight:650;color:var(--terre);font-size:14.5px">'+esc(ctxLbl[e.context]||e.context||'Incident')+'</span>' +
               '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">'+esc(e.clientName||'')+'</span>' +
             '</div>' +
