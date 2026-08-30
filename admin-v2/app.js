@@ -4067,8 +4067,8 @@
     }
     scan(CUR.domains); scan(CUR.supports);
     var chips = [];
-    if (unread) chips.push(['Vous', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', '#fbf0d8', '#8a4a0e']);
-    if (review) chips.push(['Vous', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', '#fbf0d8', '#8a4a0e']);
+    if (unread) chips.push(['Vous', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', '#F0E2D6', '#8a4a2c']);
+    if (review) chips.push(['Vous', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', '#F0E2D6', '#8a4a2c']);
     if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', '#E8F1FF', '#2c4a72']);
     if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', '#E8F1FF', '#2c4a72']);
     if (!chips.length) return '<div class="card" style="background:#f0f6ee;border-color:#cfe0c6;max-width:none"><span class="micro" style="color:#456039;font-weight:700;letter-spacing:0.04em">✓ Tout est à jour pour ce client</span></div>';
