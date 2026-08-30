@@ -3889,7 +3889,7 @@
       var totalUnread = clients.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       var head = '<div class="micro" style="margin:-2px 0 16px;color:var(--terre-600)">' + clients.length + ' espace' + (clients.length > 1 ? 's' : '') + ' · ' + actifs + ' actif' + (actifs > 1 ? 's' : '') + (totalUnread ? ' · ' + totalUnread + ' message' + (totalUnread > 1 ? 's' : '') + ' à lire' : '') + '</div>';
       var list = clients.map(function (c) { return clientCard(c, forfByKey[c.key], projByKey[c.key] || []); }).join('');
-      setMain(topbar('Clients', right, 'Forfaits et projets en cours, en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="grid grid--3">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
+      setMain(topbar('Clients', right, 'Forfaits et projets en cours, en un coup d\'œil') + '<div class="wrap">' + (list ? head + '<div class="ccards">' + list + '</div>' : '<div class="empty">Aucun client. Crée-en un, ou scanne le KV pour récupérer les clés existantes.</div>') + '</div>');
     }).catch(showError);
   }
   // Présence : « En ligne » si activité < 5 min (le poll client entretient
@@ -3937,19 +3937,28 @@
         return '<div class="ctile__proj"><span class="ctile__projn">' + esc(p.projectLabel || 'Projet') + '</span>' + (typeof p.pct === 'number' ? '<span class="ctile__projp">' + p.pct + '%</span>' : '') + '</div>';
       }).join('') + (projects.length > 3 ? '<div class="ctile__projmore">+ ' + (projects.length - 3) + ' autre' + (projects.length - 3 > 1 ? 's' : '') + '</div>' : '') + '</div>';
     }
-    return '<div class="ctile" tabindex="0" onclick="ADM.openClient(\'' + c.key + '\')" onkeydown="if(event.key===\'Enter\')ADM.openClient(\'' + c.key + '\')">' +
-      '<div class="ctile__top">' +
-        '<div class="ctile__av">' + esc(clientInitials(c)) + '</div>' +
-        '<div class="ctile__id"><div class="ctile__name">' + esc(nm) + '</div>' + (co ? '<div class="ctile__co">' + esc(co) + '</div>' : '') + '</div>' +
-        (function () { var pr = presence(c.lastSeen); return '<span class="ctile__dot' + (pr.online ? ' on' : '') + '" title="' + pr.label + '"></span>'; })() +
+    // Carte cliente au style maquette (.ccard) : avatar, nom, projet, %, barre,
+    // étape en cours, drapeaux (messages / forfait). Le forfait (forfHtml/projHtml)
+    // reste disponible dans le détail de la cliente.
+    var p0 = (projects && projects.length) ? projects[0] : null;
+    var projLine = p0 ? (esc(p0.projectLabel || 'Projet') + (co ? ' · ' + esc(co) : '')) : (co ? esc(co) : 'Espace client');
+    var pct = (p0 && typeof p0.pct === 'number') ? p0.pct : null;
+    var pr = presence(c.lastSeen);
+    var stepTxt = p0 ? (p0.currentStep ? '<span class="k">En cours</span>' + esc(p0.currentStep) : (p0.nextStep ? '<span class="k">Ensuite</span>' + esc(p0.nextStep) : '')) + (p0.delivery ? ' · livraison ' + fmtDate(p0.delivery) : '') : '';
+    var flags = '';
+    if (unread > 0) flags += '<span class="flag flag--new">' + unread + ' message' + (unread > 1 ? 's' : '') + '</span>';
+    if (forfait && forfait.configured && (forfait.remaining || 0) < 0) flags += '<span class="flag flag--attn">Forfait dépassé</span>';
+    if (!active) flags += '<span class="flag flag--calm">En pause</span>';
+    if (projects && projects.length) flags += '<span class="flag flag--calm">' + projects.length + ' projet' + (projects.length > 1 ? 's' : '') + '</span>';
+    return '<button class="ccard" type="button" onclick="ADM.openClient(\'' + c.key + '\')">' +
+      '<div class="ccard__top"><span class="ccard__a">' + esc(clientInitials(c)) + '</span>' +
+        '<div><div class="ccard__n">' + esc(nm) + '</div><div class="ccard__p">' + projLine + '</div></div>' +
+        (pct != null ? '<span class="ccard__pct">' + pct + '%</span>' : '<span class="ccard__pres' + (pr.online ? ' on' : '') + '" title="' + esc(pr.label) + '"></span>') +
       '</div>' +
-      (function () { var pr = presence(c.lastSeen); return '<div class="ctile__meta">' + (c.email ? esc(c.email) + ' · ' : '') + '<span style="color:' + (pr.online ? 'var(--green)' : 'var(--muted)') + (pr.online ? ';font-weight:600' : '') + '">' + pr.label + '</span></div>'; })() +
-      forfHtml + projHtml +
-      '<div class="ctile__foot">' +
-        (active ? '<span class="pill pill--done">actif</span>' : '<span class="pill">inactif</span>') +
-        (unread > 0 ? '<span class="pill pill--a_valider">' + unread + ' message' + (unread > 1 ? 's' : '') + '</span>' : '') +
-        (projects && projects.length ? '<span class="pill">' + projects.length + ' projet' + (projects.length > 1 ? 's' : '') + '</span>' : '') +
-      '</div></div>';
+      (pct != null ? '<div class="cbar"><i style="width:' + pct + '%"></i></div>' : '') +
+      (stepTxt ? '<div class="ccard__step">' + stepTxt + '</div>' : '') +
+      (flags ? '<div class="ccard__flags">' + flags + '</div>' : '') +
+    '</button>';
   }
   function scan() { api('/api/clients/scan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) { toast((d.added || 0) + ' client(s) ajouté(s)'); renderClients(); }); }
 

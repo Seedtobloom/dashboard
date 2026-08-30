@@ -931,3 +931,26 @@ select.cg-in{cursor:pointer}
 .prio2 .li__t{font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre)}
 .prio2 .li__c{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .prio2 .wa.daycol--over,.prio2 .gcol.daycol--over{box-shadow:inset 0 0 0 2px var(--brun)}
+
+/* ═══ Clientes — cartes .ccard style maquette ═══ */
+.ccards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.ccard{background:var(--card);border-radius:18px;padding:20px 22px;border:none;cursor:pointer;text-align:left;width:100%;display:block;transition:transform .12s,background .12s}
+.ccard:hover{transform:translateY(-2px)}
+.ccard__top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ccard__a{width:42px;height:42px;border-radius:12px;background:var(--glycine-50);color:var(--glycine-900);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:19px;flex-shrink:0}
+.ccard__top>div{flex:1;min-width:0}
+.ccard__n{font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);line-height:1.1}
+.ccard__p{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard__pct{font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);flex-shrink:0}
+.ccard__pres{width:8px;height:8px;border-radius:50%;background:var(--terre-200);flex-shrink:0}
+.ccard__pres.on{background:var(--green)}
+.ccard .cbar{height:6px;border-radius:999px;background:var(--surface);overflow:hidden;margin-bottom:13px}
+.ccard .cbar i{display:block;height:100%;border-radius:999px;background:var(--terre)}
+.ccard__step{font-family:var(--font-micro);font-size:12.5px;color:var(--terre-600);margin-bottom:13px}
+.ccard__step .k{font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);margin-right:6px}
+.ccard__flags{display:flex;flex-wrap:wrap;gap:7px}
+.flag{font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+.flag--new{background:var(--glycine);color:var(--glycine-900)}
+.flag--cmt{background:var(--glycine-50);color:var(--glycine-900)}
+.flag--attn{background:var(--gold-chip);color:var(--gold-ink)}
+.flag--calm{background:var(--beige);color:var(--terre-400)}
