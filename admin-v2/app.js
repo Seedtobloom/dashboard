@@ -1580,13 +1580,16 @@
       if (P2_days['zzz']) colKeys.push('zzz');
       function p2DayLabel(k) { if (k === 'zzz' || !k) return 'À planifier'; var dt = new Date(k); var s = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); }
       function p2DayCol(k) {
-        var items = P2_days[k] ? P2_days[k].join('') : '';
-        var body = items || '<div class="daycol__empty">Dépose une tâche ici</div>';
+        var has = P2_days[k] && P2_days[k].length;
         var drop = k === 'zzz' ? '' : ' ondragover="ADM.prioDayOver(event,this)" ondragleave="ADM.prioDayLeave(this)" ondrop="ADM.prioDropDay(event,\'' + k + '\')"';
-        return '<div class="daycol"' + drop + '><div class="dayhead">' + p2DayLabel(k) + '</div>' + body + '</div>';
+        if (has) {
+          return '<div class="wday"' + drop + '><div class="wday__h">' + p2DayLabel(k) + '</div><div class="wday__body">' + P2_days[k].join('') + '</div></div>';
+        }
+        // Jour vide : une seule ligne fine (reste une cible de dépôt).
+        return '<div class="wday wday--empty"' + drop + '><span class="wday__h">' + p2DayLabel(k) + '</span><span class="wday__free">libre — dépose une tâche</span></div>';
       }
       var hasWeek = (P2_week.length + (revs ? revs.length : 0)) > 0;
-      var blockWeekBody = colKeys.map(p2DayCol).join('');
+      var blockWeekBody = '<div class="wcal">' + colKeys.map(p2DayCol).join('') + '</div>';
       var blockWeek = hasWeek ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div><div class="panel__hint">Glisse une tâche par la poignée ⠿ sur le jour où tu comptes la faire. Ça n\'affecte pas l\'échéance de la cliente.</div>' + blockWeekBody + '</section>' : '';
       // Accueil (les compteurs sont désormais dans « Le jour » via pj-daystat)
       var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';

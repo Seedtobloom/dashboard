@@ -871,3 +871,14 @@ select.cg-in{cursor:pointer}
 .rev__x{font-family:var(--font-micro);font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
 .rev__x b{color:var(--terre-600);font-weight:700}
 .rev__d{font-family:var(--font-micro);font-size:11px;color:var(--terre-400);margin-top:9px}
+
+/* Priorités — planificateur semaine en agenda compact (maquette) */
+.prio2 .wcal{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.prio2 .wday{border-radius:10px;padding:5px 10px;transition:background .12s,box-shadow .12s}
+.prio2 .wday--empty{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px}
+.prio2 .wday--empty:hover{background:var(--surf)}
+.prio2 .wday__h{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--brun);opacity:.72}
+.prio2 .wday--empty .wday__h{opacity:.5}
+.prio2 .wday__free{font-family:var(--font-micro);font-size:10px;font-style:italic;letter-spacing:.02em;color:var(--brun);opacity:.28;white-space:nowrap}
+.prio2 .wday__body{margin-top:3px}
+.prio2 .wday.daycol--over{background:rgba(28,18,5,.06);box-shadow:inset 0 0 0 2px var(--brun)}
