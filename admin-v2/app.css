@@ -954,3 +954,13 @@ select.cg-in{cursor:pointer}
 .flag--cmt{background:var(--glycine-50);color:var(--glycine-900)}
 .flag--attn{background:var(--gold-chip);color:var(--gold-ink)}
 .flag--calm{background:var(--beige);color:var(--terre-400)}
+
+/* ═══ Fiche cliente — en-tête maquette (cdhead) ═══ */
+.cdhead{display:flex;align-items:center;gap:14px;margin:4px 0 18px;flex-wrap:wrap}
+.cdhead__a{width:52px;height:52px;border-radius:14px;background:var(--glycine);color:var(--glycine-900);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;font-size:24px;flex-shrink:0}
+.cdhead__m{flex:1;min-width:0}
+.cdhead__n{font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre);line-height:1}
+.cdhead__p{font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.cdhead__pres{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cdhead__pres i{width:8px;height:8px;border-radius:50%;background:var(--terre-200)}
+.cdhead__pres i.on{background:var(--green)}

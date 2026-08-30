@@ -4051,8 +4051,14 @@
     }).join('');
     var ml = (CUR.meetingLink || '').trim();
     var visioBtn = ml ? '<a class="btn btn--dark btn--sm" href="' + esc(ml.indexOf('http') === 0 ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Ouvrir la salle de visioconférence">' + admIcon('video') + ' Rejoindre la visio</a>' : '';
-    setMain(topbar(nm, visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>', presence(CUR.lastSeen).label) +
-      '<div class="wrap cl2">' + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+    var _cdInit = (nm.trim().charAt(0) || '?').toUpperCase();
+    var _cdProj = (CUR.domains && CUR.domains[0]) ? (DOMAIN_LABELS[CUR.domains[0].id] || CUR.domains[0].label) : 'Espace client';
+    var _cdPr = presence(CUR.lastSeen);
+    var cdhead = '<div class="cdhead"><span class="cdhead__a">' + esc(_cdInit) + '</span>' +
+      '<div class="cdhead__m"><div class="cdhead__n">' + esc(nm) + '</div><div class="cdhead__p">' + esc(_cdProj) + '</div></div>' +
+      '<span class="cdhead__pres"><i class="' + (_cdPr.online ? 'on' : '') + '"></i>' + esc(_cdPr.label) + '</span></div>';
+    setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
+      '<div class="wrap cl2">' + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
   function clientAlerts() {
