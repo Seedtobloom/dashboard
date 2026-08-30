@@ -6090,22 +6090,25 @@
     var rated = bilans.filter(function (b) { return b.rating; });
     var avg = rated.length ? (rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length) : 0;
     var reco = bilans.filter(function (b) { return b.recommend; }).length;
-    function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-    var hero = (bilans.length || avis.length) ? '<div class="kpis">' +
-      kc(bilans.length, 'Bilans reçus') +
-      kc(avg ? avg.toFixed(1).replace('.0', '') + '/5' : '·', 'Note moyenne') +
-      kc(bilans.length ? Math.round(reco / bilans.length * 100) + ' %' : '·', 'Recommandent') +
-      kc(avis.length, 'Avis sur l\'espace') + '</div>' : '';
+    function starStr(n) { var s = ''; for (var i = 1; i <= 5; i++) s += (n >= i ? '★' : '☆'); return s; }
+    function avInit(name) { return (String(name || '?').trim().charAt(0) || '?').toUpperCase(); }
+    var avNote = avg ? avg.toFixed(1).replace('.', ',') : '—';
+    var avscore = '<div class="avscore"><div class="avscore__n">' + avNote + '</div>' +
+      '<div class="avscore__stars">' + starStr(Math.round(avg)) + '</div>' +
+      '<div class="avscore__c">' + rated.length + ' bilan' + (rated.length > 1 ? 's' : '') + ' · sur 5</div>' +
+      '<div class="avscore__sub">' + (bilans.length ? Math.round(reco / bilans.length * 100) + ' % recommandent' : 'Pas encore de bilan') + (avis.length ? '<br>' + avis.length + ' avis sur l\'espace' : '') + '</div></div>';
     var avisRows = avis.length ? avis.map(function (a) {
-      return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(a.client) + '</strong><span class="micro">' + (a.category ? esc(a.category) + ' · ' : '') + fmtDate(a.createdAt) + '</span></div><div class="muted mt" style="white-space:pre-wrap;line-height:1.5">' + esc(a.content) + '</div></div>';
+      return '<div class="rev"><div class="rev__top"><span class="rev__a">' + avInit(a.client) + '</span>' +
+        '<div class="rev__who"><b>' + esc(a.client) + '</b><span>' + (a.category ? esc(a.category) + ' · ' : '') + fmtDate(a.createdAt) + '</span></div></div>' +
+        '<div class="rev__q">' + esc(a.content) + '</div></div>';
     }).join('') : '<div class="empty">Aucun avis sur l\'espace pour le moment. Les clients le laissent depuis l\'onglet « Votre avis » de leur espace.</div>';
     var bilRows = bilans.length ? bilans.map(function (b) {
-      var stars = ''; for (var i = 1; i <= 5; i++) stars += '<span style="font-size:17px;color:' + ((b.rating >= i) ? '#d8a93a' : '#d9cfbe') + '">★</span>';
-      return '<div class="card" style="max-width:760px"><div class="between"><strong>' + esc(b.client) + '</strong><span class="micro">' + fmtDate(b.submittedAt) + '</span></div>' +
-        '<div class="mt">' + stars + ' ' + (b.recommend ? '<span class="pill pill--done">recommande</span>' : '<span class="pill">pas encore</span>') + '</div>' +
-        (b.testimonial ? '<div class="muted mt" style="font-style:italic">« ' + esc(b.testimonial) + ' »' + (b.allowTestimonial ? ' <span class="pill pill--done">publiable</span>' : ' <span class="pill">interne</span>') + '</div>' : '') +
-        (b.liked ? '<div class="micro mt">Ce qui a plu : ' + esc(b.liked) + '</div>' : '') +
-        (b.improve ? '<div class="micro mt">À améliorer : ' + esc(b.improve) + '</div>' : '') + '</div>';
+      return '<div class="rev"><div class="rev__top"><span class="rev__a">' + avInit(b.client) + '</span>' +
+        '<div class="rev__who"><b>' + esc(b.client) + '</b><span>' + fmtDate(b.submittedAt) + (b.recommend ? ' · recommande' : '') + '</span></div>' +
+        '<span class="rev__stars">' + starStr(b.rating || 0) + '</span></div>' +
+        (b.testimonial ? '<div class="rev__q rev__q--it">« ' + esc(b.testimonial) + ' »</div>' : '') +
+        (b.liked ? '<div class="rev__x"><b>Ce qui a plu :</b> ' + esc(b.liked) + '</div>' : '') +
+        (b.improve ? '<div class="rev__x"><b>À améliorer :</b> ' + esc(b.improve) + '</div>' : '') + '</div>';
     }).join('') : '<div class="empty">Aucun bilan de collaboration reçu.</div>';
     var tabDefs = [['bilans', 'Bilans de collaboration', bilans.length], ['avis', 'Avis sur l\'espace', avis.length]];
     if (!tabDefs.some(function (x) { return x[0] === AVIS_TAB; })) AVIS_TAB = 'bilans';
@@ -6115,7 +6118,7 @@
     var body = AVIS_TAB === 'avis'
       ? '<div class="micro mb">Ce que les clients signalent pour améliorer leur espace (manques, incompréhensions, suggestions).</div>' + avisRows
       : '<div class="micro mb">Retours de satisfaction reçus à la fin des accompagnements.</div>' + bilRows;
-    setMain(topbar('Avis', '', 'Les retours et bilans remplis par tes clients') + '<div class="wrap">' + hero + tabBar + '<div id="avisbody">' + body + '</div></div>');
+    setMain(topbar('Avis', '', 'Les retours et bilans remplis par tes clients') + '<div class="wrap"><div class="avgrid">' + avscore + '<div>' + tabBar + '<div id="avisbody">' + body + '</div></div></div></div>');
   }
 
   /* ────────────────────────────────────────────────────────────────────────
@@ -6831,23 +6834,20 @@
   function incLoad(){ api('/api/client-errors').then(function(r){ return r.json(); }).then(function(d){ INC = (d && d.errors) || []; renderIncBody(); }).catch(showError); }
   function renderIncBody(){
     var b = el('inc-body'); if (!b) return;
-    if (!INC.length){ b.innerHTML = '<div class="card infocard" style="background:var(--card)"><div class="empty">Aucun incident. 🎉 Tout roule pour tes clientes.</div></div>'; return; }
+    if (!INC.length){ b.innerHTML = '<div class="card" style="background:var(--card)"><div class="empty">Aucun incident. 🎉 Tout roule pour tes clientes.</div></div>'; return; }
     var ctxLbl = { 'upload-ticket':'Upload — ticket', 'upload-brief':'Upload — demande', 'js':'Erreur technique', 'promise':'Erreur technique' };
-    b.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;max-width:820px">' + INC.map(function(e){
+    var icon = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
+    b.innerHTML = '<div class="inclist">' + INC.map(function(e){
       var isNew = !e.seen;
-      return '<div class="card" style="background:var(--card);padding:16px 18px;border:1px solid '+(isNew?'#e7c6bd':'var(--bone-d)')+'">' +
-        '<div class="between" style="align-items:flex-start;gap:12px">' +
-          '<div style="min-width:0">' +
-            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-              (isNew?'<span style="width:8px;height:8px;border-radius:50%;background:#8a4a2c;flex-shrink:0"></span>':'') +
-              '<span style="font-weight:650;color:var(--terre);font-size:14.5px">'+esc(ctxLbl[e.context]||e.context||'Incident')+'</span>' +
-              '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">'+esc(e.clientName||'')+'</span>' +
-            '</div>' +
-            '<div style="font-size:13px;color:var(--terre-600);line-height:1.5;margin-top:6px">'+esc(e.message||'')+'</div>' +
-            (e.url?'<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px;word-break:break-all">'+esc(e.url)+'</div>':'') +
-          '</div>' +
-          '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap;flex-shrink:0">'+fmtDT(e.at)+'</span>' +
+      return '<div class="inc'+(isNew?' inc--new':'')+'">' +
+        '<span class="inc__ic">'+icon+'</span>' +
+        '<div class="inc__m">' +
+          '<div class="inc__t">'+esc(ctxLbl[e.context]||e.context||'Incident')+'</div>' +
+          '<div class="inc__meta">'+esc(e.clientName||'')+(e.at?' · '+fmtDT(e.at):'')+'</div>' +
+          (e.message?'<div class="inc__d">'+esc(e.message)+'</div>':'') +
+          (e.url?'<div class="inc__d inc__d--url">'+esc(e.url)+'</div>':'') +
         '</div>' +
+        '<span class="inc__st '+(isNew?'inc__st--new':'inc__st--seen')+'">'+(isNew?'Nouveau':'Vu')+'</span>' +
       '</div>';
     }).join('') + '</div>';
   }
