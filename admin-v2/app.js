@@ -1338,35 +1338,9 @@
         '</div>';
       var mineHtml = prioControls + (mineBody || '<div class="empty">' + (mine.length ? 'Rien ici avec ce filtre.' : 'Rien à traiter, tout est à jour.') + '</div>');
 
-      // Focus du jour : ce qui doit bouger maintenant (retard + aujourd'hui), actions directes
-      function focusRow(x) {
-        var iso = (x.dueDate || '').slice(0, 10);
-        var overdue = x._d < 0;
-        var whenLight = overdue ? '#efb2a2' : (x._d === 0 ? '#eccd93' : 'rgba(242,229,194,0.62)');
-        var fBrief = prioBrief(x, true);
-        return '<div class="focusrow"' + (fBrief ? ' style="flex-wrap:wrap"' : '') + '>' +
-          '<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--paille);font-size:14.5px">' + esc(x.title) + (x.needsRework ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#dff0d5;background:rgba(63,90,55,0.55);padding:3px 8px;border-radius:999px;vertical-align:middle">↩ Retours reçus</span>' : '') + '</div>' +
-            '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:rgba(242,229,194,0.6);margin-top:3px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · <span style="color:' + whenLight + ';font-weight:700">' + whenLabel(x._d) + '</span></div>' + prioClientLink(x, true) + '</div>' +
-          (x.id ? '<div class="prow__act" style="flex-shrink:0">' + prioTimer(x, true) +
-            (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision au client" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
-            (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
-            (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
-            '<button class="pbtn pbtn--ok" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
-            (x.kind === 'tâche' || x.kind === 'ticket'
-              ? '<button class="pbtn" title="Proposer un report que la cliente devra accepter" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
-              : '<button class="pbtn" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>') +
-          '</div>' : '') +
-          (fBrief ? '<div style="flex-basis:100%;width:100%;min-width:0;margin-top:8px">' + fBrief + '</div>' : '') +
-        '</div>';
-      }
       // Indépendant de la vue (par date / par client) et du filtre : sinon le
       // rendu plantait en vue « Par client » (late/tdy non définies) et les
       // onglets ne répondaient plus.
-      var focusItems = mine.filter(function (x) { return x._d <= 0; }).sort(function (a, b) { return a._d - b._d; });
-      var focusBand = focusItems.length
-        ? '<div class="focusband"><div class="focusband__h">Focus du jour<span class="focusband__c">' + focusItems.length + '</span></div>' + focusItems.map(focusRow).join('') + '</div>'
-        : '<div class="focusband focusband--clear"><span style="font-size:18px">✓</span> Rien d\'urgent aujourd\'hui, tu es à jour.</div>';
-
       // Révisions demandées par le client : la balle est dans votre camp
       var revs = d.revisions || [];
       function revRow(r) {
@@ -1568,14 +1542,6 @@
             ? '<button class="pbtn" title="Proposer un report" onclick="ADM.prioProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + iso + '\',\'' + x.kind + '\')">Proposer report</button>'
             : '<button class="pbtn" title="Reporter" onclick="ADM.prioPostpone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\',\'' + iso + '\')">Reporter</button>');
       }
-      function p2Trow(x, n) {
-        var brief = prioBrief(x, false);
-        return '<div class="trow"><div class="trow__n tnum">' + n + '</div>' +
-          '<div><div class="trow__t">' + esc(x.title) + '</div><div class="trow__m">' + p2Meta(x) + '</div></div>' +
-          '<span class="trow__e">' + (x.estMinutes > 0 ? hLabel(x.estMinutes) : '') + '</span>' +
-          '<div class="trow__a rowacts">' + p2Acts(x, false) + '</div>' +
-          (brief ? '<div class="rowbrief">' + brief + '</div>' : '') + '</div>';
-      }
       function p2Drow(x, dark, whenCol, drag) {
         var col = whenCol || (x._d < 0 ? '#8a4a2c' : (x._d === 0 ? 'var(--orange)' : 'inherit'));
         var isTask = drag && x.kind === 'tâche' && x.id;
@@ -1593,12 +1559,6 @@
           '<div class="rowacts">' + catSel + p2Acts(x, dark) + '</div>' +
           (brief ? '<div class="rowbrief">' + brief + '</div>' : '') + '</div>';
       }
-      var P2_todayBody = P2_today.length ? P2_today.map(function (x, i) { return p2Trow(x, ('0' + (i + 1)).slice(-2)); }).join('') : '<div class="prioempty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>';
-      var blockToday = '<section class="panel panel--lav"><span class="heromk">' + (new Date().getDate()) + '</span>' +
-        '<div class="panel__h"><span class="tag">Aujourd\'hui · ' + P2_today.length + '</span><h2>Ce qui doit bouger maintenant</h2></div>' +
-        '<div class="today">' + P2_todayBody + '</div></section>';
-      var blockLate = P2_late.length ? '<section class="panel panel--nuit"><div class="panel__h"><span class="tag">En retard · ' + P2_late.length + '</span><h2>À rattraper</h2></div>' +
-        P2_late.map(function (x) { return p2Drow(x, true, '#f4a48f'); }).join('') + '</section>' : '';
       var blockWait = waitAll.length ? '<section class="panel panel--surf"><div class="panel__h"><span class="tag">En attente · ' + waitAll.length + '</span><h2>Chez les clientes</h2></div><div class="wgrid">' + waitHtml + '</div></section>' : '';
       // Tout ce qui est actionnable au-delà de cette semaine : sans date (tickets de
       // maintenance surtout, _d=99) OU daté plus tard (_d>7). Sinon ça passait inaperçu.
@@ -1635,16 +1595,8 @@
       var hasWeek = (P2_week.length + (revs ? revs.length : 0)) > 0;
       var blockWeekBody = colKeys.map(p2DayCol).join('');
       var blockWeek = hasWeek ? '<section class="panel panel--creme"><div class="panel__h"><span class="tag">Cette semaine · ' + (P2_week.length + (revs ? revs.length : 0)) + '</span><h2>La suite, jour par jour</h2></div><div class="panel__hint">Glisse une tâche par la poignée ⠿ sur le jour où tu comptes la faire. Ça n\'affecte pas l\'échéance de la cliente.</div>' + blockWeekBody + '</section>' : '';
-      var P2_board = '<div class="board">' + blockToday + (blockLate || '') + (blockPlan || '') + (blockWait || '') + blockWeek + '</div>';
-
-      // Accueil + bande de compteurs (repris du prototype)
+      // Accueil (les compteurs sont désormais dans « Le jour » via pj-daystat)
       var P2_hello = '<p class="hello">Bonjour Cindy</p><p class="hello__s">Ce qui compte aujourd\'hui, tous clients confondus.</p>';
-      var P2_summary = '<div class="summary">' +
-        '<div class="sm sm--late"><div class="sm__n tnum">' + nLate + '</div><div class="sm__l">En retard</div></div>' +
-        '<div class="sm"><div class="sm__n tnum">' + nToday + '</div><div class="sm__l">Aujourd\'hui</div></div>' +
-        '<div class="sm"><div class="sm__n tnum">' + nWeek + '</div><div class="sm__l">Cette semaine</div></div>' +
-        '<div class="sm"><div class="sm__n tnum">' + nWait + '</div><div class="sm__l">En attente</div></div>' +
-        '</div>';
 
       // Tes projets en cours (cartes avec % d'avancement) — repris du prototype
       var P2_projs = d.activeProjects || [];
