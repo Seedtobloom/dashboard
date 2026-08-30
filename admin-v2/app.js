@@ -4051,8 +4051,36 @@
       '<div class="cdhead__m"><div class="cdhead__n">' + esc(nm) + '</div><div class="cdhead__p">' + esc(_cdProj) + '</div></div>' +
       '<span class="cdhead__pres"><i class="' + (_cdPr.online ? 'on' : '') + '"></i>' + esc(_cdPr.label) + '</span></div>';
     setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
-      '<div class="wrap cl2">' + cdhead + clientAlerts() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+      '<div class="wrap cl2">' + cdhead + clientStats() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
+  }
+  // Bandeau de 4 tuiles (maquette cdstats) : avancement, prochaine livraison,
+  // forfait restant, dernier échange. Valeurs dérivées des données réelles.
+  function clientStats() {
+    var doms = (CUR.domains || []).concat(CUR.supports || []);
+    var totSteps = 0, doneSteps = 0, nextDue = '', forfaitTxt = '';
+    doms.forEach(function (d) {
+      var c = d.content || {};
+      (c.suivi || []).forEach(function (s) { totSteps++; if (s.status === 'done' || s.completedAt) doneSteps++; });
+      (c.livrables || []).forEach(function (l) { var dd = l.dueDate || l.dueAt || ''; if (dd && (!nextDue || dd < nextDue)) nextDue = dd; });
+      (c.suivi || []).forEach(function (s) { var dd = s.dueDate || ''; if (dd && s.status !== 'done' && !s.completedAt && (!nextDue || dd < nextDue)) nextDue = dd; });
+      if (d.id === 'partner' && c.forfait) {
+        var used = +c.forfait.used || 0, tot = +c.forfait.total || 0;
+        if (tot) forfaitTxt = fmtHrs(Math.max(0, tot - used));
+      }
+    });
+    var pct = totSteps ? Math.round(doneSteps / totSteps * 100) + '%' : '—';
+    var pr = presence(CUR.lastSeen);
+    var lastTxt = pr.online ? 'en ligne' : (pr.label || '—');
+    var t = [
+      ['', pct, 'Avancement'],
+      ['', nextDue ? esc(fmtDate(nextDue)) : '—', 'Prochaine livraison'],
+      ['', forfaitTxt || '—', 'Forfait restant'],
+      [' cdstat--new', esc(lastTxt), 'Dernier échange']
+    ];
+    return '<div class="cdstats">' + t.map(function (x) {
+      return '<div class="cdstat' + x[0] + '"><b>' + x[1] + '</b><span>' + x[2] + '</span></div>';
+    }).join('') + '</div>';
   }
   function clientAlerts() {
     var unread = 0, aValider = 0, review = 0, waitClient = 0;
@@ -4371,8 +4399,8 @@
       '<div class="micro mt">Clé d\'accès : <span class="keybox" style="display:inline-block;padding:3px 8px">' + esc(CUR.key) + '</span></div>' +
       '<div class="row mt" style="align-items:center;gap:10px"><button class="btn btn--outline btn--sm" onclick="ADM.editToken()">Copier le code du mode édition (24 h)</button>' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">À coller à la fin de l\'adresse de l\'espace client pour activer le mode édition.</span></div></div>';
-    var danger = '<div class="card infocard" style="background:#fbf1ee">' +
-      '<h3 style="color:#8a4a2c"><span class="infocard__dot" style="background:#b5462f"></span>Zone sensible</h3>' +
+    var danger = '<div class="card infocard" style="background:var(--card)">' +
+      '<h3 style="color:var(--terre)"><span class="infocard__dot" style="background:var(--gold-chip)"></span>Zone sensible</h3>' +
       '<div class="micro mb">Supprime définitivement ce client : son espace, ses messages, ses tâches et ses fichiers. Action irréversible.</div>' +
       '<button class="btn btn--danger btn--sm" onclick="ADM.deleteClient()">Supprimer ce client et son espace</button></div>';
     return '<div class="grid grid--2" style="align-items:start;max-width:1100px">' +

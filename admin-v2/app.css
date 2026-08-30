@@ -15,6 +15,13 @@
   --radius:18px; --sw:248px;
   --shadow-1:none;
   --shadow-2:none;
+  /* alias maquette (priorites-admin) — noms courts utilisés par les composants portés */
+  --beige:#E4D9C5; --bone-d:#e0d6c4;
+  --gold-chip:#CD8F6E; --gold-ink:#3d1c0b; --gold-soft:#E6E5B2;
+  --gly:#C5DEFF; --gly-50:#E8F1FF; --gly-ink:#2c4a72;
+  --paille-700:#cabf95;
+  --fd:'Cormorant Garamond','EB Garamond',Georgia,serif;
+  --fb:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font-body);font-synthesis:none;background:var(--page);color:var(--text);font-size:16px;line-height:1.5}
@@ -982,4 +989,75 @@ select.cg-in{cursor:pointer}
 .inrow--recu .inrow__ic{background:var(--glycine);color:var(--glycine-900)}
 .inrow__m{flex:1;min-width:0}
 .inrow__t{font-family:var(--font-micro);font-size:13.5px;font-weight:600;color:var(--terre)}
+.inrow__t em{font-style:italic;font-weight:500;color:var(--terre-600)}
 .inrow__s{font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.inrow__ic--cmt{background:var(--beige);color:var(--terre-600)}
+
+/* ═══ Fiche cliente — bandeau stats (maquette cdstats) ═══ */
+.cdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:860px){.cdstats{grid-template-columns:repeat(2,1fr)}}
+.cdstat{background:var(--card);border-radius:14px;padding:14px 16px}
+.cdstat--new{background:var(--glycine-50)}
+.cdstat b{display:block;font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);line-height:1;font-variant-numeric:tabular-nums}
+.cdstat--new b{color:var(--glycine-900)}
+.cdstat span{font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-top:5px;display:block}
+
+/* ═══ Fiche cliente — onglets marron (maquette ctab) ═══ */
+.cl2 .tabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);padding:6px;border-radius:15px;margin-bottom:18px}
+.cl2 .tabs .tab{position:relative;background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre-600);padding:11px 18px;border-radius:11px;text-transform:none;letter-spacing:0;transition:background .15s,color .15s}
+.cl2 .tabs .tab:hover{background:var(--beige)}
+.cl2 .tabs .tab.active{background:var(--terre);color:var(--paille);font-weight:700}
+
+/* ═══ Fiche cliente — Étapes (maquette steps) ═══ */
+.steps{display:flex;flex-direction:column;gap:9px}
+.step{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:12px;padding:13px 16px}
+.step--now{background:var(--glycine-50)}
+.step__i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;font-family:var(--font-body);font-size:12px;font-weight:700}
+.step--done .step__i{background:var(--terre);color:var(--paille)}
+.step--now .step__i{background:var(--glycine);color:var(--glycine-900)}
+.step--todo .step__i{background:var(--beige);color:var(--terre-400)}
+.step__t{flex:1;font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--terre)}
+.step__s{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--beige);color:var(--terre-400)}
+.step--now .step__s{background:var(--glycine);color:var(--glycine-900)}
+.step--done .step__s{background:var(--beige);color:var(--terre-600)}
+
+/* ═══ Fiche cliente — Fichiers (maquette ffolder/frow) ═══ */
+.ffilters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.ffolder{margin-bottom:18px}
+.ffolder:last-child{margin-bottom:0}
+.foldh{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;background:var(--beige);margin-bottom:9px}
+.foldh b{font-family:var(--font-micro);font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)}
+.foldh span{font-family:var(--font-micro);font-size:11px;color:var(--terre-400)}
+.frow{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:11px 14px;margin-bottom:8px}
+.frow--recu{background:var(--glycine-50)}
+.frow__ic{width:34px;height:34px;border-radius:9px;background:var(--beige);color:var(--terre-600);display:grid;place-items:center;flex-shrink:0}
+.frow--recu .frow__ic{background:var(--glycine);color:var(--glycine-900)}
+.frow__m{flex:1;min-width:0}
+.frow__n{font-family:var(--font-display);font-size:16px;color:var(--terre);line-height:1.2}
+.frow__s{font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.flag--wait{background:var(--beige);color:var(--muted)}
+.flag--calm{background:var(--beige);color:var(--terre-400)}
+
+/* ═══ Fiche cliente — Échanges (maquette thread) ═══ */
+.thread{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:78%;padding:12px 15px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.msg small{display:block;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px}
+.msg--in{align-self:flex-start;background:var(--glycine-50);color:var(--terre);border-bottom-left-radius:5px}
+.msg--in small{color:var(--glycine-900)}
+.msg--out{align-self:flex-end;background:var(--terre);color:var(--paille);border-bottom-right-radius:5px}
+.msg--out small{color:var(--paille-700)}
+.composer{display:flex;gap:9px;margin-top:14px}
+.composer input{flex:1;border:none;border-radius:11px;padding:11px 15px;font-family:var(--font-body);font-size:14px;color:var(--terre);background:var(--card)}
+
+/* ═══ Fiche cliente — Forfait (maquette forfaitmini/lg) ═══ */
+.forfaitmini{background:var(--terre);color:var(--paille);border-radius:16px;padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.forfaitmini__big{font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--paille);line-height:1}
+.forfaitmini__big i{font-size:16px;color:var(--paille-700)}
+.forfaitmini__s{font-family:var(--font-micro);font-size:12px;color:var(--paille-700);margin-top:4px}
+.forfaitmini__bar{flex:1;min-width:160px;height:10px;border-radius:999px;background:rgba(242,229,194,0.18);overflow:hidden}
+.forfaitmini__bar i{display:block;height:100%;border-radius:999px;background:var(--glycine)}
+.lg{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--terre);padding:5px 0}
+.lg__d{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.lg__v{margin-left:auto;font-family:var(--font-display);font-style:italic;font-size:15px;font-variant-numeric:tabular-nums}
+.backlink{background:none;border:none;cursor:pointer;font-family:var(--font-micro);font-size:12px;font-weight:600;color:var(--muted);padding:4px 0 8px}
+.backlink:hover{color:var(--terre)}
