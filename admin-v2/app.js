@@ -931,7 +931,7 @@
     var w = it.at ? new Date(it.at) : null;
     var whenTxt = w && !isNaN(w) ? w.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
     var chip = '<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:' + cfg.bg + ';color:' + cfg.ic + ';flex-shrink:0">' + admIcon(cfg.icon) + '</span>';
-    return '<div class="card" style="background:var(--card);padding:15px 17px;margin-bottom:11px;border:1px solid var(--bone-d)' + (accent ? ';border-left:3px solid ' + accent : '') + '">' +
+    return '<div style="background:' + (accent ? '#f7ede6' : 'var(--card)') + ';border-radius:14px;padding:15px 17px;margin-bottom:11px">' +
       '<div style="display:flex;gap:12px;align-items:flex-start">' + chip +
         '<div style="min-width:0;flex:1">' +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">' +
