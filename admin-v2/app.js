@@ -19,6 +19,7 @@
     semaine: 'M4 4h4v16H4zM10 4h4v16h-4zM16 4h4v16h-4z',
     planning: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
     kpi: 'M3 3v18h18M18 17V9M13 17V5M8 17v-3',
+    temps: 'M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l3 2M9 2h6',
     done: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
     clients: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
     chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
@@ -317,7 +318,7 @@
   function buildNavHtml() {
     var groups = [
       ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['semaine', 'Ma semaine'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
-      ['Pilotage', [['kpi', 'Tableau de bord'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
+      ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];
     function navItemHtml(it) {
@@ -567,6 +568,7 @@
     if (VIEW === 'projtpl') return renderProjTpl();
     if (VIEW === 'incidents') return renderIncidents();
     if (VIEW === 'kpi') return renderKpi();
+    if (VIEW === 'temps') return renderTemps();
     if (VIEW === 'clients') return renderClients();
     if (VIEW === 'newclient') return renderNewClient();
     if (VIEW === 'client') return renderClient();
@@ -3482,42 +3484,236 @@
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px">' + cards + '</div>';
   }
   function hexA(hex, a) { var h = String(hex || '').replace('#', ''); if (h.length !== 6) return 'rgba(94,63,160,' + a + ')'; return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
+  // Tableau de bord — mise en page exacte de la maquette : 4 tuiles,
+  // Santé des projets, Ce qui a besoin de toi, Accès rapide. Données réelles.
   function renderKpiBody(d) {
-    var t = d.totals || {};
-    function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-    var kpis = '<div class="kpis">' + kc(t.done || 0, 'Tâches réalisées') + kc(((t.minutes || 0) / 60).toFixed(0) + ' h', 'Temps passé') + kc(t.open || 0, 'Tâches en cours') + kc(t.clients || 0, 'Clients actifs') + '</div>';
-    var keys = Object.keys(d.tasksByMonth || {}).sort().slice(-8);
-    var tItems = keys.map(function (k) { return { label: monthLbl(k), value: d.tasksByMonth[k] || 0 }; });
-    var mItems = keys.map(function (k) { return { label: monthLbl(k), value: Math.round((d.minutesByMonth[k] || 0) / 60 * 10) / 10 }; });
-    var clientRows = (d.byClient || []).map(function (c) {
-      return '<tr><td><a href="javascript:ADM.openClient(\'' + c.key + '\')">' + esc(c.client) + '</a></td>' +
-        '<td>' + c.tasksDone + '</td><td>' + (c.minutes / 60).toFixed(1).replace('.0', '') + ' h</td><td>' + c.openTasks + '</td></tr>';
-    }).join('') || '<tr><td colspan="4" class="empty">Aucun client partenaire.</td></tr>';
-    var forf = (d.forfaits || []).filter(function (f) { return f.configured; }).map(function (f) {
-      var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0; var over = f.remaining < 0;
-      return '<div class="prow" style="display:block;padding:10px 4px"><div class="between"><strong style="font-size:14px">' + esc(f.client) + '</strong><span class="micro" style="color:' + (over ? '#8a4a2c' : 'var(--muted)') + '">' + f.used + ' / ' + f.base + ' h</span></div><div class="bar' + (over ? ' over' : '') + '" style="margin-top:6px"><span style="width:' + pct + '%"></span></div></div>';
-    }).join('') || '<div class="empty">Aucun forfait configuré.</div>';
-    var tabDefs = [['evol', 'Évolution', null], ['temps', 'Temps par type', null], ['rentabilite', 'Rentabilité', null], ['clients', 'Par client', (d.byClient || []).length], ['forfaits', 'Forfaits', (d.forfaits || []).filter(function (f) { return f.configured; }).length]];
-    if (!tabDefs.some(function (x) { return x[0] === KPI_TAB; })) KPI_TAB = 'evol';
-    var tabBar = '<div class="tabs">' + tabDefs.map(function (x) {
-      return '<button class="tab' + (KPI_TAB === x[0] ? ' active' : '') + '" onclick="ADM.kpiSetTab(\'' + x[0] + '\')">' + esc(x[1]) + (x[2] != null ? badge(x[2]) : '') + '</button>';
-    }).join('') + '</div>';
-    var body;
-    if (KPI_TAB === 'clients') {
-      body = '<div class="card"><div class="between mb"><h3 style="margin:0">Par client</h3><button class="btn btn--outline btn--sm" onclick="ADM.kpiExport()">Exporter en CSV</button></div><table><thead><tr><th>Client</th><th>Réalisées</th><th>Temps</th><th>En cours</th></tr></thead><tbody>' + clientRows + '</tbody></table></div>';
-    } else if (KPI_TAB === 'forfaits') {
-      body = '<div class="card"><h3>Forfaits du mois</h3>' + forf + '</div>';
-    } else if (KPI_TAB === 'temps') {
-      body = kpiTimeByTypeHtml();
-    } else if (KPI_TAB === 'rentabilite') {
-      body = kpiRentabiliteHtml();
+    var dash = KPI_DASH || {};
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    function dd(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); return Math.round((t - today) / 86400000); }
+    function iso(dt) { return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
+    function hL(m) { m = Math.round(m || 0); if (!m) return '0'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
+    var dls = dash.deadlines || [];
+    var mine = dls.filter(function (x) { return x.status !== 'waiting_client' && x.status !== 'review'; });
+    var pv = dash.pendingValidation || [];
+    // ── 4 tuiles ──
+    var clientSet = {}; mine.forEach(function (x) { if (x.status !== 'done') clientSet[x.key] = 1; });
+    var nProj = Object.keys(clientSet).length || (d.byClient || []).length;
+    // occupation de la semaine (5 j ouvrés)
+    var weekMin = 0, cur = new Date(today), seen = 0;
+    while (seen < 5) { var dow = cur.getDay(); if (dow !== 0 && dow !== 6) { var di = iso(cur); mine.forEach(function (x) { if ((x.dueDate || '').slice(0, 10) === di && x.status !== 'done') weekMin += (x.estMinutes > 0 ? x.estMinutes : 45); }); seen++; } cur.setDate(cur.getDate() + 1); }
+    var weekCapH = dash.weeklyCapacity || 0;
+    var occPct = weekCapH ? Math.min(100, Math.round(weekMin / 60 / weekCapH * 100)) : 0;
+    // écart estimé → réel
+    var pr = d.profitability || {};
+    var ratio = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) : 0;
+    var ecart = ratio - 100;
+    // satisfaction
+    var bilans = (KPI_AVIS && KPI_AVIS.bilans) || [];
+    var rated = bilans.filter(function (b) { return b.rating > 0; });
+    var satis = rated.length ? Math.round(rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length * 10) / 10 : 0;
+    var kts =
+      '<button class="kt kt--link" onclick="ADM.nav(\'clients\')"><div class="kt__v">' + nProj + '</div><div class="kt__l">Projets en cours</div><span class="kt__d kt__d--flat">' + nProj + ' cliente' + (nProj > 1 ? 's' : '') + ' active' + (nProj > 1 ? 's' : '') + '</span></button>' +
+      '<div class="kt"><div class="kt__v">' + (weekCapH ? occPct + ' %' : '—') + '</div><div class="kt__l">Taux d\'occupation</div>' + (weekCapH ? '<div class="kt__bar"><i style="width:' + occPct + '%"></i></div><span class="kt__d kt__d--flat" style="margin-top:9px">' + hL(weekMin) + ' / ' + weekCapH + ' h</span>' : '<span class="kt__d kt__d--flat">capacité non réglée</span>') + '</div>' +
+      '<button class="kt kt--link" onclick="ADM.nav(\'temps\')"><div class="kt__v">' + (pr.estCount ? (ecart >= 0 ? '+' : '') + ecart + ' %' : '—') + '</div><div class="kt__l">Écart estimé → réel</div><span class="kt__d ' + (pr.estCount ? (ecart > 10 ? 'kt__d--attn' : 'kt__d--up') : 'kt__d--flat') + '">' + (pr.estCount ? (ecart > 10 ? 'tu dépasses tes estimations' : 'dans tes clous') : 'note tes estimations') + '</span></button>' +
+      '<button class="kt kt--link" onclick="ADM.nav(\'avis\')"><div class="kt__v">' + (satis ? String(satis).replace('.', ',') : '—') + '</div><div class="kt__l">Satisfaction · / 5</div><span class="kt__d kt__d--up">' + rated.length + ' avis</span></button>';
+    // ── Santé des projets (covers) ──
+    var byClient = (d.byClient || []).slice(0, 6);
+    var covers = byClient.map(function (c) {
+      var tot = (c.tasksDone || 0) + (c.openTasks || 0);
+      var pct = tot ? Math.round(c.tasksDone / tot * 100) : 0;
+      var mineC = mine.filter(function (x) { return x.key === c.key && x.status !== 'done'; }).sort(function (a, b) { return (a.dueDate || '9') < (b.dueDate || '9') ? -1 : 1; });
+      var nx = mineC[0];
+      var cat = (nx && nx.projectLabel) ? nx.projectLabel : 'Projet';
+      var enCours = nx ? '<div class="cline"><span class="k">En cours</span>' + esc(nx.title || '') + '</div>' : '';
+      var ech = '';
+      if (nx && nx.dueDate) { var n = dd(nx.dueDate); ech = '<div class="cline"><span class="k">Échéance</span>' + esc(fmtDate(nx.dueDate)) + (n < 0 ? ' · ' + (-n) + ' j de retard' : (n === 0 ? " · aujourd'hui" : ' · dans ' + n + ' j')) + '</div>'; }
+      return '<button class="cc" onclick="ADM.openClient(\'' + c.key + '\')"><div class="cc__top"><span class="cc__cat">' + esc(cat) + '</span><span class="cc__pct">' + pct + '%</span></div>' +
+        '<span class="cc__t">' + esc(c.client || '') + '</span><div class="cbar"><i style="width:' + pct + '%"></i></div>' + enCours + ech + '</button>';
+    }).join('') || '<div class="empty" style="grid-column:1/-1">Aucun projet partenaire actif.</div>';
+    // ── Ce qui a besoin de toi (att) ──
+    var attItems = [];
+    mine.filter(function (x) { return x.dueDate && dd(x.dueDate) < 0 && x.status !== 'done'; })
+      .sort(function (a, b) { return dd(a.dueDate) - dd(b.dueDate); }).slice(0, 3).forEach(function (x) {
+        var late = -dd(x.dueDate);
+        attItems.push(['warn', esc(x.title || 'Tâche') + ' · en retard', esc(x.client || '') + ' · ' + late + ' j de retard', 'Ouvrir', "ADM.openClient('" + x.key + "')"]);
+      });
+    pv.slice(0, 2).forEach(function (l) {
+      var since = l.createdAt ? Math.max(0, -dd(l.createdAt)) : 0;
+      attItems.push(['file', esc(l.name || 'Livrable') + ' en attente de validation', 'chez ' + esc(l.client || 'la cliente') + (since ? ' depuis ' + since + ' j' : ''), 'Relancer', "ADM.openClient('" + l.key + "')"]);
+    });
+    var nInboxTdb = (dash.inbox || []).length;
+    if (nInboxTdb) attItems.push(['inbox', nInboxTdb + ' demande' + (nInboxTdb > 1 ? 's' : '') + ' à analyser', 'dans l\'Inbox', 'Ouvrir', "ADM.nav('inbox')"]);
+    attItems = attItems.slice(0, 5);
+    var ICN = { warn: '<path d="M12 8v5M12 16h0M12 3l9 16H3z"/>', file: '<path d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/>', inbox: '<path d="M4 5h16v11H9l-4 3v-3H4z"/>' };
+    var attHtml = attItems.length ? attItems.map(function (a) {
+      return '<div class="att"><span class="att__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7">' + (ICN[a[0]] || '') + '</svg></span>' +
+        '<div class="att__m"><div class="att__t">' + a[1] + '</div><div class="att__s">' + a[2] + '</div></div>' +
+        '<button class="att__b" onclick="' + a[4] + '">' + a[3] + '</button></div>';
+    }).join('') : '<div class="att"><span class="att__ic att__ic--ok"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg></span><div class="att__m"><div class="att__t">Tout est à jour</div><div class="att__s">rien n\'attend de toi</div></div></div>';
+    // ── Accès rapide (syn) ──
+    var doneMonth = 0; var ymNow = iso(today).slice(0, 7);
+    Object.keys(d.tasksByMonth || {}).forEach(function (k) { if (k === ymNow) doneMonth += d.tasksByMonth[k]; });
+    var nInc = (typeof INC !== 'undefined' && Array.isArray(INC)) ? INC.length : 0;
+    var syn =
+      '<button class="syn" onclick="ADM.nav(\'temps\')"><span class="syn__ic" style="background:var(--gold-chip);color:var(--gold-ink)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span><span class="syn__m"><span class="syn__l">Temps &amp; rentabilité</span><span class="syn__s">estimé vs réel</span></span><span class="syn__v">' + (pr.estCount ? (ecart >= 0 ? '+' : '') + ecart + '%' : '—') + '</span><span class="syn__arrow">→</span></button>' +
+      '<button class="syn" onclick="ADM.nav(\'done\')"><span class="syn__ic" style="background:var(--glycine);color:var(--glycine-900)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></span><span class="syn__m"><span class="syn__l">Réalisé</span><span class="syn__s">terminés ce mois</span></span><span class="syn__v">' + doneMonth + '</span><span class="syn__arrow">→</span></button>' +
+      '<button class="syn" onclick="ADM.nav(\'avis\')"><span class="syn__ic" style="background:var(--gold-soft);color:var(--gold-ink)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><span class="syn__m"><span class="syn__l">Avis</span><span class="syn__s">satisfaction · ' + rated.length + ' avis</span></span><span class="syn__v">' + (satis ? String(satis).replace('.', ',') : '—') + '</span><span class="syn__arrow">→</span></button>' +
+      '<button class="syn' + (nInc ? ' syn--attn' : '') + '" onclick="ADM.nav(\'incidents\')"><span class="syn__ic" style="background:var(--gold-chip);color:var(--gold-ink)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><span class="syn__m"><span class="syn__l">Incidents</span><span class="syn__s">à traiter</span></span><span class="syn__v">' + nInc + '</span><span class="syn__arrow">→</span></button>';
+    var html = '<div class="wrap">' +
+      '<div class="clhead"><div><p class="hello">Tableau de bord</p><p class="hello__s">Le pilotage de ton activité : projets, charge, et ce qui a besoin de toi.</p></div></div>' +
+      '<div class="kts">' + kts + '</div>' +
+      '<section class="panel panel--card" style="margin-bottom:15px"><div class="panel__h"><h2>Santé des projets</h2></div><div class="covers">' + covers + '</div></section>' +
+      '<div class="bento">' +
+        '<section class="panel panel--card"><div class="panel__h"><h2>Ce qui a besoin de toi</h2>' + (attItems.length ? '<span class="n">' + attItems.length + '</span>' : '') + '</div>' + attHtml + '</section>' +
+        '<section class="panel panel--card"><div class="panel__h"><h2>Accès rapide</h2></div><p class="tnote" style="margin-top:0">Le pouls de chaque zone. Clique pour entrer dans le détail.</p><div class="synth">' + syn + '</div></section>' +
+      '</div>' +
+    '</div>';
+    setMain(topbar('') + html);
+  }
+
+  // ═══════════ Temps & rentabilité (maquette) ═══════════
+  var TEMPS_TAB = 'rent';
+  var TEMPS_OBJ = 60; // objectif €/h (défini avec Cindy)
+  function renderTemps() {
+    setMain(topbar('') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    Promise.all([
+      api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; renderTempsBody(); }).catch(showError);
+  }
+  function tempsSetTab(t) { TEMPS_TAB = t; renderTempsBody(); }
+  function hhm(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), r = m % 60; return h ? h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : '') : m + ' min'; }
+  function renderTempsBody() {
+    var d = KPI_D || {};
+    // ── chrono live ──
+    var run = MT_TIMER || PT_TIMER || TK_TIMER;
+    var tlive;
+    if (run) {
+      var sec = run.base + (Date.now() - run.startedAt) / 1000;
+      tlive = '<div class="tlive"><span class="tlive__pulse"></span>' +
+        '<div class="tlive__m"><div class="tlive__k">Chrono en cours</div><div class="tlive__t">' + esc(run.title || 'tâche') + '</div></div>' +
+        '<div style="text-align:right"><div class="tlive__clock">' + mtClock(sec) + '</div></div>' +
+        '<button class="tlive__btn" onclick="ADM.navTimerPause()">Mettre en pause</button></div>';
     } else {
-      body = '<div class="pcols">' +
-        '<div class="card"><h3>Tâches réalisées par mois</h3>' + barsHtml(tItems, 'var(--glycine-900)') + '</div>' +
-        '<div class="card"><h3>Temps passé par mois</h3>' + barsHtml(mItems, '#c9952f', function (v) { return v + ' h'; }) + '</div></div>';
+      tlive = '<div class="tlive"><span class="tlive__pulse" style="background:var(--paille-700);animation:none"></span>' +
+        '<div class="tlive__m"><div class="tlive__k">Chrono</div><div class="tlive__t">Aucun chrono en cours</div></div>' +
+        '<div style="text-align:right"><div class="tlive__clock">00:00:00</div><div class="tlive__day">démarre un chrono depuis une tâche ou un ticket</div></div></div>';
     }
-    setMain(topbar('Tableau de bord', '', 'D\'un coup d\'œil : ta semaine, puis le détail') + '<div class="wrap">' + kpiSummaryHtml() + kpiCollabHtml() + kpiPlaisirHtml() +
-      '<h3 style="margin:8px 0 12px;font-size:16px">Détail · partenaire créative</h3>' + kpis + tabBar + '<div id="kpibody">' + body + '</div></div>');
+    // ── sous-onglets ──
+    var tabs = [['rent', 'Rentabilité'], ['repart', 'Où part mon temps'], ['estim', 'Estimé vs réel']];
+    var ttabs = '<div class="ttabs">' + tabs.map(function (t) {
+      return '<button class="ttab' + (TEMPS_TAB === t[0] ? ' is-on' : '') + '" onclick="ADM.tempsSetTab(\'' + t[0] + '\')">' + esc(t[1]) + '</button>';
+    }).join('') + '</div>';
+    var content = TEMPS_TAB === 'repart' ? tempsRepart(d) : (TEMPS_TAB === 'estim' ? tempsEstim(d) : tempsRent(d));
+    var html = '<div class="wrap tempsview">' +
+      '<div class="clhead"><div><p class="hello">Temps &amp; rentabilité</p><p class="hello__s">En temps réel : où part ton temps, où tu peux en gagner, et si chaque projet tient dans son forfait.</p></div></div>' +
+      tlive + ttabs + content + '</div>';
+    setMain(topbar('') + html);
+  }
+  // Rentabilité au temps : basée sur les forfaits (heures), sans compta.
+  function tempsRent(d) {
+    var forf = (d.forfaits || []).filter(function (f) { return f.configured; });
+    var pr = d.profitability || {};
+    var ratio = pr.estMin > 0 ? Math.round(pr.realMin / pr.estMin * 100) : 0;
+    var ecart = ratio - 100;
+    var okCount = forf.filter(function (f) { return f.remaining >= 0; }).length;
+    var trackMin = (d.timeByType || []).reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    var kts =
+      '<div class="kt"><div class="kt__v">' + TEMPS_OBJ + ' €/h</div><div class="kt__l">Ton objectif au temps</div><span class="kt__d kt__d--flat">défini avec toi</span></div>' +
+      '<div class="kt"><div class="kt__v">' + hhm(trackMin) + '</div><div class="kt__l">Temps tracké · cumul</div><span class="kt__d kt__d--flat">tâches + tickets</span></div>' +
+      '<div class="kt"><div class="kt__v">' + (pr.estCount ? (ecart >= 0 ? '+' : '') + ecart + ' %' : '—') + '</div><div class="kt__l">Écart estimé → réel</div><span class="kt__d ' + (pr.estCount ? (ecart > 10 ? 'kt__d--attn' : 'kt__d--up') : 'kt__d--flat') + '">' + (pr.estCount ? (ecart > 10 ? 'tu dépasses tes estimations' : 'dans tes clous') : 'note tes estimations') + '</span></div>' +
+      '<div class="kt"><div class="kt__v">' + okCount + ' / ' + forf.length + '</div><div class="kt__l">Forfaits dans les clous</div><span class="kt__d ' + (okCount < forf.length ? 'kt__d--attn' : 'kt__d--up') + '">' + (forf.length - okCount) + ' dépassé' + ((forf.length - okCount) > 1 ? 's' : '') + '</span></div>';
+    var rows = forf.map(function (f) {
+      var used = f.used || 0, base = f.base || 0, rem = f.remaining;
+      var pct = base ? Math.round(used / base * 100) : 0;
+      var under = rem < 0;
+      var watch = !under && base && used >= base * 0.8;
+      var flag = under ? '<span class="rentflag rentflag--under">Dépassé</span>' : (watch ? '<span class="rentflag rentflag--watch">À surveiller</span>' : '<span class="rentflag rentflag--ok">Dans le forfait</span>');
+      var restLbl = under ? ('dépassé de ' + Math.abs(rem) + ' h') : ('reste ' + rem + ' h');
+      return '<div class="rentrow' + (under ? ' rentrow--under' : '') + '">' +
+        '<div><div class="rentrow__p">' + esc(f.client || '') + '</div><div class="rentrow__c">Forfait mensuel</div></div>' +
+        '<div class="rentcell">' + base + ' h</div>' +
+        '<div class="rentcell">' + used + ' h<small>' + restLbl + '</small></div>' +
+        '<div class="rentcell rentrate" style="color:' + (under ? 'var(--paille)' : (watch ? 'var(--gold-ink)' : '#4a6b43')) + '">' + pct + '%</div>' +
+        flag + '</div>';
+    }).join('');
+    var rentBlock = forf.length
+      ? '<div class="rent"><div class="renthead"><span>Projet</span><span>Forfait</span><span>Temps</span><span>% conso</span><span>Statut</span></div>' + rows + '</div>' +
+        '<div class="rentobj"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--terre-400)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Ton objectif de rentabilité au temps : <b>' + TEMPS_OBJ + ' €/h</b> · un €/h précis par projet arrivera quand tu renseigneras le prix de chaque forfait.</div>'
+      : '<div class="empty">Aucun forfait configuré. Configure un forfait mensuel sur une cliente partenaire pour suivre sa rentabilité au temps.</div>';
+    // où tu gagnes / où tu perds (depuis estimé vs réel par pôle)
+    var gains = '';
+    var poles = (pr.poles || []).slice();
+    if (poles.length) {
+      poles.sort(function (a, b) { return (a.est > 0 ? a.real / a.est : 9) - (b.est > 0 ? b.real / b.est : 9); });
+      var win = poles[0], loss = poles[poles.length - 1];
+      var winR = win.est > 0 ? Math.round(win.real / win.est * 100) : 0;
+      var lossR = loss.est > 0 ? Math.round(loss.real / loss.est * 100) : 0;
+      gains = '<div class="gains">' +
+        '<div class="gain gain--win"><span class="gain__ic">▲</span><div class="gain__body"><div class="gain__k">Tu tiens tes estimations</div><div class="gain__t">' + esc(win.pole) + '</div><div class="gain__d">Réel à ' + winR + '% de ton estimé sur ' + win.count + ' tâche' + (win.count > 1 ? 's' : '') + '. C\'est là que tu es le plus juste.</div></div></div>' +
+        (poles.length > 1 ? '<div class="gain gain--loss"><span class="gain__ic">▼</span><div class="gain__body"><div class="gain__k">Tu débordes</div><div class="gain__t">' + esc(loss.pole) + '</div><div class="gain__d">Réel à ' + lossR + '% de ton estimé : c\'est ton poste qui dépasse le plus. Prévois plus large dans tes devis.</div></div></div>' : '') +
+      '</div>';
+    }
+    return '<div class="kts">' + kts + '</div>' +
+      '<div class="bento">' +
+        '<section class="panel panel--card"><div class="panel__h"><h2>Rentabilité par projet</h2></div><p class="tnote">Basé sur tes forfaits et le temps tracké, pas de compta ici. En dessous, chaque projet montre ce qu\'il a consommé de son forfait.</p>' + rentBlock + '</section>' +
+        '<section class="panel panel--card"><div class="panel__h"><h2>Où tu tiens, où tu débordes</h2></div>' + (gains || '<div class="empty">Renseigne un « temps estimé » sur tes tâches pour voir où tu tiens tes estimations et où tu débordes.</div>') + '</section>' +
+      '</div>';
+  }
+  // Où part ton temps : répartition par type (données réelles timeByType).
+  function tempsRepart(d) {
+    var list = (d.timeByType || []).slice();
+    if (!list.length) return '<section class="panel panel--card"><div class="panel__h"><h2>Où part ton temps</h2></div><div class="empty">Aucun temps enregistré pour l\'instant. Le temps que tu passes sur tes tâches et tes tickets apparaîtra ici, réparti par type.</div></section>';
+    var total = list.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    var maxM = list[0].minutes || 1;
+    var DOTS = ['#5A2A11', '#CD8F6E', '#8fb0d8', '#d8b9a2', '#b8b45f', '#7a5540'];
+    var rows = list.map(function (x, i) {
+      var pct = total ? Math.round(x.minutes / total * 100) : 0;
+      var w = Math.round(x.minutes / maxM * 100);
+      var col = DOTS[i % DOTS.length];
+      return '<div class="repx__r' + (i === 0 ? ' repx__r--top' : '') + '">' +
+        '<span class="repx__name"><span class="repx__dot" style="background:' + col + '"></span>' + esc(x.type) + '</span>' +
+        '<span class="repx__track"><i style="width:' + w + '%;background:' + col + '"></i></span>' +
+        '<span class="repx__right"><span class="repx__v">' + hhm(x.minutes) + '</span><span class="repx__pct">' + pct + '%</span></span></div>';
+    }).join('');
+    var top = list[0];
+    var topPct = total ? Math.round(top.minutes / total * 100) : 0;
+    return '<section class="panel panel--card"><div class="panel__h"><h2>Où part ton temps</h2><span class="n">' + hhm(total) + '</span></div>' +
+      '<p class="tnote">Par type de tâche, sur tout ce que tu as tracké. Ton plus gros poste est mis en avant.</p>' +
+      '<div class="repx">' + rows + '</div>' +
+      '<div class="insight" style="margin-top:14px"><b>À noter :</b> « ' + esc(top.type) + ' » pèse ' + topPct + '% de ton temps tracké. C\'est ton poste principal, à garder à l\'œil pour ta rentabilité.</div>' +
+    '</section>';
+  }
+  // Estimé vs réel : comparer prévu et réel par pôle (données réelles profitability).
+  function tempsEstim(d) {
+    var pr = d.profitability || {};
+    var poles = (pr.poles || []).slice();
+    if (!poles.length) return '<section class="panel panel--card"><div class="panel__h"><h2>Estimé vs réel</h2></div><div class="empty">Renseigne un « temps estimé » sur tes tâches (dans le détail d\'une tâche) pour comparer avec le temps réellement passé. Après quelques projets, tu sauras combien te prend vraiment chaque type de travail.</div></section>';
+    var DOTS = ['#5A2A11', '#CD8F6E', '#8fb0d8', '#d8b9a2', '#b8b45f'];
+    var rows = poles.map(function (p, i) {
+      var maxV = Math.max(p.est, p.real, 1);
+      var estW = Math.round(p.est / maxV * 100), realW = Math.round(p.real / maxV * 100);
+      var delta = p.est > 0 ? Math.round(p.real / p.est * 100) - 100 : 0;
+      var over = delta > 5;
+      var col = DOTS[i % DOTS.length];
+      return '<div class="kpirow">' +
+        '<div class="kpi__name"><span class="kpi__dot" style="background:' + col + '"></span>' + esc(p.pole) + '</div>' +
+        '<div class="kpi__bars">' +
+          '<div class="kpi__b"><span>Estimé</span><span class="kpi__track"><i style="width:' + estW + '%;background:var(--terre)"></i></span><b>' + hhm(p.est) + '</b></div>' +
+          '<div class="kpi__b"><span>Réel</span><span class="kpi__track"><i style="width:' + realW + '%;background:' + col + '"></i></span><b>' + hhm(p.real) + '</b></div>' +
+        '</div>' +
+        '<span class="kpi__delta ' + (over ? 'kpi__delta--over' : 'kpi__delta--ok') + '">' + (delta > 5 ? '+' + delta + '%' : (delta < -5 ? delta + '%' : 'juste')) + '</span>' +
+      '</div>';
+    }).join('');
+    var over = poles.filter(function (p) { return p.est > 0 && p.real / p.est > 1.1; }).map(function (p) { return p.pole; });
+    var insight = over.length
+      ? '<b>Ce que ça t\'apprend :</b> tu sous-estimes ' + over.slice(0, 2).map(esc).join(' et ') + '. Prévois plus large sur ' + (over.length > 1 ? 'ces postes' : 'ce poste') + ' dans tes prochains devis.'
+      : '<b>Bien joué :</b> tes estimations tombent globalement juste. Continue à noter ton temps réel pour affiner encore tes devis.';
+    return '<section class="panel panel--card"><div class="panel__h"><h2>Estimé vs réel · pour affiner tes devis</h2></div>' +
+      '<p class="tnote">Ce que tu prévois face à ce que ça te prend vraiment. Plus tu notes ton temps réel, plus tes prochains devis tombent juste.</p>' +
+      '<div class="kpi">' + rows + '</div>' +
+      '<div class="kpi__insight">' + insight + '</div>' +
+    '</section>';
   }
 
   /* ── Réalisé (historique daté) ── */
@@ -7016,7 +7212,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

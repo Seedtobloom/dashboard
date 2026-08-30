@@ -1061,3 +1061,148 @@ select.cg-in{cursor:pointer}
 .lg__v{margin-left:auto;font-family:var(--font-display);font-style:italic;font-size:15px;font-variant-numeric:tabular-nums}
 .backlink{background:none;border:none;cursor:pointer;font-family:var(--font-micro);font-size:12px;font-weight:600;color:var(--muted);padding:4px 0 8px}
 .backlink:hover{color:var(--terre)}
+
+/* ═══════════ Tableau de bord & Temps — maquette ═══════════ */
+.clhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.clfilters{display:flex;gap:7px;flex-wrap:wrap}
+.hello{font-family:var(--font-display);font-style:italic;font-size:clamp(28px,4vw,38px);color:var(--terre);margin:0;line-height:1.02;font-weight:500}
+.hello__s{font-size:14px;color:var(--muted);margin:3px 0 0}
+.panel--card{background:var(--card);border-radius:20px;padding:22px 24px}
+.panel--card .panel__h{display:flex;align-items:baseline;gap:10px;margin-bottom:15px}
+.panel--card .panel__h h2{font-family:var(--font-display);font-style:italic;font-size:22px;font-weight:500;margin:0;color:var(--terre)}
+.panel--card .panel__h .n{font-family:var(--font-micro);font-size:11px;font-weight:700;color:var(--muted)}
+.tnote{font-family:var(--font-body);font-size:11.5px;color:var(--muted);margin:-6px 0 16px;line-height:1.5}
+.tnote b{color:var(--terre);font-weight:600}
+.insight{font-family:var(--font-body);font-size:12.5px;color:var(--terre);background:var(--glycine-50);border-radius:11px;padding:12px 14px;margin-top:14px;line-height:1.5}
+.insight b{font-weight:600}
+/* tuiles KPI */
+.kts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:860px){.kts{grid-template-columns:repeat(2,1fr)}}
+.kt{background:var(--card);border-radius:16px;padding:18px 20px}
+.kt__v{font-family:var(--font-display);font-style:italic;font-size:29px;color:var(--terre);line-height:1;font-variant-numeric:tabular-nums}
+.kt__l{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.kt__d{font-family:var(--font-body);font-size:10.5px;font-weight:700;margin-top:9px;display:inline-block;padding:3px 9px;border-radius:999px}
+.kt__d--up{background:#dbe8d5;color:#4a6b43}
+.kt__d--flat{background:var(--beige);color:var(--muted)}
+.kt__d--attn{background:var(--gold-chip);color:var(--gold-ink)}
+.kt__bar{height:7px;border-radius:999px;background:var(--surface);overflow:hidden;margin-top:11px}
+.kt__bar i{display:block;height:100%;border-radius:999px;background:var(--terre)}
+.kt--link{cursor:pointer;transition:background .15s;border:none;text-align:left;width:100%;font:inherit}
+.kt--link:hover{background:var(--surface)}
+/* santé des projets */
+.covers{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+@media(max-width:860px){.covers{grid-template-columns:1fr}}
+.cc{background:var(--card);border-radius:18px;padding:18px 19px;text-align:left;border:none;cursor:pointer;display:block;width:100%}
+.cc:hover{background:var(--surface)}
+.cc__top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.cc__cat{font-family:var(--font-body);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--beige);color:var(--muted)}
+.cc__pct{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)}
+.cc__t{display:block;font-family:var(--font-display);font-style:italic;font-size:21px;color:var(--terre);margin-bottom:12px}
+.cbar{height:6px;border-radius:999px;background:var(--surface);overflow:hidden;margin-bottom:13px}
+.cbar i{display:block;height:100%;border-radius:999px;background:var(--terre)}
+.cline{display:flex;gap:8px;font-family:var(--font-body);font-size:11.5px;color:var(--terre-600);margin-top:4px}
+.cline .k{font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);width:56px;flex-shrink:0;padding-top:2px}
+/* ce qui a besoin de toi */
+.att{display:flex;align-items:center;gap:12px;background:var(--beige);border-radius:12px;padding:12px 14px;margin-bottom:9px}
+.att:last-child{margin-bottom:0}
+.att__ic{width:32px;height:32px;border-radius:9px;background:var(--gold-chip);color:var(--gold-ink);display:grid;place-items:center;flex-shrink:0}
+.att__ic--ok{background:#dbe8d5;color:#4a6b43}
+.att__m{flex:1;min-width:0}
+.att__t{font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre);line-height:1.3}
+.att__s{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.att__b{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:8px 13px;border-radius:999px;border:none;cursor:pointer;background:var(--terre);color:var(--paille);flex-shrink:0}
+/* accès rapide */
+.synth{display:flex;flex-direction:column;gap:9px}
+.syn{display:flex;align-items:center;gap:13px;width:100%;background:var(--beige);border:none;border-radius:12px;padding:13px 15px;cursor:pointer;text-align:left;font-family:var(--font-body);transition:background .15s}
+.syn:hover{background:var(--surface)}
+.syn__ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.syn__m{flex:1;min-width:0}
+.syn__l{font-size:13px;font-weight:700;color:var(--terre)}
+.syn__s{font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.syn__v{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);flex-shrink:0;font-variant-numeric:tabular-nums}
+.syn--attn .syn__v{color:var(--gold-ink)}
+.syn__arrow{color:var(--terre-400);flex-shrink:0;font-size:16px}
+.bento{display:grid;grid-template-columns:1.55fr 1fr;gap:15px;align-items:start}
+@media(max-width:980px){.bento{grid-template-columns:1fr}}
+/* Temps — chrono live */
+.tlive{display:flex;align-items:center;gap:16px;background:var(--terre);color:var(--paille);border-radius:16px;padding:16px 20px;margin-bottom:16px;flex-wrap:wrap}
+.tlive__pulse{width:12px;height:12px;border-radius:50%;background:var(--gold-chip);flex-shrink:0}
+.tlive__m{flex:1;min-width:0}
+.tlive__k{font-family:var(--font-body);font-size:9.5px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--paille-700)}
+.tlive__t{font-family:var(--font-body);font-weight:600;font-size:16px;color:var(--paille);line-height:1.2;margin-top:3px}
+.tlive__clock{font-family:var(--font-display);font-style:italic;font-size:34px;color:var(--paille);font-variant-numeric:tabular-nums;line-height:1}
+.tlive__day{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--paille-700);text-align:right;margin-top:5px}
+.tlive__btn{border:none;border-radius:999px;font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:11px 18px;cursor:pointer;background:var(--gold-chip);color:var(--gold-ink);flex-shrink:0}
+.tlive__btn--ghost{background:rgba(240,233,214,.14);color:var(--paille)}
+/* Temps — sous-onglets */
+.ttabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);padding:6px;border-radius:15px;margin-bottom:16px}
+.ttab{background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--terre-600);padding:11px 20px;border-radius:11px;transition:background .15s,color .15s}
+.ttab:hover{background:var(--beige)}
+.ttab.is-on{background:var(--terre);color:var(--paille);font-weight:700}
+/* Temps — rentabilité par projet */
+.rent{display:flex;flex-direction:column;gap:10px}
+.renthead,.rentrow{display:grid;grid-template-columns:1.5fr 82px 96px 108px 118px;gap:12px;align-items:center}
+.renthead{padding:0 16px 4px;font-family:var(--font-body);font-size:9.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)}
+.renthead span:nth-child(n+2),.rentcell{text-align:right}
+.rentrow{background:var(--card);border:none;border-radius:13px;padding:14px 16px}
+.rentrow--under{background:var(--gold-chip)}
+.rentrow__p{font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre);line-height:1.2}
+.rentrow__c{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--terre-400);margin-top:3px}
+.rentrow--under .rentrow__c{color:var(--gold-ink)}
+.rentcell{font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre);font-variant-numeric:tabular-nums}
+.rentcell small{font-family:var(--font-body);font-style:normal;font-size:10px;font-weight:700;color:var(--terre-400);display:block;margin-top:1px}
+.rentrate{font-family:var(--font-display);font-style:italic;font-size:19px}
+.rentflag{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:5px 11px;border-radius:999px;justify-self:end;white-space:nowrap}
+.rentflag--ok{background:#dbe8d5;color:#4a6b43}
+.rentflag--watch{background:var(--gold-soft);color:var(--gold-ink)}
+.rentflag--under{background:var(--nuit);color:var(--paille)}
+.rentobj{display:flex;align-items:center;gap:8px;font-family:var(--font-body);font-size:11.5px;color:var(--muted);margin-top:12px}
+.rentobj b{font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre)}
+/* Temps — où tu gagnes/perds */
+.gains{display:flex;flex-direction:column;gap:11px}
+.gain{display:flex;align-items:flex-start;gap:13px;border-radius:14px;padding:15px 17px}
+.gain--win{background:var(--glycine-50)}
+.gain--loss{background:var(--gold-chip)}
+.gain__ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;font-family:var(--font-body);font-size:14px;font-weight:700}
+.gain--win .gain__ic{background:var(--glycine);color:var(--glycine-900)}
+.gain--loss .gain__ic{background:rgba(61,28,11,.14);color:var(--gold-ink)}
+.gain__body{flex:1;min-width:0}
+.gain__k{font-family:var(--font-body);font-size:9.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase}
+.gain--win .gain__k{color:var(--glycine-900)}
+.gain--loss .gain__k{color:var(--gold-ink)}
+.gain__t{font-family:var(--font-body);font-weight:700;font-size:15px;color:var(--terre);line-height:1.3;margin:3px 0 5px}
+.gain__d{font-family:var(--font-body);font-size:12.5px;color:var(--terre);line-height:1.5}
+/* Temps — où part ton temps */
+.repx{display:flex;flex-direction:column;gap:4px}
+.repx__r{display:grid;grid-template-columns:180px 1fr 116px;gap:14px;align-items:center;padding:11px 12px;border-radius:12px}
+.repx__r:hover{background:var(--surface)}
+.repx__r--top{background:var(--glycine-50)}
+.repx__name{display:flex;align-items:center;gap:9px;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre);min-width:0}
+.repx__dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.repx__track{height:10px;border-radius:999px;background:var(--surface);overflow:hidden}
+.repx__r--top .repx__track{background:#dce6f6}
+.repx__track i{display:block;height:100%;border-radius:999px}
+.repx__right{display:flex;align-items:baseline;justify-content:flex-end;gap:8px}
+.repx__v{font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--terre);font-variant-numeric:tabular-nums}
+.repx__pct{font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--terre-400);width:34px;text-align:right}
+.repx__trend{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+.trend--up{background:var(--gold-chip);color:var(--gold-ink)}
+.trend--down{background:#dbe8d5;color:#4a6b43}
+.trend--flat{background:var(--beige);color:var(--terre-400)}
+/* Temps — estimé vs réel (scopé pour ne pas heurter .kpi du reste de l'admin) */
+.tempsview .kpi{display:flex;flex-direction:column;gap:16px;background:none;border-radius:0;padding:0;box-shadow:none}
+.tempsview .kpirow{display:grid;grid-template-columns:158px 1fr 64px;gap:14px;align-items:center}
+@media(max-width:720px){.tempsview .kpirow{grid-template-columns:1fr}}
+.tempsview .kpi__name{display:flex;align-items:center;gap:9px;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--terre)}
+.tempsview .kpi__dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.tempsview .kpi__bars{display:flex;flex-direction:column;gap:5px}
+.tempsview .kpi__b{display:flex;align-items:center;gap:8px}
+.tempsview .kpi__b>span:first-child{font-family:var(--font-body);font-size:8.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400);width:36px;flex-shrink:0}
+.tempsview .kpi__track{flex:1;height:9px;border-radius:999px;background:var(--surface);overflow:hidden}
+.tempsview .kpi__track i{display:block;height:100%;border-radius:999px}
+.tempsview .kpi__b b{font-family:var(--font-display);font-style:italic;font-size:13px;color:var(--terre);width:46px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.tempsview .kpi__delta{font-family:var(--font-body);font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;text-align:center}
+.tempsview .kpi__delta--over{background:var(--gold-chip);color:var(--gold-ink)}
+.tempsview .kpi__delta--ok{background:var(--beige);color:var(--terre-400)}
+.tempsview .kpi__insight{margin-top:6px;font-size:12.5px;color:var(--terre);line-height:1.5;background:var(--glycine-50);border-radius:11px;padding:12px 14px}
+.tempsview .kpi__insight b{font-weight:600}
