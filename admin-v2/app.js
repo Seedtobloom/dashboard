@@ -3736,40 +3736,107 @@
     csvDownload('seedtobloom-realise.csv', rows);
     toast('Export CSV téléchargé');
   }
+  var DONE_TAB = 'journal';
+  function doneSetTab(t) { DONE_TAB = t; renderDoneBody(); }
+  // Couleur d'identité par catégorie (charte, sans rouge/vert vif).
+  function doneCatColor(s) {
+    var P = ['#CD8F6E', '#8fb0d8', '#d8b9a2', '#5A2A11', '#b8b45f', '#7a5540'];
+    var h = 0, str = String(s || ''); for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return P[h % P.length];
+  }
   function renderDone() {
-    setMain(topbar('Réalisé') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain(topbar('') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/done').then(function (r) { return r.json(); }).then(function (d) {
-      var list = d.completed || [];
-      DONE_LIST = list;
-      var groups = {}, order = [];
-      list.forEach(function (x) {
-        var dt = new Date(x.completedAt);
-        var k = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
-        if (!groups[k]) { groups[k] = []; order.push(k); }
-        groups[k].push(x);
-      });
-      function monthLabel(k) { var p = k.split('-'); var d = new Date(p[0], p[1] - 1, 1); var s = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); }
-      function fmtDT(iso) { var d = new Date(iso); if (isNaN(d)) return esc(iso); var dd = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); var hh = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); return dd + ' à ' + hh; }
-      var nowD = new Date(); var curKey = nowD.getFullYear() + '-' + String(nowD.getMonth() + 1).padStart(2, '0');
-      var totalMinAll = list.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
-      var monthCount = (groups[curKey] || []).length;
-      function kc(n, l) { return '<div class="kpi"><div class="kpi__n">' + n + '</div><div class="kpi__l">' + l + '</div></div>'; }
-      var hero = list.length ? '<div class="kpis">' + kc(list.length, 'Réalisés en tout') + kc(monthCount, 'Ce mois-ci') + kc((totalMinAll / 60).toFixed(0) + ' h', 'Temps cumulé') + '</div>' : '';
-      var html = order.map(function (k) {
-        var items = groups[k];
-        var totalMin = items.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
-        var rows = items.map(function (x) {
-          var tm = x.timeSpentMinutes ? (' · ' + (x.timeSpentMinutes / 60).toFixed(1).replace('.0', '') + ' h') : '';
-          return '<div class="prow"><div class="prow__date"><strong>' + fmtDT(x.completedAt) + '</strong></div>' +
-            '<div class="prow__main"><div class="prow__el">' + esc(x.title) + '</div>' +
-              '<div class="prow__meta"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a> · ' + esc(x.projectLabel) + ' · ' + esc(x.kind) + tm + '</div></div>' +
-            '<div>' + pill('done', 'Terminé') + '</div></div>';
-        }).join('');
-        return '<div class="card"><h3>' + monthLabel(k) + ' <span class="micro" style="color:var(--muted)">· ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + (totalMin ? ' · ' + (totalMin / 60).toFixed(1).replace('.0', '') + ' h' : '') + '</span></h3>' + rows + '</div>';
-      }).join('');
-      var exportBtn = list.length ? '<button class="btn btn--outline btn--sm" onclick="ADM.doneExport()">Exporter en CSV</button>' : '';
-      setMain(topbar('Réalisé', exportBtn, 'L\'historique daté de tout ce qui a été terminé') + '<div class="wrap">' + hero + (html || '<div class="empty">Rien de terminé pour le moment. Marque des tâches « Fait » depuis Priorités ou les espaces clients.</div>') + '</div>');
+      DONE_LIST = d.completed || []; renderDoneBody();
     }).catch(showError);
+  }
+  function renderDoneBody() {
+    var list = DONE_LIST || [];
+    function hh(m) { m = Math.round(m || 0); if (!m) return '—'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? ('' + (r < 10 ? '0' : '') + r) : ''); }
+    function mkey(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); }
+    function monthLabel(k) { var p = k.split('-'); var dd = new Date(p[0], p[1] - 1, 1); var s = dd.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); }
+    var groups = {}, order = [];
+    list.forEach(function (x) { var k = mkey(new Date(x.completedAt)); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(x); });
+    order.sort(function (a, b) { return a < b ? 1 : -1; });
+    var nowD = new Date(); var curKey = mkey(nowD);
+    var prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1); var prevKey = mkey(prevD);
+    function minOf(k) { return (groups[k] || []).reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0); }
+    var monthCount = (groups[curKey] || []).length, prevCount = (groups[prevKey] || []).length;
+    var monthMin = minOf(curKey), totalMinAll = list.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
+    // satisfaction (avis)
+    var bilans = (KPI_AVIS && KPI_AVIS.bilans) || [];
+    var rated = bilans.filter(function (b) { return b.rating > 0; });
+    var satis = rated.length ? Math.round(rated.reduce(function (s, b) { return s + b.rating; }, 0) / rated.length * 10) / 10 : 0;
+    var deltaVs = monthCount - prevCount;
+    var kts =
+      '<div class="kt"><div class="kt__v">' + monthCount + '</div><div class="kt__l">Réalisés · ce mois</div><span class="kt__d ' + (deltaVs >= 0 ? 'kt__d--up' : 'kt__d--flat') + '">' + (deltaVs >= 0 ? '+' + deltaVs : deltaVs) + ' vs mois dernier</span></div>' +
+      '<div class="kt"><div class="kt__v">' + list.length + '</div><div class="kt__l">Réalisés · en tout</div><span class="kt__d kt__d--flat">ton archive</span></div>' +
+      '<div class="kt"><div class="kt__v">' + hh(monthMin) + '</div><div class="kt__l">Temps livré · ce mois</div><span class="kt__d kt__d--flat">sur ' + monthCount + ' réalisé' + (monthCount > 1 ? 's' : '') + '</span></div>' +
+      '<div class="kt"><div class="kt__v">' + (satis ? String(satis).replace('.', ',') : '—') + '</div><div class="kt__l">Satisfaction moyenne</div><span class="kt__d kt__d--up">/ 5</span></div>';
+    // rythme : 6 derniers mois
+    var months = []; for (var i = 5; i >= 0; i--) { var dm = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1); months.push(mkey(dm)); }
+    var maxMin = Math.max.apply(null, months.map(minOf).concat([1]));
+    var rythme = months.map(function (k) {
+      var mn = minOf(k); var pct = Math.round(mn / maxMin * 100); var lbl = new Date(k.split('-')[0], k.split('-')[1] - 1, 1).toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
+      return '<div class="ry' + (k === curKey ? ' ry--on' : '') + '"><div class="ry__i" style="height:' + Math.max(4, pct) + '%"></div><div class="ry__v">' + (mn ? Math.round(mn / 60) + 'h' : '0') + '</div><div class="ry__l">' + esc(lbl.charAt(0).toUpperCase() + lbl.slice(1)) + '</div></div>';
+    }).join('');
+    var rythmeBlock = '<section class="panel panel--card" style="margin-bottom:15px"><div class="panel__h"><h2>Rythme de livraison</h2><span class="n">6 mois</span></div>' +
+      '<p class="tnote">Heures livrées par mois. Ça te dit si ta charge est régulière ou en dents de scie.</p><div class="rythme">' + rythme + '</div></section>';
+    // sous-onglets
+    var tabs = [['journal', 'Journal'], ['projet', 'Par projet'], ['cat', 'Par catégorie']];
+    var ttabs = '<div class="ttabs">' + tabs.map(function (t) { return '<button class="ttab' + (DONE_TAB === t[0] ? ' is-on' : '') + '" onclick="ADM.doneSetTab(\'' + t[0] + '\')">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
+    var content;
+    if (!list.length) {
+      content = '<div class="empty">Rien de terminé pour le moment. Marque des tâches « Fait » depuis Priorités ou les espaces clients.</div>';
+    } else if (DONE_TAB === 'projet') {
+      var byP = {}, pOrder = [];
+      list.forEach(function (x) { var k = (x.client || '') + '|' + (x.projectLabel || ''); if (!byP[k]) { byP[k] = []; pOrder.push(k); } byP[k].push(x); });
+      pOrder.sort(function (a, b) { var la = Math.max.apply(null, byP[a].map(function (x) { return +new Date(x.completedAt); })), lb = Math.max.apply(null, byP[b].map(function (x) { return +new Date(x.completedAt); })); return lb - la; });
+      content = '<section class="panel panel--card">' + pOrder.map(function (k) {
+        var items = byP[k]; var cl = k.split('|')[0], pl = k.split('|')[1];
+        var tot = items.reduce(function (s, x) { return s + (x.timeSpentMinutes || 0); }, 0);
+        var last = items.slice().sort(function (a, b) { return +new Date(b.completedAt) - +new Date(a.completedAt); })[0];
+        var lastM = mkey(new Date(last.completedAt)); var live = (lastM === curKey || lastM === prevKey);
+        return '<div class="pj"><div class="pj__t"><span class="pj__dot" style="background:' + doneCatColor(pl) + '"></span>' + esc(cl) + ' · ' + esc(pl || 'Projet') + '</div>' +
+          '<span class="pj__st ' + (live ? 'pj__st--live">En cours' : 'pj__st--closed">Livré') + '</span>' +
+          '<div class="pj__c">Dernier livrable le ' + esc(fmtDate(last.completedAt)) + '</div>' +
+          '<div class="pj__meta"><span class="pj__k"><b>' + items.length + '</b>livrable' + (items.length > 1 ? 's' : '') + '</span><span class="pj__k"><b>' + hh(tot) + '</b>au total</span></div></div>';
+      }).join('') + '</section>';
+    } else if (DONE_TAB === 'cat') {
+      var byC = {};
+      list.forEach(function (x) { var c = x.projectLabel || x.kind || 'Autre'; byC[c] = (byC[c] || 0) + (x.timeSpentMinutes || 0); });
+      var cats = Object.keys(byC).map(function (c) { return { c: c, m: byC[c] }; }).sort(function (a, b) { return b.m - a.m; });
+      var maxC = Math.max.apply(null, cats.map(function (x) { return x.m; }).concat([1]));
+      var rep = cats.map(function (x) {
+        var col = doneCatColor(x.c); var w = Math.round(x.m / maxC * 100);
+        return '<div class="rep__r"><span class="rep__d" style="background:' + col + '"></span><span class="rep__n">' + esc(x.c) + '</span><span class="rep__track"><i style="width:' + w + '%;background:' + col + '"></i></span><span class="rep__v">' + hh(x.m) + '</span></div>';
+      }).join('');
+      content = '<section class="panel panel--card"><div class="panel__h"><h2>Heures livrées par catégorie</h2><span class="n">tout</span></div>' +
+        '<p class="tnote">Ce que tu as réellement produit, par type de travail. Utile pour voir ce qui remplit tes mois.</p><div class="rep">' + (rep || '<div class="empty">—</div>') + '</div></section>';
+    } else {
+      content = '<section class="panel panel--card"><p class="tnote" style="margin-top:0">Chaque réalisé daté, avec le temps réel passé. L\'écart s\'affiche quand tu as noté une estimation sur la tâche.</p>' +
+        order.map(function (k) {
+          var items = groups[k].slice().sort(function (a, b) { return +new Date(b.completedAt) - +new Date(a.completedAt); });
+          var mn = minOf(k);
+          var rows = items.map(function (x) {
+            var col = doneCatColor(x.projectLabel || x.kind);
+            var delta = '';
+            if (x.estMinutes > 0 && x.timeSpentMinutes) { var dm = Math.round((x.timeSpentMinutes - x.estMinutes) / 60 * 10) / 10; delta = Math.abs(dm) < 0.3 ? '<span class="done__delta done__delta--ok">juste</span>' : (dm > 0 ? '<span class="done__delta done__delta--over">+' + dm + ' h vs estimé</span>' : '<span class="done__delta done__delta--ok">' + dm + ' h</span>'); }
+            else delta = '<span></span>';
+            return '<div class="done"><span class="done__dot" style="background:' + col + '"></span>' +
+              '<div><div class="done__p">' + esc(x.title || '') + '</div><div class="done__c"><a href="javascript:ADM.openClient(\'' + x.key + '\')" style="color:inherit">' + esc(x.client || '') + '</a> · <b>' + esc(x.projectLabel || x.kind || '') + '</b></div></div>' +
+              delta +
+              '<div class="done__time">' + hh(x.timeSpentMinutes) + '</div>' +
+              '<div class="done__date">' + esc(fmtDate(x.completedAt)) + '</div></div>';
+          }).join('');
+          return '<div class="month"><b>' + monthLabel(k) + '</b> · ' + items.length + ' réalisé' + (items.length > 1 ? 's' : '') + '<span class="msum">' + (mn ? hh(mn) + ' livrées' : '') + '</span></div>' + rows;
+        }).join('') + '</section>';
+    }
+    var exportBtn = list.length ? '<button class="btn btn--outline btn--sm" onclick="ADM.doneExport()">Exporter en CSV</button>' : '';
+    var html = '<div class="wrap">' +
+      '<div class="clhead"><div><p class="hello">Réalisé</p><p class="hello__s">Tout ce que tu as livré. Ton archive, et le temps que ça t\'a pris.</p></div><div class="clfilters">' + exportBtn + '</div></div>' +
+      '<div class="kts">' + kts + '</div>' + rythmeBlock + ttabs + content + '</div>';
+    setMain(topbar('') + html);
   }
 
   function prioUrl(key, kind, id) { return '/api/clients/' + key + (kind === 'tâche' ? '/tasks/' : kind === 'ticket' ? '/tickets/' : '/steps/') + id; }
@@ -7212,7 +7279,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
