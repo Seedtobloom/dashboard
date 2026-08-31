@@ -4326,14 +4326,19 @@
   function clientStats() {
     var doms = (CUR.domains || []).concat(CUR.supports || []);
     var totSteps = 0, doneSteps = 0, nextDue = '', forfaitTxt = '';
+    function keepDue(dd) { if (dd && (!nextDue || dd < nextDue)) nextDue = dd; }
     doms.forEach(function (d) {
       var c = d.content || {};
+      // Avancement : étapes (projets jalonnés) ET tâches (partenaire créative).
       (c.suivi || []).forEach(function (s) { totSteps++; if (s.status === 'done' || s.completedAt) doneSteps++; });
-      (c.livrables || []).forEach(function (l) { var dd = l.dueDate || l.dueAt || ''; if (dd && (!nextDue || dd < nextDue)) nextDue = dd; });
-      (c.suivi || []).forEach(function (s) { var dd = s.dueDate || ''; if (dd && s.status !== 'done' && !s.completedAt && (!nextDue || dd < nextDue)) nextDue = dd; });
-      if (d.id === 'partner' && c.forfait) {
-        var used = +c.forfait.used || 0, tot = +c.forfait.total || 0;
-        if (tot) forfaitTxt = fmtHrs(Math.max(0, tot - used));
+      (c.taches || []).forEach(function (t) { if (t.archived) return; totSteps++; if (t.status === 'done' || t.completedAt) doneSteps++; });
+      // Prochaine échéance : livrables, étapes non terminées, tâches non terminées.
+      (c.livrables || []).forEach(function (l) { if (l.status !== 'valide') keepDue(l.dueDate || l.dueAt || ''); });
+      (c.suivi || []).forEach(function (s) { if (s.status !== 'done' && !s.completedAt) keepDue(s.dueDate || s.date || ''); });
+      (c.taches || []).forEach(function (t) { if (!t.archived && t.status !== 'done' && !t.completedAt) keepDue(t.dueDate || ''); });
+      // Forfait restant : forfait partenaire (d.forfait) ou forfait mensuel maintenance.
+      if (d.forfait && d.forfait.configured && typeof d.forfait.remaining === 'number') {
+        forfaitTxt = (d.forfait.remaining < 0 ? '− ' + fmtHrs(-d.forfait.remaining) : fmtHrs(d.forfait.remaining));
       }
     });
     var pct = totSteps ? Math.round(doneSteps / totSteps * 100) + '%' : '—';
@@ -4432,11 +4437,26 @@
   function apercuTab() {
     var doms = (CUR.domains || []).concat(CUR.supports || []);
     var main = doms.filter(function (x) { return x.isActive !== false && x.content; })[0] || doms.filter(function (x) { return x.content; })[0];
-    var cur = '', next = '', pend = 0, unread = 0;
+    var cur = '', next = '', pend = 0, unread = 0, nextDue = '', forfaitTxt = '', recent = [];
+    function keepDue(dd) { if (dd && (!nextDue || dd < nextDue)) nextDue = dd; }
     doms.forEach(function (d) {
       unread += d.unread || 0;
       var c = d.content || {};
-      (c.livrables || []).forEach(function (l) { if (l.status === 'a_valider') pend++; });
+      (c.livrables || []).forEach(function (l) {
+        if (l.status === 'a_valider') pend++;
+        if (l.status !== 'valide') keepDue(l.dueDate || l.dueAt || '');
+        if (l.createdAt) recent.push({ at: l.createdAt, t: 'Livrable envoyé · ' + (l.name || ''), s: 'Livrable' });
+      });
+      (c.suivi || []).forEach(function (s) { if (s.status !== 'done' && !s.completedAt) keepDue(s.dueDate || s.date || ''); });
+      (c.taches || []).forEach(function (t) {
+        if (t.archived) return;
+        if (t.status !== 'done' && !t.completedAt) keepDue(t.dueDate || '');
+        if (t.createdAt) recent.push({ at: t.createdAt, t: (t.title || 'Tâche'), s: 'Demande créée' });
+        if (t.completedAt) recent.push({ at: t.completedAt, t: (t.title || 'Tâche'), s: 'Terminé' });
+      });
+      if (d.forfait && d.forfait.configured && typeof d.forfait.remaining === 'number') {
+        forfaitTxt = (d.forfait.remaining < 0 ? 'dépassé de ' + fmtHrs(-d.forfait.remaining) : fmtHrs(d.forfait.remaining) + ' restant');
+      }
     });
     if (main && main.content) {
       var suivi = main.content.suivi || main.content.taches || [];
@@ -4450,12 +4470,18 @@
     if (mainLbl) ovRows += '<div class="ov"><span class="ov__k">Projet</span><span class="ov__v">' + esc(mainLbl) + '</span></div>';
     if (cur) ovRows += '<div class="ov"><span class="ov__k">En cours</span><span class="ov__v">' + esc(cur) + '</span></div>';
     if (next) ovRows += '<div class="ov"><span class="ov__k">Ensuite</span><span class="ov__v">' + esc(next) + '</span></div>';
+    if (nextDue) ovRows += '<div class="ov"><span class="ov__k">Échéance</span><span class="ov__v">' + esc(fmtDate(nextDue)) + '</span></div>';
+    if (forfaitTxt) ovRows += '<div class="ov"><span class="ov__k">Forfait</span><span class="ov__v">' + esc(forfaitTxt) + '</span></div>';
     if (!ovRows) ovRows = '<div class="ov"><span class="ov__k">Statut</span><span class="ov__v">Collaboration en cours</span></div>';
     var note = pend ? '<div class="ovnote">' + pend + ' livrable' + (pend > 1 ? 's' : '') + ' attend' + (pend > 1 ? 'ent' : '') + ' ta validation.</div>' : '';
     var overview = '<div class="ovcard"><h2>Là où on en est</h2>' + ovRows + note + '</div>';
     var pr = presence(CUR.lastSeen);
     var acts = '';
     if (unread) acts += '<div class="inrow inrow--recu"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v11H9l-4 3v-3H4z"/></svg></span><div class="inrow__m"><div class="inrow__t">' + unread + ' message' + (unread > 1 ? 's' : '') + ' non lu' + (unread > 1 ? 's' : '') + '</div><div class="inrow__s">Messagerie</div></div></div>';
+    recent.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+    recent.slice(0, 3).forEach(function (r) {
+      acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(r.t) + '</div><div class="inrow__s">' + esc(r.s) + ' · ' + esc(fmtDate(r.at)) + '</div></div></div>';
+    });
     acts += '<div class="inrow"><span class="inrow__ic"><svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg></span><div class="inrow__m"><div class="inrow__t">' + esc(pr.label) + '</div><div class="inrow__s">Dernière connexion</div></div></div>';
     var activity = '<div class="ovcard"><h2>Activité récente</h2>' + acts + '</div>';
     return '<div class="ovgrid">' + overview + activity + '</div>';
