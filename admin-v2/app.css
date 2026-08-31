@@ -1269,6 +1269,7 @@ select.cg-in{cursor:pointer}
 .ibbtn{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:8px 13px;border-radius:999px;border:none;cursor:pointer;background:var(--beige);color:var(--terre);flex-shrink:0}
 .ibbtn--dark{background:var(--terre);color:var(--paille)}
 .ibbtn--del{color:#9a4a2a}
+.ibbtn--cal{background:var(--glycine);color:var(--glycine-900)}
 .qtabs{display:inline-flex;gap:4px;background:var(--card);padding:5px;border-radius:12px}
 .qtab{font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--terre-600);padding:8px 15px;border-radius:9px;border:none;cursor:pointer;background:none}
 .qtab:hover:not(.on){background:var(--beige)}

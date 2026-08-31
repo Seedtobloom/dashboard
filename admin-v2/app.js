@@ -862,7 +862,8 @@
       '</div>' +
       '<div class="field"><label>Apple ID (e-mail)</label><input class="inp" id="cal-user" value="' + esc(d.user || '') + '" placeholder="prenom@icloud.com" style="' + S + '"></div>' +
       '<div class="field mt"><label>Mot de passe pour app</label><input class="inp" id="cal-pass" type="password" placeholder="' + (on ? '•••• enregistré — laisser vide pour ne pas changer' : 'xxxx-xxxx-xxxx-xxxx') + '" style="' + S + '"></div>' +
-      '<div class="field mt"><label>Nom du calendrier (optionnel)</label><input class="inp" id="cal-name" value="' + esc(d.calName || '') + '" placeholder="Laisse vide pour le calendrier principal" style="' + S + '"></div>' +
+      '<div class="field mt"><label>Nom du calendrier (optionnel)</label><input class="inp" id="cal-name" value="' + esc(d.calName || '') + '" placeholder="Vide = tous tes calendriers (Personnel, Travail…)" style="' + S + '"></div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">Laisse vide pour afficher les rendez-vous de <b>tous</b> tes calendriers iCloud. Indique un nom seulement si tu veux te limiter à un seul.</div>' +
       '<div class="row mt" style="gap:8px;flex-wrap:wrap;align-items:center">' +
         '<button class="btn btn--dark btn--sm" onclick="ADM.calSave()">Enregistrer</button>' +
         '<button class="btn btn--outline btn--sm" onclick="ADM.calTest()">Tester la connexion</button>' +
@@ -2689,7 +2690,11 @@
       var catLbl = c.category === 'suivi' ? 'Cliente suivie' : 'Nouveau contact';
       var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
       var hasContent = nSteps || nQ;
+      var icalBtn = (VIS_CAL.configured && c.date && !c.done)
+        ? '<button class="ibbtn' + (c.icalPushed ? '' : ' ibbtn--cal') + '" title="' + (c.icalPushed ? 'Déjà dans ton calendrier iCloud' : 'Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)') + '" onclick="event.stopPropagation();ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ iCloud' : '📅 Ajouter à iCloud') + '</button>'
+        : '';
       var actions = (hasContent && !c.done ? '<button class="ibbtn ibbtn--dark" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
+        icalBtn +
         '<button class="ibbtn" onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')">' + (c.done ? 'Compte-rendu' : 'Détails') + '</button>';
       return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '" style="cursor:pointer' + (c.done ? ';opacity:0.7' : '') + '" onclick="ADM.visOpen(\'' + c.id + '\')">' +
         '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +

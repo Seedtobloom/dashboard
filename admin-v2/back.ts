@@ -2857,23 +2857,37 @@ function calEscape(s: string): string {
 }
 async function calListEvents(cfg: CalCfg, fromIso: string, toIso: string): Promise<{ calName: string; events: AnyObj[] }> {
   const { auth, cals } = await calDiscover(cfg);
-  const cal = calPick(cfg, cals);
+  // Si un calendrier précis est demandé, on ne lit que celui-là ; sinon TOUS
+  // (iCloud a plusieurs calendriers : Personnel, Travail, partagés…).
+  const targets = cfg.calName ? cals.filter((c) => c.name.toLowerCase() === cfg.calName!.toLowerCase()) : cals;
+  const list = targets.length ? targets : cals;
   const body = '<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">' +
     '<d:prop><d:getetag/><c:calendar-data/></d:prop>' +
     '<c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">' +
     '<c:time-range start="' + calFmtTime(fromIso) + '" end="' + calFmtTime(toIso) + '"/>' +
     '</c:comp-filter></c:comp-filter></c:filter></c:calendar-query>';
-  const r = await fetch(cal.url, { method: 'REPORT', headers: { Authorization: auth, Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' }, body });
-  const xml = await r.text();
   const events: AnyObj[] = [];
-  const re = /<(?:[\w]+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:[\w]+:)?calendar-data>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xml))) {
-    const ics = calDecodeXml(m[1]);
-    for (const ev of calParseVevents(ics)) events.push(ev);
+  const seen: Record<string, boolean> = {};
+  for (const cal of list) {
+    try {
+      const r = await fetch(cal.url, { method: 'REPORT', headers: { Authorization: auth, Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' }, body });
+      const xml = await r.text();
+      const re = /<(?:[\w]+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:[\w]+:)?calendar-data>/gi;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(xml))) {
+        const ics = calDecodeXml(m[1]);
+        for (const ev of calParseVevents(ics)) {
+          const k = (ev.uid || '') + '|' + ev.start;
+          if (seen[k]) continue;
+          seen[k] = true;
+          ev.calendar = cal.name;
+          events.push(ev);
+        }
+      }
+    } catch (e) { /* un calendrier illisible ne bloque pas les autres */ }
   }
   events.sort((a, b) => String(a.start).localeCompare(String(b.start)));
-  return { calName: cal.name, events };
+  return { calName: list.map((c) => c.name).join(', '), events };
 }
 async function calCreateEvent(cfg: CalCfg, title: string, startIso: string, endIso: string): Promise<{ ok: boolean; error?: string }> {
   const { auth, cals } = await calDiscover(cfg);
