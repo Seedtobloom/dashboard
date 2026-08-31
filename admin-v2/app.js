@@ -4294,7 +4294,8 @@
   }
   function renderClient() {
     if (!CUR || CUR.key !== CURKEY) { setMain(topbar('Client') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>'); if (!CUR || CUR.key !== CURKEY) { loadClient(); } return; }
-    var nm = ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || (CUR.entreprise.nom) || CUR.client.email || CUR.key;
+    var _cl = CUR.client || {};
+    var nm = ((_cl.prenom || '') + ' ' + (_cl.nom || '')).trim() || (CUR.entreprise && CUR.entreprise.nom) || _cl.email || CUR.key;
     // Fiche cliente = 5 onglets de la maquette, exactement.
     var _domUnread = 0; (CUR.domains || []).concat(CUR.supports || []).forEach(function (x) { _domUnread += x.unread || 0; });
     var tabs = [
@@ -4647,7 +4648,7 @@
   }
 
   function tabInfos() {
-    var c = CUR.client, e = CUR.entreprise;
+    var c = CUR.client || {}, e = CUR.entreprise || {};
     var active = CUR.isActive;
     var coord = '<div class="card infocard" style="background:var(--card)">' +
       '<div class="between mb"><h3><span class="infocard__dot" style="background:#2c4a72"></span>Coordonnées</h3>' +
