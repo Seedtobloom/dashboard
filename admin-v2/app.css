@@ -473,11 +473,19 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .advice__t b{font-weight:600}
 .advice--attn{background:#f7ede6}
 .advice--attn .advice__ic{background:var(--gold-chip);color:var(--gold-ink)}
-.msview .whead{margin:2px 0 16px}
-.msview .charge{margin-bottom:18px}
+.msview .whead{margin:2px 0 14px}
 .msview .filters{margin-bottom:16px}
 .msview .week,.msview .planwrap,.msview .dayview,.msview .wdaypick{margin-top:2px}
-.msview .spanel{margin-top:24px}
+.msview .spanel{margin-top:26px}
+/* Capacité en ligne discrète */
+.capline{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+.capline__bar{width:160px;height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden;flex-shrink:0}
+.capline__bar i{display:block;height:100%;border-radius:999px}
+.capline__t{font-family:var(--font-body);font-size:12.5px;color:var(--muted)}
+.capline__t b{color:var(--terre);font-weight:600}
+.capline__cfg{margin-left:auto;border:none;background:none;cursor:pointer;color:var(--terre-400);font-size:15px;padding:4px 6px;border-radius:8px}
+.capline__cfg:hover{background:var(--beige);color:var(--terre)}
+.capedit{background:var(--card);border-radius:13px;padding:14px 16px;margin:0 0 16px}
 .sem2 .wadd{width:100%;box-sizing:border-box;font-size:11px;padding:8px 10px;margin-top:2px;background:var(--bg);border:1px dashed var(--line);border-radius:9px;color:var(--nuit)}
 .sem2 .wadd:focus{outline:none;border-color:var(--lav);background:var(--surf)}
 /* légende */

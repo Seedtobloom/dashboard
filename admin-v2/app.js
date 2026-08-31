@@ -3071,7 +3071,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7), MS_CAL = [], MS_BLOCKS = [];
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7), MS_CAL = [], MS_BLOCKS = [], MS_CAPOPEN = false;
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -3195,18 +3195,17 @@
       '<button class="snav" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
       '<button class="snav" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
       '<span class="wrange">' + rangeLbl + '</span></div>';
-    var charge = '<div class="charge"><div class="charge__row">' +
-      '<div><div class="charge__n tnum">' + (weekAvail ? msHours(weekAvail) : '—') + '</div><div class="charge__l">disponibles</div></div>' +
-      '<div><div class="charge__n tnum">' + msHours(weekPlanned) + '</div><div class="charge__l">planifiées</div></div>' +
-      '<div><div class="charge__n tnum">' + (weekAvail ? msHours(Math.max(0, marge)) : '—') + '</div><div class="charge__l">de marge</div></div>' +
-      '<p class="charge__note">' + note + '</p>' +
-    '</div></div>';
-    // Éditeur des disponibilités par jour (remplace l'ancien « Calendrier intelligent »).
-    var capEdit = '<details style="margin:0 0 14px">' +
-      '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-600);list-style:none">⚙ Mes disponibilités par jour</summary>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:10px">' +
+    // Capacité en une ligne discrète (fini le gros bloc de chiffres).
+    var capLineSlim = '<div class="capline">' +
+      '<span class="capline__bar"><i style="width:' + Math.min(100, pct) + '%;background:' + (over ? 'var(--gold-chip)' : 'var(--terre)') + '"></i></span>' +
+      '<span class="capline__t">' + (weekAvail ? '<b>' + msHours(weekPlanned) + '</b> planifié · ' + msHours(Math.max(0, marge)) + ' de marge sur ' + msHours(weekAvail) : '<b>' + msHours(weekPlanned) + '</b> planifié · capacité non réglée') + '</span>' +
+      '<button class="capline__cfg" onclick="ADM.msToggleCap()" title="Régler mes disponibilités">⚙</button>' +
+    '</div>';
+    // Éditeur des disponibilités par jour — masqué par défaut, ouvert via le ⚙.
+    var capEdit = MS_CAPOPEN ? '<div class="capedit">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">' +
       [1, 2, 3, 4, 5].map(function (k) { return '<label style="display:flex;flex-direction:column;gap:3px;font-family:var(--font-micro);font-size:10px;color:var(--muted)">' + MS_DOW[k - 1] + ' (h)<input class="inp" type="number" min="0" max="14" step="0.5" style="width:66px" value="' + (MS_DAYS[k] ? (Math.round(MS_DAYS[k] / 60 * 100) / 100) : '') + '" onchange="ADM.msSaveCap(' + k + ',this.value)"></label>'; }).join('') +
-      '</div><div class="micro" style="margin-top:8px;text-transform:none;letter-spacing:0;color:var(--muted)">Le nombre d\'heures que tu peux consacrer à tes tâches chaque jour — sert au calcul de ta marge ci-dessus.</div></details>';
+      '</div><div class="micro" style="margin-top:8px;text-transform:none;letter-spacing:0;color:var(--muted)">Les heures que tu peux consacrer à tes tâches chaque jour — sert au calcul de ta marge.</div></div>' : '';
     var FILTERS = [['all', 'Tout'], ['wt-client', 'Client'], ['wt-crea', 'Création'], ['wt-studio', 'Studio'], ['wt-admin', 'Admin']];
     var filters = '<div class="filters">' + FILTERS.map(function (f) { return '<button class="filt' + (MS_FILTER === f[0] ? ' is-active' : '') + '" onclick="ADM.msFilter(\'' + f[0] + '\')">' + f[1] + '</button>'; }).join('') + '</div>';
     // bloc coloré par type de travail, avec estimation + déplacement
@@ -3325,14 +3324,13 @@
     var planHint = MS_MODE === 'plan' ? '<p class="tnote" style="margin:0 0 14px">Glisse une tâche « À caler » dans un créneau, ou laisse « Organise pour moi » remplir tes créneaux libres sans les surcharger.</p>' : '';
     var html = '<div class="wrap sem2 msview">' +
       header +
-      upcomingBanner(MS_UPCOMING) +
       focus +
       whead +
-      charge +
+      capLineSlim +
       capEdit +
       (MS_MODE === 'plan' ? planHint : filters) +
       grid +
-      (MS_MODE === 'plan' ? '' : (legend + placeHtml)) +
+      (MS_MODE === 'plan' ? '' : placeHtml) +
     '</div>';
     setMain(topbar('') + html);
   }
@@ -3343,6 +3341,7 @@
   }
   function msWeek(v) { if (v === 0) MS_OFFSET = 0; else MS_OFFSET += v; renderMaSemaineBody(); }
   function msFilter(v) { MS_FILTER = v; renderMaSemaineBody(); }
+  function msToggleCap() { MS_CAPOPEN = !MS_CAPOPEN; renderMaSemaineBody(); }
   function msMode(m) { MS_MODE = m; if (m === 'day') { var i = (new Date().getDay() + 6) % 7; MS_OFFSET = 0; MS_DAYSEL = (i > 4 ? 0 : i); } renderMaSemaineBody(); }
   function msDaySel(i) { MS_DAYSEL = i; renderMaSemaineBody(); }
   // Catégorie (couleur) d'une tâche pour le planning : partenaire = Création,
@@ -7742,7 +7741,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
