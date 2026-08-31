@@ -973,7 +973,7 @@
   function inboxCard(it) {
     if (it.type === 'demande') return inboxDemandeCard(it);
     var x = it.x;
-    var openBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
+    var openBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.inboxDrawer(\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\')">Ouvrir la fiche</button>';
     var seenArgs = '\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\'' + ((it.type === 'validated' || it.type === 'revision') ? ',\'' + (x.project || 'partner') + '\'' : '');
     var seenBtn = '<button class="btn btn--outline btn--sm" onclick="ADM.inboxSeen(' + seenArgs + ')">Vu</button>';
     var body = '';
@@ -1085,8 +1085,61 @@
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
       '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
-      '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir la fiche</button>';
+      '<button class="pbtn" onclick="ADM.inboxDrawer(\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\')">Ouvrir la fiche</button>';
     return inboxChrome(it, body, actions, urg ? '#8a4a2c' : '');
+  }
+  // Panneau latéral droit : ouvre le détail d'un élément d'Inbox sans quitter
+  // la liste (au lieu de rediriger vers la fiche complète).
+  function inboxDrawerClose() { var b = el('inbox-drawer-bk'); if (b) b.remove(); var d = el('inbox-drawer'); if (d) d.remove(); }
+  function inboxDrawer(type, key, id) {
+    var it = inboxItems().filter(function (i) { return i.type === type && i.x.key === key && String(i.x.id) === String(id); })[0];
+    if (!it) { openClient(key); return; }
+    var x = it.x;
+    var cfg = INBOX_TYPES[type] || INBOX_TYPES.task;
+    inboxDrawerClose();
+    var bk = document.createElement('div'); bk.id = 'inbox-drawer-bk'; bk.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90'; bk.onclick = inboxDrawerClose; document.body.appendChild(bk);
+    var d = document.createElement('div'); d.id = 'inbox-drawer'; d.style.cssText = 'position:fixed;top:0;right:0;height:100vh;width:min(560px,97vw);background:var(--page,#fff);z-index:95;overflow-y:auto';
+    // Détail
+    var title = x.title || x.name || cfg.label;
+    var contentTxt = x.content || x.text || x.comment || '';
+    var chip = '<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:' + cfg.bg + ';color:' + cfg.ic + ';flex-shrink:0">' + admIcon(cfg.icon) + '</span>';
+    var meta = [];
+    if (x.dueDate) meta.push('📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong>');
+    if (x.createdAt) meta.push('🕐 ' + esc(fmtDate(x.createdAt)));
+    if (x.forfaitConfigured) meta.push(x.forfaitRemaining <= 0 ? 'Forfait épuisé' : 'Reste ' + x.forfaitRemaining + ' h');
+    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">🔗 Lien de la cliente</a>' : '';
+    // Actions selon le type (chaque action ferme le panneau puis agit)
+    var C = 'ADM.inboxDrawerClose();';
+    var acts = '';
+    if (type === 'demande') {
+      acts =
+        '<button class="btn btn--dark btn--sm" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
+        '<button class="btn btn--outline btn--sm" style="color:#8d2b21" onclick="' + C + 'ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>';
+    } else {
+      if (type === 'ticket') acts += '<button class="btn btn--dark btn--sm" onclick="' + C + 'ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">▶ Commencer</button>';
+      var seenArgs = '\'' + type + '\',\'' + x.key + '\',\'' + x.id + '\'' + ((type === 'validated' || type === 'revision') ? ',\'' + (x.project || 'partner') + '\'' : '');
+      acts += '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.inboxSeen(' + seenArgs + ')">Marquer vu</button>';
+    }
+    var openFull = '<button class="btn btn--outline btn--sm" onclick="' + C + 'ADM.openClient(\'' + x.key + '\')">Ouvrir l\'espace cliente →</button>';
+    d.innerHTML =
+      '<div style="position:sticky;top:0;background:var(--page,#fff);z-index:4;padding:16px 20px;display:flex;align-items:center;gap:12px">' +
+        chip +
+        '<div style="flex:1;min-width:0"><div class="micro" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:' + cfg.ic + '">' + cfg.label + '</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);line-height:1.15">' + esc(x.client || '') + '</div></div>' +
+        '<button onclick="ADM.inboxDrawerClose()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;flex-shrink:0">✕</button>' +
+      '</div>' +
+      '<div style="padding:6px 22px 90px">' +
+        '<div style="font-size:18px;font-weight:650;color:var(--terre);line-height:1.3;margin-bottom:12px">' + esc(title) + '</div>' +
+        (contentTxt ? '<div style="font-size:14.5px;color:var(--terre-600);line-height:1.6;white-space:pre-wrap">' + mtLinkify(contentTxt) + '</div>' : '') +
+        (meta.length ? '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-family:var(--font-micro);font-size:12px;color:var(--muted)">' + meta.map(function (m) { return '<span>' + m + '</span>'; }).join('') + '</div>' : '') +
+        inboxAtts(x) +
+        (link ? '<div style="margin-top:14px">' + link + '</div>' : '') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:24px">' + acts + '</div>' +
+        '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--surface-2)">' + openFull + '</div>' +
+      '</div>';
+    document.body.appendChild(d);
   }
   // Retire l'élément de toutes les listes et rafraîchit le badge de nav.
   function inboxDrop(key, id) {
@@ -7307,7 +7360,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
