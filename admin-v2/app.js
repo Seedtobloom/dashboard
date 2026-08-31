@@ -2749,10 +2749,25 @@
     var pastItems = past.map(function (c) { return { t: (ts(c) || 0), h: row(c, false, true) }; })
       .concat(icalPastF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, true) }; }))
       .sort(function (a, b) { return b.t - a.t; });
-    // Autres rendez-vous (agenda perso, sans visio) — section séparée, à venir.
+    // Regroupe des items {t,h} par mois (ordre décroissant), avec en-têtes.
+    function byMonth(items) {
+      if (!items.length) return '';
+      var groups = {}, order = [];
+      items.forEach(function (x) { var d = new Date(x.t); var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(x); });
+      order.sort(function (a, b) { return a < b ? 1 : -1; });
+      return order.map(function (k) {
+        var p = k.split('-'); var lbl = new Date(p[0], p[1] - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        lbl = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+        return '<div class="secmark2" style="margin-top:20px">' + esc(lbl) + ' · ' + groups[k].length + '</div>' + groups[k].map(function (x) { return x.h; }).join('');
+      }).join('');
+    }
+    // Agenda perso (sans visio) — section séparée : à venir, puis passés grisés.
     var othersUp = icalUpF(icalOthers);
-    var agendaSection = othersUp.length
-      ? '<div class="secmark2" style="margin-top:26px">Autres rendez-vous · agenda perso</div>' + othersUp.map(function (e) { return icalRow(e, false, false); }).join('')
+    var othersPast = icalPastF(icalOthers).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, true) }; });
+    var agendaSection = (othersUp.length || othersPast.length)
+      ? '<div class="secmark2" style="margin-top:30px;color:var(--terre)">Agenda perso</div>' +
+        (othersUp.length ? othersUp.map(function (e) { return icalRow(e, false, false); }).join('') : '<div class="empty" style="padding:10px 2px">Aucun rendez-vous perso à venir.</div>') +
+        byMonth(othersPast)
       : '';
     // Bandeau d'état du calendrier.
     var calbar;
@@ -2769,7 +2784,7 @@
       VIS_TYPES.map(function (t) { var n = VISIOS.cards.filter(function (c) { return (c.visioType || 'autre') === t[0]; }).length; return n ? '<button class="chip' + (VIS_TYPEFILTER === t[0] ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'' + t[0] + '\')">' + esc(t[1]) + ' · ' + n + '</button>' : ''; }).join('') + '</div>';
     var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>' + typeFilters;
     var up = upItems.length ? upItems.map(function (x) { return x.h; }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
-    var pa = pastItems.length ? '<div class="secmark2">Passées</div>' + pastItems.map(function (x) { return x.h; }).join('') : '';
+    var pa = pastItems.length ? '<div class="secmark2" style="margin-top:26px;color:var(--terre)">Passées</div>' + byMonth(pastItems) : '';
     return calbar + addBar + '<div class="secmark2">À venir</div>' + up + agendaSection + pa;
   }
   // Champ « nom » : sélecteur de cliente (suivi) ou texte libre (prospect).
