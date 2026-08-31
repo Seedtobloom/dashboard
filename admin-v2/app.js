@@ -2972,10 +2972,10 @@
     }).join('');
     var grid = '<div class="week">' + cols + '</div>';
     var legend = '<div class="legend">' +
-      '<span class="lg"><i style="background:var(--lav)"></i>Client</span>' +
-      '<span class="lg"><i style="background:var(--brun)"></i>Création</span>' +
-      '<span class="lg"><i style="background:var(--lavc)"></i>Studio</span>' +
-      '<span class="lg"><i style="background:var(--creme)"></i>Admin</span>' +
+      '<span class="lg"><i style="background:var(--glycine-700)"></i>Client</span>' +
+      '<span class="lg"><i style="background:var(--gold-chip)"></i>Création</span>' +
+      '<span class="lg"><i style="background:var(--glycine-900)"></i>Studio</span>' +
+      '<span class="lg"><i style="background:var(--terre-400)"></i>Admin</span>' +
     '</div>';
     // À placer
     var toPlace = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });

@@ -375,11 +375,11 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .wday__cap{font-family:var(--font-micro);font-size:9px;letter-spacing:0.04em;text-transform:uppercase;color:var(--brun);opacity:.7;white-space:nowrap}
 .sem2 .wday__cap.full{color:#a23c28;opacity:1;font-weight:700}
 .sem2 .wcol{display:flex;flex-direction:column;gap:9px;min-height:50px}
-.sem2 .wblk{position:relative;border-radius:13px;padding:12px 13px;display:flex;flex-direction:column;gap:5px}
+.sem2 .wblk{position:relative;border-radius:13px;padding:12px 13px 12px 15px;display:flex;flex-direction:column;gap:5px;background:var(--card);color:var(--terre);box-shadow:inset 4px 0 0 var(--wac,var(--terre-400))}
 /* Coche « fait » en haut à droite du bloc */
 .sem2 .wblk__chk{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;background:transparent;color:inherit;opacity:.4;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1;padding:0;transition:opacity .12s,background .12s,color .12s}
 .sem2 .wblk__chk:hover{opacity:.85}
-.sem2 .wblk__chk.is-on{opacity:1;background:var(--ivoire);border-color:var(--ivoire);color:var(--brun)}
+.sem2 .wblk__chk.is-on{opacity:1;background:var(--terre);border-color:var(--terre);color:var(--paille)}
 .sem2 .wblk--done{opacity:.5;filter:saturate(.45)}
 .sem2 .wblk--done .wblk__t{text-decoration:line-through;text-decoration-thickness:1px}
 .sem2 .wblk--done:hover{opacity:.72}
@@ -391,22 +391,22 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .wblk__ctl .inp{font-size:10.5px;padding:4px 6px;border-radius:7px}
 .sem2 .wblk__ctl input{width:50px;flex-shrink:0}
 .sem2 .wblk__ctl select{flex:1;min-width:0}
-.sem2 .wblk__note{flex-shrink:0;width:26px;height:26px;border-radius:7px;border:none;cursor:pointer;background:rgba(255,255,255,0.16);color:inherit;font-size:12px;line-height:1;display:grid;place-items:center;opacity:.85}
-.sem2 .wblk__note:hover{opacity:1;background:rgba(255,255,255,0.28)}
-.sem2 .wblk__notetxt{margin-top:6px;font-family:var(--font-micro);font-size:12px;line-height:1.45;color:inherit;background:rgba(255,255,255,0.16);border-radius:8px;padding:7px 10px;cursor:pointer;white-space:pre-wrap}
-/* Blocs clairs : un fond translucide sombre contraste mieux que le blanc. */
-.sem2 .wt-client .wblk__note,.sem2 .wt-studio .wblk__note,.sem2 .wt-admin .wblk__note{background:rgba(28,18,5,0.10)}
-.sem2 .wt-client .wblk__note:hover,.sem2 .wt-studio .wblk__note:hover,.sem2 .wt-admin .wblk__note:hover{background:rgba(28,18,5,0.18)}
-.sem2 .wt-client .wblk__notetxt,.sem2 .wt-studio .wblk__notetxt,.sem2 .wt-admin .wblk__notetxt{background:rgba(28,18,5,0.07)}
-.sem2 .wt-client{background:var(--lav);color:var(--nuit)}
-.sem2 .wt-crea{background:var(--brun);color:var(--ivoire)}
-.sem2 .wt-studio{background:var(--lavc);color:var(--brun)}
-.sem2 .wt-admin{background:var(--creme);color:var(--brun)}
-.sem2 .wt-rdv{background:var(--nuit);color:var(--ivoire)}
-.sem2 .wt-crea .inp,.sem2 .wt-rdv .inp{background:rgba(251,250,255,.22);border:1px solid rgba(251,250,255,.4);color:var(--ivoire)!important}
-.sem2 .wt-crea .inp::placeholder,.sem2 .wt-rdv .inp::placeholder{color:rgba(251,250,255,.7)}
-.sem2 .wt-crea option,.sem2 .wt-rdv option{color:#1C1205;background:#fff}
-.sem2 .wt-client .inp,.sem2 .wt-studio .inp,.sem2 .wt-admin .inp{background:rgba(28,18,5,.06);border:1px solid rgba(28,18,5,.14);color:var(--nuit)!important}
+.sem2 .wblk__note{flex-shrink:0;width:26px;height:26px;border-radius:7px;border:none;cursor:pointer;background:rgba(28,18,5,0.08);color:var(--terre);font-size:12px;line-height:1;display:grid;place-items:center;opacity:.85}
+.sem2 .wblk__note:hover{opacity:1;background:rgba(28,18,5,0.16)}
+.sem2 .wblk__notetxt{margin-top:6px;font-family:var(--font-micro);font-size:12px;line-height:1.45;color:var(--terre-600);background:rgba(28,18,5,0.05);border-radius:8px;padding:7px 10px;cursor:pointer;white-space:pre-wrap}
+/* Accent de catégorie (barre à gauche + libellé), fond crème pour tous (maquette). */
+.sem2 .wt-client{--wac:var(--glycine-700)}
+.sem2 .wt-crea{--wac:var(--gold-chip)}
+.sem2 .wt-studio{--wac:var(--glycine-900)}
+.sem2 .wt-admin{--wac:var(--terre-400)}
+.sem2 .wt-rdv{--wac:var(--terre)}
+.sem2 .wt-client .wblk__k{color:var(--glycine-900)}
+.sem2 .wt-crea .wblk__k{color:var(--gold-ink)}
+.sem2 .wt-studio .wblk__k{color:var(--glycine-900)}
+.sem2 .wt-admin .wblk__k{color:var(--terre-400)}
+.sem2 .wt-rdv .wblk__k{color:var(--terre)}
+.sem2 .wblk .inp{background:rgba(28,18,5,.06);border:none;color:var(--terre)!important}
+.sem2 .wblk .inp::placeholder{color:var(--muted)}
 .sem2 .wblk,.sem2 .placerow{cursor:grab}
 .sem2 .wblk:active,.sem2 .placerow:active{cursor:grabbing}
 .sem2 .wcol--over{outline:2px dashed var(--brun);outline-offset:-3px;background:rgba(65,47,33,.05);border-radius:12px}
