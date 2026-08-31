@@ -227,12 +227,29 @@
     }).then(function (d) { if (d) { VIEW = 'priorities'; renderShell(); startPoll(); } }).catch(showError);
   }
   var _poll = null;
+  // Détecte un nouveau déploiement (hash de app.js différent) et propose de
+  // recharger — évite de rester bloqué sur une ancienne version en cache.
+  var _appvBannerShown = false;
+  function checkAppVersion() {
+    if (_appvBannerShown || typeof window === 'undefined' || !window.__APPV) return;
+    fetch('/version', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.v && d.v !== window.__APPV && !_appvBannerShown) {
+        _appvBannerShown = true;
+        var b = document.createElement('div');
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99999;background:var(--terre,#110704);color:var(--paille,#F0E9D6);border-radius:999px;padding:12px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 24px rgba(28,18,5,0.25);font-family:var(--font-body,sans-serif);font-size:14px';
+        b.innerHTML = '<span>✨ Une nouvelle version est disponible.</span><button style="border:none;cursor:pointer;background:var(--paille,#F0E9D6);color:var(--terre,#110704);font-weight:700;border-radius:999px;padding:8px 16px;font-family:inherit;font-size:13px">Recharger</button>';
+        b.querySelector('button').onclick = function () { location.reload(true); };
+        document.body.appendChild(b);
+      }
+    }).catch(function () { });
+  }
   function startPoll() {
     if (_poll) return;
     _poll = setInterval(refreshUnread, 120000); setInterval(refreshOpenChat, 30000);
+    checkAppVersion(); setInterval(checkAppVersion, 90000);
     // Rafraîchit à la volée quand on revient sur l'onglet (les intervalles
     // ne tournent pas quand l'onglet est masqué → on économise le quota KV).
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshUnread(); });
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { refreshUnread(); checkAppVersion(); } });
   }
   // Rafraîchit le fil de discussion ouvert (messagerie globale ou fiche client)
   // sans toucher au champ de saisie : les nouveaux messages arrivent seuls.

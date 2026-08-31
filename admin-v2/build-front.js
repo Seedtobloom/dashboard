@@ -27,7 +27,8 @@ const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">' +
   '<link rel="stylesheet" href="/admin.css?v=' + cssV + '"></head><body>' +
   '<div id="app"><div class="center"><div class="spin"></div></div></div>' +
-  '<div class="toast" id="toast"></div><script src="/admin.js?v=' + jsV + '"></script></body></html>';
+  '<div class="toast" id="toast"></div><script>window.__APPV=' + JSON.stringify(jsV) + '</script>' +
+  '<script src="/admin.js?v=' + jsV + '"></script></body></html>';
 
 const handler = [
   'export default {',
@@ -42,6 +43,7 @@ const handler = [
   "    if (url.pathname === '/admin.css') return new Response(ADMIN_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/admin.js') return new Response(ADMIN_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': url.search ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });",
   "    if (url.pathname === '/favicon.svg') return new Response(FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
+  "    if (url.pathname === '/version') return new Response(JSON.stringify({ v: " + JSON.stringify(jsV) + " }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });",
   "    return new Response(HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, must-revalidate' } });",
   '  }',
   '};',
