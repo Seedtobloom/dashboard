@@ -1300,3 +1300,8 @@ select.cg-in{cursor:pointer}
 .vio__t{font-family:var(--font-display);font-size:17px;color:var(--terre);line-height:1.2}
 .vio__s{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-top:2px}
 .caltag{font-family:var(--font-body);font-size:8.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--glycine-900);background:var(--glycine-50);padding:3px 8px;border-radius:6px;flex-shrink:0}
+.calbar{display:flex;align-items:center;gap:12px;background:var(--glycine-50);border-radius:14px;padding:12px 16px;margin-bottom:18px}
+.calbar__ic{width:34px;height:34px;border-radius:10px;background:var(--glycine);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0;font-weight:700}
+.calbar__t{flex:1;font-size:12.5px;color:var(--terre);line-height:1.4}
+.calbar__t b{font-weight:600}
+.calbar__dot{width:7px;height:7px;border-radius:50%;background:#5a8f5a;display:inline-block;margin-right:5px;vertical-align:1px}

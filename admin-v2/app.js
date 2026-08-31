@@ -2388,8 +2388,17 @@
   function renderVisios() {
     setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
+    visLoadCalendar();
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
+  }
+  // Événements iCloud (lecture) — chargés en arrière-plan, rafraîchissent la liste.
+  var VIS_CAL = { loaded: false, configured: false, calName: '', events: [], error: '' };
+  function visLoadCalendar() {
+    api('/api/calendar/events').then(function (r) { return r.json(); }).then(function (d) {
+      VIS_CAL = { loaded: true, configured: !!d.configured, calName: d.calName || '', events: Array.isArray(d.events) ? d.events : [], error: d.error || '' };
+      if (VIEW === 'visios') renderVisiosBody();
+    }).catch(function () { VIS_CAL = { loaded: true, configured: false, calName: '', events: [], error: '' }; });
   }
   // Migration douce : les anciennes visios (trame unique) deviennent un déroulé
   // d'étapes (découpé sur les séparateurs). Sauvegardé à la première modif.
@@ -2688,10 +2697,43 @@
         '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + '</div></div>' +
         actions + '</div>';
     }
+    // Événements iCloud (lecture seule) fusionnés dans les listes.
+    function icalRow(ev, soon) {
+      var dt = ev.start ? new Date(ev.start) : null;
+      var dayB = dt && !isNaN(dt) ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
+      var hourS = (dt && !isNaN(dt) && !ev.allDay) ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : (ev.allDay ? 'journée' : '');
+      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '">' +
+        '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
+        '<span class="vio__a" style="background:var(--surface-2);color:var(--terre-400)"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>' +
+        '<div class="vio__m"><div class="vio__t">' + esc(ev.title || 'Événement') + '</div><div class="vio__s">Depuis ton calendrier</div></div>' +
+        '<span class="caltag">iCloud</span></div>';
+    }
+    var icalEvents = (VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : [];
+    function icalTs(ev) { var t = ev.start ? +new Date(ev.start) : NaN; return isNaN(t) ? null : t; }
+    var icalUp = icalEvents.filter(function (e) { var t = icalTs(e); return t != null && t >= now; }).sort(function (a, b) { return icalTs(a) - icalTs(b); });
+    var icalPast = icalEvents.filter(function (e) { var t = icalTs(e); return t != null && t < now; }).sort(function (a, b) { return icalTs(b) - icalTs(a); });
+    // Fusion visios + iCloud, triées par date.
+    var upItems = upcoming.map(function (c) { return { t: (ts(c) || 8.64e15), h: row(c, false) }; })
+      .concat(icalUp.map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
+      .sort(function (a, b) { return a.t - b.t; });
+    var pastItems = past.map(function (c) { return { t: (ts(c) || 0), h: row(c, false) }; })
+      .concat(icalPast.map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
+      .sort(function (a, b) { return b.t - a.t; });
+    // Bandeau d'état du calendrier.
+    var calbar;
+    if (VIS_CAL.configured && !VIS_CAL.error) {
+      calbar = '<div class="calbar"><span class="calbar__ic"><svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>' +
+        '<div class="calbar__t"><span class="calbar__dot"></span><b>Calendrier iCloud connecté</b>' + (VIS_CAL.calName ? ' · ' + esc(VIS_CAL.calName) : '') + ' · lu par Spark. Tes rendez-vous iCloud remontent ci-dessous, et tes visios planifiées y sont ajoutées.</div>' +
+        '<button class="ibbtn" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Gérer</button></div>';
+    } else if (VIS_CAL.configured && VIS_CAL.error) {
+      calbar = '<div class="calbar" style="background:#f7ede6"><span class="calbar__ic" style="background:var(--gold-chip);color:var(--gold-ink)">!</span><div class="calbar__t"><b>Calendrier iCloud</b> · ' + esc(VIS_CAL.error) + '</div><button class="ibbtn" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Vérifier</button></div>';
+    } else if (VIS_CAL.loaded) {
+      calbar = '<div class="calbar"><span class="calbar__ic"><svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span><div class="calbar__t">Connecte ton <b>calendrier iCloud</b> (Apple / Spark) pour voir tes rendez-vous ici et y ajouter tes visios.</div><button class="ibbtn ibbtn--dark" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Connecter</button></div>';
+    } else calbar = '';
     var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>';
-    var up = upcoming.length ? upcoming.map(function (c, i) { return row(c, i === 0); }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
-    var pa = past.length ? '<div class="secmark2">Passées</div>' + past.map(function (c) { return row(c, false); }).join('') : '';
-    return addBar + '<div class="secmark2">À venir</div>' + up + pa;
+    var up = upItems.length ? upItems.map(function (x) { return x.h; }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
+    var pa = pastItems.length ? '<div class="secmark2">Passées</div>' + pastItems.map(function (x) { return x.h; }).join('') : '';
+    return calbar + addBar + '<div class="secmark2">À venir</div>' + up + pa;
   }
   // Champ « nom » : sélecteur de cliente (suivi) ou texte libre (prospect).
   function visNameField(c) {
@@ -2737,7 +2779,8 @@
       '</div>' +
       '<div style="padding:20px 24px 70px;max-width:690px">' +
         '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">' + catSel + visNameField(c) + '</div>' +
-        '<div class="row" style="gap:8px;align-items:center;margin-bottom:20px"><span class="micro">Date & heure</span><input class="inp" type="datetime-local" style="width:auto" value="' + esc(c.date || '') + '" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)"></div>' +
+        '<div class="row" style="gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap"><span class="micro">Date & heure</span><input class="inp" type="datetime-local" style="width:auto" value="' + esc(c.date || '') + '" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)">' +
+          (c.date ? '<button class="btn btn--outline btn--sm" title="Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)" onclick="ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ Dans iCloud — réajouter' : '＋ Ajouter à iCloud') + '</button>' : '') + '</div>' +
         tplOpts +
         '<div class="between" style="margin-bottom:10px"><h3 style="margin:0">Déroulé</h3><button class="btn btn--outline btn--sm" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Étape</button></div>' +
         (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute des étapes pour construire ton déroulé (accueil, besoins, présentation…).</div>') +
@@ -2911,6 +2954,18 @@
       '<div class="micro" style="margin:14px 0 5px">Questions</div>' + qs +
       '<div class="row" style="gap:6px;margin-top:6px"><input class="inp" id="vis-tq-' + t.id + '" placeholder="+ Ajouter une question" style="flex:1;min-width:140px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.visTplQAdd(\'' + t.id + '\');}"><button class="pbtn" onclick="ADM.visTplQAdd(\'' + t.id + '\')">Ajouter</button></div>' +
     '</div>';
+  }
+  // Pousser une visio vers iCloud (apparaît ensuite dans Spark).
+  function visPushICloud(id) {
+    var c = visCard(id); if (!c) return;
+    if (!c.date) { toast('Ajoute une date d\'abord'); return; }
+    var d0 = new Date(c.date); if (isNaN(d0)) { toast('Date invalide'); return; }
+    var title = (c.client ? c.client + ' · ' : '') + 'Visio' + (c.category === 'suivi' ? '' : ' (prospect)');
+    var start = d0.toISOString(), end = new Date(d0.getTime() + 45 * 60000).toISOString();
+    toast('Ajout à iCloud…');
+    jpost('/api/calendar/events', { title: title, start: start, end: end }, 'POST').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) { if (res.ok) { toast('Ajouté à iCloud ✓'); c.icalPushed = true; visSave(); renderVisDrawer(); visLoadCalendar(); } else toast((res.d && res.d.error) || 'iCloud a refusé'); })
+      .catch(function () { toast('Erreur réseau'); });
   }
   function visTplAdd() { VISIOS.templates.unshift({ id: 't' + Date.now().toString(36), name: '', steps: [], questions: [] }); visSave(); renderVisiosBody(); }
   function visTplSet(id, f, v) { var t = visTpl(id); if (!t) return; t[f] = v; visSave(); }
@@ -7468,7 +7523,7 @@
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
+    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
