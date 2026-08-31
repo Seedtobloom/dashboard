@@ -2694,7 +2694,7 @@
       .sort(function (a, b) { return (ts(a) || 8.64e15) - (ts(b) || 8.64e15); });
     var past = cardsF.filter(function (c) { return c.done || (ts(c) != null && ts(c) < now); })
       .sort(function (a, b) { return (ts(b) || 0) - (ts(a) || 0); });
-    function row(c, soon) {
+    function row(c, soon, past) {
       var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
       var ini = (name.trim().charAt(0) || '?').toUpperCase();
       var dt = c.date ? new Date(c.date) : null;
@@ -2713,7 +2713,7 @@
         (hasContent && !c.done ? '<button class="ibbtn' + (ml ? '' : ' ibbtn--dark') + '" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
         icalBtn +
         '<button class="ibbtn" onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')">' + (c.done ? 'Compte-rendu' : 'Détails') + '</button>';
-      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '" style="cursor:pointer' + (c.done ? ';opacity:0.7' : '') + '" onclick="ADM.visOpen(\'' + c.id + '\')">' +
+      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + (past || c.done ? ' viorow--past' : '') + '" style="cursor:pointer" onclick="ADM.visOpen(\'' + c.id + '\')">' +
         '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
         '<span class="vio__a">' + esc(ini) + '</span>' +
         '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + tChip + '</div></div>' +
@@ -2721,17 +2721,17 @@
     }
     // Événements iCloud (lecture seule). Un événement avec lien de visio est une
     // « visio » ; sinon c'est un simple rendez-vous d'agenda (section à part).
-    function icalRow(ev, soon) {
+    function icalRow(ev, soon, past) {
       var dt = ev.start ? new Date(ev.start) : null;
       var dayB = dt && !isNaN(dt) ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
       var hourS = (dt && !isNaN(dt) && !ev.allDay) ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : (ev.allDay ? 'journée' : '');
       var vis = !!ev.joinUrl;
       var av = vis
         ? '<span class="vio__a"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg></span>'
-        : '<span class="vio__a" style="background:var(--surface-2);color:var(--terre-400)"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>';
+        : '<span class="vio__a" style="background:var(--paille-200);color:var(--muted)"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>';
       var join = vis ? '<a class="ibbtn ibbtn--dark" href="' + esc(ev.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
-      var tag = vis ? '<span class="caltag" style="background:var(--glycine);color:var(--glycine-900)">Visio · iCloud</span>' : '<span class="caltag">Agenda</span>';
-      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '">' +
+      var tag = vis ? '<span class="caltag" style="background:var(--glycine);color:var(--glycine-900)">Visio · iCloud</span>' : '<span class="caltag" style="background:var(--paille-200);color:var(--muted)">Perso</span>';
+      return '<div class="viorow' + (soon ? ' viorow--soon' : '') + (vis ? '' : ' viorow--perso') + (past ? ' viorow--past' : '') + '">' +
         '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' + av +
         '<div class="vio__m"><div class="vio__t">' + esc(ev.title || 'Événement') + '</div><div class="vio__s">' + esc(ev.location || 'Depuis ton calendrier') + '</div></div>' +
         join + tag + '</div>';
@@ -2743,16 +2743,16 @@
     function icalUpF(list) { return list.filter(function (e) { var t = icalTs(e); return t != null && t >= now; }).sort(function (a, b) { return icalTs(a) - icalTs(b); }); }
     function icalPastF(list) { return list.filter(function (e) { var t = icalTs(e); return t != null && t < now; }).sort(function (a, b) { return icalTs(b) - icalTs(a); }); }
     // Visios (cartes du dashboard + événements iCloud avec lien) — triées par date.
-    var upItems = upcoming.map(function (c) { return { t: (ts(c) || 8.64e15), h: row(c, false) }; })
-      .concat(icalUpF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
+    var upItems = upcoming.map(function (c, i) { return { t: (ts(c) || 8.64e15), h: row(c, false, false) }; })
+      .concat(icalUpF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, false) }; }))
       .sort(function (a, b) { return a.t - b.t; });
-    var pastItems = past.map(function (c) { return { t: (ts(c) || 0), h: row(c, false) }; })
-      .concat(icalPastF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
+    var pastItems = past.map(function (c) { return { t: (ts(c) || 0), h: row(c, false, true) }; })
+      .concat(icalPastF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, true) }; }))
       .sort(function (a, b) { return b.t - a.t; });
-    // Autres rendez-vous (agenda, sans visio) — section séparée.
+    // Autres rendez-vous (agenda perso, sans visio) — section séparée, à venir.
     var othersUp = icalUpF(icalOthers);
     var agendaSection = othersUp.length
-      ? '<div class="secmark2" style="margin-top:26px">Autres rendez-vous · agenda iCloud</div>' + othersUp.map(function (e) { return icalRow(e, false); }).join('')
+      ? '<div class="secmark2" style="margin-top:26px">Autres rendez-vous · agenda perso</div>' + othersUp.map(function (e) { return icalRow(e, false, false); }).join('')
       : '';
     // Bandeau d'état du calendrier.
     var calbar;

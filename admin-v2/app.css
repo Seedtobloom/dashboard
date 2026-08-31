@@ -1292,6 +1292,9 @@ select.cg-in{cursor:pointer}
 .tplcard__act{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
 .viorow{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px}
 .viorow--soon{background:var(--glycine-50)}
+.viorow--perso{background:var(--surface-2)}
+.viorow--past{opacity:.55}
+.viorow--past:hover{opacity:.8}
 .vio__d{text-align:center;flex-shrink:0;width:62px}
 .vio__d b{font-family:var(--font-display);font-style:italic;font-size:17px;color:var(--terre);display:block;line-height:1.05}
 .viorow--soon .vio__d b{color:var(--glycine-900)}
