@@ -1850,7 +1850,7 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'focus', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {};
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'focus', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {}, MT_GROUP = 'prio';
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#E8F1FF', '#2c4a72'], ['#F0E2D6', '#8a4a2c'], ['#f6ecd5', '#8a6414'], ['#eef1e6', '#4f6a46'], ['#EDE5D7', '#5A2A11'], ['#e6ddce', '#8a5c3f']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
@@ -2045,6 +2045,37 @@
     var t = MT_TASKS.filter(function (x) { return x.id === id; })[0];
     if (t && (t.priority || 'normale') === priority) return;
     jpost('/api/admin/tasks/' + id, { priority: priority }, 'PATCH').then(function (r) { if (r.ok) { toast('Priorité mise à jour'); renderMyTasks(); } else toast('Erreur'); });
+  }
+  // Glisser une tâche dans une colonne de catégorie (mode) → change son mode.
+  function mtDropCat(e, mode) {
+    e.preventDefault();
+    var c = e.currentTarget; if (c && c.classList.contains('mtcol')) c.style.background = '#f6f2ea';
+    var id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || MT_DRAG; MT_DRAG = null;
+    if (!id) return;
+    var t = MT_TASKS.filter(function (x) { return x.id === id; })[0];
+    if (t && (t.mode || '') === mode) return;
+    jpost('/api/admin/tasks/' + id, { mode: mode }, 'PATCH').then(function (r) { if (r.ok) { toast('Catégorie mise à jour'); renderMyTasks(); } else toast('Erreur'); });
+  }
+  function mtSetGroup(g) { MT_GROUP = g; renderMyTasks(); }
+  // Construit le tableau (colonnes) selon le regroupement choisi : priorité ou catégorie.
+  function mtBoardHtml(todo) {
+    var colDefs, keyOf, dropFn;
+    if (MT_GROUP === 'cat') {
+      colDefs = MT_MODES.map(function (m) { return [m[0], m[1], m[3], m[4]]; }).concat([['', 'À classer', '#6b533b', '#efe9e2']]);
+      keyOf = function (t) { return t.mode || ''; };
+      dropFn = 'mtDropCat';
+    } else {
+      colDefs = [['haute', 'Haute', '#8a4a2c', '#F0E2D6'], ['normale', 'Normale', '#2c4a72', '#E8F1FF'], ['basse', 'Basse', '#8a5c3f', '#EDE5D7']];
+      keyOf = function (t) { return t.priority || 'normale'; };
+      dropFn = 'mtDrop';
+    }
+    return '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + colDefs.map(function (c) {
+      var list = todo.filter(function (t) { return keyOf(t) === c[0] && (MT_TAG === 'all' || (Array.isArray(t.tags) && t.tags.indexOf(MT_TAG) !== -1)); });
+      return '<div class="mtcol" data-col="' + c[0] + '" ondragover="ADM.mtDragOver(event)" ondragleave="ADM.mtDragLeave(event)" ondrop="ADM.' + dropFn + '(event,\'' + c[0] + '\')" style="flex:1;min-width:230px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px;transition:background 120ms">' +
+        '<div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + c[2] + '">' + esc(c[1]) + '</span><span style="margin-left:auto;font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + c[2] + ';background:#fff;min-width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center">' + list.length + '</span></div>' +
+        (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Dépose une tâche ici</div>') +
+      '</div>';
+    }).join('') + '</div>';
   }
   var PT_TIMER = null, PT_INT = null;
   var DOC_BASE_TITLE = '';
@@ -3291,14 +3322,11 @@
           '<select class="inp" id="mt-recur" style="flex:1;min-width:160px" title="Répéter la tâche automatiquement">' + recOptsAdd + '</select>' +
         '</div>' +
         '<div class="micro mt">Le <b>mode</b> range la tâche dans le bon espace de ta page Focus. L\'<b>énergie</b> et la <b>durée</b> servent à savoir si ta journée est réaliste.</div></div>' : '';
-      var cols = [['haute', 'Haute', '#8a4a2c', '#F0E2D6'], ['normale', 'Normale', '#2c4a72', '#E8F1FF'], ['basse', 'Basse', '#8a5c3f', '#EDE5D7']];
-      var board = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
-        var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0]; });
-        return '<div class="mtcol" data-prio="' + c[0] + '" ondragover="ADM.mtDragOver(event)" ondragleave="ADM.mtDragLeave(event)" ondrop="ADM.mtDrop(event,\'' + c[0] + '\')" style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px;transition:background 120ms">' +
-          '<div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + c[2] + '">' + c[1] + '</span><span style="margin-left:auto;font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + c[2] + ';background:#fff;min-width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center">' + list.length + '</span></div>' +
-          (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Dépose une tâche ici</div>') +
+      var groupToggle = '<div style="display:inline-flex;gap:4px;background:var(--card);padding:4px;border-radius:11px;margin-bottom:12px">' +
+        '<button class="mtgrp' + (MT_GROUP !== 'cat' ? ' on' : '') + '" onclick="ADM.mtSetGroup(\'prio\')">Par priorité</button>' +
+        '<button class="mtgrp' + (MT_GROUP === 'cat' ? ' on' : '') + '" onclick="ADM.mtSetGroup(\'cat\')">Par catégorie</button>' +
         '</div>';
-      }).join('') + '</div>';
+      var board = mtBoardHtml(todo);
       var doneRev = done.slice().reverse();
       var doneShown = doneRev.slice(0, MT_DONE_LIMIT);
       var doneView = done.length
@@ -3311,7 +3339,7 @@
         '<button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">Tableau · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
-      var boardHint = todo.length ? '<div class="micro" style="margin:-6px 0 14px">Glisse une tâche d\'une colonne à l\'autre pour changer sa priorité.</div>' : '';
+      var boardHint = todo.length ? '<div class="micro" style="margin:-6px 0 14px">Glisse une tâche d\'une colonne à l\'autre pour changer sa ' + (MT_GROUP === 'cat' ? 'catégorie' : 'priorité') + '.</div>' : '';
       var tagSet = {}; todo.forEach(function (t) { (Array.isArray(t.tags) ? t.tags : []).forEach(function (tg) { tagSet[tg] = (tagSet[tg] || 0) + 1; }); });
       var allTags = Object.keys(tagSet).sort(function (a, b) { return a.localeCompare(b); });
       if (MT_TAG !== 'all' && !tagSet[MT_TAG]) MT_TAG = 'all';
@@ -3321,21 +3349,12 @@
       }
       var tagChips = allTags.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin:-2px 0 15px">' + tagChip('all', 'Toutes', MT_TAG === 'all') + allTags.map(function (tg) { return tagChip(tg, tg + ' · ' + tagSet[tg], MT_TAG === tg); }).join('') + '</div>' : '';
       var boardShown = board;
-      if (MT_TAG !== 'all') {
-        boardShown = '<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">' + cols.map(function (c) {
-          var list = todo.filter(function (t) { return (t.priority || 'normale') === c[0] && Array.isArray(t.tags) && t.tags.indexOf(MT_TAG) !== -1; });
-          return '<div class="mtcol" data-prio="' + c[0] + '" ondragover="ADM.mtDragOver(event)" ondragleave="ADM.mtDragLeave(event)" ondrop="ADM.mtDrop(event,\'' + c[0] + '\')" style="flex:1;min-width:250px;background:' + c[3] + ';border-radius:14px;padding:13px 13px 5px;transition:background 120ms">' +
-            '<div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span class="pdot" style="background:' + c[2] + '"></span><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + c[2] + '">' + c[1] + '</span><span style="margin-left:auto;font-family:var(--font-micro);font-size:12px;font-weight:700;color:' + c[2] + ';background:#fff;min-width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center">' + list.length + '</span></div>' +
-            (list.length ? list.map(mtCard).join('') : '<div class="micro" style="padding:14px 2px;color:' + c[2] + ';opacity:0.55;text-align:center">Aucune tâche</div>') +
-          '</div>';
-        }).join('') + '</div>';
-      }
       var quickBar = '<div style="margin-bottom:14px"><div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<input class="inp" id="mt-quick" placeholder="Ajout rapide… (ex. Relancer Émilie #Admin !)" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtQuickAdd();}">' +
         '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Le jour où tu comptes t\'en occuper">À faire le <input class="inp" id="mt-quick-do" type="date" style="width:auto"></label>' +
         '<button class="btn btn--dark" onclick="ADM.mtQuickAdd()">Ajouter</button></div>' +
         '<div class="micro" style="margin-top:6px">Astuce : ajoutez <b>#étiquette</b> pour classer, un <b>!</b> pour la priorité haute, et une date <b>« À faire le »</b> si tu veux la planifier. « + Nouvelle tâche » ouvre le détail (client, échéance, récurrence…).</div></div>';
-      var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus.</div>') : '';
+      var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? groupToggle + tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus.</div>') : '';
       // Vue Liste (checklist) : tout à faire, à cocher, avec ajout en masse.
       var prank2 = { haute: 0, normale: 1, basse: 2 };
       var listSorted = todo.slice().sort(function (a, b) {
@@ -7385,7 +7404,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
