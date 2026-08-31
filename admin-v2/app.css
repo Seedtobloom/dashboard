@@ -429,6 +429,40 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .wcal--perso .wcal__tag{background:var(--paille-200);color:var(--muted)}
 .sem2 .wcal__ti{font-family:var(--font-micro);font-size:12.5px;font-weight:600;color:var(--terre);line-height:1.25}
 .sem2 .wcal__join{align-self:flex-start;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--paille);background:var(--terre);text-decoration:none;padding:5px 10px;border-radius:999px;margin-top:2px}
+/* Vue Planifier (créneaux horaires) */
+.sem2 .planwrap{display:grid;grid-template-columns:1fr 260px;gap:15px;align-items:start}
+@media(max-width:900px){.sem2 .planwrap{grid-template-columns:1fr}}
+.sem2 .planweek{display:flex;flex-direction:column;gap:12px}
+.sem2 .pday{background:var(--card);border-radius:16px;padding:15px 17px}
+.sem2 .pday__h{font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);margin-bottom:12px}
+.sem2 .pblocks{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:560px){.sem2 .pblocks{grid-template-columns:1fr}}
+.sem2 .pblock{background:var(--surface-2);border-radius:13px;padding:12px 13px}
+.sem2 .pblock--over{background:#f3e6da}
+.sem2 .pblock.drop-hover{background:var(--glycine-50);outline:2px dashed var(--glycine-700);outline-offset:-3px}
+.sem2 .pblock__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sem2 .pblock__h b{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600)}
+.sem2 .pblock__cap{font-family:var(--font-micro);font-size:10px;font-weight:700;color:var(--terre-400);white-space:nowrap}
+.sem2 .pblock__cap.over{color:var(--gold-ink)}
+.sem2 .pblock__bar{height:6px;border-radius:999px;background:var(--surface);overflow:hidden;margin-bottom:9px}
+.sem2 .pblock__bar i{display:block;height:100%;border-radius:999px;background:var(--terre);transition:width .18s}
+.sem2 .pblock--over .pblock__bar i{background:var(--gold-chip)}
+.sem2 .pblock__drop{display:flex;flex-direction:column;gap:6px;min-height:38px}
+.sem2 .ptask{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:9px;padding:8px 10px;cursor:grab}
+.sem2 .ptask:active{cursor:grabbing}
+.sem2 .ptask__t{flex:1;font-family:var(--font-micro);font-size:12px;font-weight:600;color:var(--terre);min-width:0}
+.sem2 .ptask__m2{font-family:var(--font-micro);font-weight:500;color:var(--muted);margin-left:6px}
+.sem2 .ptask__min{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);padding:2px 7px;border-radius:999px;flex-shrink:0}
+.sem2 .pblock .ptask .ptask__min{background:var(--surface)}
+.sem2 .ptask__dl{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:2px 7px;border-radius:999px;flex-shrink:0}
+.sem2 .planrail{background:var(--card);border-radius:16px;padding:16px 18px;position:sticky;top:14px}
+.sem2 .planrail h3{font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);margin:0 0 3px}
+.sem2 .planrail__s{font-family:var(--font-micro);font-size:11px;color:var(--muted);margin:0 0 13px}
+.sem2 .planrail.drop-hover{outline:2px dashed var(--glycine-700);outline-offset:-3px}
+.sem2 .railtasks{display:flex;flex-direction:column;gap:8px;min-height:40px;margin-bottom:13px}
+.sem2 .railtasks .ptask{background:var(--surface-2)}
+.sem2 .emptyz{font-family:var(--font-micro);font-size:12px;color:var(--terre-400);padding:10px 2px}
+.sem2 .plan-auto{width:100%;justify-content:center}
 .sem2 .wadd{width:100%;box-sizing:border-box;font-size:11px;padding:8px 10px;margin-top:2px;background:var(--bg);border:1px dashed var(--line);border-radius:9px;color:var(--nuit)}
 .sem2 .wadd:focus{outline:none;border-color:var(--lav);background:var(--surf)}
 /* légende */

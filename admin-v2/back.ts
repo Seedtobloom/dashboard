@@ -1168,7 +1168,7 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   const task = container.taches.find((t: AnyObj) => t.id === taskId);
   return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes'];
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'slot'];
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -2009,7 +2009,7 @@ async function handleMyTaskCreate(request: Request, env: Env): Promise<Response>
   await saveMyTasks(env, tasks);
   return json(t, 201);
 }
-const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'doDate', 'status', 'archived', 'clientKey', 'clientName'];
+const MYTASK_FIELDS = ['title', 'notes', 'priority', 'estMinutes', 'dueDate', 'doDate', 'status', 'archived', 'clientKey', 'clientName', 'mode', 'slot'];
 // Refonte « Studio OS » : axe d'organisation par mode de travail + propriétés légères.
 const MYTASK_MODES = ['client', 'studio', 'marketing', 'organisation', 'admin', 'idee'];
 const MYTASK_ENERGY = ['quick', 'short', 'medium', 'deep'];

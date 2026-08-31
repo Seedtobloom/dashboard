@@ -3054,7 +3054,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7), MS_CAL = [];
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7), MS_CAL = [], MS_BLOCKS = [];
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -3075,9 +3075,19 @@
       MS_PARTNER = (res[2] && res[2].weekTasks) || [];
       MS_UPCOMING = (res[2] && res[2].upcoming) || [];
       MS_CAL = (res[3] && Array.isArray(res[3].events)) ? res[3].events : [];
+      MS_BLOCKS = (res[1] && Array.isArray(res[1].blocks)) ? res[1].blocks : [];
       renderMaSemaineBody();
     }).catch(showError);
   }
+  // Créneaux horaires d'un jour de la semaine (dow 1-7). Si aucun bloc n'est
+  // défini, on propose Matin / Après-midi par défaut (comme la maquette).
+  function msBlocksForDow(dow) {
+    var b = (MS_BLOCKS || []).filter(function (x) { return x.dow === dow; }).sort(function (a, b2) { return (a.start || 0) - (b2.start || 0); });
+    if (b.length) return b.map(function (x) { return { id: x.groupId || x.id, label: x.label || '', start: x.start || 0, duration: x.duration || 60 }; });
+    return [{ id: 'am', label: 'Matin', start: 570, duration: 210 }, { id: 'pm', label: 'Après-midi', start: 855, duration: 255 }];
+  }
+  function msMinToH(m) { var h = Math.floor(m / 60), mm = m % 60; return h + 'h' + (mm ? String(mm).padStart(2, '0') : ''); }
+  function msDur2(m) { m = Math.round(m || 0); if (!m) return '0'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? String(r).padStart(2, '0') : ''); }
   // Événements iCloud d'un jour (YYYY-MM-DD local), triés par heure.
   function msCalForDay(diso) {
     return (MS_CAL || []).filter(function (e) {
@@ -3127,8 +3137,9 @@
       : (over ? 'Semaine chargée — au-delà de ta capacité, lève le pied.'
         : (marge <= weekAvail * 0.15 ? 'Semaine bien remplie, mais tu tiens le rythme.' : 'La semaine respire, tu as de la marge.'));
     var modeToggle = '<div class="wmode">' +
-      '<button class="wmode__b' + (MS_MODE !== 'day' ? ' on' : '') + '" onclick="ADM.msMode(\'week\')">Semaine</button>' +
+      '<button class="wmode__b' + (MS_MODE === 'week' ? ' on' : '') + '" onclick="ADM.msMode(\'week\')">Semaine</button>' +
       '<button class="wmode__b' + (MS_MODE === 'day' ? ' on' : '') + '" onclick="ADM.msMode(\'day\')">Jour</button>' +
+      '<button class="wmode__b' + (MS_MODE === 'plan' ? ' on' : '') + '" onclick="ADM.msMode(\'plan\')">Planifier</button>' +
       '</div>';
     var whead = '<div class="whead">' + modeToggle +
       '<button class="snav" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
@@ -3185,7 +3196,9 @@
       return '<div>' + head + '<div class="wcol" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)">' + body + dayAdd + '</div></div>';
     }
     var grid;
-    if (MS_MODE === 'day') {
+    if (MS_MODE === 'plan') {
+      grid = planView(days);
+    } else if (MS_MODE === 'day') {
       if (MS_DAYSEL < 0 || MS_DAYSEL > 4) MS_DAYSEL = 0;
       var picker = '<div class="wdaypick">' + days.map(function (d, i) {
         var iso = msIso(d), isT = iso === todayIso;
@@ -3194,6 +3207,39 @@
       grid = picker + '<div class="dayview">' + dayCol(days[MS_DAYSEL]) + '</div>';
     } else {
       grid = '<div class="week">' + days.map(dayCol).join('') + '</div>';
+    }
+    // Vue Planifier : créneaux horaires par jour + rail « À caler ».
+    function planView(days) {
+      function ptask(t, inBlock) {
+        var mn = t.estMinutes || 0;
+        var cn = t.clientName ? '<span class="ptask__m2">' + esc(t.clientName) + '</span>' : '';
+        var dl = (!inBlock && t.dueDate) ? '<span class="ptask__dl">' + esc(msShort(t.dueDate)) + '</span>' : '';
+        return '<div class="ptask" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
+          '<span class="ptask__t">' + esc(t.title) + cn + '</span><span class="ptask__min">' + (mn ? msDur2(mn) : '—') + '</span>' + dl + '</div>';
+      }
+      var daysHtml = days.map(function (d) {
+        var diso = msIso(d), dow = ((d.getDay() + 6) % 7) + 1;
+        var blocks = msBlocksForDow(dow);
+        var blocksHtml = blocks.map(function (b) {
+          var inBlk = active.filter(function (t) { return (t.doDate || '').slice(0, 10) === diso && (t.slot || '') === b.id; });
+          var used = inBlk.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+          var pct = b.duration ? Math.min(100, Math.round(used / b.duration * 100)) : 0;
+          var over = used > b.duration;
+          return '<div class="pblock' + (over ? ' pblock--over' : '') + '" ondragover="ADM.msPlanOver(event,this)" ondragleave="ADM.msPlanLeave(this)" ondrop="ADM.msPlanDrop(event,\'' + diso + '\',\'' + b.id + '\',this)">' +
+            '<div class="pblock__h"><b>' + esc((b.label || 'Créneau').toUpperCase()) + ' · ' + msMinToH(b.start) + '–' + msMinToH(b.start + b.duration) + '</b>' +
+              '<span class="pblock__cap' + (over ? ' over' : '') + '">' + msDur2(used) + ' / ' + msDur2(b.duration) + '</span></div>' +
+            '<div class="pblock__bar"><i style="width:' + pct + '%"></i></div>' +
+            '<div class="pblock__drop">' + inBlk.map(function (t) { return ptask(t, true); }).join('') + '</div></div>';
+        }).join('');
+        return '<div class="pday"><div class="pday__h">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '</div><div class="pblocks">' + blocksHtml + '</div></div>';
+      }).join('');
+      // Rail : tâches à caler (sans jour, hors idées).
+      var toCal = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
+      var rail = '<aside class="planrail"><h3>À caler</h3><p class="planrail__s">Glisse une tâche dans un créneau, ou laisse-toi guider.</p>' +
+        '<div class="railtasks" ondragover="ADM.msPlanOver(event,this)" ondragleave="ADM.msPlanLeave(this)" ondrop="ADM.msPlanUnplace(event,this)">' +
+        (toCal.length ? toCal.slice(0, 60).map(function (t) { return ptask(t, false); }).join('') : '<div class="emptyz">Tout est calé 🌿</div>') + '</div>' +
+        '<button class="btn btn--dark plan-auto" onclick="ADM.msAutoPlan()">✨ Organise pour moi</button></aside>';
+      return '<div class="planwrap"><div class="planweek">' + daysHtml + '</div>' + rail + '</div>';
     }
     var legend = '<div class="legend">' +
       '<span class="lg"><i style="background:var(--glycine-700)"></i>Client</span>' +
@@ -3226,7 +3272,7 @@
     var html = '<div class="wrap sem2">' +
       '<div class="intro"><strong style="color:var(--brun)">Ma semaine</strong> = quand et comment tu bosses. Toutes tes tâches sont là — placées sur un jour ou dans « À placer ». Besoin de la vue complète (idées, tableau, minuteur) ? <a href="#" onclick="event.preventDefault();ADM.nav(\'mytasks\')" style="color:var(--brun);text-decoration:underline">Ouvrir Mes tâches →</a></div>' +
       upcomingBanner(MS_UPCOMING) +
-      whead + charge + capEdit + filters + grid + legend + placeHtml +
+      whead + charge + capEdit + (MS_MODE === 'plan' ? '' : filters) + grid + (MS_MODE === 'plan' ? '' : (legend + placeHtml)) +
     '</div>';
     setMain(topbar('Ma semaine') + html);
   }
@@ -3292,6 +3338,52 @@
     if (elm) elm.classList.remove('wcol--over');
     var id = MS_DRAG || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); MS_DRAG = null;
     if (id) msPlace(id, diso);
+  }
+  // ── Vue Planifier : glisser une tâche dans un créneau horaire ──
+  function msPlanOver(ev, elm) { ev.preventDefault(); if (elm) elm.classList.add('drop-hover'); }
+  function msPlanLeave(elm) { if (elm) elm.classList.remove('drop-hover'); }
+  function msPlanDrop(ev, diso, slot, elm) {
+    ev.preventDefault(); if (elm) elm.classList.remove('drop-hover');
+    var id = MS_DRAG || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); MS_DRAG = null;
+    if (id) msPatch(id, { doDate: diso, slot: slot });
+  }
+  function msPlanUnplace(ev, elm) {
+    ev.preventDefault(); if (elm) elm.classList.remove('drop-hover');
+    var id = MS_DRAG || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); MS_DRAG = null;
+    if (id) msPatch(id, { doDate: null, slot: '' });
+  }
+  // « Organise pour moi » : place les tâches à caler dans les créneaux libres de
+  // la semaine, échéance la plus proche d'abord, sans dépasser la capacité.
+  function msAutoPlan() {
+    var mon = msMonday(MS_OFFSET);
+    var days = []; for (var i = 0; i < 5; i++) { var d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d); }
+    // Capacité restante par (jour, créneau).
+    var slots = [];
+    days.forEach(function (d) {
+      var diso = msIso(d), dow = ((d.getDay() + 6) % 7) + 1;
+      msBlocksForDow(dow).forEach(function (b) {
+        var used = MS_ALL.filter(function (t) { return !t.archived && t.status !== 'done' && (t.doDate || '').slice(0, 10) === diso && (t.slot || '') === b.id; }).reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+        slots.push({ diso: diso, id: b.id, free: Math.max(0, (b.duration || 0) - used) });
+      });
+    });
+    var toCal = MS_ALL.filter(function (t) { return !t.archived && t.status !== 'done' && !t.doDate && t.mode !== 'idee'; })
+      .sort(function (a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
+    var patches = [];
+    toCal.forEach(function (t) {
+      var need = t.estMinutes || 30;
+      var s = slots.find(function (x) { return x.free >= need; }) || slots.find(function (x) { return x.free >= 15; });
+      if (s) { s.free -= need; patches.push({ t: t, diso: s.diso, slot: s.id }); }
+    });
+    if (!patches.length) { toast('Rien à caler, ou plus de place dans tes créneaux'); return; }
+    patches.forEach(function (p) { p.t.doDate = p.diso; p.t.slot = p.slot; });
+    renderMaSemaineBody();
+    // Persistance (une requête par tâche).
+    patches.forEach(function (p) {
+      var url = p.t._src === 'client' ? '/api/clients/' + p.t._key + '/tasks/' + p.t.id : '/api/admin/tasks/' + p.t.id;
+      var body = p.t._src === 'client' ? { projectId: 'partner', doDate: p.diso, slot: p.slot } : { doDate: p.diso, slot: p.slot };
+      jpost(url, body, 'PATCH').catch(function () {});
+    });
+    toast(patches.length + ' tâche' + (patches.length > 1 ? 's' : '') + ' calée' + (patches.length > 1 ? 's' : '') + ' ✓');
   }
   // Note personnelle sur une tâche de la semaine (perso ou cliente). Persistée
   // côté serveur via msPatch (champ notes). Éditeur en petite fenêtre.
@@ -7590,7 +7682,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
