@@ -1805,7 +1805,7 @@
       var pjDom = '<div class="pj-dom"><div class="pj-dom__h"><span class="pj-hic"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><h2>À faire aujourd\'hui</h2><span class="n">' + (P2_late.length + P2_today.length) + '</span></div>' +
         (pjDomRows ? '<p class="pj-hint">Dans l\'ordre, du haut vers le bas : commence par le retard, puis le reste de ta journée.</p>' + pjDomRows
                    : '<div class="pj-empty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>') + '</div>';
-      var nInbox = (d.inbox || []).length, nTickets = mine.filter(function (x) { return x.kind === 'ticket'; }).length;
+      var nInbox = inboxUnifiedCount(d), nTickets = mine.filter(function (x) { return x.kind === 'ticket'; }).length;
       function pjIndic(cls, ic, title, sub, badge, bcls, onclick) {
         return '<button class="pj-indic' + (cls ? ' ' + cls : '') + '" type="button"' + (onclick ? ' onclick="' + onclick + '"' : '') + '>' +
           '<span class="pj-indic__ic">' + ic + '</span><span class="pj-indic__m"><b>' + title + '</b><small>' + sub + '</small></span>' +
@@ -2947,9 +2947,11 @@
         '<span class="wblk__t">' + esc(t.title) + dueWarn + '</span>' +
         (t.clientName ? '<span class="wblk__c">' + esc(t.clientName) + '</span>' : '') +
         '<div class="wblk__ctl">' +
+          '<button class="wblk__note' + (t.notes ? ' has' : '') + '" type="button" title="' + (t.notes ? 'Note : ' + esc(t.notes) : 'Ajouter une note') + '" onclick="ADM.msNoteOpen(\'' + t.id + '\')">' + (t.notes ? '📝' : '＋') + '</button>' +
           '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (en heures, ex. 1.5)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)">' +
           '<select class="inp" title="Déplacer sur un autre jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)">' + msDaySelect(days, diso) + '</select>' +
         '</div>' +
+        (t.notes ? '<div class="wblk__notetxt" onclick="ADM.msNoteOpen(\'' + t.id + '\')" title="Modifier la note">' + esc(t.notes) + '</div>' : '') +
       '</div>';
     }
     var cols = days.map(function (d) {
@@ -3064,6 +3066,27 @@
     if (elm) elm.classList.remove('wcol--over');
     var id = MS_DRAG || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); MS_DRAG = null;
     if (id) msPlace(id, diso);
+  }
+  // Note personnelle sur une tâche de la semaine (perso ou cliente). Persistée
+  // côté serveur via msPatch (champ notes). Éditeur en petite fenêtre.
+  function msNoteOpen(id) {
+    var t = MS_ALL.find(function (x) { return x.id === id; }); if (!t) return;
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:460px;text-align:left">' +
+      '<div class="admconfirm__title">Note · ' + esc(t.title || 'Tâche') + '</div>' +
+      '<textarea id="ms-note-ta" class="inp" style="width:100%;box-sizing:border-box;min-height:120px;resize:vertical;margin-top:12px;font-size:14px;line-height:1.5" placeholder="Tes notes sur cette tâche (rappels, détails, liens…)">' + esc(t.notes || '') + '</textarea>' +
+      '<div class="admconfirm__row" style="margin-top:14px">' +
+        (t.notes ? '<button class="btn btn--outline btn--sm" data-clear style="margin-right:auto;color:#8d2b21">Effacer</button>' : '') +
+        '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Enregistrer</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    var clr = ov.querySelector('[data-clear]'); if (clr) clr.onclick = function () { msPatch(id, { notes: '' }); close(); toast('Note effacée'); };
+    ov.querySelector('[data-yes]').onclick = function () { var v = (el('ms-note-ta').value || '').trim(); msPatch(id, { notes: v }); close(); toast('Note enregistrée'); };
+    document.body.appendChild(ov);
+    var f = el('ms-note-ta'); if (f) f.focus();
   }
   function msEst(id, val) { msPatch(id, { estMinutes: parseInt(val, 10) || 0 }); }
   // Saisie du temps estimé en HEURES (décimal, ex. 1.5 = 1 h 30) → stocké en minutes.
@@ -7353,7 +7376,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
