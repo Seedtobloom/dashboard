@@ -2707,37 +2707,53 @@
       var icalBtn = (VIS_CAL.configured && c.date && !c.done)
         ? '<button class="ibbtn' + (c.icalPushed ? '' : ' ibbtn--cal') + '" title="' + (c.icalPushed ? 'Déjà dans ton calendrier iCloud' : 'Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)') + '" onclick="event.stopPropagation();ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ iCloud' : '📅 Ajouter à iCloud') + '</button>'
         : '';
-      var actions = (hasContent && !c.done ? '<button class="ibbtn ibbtn--dark" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
+      var ml = (c.meetingUrl || '').trim();
+      var joinBtn = ml ? '<a class="ibbtn ibbtn--dark" href="' + esc(/^https?:\/\//i.test(ml) ? ml : 'https://' + ml) + '" target="_blank" rel="noopener" title="Rejoindre la visio" onclick="event.stopPropagation()">Rejoindre</a>' : '';
+      var actions = joinBtn +
+        (hasContent && !c.done ? '<button class="ibbtn' + (ml ? '' : ' ibbtn--dark') + '" onclick="event.stopPropagation();ADM.visPresent(\'' + c.id + '\')">Mode appel</button>' : '') +
         icalBtn +
         '<button class="ibbtn" onclick="event.stopPropagation();ADM.visOpen(\'' + c.id + '\')">' + (c.done ? 'Compte-rendu' : 'Détails') + '</button>';
       return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '" style="cursor:pointer' + (c.done ? ';opacity:0.7' : '') + '" onclick="ADM.visOpen(\'' + c.id + '\')">' +
         '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
         '<span class="vio__a">' + esc(ini) + '</span>' +
         '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + tChip + '</div></div>' +
-        actions + '</div>';
+        actions + '<span class="caltag" style="background:var(--glycine);color:var(--glycine-900)">Visio</span></div>';
     }
-    // Événements iCloud (lecture seule) fusionnés dans les listes.
+    // Événements iCloud (lecture seule). Un événement avec lien de visio est une
+    // « visio » ; sinon c'est un simple rendez-vous d'agenda (section à part).
     function icalRow(ev, soon) {
       var dt = ev.start ? new Date(ev.start) : null;
       var dayB = dt && !isNaN(dt) ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
       var hourS = (dt && !isNaN(dt) && !ev.allDay) ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : (ev.allDay ? 'journée' : '');
+      var vis = !!ev.joinUrl;
+      var av = vis
+        ? '<span class="vio__a"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg></span>'
+        : '<span class="vio__a" style="background:var(--surface-2);color:var(--terre-400)"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>';
+      var join = vis ? '<a class="ibbtn ibbtn--dark" href="' + esc(ev.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
+      var tag = vis ? '<span class="caltag" style="background:var(--glycine);color:var(--glycine-900)">Visio · iCloud</span>' : '<span class="caltag">Agenda</span>';
       return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '">' +
-        '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
-        '<span class="vio__a" style="background:var(--surface-2);color:var(--terre-400)"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>' +
-        '<div class="vio__m"><div class="vio__t">' + esc(ev.title || 'Événement') + '</div><div class="vio__s">Depuis ton calendrier</div></div>' +
-        '<span class="caltag">iCloud</span></div>';
+        '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' + av +
+        '<div class="vio__m"><div class="vio__t">' + esc(ev.title || 'Événement') + '</div><div class="vio__s">' + esc(ev.location || 'Depuis ton calendrier') + '</div></div>' +
+        join + tag + '</div>';
     }
     var icalEvents = (VIS_CAL.configured && Array.isArray(VIS_CAL.events)) ? VIS_CAL.events : [];
     function icalTs(ev) { var t = ev.start ? +new Date(ev.start) : NaN; return isNaN(t) ? null : t; }
-    var icalUp = icalEvents.filter(function (e) { var t = icalTs(e); return t != null && t >= now; }).sort(function (a, b) { return icalTs(a) - icalTs(b); });
-    var icalPast = icalEvents.filter(function (e) { var t = icalTs(e); return t != null && t < now; }).sort(function (a, b) { return icalTs(b) - icalTs(a); });
-    // Fusion visios + iCloud, triées par date.
+    var icalVisios = icalEvents.filter(function (e) { return e.joinUrl; });
+    var icalOthers = icalEvents.filter(function (e) { return !e.joinUrl; });
+    function icalUpF(list) { return list.filter(function (e) { var t = icalTs(e); return t != null && t >= now; }).sort(function (a, b) { return icalTs(a) - icalTs(b); }); }
+    function icalPastF(list) { return list.filter(function (e) { var t = icalTs(e); return t != null && t < now; }).sort(function (a, b) { return icalTs(b) - icalTs(a); }); }
+    // Visios (cartes du dashboard + événements iCloud avec lien) — triées par date.
     var upItems = upcoming.map(function (c) { return { t: (ts(c) || 8.64e15), h: row(c, false) }; })
-      .concat(icalUp.map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
+      .concat(icalUpF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
       .sort(function (a, b) { return a.t - b.t; });
     var pastItems = past.map(function (c) { return { t: (ts(c) || 0), h: row(c, false) }; })
-      .concat(icalPast.map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
+      .concat(icalPastF(icalVisios).map(function (e) { return { t: icalTs(e), h: icalRow(e, false) }; }))
       .sort(function (a, b) { return b.t - a.t; });
+    // Autres rendez-vous (agenda, sans visio) — section séparée.
+    var othersUp = icalUpF(icalOthers);
+    var agendaSection = othersUp.length
+      ? '<div class="secmark2" style="margin-top:26px">Autres rendez-vous · agenda iCloud</div>' + othersUp.map(function (e) { return icalRow(e, false); }).join('')
+      : '';
     // Bandeau d'état du calendrier.
     var calbar;
     if (VIS_CAL.configured && !VIS_CAL.error) {
@@ -2754,7 +2770,7 @@
     var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>' + typeFilters;
     var up = upItems.length ? upItems.map(function (x) { return x.h; }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
     var pa = pastItems.length ? '<div class="secmark2">Passées</div>' + pastItems.map(function (x) { return x.h; }).join('') : '';
-    return calbar + addBar + '<div class="secmark2">À venir</div>' + up + pa;
+    return calbar + addBar + '<div class="secmark2">À venir</div>' + up + agendaSection + pa;
   }
   // Champ « nom » : sélecteur de cliente (suivi) ou texte libre (prospect).
   function visNameField(c) {
@@ -2806,6 +2822,7 @@
           (c.visioType ? visTypeChip(c.visioType) : '') + '</div>' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap"><span class="micro">Date & heure</span><input class="inp" type="datetime-local" style="width:auto" value="' + esc(c.date || '') + '" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)">' +
           (c.date ? '<button class="btn btn--outline btn--sm" title="Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)" onclick="ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ Dans iCloud — réajouter' : '＋ Ajouter à iCloud') + '</button>' : '') + '</div>' +
+        '<div class="field" style="margin-bottom:20px"><label>Lien pour rejoindre la visio</label><input class="inp" style="width:100%;box-sizing:border-box" value="' + esc(c.meetingUrl || '') + '" placeholder="https://kmeet.infomaniak.com/… (colle le lien de ta salle)" onchange="ADM.visSet(\'' + c.id + '\',\'meetingUrl\',this.value)"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">Un bouton « Rejoindre » apparaîtra sur la visio.</div></div>' +
         tplOpts +
         '<div class="between" style="margin-bottom:10px"><h3 style="margin:0">Déroulé</h3><button class="btn btn--outline btn--sm" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Étape</button></div>' +
         (stepsHtml || '<div class="empty" style="margin-bottom:10px">Ajoute des étapes pour construire ton déroulé (accueil, besoins, présentation…).</div>') +

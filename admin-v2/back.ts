@@ -2830,9 +2830,21 @@ function calParseVevents(ics: string): { uid: string; title: string; start: stri
     if (!ds) continue;
     const s = calParseIcsDate(ds.val, ds.params);
     const e = de ? calParseIcsDate(de.val, de.params) : { iso: s.iso, allDay: s.allDay };
-    out.push({ uid, title: calUnescape(sum), start: s.iso, end: e.iso, allDay: s.allDay });
+    const loc = (get('LOCATION')?.val) || '';
+    const urlp = (get('URL')?.val) || '';
+    const conf = (get('X-GOOGLE-CONFERENCE')?.val) || (get('CONFERENCE')?.val) || '';
+    const desc = (get('DESCRIPTION')?.val) || '';
+    const joinUrl = calFindJoinUrl([loc, urlp, conf, calUnescape(desc)].join(' '));
+    out.push({ uid, title: calUnescape(sum), start: s.iso, end: e.iso, allDay: s.allDay, joinUrl, isVisio: !!joinUrl, location: calUnescape(loc) });
   }
   return out;
+}
+// Repère un lien de visioconférence dans le texte d'un événement (kMeet, Zoom,
+// Meet, Teams, Whereby, Jitsi, Webex…). Vide si aucun → ce n'est pas une visio.
+function calFindJoinUrl(text: string): string {
+  const urls = text.match(/https?:\/\/[^\s<>"'\\]+/gi) || [];
+  const vid = urls.find((u) => /(kmeet|infomaniak\.com\/[a-z]|zoom\.us|meet\.google|teams\.(microsoft|live)|whereby\.com|meet\.jit\.si|jitsi|webex\.com|around\.co|livestorm|visio)/i.test(u));
+  return (vid || '').replace(/[),.;]+$/, '');
 }
 function calParseIcsDate(val: string, params: string): { iso: string; allDay: boolean } {
   const v = val.trim();
