@@ -2895,7 +2895,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [];
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7);
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -2948,7 +2948,11 @@
     var note = !weekAvail ? 'Capacité hebdo non renseignée — la marge n\'est pas calculée.'
       : (over ? 'Semaine chargée — au-delà de ta capacité, lève le pied.'
         : (marge <= weekAvail * 0.15 ? 'Semaine bien remplie, mais tu tiens le rythme.' : 'La semaine respire, tu as de la marge.'));
-    var whead = '<div class="whead">' +
+    var modeToggle = '<div class="wmode">' +
+      '<button class="wmode__b' + (MS_MODE !== 'day' ? ' on' : '') + '" onclick="ADM.msMode(\'week\')">Semaine</button>' +
+      '<button class="wmode__b' + (MS_MODE === 'day' ? ' on' : '') + '" onclick="ADM.msMode(\'day\')">Jour</button>' +
+      '</div>';
+    var whead = '<div class="whead">' + modeToggle +
       '<button class="snav" onclick="ADM.msWeek(-1)" title="Semaine précédente">←</button>' +
       '<button class="snav" onclick="ADM.msWeek(0)" title="Cette semaine">Aujourd’hui</button>' +
       '<button class="snav" onclick="ADM.msWeek(1)" title="Semaine suivante">→</button>' +
@@ -2985,7 +2989,7 @@
         (t.notes ? '<div class="wblk__notetxt" onclick="ADM.msNoteOpen(\'' + t.id + '\')" title="Modifier la note">' + esc(t.notes) + '</div>' : '') +
       '</div>';
     }
-    var cols = days.map(function (d) {
+    function dayCol(d) {
       var diso = msIso(d);
       // On inclut les tâches FAITES du jour (affichées atténuées) pour voir ce qui a été accompli.
       var allDayTasks = MS_ALL.filter(function (t) { return !t.archived && (t.doDate || '').slice(0, 10) === diso; });
@@ -3000,8 +3004,18 @@
       var body = shown.length ? shown.map(function (t) { return wblk(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
       var dayAdd = '<input class="wadd" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}">';
       return '<div>' + head + '<div class="wcol" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)">' + body + dayAdd + '</div></div>';
-    }).join('');
-    var grid = '<div class="week">' + cols + '</div>';
+    }
+    var grid;
+    if (MS_MODE === 'day') {
+      if (MS_DAYSEL < 0 || MS_DAYSEL > 4) MS_DAYSEL = 0;
+      var picker = '<div class="wdaypick">' + days.map(function (d, i) {
+        var iso = msIso(d), isT = iso === todayIso;
+        return '<button class="wdaypick__b' + (i === MS_DAYSEL ? ' on' : '') + '" onclick="ADM.msDaySel(' + i + ')">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isT ? ' · auj.' : '') + '</button>';
+      }).join('') + '</div>';
+      grid = picker + '<div class="dayview">' + dayCol(days[MS_DAYSEL]) + '</div>';
+    } else {
+      grid = '<div class="week">' + days.map(dayCol).join('') + '</div>';
+    }
     var legend = '<div class="legend">' +
       '<span class="lg"><i style="background:var(--glycine-700)"></i>Client</span>' +
       '<span class="lg"><i style="background:var(--gold-chip)"></i>Création</span>' +
@@ -3044,6 +3058,8 @@
   }
   function msWeek(v) { if (v === 0) MS_OFFSET = 0; else MS_OFFSET += v; renderMaSemaineBody(); }
   function msFilter(v) { MS_FILTER = v; renderMaSemaineBody(); }
+  function msMode(m) { MS_MODE = m; if (m === 'day') { var i = (new Date().getDay() + 6) % 7; MS_OFFSET = 0; MS_DAYSEL = (i > 4 ? 0 : i); } renderMaSemaineBody(); }
+  function msDaySel(i) { MS_DAYSEL = i; renderMaSemaineBody(); }
   // Catégorie (couleur) d'une tâche pour le planning : partenaire = Création,
   // sinon d'après le « mode » de la tâche perso.
   function msWt(t) {
@@ -7395,7 +7411,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,

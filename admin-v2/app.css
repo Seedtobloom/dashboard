@@ -369,6 +369,15 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .filt:hover{background:var(--lavc)}
 .sem2 .filt.is-active{background:var(--brun);color:var(--ivoire)}
 /* grille semaine */
+.sem2 .wmode{display:inline-flex;gap:3px;background:var(--card);padding:4px;border-radius:10px;margin-right:6px}
+.sem2 .wmode__b{border:none;cursor:pointer;font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--terre-600);padding:7px 15px;border-radius:7px;background:none}
+.sem2 .wmode__b:hover:not(.on){background:var(--beige)}
+.sem2 .wmode__b.on{background:var(--terre);color:var(--paille);font-weight:700}
+.sem2 .wdaypick{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.sem2 .wdaypick__b{border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.03em;color:var(--terre-600);background:var(--card);padding:8px 13px;border-radius:999px}
+.sem2 .wdaypick__b:hover:not(.on){background:var(--beige)}
+.sem2 .wdaypick__b.on{background:var(--terre);color:var(--paille)}
+.sem2 .dayview{max-width:520px}
 .sem2 .week{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
 @media(max-width:900px){.sem2 .week{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.sem2 .week{grid-template-columns:1fr}}
