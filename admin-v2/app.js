@@ -3054,7 +3054,7 @@
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
   // = échéance) et estMinutes = temps estimé. La capacité par jour vient du Calendrier.
-  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7);
+  var MS_OFFSET = 0, MS_TASKS = [], MS_DAYS = {}, MS_PARTNER = [], MS_ALL = [], MS_FILTER = 'all', MS_UPCOMING = [], MS_MODE = 'week', MS_DAYSEL = ((new Date().getDay() + 6) % 7), MS_CAL = [];
   var MS_DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
   var MS_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   function msPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -3067,14 +3067,33 @@
     Promise.all([
       api('/api/admin/tasks').then(function (r) { return r.json(); }),
       api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; }),
-      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; })
+      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      api('/api/calendar/events').then(function (r) { return r.json(); }).catch(function () { return {}; })
     ]).then(function (res) {
       MS_TASKS = res[0].tasks || [];
       MS_DAYS = (res[1] && res[1].days) || {};
       MS_PARTNER = (res[2] && res[2].weekTasks) || [];
       MS_UPCOMING = (res[2] && res[2].upcoming) || [];
+      MS_CAL = (res[3] && Array.isArray(res[3].events)) ? res[3].events : [];
       renderMaSemaineBody();
     }).catch(showError);
+  }
+  // Événements iCloud d'un jour (YYYY-MM-DD local), triés par heure.
+  function msCalForDay(diso) {
+    return (MS_CAL || []).filter(function (e) {
+      if (!e.start) return false;
+      var ds = e.allDay ? String(e.start).slice(0, 10) : msIso(new Date(e.start));
+      return ds === diso;
+    }).sort(function (a, b) { return String(a.start).localeCompare(String(b.start)); });
+  }
+  function msCalBlock(e) {
+    var vis = !!e.joinUrl;
+    var dt = e.start ? new Date(e.start) : null;
+    var hr = (dt && !isNaN(dt) && !e.allDay) ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : (e.allDay ? 'journée' : '');
+    var join = vis ? '<a class="wcal__join" href="' + esc(e.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Rejoindre la visio">Rejoindre</a>' : '';
+    return '<div class="wcal' + (vis ? ' wcal--visio' : ' wcal--perso') + '" title="iCloud' + (vis ? ' · visio' : ' · perso') + '">' +
+      '<div class="wcal__h">' + (hr ? '<span class="wcal__t">' + esc(hr) + '</span>' : '') + '<span class="wcal__tag">' + (vis ? 'Visio' : 'Perso') + '</span></div>' +
+      '<div class="wcal__ti">' + esc(e.title || 'Événement') + '</div>' + join + '</div>';
   }
   function msAvailMin(d) { var dow = ((d.getDay() + 6) % 7) + 1; return (MS_DAYS[dow] || 0); } // MS_DAYS en minutes (même unité que le backend)
   // Édite les disponibilités par jour (en heures côté UI, stockées en minutes).
@@ -3160,7 +3179,8 @@
         .slice().sort(function (a, b) { return (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0); });
       var capTxt = planned ? (msDur(planned) + (avail ? ' / ' + msHours(avail) : '')) : 'libre';
       var head = '<div class="wday__h"><span class="wday__d' + (isToday ? ' today' : '') + '">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isToday ? ' · auj.' : '') + '</span><span class="wday__cap' + (dOver ? ' full' : '') + '">' + capTxt + '</span></div>';
-      var body = shown.length ? shown.map(function (t) { return wblk(t, diso); }).join('') : '<div class="wfree">Rien de planifié</div>';
+      var calBlocks = msCalForDay(diso).map(msCalBlock).join('');
+      var body = calBlocks + (shown.length ? shown.map(function (t) { return wblk(t, diso); }).join('') : (calBlocks ? '' : '<div class="wfree">Rien de planifié</div>'));
       var dayAdd = '<input class="wadd" id="ms-dayadd-' + diso + '" placeholder="+ tâche" title="Ajouter une tâche ce jour-là" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}">';
       return '<div>' + head + '<div class="wcol" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)">' + body + dayAdd + '</div></div>';
     }

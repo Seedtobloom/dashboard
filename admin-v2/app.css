@@ -418,6 +418,17 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .wblk:active,.sem2 .placerow:active{cursor:grabbing}
 .sem2 .wcol--over{outline:2px dashed var(--brun);outline-offset:-3px;background:rgba(65,47,33,.05);border-radius:12px}
 .sem2 .wfree{font-family:var(--font-micro);font-size:10.5px;color:var(--brun);opacity:.5;padding:4px 2px}
+/* Blocs iCloud (lecture seule) dans la semaine */
+.sem2 .wcal{border-radius:11px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
+.sem2 .wcal--visio{background:var(--glycine-50);box-shadow:inset 3px 0 0 var(--glycine-700)}
+.sem2 .wcal--perso{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--paille-700)}
+.sem2 .wcal__h{display:flex;align-items:center;gap:7px}
+.sem2 .wcal__t{font-family:var(--font-micro);font-size:11px;font-weight:700;color:var(--terre-600)}
+.sem2 .wcal__tag{font-family:var(--font-micro);font-size:8px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;margin-left:auto}
+.sem2 .wcal--visio .wcal__tag{background:var(--glycine);color:var(--glycine-900)}
+.sem2 .wcal--perso .wcal__tag{background:var(--paille-200);color:var(--muted)}
+.sem2 .wcal__ti{font-family:var(--font-micro);font-size:12.5px;font-weight:600;color:var(--terre);line-height:1.25}
+.sem2 .wcal__join{align-self:flex-start;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;color:var(--paille);background:var(--terre);text-decoration:none;padding:5px 10px;border-radius:999px;margin-top:2px}
 .sem2 .wadd{width:100%;box-sizing:border-box;font-size:11px;padding:8px 10px;margin-top:2px;background:var(--bg);border:1px dashed var(--line);border-radius:9px;color:var(--nuit)}
 .sem2 .wadd:focus{outline:none;border-color:var(--lav);background:var(--surf)}
 /* légende */
