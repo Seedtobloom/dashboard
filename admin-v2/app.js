@@ -645,7 +645,7 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['backups', 'Sauvegardes']];
+    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes']];
     return '<div class="subtabs">' + items.map(function (it) {
       return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
     }).join('') + '</div>';
@@ -661,6 +661,10 @@
     } else if (REGL_TAB === 'quick') {
       if (QREPLIES_LOADED) { renderQuickRepliesBody(); }
       else api('/api/quick-replies').then(function (r) { return r.json(); }).then(function (d) { QREPLIES = (d && d.replies) || []; QREPLIES_LOADED = true; renderQuickRepliesBody(); }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+    } else if (REGL_TAB === 'calendar') {
+      api('/api/calendar/config').then(function (r) { return r.json(); }).then(function (d) {
+        var b = el('regl-body'); if (b) b.innerHTML = calConfigBody(d || {});
+      }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else if (REGL_TAB === 'backups') {
       renderBackups();
     } else if (REGL_TAB === 'conges') {
@@ -846,6 +850,49 @@
       '<div class="row row--end mt"><button class="btn btn--dark btn--sm" onclick="ADM.missionTypeSave()">Enregistrer</button></div></div>';
   }
   function renderReglagesBody() { var b = el('regl-body'); if (b) b.innerHTML = missionBody(); }
+  // ── Calendrier iCloud (CalDAV) ──
+  function calConfigBody(d) {
+    var on = !!d.configured;
+    var S = 'width:100%;box-sizing:border-box';
+    return '<div class="card infocard" style="background:var(--card)"><h3>' +
+        '<span class="infocard__dot" style="background:' + (on ? 'var(--green)' : 'var(--gold-chip)') + '"></span>Calendrier iCloud (Apple / Spark)</h3>' +
+      '<div class="micro mb" style="text-transform:none;letter-spacing:0;line-height:1.65;color:var(--terre-600)">' +
+        'Connecte ton calendrier <b>iCloud</b> : tes rendez-vous remontent dans Visios, et les visios que tu planifies sont ajoutées à iCloud (donc visibles dans <b>Spark</b>, qui lit le même calendrier).<br>' +
+        'Utilise un <b>mot de passe pour app</b> (jamais ton mot de passe Apple principal) : <a href="https://account.apple.com" target="_blank" rel="noopener" style="color:var(--glycine-900)">account.apple.com</a> → Connexion et sécurité → Mots de passe des apps → en créer un.' +
+      '</div>' +
+      '<div class="field"><label>Apple ID (e-mail)</label><input class="inp" id="cal-user" value="' + esc(d.user || '') + '" placeholder="prenom@icloud.com" style="' + S + '"></div>' +
+      '<div class="field mt"><label>Mot de passe pour app</label><input class="inp" id="cal-pass" type="password" placeholder="' + (on ? '•••• enregistré — laisser vide pour ne pas changer' : 'xxxx-xxxx-xxxx-xxxx') + '" style="' + S + '"></div>' +
+      '<div class="field mt"><label>Nom du calendrier (optionnel)</label><input class="inp" id="cal-name" value="' + esc(d.calName || '') + '" placeholder="Laisse vide pour le calendrier principal" style="' + S + '"></div>' +
+      '<div class="row mt" style="gap:8px;flex-wrap:wrap;align-items:center">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.calSave()">Enregistrer</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.calTest()">Tester la connexion</button>' +
+        (on ? '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.calDisconnect()">Déconnecter</button>' : '') +
+      '</div>' +
+      '<div id="cal-test" class="micro mt" style="text-transform:none;letter-spacing:0"></div>' +
+    '</div>';
+  }
+  function calSave() {
+    var user = (el('cal-user').value || '').trim();
+    var pass = (el('cal-pass').value || '').trim();
+    var calName = (el('cal-name').value || '').trim();
+    if (!user) { toast('Indique ton Apple ID'); return; }
+    jpost('/api/calendar/config', { user: user, pass: pass, calName: calName }, 'PATCH').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) { if (res.ok) { toast('Calendrier enregistré ✓'); calTest(); } else toast((res.d && res.d.error) || 'Erreur'); })
+      .catch(function () { toast('Erreur'); });
+  }
+  function calTest() {
+    var box = el('cal-test'); if (box) box.innerHTML = '<span style="color:var(--muted)">Connexion à iCloud…</span>';
+    api('/api/calendar/test', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+      var box2 = el('cal-test'); if (!box2) return;
+      if (d.ok) box2.innerHTML = '<span style="color:var(--green);font-weight:600">✓ Connecté</span> · calendrier utilisé : <b>' + esc(d.chosen || '') + '</b>' + (d.calendars && d.calendars.length > 1 ? ' <span style="color:var(--muted)">(disponibles : ' + d.calendars.map(esc).join(', ') + ')</span>' : '');
+      else box2.innerHTML = '<span style="color:#8d2b21;font-weight:600">✗ ' + esc(d.error || 'Connexion impossible') + '</span>';
+    }).catch(function () { var box2 = el('cal-test'); if (box2) box2.innerHTML = '<span style="color:#8d2b21">Erreur réseau</span>'; });
+  }
+  function calDisconnect() {
+    admConfirm({ title: 'Déconnecter iCloud ?', message: 'Tes identifiants seront supprimés du serveur. Tes événements iCloud ne s\'afficheront plus dans Visios.', yes: 'Déconnecter', no: 'Annuler', danger: true }, function () {
+      api('/api/calendar/config', { method: 'DELETE' }).then(function () { toast('Déconnecté'); renderReglages(); });
+    });
+  }
   function missionTypeAdd() {
     MISSION_LIST = missionReadInputs();
     var nv = (el('mt-type-new').value || '').trim();
@@ -7416,7 +7463,7 @@
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
-    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
+    emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,

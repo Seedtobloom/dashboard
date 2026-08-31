@@ -156,6 +156,18 @@ export default {
         if (method === 'PATCH') return handlePlanningSave(request, env);
       }
 
+      // Calendrier iCloud (CalDAV) — connexion via mot de passe d'app Apple.
+      if (pathname === '/api/calendar/config') {
+        if (method === 'GET') return handleCalConfigGet(env);
+        if (method === 'PATCH') return handleCalConfigSave(request, env);
+        if (method === 'DELETE') { await env.KV_ADMIN.delete('admin:icloud'); return json({ ok: true, configured: false }); }
+      }
+      if (pathname === '/api/calendar/test' && method === 'POST') return handleCalTest(env);
+      if (pathname === '/api/calendar/events') {
+        if (method === 'GET') return handleCalEventsList(env, url);
+        if (method === 'POST') return handleCalEventCreate(request, env);
+      }
+
       if (pathname === '/api/clients') {
         if (method === 'GET') return handleClientsList(env);
         if (method === 'POST') return handleClientCreate(request, env);
@@ -2711,4 +2723,228 @@ async function notifyClient(env: Env, data: AnyObj, subject: string, bodyHtml: s
   }
   const r = await sendEmail(env, email, subject, emailWrapper(subject, bodyHtml + cta));
   if (!r.ok) console.error('resend notifyClient', r.status, r.error);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Calendrier iCloud (CalDAV)
+ * Connexion avec l'Apple ID + un « mot de passe pour app » (jamais le mot de
+ * passe principal). Lecture des événements et création (les visios poussées
+ * ici apparaissent ensuite dans Spark, qui lit le même calendrier iCloud).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+const CAL_KEY = 'admin:icloud';
+const CAL_BASE = 'https://caldav.icloud.com';
+
+interface CalCfg { user: string; pass: string; calName?: string; }
+
+async function getCalCfg(env: Env): Promise<CalCfg | null> {
+  return (await env.KV_ADMIN.get(CAL_KEY, { type: 'json' })) as CalCfg | null;
+}
+function calAuth(cfg: CalCfg): string {
+  // btoa gère l'ASCII ; l'Apple ID et le mot de passe d'app le sont.
+  return 'Basic ' + btoa(cfg.user + ':' + cfg.pass);
+}
+function calAbs(base: string, href: string): string {
+  if (/^https?:\/\//i.test(href)) return href;
+  try { const u = new URL(base); return u.origin + href; } catch (e) { return href; }
+}
+function calMatchHref(xml: string, local: string): string {
+  const re = new RegExp('<(?:[\\w]+:)?' + local + '[^>]*>([\\s\\S]*?)</(?:[\\w]+:)?' + local + '>', 'i');
+  const m = re.exec(xml);
+  if (!m) return '';
+  const h = /<(?:[\w]+:)?href[^>]*>([\s\S]*?)<\/(?:[\w]+:)?href>/i.exec(m[1]);
+  return h ? h[1].trim() : '';
+}
+function calDecodeXml(s: string): string {
+  return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#13;/g, '').replace(/&amp;/g, '&');
+}
+function calFmtTime(iso: string): string {
+  // → YYYYMMDDTHHMMSSZ (UTC)
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()) + 'T' + p(d.getUTCHours()) + p(d.getUTCMinutes()) + p(d.getUTCSeconds()) + 'Z';
+}
+async function calPropfind(url: string, auth: string, depth: number, body: string): Promise<Response> {
+  return fetch(url, { method: 'PROPFIND', headers: { Authorization: auth, Depth: String(depth), 'Content-Type': 'application/xml; charset=utf-8' }, body });
+}
+interface CalInfo { auth: string; cals: { url: string; name: string }[]; }
+async function calDiscover(cfg: CalCfg): Promise<CalInfo> {
+  const auth = calAuth(cfg);
+  // 1) principal
+  let r = await calPropfind(CAL_BASE + '/', auth, 0,
+    '<d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>');
+  if (r.status === 401) throw new Error('Identifiants refusés (vérifie l\'Apple ID et le mot de passe d\'app).');
+  let xml = await r.text();
+  const principal = calMatchHref(xml, 'current-user-principal');
+  if (!principal) throw new Error('Principal iCloud introuvable.');
+  const principalUrl = calAbs(CAL_BASE + '/', principal);
+  // 2) calendar-home-set
+  r = await calPropfind(principalUrl, auth, 0,
+    '<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><c:calendar-home-set/></d:prop></d:propfind>');
+  xml = await r.text();
+  const home = calMatchHref(xml, 'calendar-home-set');
+  if (!home) throw new Error('Dossier de calendriers iCloud introuvable.');
+  const homeUrl = calAbs(principalUrl, home);
+  // 3) lister les calendriers
+  r = await calPropfind(homeUrl, auth, 1,
+    '<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><d:resourcetype/><d:displayname/><c:supported-calendar-component-set/></d:prop></d:propfind>');
+  xml = await r.text();
+  const cals: { url: string; name: string }[] = [];
+  const chunks = xml.split(/<(?:[\w]+:)?response[\s>]/i).slice(1);
+  for (const c of chunks) {
+    if (!/<(?:[\w]+:)?calendar\b/i.test(c)) continue; // resourcetype = calendar
+    if (!/VEVENT/i.test(c)) continue;                 // accepte les événements
+    const href = (/<(?:[\w]+:)?href[^>]*>([\s\S]*?)<\/(?:[\w]+:)?href>/i.exec(c) || [])[1];
+    if (!href) continue;
+    let name = ((/<(?:[\w]+:)?displayname[^>]*>([\s\S]*?)<\/(?:[\w]+:)?displayname>/i.exec(c) || [])[1] || 'Calendrier').trim();
+    name = calDecodeXml(name);
+    let u = calAbs(homeUrl, href.trim());
+    if (!u.endsWith('/')) u += '/';
+    cals.push({ url: u, name });
+  }
+  if (!cals.length) throw new Error('Aucun calendrier iCloud accessible.');
+  return { auth, cals };
+}
+function calPick(cfg: CalCfg, cals: { url: string; name: string }[]): { url: string; name: string } {
+  if (cfg.calName) {
+    const f = cals.find((c) => c.name.toLowerCase() === cfg.calName!.toLowerCase());
+    if (f) return f;
+  }
+  const pref = cals.find((c) => /home|domicile|personnel|calendar|calendrier/i.test(c.name));
+  return pref || cals[0];
+}
+function calParseVevents(ics: string): { uid: string; title: string; start: string; end: string; allDay: boolean }[] {
+  // Déplie les lignes (RFC5545 : continuation = CRLF + espace/tab).
+  const unfolded = ics.replace(/\r?\n[ \t]/g, '');
+  const out: { uid: string; title: string; start: string; end: string; allDay: boolean }[] = [];
+  const blocks = unfolded.split(/BEGIN:VEVENT/i).slice(1);
+  for (const b0 of blocks) {
+    const b = b0.split(/END:VEVENT/i)[0];
+    const get = (k: string) => {
+      const m = new RegExp('^' + k + '(;[^:\\r\\n]*)?:(.*)$', 'im').exec(b);
+      return m ? { params: m[1] || '', val: m[2].trim() } : null;
+    };
+    const uid = (get('UID')?.val) || '';
+    const sum = (get('SUMMARY')?.val) || '(sans titre)';
+    const ds = get('DTSTART'); const de = get('DTEND');
+    if (!ds) continue;
+    const s = calParseIcsDate(ds.val, ds.params);
+    const e = de ? calParseIcsDate(de.val, de.params) : { iso: s.iso, allDay: s.allDay };
+    out.push({ uid, title: calUnescape(sum), start: s.iso, end: e.iso, allDay: s.allDay });
+  }
+  return out;
+}
+function calParseIcsDate(val: string, params: string): { iso: string; allDay: boolean } {
+  const v = val.trim();
+  // Date seule (journée entière) : YYYYMMDD
+  if (/VALUE=DATE/i.test(params) || /^\d{8}$/.test(v)) {
+    const m = /^(\d{4})(\d{2})(\d{2})/.exec(v);
+    if (m) return { iso: m[1] + '-' + m[2] + '-' + m[3], allDay: true };
+  }
+  const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/.exec(v);
+  if (m) {
+    const base = m[1] + '-' + m[2] + '-' + m[3] + 'T' + m[4] + ':' + m[5] + ':' + m[6];
+    // Z = UTC ; sinon on renvoie l'heure « naïve » (l'affichage la traite comme locale).
+    return { iso: m[7] ? base + 'Z' : base, allDay: false };
+  }
+  return { iso: v, allDay: false };
+}
+function calUnescape(s: string): string {
+  return s.replace(/\\n/gi, ' ').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+}
+function calEscape(s: string): string {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+async function calListEvents(cfg: CalCfg, fromIso: string, toIso: string): Promise<{ calName: string; events: AnyObj[] }> {
+  const { auth, cals } = await calDiscover(cfg);
+  const cal = calPick(cfg, cals);
+  const body = '<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">' +
+    '<d:prop><d:getetag/><c:calendar-data/></d:prop>' +
+    '<c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">' +
+    '<c:time-range start="' + calFmtTime(fromIso) + '" end="' + calFmtTime(toIso) + '"/>' +
+    '</c:comp-filter></c:comp-filter></c:filter></c:calendar-query>';
+  const r = await fetch(cal.url, { method: 'REPORT', headers: { Authorization: auth, Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' }, body });
+  const xml = await r.text();
+  const events: AnyObj[] = [];
+  const re = /<(?:[\w]+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:[\w]+:)?calendar-data>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml))) {
+    const ics = calDecodeXml(m[1]);
+    for (const ev of calParseVevents(ics)) events.push(ev);
+  }
+  events.sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  return { calName: cal.name, events };
+}
+async function calCreateEvent(cfg: CalCfg, title: string, startIso: string, endIso: string): Promise<{ ok: boolean; error?: string }> {
+  const { auth, cals } = await calDiscover(cfg);
+  const cal = calPick(cfg, cals);
+  const uid = (crypto as AnyObj).randomUUID ? (crypto as AnyObj).randomUUID() : ('stb-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+  const now = calFmtTime(new Date().toISOString());
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SeedToBloom//Dashboard//FR', 'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT', 'UID:' + uid, 'DTSTAMP:' + now,
+    'DTSTART:' + calFmtTime(startIso), 'DTEND:' + calFmtTime(endIso),
+    'SUMMARY:' + calEscape(title), 'END:VEVENT', 'END:VCALENDAR', ''
+  ].join('\r\n');
+  const r = await fetch(cal.url + uid + '.ics', {
+    method: 'PUT', headers: { Authorization: auth, 'Content-Type': 'text/calendar; charset=utf-8', 'If-None-Match': '*' }, body: ics,
+  });
+  if (r.ok) return { ok: true };
+  return { ok: false, error: 'iCloud a refusé la création (statut ' + r.status + ').' };
+}
+
+async function handleCalConfigGet(env: Env): Promise<Response> {
+  const cfg = await getCalCfg(env);
+  return json({ configured: !!(cfg && cfg.user && cfg.pass), user: (cfg && cfg.user) || '', calName: (cfg && cfg.calName) || '' });
+}
+async function handleCalConfigSave(request: Request, env: Env): Promise<Response> {
+  const b = await readJson(request);
+  const cur = (await getCalCfg(env)) || ({} as CalCfg);
+  const user = (b.user != null ? String(b.user) : cur.user || '').trim();
+  // Mot de passe : si vide, on conserve l'existant (l'UI n'affiche jamais l'ancien).
+  const pass = (b.pass != null && String(b.pass).trim()) ? String(b.pass).trim() : (cur.pass || '');
+  const calName = (b.calName != null ? String(b.calName) : cur.calName || '').trim();
+  if (!user || !pass) return json({ error: 'Apple ID et mot de passe d\'app requis.' }, 400);
+  const cfg: CalCfg = { user, pass, calName };
+  await env.KV_ADMIN.put(CAL_KEY, JSON.stringify(cfg));
+  return json({ ok: true, configured: true, user, calName });
+}
+async function handleCalTest(env: Env): Promise<Response> {
+  const cfg = await getCalCfg(env);
+  if (!cfg || !cfg.user || !cfg.pass) return json({ ok: false, error: 'Calendrier non configuré.' });
+  try {
+    const { cals } = await calDiscover(cfg);
+    const chosen = calPick(cfg, cals);
+    return json({ ok: true, calendars: cals.map((c) => c.name), chosen: chosen.name });
+  } catch (e: any) {
+    return json({ ok: false, error: (e && e.message) || 'Connexion impossible.' });
+  }
+}
+async function handleCalEventsList(env: Env, url: URL): Promise<Response> {
+  const cfg = await getCalCfg(env);
+  if (!cfg || !cfg.user || !cfg.pass) return json({ configured: false, events: [] });
+  const now = new Date();
+  const from = url.searchParams.get('from') || new Date(now.getTime() - 31 * 86400000).toISOString();
+  const to = url.searchParams.get('to') || new Date(now.getTime() + 90 * 86400000).toISOString();
+  try {
+    const { calName, events } = await calListEvents(cfg, from, to);
+    return json({ configured: true, calName, events });
+  } catch (e: any) {
+    return json({ configured: true, events: [], error: (e && e.message) || 'Lecture impossible.' });
+  }
+}
+async function handleCalEventCreate(request: Request, env: Env): Promise<Response> {
+  const cfg = await getCalCfg(env);
+  if (!cfg || !cfg.user || !cfg.pass) return json({ error: 'Calendrier non configuré.' }, 400);
+  const b = await readJson(request);
+  const title = String(b.title || '').trim() || 'Visio';
+  const start = String(b.start || '').trim();
+  const end = String(b.end || '').trim() || new Date(new Date(start).getTime() + 45 * 60000).toISOString();
+  if (!start) return json({ error: 'Date de début requise.' }, 400);
+  try {
+    const r = await calCreateEvent(cfg, title, start, end);
+    return r.ok ? json({ ok: true }) : json({ error: r.error }, 502);
+  } catch (e: any) {
+    return json({ error: (e && e.message) || 'Création impossible.' }, 502);
+  }
 }
