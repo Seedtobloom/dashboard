@@ -3136,6 +3136,38 @@
     var note = !weekAvail ? 'Capacité hebdo non renseignée — la marge n\'est pas calculée.'
       : (over ? 'Semaine chargée — au-delà de ta capacité, lève le pied.'
         : (marge <= weekAvail * 0.15 ? 'Semaine bien remplie, mais tu tiens le rythme.' : 'La semaine respire, tu as de la marge.'));
+    // ── Focus : quoi faire en premier pour rentabiliser ton temps ──
+    // Priorité : le retard facturable d'abord, puis surcharge, puis le jour, puis la prochaine échéance.
+    function billable(t) { return !!t.clientName; }
+    var advSchedulable = active.filter(function (t) { return t.mode !== 'idee'; });
+    var overdueA = advSchedulable.filter(function (t) { return t.dueDate && t.dueDate.slice(0, 10) < todayIso; })
+      .sort(function (a, b) { if ((a.dueDate || '') !== (b.dueDate || '')) return (a.dueDate || '').localeCompare(b.dueDate || ''); return (billable(b) ? 1 : 0) - (billable(a) ? 1 : 0); });
+    var todayA = advSchedulable.filter(function (t) { return (t.doDate || '').slice(0, 10) === todayIso; });
+    var nextDueA = advSchedulable.filter(function (t) { return t.dueDate && t.dueDate.slice(0, 10) >= todayIso && !t.doDate; })
+      .sort(function (a, b) { return (a.dueDate || '').localeCompare(b.dueDate || ''); });
+    function advTaskLbl(t) { return '« ' + esc(t.title) + ' »' + (t.clientName ? ' <span style="color:var(--muted)">· ' + esc(t.clientName) + '</span>' : '') + (t.estMinutes ? ' <span style="color:var(--muted)">· ~' + msDur2(t.estMinutes) + '</span>' : ''); }
+    var focusMsg, focusTone = 'calm';
+    if (overdueA.length) {
+      var t0 = overdueA[0]; var billLate = overdueA.filter(billable).length;
+      focusMsg = '<b>' + overdueA.length + ' tâche' + (overdueA.length > 1 ? 's' : '') + ' en retard.</b> Commence par ' + advTaskLbl(t0) + ' — cale-la dans ton prochain créneau libre.' +
+        (billLate ? ' C\'est du <b>facturable</b> : à traiter en premier pour rentabiliser ta semaine.' : '');
+      focusTone = 'attn';
+    } else if (over) {
+      focusMsg = '<b>Semaine chargée</b> · ' + msHours(weekPlanned) + ' planifiées pour ' + msHours(weekAvail) + ' dispo. Reporte le moins urgent (ou le moins rentable) pour garder de la marge.';
+      focusTone = 'attn';
+    } else if (todayA.length) {
+      var billToday = todayA.filter(billable);
+      focusMsg = 'Aujourd\'hui, ' + todayA.length + ' tâche' + (todayA.length > 1 ? 's' : '') + ' calée' + (todayA.length > 1 ? 's' : '') + '. ' +
+        (billToday.length ? 'Attaque le <b>facturable</b> en premier : ' + advTaskLbl(billToday[0]) + '.' : 'Commence par la plus importante et garde ton élan.');
+    } else if (nextDueA.length) {
+      focusMsg = 'Rien en retard. Prochaine échéance : ' + advTaskLbl(nextDueA[0]) + ' pour le ' + esc(msShort(nextDueA[0].dueDate)) + '. Place-la tôt pour éviter le rush.';
+    } else {
+      focusMsg = 'Rien d\'urgent cette semaine. Profite d\'un créneau pour avancer sur le fond, un projet perso, ou de la prospection.';
+    }
+    var focusIc = focusTone === 'attn'
+      ? '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h0M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'
+      : '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.2 1 2.5h6c0-1.3.3-1.8 1-2.5A6 6 0 0 0 12 3zM9 20h6M10 22h4"/></svg>';
+    var focus = '<div class="advice' + (focusTone === 'attn' ? ' advice--attn' : '') + '"><span class="advice__ic">' + focusIc + '</span><div class="advice__t">' + focusMsg + '</div></div>';
     var modeToggle = '<div class="wmode">' +
       '<button class="wmode__b' + (MS_MODE === 'week' ? ' on' : '') + '" onclick="ADM.msMode(\'week\')">Semaine</button>' +
       '<button class="wmode__b' + (MS_MODE === 'day' ? ' on' : '') + '" onclick="ADM.msMode(\'day\')">Jour</button>' +
@@ -3186,8 +3218,10 @@
       var avail = msAvailMin(d);
       var dOver = avail && planned > avail;
       var isToday = diso === todayIso;
+      // Ordre : à faire avant fait ; en retard d'abord ; facturable avant perso ; échéance proche.
+      function prScore(t) { var s = 0; if (t.status === 'done') s += 1000; if (t.dueDate && t.dueDate.slice(0, 10) < todayIso) s -= 100; if (t.clientName) s -= 10; return s; }
       var shown = (MS_FILTER === 'all' ? allDayTasks : allDayTasks.filter(function (t) { return msWt(t) === MS_FILTER; }))
-        .slice().sort(function (a, b) { return (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0); });
+        .slice().sort(function (a, b) { var d = prScore(a) - prScore(b); if (d) return d; return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
       var capTxt = planned ? (msDur(planned) + (avail ? ' / ' + msHours(avail) : '')) : 'libre';
       var head = '<div class="wday__h"><span class="wday__d' + (isToday ? ' today' : '') + '">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isToday ? ' · auj.' : '') + '</span><span class="wday__cap' + (dOver ? ' full' : '') + '">' + capTxt + '</span></div>';
       var calBlocks = msCalForDay(diso).map(msCalBlock).join('');
@@ -3269,12 +3303,21 @@
         '</div>';
       }).join('') + '</div>' : '<div class="emptyz">Tout est placé. 🌿</div>') +
     '</div>';
-    var html = '<div class="wrap sem2">' +
-      '<div class="intro"><strong style="color:var(--brun)">Ma semaine</strong> = quand et comment tu bosses. Toutes tes tâches sont là — placées sur un jour ou dans « À placer ». Besoin de la vue complète (idées, tableau, minuteur) ? <a href="#" onclick="event.preventDefault();ADM.nav(\'mytasks\')" style="color:var(--brun);text-decoration:underline">Ouvrir Mes tâches →</a></div>' +
+    var header = '<div class="mshead"><div><p class="hello">Ma semaine</p><p class="hello__s">Quand et comment tu bosses — commence par ce qui compte, garde de la marge.</p></div>' +
+      '<a class="mshead__link" href="#" onclick="event.preventDefault();ADM.nav(\'mytasks\')">Toutes mes tâches →</a></div>';
+    var planHint = MS_MODE === 'plan' ? '<p class="tnote" style="margin:0 0 14px">Glisse une tâche « À caler » dans un créneau, ou laisse « Organise pour moi » remplir tes créneaux libres sans les surcharger.</p>' : '';
+    var html = '<div class="wrap sem2 msview">' +
+      header +
       upcomingBanner(MS_UPCOMING) +
-      whead + charge + capEdit + (MS_MODE === 'plan' ? '' : filters) + grid + (MS_MODE === 'plan' ? '' : (legend + placeHtml)) +
+      focus +
+      whead +
+      charge +
+      capEdit +
+      (MS_MODE === 'plan' ? planHint : filters) +
+      grid +
+      (MS_MODE === 'plan' ? '' : (legend + placeHtml)) +
     '</div>';
-    setMain(topbar('Ma semaine') + html);
+    setMain(topbar('') + html);
   }
   function msDaySelect(days, cur) {
     var opts = '<option value=""' + (!cur ? ' selected' : '') + '>— à placer</option>';

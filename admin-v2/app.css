@@ -463,6 +463,21 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .railtasks .ptask{background:var(--surface-2)}
 .sem2 .emptyz{font-family:var(--font-micro);font-size:12px;color:var(--terre-400);padding:10px 2px}
 .sem2 .plan-auto{width:100%;justify-content:center}
+/* ── Ma semaine : en-tête, focus, respiration ── */
+.msview .mshead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:4px 0 18px}
+.msview .mshead__link{font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--glycine-900);text-decoration:none;white-space:nowrap}
+.msview .mshead__link:hover{color:var(--terre)}
+.advice{display:flex;align-items:flex-start;gap:12px;background:var(--glycine-50);border-radius:14px;padding:15px 17px;margin-bottom:18px}
+.advice__ic{width:32px;height:32px;border-radius:9px;background:var(--glycine);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0}
+.advice__t{font-size:13.5px;color:var(--terre);line-height:1.6}
+.advice__t b{font-weight:600}
+.advice--attn{background:#f7ede6}
+.advice--attn .advice__ic{background:var(--gold-chip);color:var(--gold-ink)}
+.msview .whead{margin:2px 0 16px}
+.msview .charge{margin-bottom:18px}
+.msview .filters{margin-bottom:16px}
+.msview .week,.msview .planwrap,.msview .dayview,.msview .wdaypick{margin-top:2px}
+.msview .spanel{margin-top:24px}
 .sem2 .wadd{width:100%;box-sizing:border-box;font-size:11px;padding:8px 10px;margin-top:2px;background:var(--bg);border:1px dashed var(--line);border-radius:9px;color:var(--nuit)}
 .sem2 .wadd:focus{outline:none;border-color:var(--lav);background:var(--surf)}
 /* légende */
