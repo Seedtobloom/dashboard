@@ -5164,7 +5164,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la demande *</label>' +
           '<input id="_ptask-title" type="text" placeholder="Ex, visuel Instagram pour la collection été" style="'+S+'"></div>' +
         '<input type="hidden" id="_ptask-urgency" value="normal">' +
-        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) *</label>' +
+        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5e4a2e">(optionnel)</span></label>' +
           '<input id="_ptask-startDate" type="hidden">' +
           '<input id="_ptask-dueDate" type="text" readonly data-iso="'+(ds||'')+'" value="'+(ds?cpMcFmt(ds):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_ptask-dueDate\')" style="'+S+';cursor:pointer;background:#fff"></div>' +
         '<div style="margin-bottom:14px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#1C1205);display:block;margin-bottom:6px">Votre brief</label>' +
@@ -5214,8 +5214,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var links     = (document.getElementById('_ptask-links')||{}).value || '';
     if (links.trim()) content = (content.trim() ? content.trim() + '\n\n' : '') + 'Liens et références\n' + links.trim();
     var _dd = document.getElementById('_ptask-dueDate'); var dueDate = (_dd && _dd.getAttribute('data-iso')) || undefined;
-    if (!dueDate) { var eld = document.getElementById('_ptask-dueDate'); if(eld){eld.style.borderColor='red';eld.focus();} toast('Indiquez une échéance souhaitée'); return; }
-    if (cpHolidayFor(dueDate)) { var eldh = document.getElementById('_ptask-dueDate'); if(eldh){eldh.style.borderColor='red';eldh.focus();} toast('Cindy est en congés à cette date, choisissez un autre jour.'); return; }
+    if (dueDate && cpHolidayFor(dueDate)) { var eldh = document.getElementById('_ptask-dueDate'); if(eldh){eldh.style.borderColor='red';eldh.focus();} toast('Cindy est en congés à cette date, choisissez un autre jour.'); return; }
     var startDate = (document.getElementById('_ptask-startDate')||{}).value || undefined;
     var urgency   = (document.getElementById('_ptask-urgency')||{}).value || 'normal';
     var poleEl    = document.getElementById('_ptask-pole');
