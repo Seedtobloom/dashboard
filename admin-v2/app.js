@@ -2385,7 +2385,19 @@
     jpost('/api/admin/tasks/' + id, { timeSpentSeconds: total, sessionStart: sessStart, sessionEnd: sessEnd }, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur d\'enregistrement du temps'); });
   }
   // ── Visios : préparation des rendez-vous — cards + panneau + déroulé ──
-  var VISIOS = { cards: [], templates: [] }, VISIOS_LOADED = false, VIS_TAB = 'cards', VIS_SEL = null;
+  var VISIOS = { cards: [], templates: [] }, VISIOS_LOADED = false, VIS_TAB = 'cards', VIS_SEL = null, VIS_TYPEFILTER = 'all';
+  // Catégories de visio (type d'appel) — charte : marron / bleu / terracotta, pas de vert.
+  var VIS_TYPES = [
+    ['decouverte', 'Découverte', '#2c4a72', '#E8F1FF'],
+    ['pistes', 'Pistes créatives', '#8a4a2c', '#F0E2D6'],
+    ['point', 'Point d\'avancement', '#5A2A11', '#efe6dd'],
+    ['validation', 'Validation', '#3d1c0b', '#F0E2D6'],
+    ['cadrage', 'Cadrage projet', '#8a5c3f', '#efe9e2'],
+    ['autre', 'Autre', '#7a5540', '#f1eee7']
+  ];
+  function visTypeMeta(t) { for (var i = 0; i < VIS_TYPES.length; i++) if (VIS_TYPES[i][0] === t) return VIS_TYPES[i]; return null; }
+  function visTypeChip(t) { var m = visTypeMeta(t); if (!m) return ''; return '<span style="font-family:var(--font-micro);font-size:8.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:' + m[3] + ';color:' + m[2] + '">' + m[1] + '</span>'; }
+  function visSetTypeFilter(v) { VIS_TYPEFILTER = v; renderVisiosBody(); }
   function renderVisios() {
     setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
@@ -2677,9 +2689,10 @@
   function visCardsHtml() {
     var now = Date.now();
     function ts(c) { var t = c.date ? +new Date(c.date) : NaN; return isNaN(t) ? null : t; }
-    var upcoming = VISIOS.cards.filter(function (c) { return !c.done && (ts(c) == null || ts(c) >= now); })
+    var cardsF = VIS_TYPEFILTER === 'all' ? VISIOS.cards : VISIOS.cards.filter(function (c) { return (c.visioType || 'autre') === VIS_TYPEFILTER; });
+    var upcoming = cardsF.filter(function (c) { return !c.done && (ts(c) == null || ts(c) >= now); })
       .sort(function (a, b) { return (ts(a) || 8.64e15) - (ts(b) || 8.64e15); });
-    var past = VISIOS.cards.filter(function (c) { return c.done || (ts(c) != null && ts(c) < now); })
+    var past = cardsF.filter(function (c) { return c.done || (ts(c) != null && ts(c) < now); })
       .sort(function (a, b) { return (ts(b) || 0) - (ts(a) || 0); });
     function row(c, soon) {
       var name = c.client || (c.category === 'suivi' ? 'Cliente à choisir' : 'Nouveau prospect');
@@ -2688,6 +2701,7 @@
       var dayB = dt ? dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '') : '—';
       var hourS = dt ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
       var catLbl = c.category === 'suivi' ? 'Cliente suivie' : 'Nouveau contact';
+      var tChip = c.visioType ? ' ' + visTypeChip(c.visioType) : '';
       var nSteps = (c.steps || []).length, nQ = (c.questions || []).length;
       var hasContent = nSteps || nQ;
       var icalBtn = (VIS_CAL.configured && c.date && !c.done)
@@ -2699,7 +2713,7 @@
       return '<div class="viorow' + (soon ? ' viorow--soon' : '') + '" style="cursor:pointer' + (c.done ? ';opacity:0.7' : '') + '" onclick="ADM.visOpen(\'' + c.id + '\')">' +
         '<div class="vio__d"><b>' + esc(dayB.charAt(0).toUpperCase() + dayB.slice(1)) + '</b><span>' + esc(hourS) + '</span></div>' +
         '<span class="vio__a">' + esc(ini) + '</span>' +
-        '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + '</div></div>' +
+        '<div class="vio__m"><div class="vio__t">' + esc(name) + '</div><div class="vio__s" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">' + esc(catLbl) + (nSteps ? ' · ' + nSteps + ' étape' + (nSteps > 1 ? 's' : '') : '') + tChip + '</div></div>' +
         actions + '</div>';
     }
     // Événements iCloud (lecture seule) fusionnés dans les listes.
@@ -2735,7 +2749,9 @@
     } else if (VIS_CAL.loaded) {
       calbar = '<div class="calbar"><span class="calbar__ic"><svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span><div class="calbar__t">Connecte ton <b>calendrier iCloud</b> (Apple / Spark) pour voir tes rendez-vous ici et y ajouter tes visios.</div><button class="ibbtn ibbtn--dark" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Connecter</button></div>';
     } else calbar = '';
-    var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>';
+    var typeFilters = '<div class="clfilters" style="margin-bottom:12px"><button class="chip' + (VIS_TYPEFILTER === 'all' ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'all\')">Toutes</button>' +
+      VIS_TYPES.map(function (t) { var n = VISIOS.cards.filter(function (c) { return (c.visioType || 'autre') === t[0]; }).length; return n ? '<button class="chip' + (VIS_TYPEFILTER === t[0] ? ' on' : '') + '" onclick="ADM.visSetTypeFilter(\'' + t[0] + '\')">' + esc(t[1]) + ' · ' + n + '</button>' : ''; }).join('') + '</div>';
+    var addBar = '<div class="qbar"><div class="clfilters"><button class="ibbtn" onclick="ADM.visAdd(\'suivi\')">+ Cliente suivie</button><button class="ibbtn" onclick="ADM.visAdd(\'nouveau\')">+ Nouveau contact</button></div></div>' + typeFilters;
     var up = upItems.length ? upItems.map(function (x) { return x.h; }).join('') : '<div class="empty">Aucune visio à venir. Planifie ton prochain rendez-vous.</div>';
     var pa = pastItems.length ? '<div class="secmark2">Passées</div>' + pastItems.map(function (x) { return x.h; }).join('') : '';
     return calbar + addBar + '<div class="secmark2">À venir</div>' + up + pa;
@@ -2784,6 +2800,10 @@
       '</div>' +
       '<div style="padding:20px 24px 70px;max-width:690px">' +
         '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">' + catSel + visNameField(c) + '</div>' +
+        '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="micro">Catégorie</span>' +
+          '<select class="inp" style="width:auto" onchange="ADM.visSet(\'' + c.id + '\',\'visioType\',this.value)"><option value="">— type d\'appel —</option>' +
+          VIS_TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (c.visioType === t[0] ? ' selected' : '') + '>' + esc(t[1]) + '</option>'; }).join('') + '</select>' +
+          (c.visioType ? visTypeChip(c.visioType) : '') + '</div>' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap"><span class="micro">Date & heure</span><input class="inp" type="datetime-local" style="width:auto" value="' + esc(c.date || '') + '" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)">' +
           (c.date ? '<button class="btn btn--outline btn--sm" title="Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)" onclick="ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ Dans iCloud — réajouter' : '＋ Ajouter à iCloud') + '</button>' : '') + '</div>' +
         tplOpts +
@@ -2864,7 +2884,7 @@
     var c = { id: 'v' + Date.now().toString(36), client: '', clientKey: '', category: cat === 'suivi' ? 'suivi' : 'nouveau', date: '', steps: [], questions: [], notes: '', done: false, createdAt: new Date().toISOString() };
     VISIOS.cards.unshift(c); VIS_TAB = 'cards'; visSave(); renderVisiosBody(); visOpen(c.id);
   }
-  function visSet(id, field, val) { var c = visCard(id); if (!c) return; c[field] = val; visSave(); renderVisiosBody(); if (field === 'category') renderVisDrawer(); }
+  function visSet(id, field, val) { var c = visCard(id); if (!c) return; c[field] = val; visSave(); renderVisiosBody(); if (field === 'category' || field === 'visioType') renderVisDrawer(); }
   function visNoteSave(id, val) { var c = visCard(id); if (!c) return; c.notes = val; visSave(); }
   function visSetClient(id, key) { var c = visCard(id); if (!c) return; c.clientKey = key || ''; var k = NAV_CLIENTS.filter(function (x) { return x.key === key; })[0]; c.client = k ? clientName(k) : (key ? (c.client || '') : ''); visSave(); renderVisiosBody(); renderVisDrawer(); }
   // Éditeur de trame en texte enrichi (gras, taille, couleur, séparateur).
@@ -7528,7 +7548,7 @@
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
+    visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
