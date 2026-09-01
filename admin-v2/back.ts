@@ -2873,10 +2873,15 @@ async function calListEvents(cfg: CalCfg, fromIso: string, toIso: string): Promi
   // (iCloud a plusieurs calendriers : Personnel, Travail, partagés…).
   const targets = cfg.calName ? cals.filter((c) => c.name.toLowerCase() === cfg.calName!.toLowerCase()) : cals;
   const list = targets.length ? targets : cals;
+  // IMPORTANT : <c:expand> demande à iCloud de DÉPLIER les événements récurrents
+  // (créneaux hebdo : Prospection, Emails & veille, Créneau Marie…) en instances
+  // concrètes dans la fenêtre. Sans ça, iCloud ne renvoie que le « maître » à sa
+  // date d'origine, et les blocs n'apparaissent jamais dans la semaine courante.
+  const rangeStart = calFmtTime(fromIso), rangeEnd = calFmtTime(toIso);
   const body = '<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">' +
-    '<d:prop><d:getetag/><c:calendar-data/></d:prop>' +
+    '<d:prop><d:getetag/><c:calendar-data><c:expand start="' + rangeStart + '" end="' + rangeEnd + '"/></c:calendar-data></d:prop>' +
     '<c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">' +
-    '<c:time-range start="' + calFmtTime(fromIso) + '" end="' + calFmtTime(toIso) + '"/>' +
+    '<c:time-range start="' + rangeStart + '" end="' + rangeEnd + '"/>' +
     '</c:comp-filter></c:comp-filter></c:filter></c:calendar-query>';
   const events: AnyObj[] = [];
   const seen: Record<string, boolean> = {};

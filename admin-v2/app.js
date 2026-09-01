@@ -3296,7 +3296,7 @@
       return '<div class="mss-slot"><div class="mss-slot__time">' + msMinToH(ev.start) + '</div>' +
         '<div class="mss-fixed mss-fixed--' + (vis ? 'visio' : 'perso') + '">' +
           '<span class="mss-fixed__ic">' + ic + '</span>' +
-          '<div class="mss-fixed__m"><div class="mss-fixed__t">' + esc(e.title || 'Événement') + '</div><div class="mss-fixed__s">' + (vis ? 'Visio' : 'Perso') + ' · ' + timeLbl + '</div></div>' +
+          '<div class="mss-fixed__m"><div class="mss-fixed__t">' + esc(e.title || 'Événement') + '</div><div class="mss-fixed__s">' + (vis ? 'Visio · ' : '') + timeLbl + '</div></div>' +
           '<span class="mss-fixed__lock">🔒 iCloud</span>' + join +
         '</div></div>';
     }
@@ -3327,7 +3327,7 @@
         : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>';
       var join = vis ? '<a class="mss-ical__join" href="' + esc(e.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
       return '<div class="mss-ical mss-ical--' + (vis ? 'visio' : 'perso') + '" title="iCloud (figé)"><span class="mss-ical__ic">' + ic + '</span>' +
-        '<div class="mss-ical__m"><div class="mss-ical__t">' + esc(e.title || 'Événement') + '</div><div class="mss-ical__s">' + (vis ? 'Visio' : 'Perso') + ' · ' + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' +
+        '<div class="mss-ical__m"><div class="mss-ical__t">' + esc(e.title || 'Événement') + '</div><div class="mss-ical__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' +
         '<span class="mss-ical__lock" title="Figé dans iCloud">🔒</span>' + join + '</div>';
     }
     var grid;
