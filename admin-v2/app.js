@@ -3305,12 +3305,13 @@
       var used = it.tasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0), dur = it.end - it.start, over = used > dur, pct = dur ? Math.min(100, Math.round(used / dur * 100)) : 0;
       var right = vis ? '<span class="mss-block__tag">Visio</span>' + join
         : '<span class="mss-block__cap' + (over ? ' over' : '') + '" title="Temps estimé de tes tâches / durée du bloc">' + (used ? msDur2(used) : '0') + ' / ' + msDur2(dur) + '</span>';
+      var del = e.href ? '<button class="mss-block__del" title="Supprimer ce bloc (aussi dans iCloud)" onclick="event.stopPropagation();ADM.msDeleteBlock(\'' + diso + '\',\'' + key + '\')">×</button>' : '';
       var bar = vis ? '' : '<div class="mss-block__bar' + (over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>';
       return '<div class="mss-slot"><div class="mss-slot__time">' + msMinToH(it.start) + '</div>' +
         '<div class="mss-block mss-block--' + (vis ? 'visio' : 'work') + '" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDropSlot(event,\'' + diso + '\',\'' + key + '\',this)">' +
           '<div class="mss-block__h"><span class="mss-block__ic">' + ic + '</span>' +
             '<div class="mss-block__m"><div class="mss-block__t">' + esc(e.title || 'Bloc de temps') + '</div><div class="mss-block__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + ' – ' + msMinToH(it.end) + '</div></div>' +
-            right + '</div>' + bar +
+            right + del + '</div>' + bar +
           '<div class="mss-block__body">' + (tHtml || hint) + '</div>' +
         '</div></div>';
     }
@@ -3343,10 +3344,11 @@
       var tHtml = it.tasks.map(tblock).join('');
       var used = it.tasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0), dur = it.end - it.start, over = used > dur, pct = dur ? Math.min(100, Math.round(used / dur * 100)) : 0;
       var right = vis ? join : '<span class="mss-block__cap' + (over ? ' over' : '') + '" title="Estimé de tes tâches / durée du bloc">' + (used ? msDur2(used) : '0') + '/' + msDur2(dur) + '</span>';
+      var del = e.href ? '<button class="mss-block__del" title="Supprimer ce bloc (aussi dans iCloud)" onclick="event.stopPropagation();ADM.msDeleteBlock(\'' + diso + '\',\'' + key + '\')">×</button>' : '';
       var bar = (vis || !it.tasks.length) ? '' : '<div class="mss-block__bar' + (over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>';
       return '<div class="mss-block mss-block--' + (vis ? 'visio' : 'work') + ' mss-block--wk" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDropSlot(event,\'' + diso + '\',\'' + key + '\',this)">' +
         '<div class="mss-block__h"><span class="mss-block__ic">' + ic + '</span>' +
-          '<div class="mss-block__m"><div class="mss-block__t">' + esc(e.title || 'Bloc de temps') + '</div><div class="mss-block__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' + right + '</div>' + bar +
+          '<div class="mss-block__m"><div class="mss-block__t">' + esc(e.title || 'Bloc de temps') + '</div><div class="mss-block__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' + right + del + '</div>' + bar +
         (tHtml ? '<div class="mss-block__body">' + tHtml + '</div>' : '<div class="mss-block__hint">déposer une tâche</div>') +
       '</div>';
     }
@@ -3565,6 +3567,18 @@
         if (res && !res.error) { toast('Bloc ajouté à ton calendrier ✓'); if (done) done(); renderMaSemaine(); }
         else toast((res && res.error) || 'iCloud a refusé la création');
       }).catch(function () { toast('Erreur réseau'); });
+  }
+  // Supprime un bloc de temps → aussi dans iCloud (via son href). Les tâches
+  // rattachées sont simplement détachées (elles réapparaissent « à caler »).
+  function msDeleteBlock(diso, startKey) {
+    var e = msCalForDay(diso).filter(function (x) { var iv = msEventInterval(x); return iv && String(iv.s) === String(startKey); })[0];
+    if (!e || !e.href) { toast('Bloc introuvable'); return; }
+    admConfirm({ title: 'Supprimer ce bloc de temps ?', message: '« ' + esc(e.title || 'Bloc') + ' » sera supprimé de ton calendrier iCloud (toutes les occurrences si récurrent). Les tâches qui y étaient rangées seront détachées, pas supprimées.', yes: 'Oui, supprimer', no: 'Annuler', danger: true }, function () {
+      toast('Suppression…');
+      jpost('/api/calendar/events', { href: e.href }, 'DELETE').then(function (r) { return r.ok ? r.json() : { error: 'Erreur ' + r.status }; })
+        .then(function (res) { if (res && !res.error) { toast('Bloc supprimé ✓'); renderMaSemaine(); } else toast((res && res.error) || 'iCloud a refusé la suppression'); })
+        .catch(function () { toast('Erreur réseau'); });
+    });
   }
   // Catégorie (couleur) d'une tâche pour le planning : partenaire = Création,
   // sinon d'après le « mode » de la tâche perso.
@@ -7979,7 +7993,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,

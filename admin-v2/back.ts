@@ -166,6 +166,7 @@ export default {
       if (pathname === '/api/calendar/events') {
         if (method === 'GET') return handleCalEventsList(env, url);
         if (method === 'POST') return handleCalEventCreate(request, env);
+        if (method === 'DELETE') return handleCalEventDelete(request, env);
       }
 
       if (pathname === '/api/clients') {
@@ -2889,15 +2890,24 @@ async function calListEvents(cfg: CalCfg, fromIso: string, toIso: string): Promi
     try {
       const r = await fetch(cal.url, { method: 'REPORT', headers: { Authorization: auth, Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' }, body });
       const xml = await r.text();
-      const re = /<(?:[\w]+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:[\w]+:)?calendar-data>/gi;
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(xml))) {
-        const ics = calDecodeXml(m[1]);
+      // On lit chaque <response> pour récupérer son href (nécessaire à la
+      // suppression) + son calendar-data.
+      const respRe = /<(?:[\w]+:)?response[^>]*>([\s\S]*?)<\/(?:[\w]+:)?response>/gi;
+      let rm: RegExpExecArray | null;
+      while ((rm = respRe.exec(xml))) {
+        const chunk = rm[1];
+        const hrefM = /<(?:[\w]+:)?href[^>]*>([\s\S]*?)<\/(?:[\w]+:)?href>/i.exec(chunk);
+        let href = '';
+        if (hrefM) { try { href = new URL(calDecodeXml(hrefM[1]).trim(), cal.url).href; } catch (e) { href = ''; } }
+        const dataM = /<(?:[\w]+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:[\w]+:)?calendar-data>/i.exec(chunk);
+        if (!dataM) continue;
+        const ics = calDecodeXml(dataM[1]);
         for (const ev of calParseVevents(ics)) {
           const k = (ev.uid || '') + '|' + ev.start;
           if (seen[k]) continue;
           seen[k] = true;
           ev.calendar = cal.name;
+          ev.href = href;
           events.push(ev);
         }
       }
@@ -2982,5 +2992,24 @@ async function handleCalEventCreate(request: Request, env: Env): Promise<Respons
     return r.ok ? json({ ok: true }) : json({ error: r.error }, 502);
   } catch (e: any) {
     return json({ error: (e && e.message) || 'Création impossible.' }, 502);
+  }
+}
+// Supprime un événement iCloud (bloc de temps) via son href CalDAV. Un bloc
+// récurrent est supprimé en entier (toutes ses occurrences).
+async function handleCalEventDelete(request: Request, env: Env): Promise<Response> {
+  const cfg = await getCalCfg(env);
+  if (!cfg || !cfg.user || !cfg.pass) return json({ error: 'Calendrier non configuré.' }, 400);
+  const b = await readJson(request);
+  const href = String(b.href || '').trim();
+  if (!href) return json({ error: 'Référence de l\'événement manquante.' }, 400);
+  // Sécurité : n'autoriser que les URL CalDAV iCloud (pas de SSRF vers un autre hôte).
+  if (!/^https:\/\/[\w.-]*icloud\.com\//i.test(href)) return json({ error: 'URL non autorisée.' }, 400);
+  try {
+    const { auth } = await calDiscover(cfg);
+    const r = await fetch(href, { method: 'DELETE', headers: { Authorization: auth } });
+    if (r.ok || r.status === 404) return json({ ok: true });
+    return json({ error: 'iCloud a refusé la suppression (statut ' + r.status + ').' }, 502);
+  } catch (e: any) {
+    return json({ error: (e && e.message) || 'Suppression impossible.' }, 502);
   }
 }
