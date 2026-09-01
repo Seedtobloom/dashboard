@@ -629,6 +629,25 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .mssem .mss-ical__m{flex:1;min-width:0}
 .mssem .mss-ical__lock{font-size:10px;flex-shrink:0;opacity:.8}
 .mssem .mss-ical__join{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--paille);background:var(--terre);padding:4px 9px;border-radius:999px;text-decoration:none;flex-shrink:0}
+/* Bloc de temps iCloud = CONTENANT où déposer des tâches (pas figé) */
+.mssem .mss-block{border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.mssem .mss-block--work{background:var(--surface)}
+.mssem .mss-block--visio{background:var(--glycine-50)}
+.mssem .mss-block.wcol--over{outline:2px dashed var(--glycine-700);outline-offset:-3px;background:var(--brume)}
+.mssem .mss-block__h{display:flex;align-items:center;gap:9px}
+.mssem .mss-block__ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}
+.mssem .mss-block--work .mss-block__ic{background:var(--beige);color:var(--terre-400)}
+.mssem .mss-block--visio .mss-block__ic{background:var(--glycine);color:var(--glycine-900)}
+.mssem .mss-block__m{flex:1;min-width:0}
+.mssem .mss-block__t{font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--terre);line-height:1.25}
+.mssem .mss-block__s{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-top:1px;color:var(--muted)}
+.mssem .mss-block--visio .mss-block__s{color:var(--glycine-900)}
+.mssem .mss-block__tag{font-family:var(--font-micro);font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--page);padding:3px 8px;border-radius:999px;flex-shrink:0}
+.mssem .mss-block__join{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--paille);background:var(--terre);padding:5px 10px;border-radius:999px;text-decoration:none;flex-shrink:0}
+.mssem .mss-block__body{display:flex;flex-direction:column;gap:6px}
+.mssem .mss-block__body .mss-tblock{background:var(--page)}
+.mssem .mss-block__hint{font-family:var(--font-micro);font-size:10px;color:var(--terre-400);font-style:normal;padding:2px 2px 3px}
+.mssem .mss-block--wk{padding:9px 10px}
 /* Zone libre compacte (blocs de temps) dans un jour de la semaine */
 .mssem .mss-wallday{font-family:var(--font-micro);font-size:9.5px;font-weight:600;color:var(--muted);background:var(--surface);border-radius:8px;padding:5px 9px}
 .mssem .mss-wfree{border:1.5px dashed var(--terre-200);border-radius:11px;padding:7px 8px;display:flex;flex-direction:column;gap:6px}
