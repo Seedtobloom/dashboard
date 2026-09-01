@@ -5188,44 +5188,37 @@
     if (TAB === 'fichiers') return renderDocuments(body);
     if (TAB === 'echanges') return body.innerHTML = journalTab();
     if (TAB === 'forfait') return body.innerHTML = tabInfos();
-    // Vue d'UN projet (onglet dédié) : tout en une seule page propre, sans sous-onglets.
+    // Vue d'UN projet (onglet dédié en haut) : navigation COURTE en sous-onglets
+    // à l'intérieur (Aperçu / Tâches / Livrables / Forfait…), pour éviter les
+    // pages longues. Plus de sélecteur de projet (les projets sont les onglets).
     var _doms = (CUR.domains || []).concat(CUR.supports || []);
     var d = findDomain(TAB) || _doms[0];
     if (!d) { body.innerHTML = '<div class="empty">Aucun projet actif pour cette cliente.</div>'; return; }
-    body.innerHTML = projectView(d);
+    var secs = sectionsFor(d);
+    var keys = secs.map(function (x) { return x[0]; });
+    var cur = SUBTAB[d.id]; if (keys.indexOf(cur) === -1) cur = keys[0];
+    var subnav = '<div class="subtabs">' + secs.map(function (x) {
+      return '<button class="subtab' + (cur === x[0] ? ' active' : '') + '" onclick="ADM.subtab(\'' + d.id + '\',\'' + x[0] + '\')">' + esc(x[1]) + (x[2] > 0 ? ' ' + badge(x[2]) : '') + '</button>';
+    }).join('') + '</div>';
+    var content = '';
+    if (cur === 'apercu') content = apercuCard(d);
+    else if (cur === 'tickets') content = maintTickets(d);
+    else if (cur === 'creations') content = creationsGallery(d);
+    else if (cur === 'planning') content = planningTab(d);
+    else if (cur === 'forfait') content = partnerForfait(d);
+    else if (cur === 'taches') content = partnerTasks(d);
+    else if (cur === 'questionnaire') content = questionnaireCard(d);
+    else if (cur === 'bilan') content = bilanCard(d);
+    else if (cur === 'suivi') content = suiviCard(d);
+    else if (cur === 'liv') content = livrablesCard(d);
+    else content = chatCard(d);
+    body.innerHTML = subnav + content;
     var box = el('chat-' + d.id); if (box) box.scrollTop = box.scrollHeight;
-    if (d.unread > 0) { jpost('/api/clients/' + CURKEY + '/message/read', { projectId: d.id }, 'POST'); d.unread = 0; }
-    if (d.id === 'maintenance' && Array.isArray(d.content.tickets) && d.content.tickets.some(function (t) { return t.seenByAdmin === false; })) {
+    if (cur === 'msg' && d.unread > 0) { jpost('/api/clients/' + CURKEY + '/message/read', { projectId: d.id }, 'POST'); d.unread = 0; renderClient(); }
+    if (cur === 'tickets' && Array.isArray(d.content.tickets) && d.content.tickets.some(function (t) { return t.seenByAdmin === false; })) {
       jpost('/api/clients/' + CURKEY + '/tickets/seen', { projectId: d.id }, 'POST');
       d.content.tickets.forEach(function (t) { t.seenByAdmin = true; });
     }
-  }
-  // Vue projet unique et propre : avancement/étapes + tâches (par statut) +
-  // livrables + forfait/temps selon le type de projet. Questionnaire et messages
-  // restent accessibles mais repliés (pas de superflu au premier plan).
-  function projectView(d) {
-    var isSupport = /^support-/.test(d.id);
-    var title = '<div class="cl2 secmark" style="margin:0 0 14px;font-size:clamp(19px,2.2vw,24px)">' + esc(DOMAIN_LABELS[d.id] || d.label || 'Projet') + '</div>';
-    var out = [];
-    if (d.id === 'maintenance') {
-      out.push(maintTickets(d));
-    } else if (isSupport) {
-      out.push(creationsGallery(d));
-      if (d.content.planning !== undefined) out.push(planningTab(d));
-    } else {
-      if (d.content.suivi !== undefined || d.id === 'partner') out.push(apercuCard(d));
-      if (d.id === 'partner') out.push(partnerTasks(d));
-      if (d.content.suivi !== undefined) out.push(suiviCard(d));
-      if (Array.isArray(d.content.livrables)) out.push(livrablesCard(d));
-      if ((d.id === 'website' || d.id === 'branding') && d.content.planning !== undefined) out.push(planningTab(d));
-      if (d.id === 'partner') out.push(partnerForfait(d));
-    }
-    // Secondaires repliés.
-    var qn = (d.content.questionnaire || []).length;
-    var extras = '';
-    if (qn) extras += '<details style="margin-top:16px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);padding:8px 0">Questionnaire · ' + qn + '</summary><div style="margin-top:10px">' + questionnaireCard(d) + '</div></details>';
-    extras += '<details' + (d.unread ? ' open' : '') + ' style="margin-top:8px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);padding:8px 0">Messages' + (d.unread ? ' ' + badge(d.unread) : '') + '</summary><div style="margin-top:10px">' + chatCard(d) + '</div></details>';
-    return title + out.join('') + extras;
   }
   function sectionsFor(d) {
     var s = [];
