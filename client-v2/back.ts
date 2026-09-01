@@ -29,6 +29,7 @@
 export interface Env {
   KV_CLIENT: KVNamespace;
   R2_FILES: R2Bucket;
+  KV_ADMIN?: KVNamespace; // index des clientes côté admin (auto-indexation à la 1re demande)
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   ADMIN_EMAIL?: string;
@@ -1012,6 +1013,19 @@ function tasksOf(container: AnyObj): AnyObj[] {
   return container.taches;
 }
 
+// Ajoute la cliente à l'index admin si elle en est absente (clé = clé KV de son
+// espace). Silencieux si le binding KV_ADMIN n'est pas présent.
+async function ensureAdminIndex(env: Env, key: string, data: AnyObj): Promise<void> {
+  try {
+    if (!env.KV_ADMIN) return;
+    const raw = (await env.KV_ADMIN.get('clients:index', { type: 'json' })) as AnyObj[] | null;
+    const idx = Array.isArray(raw) ? raw : [];
+    if (idx.some((e: AnyObj) => e && e.key === key)) return;
+    const c = getClient(data), e = getEntreprise(c), esp = getEspace(data);
+    idx.push({ key, nom: c.nom || '', prenom: c.prenom || '', email: c.email || '', entreprise: e.nom || '', isActive: esp.isActive === true });
+    await env.KV_ADMIN.put('clients:index', JSON.stringify(idx));
+  } catch (e) { /* l'indexation ne doit jamais bloquer une demande */ }
+}
 async function handleTaskCreate(request: Request, env: Env, masterKey: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
   const { container } = resolveProject(getEspace(data), (body.projectId || '').toString());
@@ -1048,6 +1062,10 @@ async function handleTaskCreate(request: Request, env: Env, masterKey: string, d
   };
   tasksOf(container).push(task);
   await save(env, masterKey, data);
+  // Auto-indexation : si la cliente n'est pas encore dans l'index admin, on l'y
+  // ajoute pour que sa demande remonte bien dans l'Inbox / le tableau de bord
+  // sans « Scanner le KV » manuel. Ne bloque jamais la création (try/catch).
+  await ensureAdminIndex(env, masterKey, data);
 
   await notifyAdmin(env, `Nouvelle demande · ${clientFullName(data)}`,
     `<p><strong>${escHtml(clientFullName(data))}</strong> a déposé une nouvelle demande (à analyser dans ta boîte de réception) :</p>` +

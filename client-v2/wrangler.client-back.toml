@@ -8,6 +8,13 @@ binding = "KV_CLIENT"
 id = "0cb5765b6dc647fca612a760935d8111"
 preview_id = "0cb5765b6dc647fca612a760935d8111"
 
+# Index des clientes côté admin : pour auto-indexer une cliente à sa 1re demande
+# (sinon sa demande ne remonte pas dans l'Inbox sans « Scanner le KV »).
+[[kv_namespaces]]
+binding = "KV_ADMIN"
+id = "b418bb506aa3469cb589e14f5cf26230"
+preview_id = "b418bb506aa3469cb589e14f5cf26230"
+
 # R2 : documents (source de vérité)
 [[r2_buckets]]
 binding = "R2_FILES"

@@ -1228,19 +1228,23 @@
     jpost(url, body, 'PATCH').catch(function () {});
     toast('Traité ✓');
   }
-  function inboxTriage(key, id, action) {
+  function inboxTriage(key, id, action, after) {
     var labels = { accept: 'Accepter cette demande et en faire une tâche planifiée ?', hors_forfait: 'Marquer comme hors forfait (la cliente sera prévenue que ça nécessite un devis) ?', refuse: 'Refuser et archiver cette demande ?' };
     var doIt = function (notify) {
       jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', triage: action, notify: notify }, 'PATCH').then(function (r) {
         if (r.ok) {
           inboxDrop(key, id);
           toast(action === 'accept' ? 'Demande acceptée → tâche' : (action === 'hors_forfait' ? 'Marquée hors forfait' : 'Demande refusée'));
+          if (after) after();
         } else toast('Erreur');
       }).catch(function () { toast('Erreur'); });
     };
     if (action === 'refuse') { doIt(false); return; }
     notifyConfirm(labels[action], function (notify) { doIt(notify); });
   }
+  // Trier une demande depuis la fiche cliente (pas depuis l'Inbox) : on recharge
+  // la fiche pour refléter le changement (la demande devient tâche, ou part).
+  function ptDemandeTriage(id, action) { inboxTriage(CURKEY, id, action, function () { loadClient(); }); }
   // Depuis l'inbox : proposer une AUTRE date que celle souhaitée par la cliente
   // (elle la voit dans son espace et l'accepte ou non). Réutilise le mécanisme
   // proposedDueDate des tâches, mais par clé cliente (l'inbox est multi-clientes).
@@ -6219,11 +6223,34 @@
     var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
     // Les demandes en attente d'analyse vivent dans la Boîte de réception,
     // pas dans le tableau des tâches.
-    var inboxN = raw.filter(function (t) { return t.stage === 'inbox' && !t.archived; }).length;
+    var inboxTasks = raw.filter(function (t) { return t.stage === 'inbox' && !t.archived; });
+    var inboxN = inboxTasks.length;
     var all = raw.filter(function (t) { return t.stage !== 'inbox'; });
     var active = all.filter(function (t) { return !t.archived; });
     var archived = all.filter(function (t) { return t.archived; });
-    var inboxBanner = inboxN ? '<div class="card" style="background:#fbf5e6;border-color:#f0e2b0;max-width:760px;margin-bottom:14px"><div class="between"><span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;font-weight:600">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</span><button class="btn btn--outline btn--sm" onclick="ADM.nav(\'inbox\')">Ouvrir la boîte de réception</button></div></div>' : '';
+    // Demandes en attente affichées ICI (plus seulement un compteur) : titre,
+    // message, type, échéance souhaitée, pièces jointes, et le tri sur place.
+    function ptDemandeCard(t) {
+      var meta = [];
+      if (t.demandeType) meta.push(esc(t.demandeType));
+      if (t.dueDate) meta.push('échéance souhaitée ' + fmtDate(t.dueDate));
+      var metaHtml = meta.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + meta.join(' · ') + '</div>' : '';
+      var msg = (t.content || '').trim();
+      var msgHtml = msg ? '<div style="font-size:13.5px;color:var(--terre-600);margin-top:8px;white-space:pre-wrap;line-height:1.5">' + esc(msg.slice(0, 400)) + (msg.length > 400 ? '…' : '') + '</div>' : '';
+      var atts = (t.attachments || []).filter(function (a) { return a && (a.key || a.fileKey); }).length;
+      var attHtml = atts ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:7px">📎 ' + atts + ' pièce' + (atts > 1 ? 's' : '') + ' jointe' + (atts > 1 ? 's' : '') + '</div>' : '';
+      var due10 = esc((t.dueDate || '').slice(0, 10));
+      return '<div class="card" style="background:#f6ece3;max-width:760px;margin-bottom:10px">' +
+        '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:3px 9px;border-radius:999px">À analyser</span><span style="font-weight:600;color:var(--terre)">' + esc(t.title || 'Demande') + '</span></div>' +
+        metaHtml + msgHtml + attHtml +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+          '<button class="btn btn--dark btn--sm" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'hors_forfait\')">Hors forfait</button>' +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + CURKEY + '\',\'' + t.id + '\',\'' + due10 + '\')">📅 Proposer une date</button>' +
+          '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#8d2b21" onclick="ADM.ptDemandeTriage(\'' + t.id + '\',\'refuse\')">Refuser</button>' +
+        '</div></div>';
+    }
+    var inboxBanner = inboxN ? '<div style="max-width:760px;margin-bottom:16px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink);font-weight:600;margin-bottom:9px">📨 ' + inboxN + ' demande' + (inboxN > 1 ? 's' : '') + ' en attente d\'analyse</div>' + inboxTasks.map(ptDemandeCard).join('') + '</div>' : '';
     function ptCard(t) {
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
@@ -8000,7 +8027,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

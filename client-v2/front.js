@@ -1059,20 +1059,24 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var base = parseFloat(p.monthlyHours) || 0;
     var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
     var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
-    function usedIn(ym){ return (p.tasks||[]).reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
-    function activeIn(ym){ return (p.tasks||[]).some(function(t){ return (cpTaskMinByMonth(t)[ym]||0)>0; }); }
+    // Consommation = uniquement le travail DANS le forfait : on exclut les
+    // demandes non triées (inbox), le hors-forfait (out_of_scope, facturé à
+    // part), les refusées et les archivées (même règle que le back).
+    var billable = (p.tasks||[]).filter(function(t){ return !t.archived && t.stage!=='inbox' && t.stage!=='out_of_scope' && t.stage!=='refused'; });
+    function usedIn(ym){ return billable.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
     var now = new Date();
     var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
     var pdt = new Date(now.getFullYear(), now.getMonth()-1, 1);
     var prev = pdt.getFullYear()+'-'+String(pdt.getMonth()+1).padStart(2,'0');
     var used = usedIn(cur);
     var usedPrev = usedIn(prev);
-    // Report du mois précédent (seulement si c'était un vrai mois de prestation) :
+    // Report du mois précédent (qu'il y ait eu de l'activité ou non, un mois
+    // vide reporte bien son forfait) :
     //  - heures NON utilisées : reportées, plafonnées au cap (max 2 h) ;
     //  - DEPASSEMENT : déduit du mois en cours, plafonné à un mois de forfait ;
     //    le dépassement au-delà d'un mois est facturé (billedCarry), pas reporté.
     var carryIn = 0, billedCarry = 0;
-    if (base && activeIn(prev)) {
+    if (base) {
       var diffPrev = base - usedPrev;
       if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
       else {
@@ -1349,7 +1353,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (project.type === 'partenaire') {
       var f = cpForfaitState(project);
       if (!f.configured) return null;
-      var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+      // Mêmes exclusions que la consommation : pas d'inbox / hors-forfait / refusé / archivé.
+      var tasks = (Array.isArray(project.tasks) ? project.tasks : []).filter(function (t) { return !t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
       var d = 0, w = 0;
       tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done') d += m; else w += m; });
       return { availMin: Math.round(f.available * 60), doneMin: d, wipMin: w };
@@ -4210,10 +4215,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var maxMonthMin = Math.max.apply(null, months.map(function (m) { return m.min; })) || 1;
     var CHART_H = 150;
 
-    // ── Forfait ──
+    // ── Forfait ── (mêmes exclusions que la consommation : ni inbox, ni hors-forfait, ni refusé/archivé)
     var _pf = cpForfaitState(project);
+    var _fbill = tasks.filter(function (t) { return !t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
     var _fdone = 0, _fwip = 0;
-    tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[curMonthKey] || 0; if (!m) return; if (t.status === 'done') _fdone += m; else _fwip += m; });
+    _fbill.forEach(function (t) { var m = cpTaskMinByMonth(t)[curMonthKey] || 0; if (!m) return; if (t.status === 'done') _fdone += m; else _fwip += m; });
     var _availMin = Math.round(_pf.available * 60), _usedMin = _fdone + _fwip, _restMin = _availMin - _usedMin;
     var _baseMin = Math.round(_pf.base * 60), _carryMin = Math.round(_pf.carryIn * 60);
     var _dPct = _availMin > 0 ? Math.max(0, Math.min(100, _fdone / _availMin * 100)) : 0;

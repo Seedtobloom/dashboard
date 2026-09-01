@@ -1647,7 +1647,11 @@ function forfaitState(pc: AnyObj): AnyObj {
   const base = parseFloat(pc.monthlyHours) || 0;
   const cap = (pc.rolloverCapHours != null && pc.rolloverCapHours !== '') ? parseFloat(pc.rolloverCapHours) : 2;
   const rate = (pc.overageRate != null && pc.overageRate !== '') ? parseFloat(pc.overageRate) : 60;
-  const tasks: AnyObj[] = Array.isArray(pc.taches) ? pc.taches : [];
+  const allTasks: AnyObj[] = Array.isArray(pc.taches) ? pc.taches : [];
+  // Consommation du forfait = SEULEMENT le travail « dans le forfait ». On
+  // exclut les demandes non triées (stage 'inbox'), le hors-forfait (facturé
+  // à part, stage 'out_of_scope'), les refusées et les archivées.
+  const tasks = allTasks.filter((t) => !t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused');
   const now = new Date();
   const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const pdt = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -1656,14 +1660,14 @@ function forfaitState(pc: AnyObj): AnyObj {
   // chrono), jamais à la date de validation. Une validation tardive ne
   // déplace donc rien : le travail de juillet reste dans juillet.
   const usedIn = (ym: string) => tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0);
-  const activeIn = (ym: string) => tasks.some((t) => (taskMinutesByMonth(t)[ym] || 0) > 0);
   const used = usedIn(cur);
   const usedPrev = usedIn(prev);
-  // Report du mois précédent : heures non utilisées reportées (plafond `cap`),
-  // ou dépassement déduit du mois en cours (plafonné à un mois de forfait ;
-  // au-delà, c'est facturé — billedCarry — et non reporté).
+  // Report du mois précédent : les heures NON UTILISÉES du mois passé se
+  // reportent (plafond `cap`), qu'il y ait eu de l'activité ou non — un mois
+  // vide reporte donc bien son forfait. Un dépassement est déduit du mois en
+  // cours (plafonné à un mois de forfait ; au-delà, facturé — billedCarry).
   let carryIn = 0, billedCarry = 0;
-  if (base && activeIn(prev)) {
+  if (base) {
     const diffPrev = base - usedPrev;
     if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
     else {
@@ -1699,6 +1703,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const validated: AnyObj[] = []; // livrables validés par la cliente, pas encore consultés
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
   const weekTasks: AnyObj[] = []; // tâches Partenaire créative actives, à agréger dans « Ma semaine »
+  const activeProjects: AnyObj[] = []; // projets en cours (avancement) pour « Tes projets en cours »
   // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
   const wkStart = new Date(); wkStart.setHours(0, 0, 0, 0);
   wkStart.setDate(wkStart.getDate() - ((wkStart.getDay() + 6) % 7));
@@ -1850,6 +1855,33 @@ async function handleDashboard(env: Env): Promise<Response> {
       if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
       collectLiv(o, supportLabel(pid), 'support-' + pid);
     }
+    // Projets en cours (avancement) pour « Tes projets en cours » du cockpit.
+    // % = étapes terminées / total ; le partenaire compte ses tâches (hors demandes).
+    const addProj = (suivi: AnyObj[], label: string, category: string) => {
+      if (!Array.isArray(suivi) || !suivi.length) return;
+      const total = suivi.length, done = suivi.filter((s) => s.status === 'done').length;
+      if (done >= total) return; // projet terminé → pas « en cours »
+      const notDone = suivi.filter((s) => s.status !== 'done');
+      const cur = notDone.find((s) => s.status === 'in_progress') || notDone[0];
+      const ci2 = suivi.indexOf(cur);
+      const next = suivi.slice(ci2 + 1).find((s) => s.status !== 'done');
+      const dates = suivi.map((s) => s.date).filter(Boolean).sort();
+      const ndDates = notDone.map((s) => s.date).filter(Boolean).sort();
+      activeProjects.push({ key: ci.key, client: who, projectLabel: label, category, pct: Math.round(done / total * 100), currentStep: cur ? (cur.title || '') : '', nextStep: next ? (next.title || '') : '', delivery: dates.length ? dates[dates.length - 1] : '', urgency: ndDates.length ? ndDates[0] : '' });
+    };
+    if (sw) addProj(sw.suivi, 'Site web', 'website');
+    if (iv) addProj(iv.suivi, 'Identité visuelle', 'branding');
+    if (sd) for (const pid of Object.keys(sd)) { const o = getSupportObj(esp, pid); if (o) addProj(o.suivi, supportLabel(pid), 'support'); }
+    if (pc && Array.isArray(pc.taches)) {
+      const real = pc.taches.filter((t: AnyObj) => !t.archived && t.stage !== 'inbox');
+      const tot = real.length, dn = real.filter((t: AnyObj) => t.status === 'done').length;
+      if (tot && dn < tot) {
+        const nd = real.filter((t: AnyObj) => t.status !== 'done');
+        const cur = nd.find((t: AnyObj) => t.status === 'in_progress' || t.status === 'review') || nd[0];
+        const partnerDue = nd.map((t: AnyObj) => t.dueDate).filter(Boolean).sort();
+        activeProjects.push({ key: ci.key, client: who, projectLabel: 'Partenaire créative', category: 'partner', pct: Math.round(dn / tot * 100), currentStep: cur ? (cur.title || '') : '', nextStep: '', delivery: cur && cur.dueDate ? cur.dueDate : '', urgency: partnerDue.length ? partnerDue[0] : '' });
+      }
+    }
     // Tickets de maintenance ouverts : à retrouver dans les Priorités
     const ms = getDomainObj(esp, 'maintenanceSite');
     if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((t: AnyObj) => {
@@ -1873,7 +1905,8 @@ async function handleDashboard(env: Env): Promise<Response> {
   const errList = (await env.KV_CLIENT.get('global:clientErrors', { type: 'json' })) as AnyObj[] | null;
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
   upcoming.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
-  return json({ deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  activeProjects.sort((a, b) => String(a.urgency || '9999').localeCompare(String(b.urgency || '9999')));
+  return json({ deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
