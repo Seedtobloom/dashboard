@@ -6012,31 +6012,36 @@
     '</div>';
     // ── Alerte perte d'heures : le forfait est peut-être surdimensionné ──
     var lossBanner = f.lossAlert ? '<div class="card" style="background:#f6ece3;margin-top:0"><div style="display:flex;gap:11px;align-items:flex-start"><span style="font-size:18px">⚠️</span><div><div style="font-weight:600;color:#824426">Beaucoup d\'heures perdues ces derniers mois</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-top:4px;line-height:1.55">Environ <strong>' + fmtHrs(f.lost3) + '</strong> non utilisées et non reportées sur les 3 derniers mois. Le forfait est peut-être trop élevé — ça peut valoir le coup d\'en <strong>reparler avec la cliente</strong>.</div></div></div></div>' : '';
-    // ── Détail mois par mois (historique chaîné) ──
+    // ── Détail mois par mois (dépliable : les tâches qui ont consommé chaque mois) ──
+    function monthTaskLines(ym) {
+      var mt = partnerMonthTasks(d, ym).filter(function (o) { var st = o.t.stage; return st !== 'out_of_scope' && st !== 'inbox' && st !== 'refused'; });
+      if (!mt.length) return '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:6px 2px">Aucun temps travaillé ce mois.</div>';
+      return mt.map(function (o) {
+        var t = o.t;
+        var note = t.completedAt ? ('validée le ' + fmtDate(t.completedAt)) : (t.status === 'done' ? 'terminée' : 'en cours');
+        return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 2px;font-size:13.5px">' +
+          '<span style="color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span> <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· ' + note + '</span></span>' +
+          '<span style="font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums">' + fmtHrs(o.mins / 60) + '</span></div>';
+      }).join('');
+    }
     var histRows = (f.history || []).map(function (m) {
       var isOver = m.remaining < 0;
       var rest = isOver ? '− ' + fmtHrs(-m.remaining) : fmtHrs(m.remaining);
       var restCol = isOver ? '#8a4a2c' : 'var(--terre)';
-      var lost = m.lost > 0 ? '<span style="color:#824426;font-weight:600">' + fmtHrs(m.lost) + '</span>' : '<span style="color:var(--muted)">—</span>';
-      var lbl = esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '');
-      return '<tr style="' + (m.current ? 'font-weight:600;' : '') + '">' +
-        '<td style="text-align:left;padding:7px 8px">' + lbl + '</td>' +
-        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums">' + fmtHrs(m.available) + '</td>' +
-        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums">' + fmtHrs(m.used) + '</td>' +
-        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums;color:' + restCol + '">' + rest + '</td>' +
-        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums">' + lost + '</td>' +
-      '</tr>';
+      var lostChip = m.lost > 0 ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#824426;font-weight:600">' + fmtHrs(m.lost) + ' perdues non reportées</span>' : '';
+      return '<details' + (m.current ? ' open' : '') + ' style="background:' + (m.current ? 'var(--surface-2,#f4efe6)' : 'var(--card)') + ';border-radius:12px;margin-bottom:6px">' +
+        '<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;padding:11px 14px">' +
+          '<span style="flex:1;font-weight:' + (m.current ? '700' : '600') + ';color:var(--terre);font-size:14.5px;text-transform:capitalize">' + esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '') + '</span>' +
+          '<span style="font-variant-numeric:tabular-nums;color:var(--terre-600);font-size:13.5px;white-space:nowrap" title="Travaillé / Disponible">' + fmtHrs(m.used) + ' / ' + fmtHrs(m.available) + '</span>' +
+          '<span style="font-variant-numeric:tabular-nums;color:' + restCol + ';font-weight:700;min-width:80px;text-align:right;white-space:nowrap">' + rest + '</span>' +
+        '</summary>' +
+        '<div style="padding:0 14px 12px">' + (lostChip ? '<div style="margin:0 0 6px">' + lostChip + '</div>' : '') + monthTaskLines(m.ym) + '</div>' +
+      '</details>';
     }).join('');
-    var histBlock = (f.history && f.history.length) ? '<div class="card" style="margin-top:0"><h3 style="margin:0 0 10px;font-size:16px">Détail mois par mois</h3>' +
-      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">' +
-      '<thead><tr style="color:var(--muted)">' +
-        '<th style="text-align:left;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Mois</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Dispo</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Travaillé</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Reste</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Perdu</th>' +
-      '</tr></thead><tbody>' + histRows + '</tbody></table></div>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:10px;line-height:1.5">« <strong>Dispo</strong> » = base + report du mois précédent. « <strong>Perdu</strong> » = heures non utilisées qui n\'ont pas pu être reportées (au-delà du plafond de report de ' + fmtHrs(f.cap) + ')' + (f.lostRecent > 0 ? ' — soit <strong>' + fmtHrs(f.lostRecent) + '</strong> sur les mois passés affichés' : '') + '.</div>' +
+    var histBlock = (f.history && f.history.length) ? '<div class="card" style="margin-top:0"><h3 style="margin:0 0 4px;font-size:16px">Détail mois par mois</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:12px;line-height:1.5">Chaque mois : <strong>Travaillé / Dispo</strong> puis le <strong>Reste</strong>. Déplie un mois pour voir les tâches qui l\'ont consommé — <strong>le temps compte au mois où il a été fait, pas à la validation</strong>.</div>' +
+      histRows +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px;line-height:1.5">« Dispo » = base + report du mois précédent. « Perdues » = heures non utilisées non reportées (au-delà du plafond de ' + fmtHrs(f.cap) + ').</div>' +
     '</div>' : '';
     return setup + '</div>' + lossBanner + breakdown + histBlock + workSlotsSection();
   }
