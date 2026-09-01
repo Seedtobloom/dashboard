@@ -1048,7 +1048,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var total=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0), residual=Math.max(0,total-sessTotal);
     if(residual>0){
       var n=new Date(); var cur=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
-      var rm=lastStart?lastStart.slice(0,7):'';
+      var wm=String(t.workMonth||'');
+      var rm=/^\d{4}-\d{2}$/.test(wm)?wm:(lastStart?lastStart.slice(0,7):'');
       if(!rm){ var due=String(t.dueDate||'').slice(0,7); rm=(due&&due<=cur)?due:cur; }
       if(rm>cur) rm=cur;
       map[rm]=(map[rm]||0)+residual;

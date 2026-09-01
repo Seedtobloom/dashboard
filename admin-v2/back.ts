@@ -1212,6 +1212,8 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if ('content' in body) body.content = (body.content || '').toString().slice(0, 10000);
   ADMIN_TASK_FIELDS.forEach((k) => { if (k in body) t[k] = body[k]; });
   if ('estMinutes' in body) t.estMinutes = Math.max(0, Math.min(100000, Math.round(Number(body.estMinutes) || 0)));
+  // Mois de travail forcé (YYYY-MM) : repère fiable pour le suivi du temps.
+  if ('workMonth' in body) { const w = String(body.workMonth || '').slice(0, 7); t.workMonth = /^\d{4}-\d{2}$/.test(w) ? w : ''; }
   let manualDeltaMin = 0;
   if ('timeSpentSeconds' in body || 'timeSpentMinutes' in body) {
     const nsec = 'timeSpentSeconds' in body ? Math.max(0, Math.round(Number(body.timeSpentSeconds) || 0)) : Math.max(0, Math.round(Number(body.timeSpentMinutes) || 0)) * 60;
@@ -1636,7 +1638,11 @@ function taskMinutesByMonth(t: AnyObj): Record<string, number> {
   if (residual > 0) {
     const now = new Date();
     const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    let rm = lastStart ? lastStart.slice(0, 7) : '';
+    // Mois de travail FORCÉ (workMonth) : quand il est renseigné, le temps saisi
+    // à la main compte dans CE mois (repère fiable pour le suivi). Sinon on garde
+    // le rattachement automatique (dernière session → échéance → création).
+    const wm = String(t.workMonth || '');
+    let rm = /^\d{4}-\d{2}$/.test(wm) ? wm : (lastStart ? lastStart.slice(0, 7) : '');
     if (!rm) {
       // Temps ancien saisi sans horodatage : on le rattache à l'échéance SI
       // elle n'est pas dans le futur, sinon au mois courant. On ne compte

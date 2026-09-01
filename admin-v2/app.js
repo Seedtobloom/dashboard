@@ -5939,7 +5939,8 @@
     var total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0), residual = Math.max(0, total - sessTotal);
     if (residual > 0) {
       var n = new Date(); var cur = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
-      var rm = lastStart ? lastStart.slice(0, 7) : '';
+      var wm = String(t.workMonth || '');
+      var rm = /^\d{4}-\d{2}$/.test(wm) ? wm : (lastStart ? lastStart.slice(0, 7) : '');
       if (!rm) { var due = String(t.dueDate || '').slice(0, 7); rm = (due && due <= cur) ? due : cur; }
       if (rm > cur) rm = cur;
       map[rm] = (map[rm] || 0) + residual;
@@ -6039,7 +6040,23 @@
       histRows +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px;line-height:1.5">« Dispo » = base + report du mois précédent. « Perdues » = heures non utilisées non reportées (au-delà du plafond de ' + fmtHrs(f.cap) + ').</div>' +
     '</div>' : '';
-    return setup + '</div>' + lossBanner + breakdown + histBlock + workSlotsSection();
+    // ── Contrôle : tâches terminées SANS temps enregistré (à corriger) ──
+    var noTimeDone = (d.content && Array.isArray(d.content.taches) ? d.content.taches : []).filter(function (t) {
+      if (t.archived || t.stage === 'out_of_scope' || t.stage === 'inbox' || t.stage === 'refused') return false;
+      var spent = t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0;
+      return (t.status === 'done' || t.completedAt) && spent === 0;
+    });
+    var checkBlock = noTimeDone.length ? '<div class="card" style="margin-top:0;background:#f6ece3">' +
+      '<h3 style="margin:0 0 4px;font-size:16px;color:#824426">⚠️ À vérifier · ' + noTimeDone.length + ' tâche' + (noTimeDone.length > 1 ? 's' : '') + ' terminée' + (noTimeDone.length > 1 ? 's' : '') + ' sans temps</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:10px;line-height:1.5">Marquées terminées mais sans temps enregistré → elles ne décomptent rien du forfait. Renseigne leur temps (et le mois) pour un suivi juste.</div>' +
+      noTimeDone.map(function (t) {
+        return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0">' +
+          '<span style="font-size:13.5px;color:var(--terre);min-width:0"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span>' + (t.completedAt ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">· validée le ' + fmtDate(t.completedAt) + '</span>' : '') + '</span>' +
+          '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="ADM.ptFinishPrompt(\'' + t.id + '\')">Renseigner le temps</button>' +
+        '</div>';
+      }).join('') +
+    '</div>' : '';
+    return setup + '</div>' + lossBanner + checkBlock + breakdown + histBlock + workSlotsSection();
   }
   function workSlotsSection() {
     return '<div class="card"><h3>Créneaux réservés</h3>' +
@@ -6739,7 +6756,52 @@
     });
   }
   function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0, rolloverCapHours: (el('pf-cap') ? el('pf-cap').value : ''), forfaitStart: (el('pf-start') ? el('pf-start').value : '') }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
-  function taskStatus(id, st) { if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); var lbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminée' }[st] || st; jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut : ' + lbl); loadClient(); } }); }
+  function ptFindTask(id) { return (CUR && CUR.content && Array.isArray(CUR.content.taches)) ? CUR.content.taches.find(function (x) { return x.id === id; }) : null; }
+  function taskStatus(id, st) {
+    // Rappel à la clôture : on ne termine pas une tâche sans son temps.
+    if (st === 'done') {
+      var t = ptFindTask(id);
+      var spent = t ? (t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0) : 0;
+      if (t && spent === 0 && t.stage !== 'out_of_scope') { ptFinishPrompt(id); return; }
+    }
+    if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true);
+    var lbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminée' }[st] || st;
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut : ' + lbl); loadClient(); } });
+  }
+  // Fenêtre : combien de temps + quel mois, avant de terminer une tâche (suivi fiable).
+  function ptFinishPrompt(id) {
+    var t = ptFindTask(id); if (!t) return;
+    var now = new Date(); var curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    var lab = 'flex:1;display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:11px;color:var(--muted)';
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:430px;text-align:left">' +
+      '<div class="admconfirm__title">Terminer « ' + esc((t.title || 'Tâche').slice(0, 50)) + ' »</div>' +
+      '<p style="font-size:13.5px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Combien de temps as-tu passé dessus, et sur quel mois&nbsp;? Ça garantit un décompte juste du forfait. (Laisse le temps vide pour terminer sans en compter.)</p>' +
+      '<div style="display:flex;gap:10px">' +
+        '<label style="' + lab + '">Temps passé (h)<input id="fin-h" class="inp" type="number" min="0" step="0.25" style="font-size:14px;padding:9px 11px" placeholder="ex. 1.5"></label>' +
+        '<label style="' + lab + '">Mois du travail<input id="fin-m" class="inp" type="month" style="font-size:14px;padding:9px 11px" value="' + curMonth + '"></label>' +
+      '</div>' +
+      '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Terminer</button></div>' +
+    '</div>';
+    function close() { ov.remove(); }
+    function cancel() { close(); loadClient(); } // remet le sélecteur de statut à sa valeur
+    ov.addEventListener('click', function (e) { if (e.target === ov) cancel(); });
+    ov.querySelector('[data-no]').onclick = cancel;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var h = parseFloat(String((el('fin-h') || {}).value || '').replace(',', '.')) || 0;
+      var m = (el('fin-m') || {}).value || '';
+      close(); ptFinishDo(id, Math.round(h * 60), m);
+    };
+    document.body.appendChild(ov);
+    var f = el('fin-h'); if (f) f.focus();
+  }
+  function ptFinishDo(id, minutes, month) {
+    var body = { projectId: 'partner', status: 'done' };
+    if (minutes > 0) { body.timeSpentMinutes = minutes; body.forceTime = true; }
+    if (month) body.workMonth = month;
+    if (PT_TIMER && PT_TIMER.id === id) ptPause(id, true);
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast('Terminée ✓'); loadClient(); } else toast('Erreur'); });
+  }
   function taskDuplicate(id) {
     jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/duplicate?projectId=partner', {}).then(function (r) {
       if (r.ok) { toast('Tâche dupliquée ✓'); loadClient(); } else toast('Erreur');
@@ -8054,7 +8116,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
