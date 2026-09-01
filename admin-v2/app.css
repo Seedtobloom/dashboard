@@ -508,6 +508,170 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .sem2 .placerow .msdel:hover{color:#b0361c;background:#fbecea;border-color:#f0cfc9}
 .sem2 .emptyz{font-family:var(--font-body);font-style:italic;color:var(--muted);padding:16px;text-align:center}
 
+/* ═══ « Ma semaine » — maquette validée (scopé .mssem) ═══ */
+/* Blocs iCloud figés qui ancrent la journée + temps libre autour pour caler
+   les tâches. 2 vues : Semaine (5 jours pleine largeur + bandeau à caler),
+   Aujourd'hui (agenda horaire du jour J + rail). Charte Écrin. */
+.mssem{max-width:1180px}
+.mssem .mss-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+.mssem .mss-head__t{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:clamp(30px,4vw,38px);line-height:1;margin:0;color:var(--terre)}
+.mssem .mss-head__s{font-size:14px;color:var(--muted);margin:6px 0 0}
+.mssem .mss-head__link{font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--glycine-900);text-decoration:none;white-space:nowrap}
+.mssem .mss-head__link:hover{color:var(--terre)}
+/* Focus */
+.mssem .mss-focus{display:flex;align-items:center;gap:14px;background:#f6ece3;border-radius:16px;padding:15px 19px;margin-bottom:22px}
+.mssem .mss-focus__ic{width:36px;height:36px;border-radius:11px;background:var(--glycine);color:var(--glycine-900);display:grid;place-items:center;flex-shrink:0}
+.mssem .mss-focus__t{font-size:14.5px;color:var(--terre);line-height:1.55}
+.mssem .mss-focus__t b{font-weight:600}
+.mssem .mss-focus--attn{background:#f6ece3}
+.mssem .mss-focus--attn .mss-focus__ic{background:var(--gold-chip);color:var(--gold-ink)}
+.mssem .mss-focus:not(.mss-focus--attn){background:var(--glycine-50)}
+/* Barre d'outils */
+.mssem .mss-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.mssem .mss-seg{display:inline-flex;gap:3px;background:var(--card);padding:4px;border-radius:12px}
+.mssem .mss-seg button{border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--terre-600);padding:8px 16px;border-radius:9px;background:none}
+.mssem .mss-seg button:hover:not(.on){background:var(--beige)}
+.mssem .mss-seg button.on{background:var(--terre);color:var(--paille)}
+.mssem .mss-nav{display:inline-flex;align-items:center;gap:8px}
+.mssem .mss-nav button{width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;background:var(--card);color:var(--terre-600);font-size:15px}
+.mssem .mss-nav button:hover{background:var(--beige)}
+.mssem .mss-nav .today{width:auto;padding:0 14px;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.mssem .mss-range{font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre)}
+.mssem .mss-cap{margin-left:auto;display:flex;align-items:center;gap:10px}
+.mssem .mss-cap__bar{width:150px;height:7px;border-radius:999px;background:var(--surface);overflow:hidden}
+.mssem .mss-cap__bar i{display:block;height:100%;border-radius:999px}
+.mssem .mss-cap__t{font-size:12px;color:var(--muted)}
+.mssem .mss-cap__t b{color:var(--terre);font-weight:600}
+.mssem .mss-cap__cfg{border:none;background:none;cursor:pointer;color:var(--terre-400);font-size:15px;padding:2px 5px;border-radius:8px}
+.mssem .mss-cap__cfg:hover{background:var(--beige);color:var(--terre)}
+@media(max-width:720px){.mssem .mss-cap{margin-left:0;width:100%}}
+.mssem .mss-capedit{background:var(--card);border-radius:13px;padding:14px 16px;margin-bottom:16px}
+.mssem .mss-capedit__row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.mssem .mss-capedit__row label{display:flex;flex-direction:column;gap:3px;font-family:var(--font-micro);font-size:10px;color:var(--muted)}
+.mssem .mss-capedit__row input{width:66px}
+.mssem .mss-capedit__note{margin-top:8px;font-family:var(--font-micro);font-size:11px;color:var(--muted)}
+.mssem .inp{background:rgba(28,18,5,.06);border:none;border-radius:8px;color:var(--terre);padding:6px 9px;font-family:var(--font-body);font-size:12px}
+.mssem .inp:focus{outline:none;box-shadow:0 0 0 2px var(--glycine-700)}
+.mssem .inp::placeholder{color:var(--muted)}
+.mssem .mss-empty{font-family:var(--font-body);font-style:italic;color:var(--muted);padding:12px 2px;font-size:13px}
+/* Pastille tâche « à caler » */
+.mssem .mss-ptask{display:inline-flex;align-items:center;gap:8px;background:var(--page);border-radius:10px;padding:8px 10px;cursor:grab}
+.mssem .mss-ptask:active{cursor:grabbing}
+.mssem .mss-ptask__dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mssem .mss-ptask__t{font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--terre)}
+.mssem .mss-ptask__min{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:2px 7px;border-radius:999px}
+.mssem .mss-ptask__late{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:2px 7px;border-radius:999px}
+.mssem .mss-ptask__x{border:none;background:none;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;padding:0 2px;opacity:.6}
+.mssem .mss-ptask__x:hover{opacity:1;color:var(--red)}
+/* ── Semaine : bandeau à caler ── */
+.mssem .mss-wplan{background:var(--beige);border-radius:18px;padding:18px 20px;margin-bottom:18px}
+.mssem .mss-wplan__h{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:13px}
+.mssem .mss-wplan__ht{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mssem .mss-wplan__ht h3{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:21px;color:var(--terre);margin:0}
+.mssem .mss-wplan__ht p{font-family:var(--font-micro);font-size:11.5px;color:var(--muted);margin:0}
+.mssem .mss-wplan__auto,.mssem .mss-rail__auto{border:none;cursor:pointer;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:11px 18px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mssem .mss-wplan__tasks{display:flex;flex-wrap:wrap;gap:9px;min-height:20px}
+.mssem .mss-wplan__tasks .mss-ptask__min{background:var(--surface)}
+.mssem .mss-wplan__add,.mssem .mss-rail__add{display:flex;gap:8px;align-items:center;margin-top:12px}
+.mssem .mss-wplan__add .inp:first-child,.mssem .mss-rail__add .inp:first-child{flex:1;min-width:0}
+.mssem .mss-wplan__add input[type=number],.mssem .mss-rail__add input[type=number]{width:62px;flex-shrink:0}
+.mssem .mss-wplan__addbtn{border:none;cursor:pointer;background:var(--terre-400);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;border-radius:999px;flex-shrink:0}
+/* ── Semaine : grille des jours ── */
+.mssem .mss-week{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+@media(max-width:900px){.mssem .mss-week{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.mssem .mss-week{grid-template-columns:1fr}}
+.mssem .mss-day{background:var(--card);border-radius:16px;padding:16px 16px 13px;display:flex;flex-direction:column;gap:10px;min-height:200px}
+.mssem .mss-day--today{background:var(--glycine-50)}
+.mssem .mss-day__h{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:2px}
+.mssem .mss-day__d{font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--terre)}
+.mssem .mss-day--today .mss-day__d{color:var(--glycine-900)}
+.mssem .mss-day__cap{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);white-space:nowrap}
+.mssem .mss-day__free{font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-200);padding:6px 0}
+.mssem .mss-day__add{width:100%;box-sizing:border-box;border:none;background:none;text-align:left;font-family:var(--font-body);font-size:12px;color:var(--terre-400);cursor:text;padding:6px 2px 2px;margin-top:auto}
+.mssem .mss-day__add::placeholder{color:var(--terre-400)}
+.mssem .mss-day__add:focus{outline:none;color:var(--terre)}
+.mssem .mss-day.wcol--over,.mssem .mss-free.wcol--over,.mssem .mss-wplan__tasks.wcol--over,.mssem .mss-rail__tasks.wcol--over{outline:2px dashed var(--glycine-700);outline-offset:-3px}
+/* Tâche posée dans un jour */
+.mssem .mss-task{position:relative;background:var(--page);border-radius:11px;padding:10px 11px;display:flex;align-items:flex-start;gap:9px;cursor:grab}
+.mssem .mss-task:active{cursor:grabbing}
+.mssem .mss-day--today .mss-task{background:var(--card)}
+.mssem .mss-task.is-done{opacity:.5;filter:saturate(.5)}
+.mssem .mss-task.is-done .mss-task__t{text-decoration:line-through;text-decoration-thickness:1px}
+.mssem .mss-task__dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.mssem .mss-task__m{flex:1;min-width:0}
+.mssem .mss-task__t{font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--terre);line-height:1.3}
+.mssem .mss-task__s{font-family:var(--font-micro);font-size:10px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mssem .mss-task__min{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:2px 7px;border-radius:999px}
+.mssem .mss-task__late{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:2px 7px;border-radius:999px}
+.mssem .mss-task__ctl{display:flex;align-items:center;gap:5px;margin-top:1px;opacity:0;transition:opacity .12s}
+.mssem .mss-task:hover .mss-task__ctl,.mssem .mss-task:focus-within .mss-task__ctl{opacity:1}
+.mssem .mss-task__ctl .inp{padding:4px 6px;font-size:10.5px}
+.mssem .mss-task__ctl input[type=number]{width:46px;flex-shrink:0}
+.mssem .mss-task__ctl select{max-width:88px}
+.mssem .mss-task__note,.mssem .mss-tblock__note{flex-shrink:0;width:24px;height:24px;border-radius:7px;border:none;cursor:pointer;background:rgba(28,18,5,.08);color:var(--terre);font-size:11px;line-height:1;display:grid;place-items:center}
+.mssem .mss-task__note:hover,.mssem .mss-tblock__note:hover{background:rgba(28,18,5,.16)}
+.mssem .mss-task__x{flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:0 2px}
+.mssem .mss-task__x:hover{color:var(--red)}
+.mssem .mss-chk{flex-shrink:0;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--terre-200);background:transparent;color:var(--terre);cursor:pointer;display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;padding:0;margin-top:2px}
+.mssem .mss-chk:hover{border-color:var(--terre)}
+.mssem .mss-chk.is-on{background:var(--terre);border-color:var(--terre);color:var(--paille)}
+/* Bloc iCloud dans un jour (Semaine) — sans trait latéral */
+.mssem .mss-ical{border-radius:11px;padding:9px 11px;display:flex;align-items:center;gap:9px}
+.mssem .mss-ical--visio{background:var(--glycine-50)}
+.mssem .mss-ical--perso{background:var(--surface)}
+.mssem .mss-ical__ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}
+.mssem .mss-ical--visio .mss-ical__ic{background:var(--glycine);color:var(--glycine-900)}
+.mssem .mss-ical--perso .mss-ical__ic{background:var(--beige);color:var(--terre-400)}
+.mssem .mss-ical__t{font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--terre);line-height:1.25}
+.mssem .mss-ical__s{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-top:1px}
+.mssem .mss-ical--visio .mss-ical__s{color:var(--glycine-900)}
+.mssem .mss-ical--perso .mss-ical__s{color:var(--muted)}
+/* ── Aujourd'hui : agenda horaire ── */
+.mssem .mss-planhint{display:flex;align-items:center;gap:11px;background:var(--glycine-50);border-radius:13px;padding:12px 15px;margin-bottom:16px;font-size:12.5px;color:var(--terre);line-height:1.5}
+.mssem .mss-planhint b{font-weight:600}
+.mssem .mss-planhint svg{flex-shrink:0;color:var(--glycine-900)}
+.mssem .mss-allday{font-family:var(--font-micro);font-size:11px;font-weight:600;color:var(--muted);margin-bottom:12px}
+.mssem .mss-plan{display:grid;grid-template-columns:1fr 270px;gap:22px;align-items:start}
+@media(max-width:860px){.mssem .mss-plan{grid-template-columns:1fr}}
+.mssem .mss-agenda{display:flex;flex-direction:column;gap:3px}
+.mssem .mss-slot{display:grid;grid-template-columns:54px 1fr;gap:14px;align-items:stretch}
+.mssem .mss-slot__time{font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-400);text-align:right;padding-top:12px;font-variant-numeric:tabular-nums}
+.mssem .mss-fixed{border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:11px}
+.mssem .mss-fixed--visio{background:var(--glycine-50)}
+.mssem .mss-fixed--perso{background:var(--surface)}
+.mssem .mss-fixed__ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.mssem .mss-fixed--visio .mss-fixed__ic{background:var(--glycine);color:var(--glycine-900)}
+.mssem .mss-fixed--perso .mss-fixed__ic{background:var(--beige);color:var(--muted)}
+.mssem .mss-fixed__m{flex:1;min-width:0}
+.mssem .mss-fixed__t{font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre)}
+.mssem .mss-fixed__s{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.mssem .mss-fixed--visio .mss-fixed__s{color:var(--glycine-900)}
+.mssem .mss-fixed--perso .mss-fixed__s{color:var(--muted)}
+.mssem .mss-fixed__lock{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--page);padding:3px 9px;border-radius:999px;flex-shrink:0}
+.mssem .mss-fixed__join{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--paille);background:var(--terre);padding:6px 12px;border-radius:999px;text-decoration:none;flex-shrink:0}
+.mssem .mss-free{border:1.5px dashed var(--terre-200);border-radius:12px;padding:7px 9px;display:flex;flex-direction:column;gap:6px;justify-content:center;min-height:40px}
+.mssem .mss-free__h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 4px}
+.mssem .mss-free__l{font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400)}
+.mssem .mss-free__hint{font-family:var(--font-micro);font-size:11px;color:var(--terre-200)}
+.mssem .mss-free__body{display:flex;flex-direction:column;gap:6px}
+.mssem .mss-tblock{background:var(--card);border-radius:10px;padding:8px 11px;display:flex;align-items:center;gap:9px;cursor:grab}
+.mssem .mss-tblock:active{cursor:grabbing}
+.mssem .mss-tblock.is-done{opacity:.5;filter:saturate(.5)}
+.mssem .mss-tblock.is-done .mss-tblock__t{text-decoration:line-through;text-decoration-thickness:1px}
+.mssem .mss-tblock__dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mssem .mss-tblock__t{flex:1;font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--terre)}
+.mssem .mss-tblock__min{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:2px 7px;border-radius:999px}
+.mssem .mss-tblock__late{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold-ink);background:var(--gold-chip);padding:2px 7px;border-radius:999px}
+/* Rail */
+.mssem .mss-rail{background:var(--card);border-radius:16px;padding:17px 18px;position:sticky;top:16px}
+.mssem .mss-rail h3{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:19px;color:var(--terre);margin:0 0 3px}
+.mssem .mss-rail p{font-family:var(--font-micro);font-size:11px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+.mssem .mss-rail__tasks{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;min-height:30px}
+.mssem .mss-rail__tasks .mss-ptask{background:var(--beige);display:flex}
+.mssem .mss-rail__tasks .mss-ptask__t{flex:1;min-width:0}
+.mssem .mss-rail__tasks .mss-ptask__min{background:var(--card)}
+.mssem .mss-rail__auto{width:100%;margin-top:2px;padding:12px}
+
 /* ═══ Mes tâches — habillage éditorial (scopé .mt2) ═══ */
 /* Redéfinit les variables de palette + police DANS la vue : tous les styles
    en dur (var(--card)/var(--bone-d)/texte) basculent en éditorial sans réécrire
