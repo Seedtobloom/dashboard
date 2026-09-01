@@ -5002,7 +5002,7 @@
       ['etapes', 'Étapes', _domUnread],
       ['fichiers', 'Fichiers', 0],
       ['echanges', 'Échanges', 0],
-      ['forfait', 'Forfait', 0]
+      ['forfait', 'Réglages', 0]
     ];
     var tabsHtml = tabs.map(function (t) {
       var active = (TAB === t[0]) || (t[0] === 'etapes' && !!findDomain(TAB));
@@ -5995,20 +5995,19 @@
     }).join('');
     var mtBlock = '<details style="margin-top:10px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#2c4a72;background:#E8F1FF;border-radius:999px;padding:5px 12px;display:inline-block">📋 Détail : ' + mt.length + ' tâche' + (mt.length > 1 ? 's' : '') + ' travaillée' + (mt.length > 1 ? 's' : '') + ' ce mois</summary>' +
       (mt.length ? mtRows : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Aucun temps passé sur ' + esc(monthLbl) + ' pour l\'instant.</div>') + '</details>';
+    var carryTxt = f.carryIn > 0 ? ' + report ' + fmtHrs(f.carryIn) : (f.carryIn < 0 ? ' − dépassement ' + fmtHrs(-f.carryIn) : '');
     var breakdown = '<div class="card" style="margin-top:0">' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:2px">Consommation de <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
-      line('Forfait de base', fmtHrs(f.base) + ' <span class="micro" style="color:var(--muted)">/ mois</span>') +
-      carryLine +
-      '<div style="border:none;margin:4px 0"></div>' +
-      line('= Disponible ce mois', fmtHrs(f.available), 'var(--terre)', true) +
-      line('Temps travaillé ce mois', fmtHrs(f.used), 'var(--terre)') +
-      '<div class="bar' + (over ? ' over' : '') + '" style="margin:6px 0 8px"><span style="width:' + pct + '%"></span></div>' +
-      line(over ? 'Dépassement' : 'Reste', over ? fmtHrs(-f.remaining) : fmtHrs(f.remaining), restCol, true) +
+      '<div class="between" style="align-items:baseline;margin-bottom:4px">' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Ce mois · <strong style="color:var(--terre)">' + esc(monthLbl) + '</strong></div>' +
+        '<span style="font-weight:700;font-size:19px;color:' + restCol + '">' + (over ? '− ' + fmtHrs(-f.remaining) + ' dépassé' : fmtHrs(f.remaining) + ' restant') + '</span></div>' +
+      '<div class="bar' + (over ? ' over' : '') + '" style="margin:4px 0 8px"><span style="width:' + pct + '%"></span></div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">' + fmtHrs(f.used) + ' travaillées sur ' + fmtHrs(f.available) + ' dispo <span style="color:var(--muted)">(base ' + fmtHrs(f.base) + carryTxt + ')</span></div>' +
       billed +
       mtBlock +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:12px;background:var(--surface-2,#f4efe6);border-radius:10px;padding:10px 13px">' +
-        '📌 <strong>Comment c\'est compté :</strong> chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), <strong>peu importe quand la tâche est validée</strong>. Une tâche travaillée 3 h en juillet mais validée en août compte <strong>3 h en juillet</strong> et <strong>0 h en août</strong>. Le temps saisi à la main sans chrono est rattaché au mois de la dernière session, sinon à l\'échéance de la tâche. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
-      '</div>' +
+      '<details style="margin-top:12px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:var(--terre-600)">ℹ️ Comment c\'est compté&nbsp;?</summary>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-top:8px">' +
+          'Chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), peu importe quand la tâche est validée. Le temps « hors forfait » et les demandes non triées ne comptent pas. Les heures non utilisées se reportent sur le mois suivant (plafond ' + fmtHrs(f.cap) + ')&nbsp;; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
+        '</div></details>' +
     '</div>';
     // ── Alerte perte d'heures : le forfait est peut-être surdimensionné ──
     var lossBanner = f.lossAlert ? '<div class="card" style="background:#f6ece3;margin-top:0"><div style="display:flex;gap:11px;align-items:flex-start"><span style="font-size:18px">⚠️</span><div><div style="font-weight:600;color:#824426">Beaucoup d\'heures perdues ces derniers mois</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-top:4px;line-height:1.55">Environ <strong>' + fmtHrs(f.lost3) + '</strong> non utilisées et non reportées sur les 3 derniers mois. Le forfait est peut-être trop élevé — ça peut valoir le coup d\'en <strong>reparler avec la cliente</strong>.</div></div></div></div>' : '';
