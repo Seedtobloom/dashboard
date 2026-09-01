@@ -3147,21 +3147,46 @@
   }
   // Minutes occupées par les rendez-vous iCloud datés d'un jour donné.
   function msBusyMin(diso) { return msCalForDay(diso).reduce(function (sum, e) { var iv = msEventInterval(e); return sum + (iv ? (iv.en - iv.s) : 0); }, 0); }
-  // Zones de travail libres d'un jour : créneaux de travail moins les blocs iCloud.
+  // Zones de travail libres d'un jour : créneaux de travail (blocs de temps, ex.
+  // Matin / Après-midi) moins les blocs iCloud figés. Chaque zone garde le nom de
+  // son bloc, pour que Cindy VOIE ses blocs de temps.
   function msWorkZones(diso, dow) {
-    var segs = msBlocksForDow(dow).map(function (b) { return { start: b.start, end: b.start + (b.duration || 0) }; }).sort(function (a, b) { return a.start - b.start; });
+    var segs = msBlocksForDow(dow).map(function (b) { return { start: b.start, end: b.start + (b.duration || 0), label: b.label || '' }; }).sort(function (a, b) { return a.start - b.start; });
     var evs = msCalForDay(diso).map(function (e) { var iv = msEventInterval(e); return iv ? { s: iv.s, en: iv.en } : null; }).filter(Boolean).sort(function (a, b) { return a.s - b.s; });
     var zones = [];
     segs.forEach(function (seg) {
       var cur = seg.start;
       evs.filter(function (ev) { return ev.en > seg.start && ev.s < seg.end; }).forEach(function (ev) {
         var s = Math.max(ev.s, seg.start);
-        if (s > cur) zones.push({ start: cur, end: s });
+        if (s > cur) zones.push({ start: cur, end: s, label: seg.label });
         cur = Math.max(cur, Math.min(ev.en, seg.end));
       });
-      if (cur < seg.end) zones.push({ start: cur, end: seg.end });
+      if (cur < seg.end) zones.push({ start: cur, end: seg.end, label: seg.label });
     });
     return zones;
+  }
+  // Minutes de travail libres d'un jour (somme des zones libres autour de l'iCloud).
+  function msWindowFree(d) { return msWorkZones(msIso(d), ((d.getDay() + 6) % 7) + 1).reduce(function (s, z) { return s + (z.end - z.start); }, 0); }
+  // Construit la « timeline » d'un jour : blocs iCloud figés + zones libres, dans
+  // l'ordre horaire, avec les tâches déjà posées ce jour réparties (par priorité)
+  // dans les zones libres. Réutilisé par la vue Semaine (compact) et Aujourd'hui.
+  function msBuildTimeline(diso, dow) {
+    var zones = msWorkZones(diso, dow);
+    var evs = msCalForDay(diso).map(function (e) { var iv = msEventInterval(e); return iv ? { start: iv.s, end: iv.en, e: e } : null; }).filter(Boolean);
+    var placed = MS_ALL.filter(function (t) { return !t.archived && (t.doDate || '').slice(0, 10) === diso; });
+    var act = placed.filter(function (t) { return t.status !== 'done'; }).sort(msPrioSort);
+    var done = placed.filter(function (t) { return t.status === 'done'; });
+    var items = zones.map(function (z) { return { type: 'free', start: z.start, end: z.end, label: z.label, tasks: [] }; })
+      .concat(evs.map(function (ev) { return { type: 'fixed', start: ev.start, end: ev.end, e: ev.e }; }))
+      .sort(function (a, b) { return a.start - b.start; });
+    var freeItems = items.filter(function (it) { return it.type === 'free'; });
+    var queue = act.slice();
+    freeItems.forEach(function (it, idx) {
+      var rem = it.end - it.start, last = idx === freeItems.length - 1;
+      while (queue.length) { var t = queue[0], need = t.estMinutes || 30; if (need <= rem || it.tasks.length === 0 || last) { it.tasks.push(t); rem -= need; queue.shift(); } else break; }
+    });
+    if (queue.length) { if (freeItems.length) freeItems[freeItems.length - 1].tasks.push.apply(freeItems[freeItems.length - 1].tasks, queue); else items.push({ type: 'free', start: null, end: null, label: '', tasks: queue.slice() }); }
+    return { items: items, done: done };
   }
   // Temps libre restant d'un jour pour de NOUVELLES tâches (capacité − iCloud − déjà placé).
   function msDayFree(d) {
@@ -3170,11 +3195,16 @@
     var placed = MS_ALL.filter(function (t) { return !t.archived && t.status !== 'done' && (t.doDate || '').slice(0, 10) === diso; }).reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
     return Math.max(0, cap - msBusyMin(diso) - placed);
   }
-  // Tri de priorité : retards d'abord, puis les plus longues (best-fit).
+  // Tri par importance : retards d'abord, puis facturable (cliente), puis échéance
+  // la plus proche, puis les plus longues (pour un placement best-fit).
   function msPrioSort(a, b) {
     var ti = msIso(new Date());
     var la = (a.dueDate && a.dueDate.slice(0, 10) < ti) ? 1 : 0, lb = (b.dueDate && b.dueDate.slice(0, 10) < ti) ? 1 : 0;
     if (la !== lb) return lb - la;
+    var ba = a.clientName ? 1 : 0, bb = b.clientName ? 1 : 0;
+    if (ba !== bb) return bb - ba;
+    var da = (a.dueDate || '9999').slice(0, 10), db = (b.dueDate || '9999').slice(0, 10);
+    if (da !== db) return da < db ? -1 : 1;
     return (b.estMinutes || 0) - (a.estMinutes || 0);
   }
 
@@ -3270,7 +3300,8 @@
           '<span class="mss-fixed__lock">🔒 iCloud</span>' + join +
         '</div></div>';
     }
-    // Petite tâche posée dans un créneau libre.
+    // Petite tâche posée dans un créneau libre (blocs de temps). Contrôles
+    // d'édition (heures, déplacer, supprimer) révélés au survol, sur leur ligne.
     function tblock(t) {
       var cls = msWt(t), done = t.status === 'done';
       var late = (t.dueDate && t.dueDate.slice(0, 10) < todayIso && !done) ? '<span class="mss-tblock__late">retard</span>' : '';
@@ -3279,98 +3310,92 @@
         '<span class="mss-tblock__dot" style="background:' + msCatColor(cls) + '"></span>' +
         '<span class="mss-tblock__t">' + esc(t.title) + (t.clientName ? ' · ' + esc(t.clientName) : '') + '</span>' + late +
         '<span class="mss-tblock__min">' + (t.estMinutes ? msDur2(t.estMinutes) : '—') + '</span>' +
-        '<button class="mss-tblock__note' + (t.notes ? ' has' : '') + '" title="' + (t.notes ? 'Note' : 'Ajouter une note') + '" onclick="ADM.msNoteOpen(\'' + t.id + '\')">' + (t.notes ? '📝' : '＋') + '</button>' +
+        '<div class="mss-tblock__ctl">' +
+          '<button class="mss-task__note' + (t.notes ? ' has' : '') + '" title="' + (t.notes ? 'Note' : 'Ajouter une note') + '" onclick="ADM.msNoteOpen(\'' + t.id + '\')">' + (t.notes ? '📝' : '＋') + '</button>' +
+          '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (heures)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)">' +
+          '<select class="inp" title="Déplacer sur un autre jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)">' + msDaySelect(days, (t.doDate || '').slice(0, 10)) + '</select>' +
+          '<button class="mss-task__x" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer') + '" onclick="ADM.msDelete(\'' + t.id + '\')">×</button>' +
+        '</div>' +
       '</div>';
     }
 
+    // Bloc iCloud compact (vue Semaine) — figé, avec heure.
+    function fixedWeek(it) {
+      var e = it.e, vis = !!e.joinUrl;
+      var ic = vis
+        ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>';
+      var join = vis ? '<a class="mss-ical__join" href="' + esc(e.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
+      return '<div class="mss-ical mss-ical--' + (vis ? 'visio' : 'perso') + '" title="iCloud (figé)"><span class="mss-ical__ic">' + ic + '</span>' +
+        '<div class="mss-ical__m"><div class="mss-ical__t">' + esc(e.title || 'Événement') + '</div><div class="mss-ical__s">' + (vis ? 'Visio' : 'Perso') + ' · ' + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' +
+        '<span class="mss-ical__lock" title="Figé dans iCloud">🔒</span>' + join + '</div>';
+    }
     var grid;
     if (MS_MODE === 'day') {
       // ═══ AUJOURD'HUI (jour J) : agenda horaire, blocs iCloud figés + temps libre ═══
       var td = new Date(); var diso = todayIso, dow = ((td.getDay() + 6) % 7) + 1;
-      var zones = msWorkZones(diso, dow);
-      var evs = msCalForDay(diso).map(function (e) { var iv = msEventInterval(e); return iv ? { start: iv.s, end: iv.en, e: e } : null; }).filter(Boolean);
+      var tl = msBuildTimeline(diso, dow);
       var allDayEvs = msCalForDay(diso).filter(function (e) { return e.allDay; });
-      // Tâches déjà posées aujourd'hui → réparties dans les zones libres (dans l'ordre).
-      var placedToday = MS_ALL.filter(function (t) { return !t.archived && (t.doDate || '').slice(0, 10) === diso; }).sort(msPrioSort);
-      var queue = placedToday.slice();
-      var items = zones.map(function (z) { return { type: 'free', start: z.start, end: z.end, tasks: [] }; })
-        .concat(evs.map(function (ev) { return { type: 'fixed', start: ev.start, end: ev.end, e: ev.e }; }))
-        .sort(function (a, b) { return a.start - b.start; });
-      var freeItems = items.filter(function (it) { return it.type === 'free'; });
-      freeItems.forEach(function (it, idx) {
-        var rem = it.end - it.start; var last = idx === freeItems.length - 1;
-        while (queue.length) { var t = queue[0]; var need = t.estMinutes || 30; if (need <= rem || it.tasks.length === 0 || last) { it.tasks.push(t); rem -= need; queue.shift(); } else break; }
-      });
-      var agenda = items.map(function (it) {
+      var agenda = tl.items.map(function (it) {
         if (it.type === 'fixed') return fixedHtml(it);
-        var dur = it.end - it.start;
+        var dur = (it.start != null) ? (it.end - it.start) : 0;
         var tHtml = it.tasks.map(tblock).join('');
+        var lbl = (it.label ? esc(it.label) + ' · ' : '') + 'Libre' + (dur ? ' · ' + msDur2(dur) : '');
         var hint = it.tasks.length ? '' : '<span class="mss-free__hint">glisse une tâche ici</span>';
-        return '<div class="mss-slot"><div class="mss-slot__time">' + msMinToH(it.start) + '</div>' +
+        return '<div class="mss-slot"><div class="mss-slot__time">' + (it.start != null ? msMinToH(it.start) : '') + '</div>' +
           '<div class="mss-free" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)">' +
-            '<div class="mss-free__h"><span class="mss-free__l">Libre · ' + msDur2(dur) + '</span>' + hint + '</div>' +
+            '<div class="mss-free__h"><span class="mss-free__l">' + lbl + '</span>' + hint + '</div>' +
             (tHtml ? '<div class="mss-free__body">' + tHtml + '</div>' : '') +
           '</div></div>';
       }).join('');
-      if (!items.length) agenda = '<div class="mss-empty">Aucun créneau de travail réglé pour aujourd\'hui. Ouvre ⚙ pour définir tes disponibilités.</div>';
+      if (tl.done.length) agenda += '<div class="mss-slot"><div class="mss-slot__time"></div><div class="mss-donewrap">' + tl.done.map(tblock).join('') + '</div></div>';
+      if (!tl.items.length) agenda = '<div class="mss-empty">Aucun créneau de travail aujourd\'hui. Ouvre ⚙ pour régler tes disponibilités.</div>';
       var allDayBanner = allDayEvs.length ? '<div class="mss-allday">' + allDayEvs.map(function (e) { return '📌 ' + esc(e.title || 'Journée'); }).join(' · ') + '</div>' : '';
       var hint = '<div class="mss-planhint"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>' +
-        '<div>Tes rendez-vous <b>iCloud sont figés</b> dans la journée. Tu remplis le <b>temps libre</b> autour en y glissant tes tâches.</div></div>';
-      var railTasks = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(msPrioSort);
+        '<div>Tes <b>blocs de temps</b> (Matin / Après-midi) et tes rendez-vous <b>iCloud figés</b> structurent la journée. Tu remplis le <b>temps libre</b> autour en y glissant tes tâches, par ordre d\'importance.</div></div>';
+      // À caler : non planifiées + en retard (planifiées dans le passé) — clientes incluses.
+      var railTasks = active.filter(function (t) { if (t.mode === 'idee') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < todayIso; }).sort(msPrioSort);
       var rail = '<aside class="mss-rail"><h3>À caler aujourd\'hui</h3><p>Glisse-les dans un créneau libre, ou laisse-moi remplir ta journée autour de tes blocs iCloud.</p>' +
         '<div class="mss-rail__tasks" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msUnplace(event,this)">' +
-        (railTasks.length ? railTasks.slice(0, 40).map(chip).join('') : '<div class="mss-empty">Tout est calé 🌿</div>') + '</div>' +
+        (railTasks.length ? railTasks.slice(0, 80).map(chip).join('') : '<div class="mss-empty">Tout est calé 🌿</div>') + '</div>' +
         '<div class="mss-rail__add"><input class="inp" id="ms-add-title" placeholder="+ ajouter une tâche" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}"><input class="inp" id="ms-add-est" type="number" min="0" step="0.25" placeholder="h" title="Temps estimé (heures)"></div>' +
         '<button class="mss-rail__auto" onclick="ADM.msOrganizeDay()">✨ Organise ma journée</button></aside>';
       grid = allDayBanner + hint + '<div class="mss-plan"><div class="mss-agenda">' + agenda + '</div>' + rail + '</div>';
     } else {
       // ═══ SEMAINE : bandeau « à caler » + 5 jours pleine largeur ═══
-      var backlog = active.filter(function (t) { return !t.doDate && t.mode !== 'idee'; }).sort(msPrioSort);
+      // À caler : non planifiées + en retard (planifiées avant cette semaine) —
+      // tâches clientes (Partenaire créative) incluses, pour ne rien manquer.
+      var backlog = active.filter(function (t) { if (t.mode === 'idee') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < w0; }).sort(msPrioSort);
       var wplan = '<div class="mss-wplan"><div class="mss-wplan__h"><div class="mss-wplan__ht">' +
         '<h3>À caler cette semaine</h3><p>Je les cale dans le temps libre autour de tes blocs iCloud.</p></div>' +
         '<button class="mss-wplan__auto" onclick="ADM.msOrganizeWeek()">✨ Organise ma semaine</button></div>' +
         '<div class="mss-wplan__tasks" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msUnplace(event,this)">' +
-        (backlog.length ? backlog.slice(0, 40).map(chip).join('') : '<div class="mss-empty">Tout est placé 🌿</div>') + '</div>' +
+        (backlog.length ? backlog.slice(0, 80).map(chip).join('') : '<div class="mss-empty">Tout est placé 🌿</div>') + '</div>' +
         '<div class="mss-wplan__add"><input class="inp" id="ms-add-title" placeholder="+ ajouter une tâche" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddTop();}"><input class="inp" id="ms-add-est" type="number" min="0" step="0.25" placeholder="h" title="Temps estimé (heures)"><button class="mss-wplan__addbtn" onclick="ADM.msAddTop()">Ajouter</button></div>' +
       '</div>';
       function dayCard(d) {
-        var diso = msIso(d), isToday = diso === todayIso;
-        var dayTasks = MS_ALL.filter(function (t) { return !t.archived && (t.doDate || '').slice(0, 10) === diso; });
-        function prScore(t) { var s = 0; if (t.status === 'done') s += 1000; if (t.dueDate && t.dueDate.slice(0, 10) < todayIso) s -= 100; if (t.clientName) s -= 10; return s; }
-        var shown = dayTasks.slice().sort(function (a, b) { var x = prScore(a) - prScore(b); if (x) return x; return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
-        var free = msDayFree(d);
-        var capTxt = shown.filter(function (t) { return t.status !== 'done'; }).length ? (free > 5 ? msDur2(free) + ' libre' : 'complet') : (msAvailMin(d) ? msDur2(free) + ' libre' : 'libre');
-        var cal = msCalForDay(diso).map(function (e) {
-          var vis = !!e.joinUrl, dt = e.start ? new Date(e.start) : null;
-          var hr = (dt && !isNaN(dt) && !e.allDay) ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : (e.allDay ? 'journée' : '');
-          var ic = vis
-            ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg>'
-            : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>';
-          return '<div class="mss-ical mss-ical--' + (vis ? 'visio' : 'perso') + '"><span class="mss-ical__ic">' + ic + '</span><div><div class="mss-ical__t">' + esc(e.title || 'Événement') + '</div><div class="mss-ical__s">' + (vis ? 'Visio' : 'Perso') + (hr ? ' · ' + esc(hr) : '') + '</div></div></div>';
+        var diso = msIso(d), isToday = diso === todayIso, dow = ((d.getDay() + 6) % 7) + 1;
+        var tl = msBuildTimeline(diso, dow);
+        var placedMin = MS_ALL.filter(function (t) { return !t.archived && t.status !== 'done' && (t.doDate || '').slice(0, 10) === diso; }).reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0);
+        var left = Math.max(0, msWindowFree(d) - placedMin);
+        var hasTasks = tl.items.some(function (it) { return it.type === 'free' && it.tasks.length; }) || tl.done.length;
+        var capTxt = hasTasks ? (left > 5 ? msDur2(left) + ' libre' : 'complet') : (left > 5 ? msDur2(left) + ' libre' : 'libre');
+        var allDayEvs = msCalForDay(diso).filter(function (e) { return e.allDay; });
+        var allDayHtml = allDayEvs.length ? '<div class="mss-wallday">' + allDayEvs.map(function (e) { return '📌 ' + esc(e.title || 'Journée'); }).join(' · ') + '</div>' : '';
+        var body = tl.items.map(function (it) {
+          if (it.type === 'fixed') return fixedWeek(it);
+          var dur = (it.start != null) ? (it.end - it.start) : 0;
+          var lbl = (it.label ? esc(it.label) : 'Libre') + (dur ? ' · ' + msDur2(dur) : '');
+          var tHtml = it.tasks.map(tblock).join('');
+          return '<div class="mss-wfree"><div class="mss-wfree__l">' + lbl + '</div>' +
+            (tHtml ? '<div class="mss-wfree__body">' + tHtml + '</div>' : '<div class="mss-wfree__hint">temps libre</div>') + '</div>';
         }).join('');
-        function taskRow(t) {
-          var cls = msWt(t), done = t.status === 'done';
-          var late = (t.dueDate && t.dueDate.slice(0, 10) < todayIso && !done) ? '<span class="mss-task__late">retard</span>' : '';
-          var subParts = [];
-          if (t.clientName) subParts.push(esc(t.clientName)); else subParts.push(msWtLabel(cls));
-          var sub = subParts.join('') + late + (t.estMinutes ? '<span class="mss-task__min">' + msDur2(t.estMinutes) + '</span>' : '');
-          return '<div class="mss-task' + (done ? ' is-done' : '') + '" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
-            '<button class="mss-chk' + (done ? ' is-on' : '') + '" title="' + (done ? 'Fait — décocher' : 'Marquer comme fait') + '" onclick="ADM.msDone(\'' + t.id + '\',' + (done ? 'false' : 'true') + ')">' + (done ? '✓' : '') + '</button>' +
-            '<span class="mss-task__dot" style="background:' + msCatColor(cls) + '"></span>' +
-            '<div class="mss-task__m"><div class="mss-task__t">' + esc(t.title) + '</div><div class="mss-task__s">' + sub + '</div></div>' +
-            '<div class="mss-task__ctl">' +
-              '<button class="mss-task__note' + (t.notes ? ' has' : '') + '" title="' + (t.notes ? 'Note' : 'Ajouter une note') + '" onclick="ADM.msNoteOpen(\'' + t.id + '\')">' + (t.notes ? '📝' : '＋') + '</button>' +
-              '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (heures)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)">' +
-              '<select class="inp" title="Déplacer sur un autre jour" onchange="ADM.msPlace(\'' + t.id + '\',this.value)">' + msDaySelect(days, diso) + '</select>' +
-              '<button class="mss-task__x" title="' + (t._src === 'client' ? 'Retirer du planning' : 'Supprimer') + '" onclick="ADM.msDelete(\'' + t.id + '\')">×</button>' +
-            '</div></div>';
-        }
-        var body = cal + shown.map(taskRow).join('');
-        if (!shown.length && !cal) body = '<div class="mss-day__free">Journée qui respire.</div>';
+        body += tl.done.map(tblock).join('');
+        if (!tl.items.length && !tl.done.length) body = '<div class="mss-day__free">Journée qui respire.</div>';
         var add = '<input class="mss-day__add" id="ms-dayadd-' + diso + '" placeholder="+ tâche" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.msAddDay(\'' + diso + '\');}">';
         return '<div class="mss-day' + (isToday ? ' mss-day--today' : '') + '" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)">' +
           '<div class="mss-day__h"><span class="mss-day__d">' + MS_DOW[(d.getDay() + 6) % 7] + ' ' + d.getDate() + (isToday ? ' · auj.' : '') + '</span><span class="mss-day__cap">' + capTxt + '</span></div>' +
-          body + add + '</div>';
+          allDayHtml + body + add + '</div>';
       }
       grid = wplan + '<div class="mss-week">' + days.map(dayCard).join('') + '</div>';
     }
@@ -3397,25 +3422,35 @@
       jpost(url, body, 'PATCH').catch(function () {});
     });
   }
-  // « Organise ma semaine » : cale les tâches à caler dans le temps libre RÉEL de
-  // chaque jour (capacité − blocs iCloud − déjà placé). Retards d'abord, puis les
-  // plus longues. Une tâche qui ne rentre nulle part reste à caler.
+  // « Organise ma semaine » : RÉÉQUILIBRE la semaine. Reprend les tâches à caler
+  // ET celles déjà posées cette semaine, les trie par importance (retard →
+  // facturable → échéance → durée) et les répartit dans le temps libre réel de
+  // chaque jour (fenêtre de travail − blocs iCloud), sans surcharger un seul jour.
   function msOrganizeWeek() {
     var mon = msMonday(MS_OFFSET);
     var days = []; for (var i = 0; i < 5; i++) { var d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d); }
-    var free = days.map(msDayFree);
-    var toCal = MS_ALL.filter(function (t) { return !t.archived && t.status !== 'done' && !t.doDate && t.mode !== 'idee'; }).sort(msPrioSort);
-    var placed = [], leftover = 0;
-    toCal.forEach(function (t) {
+    var w0 = msIso(days[0]), w4 = msIso(days[4]);
+    var free = days.map(msWindowFree);
+    // Pool : tâches sans jour + tâches déjà posées dans la semaine (on rééquilibre).
+    var pool = MS_ALL.filter(function (t) {
+      if (t.archived || t.status === 'done' || t.mode === 'idee') return false;
+      var dd = (t.doDate || '').slice(0, 10);
+      return !dd || dd <= w4; // non planifiées + en retard + déjà cette semaine (pas le futur)
+    }).sort(msPrioSort);
+    var changed = [], leftover = 0;
+    pool.forEach(function (t) {
       var need = t.estMinutes || 30, bi = -1, bf = -1;
-      for (var j = 0; j < free.length; j++) { if (free[j] >= need && free[j] > bf) { bf = free[j]; bi = j; } }
-      if (bi < 0) { leftover++; return; }
-      free[bi] -= need; t.doDate = msIso(days[bi]); placed.push(t);
+      for (var j = 0; j < 5; j++) { if (free[j] >= need && free[j] > bf) { bf = free[j]; bi = j; } }
+      if (bi < 0) { if (t.doDate) { t.doDate = null; changed.push(t); } leftover++; return; }
+      free[bi] -= need;
+      var nd = msIso(days[bi]);
+      if (nd !== (t.doDate || '').slice(0, 10)) { t.doDate = nd; changed.push(t); }
     });
-    if (!placed.length) { toast(leftover ? 'Plus de temps libre cette semaine' : 'Rien à caler'); return; }
+    if (!pool.length) { toast('Rien à organiser'); return; }
     renderMaSemaineBody();
-    msPersistPlacement(placed);
-    toast(placed.length + ' tâche' + (placed.length > 1 ? 's' : '') + ' calée' + (placed.length > 1 ? 's' : '') + ' ✓' + (leftover ? ' · ' + leftover + ' sans place' : ''));
+    if (changed.length) msPersistPlacement(changed);
+    msBadgesSoon();
+    toast('Semaine équilibrée ✓ ' + pool.length + ' tâche' + (pool.length > 1 ? 's' : '') + ' répartie' + (pool.length > 1 ? 's' : '') + ' par ordre d\'importance' + (leftover ? ' · ' + leftover + ' sans place' : ''));
   }
   // « Organise ma journée » : remplit le temps libre d'aujourd'hui (autour des
   // blocs iCloud) avec les tâches à caler qui rentrent.
@@ -3431,6 +3466,7 @@
     if (!placed.length) { toast('Pas assez de temps libre aujourd\'hui'); return; }
     renderMaSemaineBody();
     msPersistPlacement(placed);
+    msBadgesSoon();
     toast('Journée organisée ✓ ' + placed.length + ' tâche' + (placed.length > 1 ? 's' : '') + ' calée' + (placed.length > 1 ? 's' : '') + (leftover ? ' · ' + leftover + ' un autre jour' : ''));
   }
   // Retirer une tâche du planning (glissée vers le backlog / rail).
@@ -3458,7 +3494,12 @@
     Object.keys(body).forEach(function (k) { t[k] = body[k]; });
     renderMaSemaineBody();
     jpost(url, payload, 'PATCH').then(function (r) { if (!r.ok) toast('Erreur'); }).catch(function () { toast('Erreur'); });
+    msBadgesSoon();
   }
+  // Rafraîchit les bulles de notif (Mes tâches / Priorités / Inbox…) peu après une
+  // action, au lieu d'attendre le cycle de 2 min. Débounce pour éviter les rafales.
+  var _msBadgeT = null;
+  function msBadgesSoon() { if (_msBadgeT) clearTimeout(_msBadgeT); _msBadgeT = setTimeout(function () { _msBadgeT = null; if (typeof refreshUnread === 'function') refreshUnread(); }, 700); }
   function msPlace(id, diso) { msPatch(id, { doDate: diso || null }); }
   // Cocher une tâche du jour comme faite : elle reste visible mais atténuée.
   function msDone(id, done) { msPatch(id, { status: done ? 'done' : 'todo' }); toast(done ? '✓ Fait' : 'Remise à faire'); }
@@ -3476,7 +3517,7 @@
     }
     admConfirm({ title: 'Supprimer cette tâche ?', message: 'La tâche sera définitivement supprimée.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
       api('/api/admin/tasks/' + id, { method: 'DELETE' }).then(function (r) {
-        if (r.ok) { MS_TASKS = MS_TASKS.filter(function (x) { return x.id !== id; }); toast('Supprimée'); renderMaSemaineBody(); }
+        if (r.ok) { MS_TASKS = MS_TASKS.filter(function (x) { return x.id !== id; }); toast('Supprimée'); renderMaSemaineBody(); msBadgesSoon(); }
         else toast('Erreur');
       }).catch(function () { toast('Erreur'); });
     });
@@ -3566,7 +3607,7 @@
   function msCreate(title, doDate, est) {
     title = (title || '').trim(); if (!title) { toast('Titre requis'); return; }
     jpost('/api/admin/tasks', { title: title, doDate: doDate || null, estMinutes: parseInt(est, 10) || 0 }).then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
-      if (t) { MS_TASKS.push(t); toast('Ajoutée'); renderMaSemaineBody(); } else toast('Erreur');
+      if (t) { MS_TASKS.push(t); toast('Ajoutée'); renderMaSemaineBody(); msBadgesSoon(); } else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
   }
   function msAddTop() { var t = el('ms-add-title'); if (!t) return; var e = el('ms-add-est'); var estMin = e && e.value ? String(Math.round((parseFloat(e.value) || 0) * 60)) : ''; msCreate(t.value, el('ms-add-day') ? el('ms-add-day').value : '', estMin); }
