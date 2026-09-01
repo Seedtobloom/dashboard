@@ -645,6 +645,11 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .mssem .mss-block__tag{font-family:var(--font-micro);font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--page);padding:3px 8px;border-radius:999px;flex-shrink:0}
 .mssem .mss-block__join{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--paille);background:var(--terre);padding:5px 10px;border-radius:999px;text-decoration:none;flex-shrink:0}
 .mssem .mss-block__body{display:flex;flex-direction:column;gap:6px}
+.mssem .mss-block__cap{font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.02em;color:var(--muted);background:var(--page);padding:3px 8px;border-radius:999px;flex-shrink:0;white-space:nowrap}
+.mssem .mss-block__cap.over{color:var(--gold-ink);background:var(--gold-chip)}
+.mssem .mss-block__bar{height:5px;border-radius:999px;background:var(--page);overflow:hidden}
+.mssem .mss-block__bar i{display:block;height:100%;border-radius:999px;background:var(--terre-400)}
+.mssem .mss-block__bar.over i{background:var(--gold-chip)}
 .mssem .mss-block__body .mss-tblock{background:var(--page)}
 .mssem .mss-block__hint{font-family:var(--font-micro);font-size:10px;color:var(--terre-400);font-style:normal;padding:2px 2px 3px}
 .mssem .mss-block--wk{padding:9px 10px}

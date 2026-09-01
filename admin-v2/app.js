@@ -3301,11 +3301,15 @@
       var join = vis ? '<a class="mss-block__join" href="' + esc(e.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
       var tHtml = it.tasks.map(tblock).join('');
       var hint = it.tasks.length ? '' : '<span class="mss-block__hint">déposer une tâche ici</span>';
+      var used = it.tasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0), dur = it.end - it.start, over = used > dur, pct = dur ? Math.min(100, Math.round(used / dur * 100)) : 0;
+      var right = vis ? '<span class="mss-block__tag">Visio</span>' + join
+        : '<span class="mss-block__cap' + (over ? ' over' : '') + '" title="Temps estimé de tes tâches / durée du bloc">' + (used ? msDur2(used) : '0') + ' / ' + msDur2(dur) + '</span>';
+      var bar = vis ? '' : '<div class="mss-block__bar' + (over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>';
       return '<div class="mss-slot"><div class="mss-slot__time">' + msMinToH(it.start) + '</div>' +
         '<div class="mss-block mss-block--' + (vis ? 'visio' : 'work') + '" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDropSlot(event,\'' + diso + '\',\'' + key + '\',this)">' +
           '<div class="mss-block__h"><span class="mss-block__ic">' + ic + '</span>' +
             '<div class="mss-block__m"><div class="mss-block__t">' + esc(e.title || 'Bloc de temps') + '</div><div class="mss-block__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + ' – ' + msMinToH(it.end) + '</div></div>' +
-            '<span class="mss-block__tag">iCloud</span>' + join + '</div>' +
+            right + '</div>' + bar +
           '<div class="mss-block__body">' + (tHtml || hint) + '</div>' +
         '</div></div>';
     }
@@ -3336,9 +3340,12 @@
         : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>';
       var join = vis ? '<a class="mss-block__join" href="' + esc(e.joinUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Rejoindre</a>' : '';
       var tHtml = it.tasks.map(tblock).join('');
+      var used = it.tasks.reduce(function (s, t) { return s + (t.estMinutes || 0); }, 0), dur = it.end - it.start, over = used > dur, pct = dur ? Math.min(100, Math.round(used / dur * 100)) : 0;
+      var right = vis ? join : '<span class="mss-block__cap' + (over ? ' over' : '') + '" title="Estimé de tes tâches / durée du bloc">' + (used ? msDur2(used) : '0') + '/' + msDur2(dur) + '</span>';
+      var bar = (vis || !it.tasks.length) ? '' : '<div class="mss-block__bar' + (over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>';
       return '<div class="mss-block mss-block--' + (vis ? 'visio' : 'work') + ' mss-block--wk" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDropSlot(event,\'' + diso + '\',\'' + key + '\',this)">' +
         '<div class="mss-block__h"><span class="mss-block__ic">' + ic + '</span>' +
-          '<div class="mss-block__m"><div class="mss-block__t">' + esc(e.title || 'Bloc de temps') + '</div><div class="mss-block__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' + join + '</div>' +
+          '<div class="mss-block__m"><div class="mss-block__t">' + esc(e.title || 'Bloc de temps') + '</div><div class="mss-block__s">' + (vis ? 'Visio · ' : '') + msMinToH(it.start) + '–' + msMinToH(it.end) + '</div></div>' + right + '</div>' + bar +
         (tHtml ? '<div class="mss-block__body">' + tHtml + '</div>' : '<div class="mss-block__hint">déposer une tâche</div>') +
       '</div>';
     }
