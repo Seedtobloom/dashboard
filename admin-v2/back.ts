@@ -1653,39 +1653,48 @@ function forfaitState(pc: AnyObj): AnyObj {
   // à part, stage 'out_of_scope'), les refusées et les archivées.
   const tasks = allTasks.filter((t) => !t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused');
   const now = new Date();
-  const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  const pdt = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prev = pdt.getFullYear() + '-' + String(pdt.getMonth() + 1).padStart(2, '0');
   // Temps rattaché au mois où il a été RÉELLEMENT travaillé (sessions de
   // chrono), jamais à la date de validation. Une validation tardive ne
   // déplace donc rien : le travail de juillet reste dans juillet.
   const usedIn = (ym: string) => tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0);
-  const used = usedIn(cur);
-  const usedPrev = usedIn(prev);
-  // Report du mois précédent : les heures NON UTILISÉES du mois passé se
-  // reportent (plafond `cap`), qu'il y ait eu de l'activité ou non — un mois
-  // vide reporte donc bien son forfait. Un dépassement est déduit du mois en
-  // cours (plafonné à un mois de forfait ; au-delà, facturé — billedCarry).
-  let carryIn = 0, billedCarry = 0;
-  if (base) {
-    const diffPrev = base - usedPrev;
-    if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
-    else {
-      const overagePrev = -diffPrev;
-      const deduction = Math.min(overagePrev, base);
-      carryIn = -deduction;
-      billedCarry = Math.round((overagePrev - deduction) * 10) / 10;
-    }
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  // ── Historique CHAÎNÉ des 6 derniers mois ──
+  // Chaque mois : dispo = base + report entrant ; on consomme ; les heures NON
+  // utilisées se reportent au mois suivant (plafond `cap`) — au-delà du plafond
+  // elles sont PERDUES (lost). Un dépassement est déduit du mois suivant
+  // (plafonné à un mois de forfait) ; le reste est facturé (billed).
+  const MONTHS = 6;
+  const history: AnyObj[] = [];
+  let carry = 0;
+  for (let i = MONTHS - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const avail = base + carry;
+    const usedM = usedIn(ym);
+    const rem = avail - usedM;
+    let carryOut = 0, lost = 0, overage = 0, billed = 0;
+    if (rem >= 0) { carryOut = Math.min(cap, rem); lost = rem - carryOut; }
+    else { overage = -rem; const deduction = Math.min(overage, base); carryOut = -deduction; billed = overage - deduction; }
+    history.push({ ym, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), base: r1(base), carryIn: r1(carry), available: r1(avail), used: r1(usedM), remaining: r1(rem), lost: r1(lost), overage: r1(overage), billed: r1(billed), current: i === 0 });
+    carry = carryOut;
   }
-  const available = base + carryIn;
-  const remaining = available - used;
+  const curM = history[history.length - 1];
+  // ── Signal de PERTE : heures gâchées sur les mois COMPLETS (hors mois en
+  // cours). Alerte si, sur les 3 derniers mois complets, on perd l'équivalent
+  // d'au moins un demi-mois de forfait → à revoir avec la cliente.
+  const completed = history.slice(0, -1);
+  const lostRecent = r1(completed.reduce((s, h) => s + h.lost, 0));
+  const last3 = completed.slice(-3);
+  const lost3 = r1(last3.reduce((s, h) => s + h.lost, 0));
+  const lossAlert = base > 0 && last3.length >= 2 && lost3 >= base * 0.5;
   return {
     base, cap, rate, configured: base > 0,
-    carryIn: Math.round(carryIn * 10) / 10,
-    billedCarry,
-    available: Math.round(available * 10) / 10,
-    used: Math.round(used * 10) / 10,
-    remaining: Math.round(remaining * 10) / 10,
+    carryIn: curM.carryIn,
+    billedCarry: curM.billed,
+    available: curM.available,
+    used: curM.used,
+    remaining: curM.remaining,
+    history, lostRecent, lost3, lossAlert,
   };
 }
 
@@ -1773,7 +1782,10 @@ async function handleDashboard(env: Env): Promise<Response> {
     const pc = getDomainObj(esp, 'partenaireCreative');
     if (pc) {
       const fs = forfaitState(pc);
-      forfaits.push({ key: ci.key, client: who, ...fs });
+      // Le tableau de bord n'a pas besoin du détail mensuel (history) : on
+      // l'enlève pour ne pas alourdir la réponse ; on garde le signal de perte.
+      const { history: _fh, ...fsLite } = fs;
+      forfaits.push({ key: ci.key, client: who, ...fsLite });
       // Contexte cliente pour la boîte de réception (nb de demandes ce mois, temps moyen).
       const nowMonth = nowIso().slice(0, 7);
       const pcTaches: AnyObj[] = Array.isArray(pc.taches) ? pc.taches : [];

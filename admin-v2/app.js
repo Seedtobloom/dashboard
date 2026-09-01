@@ -1558,16 +1558,18 @@
         if (!f.configured) {
           return '<div class="prow" style="display:block;padding:11px 4px"><div class="between">' + nameLink + '<span class="micro" style="color:var(--muted)">non défini</span></div></div>';
         }
-        var pct = f.base > 0 ? Math.min(100, Math.round(f.used / f.base * 100)) : 0;
+        var pct = f.available > 0 ? Math.min(100, Math.round(f.used / f.available * 100)) : (f.used > 0 ? 100 : 0);
         var over = f.remaining < 0;
         var low = !over && f.remaining <= f.base * 0.2;
         var restCol = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
         var restLabel = over ? ('dépassé de ' + Math.abs(f.remaining) + ' h') : ('reste ' + f.remaining + ' h');
+        var lossLine = f.lossAlert ? '<div class="micro" style="margin-top:5px;text-transform:none;letter-spacing:0;color:#824426;font-weight:600">⚠️ ~' + f.lost3 + ' h perdues sur 3 mois — forfait à revoir avec la cliente</div>' : '';
         return '<div class="prow" style="display:block;padding:12px 4px">' +
           '<div class="between" style="align-items:baseline">' + nameLink +
             '<span style="font-weight:700;font-size:15px;color:' + restCol + '">' + restLabel + '</span></div>' +
           '<div class="bar' + (over ? ' over' : '') + '" style="margin-top:7px"><span style="width:' + pct + '%"></span></div>' +
-          '<div class="micro" style="margin-top:5px;color:var(--muted)">' + f.used + ' h consommées sur ' + f.base + ' h · ' + pct + '%</div>' +
+          '<div class="micro" style="margin-top:5px;color:var(--muted)">' + f.used + ' h consommées sur ' + f.available + ' h dispo · ' + pct + '%</div>' +
+          lossLine +
         '</div>';
       }).join('');
 
@@ -6008,7 +6010,35 @@
         '📌 <strong>Comment c\'est compté :</strong> chaque heure est rattachée au <strong>mois où elle a réellement été travaillée</strong> (d\'après le chrono), <strong>peu importe quand la tâche est validée</strong>. Une tâche travaillée 3 h en juillet mais validée en août compte <strong>3 h en juillet</strong> et <strong>0 h en août</strong>. Le temps saisi à la main sans chrono est rattaché au mois de la dernière session, sinon à l\'échéance de la tâche. Les heures non utilisées d\'un mois se reportent sur le suivant (plafond ' + fmtHrs(f.cap) + ') ; un dépassement est déduit du mois suivant, et au-delà d\'un mois de forfait il est facturé.' +
       '</div>' +
     '</div>';
-    return setup + '</div>' + breakdown + workSlotsSection();
+    // ── Alerte perte d'heures : le forfait est peut-être surdimensionné ──
+    var lossBanner = f.lossAlert ? '<div class="card" style="background:#f6ece3;margin-top:0"><div style="display:flex;gap:11px;align-items:flex-start"><span style="font-size:18px">⚠️</span><div><div style="font-weight:600;color:#824426">Beaucoup d\'heures perdues ces derniers mois</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-top:4px;line-height:1.55">Environ <strong>' + fmtHrs(f.lost3) + '</strong> non utilisées et non reportées sur les 3 derniers mois. Le forfait est peut-être trop élevé — ça peut valoir le coup d\'en <strong>reparler avec la cliente</strong>.</div></div></div></div>' : '';
+    // ── Détail mois par mois (historique chaîné) ──
+    var histRows = (f.history || []).map(function (m) {
+      var isOver = m.remaining < 0;
+      var rest = isOver ? '− ' + fmtHrs(-m.remaining) : fmtHrs(m.remaining);
+      var restCol = isOver ? '#8a4a2c' : 'var(--terre)';
+      var lost = m.lost > 0 ? '<span style="color:#824426;font-weight:600">' + fmtHrs(m.lost) + '</span>' : '<span style="color:var(--muted)">—</span>';
+      var lbl = esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '');
+      return '<tr style="' + (m.current ? 'font-weight:600;' : '') + '">' +
+        '<td style="text-align:left;padding:7px 8px">' + lbl + '</td>' +
+        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums">' + fmtHrs(m.available) + '</td>' +
+        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums">' + fmtHrs(m.used) + '</td>' +
+        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums;color:' + restCol + '">' + rest + '</td>' +
+        '<td style="text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums">' + lost + '</td>' +
+      '</tr>';
+    }).join('');
+    var histBlock = (f.history && f.history.length) ? '<div class="card" style="margin-top:0"><h3 style="margin:0 0 10px;font-size:16px">Détail mois par mois</h3>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="color:var(--muted)">' +
+        '<th style="text-align:left;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Mois</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Dispo</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Travaillé</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Reste</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Perdu</th>' +
+      '</tr></thead><tbody>' + histRows + '</tbody></table></div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:10px;line-height:1.5">« <strong>Dispo</strong> » = base + report du mois précédent. « <strong>Perdu</strong> » = heures non utilisées qui n\'ont pas pu être reportées (au-delà du plafond de report de ' + fmtHrs(f.cap) + ')' + (f.lostRecent > 0 ? ' — soit <strong>' + fmtHrs(f.lostRecent) + '</strong> sur les mois passés affichés' : '') + '.</div>' +
+    '</div>' : '';
+    return setup + '</div>' + lossBanner + breakdown + histBlock + workSlotsSection();
   }
   function workSlotsSection() {
     return '<div class="card"><h3>Créneaux réservés</h3>' +
