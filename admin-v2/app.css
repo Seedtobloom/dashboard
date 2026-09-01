@@ -512,7 +512,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 /* Blocs iCloud figés qui ancrent la journée + temps libre autour pour caler
    les tâches. 2 vues : Semaine (5 jours pleine largeur + bandeau à caler),
    Aujourd'hui (agenda horaire du jour J + rail). Charte Écrin. */
-.mssem{max-width:1180px}
+.mssem{max-width:1500px;padding-left:26px;padding-right:26px}
 .mssem .mss-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:20px}
 .mssem .mss-head__t{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:clamp(30px,4vw,38px);line-height:1;margin:0;color:var(--terre)}
 .mssem .mss-head__s{font-size:14px;color:var(--muted);margin:6px 0 0}
@@ -576,10 +576,10 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .mssem .mss-wplan__add .inp:first-child,.mssem .mss-rail__add .inp:first-child{flex:1;min-width:0}
 .mssem .mss-wplan__add input[type=number],.mssem .mss-rail__add input[type=number]{width:62px;flex-shrink:0}
 .mssem .mss-wplan__addbtn{border:none;cursor:pointer;background:var(--terre-400);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;border-radius:999px;flex-shrink:0}
-/* ── Semaine : grille des jours ── */
-.mssem .mss-week{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
-@media(max-width:900px){.mssem .mss-week{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.mssem .mss-week{grid-template-columns:1fr}}
+/* ── Semaine : 5 jours larges, défilement horizontal si besoin ── */
+.mssem .mss-week{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:16px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.mssem .mss-week > .mss-day{scroll-snap-align:start}
+@media(max-width:560px){.mssem .mss-week{grid-auto-flow:row;grid-template-columns:1fr;overflow-x:visible}}
 .mssem .mss-day{background:var(--card);border-radius:16px;padding:16px 16px 13px;display:flex;flex-direction:column;gap:10px;min-height:200px}
 .mssem .mss-day--today{background:var(--glycine-50)}
 .mssem .mss-day__h{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:2px}

@@ -3309,7 +3309,7 @@
         '<button class="mss-chk' + (done ? ' is-on' : '') + '" title="' + (done ? 'Fait — décocher' : 'Marquer comme fait') + '" onclick="ADM.msDone(\'' + t.id + '\',' + (done ? 'false' : 'true') + ')">' + (done ? '✓' : '') + '</button>' +
         '<span class="mss-tblock__dot" style="background:' + msCatColor(cls) + '"></span>' +
         '<span class="mss-tblock__t">' + esc(t.title) + (t.clientName ? ' · ' + esc(t.clientName) : '') + '</span>' + late +
-        '<span class="mss-tblock__min">' + (t.estMinutes ? msDur2(t.estMinutes) : '—') + '</span>' +
+        (t.estMinutes ? '<span class="mss-tblock__min">' + msDur2(t.estMinutes) + '</span>' : '') +
         '<div class="mss-tblock__ctl">' +
           '<button class="mss-task__note' + (t.notes ? ' has' : '') + '" title="' + (t.notes ? 'Note' : 'Ajouter une note') + '" onclick="ADM.msNoteOpen(\'' + t.id + '\')">' + (t.notes ? '📝' : '＋') + '</button>' +
           '<input class="inp" type="number" min="0" step="0.25" value="' + (t.estMinutes ? (Math.round(t.estMinutes / 60 * 100) / 100) : '') + '" placeholder="h" title="Temps estimé (heures)" onchange="ADM.msEstH(\'' + t.id + '\',this.value)">' +
