@@ -2906,17 +2906,20 @@ async function calListEvents(cfg: CalCfg, fromIso: string, toIso: string): Promi
   events.sort((a, b) => String(a.start).localeCompare(String(b.start)));
   return { calName: list.map((c) => c.name).join(', '), events };
 }
-async function calCreateEvent(cfg: CalCfg, title: string, startIso: string, endIso: string): Promise<{ ok: boolean; error?: string }> {
+async function calCreateEvent(cfg: CalCfg, title: string, startIso: string, endIso: string, rrule?: string): Promise<{ ok: boolean; error?: string }> {
   const { auth, cals } = await calDiscover(cfg);
   const cal = calPick(cfg, cals);
   const uid = (crypto as AnyObj).randomUUID ? (crypto as AnyObj).randomUUID() : ('stb-' + Date.now() + '-' + Math.random().toString(36).slice(2));
   const now = calFmtTime(new Date().toISOString());
-  const ics = [
+  const lines = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SeedToBloom//Dashboard//FR', 'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT', 'UID:' + uid, 'DTSTAMP:' + now,
     'DTSTART:' + calFmtTime(startIso), 'DTEND:' + calFmtTime(endIso),
-    'SUMMARY:' + calEscape(title), 'END:VEVENT', 'END:VCALENDAR', ''
-  ].join('\r\n');
+    'SUMMARY:' + calEscape(title),
+  ];
+  if (rrule) lines.push('RRULE:' + rrule); // ex. FREQ=WEEKLY (bloc de temps récurrent)
+  lines.push('END:VEVENT', 'END:VCALENDAR', '');
+  const ics = lines.join('\r\n');
   const r = await fetch(cal.url + uid + '.ics', {
     method: 'PUT', headers: { Authorization: auth, 'Content-Type': 'text/calendar; charset=utf-8', 'If-None-Match': '*' }, body: ics,
   });
@@ -2971,9 +2974,11 @@ async function handleCalEventCreate(request: Request, env: Env): Promise<Respons
   const title = String(b.title || '').trim() || 'Visio';
   const start = String(b.start || '').trim();
   const end = String(b.end || '').trim() || new Date(new Date(start).getTime() + 45 * 60000).toISOString();
+  // Bloc de temps récurrent : b.repeat === 'weekly' → RRULE hebdomadaire.
+  const rrule = String(b.repeat || '') === 'weekly' ? 'FREQ=WEEKLY' : undefined;
   if (!start) return json({ error: 'Date de début requise.' }, 400);
   try {
-    const r = await calCreateEvent(cfg, title, start, end);
+    const r = await calCreateEvent(cfg, title, start, end, rrule);
     return r.ok ? json({ ok: true }) : json({ error: r.error }, 502);
   } catch (e: any) {
     return json({ error: (e && e.message) || 'Création impossible.' }, 502);

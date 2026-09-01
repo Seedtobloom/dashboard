@@ -3275,7 +3275,8 @@
       '<span class="mss-cap__bar"><i style="width:' + Math.min(100, pct) + '%;background:' + (over ? 'var(--gold-chip)' : 'var(--terre)') + '"></i></span>' +
       '<span class="mss-cap__t">' + (weekAvail ? '<b>' + msHours(weekPlanned) + '</b> planifié · ' + msHours(Math.max(0, marge)) + ' de marge' : '<b>' + msHours(weekPlanned) + '</b> planifié') + '</span>' +
       '<button class="mss-cap__cfg" onclick="ADM.msToggleCap()" title="Régler mes disponibilités">⚙</button></div>';
-    var bar = '<div class="mss-bar">' + seg + nav + capBar + '</div>';
+    var newBlockBtn = '<button class="mss-newblock" onclick="ADM.msNewBlock()" title="Créer un bloc de temps (écrit sur ton iCloud)">＋ Bloc de temps</button>';
+    var bar = '<div class="mss-bar">' + seg + newBlockBtn + nav + capBar + '</div>';
     // Éditeur des disponibilités par jour — masqué par défaut, ouvert via le ⚙.
     var capEdit = MS_CAPOPEN ? '<div class="mss-capedit"><div class="mss-capedit__row">' +
       [1, 2, 3, 4, 5].map(function (k) { return '<label>' + MS_DOW[k - 1] + ' (h)<input class="inp" type="number" min="0" max="14" step="0.5" value="' + (MS_DAYS[k] ? (Math.round(MS_DAYS[k] / 60 * 100) / 100) : '') + '" onchange="ADM.msSaveCap(' + k + ',this.value)"></label>'; }).join('') +
@@ -3521,6 +3522,49 @@
     ev.preventDefault(); ev.stopPropagation(); if (elm) elm.classList.remove('wcol--over');
     var id = MS_DRAG || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); MS_DRAG = null;
     if (id) msPatch(id, { doDate: null, slot: '' });
+  }
+  // ── Créer un bloc de temps → écrit sur le calendrier iCloud ──
+  function msNewBlock(diso) {
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    var day = diso || msIso(new Date());
+    var lab = 'display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:11px;color:var(--muted)';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:440px;text-align:left">' +
+      '<div class="admconfirm__title">Nouveau bloc de temps</div>' +
+      '<p style="font-size:12.5px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Il sera ajouté à ton calendrier iCloud, et servira de repère pour y ranger tes tâches.</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<label style="' + lab + '">Nom du bloc<input id="mb-title" class="inp" placeholder="Créneau Marie, Prospection, Envol…" style="font-size:14px;padding:9px 11px"></label>' +
+        '<label style="' + lab + '">Jour<input id="mb-date" class="inp" type="date" value="' + day + '" style="font-size:14px;padding:9px 11px"></label>' +
+        '<div style="display:flex;gap:10px">' +
+          '<label style="flex:1;' + lab + '">Début<input id="mb-start" class="inp" type="time" value="09:30" style="font-size:14px;padding:9px 11px"></label>' +
+          '<label style="flex:1;' + lab + '">Fin<input id="mb-end" class="inp" type="time" value="13:00" style="font-size:14px;padding:9px 11px"></label>' +
+        '</div>' +
+        '<label style="display:flex;align-items:center;gap:9px;font-family:var(--font-body);font-size:13px;color:var(--terre);cursor:pointer;margin-top:2px"><input id="mb-rep" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--terre)">Chaque semaine (bloc récurrent)</label>' +
+      '</div>' +
+      '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Créer le bloc</button></div>' +
+    '</div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () { msSaveBlock(close); };
+    document.body.appendChild(ov);
+    var f = el('mb-title'); if (f) f.focus();
+  }
+  function msSaveBlock(done) {
+    var title = ((el('mb-title') && el('mb-title').value) || '').trim();
+    var date = el('mb-date') && el('mb-date').value;
+    var st = el('mb-start') && el('mb-start').value, en = el('mb-end') && el('mb-end').value;
+    var rep = el('mb-rep') && el('mb-rep').checked;
+    if (!title) { toast('Nom du bloc requis'); return; }
+    if (!date || !st || !en) { toast('Jour et horaires requis'); return; }
+    var startD = new Date(date + 'T' + st + ':00'), endD = new Date(date + 'T' + en + ':00');
+    if (isNaN(startD) || isNaN(endD) || endD <= startD) { toast('La fin doit être après le début'); return; }
+    toast('Création du bloc…');
+    jpost('/api/calendar/events', { title: title, start: startD.toISOString(), end: endD.toISOString(), repeat: rep ? 'weekly' : 'none' })
+      .then(function (r) { return r.ok ? r.json() : { error: 'Erreur ' + r.status }; })
+      .then(function (res) {
+        if (res && !res.error) { toast('Bloc ajouté à ton calendrier ✓'); if (done) done(); renderMaSemaine(); }
+        else toast((res && res.error) || 'iCloud a refusé la création');
+      }).catch(function () { toast('Erreur réseau'); });
   }
   // Catégorie (couleur) d'une tâche pour le planning : partenaire = Création,
   // sinon d'après le « mode » de la tâche perso.
@@ -7935,7 +7979,7 @@
   // API publique pour les onclick
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
-    msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
+    msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,

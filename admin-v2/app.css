@@ -532,6 +532,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .mssem .mss-seg button{border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--terre-600);padding:8px 16px;border-radius:9px;background:none}
 .mssem .mss-seg button:hover:not(.on){background:var(--beige)}
 .mssem .mss-seg button.on{background:var(--terre);color:var(--paille)}
+.mssem .mss-newblock{border:none;cursor:pointer;background:var(--surface-2);color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:9px 14px;border-radius:999px}
+.mssem .mss-newblock:hover{background:var(--beige);color:var(--terre)}
 .mssem .mss-nav{display:inline-flex;align-items:center;gap:8px}
 .mssem .mss-nav button{width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;background:var(--card);color:var(--terre-600);font-size:15px}
 .mssem .mss-nav button:hover{background:var(--beige)}
