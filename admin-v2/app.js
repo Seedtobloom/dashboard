@@ -2784,19 +2784,15 @@
         return '<div class="secmark2" style="margin-top:20px">' + esc(lbl) + ' · ' + groups[k].length + '</div>' + groups[k].map(function (x) { return x.h; }).join('');
       }).join('');
     }
-    // Agenda perso (sans visio) — section séparée : à venir, puis passés grisés.
-    var othersUp = icalUpF(icalOthers);
-    var othersPast = icalPastF(icalOthers).map(function (e) { return { t: icalTs(e), h: icalRow(e, false, true) }; });
-    var agendaSection = (othersUp.length || othersPast.length)
-      ? '<div class="secmark2" style="margin-top:30px;color:var(--terre)">Agenda perso</div>' +
-        (othersUp.length ? othersUp.map(function (e) { return icalRow(e, false, false); }).join('') : '<div class="empty" style="padding:10px 2px">Aucun rendez-vous perso à venir.</div>') +
-        byMonth(othersPast)
-      : '';
+    // La section Visios ne montre QUE les visios (dashboard + iCloud avec lien).
+    // Les autres événements iCloud (blocs de temps de travail, rendez-vous perso)
+    // ne sont PAS affichés ici : inutiles dans cette partie.
+    var agendaSection = '';
     // Bandeau d'état du calendrier.
     var calbar;
     if (VIS_CAL.configured && !VIS_CAL.error) {
       calbar = '<div class="calbar"><span class="calbar__ic"><svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg></span>' +
-        '<div class="calbar__t"><span class="calbar__dot"></span><b>Calendrier iCloud connecté</b>' + (VIS_CAL.calName ? ' · ' + esc(VIS_CAL.calName) : '') + ' · lu par Spark. Tes rendez-vous iCloud remontent ci-dessous, et tes visios planifiées y sont ajoutées.</div>' +
+        '<div class="calbar__t"><span class="calbar__dot"></span><b>Calendrier iCloud connecté</b>' + (VIS_CAL.calName ? ' · ' + esc(VIS_CAL.calName) : '') + '. Seules tes <b>visios</b> (avec lien) remontent ici ; tes visios planifiées sont ajoutées à iCloud.</div>' +
         '<button class="ibbtn" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Gérer</button></div>';
     } else if (VIS_CAL.configured && VIS_CAL.error) {
       calbar = '<div class="calbar" style="background:#f7ede6"><span class="calbar__ic" style="background:var(--gold-chip);color:var(--gold-ink)">!</span><div class="calbar__t"><b>Calendrier iCloud</b> · ' + esc(VIS_CAL.error) + '</div><button class="ibbtn" onclick="ADM.nav(\'reglages\');setTimeout(function(){ADM.reglSetTab(\'calendar\')},60)">Vérifier</button></div>';
@@ -4835,7 +4831,7 @@
 
   /* ── Clients ── */
   function renderClients() {
-    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()">Scanner le KV</button><button class="btn" onclick="ADM.nav(\'newclient\')">+ Nouveau client</button>';
+    var right = '<button class="btn btn--outline btn--sm" onclick="ADM.scan()" title="Reconstruit la liste : rattrape les clientes / demandes qui ne remontent pas (ex. une demande créée côté cliente).">🔄 Retrouver mes clientes</button><button class="btn" onclick="ADM.nav(\'newclient\')">+ Nouveau client</button>';
     setMain(topbar('Clients', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     // On récupère aussi le tableau de bord pour la vue rapide : forfaits + projets en cours par client.
     Promise.all([
