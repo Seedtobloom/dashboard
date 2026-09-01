@@ -542,6 +542,12 @@ async function handleClientApi(
       container.rolloverCapHours = (isFinite(rc) && rc >= 0) ? rc : '';
     }
     if (body.forfaitOverrides && typeof body.forfaitOverrides === 'object') container.forfaitOverrides = body.forfaitOverrides;
+    // Début du forfait (mois où l'accompagnement a commencé) : l'historique ne
+    // compte rien avant. Format 'YYYY-MM' ; vide = auto (1re tâche).
+    if (body.forfaitStart !== undefined) {
+      const fsv = String(body.forfaitStart || '').slice(0, 7);
+      container.forfaitStart = /^\d{4}-\d{2}$/.test(fsv) ? fsv : '';
+    }
     // Créneaux réservés : quand Cindy travaille pour ce client (récurrent).
     if (Array.isArray(body.workSlots)) {
       container.workSlots = body.workSlots.map((s: AnyObj) => ({
@@ -1658,25 +1664,46 @@ function forfaitState(pc: AnyObj): AnyObj {
   // déplace donc rien : le travail de juillet reste dans juillet.
   const usedIn = (ym: string) => tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0);
   const r1 = (n: number) => Math.round(n * 10) / 10;
-  // ── Historique CHAÎNÉ des 6 derniers mois ──
-  // Chaque mois : dispo = base + report entrant ; on consomme ; les heures NON
-  // utilisées se reportent au mois suivant (plafond `cap`) — au-delà du plafond
+  const ymOf = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const curYm = ymOf(now);
+  // ── Début du forfait : on ne compte RIEN avant. Explicite (forfaitStart) ou,
+  // à défaut, le mois de la 1re tâche / 1re session (l'accompagnement a commencé
+  // là — pas de « mois vides » fantômes avant). ──
+  let startYm = /^\d{4}-\d{2}$/.test(String(pc.forfaitStart || '')) ? String(pc.forfaitStart) : '';
+  if (!startYm) {
+    for (const t of tasks) {
+      const c = String(t.createdAt || '').slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(c) && (!startYm || c < startYm)) startYm = c;
+      for (const s of (Array.isArray(t.sessions) ? t.sessions : [])) {
+        const sm = String((s && s.start) || '').slice(0, 7);
+        if (/^\d{4}-\d{2}$/.test(sm) && (!startYm || sm < startYm)) startYm = sm;
+      }
+    }
+  }
+  if (!startYm || startYm > curYm) startYm = curYm;
+  // ── Historique CHAÎNÉ, du début du forfait (au plus tôt 6 mois en arrière)
+  // jusqu'au mois en cours. Chaque mois : dispo = base + report entrant ; on
+  // consomme ; les heures NON utilisées se reportent (plafond `cap`) — au-delà
   // elles sont PERDUES (lost). Un dépassement est déduit du mois suivant
-  // (plafonné à un mois de forfait) ; le reste est facturé (billed).
-  const MONTHS = 6;
+  // (plafonné à un mois de forfait) ; le reste est facturé (billed). ──
+  const sixAgoYm = ymOf(new Date(now.getFullYear(), now.getMonth() - 5, 1));
+  const boundYm = startYm > sixAgoYm ? startYm : sixAgoYm;
   const history: AnyObj[] = [];
   let carry = 0;
-  for (let i = MONTHS - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const cursor = new Date(parseInt(boundYm.slice(0, 4), 10), parseInt(boundYm.slice(5, 7), 10) - 1, 1);
+  const endM = new Date(now.getFullYear(), now.getMonth(), 1);
+  while (cursor <= endM) {
+    const d = cursor;
+    const ym = ymOf(d);
     const avail = base + carry;
     const usedM = usedIn(ym);
     const rem = avail - usedM;
     let carryOut = 0, lost = 0, overage = 0, billed = 0;
     if (rem >= 0) { carryOut = Math.min(cap, rem); lost = rem - carryOut; }
     else { overage = -rem; const deduction = Math.min(overage, base); carryOut = -deduction; billed = overage - deduction; }
-    history.push({ ym, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), base: r1(base), carryIn: r1(carry), available: r1(avail), used: r1(usedM), remaining: r1(rem), lost: r1(lost), overage: r1(overage), billed: r1(billed), current: i === 0 });
+    history.push({ ym, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), base: r1(base), carryIn: r1(carry), available: r1(avail), used: r1(usedM), remaining: r1(rem), lost: r1(lost), overage: r1(overage), billed: r1(billed), current: ym === curYm });
     carry = carryOut;
+    cursor.setMonth(cursor.getMonth() + 1);
   }
   const curM = history[history.length - 1];
   // ── Signal de PERTE : heures gâchées sur les mois COMPLETS (hors mois en
@@ -1695,6 +1722,7 @@ function forfaitState(pc: AnyObj): AnyObj {
     used: curM.used,
     remaining: curM.remaining,
     history, lostRecent, lost3, lossAlert,
+    start: String(pc.forfaitStart || ''), startAuto: startYm,
   };
 }
 

@@ -5969,6 +5969,7 @@
       '<div class="row" style="gap:14px;flex-wrap:wrap;align-items:center">' +
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)">Base <input id="pf-h" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.base || 0) + '"> h/mois</label>' +
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Heures non utilisées reportées au mois suivant. Par défaut 2 h — augmente-le si tu veux reporter plus.">Report max <input id="pf-cap" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.cap != null ? f.cap : 2) + '"> h</label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Mois où l\'accompagnement a commencé — rien n\'est compté avant. Laisse vide pour détecter automatiquement.">Début <input id="pf-start" class="inp" type="month" style="width:auto" value="' + esc(f.start || '') + '"' + (f.startAuto && !f.start ? ' placeholder="' + esc(f.startAuto) + '"' : '') + '></label>' +
         '<button class="btn btn--sm" onclick="ADM.saveForfait()">OK</button>' +
       '</div></div>';
     if (!f.configured) { return setup + '<div class="micro mt" style="text-transform:none;letter-spacing:0;color:var(--muted)">Renseigne un nombre d\'heures par mois pour activer le suivi de consommation et le report.</div></div>' + workSlotsSection(); }
@@ -6027,13 +6028,13 @@
       '</tr>';
     }).join('');
     var histBlock = (f.history && f.history.length) ? '<div class="card" style="margin-top:0"><h3 style="margin:0 0 10px;font-size:16px">Détail mois par mois</h3>' +
-      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">' +
       '<thead><tr style="color:var(--muted)">' +
-        '<th style="text-align:left;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Mois</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Dispo</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Travaillé</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Reste</th>' +
-        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase">Perdu</th>' +
+        '<th style="text-align:left;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Mois</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Dispo</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Travaillé</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Reste</th>' +
+        '<th style="text-align:right;font-weight:600;padding:6px 8px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Perdu</th>' +
       '</tr></thead><tbody>' + histRows + '</tbody></table></div>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:10px;line-height:1.5">« <strong>Dispo</strong> » = base + report du mois précédent. « <strong>Perdu</strong> » = heures non utilisées qui n\'ont pas pu être reportées (au-delà du plafond de report de ' + fmtHrs(f.cap) + ')' + (f.lostRecent > 0 ? ' — soit <strong>' + fmtHrs(f.lostRecent) + '</strong> sur les mois passés affichés' : '') + '.</div>' +
     '</div>' : '';
@@ -6736,7 +6737,7 @@
       api('/api/clients/' + CURKEY + '/benefices/' + id, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Supprimé'); loadClient(); } else toast('Erreur'); });
     });
   }
-  function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0, rolloverCapHours: (el('pf-cap') ? el('pf-cap').value : '') }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
+  function saveForfait() { jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', monthlyHours: Number(el('pf-h').value) || 0, rolloverCapHours: (el('pf-cap') ? el('pf-cap').value : ''), forfaitStart: (el('pf-start') ? el('pf-start').value : '') }, 'PATCH').then(function (r) { if (r.ok) { toast('Forfait mis à jour'); loadClient(); } }); }
   function taskStatus(id, st) { if (st === 'done' && PT_TIMER && PT_TIMER.id === id) ptPause(id, true); var lbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminée' }[st] || st; jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', status: st }, 'PATCH').then(function (r) { if (r.ok) { toast('Statut : ' + lbl); loadClient(); } }); }
   function taskDuplicate(id) {
     jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/duplicate?projectId=partner', {}).then(function (r) {
