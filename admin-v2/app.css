@@ -1294,6 +1294,27 @@ select.cg-in{cursor:pointer}
 .cdstat--new b{color:var(--glycine-900)}
 .cdstat span{font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-top:5px;display:block}
 
+/* ═══ Carte marron « Ce qui t'attend » (hero de fiche) ═══ */
+.cl2 .cqa{background:#241610;border-radius:20px;padding:19px 24px;margin:2px 0 20px}
+.cqa__hd{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.cqa__ic{width:36px;height:36px;border-radius:11px;background:#3a2716;color:#F3E9DB;display:grid;place-items:center;flex-shrink:0}
+.cqa__t{font-family:var(--font-display);font-style:italic;font-size:22px;color:#F3E9DB;line-height:1}
+.cqa__n{min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--gold-chip);color:var(--gold-ink);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center}
+.cqa__chips{display:flex;gap:9px;flex-wrap:wrap}
+.cqa__chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:999px;font-size:13.5px;font-weight:600}
+.cqa__chip--v{background:var(--gold-chip);color:var(--gold-ink)}
+.cqa__chip--c{background:#C5DEFF;color:#22436e}
+.cqa__who{font-size:9px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;font-weight:700}
+.cl2 .cqa--ok{display:flex;align-items:center;gap:13px;padding:16px 22px}
+.cqa--ok .cqa__ic{background:#3a2716;width:32px;height:32px}
+.cqa--ok .cqa__t{font-family:var(--font-body);font-style:normal;font-size:15px;font-weight:600}
+
+/* ═══ Sous-menu du forfait (Ce mois / Historique / Réglages) ═══ */
+.ffwrap .ffnav{display:inline-flex;gap:3px;background:var(--surface);padding:4px;border-radius:11px;margin-bottom:16px;flex-wrap:wrap}
+.ffwrap .ffnav button{border:none;cursor:pointer;background:none;font-family:var(--font-micro);font-size:12.5px;font-weight:600;color:var(--terre-600);padding:8px 15px;border-radius:8px;transition:background .15s,color .15s}
+.ffwrap .ffnav button:hover:not(.on){background:var(--beige)}
+.ffwrap .ffnav button.on{background:var(--terre);color:var(--paille)}
+
 /* ═══ Fiche cliente — onglets marron (maquette ctab) ═══ */
 .cl2 .tabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);padding:6px;border-radius:15px;margin-bottom:18px}
 .cl2 .tabs .tab{position:relative;background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre-600);padding:11px 18px;border-radius:11px;text-transform:none;letter-spacing:0;transition:background .15s,color .15s}

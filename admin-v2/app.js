@@ -5014,7 +5014,7 @@
       '<div class="cdhead__m"><div class="cdhead__n">' + esc(nm) + '</div><div class="cdhead__p">' + esc(_cdProj) + '</div></div>' +
       '<span class="cdhead__pres"><i class="' + (_cdPr.online ? 'on' : '') + '"></i>' + esc(_cdPr.label) + '</span></div>';
     setMain(topbar('', visioBtn + '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'clients\')">← Clients</button>') +
-      '<div class="wrap cl2">' + cdhead + clientStats() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
+      '<div class="wrap cl2">' + cdhead + clientAlerts() + clientStats() + '<div class="tabs">' + tabsHtml + '</div><div id="tabbody"></div></div>');
     renderTab();
   }
   // Bandeau de 4 tuiles (maquette cdstats) : avancement, prochaine livraison,
@@ -5062,13 +5062,17 @@
     }
     scan(CUR.domains); scan(CUR.supports);
     var chips = [];
-    if (unread) chips.push(['Vous', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', '#F0E2D6', '#8a4a2c']);
-    if (review) chips.push(['Vous', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', '#F0E2D6', '#8a4a2c']);
-    if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', '#E8F1FF', '#2c4a72']);
-    if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', '#E8F1FF', '#2c4a72']);
-    if (!chips.length) return '<div class="card" style="background:#f0f6ee;border-color:#cfe0c6;max-width:none"><span class="micro" style="color:#456039;font-weight:700;letter-spacing:0.04em">✓ Tout est à jour pour ce client</span></div>';
-    return '<div class="card" style="max-width:none"><div class="micro mb" style="font-weight:700;color:var(--terre);text-transform:uppercase;letter-spacing:0.05em">Ce qui attend</div><div class="row" style="gap:8px;flex-wrap:wrap">' +
-      chips.map(function (ch) { return '<span style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:' + ch[2] + ';color:' + ch[3] + ';font-size:12.5px;font-weight:600"><span style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7">' + ch[0] + '</span>' + esc(ch[1]) + '</span>'; }).join('') + '</div></div>';
+    // 'v' = à toi de jouer (terracotta) · 'c' = en attente de la cliente (bleu clair)
+    if (unread) chips.push(['Toi', unread + ' message' + (unread > 1 ? 's' : '') + ' à lire', 'v']);
+    if (review) chips.push(['Toi', review + ' tâche' + (review > 1 ? 's' : '') + ' à valider', 'v']);
+    if (aValider) chips.push(['Client', aValider + ' livrable' + (aValider > 1 ? 's' : '') + ' en attente de sa validation', 'c']);
+    if (waitClient) chips.push(['Client', waitClient + ' étape' + (waitClient > 1 ? 's' : '') + ' en attente de lui', 'c']);
+    var _bell = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
+    if (!chips.length) return '<div class="cqa cqa--ok"><span class="cqa__ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="cqa__t">Tout est à jour pour ce client</span></div>';
+    var chipsHtml = chips.map(function (ch) {
+      return '<span class="cqa__chip cqa__chip--' + ch[2] + '"><span class="cqa__who">' + ch[0] + '</span>' + esc(ch[1]) + '</span>';
+    }).join('');
+    return '<div class="cqa"><div class="cqa__hd"><span class="cqa__ic">' + _bell + '</span><span class="cqa__t">Ce qui t\'attend</span><span class="cqa__n">' + chips.length + '</span></div><div class="cqa__chips">' + chipsHtml + '</div></div>';
   }
   function tab(t) { TAB = t; if (CURKEY) TAB_BY_CLIENT[CURKEY] = t; renderClient(); renderNav(); }
 
@@ -5958,6 +5962,12 @@
       .filter(function (o) { return o.mins > 0; })
       .sort(function (a, b) { return b.mins - a.mins; });
   }
+  // Sous-menu du forfait (Ce mois / Historique / Réglages) — bascule côté client, sans re-render.
+  function ffShow(btn, id) {
+    var wrap = btn.closest('.ffwrap'); if (!wrap) return;
+    wrap.querySelectorAll('.ffnav > button').forEach(function (b) { b.classList.toggle('on', b === btn); });
+    wrap.querySelectorAll('.ffv').forEach(function (v) { v.style.display = (v.getAttribute('data-ff') === id) ? '' : 'none'; });
+  }
   function partnerForfait(d) {
     var f = d.forfait || {};
     WORKSLOTS = (d.content && Array.isArray(d.content.workSlots)) ? d.content.workSlots.slice() : [];
@@ -6058,7 +6068,17 @@
         '</div>';
       }).join('') +
     '</div>' : '';
-    return setup + '</div>' + lossBanner + checkBlock + breakdown + histBlock + workSlotsSection();
+    var histView = (f.history && f.history.length) ? histBlock : '<div class="card" style="margin-top:0"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Pas encore d\'historique — il se remplit au fil des mois.</div></div>';
+    return '<div class="ffwrap">' +
+      '<div class="ffnav">' +
+        '<button class="on" onclick="ADM.ffShow(this,\'mois\')">Ce mois</button>' +
+        '<button onclick="ADM.ffShow(this,\'hist\')">Historique</button>' +
+        '<button onclick="ADM.ffShow(this,\'reg\')">Réglages</button>' +
+      '</div>' +
+      '<div class="ffv" data-ff="mois">' + breakdown + lossBanner + checkBlock + '</div>' +
+      '<div class="ffv" data-ff="hist" style="display:none">' + histView + '</div>' +
+      '<div class="ffv" data-ff="reg" style="display:none">' + setup + '</div>' + workSlotsSection() + '</div>' +
+    '</div>';
   }
   function workSlotsSection() {
     return '<div class="card"><h3>Créneaux réservés</h3>' +
@@ -6305,14 +6325,14 @@
       var opts = TASK_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (t.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('');
       var prun = PT_TIMER && PT_TIMER.id === t.id;
       var pbase = ptBase(t);
-      var ptColor = prun ? 'var(--green)' : (pbase ? 'var(--terre)' : '#c3b9a6');
+      var ptColor = prun ? '#8a4a2c' : (pbase ? 'var(--terre)' : '#c3b9a6');
       var chrono = '<span id="pt-timer-' + t.id + '" title="Temps passé" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;letter-spacing:0.02em;color:' + ptColor + ';min-width:74px;text-align:center">' + mtClock(pbase) + '</span>';
       var chBtn = prun
-        ? '<button class="btn btn--outline btn--sm" style="color:var(--orange);border-color:#f0d8b0" onclick="ADM.ptPause(\'' + t.id + '\')">⏸ Pause</button>'
+        ? '<button class="btn btn--outline btn--sm" style="color:#8a4a2c;border-color:#e8cbb0" onclick="ADM.ptPause(\'' + t.id + '\')">⏸ Pause</button>'
         : '<button class="btn btn--outline btn--sm" onclick="ADM.ptStart(\'' + t.id + '\')">▶ Démarrer</button>';
-      var stCol = { todo: '#a98bd6', in_progress: '#35608f', review: '#c9952f', done: '#5d7a52' }[t.status] || '#a98bd6';
+      var stCol = { todo: '#5A2A11', in_progress: '#5A2A11', review: '#3d1c0b', done: '#7a5540' }[t.status] || '#5A2A11';
       var stLbl = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', done: 'Terminé' }[t.status] || t.status;
-      var stBg = { todo: '#E8F1FF', in_progress: '#e3edfb', review: '#fbf0d8', done: '#e7f0e3' }[t.status] || '#E8F1FF';
+      var stBg = { todo: '#EFE6D6', in_progress: '#E8F1FF', review: '#CD8F6E', done: '#EDE5D7' }[t.status] || '#EFE6D6';
       var needsAction = t.status === 'review';
       var archBtn = t.archived
         ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',false)">Restaurer</button>'
@@ -8128,7 +8148,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
