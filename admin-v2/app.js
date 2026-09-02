@@ -6033,22 +6033,46 @@
           '<span style="font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums">' + fmtHrs(o.mins / 60) + '</span></div>';
       }).join('');
     }
+    function fcRow(l, v, cls) { return '<div class="fcalc__r' + (cls ? ' fcalc__r--' + cls : '') + '"><span>' + l + '</span><span>' + v + '</span></div>'; }
+    // Récap visuel du temps par mois (haut de l'historique)
+    var totalUsed = (f.history || []).reduce(function (s, m) { return s + (m.used || 0); }, 0);
+    var maxAvail = (f.history || []).reduce(function (s, m) { return Math.max(s, m.available || 0); }, 1);
+    var nMonths = (f.history || []).length;
+    var recapRows = (f.history || []).map(function (m) {
+      var w = Math.max(0, Math.min(100, Math.round((m.used / maxAvail) * 100)));
+      var mlbl = String(m.label || '').split(' ')[0];
+      return '<div class="frrow"><span class="frrow__m">' + esc(mlbl) + '</span><span class="frrow__bar"><i style="width:' + w + '%"></i></span><span class="frrow__h">' + fmtHrs(m.used) + '</span></div>';
+    }).join('');
+    var recap = nMonths ? '<div class="frecap"><div class="frecap__t">Depuis le début de la collaboration · <b>' + fmtHrs(totalUsed) + '</b> travaillées sur ' + nMonths + ' mois</div>' + recapRows + '</div>' : '';
     var histRows = (f.history || []).map(function (m) {
       var isOver = m.remaining < 0;
       var rest = isOver ? '− ' + fmtHrs(-m.remaining) : fmtHrs(m.remaining);
       var restCol = isOver ? '#8a4a2c' : 'var(--terre)';
-      var lostChip = m.lost > 0 ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#824426;font-weight:600">' + fmtHrs(m.lost) + ' perdues non reportées</span>' : '';
+      var carryOut = m.remaining >= 0 ? Math.max(0, m.remaining - m.lost) : 0;
+      var calc = '<div class="fcalc"><div class="fcalc__h">Le calcul du mois</div>' +
+        fcRow('Base du forfait', fmtHrs(m.base)) +
+        (m.carryIn ? fcRow((m.carryIn > 0 ? '+ Report du mois dernier' : '− Dépassement du mois dernier'), (m.carryIn > 0 ? '+ ' : '− ') + fmtHrs(Math.abs(m.carryIn)), 'rep') : fcRow('+ Report du mois dernier', '0 h')) +
+        fcRow('= Disponible', '<b>' + fmtHrs(m.available) + '</b>', 'tot') +
+        fcRow('− Travaillé', fmtHrs(m.used)) +
+        fcRow('= ' + (m.current ? 'Restant (mois en cours)' : 'Reste'), '<b>' + (isOver ? '− ' + fmtHrs(-m.remaining) : fmtHrs(m.remaining)) + '</b>', 'tot') +
+        (m.current
+          ? fcRow('Report / pertes', 'calculés à la clôture')
+          : ((m.remaining >= 0 ? fcRow('→ Reporté (plafond ' + fmtHrs(f.cap) + ')', fmtHrs(carryOut), 'rep') : '') +
+             (m.lost > 0 ? fcRow('→ Perdu (au-delà du plafond)', fmtHrs(m.lost), 'lost') : '') +
+             (m.overage > 0 ? fcRow('→ Dépassement à facturer', fmtHrs(m.overage), 'lost') : ''))) +
+        '</div>';
       return '<details' + (m.current ? ' open' : '') + ' style="background:' + (m.current ? 'var(--surface-2,#f4efe6)' : 'var(--card)') + ';border-radius:12px;margin-bottom:6px">' +
         '<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;padding:11px 14px">' +
           '<span style="flex:1;font-weight:' + (m.current ? '700' : '600') + ';color:var(--terre);font-size:14.5px;text-transform:capitalize">' + esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '') + '</span>' +
           '<span style="font-variant-numeric:tabular-nums;color:var(--terre-600);font-size:13.5px;white-space:nowrap" title="Travaillé / Disponible">' + fmtHrs(m.used) + ' / ' + fmtHrs(m.available) + '</span>' +
           '<span style="font-variant-numeric:tabular-nums;color:' + restCol + ';font-weight:700;min-width:80px;text-align:right;white-space:nowrap">' + rest + '</span>' +
         '</summary>' +
-        '<div style="padding:0 14px 12px">' + (lostChip ? '<div style="margin:0 0 6px">' + lostChip + '</div>' : '') + monthTaskLines(m.ym) + '</div>' +
+        '<div style="padding:0 14px 12px">' + monthTaskLines(m.ym) + calc + '</div>' +
       '</details>';
     }).join('');
     var histBlock = (f.history && f.history.length) ? '<div class="card" style="margin-top:0"><h3 style="margin:0 0 4px;font-size:16px">Détail mois par mois</h3>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:12px;line-height:1.5">Chaque mois : <strong>Travaillé / Dispo</strong> puis le <strong>Reste</strong>. Déplie un mois pour voir les tâches qui l\'ont consommé — <strong>le temps compte au mois où il a été fait, pas à la validation</strong>.</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:12px;line-height:1.5">Chaque mois : <strong>Travaillé / Dispo</strong> puis le <strong>Reste</strong>. Déplie un mois pour voir les tâches qui l\'ont consommé <strong>et le calcul complet (report / perdu)</strong> — le temps compte au mois où il a été fait, pas à la validation.</div>' +
+      recap +
       histRows +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px;line-height:1.5">« Dispo » = base + report du mois précédent. « Perdues » = heures non utilisées non reportées (au-delà du plafond de ' + fmtHrs(f.cap) + ').</div>' +
     '</div>' : '';
@@ -6339,6 +6363,9 @@
         : (t.status === 'done' ? '<button class="btn btn--outline btn--sm" onclick="ADM.taskArchive(\'' + t.id + '\',true)">Archiver</button>' : '');
       var hair = 'height:1px;background:var(--bone-d);margin:18px 0;opacity:0.7';
       var pill = '<span style="display:inline-block;font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + stCol + ';background:' + stBg + ';padding:4px 11px;border-radius:999px">' + stLbl + '</span>';
+      // Chip carrée à icône (état) — jamais de point
+      var stIcon = { todo: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', in_progress: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', review: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', done: '<path d="M20 6 9 17l-5-5"/>' }[t.status] || '<circle cx="12" cy="12" r="9"/>';
+      var stChip = '<span class="tkchip" style="background:' + stBg + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="' + stCol + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + stIcon + '</svg></span>';
       var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">échéance ' + fmtDate(t.dueDate) + '</span>' : '';
       // en-tête : titre + statut/échéance à gauche, actions à droite
       // Badge « livrable » : catégorise la tâche selon l'état de son dernier
@@ -6349,18 +6376,19 @@
       var dlvBadge = '';
       if (lastDlv) {
         var dm = {
-          a_valider: ['📦 Livrable envoyé' + (lastDlv.createdAt ? ' le ' + fmtDate(lastDlv.createdAt) : '') + ' · en attente de validation', '#8a6f2e', '#fbf0d8'],
-          valide: ['📦 Livrable validé' + (lastDlv.validatedAt ? ' le ' + fmtDate(lastDlv.validatedAt) : '') + ' ✓', '#3f6b3a', '#e7f0e3'],
+          a_valider: ['📦 Livrable envoyé' + (lastDlv.createdAt ? ' le ' + fmtDate(lastDlv.createdAt) : '') + ' · en attente de validation', '#3d1c0b', '#CD8F6E'],
+          valide: ['📦 Livrable validé' + (lastDlv.validatedAt ? ' le ' + fmtDate(lastDlv.validatedAt) : '') + ' ✓', '#5c4633', '#EDE5D7'],
           refuse: ['📦 Révision demandée', '#8a4a2c', '#F0E2D6'],
           revision: ['📦 Révision demandée', '#8a4a2c', '#F0E2D6']
         }[lastDlv.status || 'a_valider'] || null;
         if (dm) dlvBadge = '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.03em;color:' + dm[1] + ';background:' + dm[2] + ';padding:4px 11px;border-radius:999px">' + dm[0] + (tls.length > 1 ? ' · V' + tls.length : '') + '</span>';
       }
       var header = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">' +
+        '<div style="display:flex;gap:13px;align-items:flex-start;min-width:0">' + stChip +
         '<div style="min-width:0">' +
           '<div style="font-size:18px;font-weight:600;color:var(--terre);line-height:1.25">' + esc(t.title) + '</div>' +
           '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + dueTag + dlvBadge + '</div>' +
-        '</div>' +
+        '</div></div>' +
         '<div style="display:flex;gap:7px;flex-shrink:0">' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' +
           '<button class="btn btn--outline btn--sm" title="Créer une copie de cette tâche (brief compris)" onclick="ADM.taskDuplicate(\'' + t.id + '\')">Dupliquer</button>' + archBtn +

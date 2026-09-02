@@ -1315,6 +1315,29 @@ select.cg-in{cursor:pointer}
 .ffwrap .ffnav button:hover:not(.on){background:var(--beige)}
 .ffwrap .ffnav button.on{background:var(--terre);color:var(--paille)}
 
+/* chip carrée à icône (état de tâche) */
+.tkchip{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+.tkchip svg{display:block}
+
+/* bloc calcul du mois (forfait) */
+.fcalc{background:var(--card);border-radius:10px;padding:11px 13px;margin-top:10px;font-family:var(--font-micro)}
+.fcalc__h{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.fcalc__r{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:12.5px;color:var(--terre-600);font-variant-numeric:tabular-nums}
+.fcalc__r b{color:var(--terre);font-weight:700}
+.fcalc__r--tot{border-top:1px dashed var(--bone-d);margin-top:4px;padding-top:6px}
+.fcalc__r--rep{color:#22436e;font-weight:700}
+.fcalc__r--lost{color:#8a4a2c;font-weight:700}
+
+/* récap du temps par mois (haut de l'historique) */
+.frecap{background:var(--surface);border-radius:14px;padding:15px 17px;margin-bottom:14px}
+.frecap__t{font-size:14px;color:var(--terre-600);margin-bottom:11px}
+.frecap__t b{font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre)}
+.frrow{display:flex;align-items:center;gap:11px;padding:3px 0}
+.frrow__m{font-family:var(--font-micro);width:64px;font-size:11px;font-weight:700;color:var(--muted);text-transform:capitalize;flex-shrink:0}
+.frrow__bar{flex:1;height:9px;border-radius:999px;background:#00000010;overflow:hidden}
+.frrow__bar i{display:block;height:100%;border-radius:999px;background:var(--terre-600)}
+.frrow__h{font-family:var(--font-micro);width:56px;text-align:right;font-size:12px;font-weight:700;color:var(--terre);font-variant-numeric:tabular-nums;flex-shrink:0}
+
 /* ═══ Fiche cliente — onglets marron (maquette ctab) ═══ */
 .cl2 .tabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);padding:6px;border-radius:15px;margin-bottom:18px}
 .cl2 .tabs .tab{position:relative;background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--terre-600);padding:11px 18px;border-radius:11px;text-transform:none;letter-spacing:0;transition:background .15s,color .15s}
