@@ -5,37 +5,34 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --terre-600:#412F21; --terre-400:#8a6f54; --terre-200:#c8b29a;
   --nuit-900:#0d0803; --nuit:#1C1205; --nuit-700:#2a1d10;
   --nuit-500:#5c4633; --nuit-300:#8a6f54;
-  /* accent bleu clair (remplace l'ancien mauve glycine) — noms conservés pour compat */
-  --glycine-50:#E8F1FF; --glycine-200:#D3E2F6; --glycine:#C5DEFF;
-  --glycine-700:#7fa8d0; --glycine-900:#2c4a72;
-  --brume-50:#E8F1FF; --brume-200:#D3E2F6; --brume:#C5DEFF;
-  --brume-700:#7fa8d0; --brume-900:#2c4a72;
+  --glycine-50:#f7efff; --glycine-200:#efddff; --glycine:#E4D1FE;
+  --glycine-700:#a98bd6; --glycine-900:#573b8a;
+  --brume-50:#f7efff; --brume-200:#efddff; --brume:#F0E8FF;
+  --brume-700:#a98bd6; --brume-900:#573b8a;
   --paille-200:#fbf3d8; --paille:#F2E5C2; --paille-700:#c9b585;
-  --bone:#ffffff; --bone-d:#e6ddce; --card:#fffefb;
-  /* terracotta (touche · texte marron foncé par-dessus) */
-  --terra:#CD8F6E; --terra-ink:#3d1c0b; --terra-50:#F3E6D9; --noisette:#5A2A11;
+  --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb;
   /* legacy aliases for compat */
   --brown: #412F21;
-  --navy: #2A1A0D;
-  --sidebar-bg: #2E1D11;
-  --lavender: #C5DEFF;
-  --blue-light: #C5DEFF;
-  --cream: #F7F3EC;
-  --bg: #F7F3EC;
+  --navy: #1C1205;
+  --sidebar-bg: #1C1205;
+  --lavender: #E4D1FE;
+  --blue-light: #E4D1FE;
+  --cream: #F2E5C2;
+  --bg: #ffffff;
   --white: #FFFFFF;
-  --text: #2A1A0D;
+  --text: #412F21;
   --muted: #6b533b;
-  --border: #e6ddce;
-  --surface: #F7F3EC;
-  --sage: #7fa8d0;
-  --sky: #C5DEFF;
-  --sidebar-text: #EFE1B0;
-  --orange: #CD8F6E;
+  --border: #eae5dc;
+  --surface: #F8F6F2;
+  --sage: #a98bd6;
+  --sky: #E4D1FE;
+  --sidebar-text: #E4D1FE;
+  --orange: #c9952f;
   --radius: 10px;
   --shadow: none;
   --sw: 256px;
-  /* status : à faire=neutre · en cours=bleu clair · à valider=terracotta · terminé=marron */
-  --st-todo:#8a6f54; --st-progress:#7fa8d0; --st-review:#CD8F6E; --st-done:#412F21;
+  /* status */
+  --st-todo:#a98bd6; --st-progress:#a98bd6; --st-review:#c9952f; --st-done:#412F21;
   /* fonts */
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
   --font-body:'Alegreya',Georgia,'Times New Roman',serif;
@@ -282,7 +279,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg__av--cindy { background: var(--terre); color: var(--paille); }
 .cp-msg__bubble { max-width: 68%; padding: 12px 16px; border-radius: 14px; font-size: 15.5px; line-height: 1.55; font-family: var(--font-body); color: var(--terre); }
 .cp-msg--cindy .cp-msg__bubble { background: #fff; border: 1px solid var(--bone-d); border-bottom-left-radius: 4px; border-bottom-right-radius: 14px; }
-.cp-msg--client .cp-msg__bubble { background: #C5DEFF; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
+.cp-msg--client .cp-msg__bubble { background: #E4D1FE; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
 .cp-msg__text { white-space: pre-wrap; overflow-wrap: break-word; }
 .cp-msg__date { font-family: var(--font-micro); font-size: 9.5px; color: var(--terre-600); opacity: 0.7; margin-top: 5px; letter-spacing: 0.04em; }
 .cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--bone-d); border-radius: var(--radius-2); font-family: var(--font-body); font-size: var(--fs-small); resize: vertical; min-height: 80px; color: var(--terre); background: var(--card); outline: none; transition: border-color var(--dur) var(--ease); }

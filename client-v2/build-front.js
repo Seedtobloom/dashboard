@@ -197,8 +197,8 @@ must(js.indexOf("{ k:'todo',        label:'REÇUE',     col:'#b08968' },") !== -
 js = js.replace("{ k:'todo',        label:'REÇUE',     col:'#b08968' },", "{ k:'En attente du brief', label:'EN ATTENTE', col:'#B8A98F' },");
 must(js.indexOf("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },") !== -1, 'cal chip encours');
 js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },", "{ k:'En cours', label:'EN COURS', col:'#6E86B8' },");
-must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#CD8F6E' }") !== -1, 'cal chip avalider');
-js = js.replace("{ k:'review',      label:'À VALIDER', col:'#CD8F6E' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#CD8F6E' },\n      { k:'Terminé', label:'TERMINÉ', col:'#5c4633' }");
+must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#c9952f' }") !== -1, 'cal chip avalider');
+js = js.replace("{ k:'review',      label:'À VALIDER', col:'#c9952f' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#C8794E' },\n      { k:'Terminé', label:'TERMINÉ', col:'#7C8B5A' }");
 
 // la sauvegarde d'une propriété recolore la pastille (re-render) — fiable aussi depuis la carte
 must(js.indexOf("toast('Enregistré ✓'); })") !== -1, 'prop save rerender');
