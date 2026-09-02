@@ -5947,7 +5947,14 @@
       var n = new Date(); var cur = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
       var wm = String(t.workMonth || '');
       var rm = /^\d{4}-\d{2}$/.test(wm) ? wm : (lastStart ? lastStart.slice(0, 7) : '');
-      if (!rm) { var due = String(t.dueDate || '').slice(0, 7); rm = (due && due <= cur) ? due : cur; }
+      if (!rm) {
+        // Sans chrono ni mois forcé : rattaché au vrai moment du travail (début
+        // → création), avant l'échéance ; jamais à la validation ni au futur.
+        var st = String(t.startDate || '').slice(0, 7);
+        var cr = String(t.createdAt || '').slice(0, 7);
+        var due = String(t.dueDate || '').slice(0, 7);
+        rm = (st && st <= cur) ? st : ((cr && cr <= cur) ? cr : ((due && due <= cur) ? due : cur));
+      }
       if (rm > cur) rm = cur;
       map[rm] = (map[rm] || 0) + residual;
     }

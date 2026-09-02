@@ -1644,11 +1644,14 @@ function taskMinutesByMonth(t: AnyObj): Record<string, number> {
     const wm = String(t.workMonth || '');
     let rm = /^\d{4}-\d{2}$/.test(wm) ? wm : (lastStart ? lastStart.slice(0, 7) : '');
     if (!rm) {
-      // Temps ancien saisi sans horodatage : on le rattache à l'échéance SI
-      // elle n'est pas dans le futur, sinon au mois courant. On ne compte
-      // JAMAIS du travail sur un mois futur.
+      // Sans chrono ni mois forcé : on rattache au VRAI moment du travail — le
+      // DÉBUT de la tâche, puis sa création — AVANT l'échéance, et jamais à la
+      // validation ni au futur. Un sujet travaillé en août mais fini/validé en
+      // septembre reste ainsi compté en août.
+      const st = String(t.startDate || '').slice(0, 7);
+      const cr = String(t.createdAt || '').slice(0, 7);
       const due = String(t.dueDate || '').slice(0, 7);
-      rm = (due && due <= cur) ? due : cur;
+      rm = (st && st <= cur) ? st : ((cr && cr <= cur) ? cr : ((due && due <= cur) ? due : cur));
     }
     if (rm > cur) rm = cur;
     map[rm] = (map[rm] || 0) + residual;
