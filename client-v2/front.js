@@ -85,6 +85,8 @@ a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer
 .cp-chev { transition: transform .2s; }
 details[open] > .cp-mrow .cp-chev { transform: rotate(90deg); }
 details[open] > .cp-mrow .cp-see { opacity: 0; }
+.cp-chev2 { transition: transform .2s; }
+details[open] > summary .cp-chev2 { transform: rotate(90deg); }
 a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--glycine-700); outline-offset: 2px; border-radius: 4px; }
 .cp-sidebar a:focus-visible, .cp-sidebar button:focus-visible { outline-color: var(--brume-200); }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -4271,6 +4273,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="font-size:15px;color:#d8c6a8;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
       '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + _wPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', 'terminé') + (_fwip > 0 ? flag('#9a72d6', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
+      '<details style="margin-top:20px;border-top:1px solid rgba(251,250,246,.14);padding-top:14px">' +
+        '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#c9b28c">' +
+          '<span class="cp-chev2" style="display:inline-flex;color:#c9b28c"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>Comment fonctionne votre forfait&nbsp;?' +
+        '</summary>' +
+        '<div style="font-size:13.5px;color:#d8c6a8;line-height:1.6;margin-top:13px;max-width:620px">' +
+          '<p style="margin:0 0 9px">Vous disposez de <b style="color:#F2E5C2">' + hmm(_baseMin) + ' par mois</b> pour avancer sur vos projets.</p>' +
+          '<p style="margin:0 0 9px">Le temps compte au mois où le travail est <b style="color:#F2E5C2">réellement fait</b>. Les heures non utilisées ne se reportent <b style="color:#F2E5C2">pas</b> d\'un mois à l\'autre (au-delà d\'un petit report de ' + hmm(Math.round((_pf.cap || 0) * 60)) + '), autant en profiter pour me confier vos sujets.</p>' +
+          '<p style="margin:0">Si un mois on va au-delà, les heures en plus sont simplement facturées en supplément, et on en parle ensemble avant.</p>' +
+        '</div>' +
+      '</details>' +
     '</section>' : card(sub('Renseignez un forfait pour suivre la consommation.'));
 
     // ── 3. Graphe empilé par catégorie ──

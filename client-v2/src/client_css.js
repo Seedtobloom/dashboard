@@ -68,6 +68,8 @@ a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer
 .cp-chev { transition: transform .2s; }
 details[open] > .cp-mrow .cp-chev { transform: rotate(90deg); }
 details[open] > .cp-mrow .cp-see { opacity: 0; }
+.cp-chev2 { transition: transform .2s; }
+details[open] > summary .cp-chev2 { transform: rotate(90deg); }
 a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--glycine-700); outline-offset: 2px; border-radius: 4px; }
 .cp-sidebar a:focus-visible, .cp-sidebar button:focus-visible { outline-color: var(--brume-200); }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
