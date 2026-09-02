@@ -6391,6 +6391,11 @@
       var stIcon = { todo: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', in_progress: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', review: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', done: '<path d="M20 6 9 17l-5-5"/>' }[t.status] || '<circle cx="12" cy="12" r="9"/>';
       var stChip = '<span class="tkchip" style="background:' + stBg + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="' + stCol + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + stIcon + '</svg></span>';
       var dueTag = t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">échéance ' + fmtDate(t.dueDate) + '</span>' : '';
+      // Où le temps de CETTE tâche est compté (mois de rattachement) — lève le doute
+      // « je ne sais pas où c'est comptabilisé », même pour une tâche en attente.
+      var _mbm = admTaskMinByMonth(t);
+      var _mks = Object.keys(_mbm).filter(function (k) { return _mbm[k] > 0; }).sort();
+      var monthChip = _mks.length ? '<span title="Le temps de cette tâche est décompté du forfait sur ce(s) mois" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.03em;color:var(--terre-600);background:var(--surface);padding:4px 11px;border-radius:999px">🗓 compté en ' + _mks.map(function (k) { return new Date(k + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long' }); }).join(' + ') + '</span>' : '';
       // en-tête : titre + statut/échéance à gauche, actions à droite
       // Badge « livrable » : catégorise la tâche selon l'état de son dernier
       // livrable envoyé (envoyé/à valider, validé, révision demandée).
@@ -6411,7 +6416,7 @@
         '<div style="display:flex;gap:13px;align-items:flex-start;min-width:0">' + stChip +
         '<div style="min-width:0">' +
           '<div style="font-size:18px;font-weight:600;color:var(--terre);line-height:1.25">' + esc(t.title) + '</div>' +
-          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + dueTag + dlvBadge + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + monthChip + dueTag + dlvBadge + '</div>' +
         '</div></div>' +
         '<div style="display:flex;gap:7px;flex-shrink:0">' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' +
