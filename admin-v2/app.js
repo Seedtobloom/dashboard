@@ -6145,7 +6145,7 @@
       '</div>' +
       '<div class="ffv" data-ff="mois">' + breakdown + lossBanner + checkBlock + '</div>' +
       '<div class="ffv" data-ff="hist" style="display:none">' + histView + completeness + '</div>' +
-      '<div class="ffv" data-ff="reg" style="display:none">' + setup + '</div>' + excBlock + workSlotsSection() + '</div>' +
+      '<div class="ffv" data-ff="reg" style="display:none">' + setup + excBlock + workSlotsSection() + '</div>' +
     '</div>';
   }
   function workSlotsSection() {
