@@ -6419,6 +6419,7 @@
           '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px">' + pill + monthChip + dueTag + dlvBadge + '</div>' +
         '</div></div>' +
         '<div style="display:flex;gap:7px;flex-shrink:0">' +
+          '<button class="btn btn--outline btn--sm" title="Corriger le temps passé et le mois où il compte dans le forfait" onclick="ADM.ptTimePrompt(\'' + t.id + '\')">🗓 Temps &amp; mois</button>' +
           '<button class="btn btn--outline btn--sm" onclick="ADM.taskEditOpen(\'' + t.id + '\')">Modifier</button>' +
           '<button class="btn btn--outline btn--sm" title="Créer une copie de cette tâche (brief compris)" onclick="ADM.taskDuplicate(\'' + t.id + '\')">Dupliquer</button>' + archBtn +
           '<button class="btn btn--danger btn--sm" onclick="ADM.taskDelete(\'' + t.id + '\')">Suppr.</button>' +
@@ -6892,6 +6893,46 @@
     if (month) body.workMonth = month;
     if (PT_TIMER && PT_TIMER.id === id) ptPause(id, true);
     jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast('Terminée ✓'); loadClient(); } else toast('Erreur'); });
+  }
+  // Correcteur libre « Temps & mois » : accessible sur N'IMPORTE quelle tâche
+  // (pas seulement à la clôture), en heures + minutes, avec le mois forcé.
+  function ptTimePrompt(id) {
+    var t = ptFindTask(id); if (!t) return;
+    var now = new Date(); var curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    var curMin = t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0;
+    var curH = Math.floor(curMin / 60), curM = curMin % 60;
+    var mbm = admTaskMinByMonth(t); var mks = Object.keys(mbm).filter(function (k) { return mbm[k] > 0; }).sort();
+    var wm = /^\d{4}-\d{2}$/.test(String(t.workMonth || '')) ? String(t.workMonth) : '';
+    var defMonth = wm || (mks.length ? mks[mks.length - 1] : curMonth);
+    var lab = 'flex:1;display:flex;flex-direction:column;gap:4px;font-family:var(--font-micro);font-size:11px;color:var(--muted)';
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:460px;text-align:left">' +
+      '<div class="admconfirm__title">Temps &amp; mois</div>' +
+      '<p style="font-size:13.5px;color:var(--muted);margin:8px 0 14px;line-height:1.5">Le temps passé sur « ' + esc((t.title || 'Tâche').slice(0, 50)) + ' » et le mois où il est compté dans le forfait.</p>' +
+      '<div style="display:flex;gap:10px">' +
+        '<label style="' + lab + '">Heures<input id="tm-h" class="inp" type="number" min="0" step="1" style="font-size:14px;padding:9px 11px" value="' + curH + '"></label>' +
+        '<label style="' + lab + '">Minutes<input id="tm-m" class="inp" type="number" min="0" max="59" step="5" style="font-size:14px;padding:9px 11px" value="' + curM + '"></label>' +
+        '<label style="' + lab + '">Mois du travail<input id="tm-mo" class="inp" type="month" style="font-size:14px;padding:9px 11px" value="' + defMonth + '"></label>' +
+      '</div>' +
+      '<div class="admconfirm__row" style="margin-top:16px"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff">Enregistrer</button></div>' +
+    '</div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var h = parseInt((el('tm-h') || {}).value || '0', 10) || 0;
+      var m = parseInt((el('tm-m') || {}).value || '0', 10) || 0;
+      var mo = (el('tm-mo') || {}).value || '';
+      close(); ptTimeDo(id, h * 60 + m, mo);
+    };
+    document.body.appendChild(ov);
+    var f = el('tm-h'); if (f) { f.focus(); f.select(); }
+  }
+  function ptTimeDo(id, minutes, month) {
+    var loc = ptFind(id); if (loc) { loc.timeSpentMinutes = minutes; loc.timeSpentSeconds = minutes * 60; if (month) loc.workMonth = month; }
+    var body = { projectId: 'partner', timeSpentMinutes: minutes, timeSpentSeconds: minutes * 60, forceTime: true };
+    if (month) body.workMonth = month;
+    jpost('/api/clients/' + CURKEY + '/tasks/' + id, body, 'PATCH').then(function (r) { if (r.ok) { toast('Temps enregistré ✓'); loadClient(); } else toast('Erreur'); });
   }
   function taskDuplicate(id) {
     jpost('/api/clients/' + CURKEY + '/tasks/' + id + '/duplicate?projectId=partner', {}).then(function (r) {
@@ -8207,7 +8248,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
+    taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
