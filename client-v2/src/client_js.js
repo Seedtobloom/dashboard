@@ -3772,11 +3772,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var byMonthCard = card(byMonthInner);
 
     // ── Layout dashboard : forfait dominant en haut à gauche ──
+    // (Le détail mois par mois n'est PAS montré au client — il reste dans l'admin.
+    //  Côté client : forfait du mois + où va le temps + détail du mois seulement.)
     return synth +
       '<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:stretch">' +
         hero + chartCard + detailCard + catCard +
       '</div>' +
-      '<div style="margin-top:16px">' + byMonthCard + '</div>' +
       archAccordion;
   }
 
