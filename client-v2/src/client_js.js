@@ -3748,7 +3748,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     });
     var mkeys = Object.keys(_mkeys).sort().reverse();
     var byMonthInner = cardHead('Le détail, mois par mois', 'timer') +
-      sub('Chaque mois, les tâches sur lesquelles j\'ai travaillé pour vous. Le temps compte au mois où le travail est fait, pas à la validation.') +
+      sub('<b style="color:var(--terre)">Cliquez sur un mois</b> pour voir les tâches faites et le temps. Le temps compte au mois où le travail est fait, pas à la validation.') +
       (mkeys.length ? mkeys.map(function (mk) {
         var rows = tasks.map(function (t) { return { t: t, min: cpTaskMinByMonth(t)[mk] || 0 }; })
           .filter(function (o) { return o.min > 0 && o.t.stage !== 'inbox' && o.t.stage !== 'out_of_scope' && o.t.stage !== 'refused'; })
@@ -3757,13 +3757,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var isCur = mk === curMonthKey;
         var dl = new Date(mk + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
         return '<details' + (isCur ? ' open' : '') + ' style="border-top:1px solid #efe7db">' +
-          '<summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 2px">' +
+          '<summary class="cp-mrow" style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 12px">' +
+            '<span class="cp-chev" style="flex-shrink:0;color:var(--terre-400)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>' +
             '<span style="flex:1;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);text-transform:capitalize">' + esc(dl) + (isCur ? ' <span style="font-family:var(--font-micro);font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">· en cours</span>' : '') + '</span>' +
             '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);flex-shrink:0">' + hmm(tot) + '</span>' +
+            '<span class="cp-see" style="flex-shrink:0;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">détail</span>' +
           '</summary>' +
           '<div style="padding:0 2px 12px">' + rows.map(function (o) {
             var wip = o.t.status !== 'done';
-            return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:6px 0"><span style="font-size:14px;color:var(--terre)">' + esc(o.t.title || 'Tâche') + (wip ? ' <span style="font-family:var(--font-micro);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--glycine-900)">en cours</span>' : '') + '</span><span style="font-weight:600;font-size:14px;flex-shrink:0">' + hmm(o.min) + '</span></div>';
+            return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 0"><span style="font-size:15.5px;color:var(--terre)">' + esc(o.t.title || 'Tâche') + (wip ? ' <span style="font-family:var(--font-micro);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--glycine-900)">en cours</span>' : '') + '</span><span style="font-weight:600;font-size:15.5px;flex-shrink:0">' + hmm(o.min) + '</span></div>';
           }).join('') + '</div>' +
         '</details>';
       }).join('') : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Le détail apparaîtra ici au fil des mois.</p>');

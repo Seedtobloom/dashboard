@@ -38,7 +38,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --font-body:'Alegreya',Georgia,'Times New Roman',serif;
   --font-micro:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
   /* type scale */
-  --fs-micro:11px; --fs-small:14px; --fs-body:17px; --fs-lead:20px;
+  --fs-micro:11.5px; --fs-small:15px; --fs-body:18px; --fs-lead:21px;
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
   /* shape */
   --radius-1:2px; --radius-2:6px; --radius-3:10px; --radius-pill:999px;
@@ -62,6 +62,12 @@ a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer
 .micro { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
 .eyebrow { font-family: var(--font-micro); font-size: 12px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
 .serif-it { font-family: var(--font-display); font-style: italic; }
+/* Ligne de mois dépliable : affordance claire (chevron qui pivote + survol) */
+.cp-mrow { border-radius: 10px; transition: background .15s; }
+.cp-mrow:hover { background: #efe7db; }
+.cp-chev { transition: transform .2s; }
+details[open] > .cp-mrow .cp-chev { transform: rotate(90deg); }
+details[open] > .cp-mrow .cp-see { opacity: 0; }
 a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--glycine-700); outline-offset: 2px; border-radius: 4px; }
 .cp-sidebar a:focus-visible, .cp-sidebar button:focus-visible { outline-color: var(--brume-200); }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
