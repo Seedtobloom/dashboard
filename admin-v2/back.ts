@@ -1695,8 +1695,9 @@ function forfaitState(pc: AnyObj): AnyObj {
   // consomme ; les heures NON utilisées se reportent (plafond `cap`) — au-delà
   // elles sont PERDUES (lost). Un dépassement est déduit du mois suivant
   // (plafonné à un mois de forfait) ; le reste est facturé (billed). ──
-  const sixAgoYm = ymOf(new Date(now.getFullYear(), now.getMonth() - 5, 1));
-  const boundYm = startYm > sixAgoYm ? startYm : sixAgoYm;
+  // Historique complet depuis le début de la collaboration (aucun mois ancien
+  // coupé) — sinon des tâches faites il y a plus de quelques mois « disparaissent ».
+  const boundYm = startYm;
   const history: AnyObj[] = [];
   let carry = 0;
   const cursor = new Date(parseInt(boundYm.slice(0, 4), 10), parseInt(boundYm.slice(5, 7), 10) - 1, 1);

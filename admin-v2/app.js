@@ -6094,6 +6094,21 @@
         '</div>';
       }).join('') +
     '</div>' : '';
+    // ── Contrôle de complétude : total compté + tâches exclues visibles (pour retrouver une tâche « manquante ») ──
+    var _allT = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
+    function _tmin(t) { return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
+    var _bill = _allT.filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    var _billMin = _bill.reduce(function (s, t) { return s + _tmin(t); }, 0);
+    var _oos = _allT.filter(function (t) { return t.stage === 'out_of_scope' && _tmin(t) > 0; });
+    var _oosMin = _oos.reduce(function (s, t) { return s + _tmin(t); }, 0);
+    function _exLine(t) { return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 0;font-size:13.5px"><span style="color:var(--terre)"><span style="font-weight:600">' + esc(t.title || 'Tâche') + '</span></span><span style="font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums">' + fmtHrs(_tmin(t) / 60) + '</span></div>'; }
+    var completeness = '<div class="card" style="margin-top:0">' +
+      '<h3 style="margin:0 0 4px;font-size:16px">Contrôle · tout est compté&nbsp;?</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-bottom:6px"><strong>' + _bill.length + ' tâche' + (_bill.length > 1 ? 's' : '') + '</strong> dans le forfait (archivées comprises) · <strong>' + fmtHrs(_billMin / 60) + '</strong> enregistrées au total. Une tâche que tu as faite n\'apparaît pas&nbsp;? Elle est forcément dans un de ces cas :</div>' +
+      (noTimeDone.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#824426;margin:4px 0 2px;font-weight:600">• ' + noTimeDone.length + ' terminée' + (noTimeDone.length > 1 ? 's' : '') + ' sans temps saisi → onglet « Ce mois » pour les renseigner</div>' : '') +
+      (_oos.length ? '<details style="margin-top:6px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#8a4a2c;background:#F0E2D6;border-radius:999px;padding:5px 12px;display:inline-block">• Hors forfait · ' + _oos.length + ' tâche' + (_oos.length > 1 ? 's' : '') + ' avec ' + fmtHrs(_oosMin / 60) + ' (non compté — facturé à part)</summary><div style="margin-top:6px">' + _oos.map(_exLine).join('') + '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Si l\'une devrait compter dans le forfait, rouvre-la et enlève « hors forfait ».</div></div></details>' : '') +
+      (!noTimeDone.length && !_oos.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">✓ Aucune tâche exclue — tout ton travail facturable est compté.</div>' : '') +
+    '</div>';
     var histView = (f.history && f.history.length) ? histBlock : '<div class="card" style="margin-top:0"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Pas encore d\'historique — il se remplit au fil des mois.</div></div>';
     return '<div class="ffwrap">' +
       '<div class="ffnav">' +
@@ -6102,7 +6117,7 @@
         '<button onclick="ADM.ffShow(this,\'reg\')">Réglages</button>' +
       '</div>' +
       '<div class="ffv" data-ff="mois">' + breakdown + lossBanner + checkBlock + '</div>' +
-      '<div class="ffv" data-ff="hist" style="display:none">' + histView + '</div>' +
+      '<div class="ffv" data-ff="hist" style="display:none">' + histView + completeness + '</div>' +
       '<div class="ffv" data-ff="reg" style="display:none">' + setup + '</div>' + workSlotsSection() + '</div>' +
     '</div>';
   }
