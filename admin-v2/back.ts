@@ -1663,7 +1663,10 @@ function forfaitState(pc: AnyObj): AnyObj {
   // Consommation du forfait = SEULEMENT le travail « dans le forfait ». On
   // exclut les demandes non triées (stage 'inbox'), le hors-forfait (facturé
   // à part, stage 'out_of_scope'), les refusées et les archivées.
-  const tasks = allTasks.filter((t) => !t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused');
+  // Les tâches ARCHIVÉES restent comptées : archiver ne fait que ranger, ça ne
+  // décompte pas le travail déjà fait. On exclut seulement le non-facturable :
+  // demandes non triées (inbox), hors-forfait, refusées.
+  const tasks = allTasks.filter((t) => t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused');
   const now = new Date();
   // Temps rattaché au mois où il a été RÉELLEMENT travaillé (sessions de
   // chrono), jamais à la date de validation. Une validation tardive ne

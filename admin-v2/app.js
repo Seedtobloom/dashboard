@@ -5957,7 +5957,9 @@
   // triées par plus gros contributeur. La validation ne change rien.
   function partnerMonthTasks(d, ym) {
     var tasks = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
-    return tasks.filter(function (t) { return !t.archived; })
+    // Inclut les tâches archivées (le travail fait compte toujours) ; on exclut
+    // seulement le non-facturable (inbox / hors-forfait / refusé).
+    return tasks.filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; })
       .map(function (t) { return { t: t, mins: admTaskMinByMonth(t)[ym] || 0 }; })
       .filter(function (o) { return o.mins > 0; })
       .sort(function (a, b) { return b.mins - a.mins; });
