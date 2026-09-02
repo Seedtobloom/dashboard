@@ -1700,6 +1700,18 @@ function forfaitState(pc: AnyObj): AnyObj {
   // (plafonné à un mois de forfait) ; le reste est facturé (billed). ──
   // Historique complet depuis le début de la collaboration (aucun mois ancien
   // coupé) — sinon des tâches faites il y a plus de quelques mois « disparaissent ».
+  // Forfait EXCEPTIONNEL par mois (forfaitOverrides['YYYY-MM']) : remplace la base
+  // rien que pour ce mois-là (ex. septembre = 3h50 au lieu de 2h), sans toucher la
+  // base permanente. Vide/absent = on garde la base normale.
+  const overrides: AnyObj = (pc.forfaitOverrides && typeof pc.forfaitOverrides === 'object') ? pc.forfaitOverrides : {};
+  const baseFor = (ym: string): number => {
+    const o = overrides[ym];
+    return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : base;
+  };
+  const isExc = (ym: string): boolean => {
+    const o = overrides[ym];
+    return o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o));
+  };
   const boundYm = startYm;
   const history: AnyObj[] = [];
   let carry = 0;
@@ -1708,13 +1720,14 @@ function forfaitState(pc: AnyObj): AnyObj {
   while (cursor <= endM) {
     const d = cursor;
     const ym = ymOf(d);
-    const avail = base + carry;
+    const bM = baseFor(ym);
+    const avail = bM + carry;
     const usedM = usedIn(ym);
     const rem = avail - usedM;
     let carryOut = 0, lost = 0, overage = 0, billed = 0;
     if (rem >= 0) { carryOut = Math.min(cap, rem); lost = rem - carryOut; }
-    else { overage = -rem; const deduction = Math.min(overage, base); carryOut = -deduction; billed = overage - deduction; }
-    history.push({ ym, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), base: r1(base), carryIn: r1(carry), available: r1(avail), used: r1(usedM), remaining: r1(rem), lost: r1(lost), overage: r1(overage), billed: r1(billed), current: ym === curYm });
+    else { overage = -rem; const deduction = Math.min(overage, bM); carryOut = -deduction; billed = overage - deduction; }
+    history.push({ ym, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), base: r1(bM), exceptional: isExc(ym), carryIn: r1(carry), available: r1(avail), used: r1(usedM), remaining: r1(rem), lost: r1(lost), overage: r1(overage), billed: r1(billed), current: ym === curYm });
     carry = carryOut;
     cursor.setMonth(cursor.getMonth() + 1);
   }
@@ -1736,6 +1749,7 @@ function forfaitState(pc: AnyObj): AnyObj {
     remaining: curM.remaining,
     history, lostRecent, lost3, lossAlert,
     start: String(pc.forfaitStart || ''), startAuto: startYm,
+    overrides, curExceptional: !!curM.exceptional,
   };
 }
 

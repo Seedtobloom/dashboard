@@ -5979,6 +5979,7 @@
   }
   function partnerForfait(d) {
     var f = d.forfait || {};
+    PF_OVERRIDES = (f.overrides && typeof f.overrides === 'object') ? Object.assign({}, f.overrides) : {};
     WORKSLOTS = (d.content && Array.isArray(d.content.workSlots)) ? d.content.workSlots.slice() : [];
     var now = new Date();
     var monthLbl = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
@@ -6072,7 +6073,7 @@
         '</div>';
       return '<details' + (m.current ? ' open' : '') + ' style="background:' + (m.current ? 'var(--surface-2,#f4efe6)' : 'var(--card)') + ';border-radius:12px;margin-bottom:6px">' +
         '<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;padding:11px 14px">' +
-          '<span style="flex:1;font-weight:' + (m.current ? '700' : '600') + ';color:var(--terre);font-size:14.5px;text-transform:capitalize">' + esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '') + '</span>' +
+          '<span style="flex:1;font-weight:' + (m.current ? '700' : '600') + ';color:var(--terre);font-size:14.5px;text-transform:capitalize">' + esc(m.label) + (m.current ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink)">· en cours</span>' : '') + (m.exceptional ? ' <span class="micro" style="text-transform:none;letter-spacing:0;color:var(--gold-ink);background:var(--gold-chip);padding:1px 8px;border-radius:999px;font-weight:700">exceptionnel</span>' : '') + '</span>' +
           '<span style="font-variant-numeric:tabular-nums;color:var(--terre-600);font-size:13.5px;white-space:nowrap" title="Travaillé / Disponible">' + fmtHrs(m.used) + ' / ' + fmtHrs(m.available) + '</span>' +
           '<span style="font-variant-numeric:tabular-nums;color:' + restCol + ';font-weight:700;min-width:80px;text-align:right;white-space:nowrap">' + rest + '</span>' +
         '</summary>' +
@@ -6117,6 +6118,25 @@
       (!noTimeDone.length && !_oos.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">✓ Aucune tâche exclue — tout ton travail facturable est compté.</div>' : '') +
     '</div>';
     var histView = (f.history && f.history.length) ? histBlock : '<div class="card" style="margin-top:0"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Pas encore d\'historique — il se remplit au fil des mois.</div></div>';
+    // ── Forfait EXCEPTIONNEL pour un mois (n'affecte que ce mois, pas la base) ──
+    var _ovs = (f.overrides && typeof f.overrides === 'object') ? f.overrides : {};
+    var _ovKeys = Object.keys(_ovs).filter(function (k) { return /^\d{4}-\d{2}$/.test(k) && _ovs[k] !== '' && _ovs[k] != null; }).sort();
+    var _ovRows = _ovKeys.map(function (k) {
+      var lbl = new Date(k + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--bone-d)"><span style="flex:1;text-transform:capitalize;font-weight:600;color:var(--terre);font-size:14px">' + esc(lbl) + '</span><span style="font-family:var(--font-micro);font-weight:700;color:var(--gold-ink)">' + fmtHrs(parseFloat(_ovs[k])) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.forfaitOverrideDel(\'' + k + '\')">Retirer</button></div>';
+    }).join('');
+    var _cm3 = (function () { var n = new Date(); return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); })();
+    var excBlock = '<div class="card" style="margin-top:0">' +
+      '<h3 style="margin:0 0 4px;font-size:16px">Forfait exceptionnel pour un mois</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:12px;line-height:1.55">Pour <strong>un seul mois</strong> (ex. septembre = 3 h 50 au lieu de la base). Ta base normale (<strong>' + fmtHrs(f.base || 0) + '/mois</strong>) ne bouge pas — c\'est valable rien que pour ce mois-là, tu n\'as rien à remettre après.</div>' +
+      '<div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end">' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Mois<input id="ovf-mo" class="inp" type="month" value="' + _cm3 + '" style="width:auto"></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Heures<input id="ovf-h" class="inp" type="number" min="0" step="1" style="width:82px" placeholder="3"></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Minutes<input id="ovf-m" class="inp" type="number" min="0" max="59" step="5" style="width:82px" placeholder="50"></label>' +
+        '<button class="btn btn--sm" onclick="ADM.forfaitOverrideAdd()">Appliquer</button>' +
+      '</div>' +
+      (_ovKeys.length ? '<div style="margin-top:14px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Exceptions en cours</div>' + _ovRows + '</div>' : '') +
+    '</div>';
     return '<div class="ffwrap">' +
       '<div class="ffnav">' +
         '<button class="on" onclick="ADM.ffShow(this,\'mois\')">Ce mois</button>' +
@@ -6125,7 +6145,7 @@
       '</div>' +
       '<div class="ffv" data-ff="mois">' + breakdown + lossBanner + checkBlock + '</div>' +
       '<div class="ffv" data-ff="hist" style="display:none">' + histView + completeness + '</div>' +
-      '<div class="ffv" data-ff="reg" style="display:none">' + setup + '</div>' + workSlotsSection() + '</div>' +
+      '<div class="ffv" data-ff="reg" style="display:none">' + setup + '</div>' + excBlock + workSlotsSection() + '</div>' +
     '</div>';
   }
   function workSlotsSection() {
@@ -6134,6 +6154,19 @@
       '<div id="ws-card">' + workSlotsCard() + '</div></div>';
   }
   var WORKSLOTS = [];
+  var PF_OVERRIDES = {};
+  function forfaitOverrideSave() {
+    jpost('/api/clients/' + CURKEY + '/forfait', { projectId: 'partner', forfaitOverrides: PF_OVERRIDES }, 'PATCH').then(function (r) { if (r.ok) { toast('Exception enregistrée ✓'); loadClient(); } else toast('Erreur'); });
+  }
+  function forfaitOverrideAdd() {
+    var mo = (el('ovf-mo') || {}).value || ''; if (!/^\d{4}-\d{2}$/.test(mo)) { toast('Choisis un mois'); return; }
+    var h = parseInt((el('ovf-h') || {}).value || '0', 10) || 0;
+    var m = parseInt((el('ovf-m') || {}).value || '0', 10) || 0;
+    if (h <= 0 && m <= 0) { toast('Indique un nombre d\'heures'); return; }
+    PF_OVERRIDES[mo] = Math.round((h + m / 60) * 100) / 100;
+    forfaitOverrideSave();
+  }
+  function forfaitOverrideDel(mo) { delete PF_OVERRIDES[mo]; forfaitOverrideSave(); }
   var WS_DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
   function wsReadInputs() {
     return WORKSLOTS.map(function (_, i) {
@@ -8246,7 +8279,7 @@
   window.ADM = {
     nav: nav, login: login, logout: logout, scan: scan, createClient: createClient, copy: copy, editToken: editToken, navClientTab: navClientTab, navToggleClient: navToggleClient,
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
-    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
+    openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
