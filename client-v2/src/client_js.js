@@ -825,11 +825,23 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="height:100%;width:' + dPct + '%;background:' + doneCol + '"></span>' +
         '<span style="height:100%;width:' + wPct + '%;background:' + wipCol + ';box-shadow:inset 2px 0 0 ' + divider + '"></span>' +
       '</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:7px 16px">' + lg(doneCol, hm(doneMin) + ' terminé') + lg(wipCol, hm(wipMin) + ' en cours') + lg(dark ? 'rgba(251,250,246,.22)' : 'rgba(65,47,33,.14)', hm(Math.max(0, restMin)) + ' restantes') + '</div>';
+      '<div style="display:flex;flex-wrap:wrap;gap:7px 16px">' + lg(doneCol, 'terminé') + lg(wipCol, 'en cours') + lg(dark ? 'rgba(251,250,246,.22)' : 'rgba(65,47,33,.14)', 'disponible') + '</div>';
+  }
+  // Statut du forfait (client) : un compteur CLAIR mais formulé positivement,
+  // avec le principe « à utiliser ce mois » (les heures non utilisées ne se
+  // cumulent pas — la cliente comprend qu'elle a intérêt à s'en servir).
+  function cpMood(availMin, usedMin, capH) {
+    var rest = availMin - usedMin;
+    var cap = (capH != null ? capH : 2);
+    function hm(min) { min = Math.round(Math.abs(min)); var h = Math.floor(min / 60), m = min % 60; return (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
+    if (rest < 0) return { tone: 'over', label: 'Forfait complété ce mois', note: 'On a un peu dépassé — les demandes en plus sont facturées en supplément. On en parle quand vous voulez, et je réajuste le forfait avec vous si besoin.' };
+    if (availMin > 0 && rest <= availMin * 0.12) return { tone: 'low', label: 'Il reste ' + hm(rest) + ' ce mois', note: 'On arrive au bout du forfait de ce mois. Si un sujet presse, dites-le-moi et on le priorise ensemble.' };
+    return { tone: 'ok', label: 'Il vous reste ' + hm(rest) + ' ce mois', note: 'Profitez-en : les heures non utilisées ne se reportent pas d\'un mois à l\'autre (au-delà d\'un petit report de ' + hm(cap * 60) + '). C\'est le bon moment pour me confier vos sujets.' };
   }
   function cpForfaitCard(eyebrow, nums, pid) {
     var availMin = nums.availMin, doneMin = nums.doneMin, wipMin = nums.wipMin;
     var usedMin = doneMin + wipMin, restMin = availMin - usedMin;
+    var _cm = cpMood(availMin, usedMin);
     function hm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
     var donePct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
     var wipPct = availMin > 0 ? Math.max(0, Math.min(100 - donePct, wipMin / availMin * 100)) : 0;
@@ -838,9 +850,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
         '<div>' +
           '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">' + eyebrow + '</div>' +
-          '<div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:0.9;color:' + (restMin < 0 ? '#e79a8a' : '#FBFAF6') + '">' + hm(Math.abs(restMin)) + '</span><span style="font-family:var(--font-body);font-size:14px;color:#d8c6a8">' + (restMin < 0 ? 'de dépassement' : 'restantes sur ' + hm(availMin)) + '</span></div>' +
+          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#e79a8a' : '#FBFAF6') + '">' + _cm.label + '</div>' +
+          '<div style="font-family:var(--font-body);font-size:14px;color:#d8c6a8;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir le détail →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
     '</div>';
@@ -3671,17 +3684,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
     function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
     function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    var _cm2 = cpMood(_availMin, _usedMin, _pf.cap);
     var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
-      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(monthLbl2) + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (_restMin < 0 ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(_restMin)) + '</span><span style="font-size:15px;color:#d8c6a8">' + (_restMin < 0 ? 'de dépassement' : 'restantes sur ' + hmm(_availMin) + ' ce mois') + '</span></div>' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre accompagnement · ' + esc(monthLbl2) + '</div>' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#e79a8a' : '#FBFAF6') + '">' + _cm2.label + '</div>' +
+      '<div style="font-size:15px;color:#d8c6a8;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
       '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + _wPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', hmm(_fdone) + ' terminé') + (_fwip > 0 ? flag('#9a72d6', hmm(_fwip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
-      '<div style="height:1px;background:rgba(251,250,246,.14);margin:26px 0"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px 40px">' +
-        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(_baseMin)) + (_carryMin !== 0 ? fRow((_carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (_carryMin > 0 ? '+' : '−') + hmm(Math.abs(_carryMin))) : '') + '</div>' +
-        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Tâches terminées', hmm(_fdone)) + (_fwip > 0 ? fRow('+ En cours (déjà compté)', hmm(_fwip), true) : '') + '</div>' +
-      '</div>' +
-      (_pf.remaining < 0 ? '<div style="font-size:12px;color:#e79a8a;margin-top:16px;line-height:1.45">Dépassement facturé ' + _pf.rate + ' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', 'terminé') + (_fwip > 0 ? flag('#9a72d6', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
     '</section>' : card(sub('Renseignez un forfait pour suivre la consommation.'));
 
     // ── 3. Graphe empilé par catégorie ──
