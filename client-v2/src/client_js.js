@@ -489,11 +489,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   }
   function cpForfaitState(p) {
     var base = parseFloat(p.monthlyHours) || 0;
-    // Forfait EXCEPTIONNEL par mois (forfaitOverrides['YYYY-MM']) : remplace la
-    // base rien que pour ce mois-là (ex. septembre = 3h50 au lieu de 2h), sans
-    // toucher la base normale. Même règle que l'admin.
+    // REPORT EXCEPTIONNEL par mois (forfaitOverrides['YYYY-MM']) : normalement le
+    // report est plafonné au cap (2 h). Pour un mois précis, on force un report
+    // entrant plus grand (ex. septembre : report 3h50). La base ne change pas.
     var _ovr = (p.forfaitOverrides && typeof p.forfaitOverrides === 'object') ? p.forfaitOverrides : {};
-    function baseFor(ym){ var o = _ovr[ym]; return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : base; }
+    function ovVal(ym){ var o = _ovr[ym]; return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : null; }
     var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
     var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
     // Consommation = uniquement le travail DANS le forfait : on exclut les
@@ -507,27 +507,27 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var prev = pdt.getFullYear()+'-'+String(pdt.getMonth()+1).padStart(2,'0');
     var used = usedIn(cur);
     var usedPrev = usedIn(prev);
-    var baseCur = baseFor(cur);
-    var basePrev = baseFor(prev);
-    // Report du mois précédent (qu'il y ait eu de l'activité ou non — un mois
-    // vide reporte bien son forfait) :
-    //  - heures NON utilisées : reportées, plafonnées au cap (max 2 h) ;
-    //  - DEPASSEMENT : déduit du mois en cours, plafonné à un mois de forfait ;
-    //    le dépassement au-delà d'un mois est facturé (billedCarry), pas reporté.
+    var ovCur = ovVal(cur);
+    // Report entrant du mois en cours :
+    //  - si report EXCEPTIONNEL défini pour ce mois → on le force ;
+    //  - sinon report normal du mois précédent (plafonné au cap, max 2 h) ;
+    //    un DEPASSEMENT est déduit du mois en cours (facturé au-delà d'un mois).
     var carryIn = 0, billedCarry = 0;
-    if (basePrev) {
-      var diffPrev = basePrev - usedPrev;
+    if (ovCur !== null) {
+      carryIn = ovCur;
+    } else if (base) {
+      var diffPrev = base - usedPrev;
       if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
       else {
         var overagePrev = -diffPrev;
-        var deduction = Math.min(overagePrev, basePrev);
+        var deduction = Math.min(overagePrev, base);
         carryIn = -deduction;
         billedCarry = Math.round((overagePrev - deduction) * 10) / 10;
       }
     }
-    var available = baseCur + carryIn;
+    var available = base + carryIn;
     var remaining = available - used;
-    return { base:baseCur, baseStd:base, exceptional: baseCur !== base, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
+    return { base:base, exceptional: ovCur !== null, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
   }
   function cpFmtH(h){ var v = Math.round(h*10)/10; return (v % 1 === 0 ? String(v) : v.toFixed(1)) + ' h'; }
 
@@ -4681,10 +4681,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     }
     if (!months.length) return '<div class="cp-card"><div class="cp-empty">Aucune donnée disponible.</div></div>';
 
-    // Calculer soldes. Le report M-1 est le solde chaîné du mois précédent.
-    // forfaitOverrides['YYYY-MM'] = forfait EXCEPTIONNEL pour ce mois-là
-    // (ex. septembre = 3h50 au lieu de 2h), sans toucher la base normale.
-    function _mBase(mk){ var o = overrides[mk]; return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : forfait; }
+    // Modèle IDENTIQUE au compteur du haut (cpForfaitState) pour ne pas se
+    // contredire : base fixe + report entrant PLAFONNÉ (cap 2 h). Les heures
+    // non utilisées au-delà du plafond sont perdues (elles ne s'accumulent pas).
+    // forfaitOverrides['YYYY-MM'] = REPORT EXCEPTIONNEL de ce mois-là (ex. sept.
+    // = report 3h50 au lieu de 2 h max), sans toucher la base.
+    var cap = (project.rolloverCapHours != null && project.rolloverCapHours !== '') ? parseFloat(project.rolloverCapHours) : 2;
+    function _ov(mk){ var o = overrides[mk]; return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : null; }
     var rows = [];
     var carry = 0;
     var totalReel = 0;
@@ -4692,14 +4695,16 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     months.forEach(function(mk, idx) {
       var mTasks = byMonth[mk] || [];
       var reel = mTasks.reduce(function(s,t){ return s+(t.timeSpentMinutes||0); },0) / 60;
-      var mBase = _mBase(mk);
-      var regulM1 = carry;
-      var solde = mBase + regulM1 - reel;
-      carry = solde;
+      var ov = _ov(mk);
+      var carryIn = (ov !== null) ? ov : carry;        // report entrant (forcé si exception)
+      var avail = forfait + carryIn;
+      var restant = avail - reel;                        // solde DU MOIS (ne s'accumule pas)
+      var carryOut = restant >= 0 ? Math.min(cap, restant) : -Math.min(-restant, forfait);
+      carry = carryOut;
       totalReel += reel;
-      totalForfait += mBase;
+      totalForfait += avail;
       var mLabel = new Date(mk+'-15').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-      rows.push({ mk:mk, label:mLabel, forfait:mBase, regulM1:regulM1, hasOverride:(mBase!==forfait), reel:reel, solde:solde });
+      rows.push({ mk:mk, label:mLabel, forfait:forfait, regulM1:carryIn, hasOverride:(ov!==null), reel:reel, solde:restant });
     });
 
     var totalSolde = carry;
@@ -4707,12 +4712,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var rowsHtml = rows.map(function(r) {
       var isNow = r.mk === endKey;
       var soldeCol = r.solde > 0 ? 'var(--sage)' : r.solde < 0 ? 'var(--red)' : 'var(--muted)';
-      var regulCell = '<div style="display:flex;align-items:center;gap:6px;justify-content:center">' +
+      var regulCell = '<div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">' +
         '<span style="color:'+(r.regulM1>0?'var(--sage)':r.regulM1<0?'var(--red)':'var(--muted)')+'">' +
           fmt(r.regulM1) +
         '</span>' +
+        (r.hasOverride ? '<span style="font-size:10px;font-weight:700;color:var(--navy);background:rgba(28,18,5,0.06);border-radius:999px;padding:1px 7px;white-space:nowrap">exceptionnel</span>' : '') +
       '</div>';
-      var fCell = fmt(r.forfait) + (r.hasOverride ? ' <span style="font-size:10px;font-weight:700;color:var(--navy);background:rgba(28,18,5,0.06);border-radius:999px;padding:1px 7px;vertical-align:middle;white-space:nowrap">exceptionnel</span>' : '');
+      var fCell = fmt(r.forfait);
       return '<tr style="'+(isNow?'background:rgba(28,18,5,0.03);font-weight:600':'')+'\">' +
         '<td style="padding:10px 14px;font-size:14px;text-transform:capitalize;white-space:nowrap">'+esc(r.label)+'</td>' +
         '<td style="padding:10px 14px;font-size:14px;text-align:center">'+fCell+'</td>' +
@@ -4751,13 +4757,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Forfait</th>' +
             '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Report M-1</th>' +
             '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Réel</th>' +
-            '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Solde</th>' +
+            '<th style="padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center">Restant</th>' +
           '</tr></thead>' +
           '<tbody style="border-bottom:2px solid var(--border)">'+rowsHtml+'</tbody>' +
           '<tfoot><tr>' +
-            '<td colspan="3" style="padding:10px 14px;font-size:13px;color:var(--muted)">Total</td>' +
+            '<td colspan="3" style="padding:10px 14px;font-size:13px;color:var(--muted)">Total travaillé</td>' +
             '<td style="padding:10px 14px;font-size:14px;text-align:center;font-weight:600;color:var(--navy)">'+fmtH(totalReel)+'</td>' +
-            '<td style="padding:10px 14px;font-size:14px;text-align:center;font-weight:700;color:'+(totalSolde>=0?'var(--sage)':'var(--red)')+'">'+fmtH(totalSolde)+'</td>' +
+            '<td style="padding:10px 14px;font-size:13px;text-align:center;color:var(--muted)"></td>' +
           '</tr></tfoot>' +
         '</table></div>' +
         '<div style="padding:16px 0;min-width:140px">' + donut + '</div>' +

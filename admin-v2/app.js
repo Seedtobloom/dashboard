@@ -5998,8 +5998,9 @@
     var restCol = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
     var pct = f.available > 0 ? Math.min(100, Math.round(f.used / f.available * 100)) : (f.used > 0 ? 100 : 0);
     function line(lbl, val, col, strong) { return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">' + lbl + '</span><span style="font-weight:' + (strong ? '700' : '600') + ';font-size:' + (strong ? '15px' : '13.5px') + ';color:' + (col || 'var(--terre)') + '">' + val + '</span></div>'; }
+    var _excTag = f.curExceptional ? ' <span style="font-size:10px;font-weight:700;color:var(--gold-ink);background:var(--gold-chip);border-radius:999px;padding:1px 8px;vertical-align:middle">exceptionnel</span>' : '';
     var carryLine = '';
-    if (f.carryIn > 0) carryLine = line('+ Report du mois dernier <span style="color:var(--muted)">(heures non utilisées)</span>', '+ ' + fmtHrs(f.carryIn), 'var(--green)');
+    if (f.carryIn > 0) carryLine = line('+ Report du mois dernier ' + (f.curExceptional ? _excTag : '<span style="color:var(--muted)">(heures non utilisées)</span>'), '+ ' + fmtHrs(f.carryIn), 'var(--green)');
     else if (f.carryIn < 0) carryLine = line('− Dépassement du mois dernier <span style="color:var(--muted)">(déduit)</span>', '− ' + fmtHrs(-f.carryIn), '#8a4a2c');
     else carryLine = line('Report du mois dernier', '0 h', 'var(--muted)');
     var billed = f.billedCarry > 0 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;border-radius:8px;padding:7px 11px;margin-top:8px">⚠️ ' + fmtHrs(f.billedCarry) + ' de dépassement au-delà d\'un mois de forfait le mois dernier → à facturer (non reporté).</div>' : '';
@@ -6126,16 +6127,17 @@
       return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--bone-d)"><span style="flex:1;text-transform:capitalize;font-weight:600;color:var(--terre);font-size:14px">' + esc(lbl) + '</span><span style="font-family:var(--font-micro);font-weight:700;color:var(--gold-ink)">' + fmtHrs(parseFloat(_ovs[k])) + '</span><button class="btn btn--outline btn--sm" onclick="ADM.forfaitOverrideDel(\'' + k + '\')">Retirer</button></div>';
     }).join('');
     var _cm3 = (function () { var n = new Date(); return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); })();
+    var _capH = (f.cap != null ? f.cap : 2);
     var excBlock = '<div class="card" style="margin-top:0">' +
-      '<h3 style="margin:0 0 4px;font-size:16px">Forfait exceptionnel pour un mois</h3>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:12px;line-height:1.55">Pour <strong>un seul mois</strong> (ex. septembre = 3 h 50 au lieu de la base). Ta base normale (<strong>' + fmtHrs(f.base || 0) + '/mois</strong>) ne bouge pas — c\'est valable rien que pour ce mois-là, tu n\'as rien à remettre après.</div>' +
+      '<h3 style="margin:0 0 4px;font-size:16px">Report exceptionnel pour un mois</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:12px;line-height:1.55">Normalement le report d\'un mois sur l\'autre est plafonné à <strong>' + fmtHrs(_capH) + '</strong>. Pour <strong>un mois précis</strong>, tu peux autoriser un report plus grand (ex. septembre&nbsp;: on reporte 3 h 50). La base (<strong>' + fmtHrs(f.base || 0) + '/mois</strong>) ne change pas — ce mois-là aura <em>base + report saisi</em>.</div>' +
       '<div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end">' +
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Mois<input id="ovf-mo" class="inp" type="month" value="' + _cm3 + '" style="width:auto"></label>' +
-        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Heures<input id="ovf-h" class="inp" type="number" min="0" step="1" style="width:82px" placeholder="3"></label>' +
-        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Minutes<input id="ovf-m" class="inp" type="number" min="0" max="59" step="5" style="width:82px" placeholder="50"></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Report — heures<input id="ovf-h" class="inp" type="number" min="0" step="1" style="width:92px" placeholder="3"></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Report — minutes<input id="ovf-m" class="inp" type="number" min="0" max="59" step="5" style="width:98px" placeholder="50"></label>' +
         '<button class="btn btn--sm" onclick="ADM.forfaitOverrideAdd()">Appliquer</button>' +
       '</div>' +
-      (_ovKeys.length ? '<div style="margin-top:14px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Exceptions en cours</div>' + _ovRows + '</div>' : '') +
+      (_ovKeys.length ? '<div style="margin-top:14px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Reports exceptionnels en cours</div>' + _ovRows + '</div>' : '') +
     '</div>';
     return '<div class="ffwrap">' +
       '<div class="ffnav">' +
