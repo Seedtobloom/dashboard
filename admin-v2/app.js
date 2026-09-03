@@ -47,7 +47,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   // Mise en forme légère des messages (même syntaxe que côté client) : **gras**,
   // _italique_, [couleur]…[/], puces « - », retours à la ligne. Échappe d'abord.
-  var MSG_COLORS = { violet: '#6c4ea4', vert: '#4f7a52', bleu: '#35608f', orange: '#b5791f', rouge: '#9b3a2e' };
+  var MSG_COLORS = { violet: '#5A2A11', vert: '#4f7a52', bleu: '#35608f', orange: '#b5791f', rouge: '#9b3a2e' };
   function fmtMsg(s) {
     s = esc(String(s == null ? '' : s));
     s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
@@ -81,7 +81,7 @@
       b('<em>I</em>', 'Italique', 'ADM.msgWrap(\'' + id + '\',\'_\',\'_\')') +
       b('<span style="font-size:11px">A</span><span style="font-size:14px">+</span>', 'Grossir le texte', 'ADM.msgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
       b('<span style="font-size:10px">A</span><span style="font-size:15px">+</span>', 'Titre (plus grand)', 'ADM.msgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
-      sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
+      sw('#5A2A11', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
       b('•', 'Liste à puces', 'ADM.msgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'ADM.emojiToggle(\'' + id + '\')') +
     '</div>' + pal;
@@ -434,12 +434,12 @@
     var commentRows = COMMENT_TASKS.map(function (t) {
       var when = t.at ? new Date(t.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       var txt = (t.text || '').trim();
-      return '<div style="padding:13px 15px;border:none;background:#f4f1fa">' +
+      return '<div style="padding:13px 15px;border:none;background:#E8F1FF">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
           '<div style="font-weight:600;color:var(--terre);font-size:14px;min-width:0">' + esc(t.title || 'Sans titre') + '</div>' +
           (when ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + when + '</span>' : '') +
         '</div>' +
-        '<div class="micro" style="color:#573b8a;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">💬 Nouveau commentaire de ' + esc(t.client) + '</div>' +
+        '<div class="micro" style="color:#2c4a72;text-transform:none;letter-spacing:0;margin-top:3px;font-weight:600">💬 Nouveau commentaire de ' + esc(t.client) + '</div>' +
         (txt ? '<div style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">« ' + esc(txt) + ' »</div>' : '') +
         '<div style="display:flex;gap:7px;margin-top:9px">' +
           '<button class="btn btn--dark btn--sm" onclick="ADM.notifOpen(\'' + t.key + '\',\'' + t.id + '\')">Ouvrir</button>' +
@@ -1971,7 +1971,7 @@
 
       var qd = d.qnrDone || [];
       var qnrDoneCard = qd.length ? '<div class="card infocard" style="background:var(--card)">' +
-        '<h3><span class="infocard__dot" style="background:#8267ab"></span>Questionnaires reçus · ' + qd.length + '</h3>' +
+        '<h3><span class="infocard__dot" style="background:#CD8F6E"></span>Questionnaires reçus · ' + qd.length + '</h3>' +
         '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ces clientes ont complété un questionnaire — consulte leurs réponses.</div>' +
         qd.map(function (q) {
           return '<div class="file" style="gap:10px"><span class="nm">' + esc(q.name) + ' <span class="micro" style="color:var(--muted)">· ' + esc(q.client) + (q.completedAt ? ' · ' + fmtDate(q.completedAt) : '') + '</span></span>' +
@@ -3314,7 +3314,7 @@
     var bg = dark ? 'rgba(255,255,255,0.08)' : '#fff';
     var css = 'padding:5px 9px;border:1px solid ' + bd + ';border-radius:7px;background:' + bg + ';cursor:pointer;font-size:13px;color:' + col + ';line-height:1;font-family:inherit';
     function b(cmd, label, title, val) { return '<button type="button" title="' + title + '" onmousedown="event.preventDefault();ADM.visFmt(\'' + cmd + '\'' + (val ? ',\'' + val + '\'' : '') + ')" style="' + css + '">' + label + '</button>'; }
-    var sw = ['#412F21', '#c0533b', '#4f6a46', '#6c4ea4', '#c9952f'].map(function (c) { return '<button type="button" title="Couleur du texte" onmousedown="event.preventDefault();ADM.visFmt(\'foreColor\',\'' + c + '\')" style="width:19px;height:19px;border-radius:5px;border:1px solid ' + bd + ';background:' + c + ';cursor:pointer"></button>'; }).join('');
+    var sw = ['#110704', '#c0533b', '#4f6a46', '#35608f', '#c9952f'].map(function (c) { return '<button type="button" title="Couleur du texte" onmousedown="event.preventDefault();ADM.visFmt(\'foreColor\',\'' + c + '\')" style="width:19px;height:19px;border-radius:5px;border:1px solid ' + bd + ';background:' + c + ';cursor:pointer"></button>'; }).join('');
     var sep = '<span style="width:1px;height:16px;background:' + bd + ';margin:0 2px;display:inline-block"></span>';
     return b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + sep +
       b('fontSize', 'A<span style="font-size:9px;vertical-align:super">+</span>', 'Grand texte', '5') + b('fontSize', 'A', 'Texte normal', '3') + b('fontSize', '<span style="font-size:10px">a</span>', 'Petit texte', '2') + sep +
@@ -5993,7 +5993,7 @@
     t0 = t0 || '';
     var cq = cid ? ',\'' + cid + '\'' : '';
     var rows = planCompute(planning, t0);
-    var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#f4f1fa', '#573b8a'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
+    var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#F0E2D6', '#8a4a2c'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
     var STx = { fait: ['Fait', '#e6f0e2', '#456039'], en_cours: ['En cours', '#f6ead2', '#8a6414'], a_venir: ['À venir', '#efe7d7', '#675334'] };
     function jalonRow(r) {
       var j = r.j;
@@ -6736,13 +6736,13 @@
       return '<tr>' + cols.map(function (c, ci) {
         var val = (row && row[ci] != null) ? row[ci] : '';
         var vis = ci === visIdx;
-        var cellBg = vis ? (even ? '#E7DAFA' : '#EFE7FB') : rowBg;
+        var cellBg = vis ? (even ? '#E8F1FF' : '#eaf1fb') : rowBg;
         var rnd = last ? ((ci === 0 ? 'border-bottom-left-radius:13px;' : '') + (ci === cols.length - 1 ? 'border-bottom-right-radius:13px;' : '')) : '';
         var raw = String(val).replace(/<[^>]*>/g, '').trim();
         if (ci === 0 && raw && raw.length <= 4) {
           return '<td style="padding:14px 10px;text-align:center;vertical-align:top;background:' + cellBg + ';' + rnd + '"><span style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#F1DCA6;color:#7a5a1e;font-family:var(--font-display);font-style:italic;font-size:16px">' + esc(raw) + '</span></td>';
         }
-        var col = vis ? '#5b3f96' : 'var(--terre)';
+        var col = vis ? '#2c4a72' : 'var(--terre)';
         var extra = vis ? 'font-style:italic;font-size:13px;' : (ci === titIdx ? "font-family:var(--font-display);font-size:17px;line-height:1.25;" : 'font-size:13.5px;line-height:1.55;');
         return '<td style="padding:14px 15px;vertical-align:top;color:' + col + ';white-space:pre-wrap;word-break:break-word;min-width:130px;max-width:340px;background:' + cellBg + ';' + extra + rnd + '">' + admRichSafe(val) + '</td>';
       }).join('') + '</tr>';
@@ -7076,7 +7076,7 @@
     var list = (t.comments || []);
     var cs = list.length ? list.map(function (c) {
       var mine = c.author === 'cindy';
-      var bg = mine ? 'var(--surface-2)' : '#f4f1fa';
+      var bg = mine ? 'var(--surface-2)' : '#E8F1FF';
       var who = mine ? 'Vous' : 'Client';
       return '<div style="display:flex;flex-direction:column;align-items:' + (mine ? 'flex-end' : 'flex-start') + ';margin-bottom:7px">' +
         '<div style="max-width:88%;background:' + bg + ';border-radius:12px;padding:8px 12px">' +
@@ -7084,7 +7084,7 @@
           '<div style="font-size:13.5px;color:var(--terre);line-height:1.45">' + mtLinkify(c.text || '') + '</div>' +
         '</div></div>';
     }).join('') : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Aucun échange pour l\'instant.</div>';
-    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#573b8a;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
+    var flag = t.clientCommentNotif ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#2c4a72;background:#E8F1FF;padding:3px 8px;border-radius:999px;margin-left:8px">Nouveau</span>' : '';
     return '<div><div class="micro" style="margin-bottom:9px">Échanges sur la tâche' + flag + '</div>' + cs +
       '<div class="row mt" style="gap:8px"><input class="inp" style="flex:1" id="cm-' + t.id + '" placeholder="Répondre au client…" onkeydown="if(event.key===\'Enter\')ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')"><button class="btn btn--dark btn--sm" onclick="ADM.taskComment(\'' + pid + '\',\'' + t.id + '\')">Envoyer</button></div></div>';
   }
@@ -8384,7 +8384,7 @@
   var PRJ = [], PRJ_LOADED = false, PRJ_SEL = null, PRJ_SHOW_ARCH = false, PRJ_SEQ = 0;
   var PRJ_OFFERS = [['website', 'Site internet'], ['branding', 'Identité visuelle'], ['supports', 'Support de communication'], ['partner', 'Partenaire créative'], ['maintenance', 'Maintenance']];
   var PRJ_OFFER_PID = { website: 'website', branding: 'branding', partner: 'partner', maintenance: 'maintenance', supports: 'support-001' };
-  var PRJ_STEP_TYPES = [['client', 'Action cliente', '#8267ab', 'stepClient'], ['studio', 'Travail studio', '#4a6fa5', 'stepStudio'], ['validation', 'Validation', '#3f9a6a', 'stepValid']];
+  var PRJ_STEP_TYPES = [['client', 'Action cliente', '#CD8F6E', 'stepClient'], ['studio', 'Travail studio', '#4a6fa5', 'stepStudio'], ['validation', 'Validation', '#3f9a6a', 'stepValid']];
   function prjId(p) { PRJ_SEQ++; return (p || 'p') + Date.now().toString(36) + PRJ_SEQ.toString(36); }
   function prjTpl(id) { for (var i = 0; i < PRJ.length; i++) if (PRJ[i].id === id) return PRJ[i]; return null; }
   function prjOfferLabel(o) { for (var i = 0; i < PRJ_OFFERS.length; i++) if (PRJ_OFFERS[i][0] === o) return PRJ_OFFERS[i][1]; return o; }
@@ -8473,7 +8473,7 @@
     var col = t.color || '#2c4a72';
     var offSel = '<select class="inp" style="width:auto" onchange="ADM.prjSet(\'' + t.id + '\',\'offer\',this.value)">' +
       PRJ_OFFERS.map(function (o) { return '<option value="' + o[0] + '"' + (t.offer === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
-    var swatches = ['#2c4a72', '#8267ab', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
+    var swatches = ['#2c4a72', '#CD8F6E', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
     var colorDots = swatches.map(function (c) { return '<button title="' + esc(c) + '" onclick="ADM.prjSet(\'' + t.id + '\',\'color\',\'' + c + '\')" style="width:22px;height:22px;border-radius:50%;background:' + c + ';border:2px solid ' + (col === c ? 'var(--terre)' : 'transparent') + ';cursor:pointer"></button>'; }).join('');
     var phasesHtml = (t.phases || []).map(function (p, i) { return prjPhaseHtml(t, p, i, (t.phases || []).length); }).join('');
     return '<div style="position:sticky;top:0;background:var(--bg,#faf7f1);z-index:4;padding:14px 22px;border:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
@@ -8611,7 +8611,7 @@
       prjMkPhase('Développement WordPress', 'Sem. 4–5', [prjMkStep('studio', 'Intégration sur staging', 480), prjMkStep('studio', 'Responsive + SEO + formulaire', 240), prjMkStep('client', 'Retours via Pastel', 0), prjMkStep('validation', 'Valider les corrections', 30)], [prjMkDeliv('Site de test (staging)', 2)]),
       prjMkPhase('Livraison', 'Sem. 6', [prjMkStep('studio', 'Mise en ligne + vérifications', 120), prjMkStep('studio', 'Formation 1h', 60), prjMkStep('validation', 'Réception', 0)], [prjMkDeliv('Site en ligne', 0), prjMkDeliv('Tutoriel de prise en main', 0)]),
     ] };
-    var brand = { id: prjId('t'), name: 'Identité visuelle', offer: 'branding', icon: '🎨', color: '#8267ab', totalWeeks: 0, archived: false, phases: [
+    var brand = { id: prjId('t'), name: 'Identité visuelle', offer: 'branding', icon: '🎨', color: '#CD8F6E', totalWeeks: 0, archived: false, phases: [
       prjMkPhase('Questionnaire & stratégie', '', [prjMkStep('client', 'Répondre au questionnaire', 30), prjMkStep('studio', 'Stratégie de marque', 120), prjMkStep('validation', 'Valider la stratégie', 20)], [prjMkDeliv('Plateforme de marque', 0)]),
       prjMkPhase('Direction artistique', '', [prjMkStep('studio', 'Moodboard / pistes créatives', 180), prjMkStep('validation', 'Valider la piste créative', 20)], [prjMkDeliv('Direction artistique (moodboard)', 2)]),
       prjMkPhase('Logo', '', [prjMkStep('studio', 'Création du logo + déclinaisons', 300), prjMkStep('validation', 'Valider le logo', 30)], [prjMkDeliv('Logo + déclinaisons', 2)]),
