@@ -1431,11 +1431,13 @@
     // Saisie du temps passé directement depuis ce panneau (sans ouvrir la fiche).
     var isMaint = atOffer(x) === 'maint';
     var curMin = x.timeSpentMinutes || Math.round((x.timeSpentSeconds || 0) / 60) || 0;
+    var curH = Math.floor(curMin / 60), curM = curMin % 60;
     var timeBlock =
       '<p class="at-dr__lab" style="margin-top:24px">Temps passé</p>' +
-      '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' +
-        '<input class="inp" id="att-min-' + x.id + '" type="number" min="0" step="15" value="' + curMin + '" style="width:92px" onchange="ADM.atSetTime(\'' + key + '\',\'' + x.id + '\',' + isMaint + ',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
-        (isMaint ? '' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-left:6px">Compté en</span><input class="inp" id="att-wm-' + x.id + '" type="month" value="' + esc(x.workMonth || '') + '" style="width:158px" onchange="ADM.atSetMonth(\'' + key + '\',\'' + x.id + '\',this.value)" title="Forcer le mois de rattachement (laisser vide = automatique)">') +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        '<input class="inp" id="att-h-' + x.id + '" type="number" min="0" value="' + curH + '" style="width:64px" onchange="ADM.atSetTime(\'' + key + '\',\'' + x.id + '\',' + isMaint + ')"><span class="micro" style="text-transform:none;letter-spacing:0">h</span>' +
+        '<input class="inp" id="att-m-' + x.id + '" type="number" min="0" max="59" value="' + curM + '" style="width:64px" onchange="ADM.atSetTime(\'' + key + '\',\'' + x.id + '\',' + isMaint + ')"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
+        (isMaint ? '' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-left:10px">Compté en</span><input class="inp" id="att-wm-' + x.id + '" type="month" value="' + esc(x.workMonth || '') + '" style="width:158px" onchange="ADM.atSetMonth(\'' + key + '\',\'' + x.id + '\',this.value)" title="Forcer le mois de rattachement (laisser vide = automatique)">') +
       '</div>';
     el('at-dr-in').innerHTML =
       '<div class="at-dr__top"><button class="at-dr__x" onclick="ADM.atClose()">✕</button>' +
@@ -1464,8 +1466,11 @@
   function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   // Saisie du temps depuis le panneau « Toutes les tâches » : PATCH la bonne
   // ressource selon l'offre (tâche partenaire vs ticket maintenance).
-  function atSetTime(key, id, isMaint, mn) {
-    var m = Math.max(0, parseInt(mn, 10) || 0);
+  function atSetTime(key, id, isMaint) {
+    var hEl = el('att-h-' + id), mEl = el('att-m-' + id);
+    var h = Math.max(0, parseInt(hEl && hEl.value, 10) || 0);
+    var mm = Math.max(0, parseInt(mEl && mEl.value, 10) || 0);
+    var m = h * 60 + mm;
     var url = isMaint ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
     var body = isMaint
       ? { projectId: 'maintenance', timeSpentMinutes: m, timeSpentSeconds: m * 60 }
