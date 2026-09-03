@@ -1659,14 +1659,19 @@ function taskMinutesByMonth(t: AnyObj): Record<string, number> {
     const wm = String(t.workMonth || '');
     let rm = /^\d{4}-\d{2}$/.test(wm) ? wm : (lastStart ? lastStart.slice(0, 7) : '');
     if (!rm) {
-      // Sans chrono ni mois forcé : on rattache au VRAI moment du travail — le
-      // DÉBUT de la tâche, puis sa création — AVANT l'échéance, et jamais à la
-      // validation ni au futur. Un sujet travaillé en août mais fini/validé en
-      // septembre reste ainsi compté en août.
-      const st = String(t.startDate || '').slice(0, 7);
-      const cr = String(t.createdAt || '').slice(0, 7);
-      const due = String(t.dueDate || '').slice(0, 7);
-      rm = (st && st <= cur) ? st : ((cr && cr <= cur) ? cr : ((due && due <= cur) ? due : cur));
+      // Sans chrono ni mois forcé, le rattachement suit l'état de la tâche :
+      //  - EN COURS : le travail se fait maintenant → mois courant. C'est le cas
+      //    d'une saisie manuelle du temps ; il apparaît immédiatement dans le
+      //    détail et la jauge du mois, cohérent avec ce qu'affiche l'admin.
+      //  - TERMINÉE : le mois où elle a été terminée (à défaut, échéance/création).
+      if (String(t.status) === 'done') {
+        const cp = String(t.completedAt || '').slice(0, 7);
+        const due = String(t.dueDate || '').slice(0, 7);
+        const cr = String(t.createdAt || '').slice(0, 7);
+        rm = (cp && cp <= cur) ? cp : ((due && due <= cur) ? due : ((cr && cr <= cur) ? cr : cur));
+      } else {
+        rm = cur;
+      }
     }
     if (rm > cur) rm = cur;
     map[rm] = (map[rm] || 0) + residual;

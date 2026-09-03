@@ -180,9 +180,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: white; }
 .cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #5A2A11; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
 /* Bannière image pleine (maquette) : toute l'illustration visible, hauteur auto */
-.cp-proj-banner--img { height: auto; background: none; border-radius: 0; flex-shrink: 0; }
+/* Bannière image : la CARTE s'adapte à la bannière (jamais l'inverse). L'image
+   est affichée EN ENTIER, à sa proportion native (744×460), largeur = carte,
+   hauteur automatique  aucun recadrage possible. */
+.cp-proj-banner--img { height: auto !important; min-height: 0; max-height: none; background: none; border-radius: 0; flex-shrink: 0; line-height: 0; overflow: visible; }
 .cp-proj-banner--img::after { display: none; }
-.cp-proj-ban-img { display: block; width: 100%; height: auto; }
+.cp-proj-ban-img { display: block; width: 100%; height: auto; object-fit: contain; }
 /* Pied compact (façon maquette) : libellé + valeur + flèche, pour éviter les cartes trop longues */
 .cp-proj-ft { display: flex; align-items: flex-start; gap: 16px; padding: 22px 26px 24px; flex: 1; background: #110704; }
 .cp-proj-ft__st { flex: 1; min-width: 0; }
@@ -1088,7 +1091,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var n=new Date(); var cur=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
       var wm=String(t.workMonth||'');
       var rm=/^\d{4}-\d{2}$/.test(wm)?wm:(lastStart?lastStart.slice(0,7):'');
-      if(!rm){ var st=String(t.startDate||'').slice(0,7); var cr=String(t.createdAt||'').slice(0,7); var due=String(t.dueDate||'').slice(0,7); rm=(st&&st<=cur)?st:((cr&&cr<=cur)?cr:((due&&due<=cur)?due:cur)); }
+      if(!rm){
+        // Sans chrono ni mois forcé : EN COURS → mois courant (le travail se fait
+        // maintenant, la saisie manuelle apparaît tout de suite dans le détail et
+        // la jauge) ; TERMINÉE → le mois où elle a été terminée.
+        if(String(t.status)==='done'){ var cp=String(t.completedAt||'').slice(0,7); var due=String(t.dueDate||'').slice(0,7); var cr=String(t.createdAt||'').slice(0,7); rm=(cp&&cp<=cur)?cp:((due&&due<=cur)?due:((cr&&cr<=cur)?cr:cur)); }
+        else { rm=cur; }
+      }
       if(rm>cur) rm=cur;
       map[rm]=(map[rm]||0)+residual;
     }
