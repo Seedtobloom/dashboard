@@ -2859,6 +2859,7 @@
     return secs.filter(function (s) { return s.questions.length || s.hint; });
   }
   function trameOpen(id) { VIS_TRAME_OPEN = id; CALL_TRAME_EDIT = false; renderVisiosBody(); window.scrollTo({ top: 0 }); }
+  function trameEditLib(id) { VIS_TRAME_OPEN = id; CALL_TRAME_SEL = id; CALL_TRAME_EDIT = true; renderVisiosBody(); window.scrollTo({ top: 0 }); }
   function trameBackLib() { VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; renderVisiosBody(); }
   function trameQToggle(k) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].c = !VIS_TRAME_ANS[k].c; renderVisiosBody(); }
   function trameQNote(k, v) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].n = v; }
@@ -2867,14 +2868,15 @@
     var trames = tramesGet();
     var cards = trames.map(function (t) {
       var secs = trameParse(t.content); var nq = 0; secs.forEach(function (s) { nq += s.questions.length; });
-      return '<button onclick="ADM.trameOpen(\'' + t.id + '\')" style="text-align:left;border:none;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;font:inherit;color:inherit">' +
+      return '<div onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
+        '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:14px;display:grid;place-items:center">✎</button>' +
         '<span style="width:40px;height:40px;border-radius:11px;background:var(--gold-chip);color:var(--terre);display:grid;place-items:center;margin-bottom:13px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' +
         '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);line-height:1.1">' + esc(t.title || 'Sans titre') + '</span>' +
         '<span style="font-family:var(--font-micro);font-size:12px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
         '<span style="font-family:var(--font-micro);font-size:12px;font-weight:600;color:var(--terre-600);margin-top:14px;display:inline-flex;align-items:center;gap:6px">Ouvrir l\'appel <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
-      '</button>';
+      '</div>';
     }).join('');
-    return '<div class="vis-wrap" style="max-width:900px">' +
+    return '<div class="vis-wrap" style="max-width:900px;margin:0 auto">' +
       '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><p class="hello" style="margin:0">Trames d\'appel</p><p class="hello__s" style="margin:6px 0 0">Tes canevas de questions réutilisables. Ouvre-en un avant un appel, puis coche et note pendant la visio.</p></div>' +
       '<button class="btn btn--dark btn--sm" onclick="ADM.trameNew()">+ Nouvelle trame</button></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px">' + cards + '</div></div>';
@@ -2882,7 +2884,7 @@
   function visTrameCallHtml(id) {
     var t = tramesGet().filter(function (x) { return x.id === id; })[0];
     if (!t) { VIS_TRAME_OPEN = null; return visTramesHtml(); }
-    if (CALL_TRAME_EDIT) { CALL_TRAME_SEL = id; return '<div class="vis-wrap" style="max-width:760px"><button class="btn btn--outline btn--sm" style="margin-bottom:12px" onclick="ADM.trameBackLib()">← Bibliothèque</button>' + callTrame() + '</div>'; }
+    if (CALL_TRAME_EDIT) { CALL_TRAME_SEL = id; return '<div class="vis-wrap" style="max-width:760px;margin:0 auto"><button class="btn btn--outline btn--sm" style="margin-bottom:12px" onclick="ADM.trameBackLib()">← Bibliothèque</button>' + callTrame() + '</div>'; }
     var secs = trameParse(t.content);
     var total = 0, done = 0;
     secs.forEach(function (s, si) { s.questions.forEach(function (q, qi) { total++; var a = VIS_TRAME_ANS[id + '_' + si + '_' + qi]; if (a && a.c) done++; }); });
@@ -2898,7 +2900,7 @@
       return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:var(--font-display);font-size:21px;font-weight:600;color:var(--terre)">' + esc(s.title || 'Étape') + '</span></div>' +
         (s.hint ? '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--muted);font-style:italic;margin:0 0 12px 37px;line-height:1.5">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
     }).join('');
-    return '<div class="vis-wrap" style="max-width:760px">' +
+    return '<div class="vis-wrap" style="max-width:760px;margin:0 auto">' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.trameBackLib()">← Bibliothèque</button>' +
       '<div style="background:var(--terre);color:var(--paille);border-radius:18px;padding:22px 26px;margin-top:14px">' +
         '<div style="font-family:var(--font-micro);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
@@ -8586,7 +8588,7 @@
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, trameOpen: trameOpen, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
+    visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
