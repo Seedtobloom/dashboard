@@ -1860,7 +1860,8 @@
         var iso = (x.dueDate || '').slice(0, 10);
         return '<div class="prow__act">' + prioTimer(x, true) +
           (x.project === 'partner' ? '<button class="pbtn" title="Envoyer un lien de révision" onclick="ADM.prioSendReview(\'' + x.key + '\',\'' + x.id + '\')">Révision</button>' : '') +
-          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable (fichier)" onclick="ADM.prioAddDlv(\'' + x.key + '\',\'' + x.id + '\')">+ Livrable</button>' : '') +
+          (x.project === 'partner' ? '<button class="pbtn" title="Déposer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + x.key + '\',\'' + x.id + '\')">🔗 Lien</button>' : '') +
           (x.kind === 'ticket' && x.status === 'open' ? '<button class="pbtn" onclick="ADM.prioTicketStart(\'' + x.key + '\',\'' + x.id + '\')">En cours</button>' : '') +
           '<button class="pbtn pbtn--ok" title="Marquer fait" onclick="ADM.prioDone(\'' + x.key + '\',\'' + x.project + '\',\'' + x.kind + '\',\'' + x.id + '\')">Fait</button>' +
           '</div>';
