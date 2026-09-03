@@ -2439,6 +2439,21 @@
     setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
     visLoadCalendar();
+    // Bibliothèque de trames (serveur) — chargée une fois, avec migration douce
+    // depuis l'ancien stockage local et ajout de la trame kakémonos si absente.
+    if (!TRAMES_LOADED) {
+      api('/api/call-trames').then(function (r) { return r.json(); }).then(function (d) {
+        var srv = (d && Array.isArray(d.trames)) ? d.trames : [];
+        if (!srv.length) { try { var loc = JSON.parse(localStorage.getItem('stb_trames') || 'null'); if (Array.isArray(loc) && loc.length) srv = loc; } catch (e) {} }
+        var changed = false;
+        if (!srv.length) { srv = [kakemonoTrame(), defaultTrame()]; changed = true; }
+        else { var kseed = false; try { kseed = localStorage.getItem('stb_kakemono_seeded') === '1'; } catch (e) {}
+          if (!kseed && !srv.some(function (t) { return t.id === 't_kakemono_h2eau'; })) { srv.unshift(kakemonoTrame()); changed = true; try { localStorage.setItem('stb_kakemono_seeded', '1'); } catch (e) {} } }
+        TRAMES_SRV = srv; TRAMES_LOADED = true;
+        if (changed) jpost('/api/call-trames', { trames: srv }, 'PATCH').catch(function () {});
+        if (VIEW === 'visios') renderVisiosBody();
+      }).catch(function () { TRAMES_SRV = [kakemonoTrame(), defaultTrame()]; TRAMES_LOADED = true; if (VIEW === 'visios') renderVisiosBody(); });
+    }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
   }
@@ -2553,8 +2568,51 @@
 
   // ── Trames d'appel : scripts que Cindy crée/édite et suit pendant la visio ──
   var CALL_RIGHT = 'trame', CALL_TRAME_SEL = null, CALL_TRAME_EDIT = false, TRAME_KEY = 'stb_trames';
-  function tramesRaw() { try { return JSON.parse(localStorage.getItem(TRAME_KEY) || 'null'); } catch (e) { return null; } }
-  function tramesSaveAll(a) { try { localStorage.setItem(TRAME_KEY, JSON.stringify(a)); } catch (e) {} }
+  // Bibliothèque de trames : persistée côté serveur (admin:callTrames), réutilisable
+  // sur tous les appels et tous les appareils. TRAMES_SRV = copie en mémoire.
+  var TRAMES_SRV = null, TRAMES_LOADED = false;
+  function tramesRaw() { return Array.isArray(TRAMES_SRV) ? TRAMES_SRV : null; }
+  function tramesSaveAll(a) { TRAMES_SRV = Array.isArray(a) ? a : []; jpost('/api/call-trames', { trames: TRAMES_SRV }, 'PATCH').catch(function () {}); }
+  // Trame d'appel « Découverte projet print » (kakémonos H2Eau) — pré-remplie.
+  function kakemonoTrame() {
+    var L = [
+      "🌱 Découverte projet print — kakémonos",
+      "Fil : Besoin → Valider les 2 kakémonos → Rôle sur le salon → Messages → Planning → Qui décide",
+      "",
+      "① COMMENCER PAR LE BESOIN",
+      "Comprendre le pourquoi derrière la demande, pas seulement « je veux quelque chose de plus moderne ».",
+      "« Pour commencer, qu'est-ce qui te pousse aujourd'hui à vouloir moderniser ces deux kakémonos ? »",
+      "« Qu'est-ce qui ne fonctionne plus vraiment avec les actuels ? »",
+      "",
+      "② VALIDER PRÉCISÉMENT LES DEUX KAKÉMONOS",
+      "Important pour le devis : de la vraie rédaction, ce n'est pas le même temps qu'une simple remise en forme.",
+      "« Le Allo… : tu veux que je puisse le revoir complètement, c'est bien ça ? »",
+      "« Alléger le texte, ça veut dire que je retravaille aussi le contenu et les formulations, ou surtout le tri et la mise en forme des textes existants ? »",
+      "« Les 3 étapes : on reste plutôt sur une modernisation de l'existant, sans repartir de zéro ? »",
+      "« Des éléments que tu veux absolument conserver sur celui-ci ? »",
+      "",
+      "③ COMPRENDRE LE RÔLE DES KAKÉMONOS SUR LE SALON",
+      "La 2e question aide à penser la hiérarchie visuelle.",
+      "« Comment vas-tu utiliser les deux kakémonos sur le salon ? »",
+      "« Si quelqu'un passe devant quelques secondes, qu'est-ce qu'il doit retenir en priorité ? »",
+      "",
+      "④ VALIDER LES MESSAGES IMPORTANTS",
+      "Il a déjà donné les infos par mail : on confirme, on ne fait pas répéter.",
+      "« Tes priorités : logo H2Eau, 15 à 30 % d'économies, ROI 12 à 36 mois, 3 phases (étude, installation, suivi). C'est toujours ça ? »",
+      "« Un message commercial important à faire apparaître qu'on n'a pas encore évoqué ? »",
+      "",
+      "⑤ VERROUILLER LE PLANNING",
+      "La vraie date à sécuriser = celle où il transmet les fichiers à Doublet.",
+      "« Deadline fin septembre, tu as la date exacte du salon ? »",
+      "« Doublet attend les fichiers pour quelle date au plus tard ? »",
+      "« De mon côté, gardons une petite marge avant la deadline pour éviter les corrections dans l'urgence. »",
+      "",
+      "⑥ SAVOIR QUI DÉCIDE",
+      "Pour éviter le « j'adore, mais mon associé voudrait changer… »",
+      "« C'est toi qui valides directement les créations, ou quelqu'un d'autre dans la boucle ? »"
+    ];
+    return { id: 't_kakemono_h2eau', title: 'Découverte projet print (kakémonos)', content: L.join('\n') };
+  }
   function defaultTrame() {
     var L = [
       "🌱 Trame d'appel découverte",
@@ -2628,10 +2686,11 @@
     return { id: 't_decouverte_full', title: 'Appel découverte', content: L.join('\n') };
   }
   function tramesGet() {
-    var a = tramesRaw(); if (!Array.isArray(a)) a = [];
-    var seeded = false; try { seeded = localStorage.getItem('stb_trames_seeded_full') === '1'; } catch (e) {}
-    if (!seeded) { a.unshift(defaultTrame()); try { localStorage.setItem('stb_trames_seeded_full', '1'); } catch (e) {} tramesSaveAll(a); }
-    if (!a.length) { a = [defaultTrame()]; tramesSaveAll(a); }
+    // Pas encore chargé du serveur : on affiche des trames par défaut sans rien
+    // sauvegarder (pour ne pas écraser la bibliothèque serveur avant réception).
+    if (!Array.isArray(TRAMES_SRV)) return [kakemonoTrame(), defaultTrame()];
+    var a = TRAMES_SRV;
+    if (!a.length) { a = [kakemonoTrame(), defaultTrame()]; tramesSaveAll(a); }
     return a;
   }
   function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; renderVisiosBody(); }
@@ -2642,7 +2701,7 @@
   function callRight(mode) { CALL_RIGHT = mode; renderVisiosBody(); }
   // Surligne les passages entre guillemets « … » = ce que Cindy dit à l'oral.
   function trameHi(s) {
-    return esc(s).replace(/«[^»]*»/g, function (m) { return '<span style="background:#efe4ff;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 4px">' + m + '</span>'; });
+    return esc(s).replace(/«[^»]*»/g, function (m) { return '<span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 4px">' + m + '</span>'; });
   }
   // Une ligne « repère » (à NE PAS dire) : gris, italique.
   function trameNote(s, ml) { return '<div style="font-family:var(--font-micro);font-size:13px;line-height:1.55;color:var(--muted);font-style:italic;margin-bottom:' + (ml || 2) + 'px">' + esc(s) + '</div>'; }
@@ -2685,7 +2744,7 @@
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:13px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
         '<button class="btn btn--outline btn--sm" title="Éditer" onclick="ADM.trameEditToggle()">✎</button>' +
         '<button class="btn btn--outline btn--sm" title="Nouvelle trame" onclick="ADM.trameNew()">+</button></div>' +
-      '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="background:#efe4ff;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« … »</span> ce que tu dis · <span style="font-style:italic">gris = tes repères / mots du client (à ne pas dire)</span></div>' +
+      '<div style="font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="background:#F0E2D6;color:var(--terre);font-weight:600;border-radius:4px;padding:1px 5px">« … »</span> ce que tu dis · <span style="font-style:italic">gris = tes repères / mots du client (à ne pas dire)</span></div>' +
       '<div style="max-height:calc(100vh - 250px);overflow:auto;padding-right:4px">' + trameRender(cur.content) + '</div>' +
     '</div>';
   }

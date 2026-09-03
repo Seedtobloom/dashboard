@@ -128,6 +128,10 @@ export default {
         if (method === 'GET') return handleQuickRepliesGet(env);
         if (method === 'PATCH') return handleQuickRepliesSave(request, env);
       }
+      if (pathname === '/api/call-trames') {
+        if (method === 'GET') return handleCallTramesGet(env);
+        if (method === 'PATCH') return handleCallTramesSave(request, env);
+      }
       if (pathname === '/api/capacity' && method === 'PATCH') {
         const b = await readJson(request);
         const n = Math.max(0, Math.round((Number(b.weeklyHours) || 0) * 10) / 10);
@@ -2715,6 +2719,28 @@ async function getQuickReplies(env: Env): Promise<AnyObj[]> {
 async function handleQuickRepliesGet(env: Env): Promise<Response> {
   return json({ replies: await getQuickReplies(env) });
 }
+
+/* ── Trames d'appel : canevas de questions réutilisables pour les visios (studio) ── */
+function cleanCallTrame(t: AnyObj): AnyObj {
+  return {
+    id: (t && t.id ? String(t.id) : genId()).slice(0, 60),
+    title: String((t && t.title) || '').slice(0, 200),
+    content: String((t && t.content) || '').slice(0, 20000),
+  };
+}
+async function getCallTrames(env: Env): Promise<AnyObj[]> {
+  const v = (await env.KV_ADMIN.get('admin:callTrames', { type: 'json' })) as AnyObj[] | null;
+  return Array.isArray(v) ? v : [];
+}
+async function handleCallTramesGet(env: Env): Promise<Response> {
+  return json({ trames: await getCallTrames(env) });
+}
+async function handleCallTramesSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const list = (Array.isArray(body.trames) ? body.trames : []).map(cleanCallTrame).filter((t: AnyObj) => t.title || t.content).slice(0, 100);
+  await env.KV_ADMIN.put('admin:callTrames', JSON.stringify(list));
+  return json({ trames: list });
+}
 async function handleQuickRepliesSave(request: Request, env: Env): Promise<Response> {
   const body = await readJson(request);
   const list = (Array.isArray(body.replies) ? body.replies : []).map(cleanQuickReply).filter((r: AnyObj) => r.label || r.text).slice(0, 100);
@@ -2753,6 +2779,7 @@ async function backupSnapshot(env: Env): Promise<{ name: string; size: number; c
     adminVisios: await env.KV_ADMIN.get('admin:visios', { type: 'json' }),
     adminQuestionnaires: await env.KV_ADMIN.get('admin:questionnaires', { type: 'json' }),
     adminQuickReplies: await env.KV_ADMIN.get('admin:quickReplies', { type: 'json' }),
+    adminCallTrames: await env.KV_ADMIN.get('admin:callTrames', { type: 'json' }),
     adminCapacity: await env.KV_ADMIN.get('admin:capacity', { type: 'json' }),
     adminPlanning: await env.KV_ADMIN.get('admin:planning', { type: 'json' }),
     emailTemplates: await env.KV_ADMIN.get('email_templates', { type: 'json' }),
