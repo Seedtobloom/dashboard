@@ -11,7 +11,13 @@ const { execSync } = require('child_process');
 const dir = __dirname;
 const crypto = require('crypto');
 const css = fs.readFileSync(path.join(dir, 'app.css'), 'utf8');
-const js = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
+// Modèle « temps & forfait » : SOURCE UNIQUE (shared/forfait-model.js), la même
+// que celle importée par back.ts. On la préfixe au SPA ; la ligne `export {...}`
+// (utile au Worker) est retirée puisqu'ici c'est un script classique.
+const sharedModel = fs
+  .readFileSync(path.join(dir, '..', 'shared', 'forfait-model.js'), 'utf8')
+  .replace(/^export\s*\{[^}]*\};?\s*$/m, '');
+const js = sharedModel + '\n' + fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
 const favicon = fs.readFileSync(path.join(dir, 'favicon.svg'), 'utf8');
 // Empreinte du contenu → URL versionnée : chaque déploiement change l'URL de
 // l'asset, donc le navigateur/CDN charge la nouvelle version immédiatement

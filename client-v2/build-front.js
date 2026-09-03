@@ -17,6 +17,17 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 let css = read('src/client_css.js');     // var CLIENT_CSS = String.raw`...`;
 let js = read('src/client_js.js');       // var CLIENT_JS  = String.raw`...`;
+// Modèle « temps & forfait » : SOURCE UNIQUE (shared/forfait-model.js), la même
+// qu'importe back.ts et que préfixe le SPA admin. On l'injecte EN TÊTE du SPA
+// cliente (donc dans le template String.raw — d'où l'interdiction de backtick
+// dans ce fichier). La ligne `export {...}`, utile au Worker, est retirée ici.
+{
+  const sharedModel = read('../shared/forfait-model.js').replace(/^export\s*\{[^}]*\};?\s*$/m, '');
+  const anchor = 'var CLIENT_JS = String.raw`';
+  if (js.indexOf(anchor) !== 0) throw new Error('client_js.js : en-tête String.raw introuvable');
+  // remplacement par fonction : évite toute interprétation des $ du modèle
+  js = js.replace(anchor, () => anchor + '\n' + sharedModel + '\n');
+}
 let html = read('src/client_html.js');   // var CLIENT_HTML = `...`;
 const favicon = read('favicon.svg');
 // Bannières d'offres (images réelles de la maquette) : embarquées en base64 et

@@ -6350,70 +6350,18 @@
   }
 
   /* partner: forfait + tâches (sous-onglets séparés) */
-  // Format UNIQUE des durées, identique à l'espace cliente (« 6h37 » / « 12 h »).
-  // Avant : décimal « 6.6 h » côté admin et « 6h37 » côté cliente — deux
-  // écritures de la même durée d'un dashboard à l'autre.
-  function fmtHrs(h) { var min = Math.round((h || 0) * 60); var neg = min < 0; min = Math.abs(min); var hh = Math.floor(min / 60), mm = min % 60; return (neg ? '− ' : '') + (mm ? (hh + 'h' + String(mm).padStart(2, '0')) : (hh + ' h')); }
-  function admSessionMin(s) { if (s && typeof s.minutes === 'number') return Math.max(0, Math.min(s.minutes, 24 * 60)); var st = s && s.start ? Date.parse(s.start) : NaN, en = s && s.end ? Date.parse(s.end) : NaN; if (isNaN(st) || isNaN(en) || en <= st) return 0; return Math.min((en - st) / 60000, 24 * 60); }
-  // Ajuste une répartition par mois pour que la somme fasse EXACTEMENT total.
-  // INVARIANT : on ne répartit jamais plus (ni moins) que le temps enregistré.
-  function admFitMap(map, total) {
-    var keys = Object.keys(map); if (!keys.length || total <= 0) return {};
-    var sum = 0; keys.forEach(function (k) { sum += map[k]; });
-    if (sum <= 0) return {};
-    var out = {}, acc = 0;
-    for (var i = 0; i < keys.length; i++) {
-      var v = (i === keys.length - 1) ? (total - acc) : Math.round(map[keys[i]] / sum * total);
-      if (v < 0) v = 0;
-      acc += v; if (v > 0) out[keys[i]] = v;
-    }
-    return out;
-  }
-  // Répartition du temps d'une tâche par mois RÉELLEMENT travaillé.
-  // STRICTEMENT IDENTIQUE à back.ts (taskMinutesByMonth) et au portail client
-  // (cpTaskMinByMonth) : toute divergence ici ferait dire à l'admin et à
-  // l'espace cliente deux choses différentes sur le même mois.
-  function admTaskMinByMonth(t) {
-    var total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
-    if (!(total > 0)) return {};
-    var n = new Date(); var cur = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
-    // 1) Mois FORCÉ (« Compté en ») : TOUT le temps compte dans ce mois.
-    var wm = String(t.workMonth || '');
-    if (/^\d{4}-\d{2}$/.test(wm)) { var mF = {}; mF[wm > cur ? cur : wm] = total; return mF; }
-    // 2) Mois de chaque session (chrono + saisie manuelle horodatée).
-    var map = {}, sessTotal = 0, lastStart = '';
-    (Array.isArray(t.sessions) ? t.sessions : []).forEach(function (s) {
-      var m = admSessionMin(s), ym = String((s && s.start) || '').slice(0, 7);
-      if (m <= 0 || !ym) return;
-      if (ym > cur) ym = cur;
-      map[ym] = (map[ym] || 0) + m; sessTotal += m;
-      if (String(s.start) > lastStart) lastStart = String(s.start);
-    });
-    // 3) Reste : EN COURS → mois courant ; TERMINÉE → mois de sa clôture.
-    var residual = total - sessTotal;
-    if (residual > 0) {
-      var rm = lastStart ? lastStart.slice(0, 7) : '';
-      if (!rm) {
-        if (String(t.status) === 'done') {
-          var cp = String(t.completedAt || '').slice(0, 7);
-          var due = String(t.dueDate || '').slice(0, 7);
-          var cr = String(t.createdAt || '').slice(0, 7);
-          rm = (cp && cp <= cur) ? cp : ((due && due <= cur) ? due : ((cr && cr <= cur) ? cr : cur));
-        } else { rm = cur; }
-      }
-      if (rm > cur) rm = cur;
-      map[rm] = (map[rm] || 0) + residual;
-    }
-    // 4) INVARIANT : somme des mois == total de la tâche.
-    return admFitMap(map, total);
-  }
+  // Temps & forfait : tout vient de shared/forfait-model.js, préfixé au SPA par
+  // build-front.js et importé à l'identique par back.ts. Aucune règle de calcul
+  // n'est réécrite ici — juste des alias aux noms utilisés dans ce fichier.
+  function fmtHrs(h) { return stbFmtHours(h); }
+  function admTaskMinByMonth(t) { return stbTaskMinByMonth(t); }
   // Tâches ayant du temps RÉELLEMENT TRAVAILLÉ sur le mois ym (part du mois),
   // triées par plus gros contributeur. La validation ne change rien.
   function partnerMonthTasks(d, ym) {
     var tasks = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
     // Inclut les tâches archivées (le travail fait compte toujours) ; on exclut
     // seulement le non-facturable (inbox / hors-forfait / refusé).
-    return tasks.filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; })
+    return stbBillable(tasks)
       .map(function (t) { return { t: t, mins: admTaskMinByMonth(t)[ym] || 0 }; })
       .filter(function (o) { return o.mins > 0; })
       .sort(function (a, b) { return b.mins - a.mins; });
@@ -6553,7 +6501,7 @@
     // ── Contrôle de complétude : total compté + tâches exclues visibles (pour retrouver une tâche « manquante ») ──
     var _allT = (d.content && Array.isArray(d.content.taches)) ? d.content.taches : [];
     function _tmin(t) { return t.timeSpentMinutes || Math.round((t.timeSpentSeconds || 0) / 60) || 0; }
-    var _bill = _allT.filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    var _bill = stbBillable(_allT);
     var _billMin = _bill.reduce(function (s, t) { return s + _tmin(t); }, 0);
     var _oos = _allT.filter(function (t) { return t.stage === 'out_of_scope' && _tmin(t) > 0; });
     var _oosMin = _oos.reduce(function (s, t) { return s + _tmin(t); }, 0);

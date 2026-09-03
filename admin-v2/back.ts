@@ -15,6 +15,8 @@
  * saisies ensemble. Session 24h (cookie HttpOnly stb_admin).
  */
 
+import { stbTaskMinByMonth, stbForfaitState } from '../shared/forfait-model.js';
+
 export interface Env {
   KV_CLIENT: KVNamespace;
   KV_ADMIN: KVNamespace;
@@ -1610,184 +1612,13 @@ async function handleDeliverableDelete(request: Request, env: Env, key: string, 
 
 /* ─────────────────────────── tableau de bord (priorités + forfaits) ─────────────────────────── */
 
-// Durée d'une entrée de temps (en minutes), plafonnée à 24 h. Une session de
-// chrono a start/end ; une saisie manuelle horodatée a { start, minutes }.
-function sessionMinutes(s: AnyObj): number {
-  if (s && typeof s.minutes === 'number') return Math.max(0, Math.min(s.minutes, 24 * 60));
-  const st = s && s.start ? Date.parse(s.start) : NaN;
-  const en = s && s.end ? Date.parse(s.end) : NaN;
-  if (isNaN(st) || isNaN(en) || en <= st) return 0;
-  return Math.min((en - st) / 60000, 24 * 60);
-}
-// Répartition du temps d'une tâche PAR MOIS où il a réellement été travaillé
-// (mois de chaque session de chrono). Le temps saisi à la main sans session
-// (résidu) est rattaché à un mois stable : dernière session, sinon échéance,
-// sinon création. On n'utilise JAMAIS la date de validation → une validation
-// tardive ne déplace pas rétroactivement la consommation d'un autre mois.
-// Ajuste une répartition par mois pour que la somme fasse EXACTEMENT total.
-// INVARIANT du comptage : ce qui est réparti par mois ne peut jamais valoir plus
-// (ni moins) que le temps réellement enregistré sur la tâche. Indispensable car
-// un temps corrigé À LA BAISSE laisse des sessions plus grosses que le total
-// (l'admin afficherait 2 h et le détail client 6 h).
-function fitMap(map: Record<string, number>, total: number): Record<string, number> {
-  const keys = Object.keys(map);
-  if (!keys.length || total <= 0) return {};
-  let sum = 0;
-  for (const k of keys) sum += map[k];
-  if (sum <= 0) return {};
-  const out: Record<string, number> = {};
-  let acc = 0;
-  for (let i = 0; i < keys.length; i++) {
-    let v = (i === keys.length - 1) ? (total - acc) : Math.round(map[keys[i]] / sum * total);
-    if (v < 0) v = 0;
-    acc += v;
-    if (v > 0) out[keys[i]] = v;
-  }
-  return out;
-}
-function taskMinutesByMonth(t: AnyObj): Record<string, number> {
-  const total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
-  if (!(total > 0)) return {};
-  const now = new Date();
-  const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  // 1) Mois FORCÉ (workMonth / « Compté en ») : TOUT le temps de la tâche compte
-  //    dans ce mois, chrono compris, jamais dans le futur.
-  const wm = String(t.workMonth || '');
-  if (/^\d{4}-\d{2}$/.test(wm)) {
-    const mF: Record<string, number> = {};
-    mF[wm > cur ? cur : wm] = total;
-    return mF;
-  }
-  // 2) Répartition par mois de travail : mois de chaque session (chrono ET
-  //    saisie manuelle, horodatée à sa saisie).
-  const map: Record<string, number> = {};
-  let sessTotal = 0;
-  let lastStart = '';
-  for (const s of (Array.isArray(t.sessions) ? t.sessions : [])) {
-    const mins = sessionMinutes(s);
-    let ym = String((s && s.start) || '').slice(0, 7);
-    if (mins <= 0 || !ym) continue;
-    if (ym > cur) ym = cur;
-    map[ym] = (map[ym] || 0) + mins;
-    sessTotal += mins;
-    if (String(s.start) > lastStart) lastStart = String(s.start);
-  }
-  // 3) Reste non couvert par les sessions → mois de travail :
-  //    EN COURS → mois courant ; TERMINÉE → mois de sa clôture.
-  const residual = total - sessTotal;
-  if (residual > 0) {
-    let rm = lastStart ? lastStart.slice(0, 7) : '';
-    if (!rm) {
-      if (String(t.status) === 'done') {
-        const cp = String(t.completedAt || '').slice(0, 7);
-        const due = String(t.dueDate || '').slice(0, 7);
-        const cr = String(t.createdAt || '').slice(0, 7);
-        rm = (cp && cp <= cur) ? cp : ((due && due <= cur) ? due : ((cr && cr <= cur) ? cr : cur));
-      } else {
-        rm = cur;
-      }
-    }
-    if (rm > cur) rm = cur;
-    map[rm] = (map[rm] || 0) + residual;
-  }
-  // 4) INVARIANT : somme des mois == total de la tâche.
-  return fitMap(map, total);
-}
+// Le modèle « temps & forfait » vit dans shared/forfait-model.js : SOURCE
+// UNIQUE, répliquée telle quelle dans les deux SPA à la compilation. On ne
+// garde ici que des alias, déclarés en `function` car ils sont appelés plus
+// haut dans le fichier (hoisting).
+function taskMinutesByMonth(t: AnyObj): Record<string, number> { return stbTaskMinByMonth(t); }
 function forfaitState(pc: AnyObj): AnyObj {
-  const base = parseFloat(pc.monthlyHours) || 0;
-  const cap = (pc.rolloverCapHours != null && pc.rolloverCapHours !== '') ? parseFloat(pc.rolloverCapHours) : 2;
-  const rate = (pc.overageRate != null && pc.overageRate !== '') ? parseFloat(pc.overageRate) : 60;
-  const allTasks: AnyObj[] = Array.isArray(pc.taches) ? pc.taches : [];
-  // Consommation du forfait = SEULEMENT le travail « dans le forfait ». On
-  // exclut les demandes non triées (stage 'inbox'), le hors-forfait (facturé
-  // à part, stage 'out_of_scope'), les refusées et les archivées.
-  // Les tâches ARCHIVÉES restent comptées : archiver ne fait que ranger, ça ne
-  // décompte pas le travail déjà fait. On exclut seulement le non-facturable :
-  // demandes non triées (inbox), hors-forfait, refusées.
-  const tasks = allTasks.filter((t) => t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused');
-  const now = new Date();
-  // Temps rattaché au mois où il a été RÉELLEMENT travaillé (sessions de
-  // chrono), jamais à la date de validation. Une validation tardive ne
-  // déplace donc rien : le travail de juillet reste dans juillet.
-  const usedIn = (ym: string) => tasks.reduce((s, t) => s + (taskMinutesByMonth(t)[ym] || 0) / 60, 0);
-  const r1 = (n: number) => Math.round(n * 10) / 10;
-  const ymOf = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  const curYm = ymOf(now);
-  // ── Début du forfait : on ne compte RIEN avant. Explicite (forfaitStart) ou,
-  // à défaut, le mois de la 1re tâche / 1re session (l'accompagnement a commencé
-  // là — pas de « mois vides » fantômes avant). ──
-  let startYm = /^\d{4}-\d{2}$/.test(String(pc.forfaitStart || '')) ? String(pc.forfaitStart) : '';
-  if (!startYm) {
-    for (const t of tasks) {
-      const c = String(t.createdAt || '').slice(0, 7);
-      if (/^\d{4}-\d{2}$/.test(c) && (!startYm || c < startYm)) startYm = c;
-      for (const s of (Array.isArray(t.sessions) ? t.sessions : [])) {
-        const sm = String((s && s.start) || '').slice(0, 7);
-        if (/^\d{4}-\d{2}$/.test(sm) && (!startYm || sm < startYm)) startYm = sm;
-      }
-    }
-  }
-  if (!startYm || startYm > curYm) startYm = curYm;
-  // ── Historique CHAÎNÉ, du début du forfait (au plus tôt 6 mois en arrière)
-  // jusqu'au mois en cours. Chaque mois : dispo = base + report entrant ; on
-  // consomme ; les heures NON utilisées se reportent (plafond `cap`) — au-delà
-  // elles sont PERDUES (lost). Un dépassement est déduit du mois suivant
-  // (plafonné à un mois de forfait) ; le reste est facturé (billed). ──
-  // Historique complet depuis le début de la collaboration (aucun mois ancien
-  // coupé) — sinon des tâches faites il y a plus de quelques mois « disparaissent ».
-  // REPORT EXCEPTIONNEL par mois (forfaitOverrides['YYYY-MM']) : normalement le
-  // report d'un mois sur l'autre est plafonné à `cap` (2 h). Pour un mois précis,
-  // on peut autoriser un report plus grand (ex. septembre : on reporte 3 h 50 au
-  // lieu de 2 h max). La base ne change pas ; c'est le report ENTRANT de ce mois
-  // qui est forcé à la valeur saisie. Vide/absent = report normal (plafonné).
-  const overrides: AnyObj = (pc.forfaitOverrides && typeof pc.forfaitOverrides === 'object') ? pc.forfaitOverrides : {};
-  const ovVal = (ym: string): number | null => {
-    const o = overrides[ym];
-    return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : null;
-  };
-  const isExc = (ym: string): boolean => ovVal(ym) !== null;
-  const boundYm = startYm;
-  const history: AnyObj[] = [];
-  let carry = 0;
-  const cursor = new Date(parseInt(boundYm.slice(0, 4), 10), parseInt(boundYm.slice(5, 7), 10) - 1, 1);
-  const endM = new Date(now.getFullYear(), now.getMonth(), 1);
-  while (cursor <= endM) {
-    const d = cursor;
-    const ym = ymOf(d);
-    const ov = ovVal(ym);
-    // Report entrant : forcé à la valeur exceptionnelle si définie, sinon le
-    // report normal (déjà plafonné au mois précédent).
-    const carryIn = (ov !== null) ? ov : carry;
-    const avail = base + carryIn;
-    const usedM = usedIn(ym);
-    const rem = avail - usedM;
-    let carryOut = 0, lost = 0, overage = 0, billed = 0;
-    if (rem >= 0) { carryOut = Math.min(cap, rem); lost = rem - carryOut; }
-    else { overage = -rem; const deduction = Math.min(overage, base); carryOut = -deduction; billed = overage - deduction; }
-    history.push({ ym, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), base: r1(base), exceptional: isExc(ym), carryIn: r1(carryIn), available: r1(avail), used: r1(usedM), remaining: r1(rem), lost: r1(lost), overage: r1(overage), billed: r1(billed), current: ym === curYm });
-    carry = carryOut;
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-  const curM = history[history.length - 1];
-  // ── Signal de PERTE : heures gâchées sur les mois COMPLETS (hors mois en
-  // cours). Alerte si, sur les 3 derniers mois complets, on perd l'équivalent
-  // d'au moins un demi-mois de forfait → à revoir avec la cliente.
-  const completed = history.slice(0, -1);
-  const lostRecent = r1(completed.reduce((s, h) => s + h.lost, 0));
-  const last3 = completed.slice(-3);
-  const lost3 = r1(last3.reduce((s, h) => s + h.lost, 0));
-  const lossAlert = base > 0 && last3.length >= 2 && lost3 >= base * 0.5;
-  return {
-    base, cap, rate, configured: base > 0,
-    carryIn: curM.carryIn,
-    billedCarry: curM.billed,
-    available: curM.available,
-    used: curM.used,
-    remaining: curM.remaining,
-    history, lostRecent, lost3, lossAlert,
-    start: String(pc.forfaitStart || ''), startAuto: startYm,
-    overrides, curExceptional: !!curM.exceptional,
-  };
+  return stbForfaitState(pc, Array.isArray(pc.taches) ? pc.taches : []);
 }
 
 async function handleDashboard(env: Env): Promise<Response> {

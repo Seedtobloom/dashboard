@@ -600,7 +600,263 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 `;
 
 
-const CLIENT_JS = String.raw`// Client portal SPA, multi-project
+const CLIENT_JS = String.raw`
+/**
+ * SOURCE UNIQUE du modèle « temps & forfait », Seed to Bloom.
+ *
+ * Ce fichier est la SEULE implémentation du décompte des heures. Il est
+ * répliqué à la compilation dans les trois cibles :
+ *   - admin-v2/back.ts        (API)            : import ES
+ *   - admin-v2/app.js         (SPA studio)     : injecté par admin-v2/build-front.js
+ *   - client-v2/src/client_js.js (SPA cliente) : injecté par client-v2/build-front.js
+ *
+ * NE JAMAIS recopier ces règles ailleurs : c'est précisément ce qui avait fait
+ * diverger les écrans (le studio affichait « reste 7h42 », la cliente
+ * « reste 5h41 » pour le même mois). Toute évolution du calcul se fait ICI.
+ *
+ * Écrit en JS volontairement simple (ES5) : le même texte doit tourner dans un
+ * Worker et dans les deux SPA, sans transpilation.
+ *
+ * CONTRAINTE : ce fichier est injecté tel quel dans un template String.raw
+ * (SPA cliente). Donc ni backtick, ni interpolation dollar-accolade ici 
+ * même en commentaire : le template serait coupé net.
+ */
+
+/* ── Utilitaires de mois ─────────────────────────────────────────────────── */
+
+function stbYm(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function stbCurYm() {
+  return stbYm(new Date());
+}
+function stbIsYm(v) {
+  return /^\d{4}-\d{2}$/.test(String(v || ''));
+}
+
+/* ── Minutes d'une session de chrono ─────────────────────────────────────── */
+/* Un champ « minutes » explicite = saisie manuelle horodatée ; sinon début→fin. */
+
+function stbSessionMin(s) {
+  if (s && typeof s.minutes === 'number') return Math.max(0, Math.min(s.minutes, 24 * 60));
+  var st = s && s.start ? Date.parse(s.start) : NaN;
+  var en = s && s.end ? Date.parse(s.end) : NaN;
+  if (isNaN(st) || isNaN(en) || en <= st) return 0;
+  return Math.min((en - st) / 60000, 24 * 60);
+}
+
+/* ── INVARIANT : une répartition par mois vaut EXACTEMENT le total ───────── */
+/*
+ * Indispensable : chaque saisie manuelle crée une session horodatée, donc un
+ * temps corrigé À LA BAISSE laisse derrière lui des sessions plus grosses que
+ * le total. Sans ce recadrage, le studio affiche 2 h et la cliente 6h37.
+ */
+function stbFitMap(map, total) {
+  var keys = Object.keys(map);
+  if (!keys.length || total <= 0) return {};
+  var sum = 0, i;
+  for (i = 0; i < keys.length; i++) sum += map[keys[i]];
+  if (sum <= 0) return {};
+  var out = {}, acc = 0, v;
+  for (i = 0; i < keys.length; i++) {
+    v = (i === keys.length - 1) ? (total - acc) : Math.round(map[keys[i]] / sum * total);
+    if (v < 0) v = 0;
+    acc += v;
+    if (v > 0) out[keys[i]] = v;
+  }
+  return out;
+}
+
+/* ── Répartition du temps d'une tâche par mois de travail ────────────────── */
+/*
+ * 1) « Compté en » (workMonth) renseigné → TOUT le temps sur ce mois.
+ * 2) Sinon : le mois de chaque session de chrono (saisies manuelles incluses,
+ *    elles sont horodatées à leur saisie côté serveur).
+ * 3) Le reste : tâche EN COURS → mois courant (le travail se fait maintenant) ;
+ *    tâche TERMINÉE → le mois de sa clôture. Jamais dans le futur.
+ * 4) Recadrage par l'invariant.
+ */
+function stbTaskMinByMonth(t) {
+  var total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
+  if (!(total > 0)) return {};
+  var cur = stbCurYm();
+
+  var wm = String(t.workMonth || '');
+  if (stbIsYm(wm)) {
+    var forced = {};
+    forced[wm > cur ? cur : wm] = total;
+    return forced;
+  }
+
+  var map = {}, sessTotal = 0, lastStart = '';
+  var sessions = Array.isArray(t.sessions) ? t.sessions : [];
+  for (var i = 0; i < sessions.length; i++) {
+    var s = sessions[i];
+    var mins = stbSessionMin(s);
+    var ym = String((s && s.start) || '').slice(0, 7);
+    if (mins <= 0 || !ym) continue;
+    if (ym > cur) ym = cur;
+    map[ym] = (map[ym] || 0) + mins;
+    sessTotal += mins;
+    if (String(s.start) > lastStart) lastStart = String(s.start);
+  }
+
+  var residual = total - sessTotal;
+  if (residual > 0) {
+    var rm = lastStart ? lastStart.slice(0, 7) : '';
+    if (!rm) {
+      if (String(t.status) === 'done') {
+        var cp = String(t.completedAt || '').slice(0, 7);
+        var due = String(t.dueDate || '').slice(0, 7);
+        var cr = String(t.createdAt || '').slice(0, 7);
+        rm = (cp && cp <= cur) ? cp : ((due && due <= cur) ? due : ((cr && cr <= cur) ? cr : cur));
+      } else {
+        rm = cur;
+      }
+    }
+    if (rm > cur) rm = cur;
+    map[rm] = (map[rm] || 0) + residual;
+  }
+
+  return stbFitMap(map, total);
+}
+
+/* ── Tâches qui CONSOMMENT le forfait ────────────────────────────────────── */
+/*
+ * Une demande non triée (inbox), hors forfait (facturée à part) ou refusée
+ * n'entre jamais dans le décompte. Les ARCHIVÉES restent comptées : archiver
+ * range, ça n'efface pas le travail fait.
+ */
+function stbBillable(list) {
+  return (Array.isArray(list) ? list : []).filter(function (t) {
+    return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused';
+  });
+}
+
+/* ── État du forfait : chaîne mois par mois ──────────────────────────────── */
+/*
+ * On NE PEUT PAS déduire le report du mois en cours en ne regardant qu'un mois
+ * en arrière : le dépassement d'un mois se mesure contre le DISPONIBLE de ce
+ * mois-là (base + son propre report), pas contre la base. D'où la chaîne
+ * complète depuis le début du forfait.
+ *
+ * Chaque mois : dispo = base + report entrant ; on consomme ; les heures non
+ * utilisées se reportent (plafond « cap »), au-delà elles sont perdues. Un
+ * dépassement est déduit du mois suivant (plafonné à un mois de forfait), le
+ * reste est facturé.
+ *
+ * forfaitOverrides['YYYY-MM'] force le report ENTRANT de ce mois (report
+ * exceptionnel) ; la base ne change pas.
+ *
+ * @param cfg   config du forfait (monthlyHours, rolloverCapHours, overageRate,
+ *              forfaitOverrides, forfaitStart)
+ * @param tasks liste brute des tâches (le filtrage facturable est fait ici)
+ */
+function stbForfaitState(cfg, tasks) {
+  cfg = cfg || {};
+  var base = parseFloat(cfg.monthlyHours) || 0;
+  var cap = (cfg.rolloverCapHours != null && cfg.rolloverCapHours !== '') ? parseFloat(cfg.rolloverCapHours) : 2;
+  var rate = (cfg.overageRate != null && cfg.overageRate !== '') ? parseFloat(cfg.overageRate) : 60;
+  var overrides = (cfg.forfaitOverrides && typeof cfg.forfaitOverrides === 'object') ? cfg.forfaitOverrides : {};
+  var billable = stbBillable(tasks);
+  var cur = stbCurYm();
+  var now = new Date();
+
+  function ovVal(ym) {
+    var o = overrides[ym];
+    return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : null;
+  }
+  function usedIn(ym) {
+    return billable.reduce(function (s, t) { return s + (stbTaskMinByMonth(t)[ym] || 0) / 60; }, 0);
+  }
+  function r1(n) { return Math.round(n * 10) / 10; }
+
+  // Début du forfait : explicite, sinon le mois de la 1re tâche / 1re session
+  // (pas de « mois vides » fantômes avant le début de l'accompagnement).
+  var startYm = stbIsYm(cfg.forfaitStart) ? String(cfg.forfaitStart) : '';
+  if (!startYm) {
+    billable.forEach(function (t) {
+      var c = String(t.createdAt || '').slice(0, 7);
+      if (stbIsYm(c) && (!startYm || c < startYm)) startYm = c;
+      (Array.isArray(t.sessions) ? t.sessions : []).forEach(function (s) {
+        var sm = String((s && s.start) || '').slice(0, 7);
+        if (stbIsYm(sm) && (!startYm || sm < startYm)) startYm = sm;
+      });
+    });
+  }
+  if (!startYm || startYm > cur) startYm = cur;
+
+  var history = [];
+  var carry = 0;
+  var cursor = new Date(parseInt(startYm.slice(0, 4), 10), parseInt(startYm.slice(5, 7), 10) - 1, 1);
+  var endM = new Date(now.getFullYear(), now.getMonth(), 1);
+  while (cursor <= endM) {
+    var ym = stbYm(cursor);
+    var ov = ovVal(ym);
+    var carryIn = (ov !== null) ? ov : carry;
+    var avail = base + carryIn;
+    var usedM = usedIn(ym);
+    var rem = avail - usedM;
+    var carryOut = 0, lost = 0, overage = 0, billed = 0;
+    if (rem >= 0) {
+      carryOut = Math.min(cap, rem);
+      lost = rem - carryOut;
+    } else {
+      overage = -rem;
+      var deduction = Math.min(overage, base);
+      carryOut = -deduction;
+      billed = overage - deduction;
+    }
+    history.push({
+      ym: ym,
+      label: cursor.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      base: r1(base), exceptional: ov !== null, carryIn: r1(carryIn),
+      available: r1(avail), used: r1(usedM), remaining: r1(rem),
+      lost: r1(lost), overage: r1(overage), billed: r1(billed),
+      current: ym === cur
+    });
+    carry = carryOut;
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  var curM = history[history.length - 1] || {
+    base: base, carryIn: 0, available: base, used: 0, remaining: base,
+    billed: 0, exceptional: false
+  };
+
+  // Signal de PERTE sur les mois COMPLETS (hors mois en cours).
+  var completed = history.slice(0, -1);
+  var lostRecent = r1(completed.reduce(function (s, h) { return s + h.lost; }, 0));
+  var last3 = completed.slice(-3);
+  var lost3 = r1(last3.reduce(function (s, h) { return s + h.lost; }, 0));
+  var lossAlert = base > 0 && last3.length >= 2 && lost3 >= base * 0.5;
+
+  return {
+    base: base, cap: cap, rate: rate, configured: base > 0,
+    exceptional: !!curM.exceptional, curExceptional: !!curM.exceptional,
+    carryIn: curM.carryIn, billedCarry: curM.billed,
+    available: curM.available, used: curM.used, remaining: curM.remaining,
+    over: curM.remaining < 0 ? -curM.remaining : 0,
+    history: history, lostRecent: lostRecent, lost3: lost3, lossAlert: lossAlert,
+    start: String(cfg.forfaitStart || ''), startAuto: startYm, overrides: overrides
+  };
+}
+
+/* ── Format UNIQUE des durées : « 6h37 » / « 12 h » ──────────────────────── */
+
+function stbFmtHours(h) {
+  var min = Math.round((h || 0) * 60);
+  var neg = min < 0;
+  min = Math.abs(min);
+  var hh = Math.floor(min / 60), mm = min % 60;
+  return (neg ? '− ' : '') + (mm ? (hh + 'h' + String(mm).padStart(2, '0')) : (hh + ' h'));
+}
+function stbFmtMin(min) {
+  return stbFmtHours((min || 0) / 60);
+}
+
+
+// Client portal SPA, multi-project
 (function() {
   'use strict';
 
@@ -1074,127 +1330,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   // Le report ne s'applique QUE si la prestation tournait le mois précédent
   // (au moins une activité enregistrée). Au tout début de la prestation, ou un
   // mois sans aucune consommation, il n'y a pas de report.
-  // Durée d'une entrée de temps en minutes (chrono start/end, ou saisie
-  // manuelle horodatée { start, minutes }). Plafond 24 h.
-  function cpSessionMin(s){ if(s&&typeof s.minutes==='number') return Math.max(0,Math.min(s.minutes,24*60)); var st=s&&s.start?Date.parse(s.start):NaN, en=s&&s.end?Date.parse(s.end):NaN; if(isNaN(st)||isNaN(en)||en<=st) return 0; return Math.min((en-st)/60000, 24*60); }
-  // Répartition du temps d'une tâche par mois RÉELLEMENT travaillé (voir back.ts).
-  // Ajuste une répartition par mois pour que la somme fasse EXACTEMENT total.
-  // C'est l'INVARIANT du comptage : ce qu'on répartit par mois ne peut jamais
-  // valoir plus (ni moins) que le temps réellement enregistré sur la tâche.
-  // Indispensable car un temps corrigé À LA BAISSE laisse derrière lui des
-  // sessions plus grosses que le total (l'admin afficherait 2 h et le détail 6 h).
-  function cpFitMap(map, total){
-    var keys=Object.keys(map); if(!keys.length||total<=0) return {};
-    var sum=0; keys.forEach(function(k){ sum+=map[k]; });
-    if(sum<=0) return {};
-    var out={}, acc=0;
-    for(var i=0;i<keys.length;i++){
-      var v = (i===keys.length-1) ? (total-acc) : Math.round(map[keys[i]]/sum*total);
-      if(v<0) v=0;
-      acc+=v; if(v>0) out[keys[i]]=v;
-    }
-    return out;
-  }
-  function cpTaskMinByMonth(t){
-    var total=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0);
-    if(!(total>0)) return {};
-    var n=new Date(); var cur=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
-    // 1) Mois FORCÉ (« Compté en ») : TOUT le temps de la tâche compte dans ce
-    //    mois (chrono inclus), jamais dans le futur.
-    var wm=String(t.workMonth||'');
-    if(/^\d{4}-\d{2}$/.test(wm)){ var mF={}; mF[wm>cur?cur:wm]=total; return mF; }
-    // 2) Répartition par mois de travail : mois de chaque session (chrono ET
-    //    saisie manuelle, qui est horodatée à sa saisie côté serveur).
-    var map={}, sessTotal=0, lastStart='';
-    (Array.isArray(t.sessions)?t.sessions:[]).forEach(function(s){
-      var m=cpSessionMin(s), ym=String((s&&s.start)||'').slice(0,7);
-      if(m<=0||!ym) return;
-      if(ym>cur) ym=cur;
-      map[ym]=(map[ym]||0)+m; sessTotal+=m;
-      if(String(s.start)>lastStart) lastStart=String(s.start);
-    });
-    // 3) Reste non couvert par les sessions → rattaché au mois de travail :
-    //    EN COURS → mois courant (le travail se fait maintenant) ;
-    //    TERMINÉE → le mois de sa clôture.
-    var residual=total-sessTotal;
-    if(residual>0){
-      var rm=lastStart?lastStart.slice(0,7):'';
-      if(!rm){
-        if(String(t.status)==='done'){ var cp=String(t.completedAt||'').slice(0,7); var due=String(t.dueDate||'').slice(0,7); var cr=String(t.createdAt||'').slice(0,7); rm=(cp&&cp<=cur)?cp:((due&&due<=cur)?due:((cr&&cr<=cur)?cr:cur)); }
-        else { rm=cur; }
-      }
-      if(rm>cur) rm=cur;
-      map[rm]=(map[rm]||0)+residual;
-    }
-    // 4) INVARIANT : somme des mois == total de la tâche (corrige aussi le cas
-    //    où les sessions dépassent le total après une correction à la baisse).
-    return cpFitMap(map, total);
-  }
-  // Tâches qui CONSOMMENT le forfait. Règle UNIQUE, utilisée par la jauge, le
-  // détail du mois, les stats et l'historique : une demande non triée (inbox),
-  // hors forfait (facturée à part) ou refusée n'entre jamais dans le décompte.
-  // Sans ça, deux écrans qui parlent du même mois affichent deux totaux.
-  function cpBillable(list){ return (Array.isArray(list)?list:[]).filter(function(t){ return t.stage!=='inbox' && t.stage!=='out_of_scope' && t.stage!=='refused'; }); }
-  function cpForfaitState(p) {
-    var base = parseFloat(p.monthlyHours) || 0;
-    // REPORT EXCEPTIONNEL par mois (forfaitOverrides['YYYY-MM']) : normalement le
-    // report est plafonné au cap (2 h). Pour un mois précis, on force un report
-    // entrant plus grand (ex. septembre : report 3h50). La base ne change pas.
-    var _ovr = (p.forfaitOverrides && typeof p.forfaitOverrides === 'object') ? p.forfaitOverrides : {};
-    function ovVal(ym){ var o = _ovr[ym]; return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : null; }
-    var cap  = (p.rolloverCapHours != null && p.rolloverCapHours !== '') ? parseFloat(p.rolloverCapHours) : 2;
-    var rate = (p.overageRate != null && p.overageRate !== '') ? parseFloat(p.overageRate) : 60;
-    // Consommation = uniquement le travail DANS le forfait : on exclut les
-    // demandes non triées (inbox), le hors-forfait (out_of_scope, facturé à
-    // part), les refusées et les archivées (même règle que le back).
-    var billable = cpBillable(p.tasks);
-    function usedIn(ym){ return billable.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
-    var now = new Date();
-    var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    function r1(n){ return Math.round(n*10)/10; }
-    // ── Historique CHAÎNÉ, mois par mois, depuis le début du forfait, RÉPLIQUE
-    // EXACTE de forfaitState() côté serveur. On ne peut PAS déduire le report du
-    // mois en cours en ne regardant que le mois précédent : le dépassement d'un
-    // mois se mesure contre le DISPONIBLE de ce mois-là (base + son propre
-    // report), pas contre la base. C'est ce raccourci qui faisait dire « reste
-    // 5h41 » à la cliente quand l'admin disait « reste 7h42 ». ──
-    var startYm = /^\d{4}-\d{2}$/.test(String(p.forfaitStart||'')) ? String(p.forfaitStart) : '';
-    if (!startYm) {
-      billable.forEach(function(t){
-        var c = String(t.createdAt||'').slice(0,7);
-        if (/^\d{4}-\d{2}$/.test(c) && (!startYm || c < startYm)) startYm = c;
-        (Array.isArray(t.sessions)?t.sessions:[]).forEach(function(s){
-          var sm = String((s&&s.start)||'').slice(0,7);
-          if (/^\d{4}-\d{2}$/.test(sm) && (!startYm || sm < startYm)) startYm = sm;
-        });
-      });
-    }
-    if (!startYm || startYm > cur) startYm = cur;
-    var history = [];
-    var carry = 0;
-    var cursor = new Date(parseInt(startYm.slice(0,4),10), parseInt(startYm.slice(5,7),10)-1, 1);
-    var endM = new Date(now.getFullYear(), now.getMonth(), 1);
-    while (cursor <= endM) {
-      var ym = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0');
-      var ov = ovVal(ym);
-      var carryInM = (ov !== null) ? ov : carry;
-      var availM = base + carryInM;
-      var usedM = usedIn(ym);
-      var remM = availM - usedM;
-      var carryOut = 0, lost = 0, overage = 0, billed = 0;
-      if (remM >= 0) { carryOut = Math.min(cap, remM); lost = remM - carryOut; }
-      else { overage = -remM; var deduction = Math.min(overage, base); carryOut = -deduction; billed = overage - deduction; }
-      history.push({ ym:ym, label: cursor.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}), base:r1(base), exceptional: ov !== null, carryIn:r1(carryInM), available:r1(availM), used:r1(usedM), remaining:r1(remM), lost:r1(lost), overage:r1(overage), billed:r1(billed), current: ym === cur });
-      carry = carryOut;
-      cursor.setMonth(cursor.getMonth()+1);
-    }
-    var curM = history[history.length-1] || { base:base, carryIn:0, available:base, used:0, remaining:base, billed:0, exceptional:false };
-    return { base:base, exceptional: !!curM.exceptional, cap:cap, rate:rate, carryIn:curM.carryIn, billedCarry:curM.billed, available:curM.available, used:curM.used, remaining:curM.remaining, over: curM.remaining<0 ? -curM.remaining : 0, configured: base>0, history:history, startAuto:startYm };
-  }
-  // Format UNIQUE du temps dans tout l'espace client : « 6h37 » / « 12 h ».
-  // (Avant : décimal « 6.6 h » ici et « 6h37 » dans la jauge, deux écritures
-  // différentes pour la même durée, d'où l'impression d'incohérence.)
-  function cpFmtH(h){ var min=Math.round((h||0)*60); var neg=min<0; min=Math.abs(min); var hh=Math.floor(min/60), mm=min%60; return (neg?'−':'')+(mm?(hh+'h'+String(mm).padStart(2,'0')):(hh+' h')); }
+  // Temps & forfait : tout vient de shared/forfait-model.js, SOURCE UNIQUE,
+  // injectée en tête de ce SPA par build-front.js et importée à l'identique par
+  // back.ts et le SPA studio. Aucune règle de calcul n'est réécrite ici : juste
+  // des alias aux noms utilisés dans ce fichier.
+  function cpSessionMin(s){ return stbSessionMin(s); }
+  function cpTaskMinByMonth(t){ return stbTaskMinByMonth(t); }
+  function cpBillable(list){ return stbBillable(list); }
+  function cpForfaitState(p) { return stbForfaitState(p, p && p.tasks); }
+  function cpFmtH(h){ return stbFmtHours(h); }
 
   // Regroupement par type d'offre (ordre et libellés des sections).
   var TYPE_GROUPS = [
@@ -3694,7 +3838,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
   var PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
-  function partFmtH(min){ min = min || 0; var h = Math.floor(min/60), m = min%60; return m ? (h+'h'+String(m).padStart(2,'0')) : (h+' h'); }
+  function partFmtH(min){ return stbFmtMin(min); }
   // Historique client : tâches terminées/archivées groupées par mois.
   function cliPartHistoryHtml(allTasks, mkOpen, mkReopen, only) {
     var arr = allTasks || [];
