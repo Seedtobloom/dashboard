@@ -34,7 +34,7 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --orange: #CD8F6E;
   --red: #5A2A11;
   --radius: 10px;
-  --shadow: 2px 3px 6px -2px rgba(17,7,4,.07);
+  --shadow: none;
   --sw: 256px;
   /* status */
   --st-todo:rgba(17,7,4,.3); --st-progress:#CD8F6E; --st-review:#C5DEFF; --st-done:#5A2A11;
@@ -47,9 +47,9 @@ var CLIENT_CSS = String.raw`/* Client portal — Ecrin Design System — Seed to
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
   /* shape */
   --radius-1:2px; --radius-2:6px; --radius-3:10px; --radius-pill:999px;
-  --shadow-1:16px 16px 0 -2px rgba(17,7,4,.45);
-  --shadow-2:9px 11px 20px -8px rgba(17,7,4,.20);
-  --shadow-3:8px 12px 26px -8px rgba(17,7,4,.24);
+  --shadow-1:none;
+  --shadow-2:0 8px 20px -12px rgba(17,7,4,.12);
+  --shadow-3:0 16px 40px -14px rgba(17,7,4,.22);
   --ease:cubic-bezier(0.16,1,0.3,1); --dur:240ms;
   /* button tokens */
   --btn-primary-bg:var(--glycine); --btn-primary-fg:var(--terre);
