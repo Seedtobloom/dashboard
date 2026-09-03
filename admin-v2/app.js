@@ -2909,7 +2909,7 @@
     var body = secs.map(function (s, si) {
       var qs = s.questions.map(function (q, qi) {
         var k = id + '_' + si + '_' + qi; var a = VIS_TRAME_ANS[k] || {}; var on = !!a.c;
-        return '<div style="background:' + (on ? 'var(--gold-soft)' : 'var(--card)') + ';border-radius:13px;padding:14px 16px;margin-bottom:11px;display:flex;gap:13px">' +
+        return '<div style="background:' + (on ? 'var(--card)' : '#fff') + ';box-shadow:' + (on ? 'inset 3px 0 0 var(--gold-chip)' : 'inset 0 0 0 1px var(--bone-d)') + ';border-radius:13px;padding:14px 16px;margin-bottom:11px;display:flex;gap:13px">' +
           '<button onclick="ADM.trameQToggle(\'' + k + '\')" style="width:24px;height:24px;flex-shrink:0;margin-top:2px;border:none;cursor:pointer;border-radius:7px;background:' + (on ? 'var(--terre-600)' : 'var(--bone)') + ';box-shadow:' + (on ? 'none' : 'inset 0 0 0 1.5px var(--bone-d)') + ';display:grid;place-items:center;color:var(--paille)">' + (on ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '') + '</button>' +
           '<div style="flex:1;min-width:0"><div style="font-family:\'Alegreya\',Georgia,serif;font-size:22px;line-height:1.35;color:' + (on ? 'var(--terre-600)' : 'var(--terre)') + '">' + trameHi(q) + '</div>' +
           '<textarea onchange="ADM.trameQNote(\'' + k + '\',this.value)" placeholder="Note la réponse…" style="width:100%;box-sizing:border-box;margin-top:9px;min-height:40px;resize:vertical;border:none;background:var(--bone);border-radius:9px;padding:10px 13px;font-family:var(--font-body);font-weight:300;font-size:16px;color:var(--terre);outline:none;line-height:1.5">' + esc(a.n || '') + '</textarea></div></div>';
@@ -4702,7 +4702,7 @@
         '<div><div class="rentrow__p">' + esc(f.client || '') + '</div><div class="rentrow__c">Forfait mensuel</div></div>' +
         '<div class="rentcell">' + base + ' h</div>' +
         '<div class="rentcell">' + used + ' h<small>' + restLbl + '</small></div>' +
-        '<div class="rentcell rentrate" style="color:' + (under ? 'var(--paille)' : (watch ? 'var(--gold-ink)' : '#4a6b43')) + '">' + pct + '%</div>' +
+        '<div class="rentcell rentrate" style="color:' + (under ? 'var(--gold-ink)' : (watch ? 'var(--gold-ink)' : '#4a6b43')) + '">' + pct + '%</div>' +
         flag + '</div>';
     }).join('');
     var rentBlock = forf.length
