@@ -19,6 +19,12 @@ let css = read('src/client_css.js');     // var CLIENT_CSS = String.raw`...`;
 let js = read('src/client_js.js');       // var CLIENT_JS  = String.raw`...`;
 let html = read('src/client_html.js');   // var CLIENT_HTML = `...`;
 const favicon = read('favicon.svg');
+// Bannières d'offres (images réelles de la maquette) : embarquées en base64 et
+// servies par le worker sous /assets/banner-<offre>.png (référencées par URL
+// dans les cartes d'accueil, donc mises en cache à part du HTML).
+const bannerFiles = { identite: 'banners/banner-identite.png', supports: 'banners/banner-supports.png', partenaire: 'banners/banner-partenaire.png' };
+const bannerB64 = {};
+Object.keys(bannerFiles).forEach(function (k) { bannerB64[k] = fs.readFileSync(path.join(ROOT, bannerFiles[k])).toString('base64'); });
 const patch = read('_login_patch.js');
 const chatPatch = read('_chat_patch.js');
 const livPatch = read('_deliverables_patch.js');
@@ -275,6 +281,7 @@ const handler = [
   "    if (url.pathname === '/client.css') return new Response(CLIENT_CSS, { headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
   "    if (url.pathname === '/client.js') return new Response(CLIENT_JS, { headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });",
   "    if (url.pathname === '/favicon.svg') return new Response(CLIENT_FAVICON, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });",
+  "    { const mB = url.pathname.match(/^\\/assets\\/banner-([a-z]+)\\.png$/); if (mB && CLIENT_BANNERS[mB[1]]) { const bin = atob(CLIENT_BANNERS[mB[1]]); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return new Response(arr, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800, immutable' } }); } }",
   "    return new Response(CLIENT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, must-revalidate' } });",
   '  }',
   '};',
@@ -283,7 +290,8 @@ const handler = [
 ].join('\n');
 
 const favConst = 'const CLIENT_FAVICON = ' + JSON.stringify(favicon) + ';\n';
-const out = handler + favConst + css + '\n\n' + js + '\n\n' + html + '\n';
+const bannersConst = 'const CLIENT_BANNERS = ' + JSON.stringify(bannerB64) + ';\n';
+const out = handler + favConst + bannersConst + css + '\n\n' + js + '\n\n' + html + '\n';
 fs.writeFileSync(path.join(ROOT, 'front.js'), out);
 console.log('front.js écrit (' + out.length + ' octets)');
 

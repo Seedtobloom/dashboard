@@ -132,6 +132,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // Couleurs de bannière franches (charte Écrin) reprises de la maquette :
   // brun, lavande, crème — au lieu des tons « deep » délavés.
   var CP_TYPE_BANNER = { identite:'#C5DEFF', site:'#C5DEFF', maintenance:'#110704', partenaire:'#110704', support:'#C5DEFF', autre:'#F8F6F2' };
+  // Images de bannières réelles (maquette) servies par le worker, par type d'offre.
+  // Repli sur la couleur franche CP_TYPE_BANNER quand aucune image (ou bannière perso).
+  var CP_TYPE_BANNER_IMG = { identite:'/assets/banner-identite.png', partenaire:'/assets/banner-partenaire.png', support:'/assets/banner-supports.png' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
@@ -1261,7 +1264,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       // Bannière de couleur franche (brun / lavande / crème), placeholder de la
       // future image de couverture — reprise de la maquette validée.
       var _bannerBg = (p.bannerColor ? String(p.bannerColor).split('|')[0] : '') || CP_TYPE_BANNER[p.type] || _band.deep;
-      var bannerStyle = 'background:' + _bannerBg + ';height:150px';
+      var _bImg = (!p.bannerColor && CP_TYPE_BANNER_IMG[p.type]) ? CP_TYPE_BANNER_IMG[p.type] : '';
+      var bannerStyle = _bImg
+        ? 'background:' + _bannerBg + ' url(' + _bImg + ') center/cover no-repeat;height:150px'
+        : 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
       var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#5A2A11') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
