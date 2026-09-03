@@ -507,7 +507,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-sp__row { display: grid; grid-template-columns: 1.7fr 1fr; gap: clamp(16px,1.8vw,26px); margin-top: clamp(18px,2vw,28px); }
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
 .cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
-.cp-sp__card--cta { background: var(--card); box-shadow: inset 0 3px 0 var(--paille); display: flex; flex-direction: column; }
+.cp-sp__card--cta { background: var(--card); box-shadow: var(--shadow-1); display: flex; flex-direction: column; }
 .cp-sp__card--brown { background: var(--terre); }
 .cp-sp__card--brown .cp-sp__kick { color: var(--paille); }
 .cp-sp__card--brown .cp-sp__big { color: #fff; }
