@@ -2845,13 +2845,26 @@
 
   // ── Onglet « Trames d'appel » : bibliothèque de cartes + mode appel interactif (cocher + noter) ──
   var VIS_TRAME_OPEN = null, VIS_TRAME_ANS = {};
+  // Titre stocké en MAJUSCULES (ancien format) → phrase normale. Jamais tout en
+  // capitales à l'affichage (préférence de Cindy : « jamais en gras et majuscule »).
+  function trameTitleClean(s) {
+    var t = String(s || '').trim();
+    if (t && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t)) {
+      t = t.toLocaleLowerCase('fr');
+      t = t.charAt(0).toLocaleUpperCase('fr') + t.slice(1);
+    }
+    return t;
+  }
   // Découpe le contenu texte d'une trame en étapes { titre, aide, questions[] }.
   function trameParse(content) {
     var lines = String(content || '').split('\n'), secs = [], cur = null;
     lines.forEach(function (l) {
       var t = l.trim(); if (!t) return;
-      var isHead = /^[①②③④⑤⑥⑦⑧⑨🌱📝]/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
-      if (isHead) { cur = { title: t.replace(/^[①②③④⑤⑥⑦⑧⑨🌱📝]\s*/, ''), hint: '', questions: [] }; secs.push(cur); return; }
+      // 🌱 / 📝 sont des emojis « astraux » (paires de substitution) : hors d'une
+      // classe [...] et via une alternance, on les retire proprement (sinon on ne
+      // supprime qu'une moitié et il reste un « � »).
+      var isHead = /^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
+      if (isHead) { cur = { title: trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)\s*/, '')), hint: '', questions: [] }; secs.push(cur); return; }
       if (!cur) { cur = { title: '', hint: '', questions: [] }; secs.push(cur); }
       // Question = une réplique à dire : le « … » est en tête de ligne (éventuel
       // court libellé « Label : » avant). Sinon = phrase d'aide/repère (même si
@@ -2901,7 +2914,7 @@
           '<div style="flex:1;min-width:0"><div style="font-family:\'Alegreya\',Georgia,serif;font-size:22px;line-height:1.35;color:' + (on ? 'var(--terre-600)' : 'var(--terre)') + '">' + trameHi(q) + '</div>' +
           '<textarea onchange="ADM.trameQNote(\'' + k + '\',this.value)" placeholder="Note la réponse…" style="width:100%;box-sizing:border-box;margin-top:9px;min-height:40px;resize:vertical;border:none;background:var(--bone);border-radius:9px;padding:10px 13px;font-family:var(--font-body);font-weight:300;font-size:16px;color:var(--terre);outline:none;line-height:1.5">' + esc(a.n || '') + '</textarea></div></div>';
       }).join('');
-      return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:\'Alegreya\',Georgia,serif;font-size:25px;font-weight:500;color:var(--terre)">' + esc(s.title || 'Étape') + '</span></div>' +
+      return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:\'Alegreya\',Georgia,serif;font-size:25px;font-weight:400;color:var(--terre)">' + esc(trameTitleClean(s.title) || 'Étape') + '</span></div>' +
         (s.hint ? '<div style="font-family:var(--font-micro);font-weight:300;font-size:14px;color:var(--muted);font-style:italic;margin:0 0 13px 37px;line-height:1.55">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
     }).join('');
     return '<div class="vis-wrap" style="max-width:760px;margin:0 auto">' +
@@ -2925,7 +2938,7 @@
     return lines.map(function (l) {
       var t = l.trim();
       if (t === '') return '<div style="height:11px"></div>';
-      if (/^[①②③④⑤⑥⑦⑧⑨🌱📝]/.test(t)) return '<div style="font-family:var(--font-micro);font-weight:700;font-size:15px;color:var(--terre);margin:18px 0 8px">' + esc(l) + '</div>';
+      if (/^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)/.test(t)) return '<div style="font-family:\'Alegreya\',Georgia,serif;font-weight:400;font-size:19px;color:var(--terre);margin:18px 0 8px">' + esc(trameTitleClean(t.replace(/^([①②③④⑤⑥⑦⑧⑨]|🌱|📝)\s*/, ''))) + '</div>';
       var gi = l.indexOf('→');
       if (gi !== -1) {
         // Avant la flèche = condition / mots du client (à NE PAS dire) ; après = ta réponse.
