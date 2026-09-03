@@ -3392,7 +3392,9 @@
       var hint = '<div class="mss-planhint"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>' +
         '<div>Tes <b>blocs de temps iCloud</b> (Créneau Marie, Envol, Prospection…) sont des <b>repères où poser tes tâches</b> : dépose une tâche dans le bloc du bon projet, ou dans le temps libre autour.</div></div>';
       // À caler : non planifiées + en retard (planifiées dans le passé) — clientes incluses.
-      var railTasks = active.filter(function (t) { if (t.mode === 'idee') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < todayIso; }).sort(msPrioSort);
+      // On exclut les tâches EN ATTENTE CLIENT (à valider / action cliente) : elles
+      // ne sont pas à caler dans ton temps, la balle est dans le camp de la cliente.
+      var railTasks = active.filter(function (t) { if (t.mode === 'idee') return false; if (t.status === 'review' || t.status === 'waiting_client') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < todayIso; }).sort(msPrioSort);
       var rail = '<aside class="mss-rail"><h3>À caler aujourd\'hui</h3><p>Dépose-les dans le bloc de temps du bon projet, ou laisse-moi les ranger.</p>' +
         '<div class="mss-rail__tasks" ondragover="ADM.msDayOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msUnplace(event,this)">' +
         (railTasks.length ? railTasks.slice(0, 80).map(chip).join('') : '<div class="mss-empty">Tout est calé 🌿</div>') + '</div>' +
@@ -3403,7 +3405,7 @@
       // ═══ SEMAINE : bandeau « à caler » + 5 jours pleine largeur ═══
       // À caler : non planifiées + en retard (planifiées avant cette semaine) —
       // tâches clientes (Partenaire créative) incluses, pour ne rien manquer.
-      var backlog = active.filter(function (t) { if (t.mode === 'idee') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < w0; }).sort(msPrioSort);
+      var backlog = active.filter(function (t) { if (t.mode === 'idee') return false; if (t.status === 'review' || t.status === 'waiting_client') return false; var dd = (t.doDate || '').slice(0, 10); return !dd || dd < w0; }).sort(msPrioSort);
       var wplan = '<div class="mss-wplan"><div class="mss-wplan__h"><div class="mss-wplan__ht">' +
         '<h3>À caler cette semaine</h3><p>Dépose une tâche dans un bloc de temps, ou laisse-moi la ranger dans le bon projet.</p></div>' +
         '<button class="mss-wplan__auto" onclick="ADM.msOrganizeWeek()">✨ Organise ma semaine</button></div>' +
