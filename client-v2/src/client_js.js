@@ -549,31 +549,45 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function usedIn(ym){ return billable.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
     var now = new Date();
     var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    var pdt = new Date(now.getFullYear(), now.getMonth()-1, 1);
-    var prev = pdt.getFullYear()+'-'+String(pdt.getMonth()+1).padStart(2,'0');
-    var used = usedIn(cur);
-    var usedPrev = usedIn(prev);
-    var ovCur = ovVal(cur);
-    // Report entrant du mois en cours :
-    //  - si report EXCEPTIONNEL défini pour ce mois → on le force ;
-    //  - sinon report normal du mois précédent (plafonné au cap, max 2 h) ;
-    //    un DEPASSEMENT est déduit du mois en cours (facturé au-delà d'un mois).
-    var carryIn = 0, billedCarry = 0;
-    if (ovCur !== null) {
-      carryIn = ovCur;
-    } else if (base) {
-      var diffPrev = base - usedPrev;
-      if (diffPrev >= 0) { carryIn = Math.min(cap, diffPrev); }
-      else {
-        var overagePrev = -diffPrev;
-        var deduction = Math.min(overagePrev, base);
-        carryIn = -deduction;
-        billedCarry = Math.round((overagePrev - deduction) * 10) / 10;
-      }
+    function r1(n){ return Math.round(n*10)/10; }
+    // ── Historique CHAÎNÉ, mois par mois, depuis le début du forfait — RÉPLIQUE
+    // EXACTE de forfaitState() côté serveur. On ne peut PAS déduire le report du
+    // mois en cours en ne regardant que le mois précédent : le dépassement d'un
+    // mois se mesure contre le DISPONIBLE de ce mois-là (base + son propre
+    // report), pas contre la base. C'est ce raccourci qui faisait dire « reste
+    // 5h41 » à la cliente quand l'admin disait « reste 7h42 ». ──
+    var startYm = /^\d{4}-\d{2}$/.test(String(p.forfaitStart||'')) ? String(p.forfaitStart) : '';
+    if (!startYm) {
+      billable.forEach(function(t){
+        var c = String(t.createdAt||'').slice(0,7);
+        if (/^\d{4}-\d{2}$/.test(c) && (!startYm || c < startYm)) startYm = c;
+        (Array.isArray(t.sessions)?t.sessions:[]).forEach(function(s){
+          var sm = String((s&&s.start)||'').slice(0,7);
+          if (/^\d{4}-\d{2}$/.test(sm) && (!startYm || sm < startYm)) startYm = sm;
+        });
+      });
     }
-    var available = base + carryIn;
-    var remaining = available - used;
-    return { base:base, exceptional: ovCur !== null, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
+    if (!startYm || startYm > cur) startYm = cur;
+    var history = [];
+    var carry = 0;
+    var cursor = new Date(parseInt(startYm.slice(0,4),10), parseInt(startYm.slice(5,7),10)-1, 1);
+    var endM = new Date(now.getFullYear(), now.getMonth(), 1);
+    while (cursor <= endM) {
+      var ym = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0');
+      var ov = ovVal(ym);
+      var carryInM = (ov !== null) ? ov : carry;
+      var availM = base + carryInM;
+      var usedM = usedIn(ym);
+      var remM = availM - usedM;
+      var carryOut = 0, lost = 0, overage = 0, billed = 0;
+      if (remM >= 0) { carryOut = Math.min(cap, remM); lost = remM - carryOut; }
+      else { overage = -remM; var deduction = Math.min(overage, base); carryOut = -deduction; billed = overage - deduction; }
+      history.push({ ym:ym, label: cursor.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}), base:r1(base), exceptional: ov !== null, carryIn:r1(carryInM), available:r1(availM), used:r1(usedM), remaining:r1(remM), lost:r1(lost), overage:r1(overage), billed:r1(billed), current: ym === cur });
+      carry = carryOut;
+      cursor.setMonth(cursor.getMonth()+1);
+    }
+    var curM = history[history.length-1] || { base:base, carryIn:0, available:base, used:0, remaining:base, billed:0, exceptional:false };
+    return { base:base, exceptional: !!curM.exceptional, cap:cap, rate:rate, carryIn:curM.carryIn, billedCarry:curM.billed, available:curM.available, used:curM.used, remaining:curM.remaining, over: curM.remaining<0 ? -curM.remaining : 0, configured: base>0, history:history, startAuto:startYm };
   }
   // Format UNIQUE du temps dans tout l'espace client : « 6h37 » / « 12 h ».
   // (Avant : décimal « 6.6 h » ici et « 6h37 » dans la jauge — deux écritures
@@ -904,7 +918,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var project = pd.project;
     var mk = _todayStr().slice(0, 7);
     var tasks = cpBillable(project.tasks);
-    var rows = tasks.map(function (t) { return { t: t, min: cpTaskMinByMonth(t)[mk] || 0 }; }).filter(function (r) { return r.min > 0; }).sort(function (a, b) { return b.min - a.min; });
+    // On liste le temps compté ce mois-ci ET les sujets EN COURS (démarrés ou en
+    // attente de validation), même si aucun temps n'y est encore rattaché : la
+    // cliente voit ce qui avance, pas seulement ce qui est déjà décompté.
+    var WIP = { in_progress: 1, review: 1, waiting_client: 1 };
+    var rows = tasks.map(function (t) { return { t: t, min: cpTaskMinByMonth(t)[mk] || 0 }; })
+      .filter(function (r) { return r.min > 0 || (!r.t.archived && WIP[r.t.status || '']); })
+      .sort(function (a, b) { return (b.min - a.min) || String(a.t.title || '').localeCompare(String(b.t.title || '')); });
     if (!rows.length) return '';
     function hm(min) { min = Math.round(min); var h = Math.floor(min / 60), m = min % 60; return m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h'); }
     var items = rows.map(function (r) {
@@ -917,7 +937,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(248,246,242,.1)">' +
         '<span style="flex:1;min-width:0;font-family:var(--font-body);font-size:14px;color:#F8F6F2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.t.title || 'Sans titre') + '</span>' +
         badge +
-        '<span style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;color:#E6E5B2;min-width:56px;text-align:right">' + hm(r.min) + '</span>' +
+        (r.min > 0
+          ? '<span style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;color:#E6E5B2;min-width:56px;text-align:right">' + hm(r.min) + '</span>'
+          : '<span title="Aucun temps compté ce mois pour l\'instant" style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;color:rgba(230,229,178,.42);min-width:56px;text-align:right">—</span>') +
       '</div>';
     }).join('');
     return '<details class="cp-fdetail" style="margin-top:16px">' +
@@ -4742,69 +4764,21 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (!forfait) return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2></div>' +
       '<p style="color:var(--muted);font-size:14px;padding:8px 0">Le forfait sera défini par le studio.</p></div>';
 
-    // Tâches facturables (mêmes exclusions que le compteur du haut).
-    var billable = cpBillable(tasks);
-    // Grouper par mois pour lister les mois connus (basé sur dueDate ou completedAt).
-    var byMonth = {};
-    tasks.forEach(function(t) {
-      var ref = (t.completedAt || t.dueDate || '');
-      if (!ref) return;
-      var key = ref.slice(0,7); // YYYY-MM
-      if (!byMonth[key]) byMonth[key] = [];
-      byMonth[key].push(t);
-    });
-
-    // Construire la liste de mois depuis le début du projet. On part du PLUS TÔT
-    // entre le début du projet et le premier mois où du temps est réellement
-    // compté : sinon un mois rattaché en arrière (« Compté en ») serait absent de
-    // l'historique et ses heures deviendraient invisibles.
-    var timedMonths = {};
-    billable.forEach(function(t){ var mm=cpTaskMinByMonth(t); Object.keys(mm).forEach(function(k){ if(mm[k]>0) timedMonths[k]=1; }); });
-    var startM = project.startDate ? project.startDate.slice(0,7) : Object.keys(byMonth).sort()[0];
-    var firstTimed = Object.keys(timedMonths).sort()[0];
-    if (firstTimed && (!startM || firstTimed < startM)) startM = firstTimed;
+    // L'historique vient de la MÊME source que le compteur du haut et que
+    // l'admin : la chaîne mois par mois de cpForfaitState (réplique du serveur).
+    // Avant, ce tableau recalculait sa propre chaîne dans son coin — d'où des
+    // écarts entre le compteur, l'historique et le suivi côté studio.
+    var _st = cpForfaitState(project);
     var now = new Date();
     var endKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    var months = [];
-    if (startM) {
-      var cur = new Date(startM+'-01');
-      var end = new Date(endKey+'-01');
-      while (cur <= end) {
-        months.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0'));
-        cur.setMonth(cur.getMonth()+1);
-      }
-    }
-    if (!months.length) return '<div class="cp-card"><div class="cp-empty">Aucune donnée disponible.</div></div>';
-
-    // Modèle IDENTIQUE au compteur du haut (cpForfaitState) pour ne pas se
-    // contredire : base fixe + report entrant PLAFONNÉ (cap 2 h). Les heures
-    // non utilisées au-delà du plafond sont perdues (elles ne s'accumulent pas).
-    // forfaitOverrides['YYYY-MM'] = REPORT EXCEPTIONNEL de ce mois-là (ex. sept.
-    // = report 3h50 au lieu de 2 h max), sans toucher la base.
-    var cap = (project.rolloverCapHours != null && project.rolloverCapHours !== '') ? parseFloat(project.rolloverCapHours) : 2;
-    function _ov(mk){ var o = overrides[mk]; return (o !== undefined && o !== null && o !== '' && !isNaN(parseFloat(o))) ? parseFloat(o) : null; }
-    var rows = [];
-    var carry = 0;
-    var totalReel = 0;
-    var totalForfait = 0;
-    months.forEach(function(mk, idx) {
-      // Réel du mois = temps RÉELLEMENT travaillé ce mois-là (terminé ET en cours),
-      // même attribution que le compteur du haut (cpTaskMinByMonth), pour que
-      // l'historique reflète aussi le travail en cours.
-      var reel = billable.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[mk]||0)/60; }, 0);
-      var ov = _ov(mk);
-      var carryIn = (ov !== null) ? ov : carry;        // report entrant (forcé si exception)
-      var avail = forfait + carryIn;
-      var restant = avail - reel;                        // solde DU MOIS (ne s'accumule pas)
-      var carryOut = restant >= 0 ? Math.min(cap, restant) : -Math.min(-restant, forfait);
-      carry = carryOut;
-      totalReel += reel;
-      totalForfait += avail;
-      var mLabel = new Date(mk+'-15').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-      rows.push({ mk:mk, label:mLabel, forfait:forfait, regulM1:carryIn, hasOverride:(ov!==null), reel:reel, solde:restant });
+    var rows = (_st.history || []).map(function(h){
+      return { mk:h.ym, label:h.label, forfait:h.base, regulM1:h.carryIn, hasOverride:h.exceptional, reel:h.used, solde:h.remaining };
     });
-
-    var totalSolde = carry;
+    if (!rows.length) return '<div class="cp-card"><div class="cp-empty">Aucune donnée disponible.</div></div>';
+    var totalReel = 0, totalForfait = 0;
+    rows.forEach(function(r){ totalReel += r.reel; totalForfait += r.forfait + r.regulM1; });
+    var lastH = (_st.history || [])[(_st.history || []).length - 1] || { remaining: 0 };
+    var totalSolde = lastH.remaining;
     // Un SEUL format d'heures dans tout l'espace client (« 6h37 » / « 12 h »).
     function fmt(h) { return cpFmtH(h); }
     var rowsHtml = rows.map(function(r) {
