@@ -165,7 +165,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-banner--img::after { display: none; }
 .cp-proj-ban-img { display: block; width: 100%; height: auto; }
 /* Pied compact (façon maquette) : libellé + valeur + flèche, pour éviter les cartes trop longues */
-.cp-proj-ft { display: flex; align-items: flex-start; gap: 14px; padding: 17px 20px 18px; flex: 1; background: #5A2A11; }
+.cp-proj-ft { display: flex; align-items: flex-start; gap: 14px; padding: 17px 20px 18px; flex: 1; background: #110704; }
 .cp-proj-ft__st { flex: 1; min-width: 0; }
 .cp-proj-ft__k { font-family: var(--font-micro); font-size: 10.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: #E6E5B2; display: flex; align-items: center; gap: 7px; }
 .cp-proj-ft__k .req { color: #E6E5B2; }
