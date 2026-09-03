@@ -1625,6 +1625,17 @@ function sessionMinutes(s: AnyObj): number {
 // sinon création. On n'utilise JAMAIS la date de validation → une validation
 // tardive ne déplace pas rétroactivement la consommation d'un autre mois.
 function taskMinutesByMonth(t: AnyObj): Record<string, number> {
+  const total0 = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
+  // Mois FORCÉ (workMonth / « Compté en ») : TOUT le temps de la tâche compte
+  // dans ce mois, chrono compris — pas seulement la part saisie à la main.
+  const wmF = String(t.workMonth || '');
+  if (/^\d{4}-\d{2}$/.test(wmF)) {
+    const nF = new Date(); const curF = nF.getFullYear() + '-' + String(nF.getMonth() + 1).padStart(2, '0');
+    const mkF = wmF > curF ? curF : wmF;
+    const mF: Record<string, number> = {};
+    if (total0 > 0) mF[mkF] = total0;
+    return mF;
+  }
   const map: Record<string, number> = {};
   const sessions: AnyObj[] = Array.isArray(t.sessions) ? t.sessions : [];
   let sessTotal = 0;

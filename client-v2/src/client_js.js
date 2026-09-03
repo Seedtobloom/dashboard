@@ -477,9 +477,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cpSessionMin(s){ if(s&&typeof s.minutes==='number') return Math.max(0,Math.min(s.minutes,24*60)); var st=s&&s.start?Date.parse(s.start):NaN, en=s&&s.end?Date.parse(s.end):NaN; if(isNaN(st)||isNaN(en)||en<=st) return 0; return Math.min((en-st)/60000, 24*60); }
   // Répartition du temps d'une tâche par mois RÉELLEMENT travaillé (voir back.ts).
   function cpTaskMinByMonth(t){
+    var total0=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0);
+    // Mois FORCÉ (« Compté en ») : TOUT le temps de la tâche compte dans ce mois
+    // (y compris le chrono), pas seulement la part saisie à la main.
+    var wmF=String(t.workMonth||'');
+    if(/^\d{4}-\d{2}$/.test(wmF)){ var n2=new Date(); var cur2=n2.getFullYear()+'-'+String(n2.getMonth()+1).padStart(2,'0'); var mk2=wmF>cur2?cur2:wmF; var mF={}; if(total0>0) mF[mk2]=total0; return mF; }
     var map={}, sessions=Array.isArray(t.sessions)?t.sessions:[], sessTotal=0, lastStart='';
     sessions.forEach(function(s){ var m=cpSessionMin(s), ym=String((s&&s.start)||'').slice(0,7); if(m<=0||!ym) return; map[ym]=(map[ym]||0)+m; sessTotal+=m; if(String(s.start)>lastStart) lastStart=String(s.start); });
-    var total=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0), residual=Math.max(0,total-sessTotal);
+    var total=total0, residual=Math.max(0,total-sessTotal);
     if(residual>0){
       var n=new Date(); var cur=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
       var wm=String(t.workMonth||'');
@@ -859,8 +864,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!rows.length) return '';
     function hm(min) { min = Math.round(min); var h = Math.floor(min / 60), m = min % 60; return m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h'); }
     var items = rows.map(function (r) {
-      var done = r.t.status === 'done';
-      var badge = '<span style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 9px;border-radius:999px;background:' + (done ? 'rgba(248,246,242,.16)' : 'rgba(197,222,255,.22)') + ';color:' + (done ? '#F8F6F2' : '#C5DEFF') + '">' + (done ? 'terminé' : 'en cours') + '</span>';
+      var st = r.t.status || 'todo';
+      var SLBL = { todo: 'à faire', in_progress: 'en cours', review: 'à valider', waiting_client: 'à valider', done: 'terminé' };
+      var lbl = SLBL[st] || 'en cours';
+      var bg = st === 'done' ? 'rgba(248,246,242,.16)' : (st === 'in_progress' ? 'rgba(197,222,255,.22)' : ((st === 'review' || st === 'waiting_client') ? 'rgba(230,229,178,.2)' : 'rgba(248,246,242,.09)'));
+      var col = st === 'done' ? '#F8F6F2' : (st === 'in_progress' ? '#C5DEFF' : ((st === 'review' || st === 'waiting_client') ? '#E6E5B2' : 'rgba(248,246,242,.72)'));
+      var badge = '<span style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 9px;border-radius:999px;background:' + bg + ';color:' + col + '">' + lbl + '</span>';
       return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(248,246,242,.1)">' +
         '<span style="flex:1;min-width:0;font-family:var(--font-body);font-size:14px;color:#F8F6F2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.t.title || 'Sans titre') + '</span>' +
         badge +
