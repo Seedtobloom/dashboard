@@ -66,7 +66,7 @@ const CLIENT_CSS = String.raw`/* Client portal  Ecrin Design System  Seed to Blo
   --fs-h5:22px; --fs-h4:28px; --fs-h3:36px;
   /* shape */
   --radius-1:2px; --radius-2:6px; --radius-3:10px; --radius-pill:999px;
-  --shadow-1:6px 7px 13px -6px rgba(17,7,4,.16);
+  --shadow-1:16px 16px 0 -2px rgba(17,7,4,.45);
   --shadow-2:9px 11px 20px -8px rgba(17,7,4,.20);
   --shadow-3:8px 12px 26px -8px rgba(17,7,4,.24);
   --ease:cubic-bezier(0.16,1,0.3,1); --dur:240ms;
