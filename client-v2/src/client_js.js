@@ -848,6 +848,32 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (availMin > 0 && rest <= availMin * 0.12) return { tone: 'low', label: 'Il reste ' + hm(rest) + ' ce mois', note: 'On arrive au bout du forfait de ce mois. Si un sujet presse, dites-le-moi et on le priorise ensemble.' };
     return { tone: 'ok', label: 'Il vous reste ' + hm(rest) + ' ce mois', note: 'Profitez-en : les heures non utilisées ne se reportent pas d\'un mois à l\'autre (au-delà d\'un petit report de ' + hm(cap * 60) + '). C\'est le bon moment pour me confier vos sujets.' };
   }
+  // Détail repliable du mois en cours : les tâches sur lesquelles du temps a été
+  // passé ce mois-ci (terminé ET en cours), avec leur durée. Sur fond foncé.
+  function cpForfaitDetail(pid) {
+    var pd = getPD(pid); if (!pd || !pd.project) return '';
+    var project = pd.project;
+    var mk = _todayStr().slice(0, 7);
+    var tasks = (Array.isArray(project.tasks) ? project.tasks : []).filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    var rows = tasks.map(function (t) { return { t: t, min: cpTaskMinByMonth(t)[mk] || 0 }; }).filter(function (r) { return r.min > 0; }).sort(function (a, b) { return b.min - a.min; });
+    if (!rows.length) return '';
+    function hm(min) { min = Math.round(min); var h = Math.floor(min / 60), m = min % 60; return m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h'); }
+    var items = rows.map(function (r) {
+      var done = r.t.status === 'done';
+      var badge = '<span style="font-family:var(--font-micro);font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 9px;border-radius:999px;background:' + (done ? 'rgba(248,246,242,.16)' : 'rgba(197,222,255,.22)') + ';color:' + (done ? '#F8F6F2' : '#C5DEFF') + '">' + (done ? 'terminé' : 'en cours') + '</span>';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(248,246,242,.1)">' +
+        '<span style="flex:1;min-width:0;font-family:var(--font-body);font-size:14px;color:#F8F6F2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.t.title || 'Sans titre') + '</span>' +
+        badge +
+        '<span style="font-family:var(--font-micro);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;color:#E6E5B2;min-width:56px;text-align:right">' + hm(r.min) + '</span>' +
+      '</div>';
+    }).join('');
+    return '<details class="cp-fdetail" style="margin-top:16px">' +
+        '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#C5DEFF;display:inline-flex;align-items:center;gap:9px">' +
+          '<span class="cp-fd-chev" aria-hidden="true">›</span> Le détail du mois <span style="opacity:.6">(' + rows.length + ')</span>' +
+        '</summary>' +
+        '<div style="margin-top:8px">' + items + '</div>' +
+      '</details>';
+  }
   function cpForfaitCard(eyebrow, nums, pid) {
     var availMin = nums.availMin, doneMin = nums.doneMin, wipMin = nums.wipMin;
     var usedMin = doneMin + wipMin, restMin = availMin - usedMin;
@@ -866,6 +892,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#110704;background:#C5DEFF;border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
+      cpForfaitDetail(pid) +
     '</div>';
   }
   // Bloc « Votre forfait » sur l'accueil, pour CHAQUE espace ayant un forfait.

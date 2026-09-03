@@ -177,6 +177,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-proj-card:hover .cp-proj-ft__arr { background: var(--glycine); color: #110704; }
 .cp-proj-ft__bar { height: 4px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin: 0 20px; }
 .cp-proj-ft__bar > span { display: block; height: 100%; background: var(--terre); border-radius: 999px; }
+.cp-fdetail > summary { list-style: none; }
+.cp-fdetail > summary::-webkit-details-marker { display: none; }
+.cp-fd-chev { display: inline-block; transition: transform 0.2s var(--ease); }
+.cp-fdetail[open] > summary .cp-fd-chev { transform: rotate(90deg); }
 .cp-proj-card__body { padding: 20px 22px 22px; }
 .cp-proj-card__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-style: italic; margin-bottom: 8px; line-height: 1.25; font-weight: 400; }
 .cp-proj-card__meta { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; letter-spacing: 0.06em; text-transform: uppercase; }
