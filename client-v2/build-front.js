@@ -107,8 +107,7 @@ if (js.indexOf("'background:' + _band.deep + ';height:96px'") !== -1) {
 }
 // Cards à hauteur égale (bas alignés) MAIS sans vide sans couleur : le corps remplit
 // la card et le bas (barre de progression + pied) est poussé en bas.
-must(css.indexOf(".cp-proj-card { background: #F8F6F2; border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer;") !== -1, 'proj-card flex');
-css = css.replace(".cp-proj-card { background: #F8F6F2; border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer;", ".cp-proj-card { background: #F8F6F2; border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; display: flex; flex-direction: column; cursor: pointer;");
+// .cp-proj-card : display:flex + flex-direction:column désormais dans la source (client_css.js).
 must(css.indexOf(".cp-proj-card__body { padding: 20px 22px 22px; }") !== -1, 'proj-card body flex');
 css = css.replace(".cp-proj-card__body { padding: 20px 22px 22px; }", ".cp-proj-card__body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }");
 must(css.indexOf(".cp-proj-bar { height: 5px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }") !== -1, 'proj-bar margin');

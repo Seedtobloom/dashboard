@@ -863,7 +863,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
           '<div style="font-family:var(--font-body);font-size:14px;color:#F8F6F2;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:rgba(197,222,255,0.3);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#110704;background:#C5DEFF;border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
     '</div>';
@@ -1288,11 +1288,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var openTasks = partTasks.filter(function(t){ return t.status !== 'done'; });
         var waitingPartStep = steps.find(function(s){ return s.status === 'waiting_client'; });
         var pOverlay = waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">&#x26A1; Action requise</span>' : '';
-        var pKicker = (openTasks.length ? 'Prochaine demande' : (p.monthlyHours ? p.monthlyHours + ' h par mois' : 'Accompagnement')) + _unreadKicker;
+        var pKicker = openTasks.length ? 'Prochaine demande' : 'Accompagnement';
         var pValue = openTasks.length ? esc(openTasks[0].title||'Sans titre') : 'Accompagnement actif';
+        var pMeta = [];
+        if (p.monthlyHours) pMeta.push('<span><b>' + p.monthlyHours + ' h</b> par mois</span>');
+        pMeta.push('<span><b>' + openTasks.length + '</b> demande' + (openTasks.length>1?'s':'') + ' en cours</span>');
+        if (waitingPartStep) pMeta.push('<span class="req">&#x26A1; Action requise</span>');
+        if (_unread>0) pMeta.push('<span>' + _unread + ' non lu' + (_unread>1?'s':'') + '</span>');
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
           mkBanner(pOverlay) +
-          '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + pKicker + '</div><div class="cp-proj-ft__v">' + pValue + '</div></div>' + _arrow + '</div>' +
+          '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + pKicker + '</div><div class="cp-proj-ft__v">' + pValue + '</div><div class="cp-proj-ft__meta">' + pMeta.join('') + '</div></div>' + _arrow + '</div>' +
         '</button>';
       }
       var nextStep = steps.find(function(s){ return s.status !== 'done'; });
@@ -1300,13 +1305,19 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var gOverlay =
         '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
         (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '');
-      var gKicker = (nextStep ? 'Prochaine étape' : (steps.length ? 'Avancement' : 'Statut')) + (gWaiting ? ' · <span class="req">à vous de jouer</span>' : '') + _unreadKicker;
+      var gKicker = nextStep ? 'Prochaine étape' : (steps.length ? 'Avancement' : 'Statut');
       var gValue = nextStep ? esc(nextStep.title) : (steps.length ? 'Toutes les étapes sont faites' : 'Projet en préparation');
       var gBar = steps.length ? '<div class="cp-proj-ft__bar"><span style="width:' + pct + '%"></span></div>' : '';
+      var gMeta = [];
+      if (p.deadline) gMeta.push('<span>Échéance <b>' + fmtShort(p.deadline) + '</b></span>');
+      if (steps.length) gMeta.push('<span><b>' + pct + '%</b> · ' + done + '/' + steps.length + ' étapes</span>');
+      if (p.deadlineExtended) gMeta.push('<span>&#x21A9; Date prolongée</span>');
+      if (gWaiting) gMeta.push('<span class="req">&#x26A1; À vous de jouer</span>');
+      if (_unread>0) gMeta.push('<span>' + _unread + ' non lu' + (_unread>1?'s':'') + '</span>');
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         mkBanner(gOverlay) +
         gBar +
-        '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + gKicker + '</div><div class="cp-proj-ft__v">' + gValue + '</div></div>' + _arrow + '</div>' +
+        '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + gKicker + '</div><div class="cp-proj-ft__v">' + gValue + '</div>' + (gMeta.length ? '<div class="cp-proj-ft__meta">' + gMeta.join('') + '</div>' : '') + '</div>' + _arrow + '</div>' +
       '</button>';
     }
 
