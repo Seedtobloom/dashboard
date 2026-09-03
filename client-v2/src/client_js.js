@@ -476,31 +476,63 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // manuelle horodatée { start, minutes }). Plafond 24 h.
   function cpSessionMin(s){ if(s&&typeof s.minutes==='number') return Math.max(0,Math.min(s.minutes,24*60)); var st=s&&s.start?Date.parse(s.start):NaN, en=s&&s.end?Date.parse(s.end):NaN; if(isNaN(st)||isNaN(en)||en<=st) return 0; return Math.min((en-st)/60000, 24*60); }
   // Répartition du temps d'une tâche par mois RÉELLEMENT travaillé (voir back.ts).
+  // Ajuste une répartition par mois pour que la somme fasse EXACTEMENT total.
+  // C'est l'INVARIANT du comptage : ce qu'on répartit par mois ne peut jamais
+  // valoir plus (ni moins) que le temps réellement enregistré sur la tâche.
+  // Indispensable car un temps corrigé À LA BAISSE laisse derrière lui des
+  // sessions plus grosses que le total (l'admin afficherait 2 h et le détail 6 h).
+  function cpFitMap(map, total){
+    var keys=Object.keys(map); if(!keys.length||total<=0) return {};
+    var sum=0; keys.forEach(function(k){ sum+=map[k]; });
+    if(sum<=0) return {};
+    var out={}, acc=0;
+    for(var i=0;i<keys.length;i++){
+      var v = (i===keys.length-1) ? (total-acc) : Math.round(map[keys[i]]/sum*total);
+      if(v<0) v=0;
+      acc+=v; if(v>0) out[keys[i]]=v;
+    }
+    return out;
+  }
   function cpTaskMinByMonth(t){
-    var total0=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0);
-    // Mois FORCÉ (« Compté en ») : TOUT le temps de la tâche compte dans ce mois
-    // (y compris le chrono), pas seulement la part saisie à la main.
-    var wmF=String(t.workMonth||'');
-    if(/^\d{4}-\d{2}$/.test(wmF)){ var n2=new Date(); var cur2=n2.getFullYear()+'-'+String(n2.getMonth()+1).padStart(2,'0'); var mk2=wmF>cur2?cur2:wmF; var mF={}; if(total0>0) mF[mk2]=total0; return mF; }
-    var map={}, sessions=Array.isArray(t.sessions)?t.sessions:[], sessTotal=0, lastStart='';
-    sessions.forEach(function(s){ var m=cpSessionMin(s), ym=String((s&&s.start)||'').slice(0,7); if(m<=0||!ym) return; map[ym]=(map[ym]||0)+m; sessTotal+=m; if(String(s.start)>lastStart) lastStart=String(s.start); });
-    var total=total0, residual=Math.max(0,total-sessTotal);
+    var total=Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0);
+    if(!(total>0)) return {};
+    var n=new Date(); var cur=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
+    // 1) Mois FORCÉ (« Compté en ») : TOUT le temps de la tâche compte dans ce
+    //    mois (chrono inclus), jamais dans le futur.
+    var wm=String(t.workMonth||'');
+    if(/^\d{4}-\d{2}$/.test(wm)){ var mF={}; mF[wm>cur?cur:wm]=total; return mF; }
+    // 2) Répartition par mois de travail : mois de chaque session (chrono ET
+    //    saisie manuelle, qui est horodatée à sa saisie côté serveur).
+    var map={}, sessTotal=0, lastStart='';
+    (Array.isArray(t.sessions)?t.sessions:[]).forEach(function(s){
+      var m=cpSessionMin(s), ym=String((s&&s.start)||'').slice(0,7);
+      if(m<=0||!ym) return;
+      if(ym>cur) ym=cur;
+      map[ym]=(map[ym]||0)+m; sessTotal+=m;
+      if(String(s.start)>lastStart) lastStart=String(s.start);
+    });
+    // 3) Reste non couvert par les sessions → rattaché au mois de travail :
+    //    EN COURS → mois courant (le travail se fait maintenant) ;
+    //    TERMINÉE → le mois de sa clôture.
+    var residual=total-sessTotal;
     if(residual>0){
-      var n=new Date(); var cur=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
-      var wm=String(t.workMonth||'');
-      var rm=/^\d{4}-\d{2}$/.test(wm)?wm:(lastStart?lastStart.slice(0,7):'');
+      var rm=lastStart?lastStart.slice(0,7):'';
       if(!rm){
-        // Sans chrono ni mois forcé : EN COURS → mois courant (le travail se fait
-        // maintenant, la saisie manuelle apparaît tout de suite dans le détail et
-        // la jauge) ; TERMINÉE → le mois où elle a été terminée.
         if(String(t.status)==='done'){ var cp=String(t.completedAt||'').slice(0,7); var due=String(t.dueDate||'').slice(0,7); var cr=String(t.createdAt||'').slice(0,7); rm=(cp&&cp<=cur)?cp:((due&&due<=cur)?due:((cr&&cr<=cur)?cr:cur)); }
         else { rm=cur; }
       }
       if(rm>cur) rm=cur;
       map[rm]=(map[rm]||0)+residual;
     }
-    return map;
+    // 4) INVARIANT : somme des mois == total de la tâche (corrige aussi le cas
+    //    où les sessions dépassent le total après une correction à la baisse).
+    return cpFitMap(map, total);
   }
+  // Tâches qui CONSOMMENT le forfait. Règle UNIQUE, utilisée par la jauge, le
+  // détail du mois, les stats et l'historique : une demande non triée (inbox),
+  // hors forfait (facturée à part) ou refusée n'entre jamais dans le décompte.
+  // Sans ça, deux écrans qui parlent du même mois affichent deux totaux.
+  function cpBillable(list){ return (Array.isArray(list)?list:[]).filter(function(t){ return t.stage!=='inbox' && t.stage!=='out_of_scope' && t.stage!=='refused'; }); }
   function cpForfaitState(p) {
     var base = parseFloat(p.monthlyHours) || 0;
     // REPORT EXCEPTIONNEL par mois (forfaitOverrides['YYYY-MM']) : normalement le
@@ -513,7 +545,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Consommation = uniquement le travail DANS le forfait : on exclut les
     // demandes non triées (inbox), le hors-forfait (out_of_scope, facturé à
     // part), les refusées et les archivées (même règle que le back).
-    var billable = (p.tasks||[]).filter(function(t){ return t.stage!=='inbox' && t.stage!=='out_of_scope' && t.stage!=='refused'; });
+    var billable = cpBillable(p.tasks);
     function usedIn(ym){ return billable.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[ym]||0)/60; }, 0); }
     var now = new Date();
     var cur = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
@@ -543,7 +575,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var remaining = available - used;
     return { base:base, exceptional: ovCur !== null, cap:cap, rate:rate, carryIn:carryIn, billedCarry:billedCarry, available:available, used:used, remaining:remaining, over: remaining<0 ? -remaining : 0, configured: base>0 };
   }
-  function cpFmtH(h){ var v = Math.round(h*10)/10; return (v % 1 === 0 ? String(v) : v.toFixed(1)) + ' h'; }
+  // Format UNIQUE du temps dans tout l'espace client : « 6h37 » / « 12 h ».
+  // (Avant : décimal « 6.6 h » ici et « 6h37 » dans la jauge — deux écritures
+  // différentes pour la même durée, d'où l'impression d'incohérence.)
+  function cpFmtH(h){ var min=Math.round((h||0)*60); var neg=min<0; min=Math.abs(min); var hh=Math.floor(min/60), mm=min%60; return (neg?'−':'')+(mm?(hh+'h'+String(mm).padStart(2,'0')):(hh+' h')); }
 
   // Regroupement par type d'offre (ordre et libellés des sections).
   var TYPE_GROUPS = [
@@ -724,15 +759,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var mins = 0, dlv = 0, msgs = 0, files = 0;
     (appData.projects || []).forEach(function(pd) {
       var p = pd.project || {};
-      (p.tasks || []).forEach(function(t) { mins += (t.timeSpentMinutes || 0); });
+      // Mêmes exclusions que le forfait : une demande jamais triée (inbox) ou
+      // refusée n'a pas été travaillée, elle ne compte pas comme du temps investi.
+      // Le hors-forfait reste compté : c'est du vrai travail, simplement facturé à part.
+      (p.tasks || []).forEach(function(t) { if (t.stage==='inbox'||t.stage==='refused') return; mins += Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0); });
       (p.deliverables || []).forEach(function(d) { if (d.fileKey || d.reviewLink) dlv++; });
       (pd.messages || []).forEach(function() { msgs++; });
       (pd.files || []).forEach(function(f) { if (f.source !== 'client') files++; });
     });
     msgs += ((appData.conversation || []).length) || 0;
-    var hours = Math.round(mins / 60 * 10) / 10;
+    var hours = mins / 60;
     var stats = [];
-    if (hours > 0) stats.push([cpFmtH ? cpFmtH(hours) : (hours + ' h'), 'investies pour toi']);
+    if (mins > 0) stats.push([cpFmtH(hours), 'investies pour toi']);
     if (files > 0) stats.push([String(files), 'fichier' + (files > 1 ? 's' : '') + ' produit' + (files > 1 ? 's' : '')]);
     if (msgs > 0) stats.push([String(msgs), 'échange' + (msgs > 1 ? 's' : '')]);
     if (dlv > 0) stats.push([String(dlv), 'livrable' + (dlv > 1 ? 's' : '')]);
@@ -807,7 +845,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var f = cpForfaitState(project);
       if (!f.configured) return null;
       // Mêmes exclusions que la consommation : pas d'inbox / hors-forfait / refusé / archivé.
-      var tasks = (Array.isArray(project.tasks) ? project.tasks : []).filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+      var tasks = cpBillable(project.tasks);
       var d = 0, w = 0;
       tasks.forEach(function (t) { var m = cpTaskMinByMonth(t)[mk] || 0; if (!m) return; if (t.status === 'done') d += m; else w += m; });
       return { availMin: Math.round(f.available * 60), doneMin: d, wipMin: w };
@@ -865,7 +903,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var pd = getPD(pid); if (!pd || !pd.project) return '';
     var project = pd.project;
     var mk = _todayStr().slice(0, 7);
-    var tasks = (Array.isArray(project.tasks) ? project.tasks : []).filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    var tasks = cpBillable(project.tasks);
     var rows = tasks.map(function (t) { return { t: t, min: cpTaskMinByMonth(t)[mk] || 0 }; }).filter(function (r) { return r.min > 0; }).sort(function (a, b) { return b.min - a.min; });
     if (!rows.length) return '';
     function hm(min) { min = Math.round(min); var h = Math.floor(min / 60), m = min % 60; return m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h'); }
@@ -3274,7 +3312,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var todayTasks = tasks.filter(function(t){return (t.dueDate||'').slice(0,10)===todayStr0 && t.status!=='done';});
     // Heures du mois = temps RÉELLEMENT travaillé ce mois (même règle que le
     // forfait), pour que la tuile, le graphe et le forfait affichent la même chose.
-    var monthReel = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
+    var monthReel = cpBillable(tasks).reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
     var forfaitH = project.monthlyHours || 0;
     var _pf = cpForfaitState(project);
     var _fnums = cpForfaitNums(project);
@@ -3677,6 +3715,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function buildPartStats(pd) {
     var project = pd.project;
     var tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    // Tout ce qui compte du TEMPS ici utilise la même liste que la jauge et le
+    // détail du forfait, sinon deux blocs de la même page s'affichent différents.
+    var billable = cpBillable(tasks);
     var forfaitH = project.monthlyHours || 0;
     var curMonthKey = _todayStr().slice(0, 7);
     var now = new Date();
@@ -3684,14 +3725,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function hmm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
     function catOf(t) { var c = (t.missionType && String(t.missionType).trim()) || (t.properties && t.properties.p_typemission) || ''; return c || 'Autre'; }
 
-    var monthReel = tasks.reduce(function (s, t) { return s + (cpTaskMinByMonth(t)[curMonthKey] || 0) / 60; }, 0);
+    var monthReel = billable.reduce(function (s, t) { return s + (cpTaskMinByMonth(t)[curMonthKey] || 0) / 60; }, 0);
     var archived = tasks.filter(function (t) { return t.archived; });
 
     // ── Catégories : couleurs STABLES (mêmes dans le graphe et les moyennes),
     //    triées par total travaillé ; au-delà de 5, regroupées en « Autres ». ──
     var CAT_PAL = ['#C5DEFF', '#CD8F6E', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#CD8F6E'];
     var catTot = {};
-    tasks.forEach(function (t) { var c = catOf(t); var bm = cpTaskMinByMonth(t); var s = 0; for (var k in bm) s += bm[k]; catTot[c] = (catTot[c] || 0) + s; });
+    billable.forEach(function (t) { var c = catOf(t); var bm = cpTaskMinByMonth(t); var s = 0; for (var k in bm) s += bm[k]; catTot[c] = (catTot[c] || 0) + s; });
     var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
     var MAXCATS = 5;
     var catColor = { 'Autres': '#F8F6F2' };
@@ -3703,13 +3744,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // ── 5 mois : total + répartition par catégorie ──
     var months = [];
     for (var i = 4; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); months.push({ key: key, label: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase().replace('.', ''), min: 0, byCat: {} }); }
-    tasks.forEach(function (t) { var c = catShown(catOf(t)); var bm = cpTaskMinByMonth(t); months.forEach(function (m) { var mn = bm[m.key] || 0; if (mn) { m.min += mn; m.byCat[c] = (m.byCat[c] || 0) + mn; } }); });
+    billable.forEach(function (t) { var c = catShown(catOf(t)); var bm = cpTaskMinByMonth(t); months.forEach(function (m) { var mn = bm[m.key] || 0; if (mn) { m.min += mn; m.byCat[c] = (m.byCat[c] || 0) + mn; } }); });
     var maxMonthMin = Math.max.apply(null, months.map(function (m) { return m.min; })) || 1;
     var CHART_H = 150;
 
     // ── Forfait ── (mêmes exclusions que la consommation : ni inbox, ni hors-forfait, ni refusé/archivé)
     var _pf = cpForfaitState(project);
-    var _fbill = tasks.filter(function (t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    var _fbill = billable;
     var _fdone = 0, _fwip = 0;
     _fbill.forEach(function (t) { var m = cpTaskMinByMonth(t)[curMonthKey] || 0; if (!m) return; if (t.status === 'done') _fdone += m; else _fwip += m; });
     var _availMin = Math.round(_pf.available * 60), _usedMin = _fdone + _fwip, _restMin = _availMin - _usedMin;
@@ -3771,7 +3812,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var chartCard = card(cardHead('Par type de mission', 'chart') + sub('Où va votre temps, mois par mois.') + chartBars + chartLg);
 
     // ── 4. Détail du mois (épuré : chips statut + catégorie) ──
-    var monthTasks = tasks.map(function (t) { return { t: t, mins: cpTaskMinByMonth(t)[curMonthKey] || 0 }; }).filter(function (o) { return o.mins > 0; }).sort(function (a, b) { return b.mins - a.mins; });
+    var monthTasks = billable.map(function (t) { return { t: t, mins: cpTaskMinByMonth(t)[curMonthKey] || 0 }; }).filter(function (o) { return o.mins > 0; }).sort(function (a, b) { return b.mins - a.mins; });
     var detailRows = monthTasks.map(function (o) {
       var t = o.t, wip = t.status !== 'done', cat = catOf(t);
       var statusChip = wip ? chip('var(--glycine-50,#C5DEFF)', 'var(--glycine-900,#5A2A11)', 'En cours') : chip('#F8F6F2', '#5A2A11', '✓ Terminée');
@@ -3792,7 +3833,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // ── 5. Moyennes par type (mêmes couleurs que le graphe) ──
     var catMap = {};
-    tasks.forEach(function (t) { var c = catOf(t); if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += (t.timeSpentMinutes || 0); catMap[c].n += 1; });
+    billable.forEach(function (t) { var c = catOf(t); if (!catMap[c]) catMap[c] = { min: 0, n: 0 }; catMap[c].min += Math.round(t.timeSpentMinutes||(t.timeSpentSeconds||0)/60||0); catMap[c].n += 1; });
     var cats = Object.keys(catMap).map(function (k) { return { name: k, min: catMap[k].min, n: catMap[k].n }; }).filter(function (c) { return c.min > 0; }).sort(function (a, b) { return b.min - a.min; });
     var catInner = cardHead('En moyenne, par type') + sub('Un repère du temps que je consacre à chaque type de mission.') +
       cats.map(function (c, i) {
@@ -4026,7 +4067,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var curMonthKey = todayStr.slice(0,7);
     // Heures du mois = temps RÉELLEMENT travaillé ce mois (même règle que le
     // forfait), pour que la tuile, le graphe et le forfait affichent la même chose.
-    var monthReel = tasks.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
+    var monthReel = cpBillable(tasks).reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[curMonthKey]||0)/60; }, 0);
     var _pfBar = cpForfaitState(project);
     var _fbNums = cpForfaitNums(project);
     var forfaitLeft = _pfBar.remaining;               // inclut le report du mois dernier
@@ -4702,7 +4743,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<p style="color:var(--muted);font-size:14px;padding:8px 0">Le forfait sera défini par le studio.</p></div>';
 
     // Tâches facturables (mêmes exclusions que le compteur du haut).
-    var billable = tasks.filter(function(t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    var billable = cpBillable(tasks);
     // Grouper par mois pour lister les mois connus (basé sur dueDate ou completedAt).
     var byMonth = {};
     tasks.forEach(function(t) {
@@ -4713,8 +4754,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       byMonth[key].push(t);
     });
 
-    // Construire la liste de mois depuis le début du projet
+    // Construire la liste de mois depuis le début du projet. On part du PLUS TÔT
+    // entre le début du projet et le premier mois où du temps est réellement
+    // compté : sinon un mois rattaché en arrière (« Compté en ») serait absent de
+    // l'historique et ses heures deviendraient invisibles.
+    var timedMonths = {};
+    billable.forEach(function(t){ var mm=cpTaskMinByMonth(t); Object.keys(mm).forEach(function(k){ if(mm[k]>0) timedMonths[k]=1; }); });
     var startM = project.startDate ? project.startDate.slice(0,7) : Object.keys(byMonth).sort()[0];
+    var firstTimed = Object.keys(timedMonths).sort()[0];
+    if (firstTimed && (!startM || firstTimed < startM)) startM = firstTimed;
     var now = new Date();
     var endKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
     var months = [];
@@ -4757,7 +4805,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     });
 
     var totalSolde = carry;
-    function fmt(h) { var abs=Math.abs(h); var hh=Math.floor(abs); var mm=Math.round((abs-hh)*60); return (h<0?'-':'')+(hh>0?hh+'h ':'')+String(mm).padStart(2,'0')+'min'; }
+    // Un SEUL format d'heures dans tout l'espace client (« 6h37 » / « 12 h »).
+    function fmt(h) { return cpFmtH(h); }
     var rowsHtml = rows.map(function(r) {
       var isNow = r.mk === endKey;
       var soldeCol = r.solde > 0 ? 'var(--sage)' : r.solde < 0 ? 'var(--red)' : 'var(--muted)';
@@ -4790,7 +4839,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#5A2A11" font-family="Inter Tight,sans-serif">heures utilisées</text>' +
     '</svg>';
 
-    function fmtH(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
+    function fmtH(h){ return cpFmtH(h); }
 
     return '<div class="cp-card">' +
       '<div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2>' +

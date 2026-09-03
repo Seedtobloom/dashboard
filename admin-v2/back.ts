@@ -1624,46 +1624,60 @@ function sessionMinutes(s: AnyObj): number {
 // (résidu) est rattaché à un mois stable : dernière session, sinon échéance,
 // sinon création. On n'utilise JAMAIS la date de validation → une validation
 // tardive ne déplace pas rétroactivement la consommation d'un autre mois.
+// Ajuste une répartition par mois pour que la somme fasse EXACTEMENT total.
+// INVARIANT du comptage : ce qui est réparti par mois ne peut jamais valoir plus
+// (ni moins) que le temps réellement enregistré sur la tâche. Indispensable car
+// un temps corrigé À LA BAISSE laisse des sessions plus grosses que le total
+// (l'admin afficherait 2 h et le détail client 6 h).
+function fitMap(map: Record<string, number>, total: number): Record<string, number> {
+  const keys = Object.keys(map);
+  if (!keys.length || total <= 0) return {};
+  let sum = 0;
+  for (const k of keys) sum += map[k];
+  if (sum <= 0) return {};
+  const out: Record<string, number> = {};
+  let acc = 0;
+  for (let i = 0; i < keys.length; i++) {
+    let v = (i === keys.length - 1) ? (total - acc) : Math.round(map[keys[i]] / sum * total);
+    if (v < 0) v = 0;
+    acc += v;
+    if (v > 0) out[keys[i]] = v;
+  }
+  return out;
+}
 function taskMinutesByMonth(t: AnyObj): Record<string, number> {
-  const total0 = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
-  // Mois FORCÉ (workMonth / « Compté en ») : TOUT le temps de la tâche compte
-  // dans ce mois, chrono compris — pas seulement la part saisie à la main.
-  const wmF = String(t.workMonth || '');
-  if (/^\d{4}-\d{2}$/.test(wmF)) {
-    const nF = new Date(); const curF = nF.getFullYear() + '-' + String(nF.getMonth() + 1).padStart(2, '0');
-    const mkF = wmF > curF ? curF : wmF;
+  const total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
+  if (!(total > 0)) return {};
+  const now = new Date();
+  const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  // 1) Mois FORCÉ (workMonth / « Compté en ») : TOUT le temps de la tâche compte
+  //    dans ce mois, chrono compris, jamais dans le futur.
+  const wm = String(t.workMonth || '');
+  if (/^\d{4}-\d{2}$/.test(wm)) {
     const mF: Record<string, number> = {};
-    if (total0 > 0) mF[mkF] = total0;
+    mF[wm > cur ? cur : wm] = total;
     return mF;
   }
+  // 2) Répartition par mois de travail : mois de chaque session (chrono ET
+  //    saisie manuelle, horodatée à sa saisie).
   const map: Record<string, number> = {};
-  const sessions: AnyObj[] = Array.isArray(t.sessions) ? t.sessions : [];
   let sessTotal = 0;
   let lastStart = '';
-  for (const s of sessions) {
+  for (const s of (Array.isArray(t.sessions) ? t.sessions : [])) {
     const mins = sessionMinutes(s);
-    const ym = String((s && s.start) || '').slice(0, 7);
+    let ym = String((s && s.start) || '').slice(0, 7);
     if (mins <= 0 || !ym) continue;
+    if (ym > cur) ym = cur;
     map[ym] = (map[ym] || 0) + mins;
     sessTotal += mins;
     if (String(s.start) > lastStart) lastStart = String(s.start);
   }
-  const total = Math.round(t.timeSpentMinutes || (t.timeSpentSeconds || 0) / 60 || 0);
-  const residual = Math.max(0, total - sessTotal);
+  // 3) Reste non couvert par les sessions → mois de travail :
+  //    EN COURS → mois courant ; TERMINÉE → mois de sa clôture.
+  const residual = total - sessTotal;
   if (residual > 0) {
-    const now = new Date();
-    const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    // Mois de travail FORCÉ (workMonth) : quand il est renseigné, le temps saisi
-    // à la main compte dans CE mois (repère fiable pour le suivi). Sinon on garde
-    // le rattachement automatique (dernière session → échéance → création).
-    const wm = String(t.workMonth || '');
-    let rm = /^\d{4}-\d{2}$/.test(wm) ? wm : (lastStart ? lastStart.slice(0, 7) : '');
+    let rm = lastStart ? lastStart.slice(0, 7) : '';
     if (!rm) {
-      // Sans chrono ni mois forcé, le rattachement suit l'état de la tâche :
-      //  - EN COURS : le travail se fait maintenant → mois courant. C'est le cas
-      //    d'une saisie manuelle du temps ; il apparaît immédiatement dans le
-      //    détail et la jauge du mois, cohérent avec ce qu'affiche l'admin.
-      //  - TERMINÉE : le mois où elle a été terminée (à défaut, échéance/création).
       if (String(t.status) === 'done') {
         const cp = String(t.completedAt || '').slice(0, 7);
         const due = String(t.dueDate || '').slice(0, 7);
@@ -1676,7 +1690,8 @@ function taskMinutesByMonth(t: AnyObj): Record<string, number> {
     if (rm > cur) rm = cur;
     map[rm] = (map[rm] || 0) + residual;
   }
-  return map;
+  // 4) INVARIANT : somme des mois == total de la tâche.
+  return fitMap(map, total);
 }
 function forfaitState(pc: AnyObj): AnyObj {
   const base = parseFloat(pc.monthlyHours) || 0;
@@ -2075,9 +2090,12 @@ async function handleKpi(env: Env): Promise<Response> {
       if (t.stage === 'out_of_scope') horsForfait++;
       if (t.status === 'done') {
         totalDone++; cDone++;
-        const min = t.timeSpentMinutes || 0; totalMinutes += min; cMin += min;
+        const min = t.timeSpentMinutes || 0;
+        // Le NOMBRE de tâches terminées reste daté à la validation (c'est bien
+        // ce mois-là qu'elles ont été livrées) ; le TEMPS, lui, est compté au
+        // mois où il a été travaillé — voir la passe dédiée plus bas.
         const when = (t.completedAt || t.dueDate || '').slice(0, 7);
-        if (when) { tasksByMonth[when] = (tasksByMonth[when] || 0) + 1; minutesByMonth[when] = (minutesByMonth[when] || 0) + min; }
+        if (when) tasksByMonth[when] = (tasksByMonth[when] || 0) + 1;
         if (min > 0) { const _pl = (t.pole || 'Autre').toString().slice(0, 40); poleTime[_pl] = (poleTime[_pl] || 0) + min; }
         if (t.estMinutes > 0 && min > 0) {
           estMin += t.estMinutes; realMin += min; estCount++;
@@ -2087,6 +2105,17 @@ async function handleKpi(env: Env): Promise<Response> {
         }
       } else if (!t.archived && t.stage !== 'inbox' && t.stage !== 'out_of_scope') { cOpen++; totalOpen++; }
     });
+    // TEMPS TRAVAILLÉ : exactement la même règle que le suivi du forfait —
+    // rattaché au mois où il a réellement été travaillé, travail EN COURS
+    // compris, et hors demandes non triées / hors-forfait / refusées. Sans ça
+    // le graphe « Temps par mois » contredit le forfait de la même cliente.
+    tasks
+      .filter((t: AnyObj) => t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused')
+      .forEach((t: AnyObj) => {
+        const bm = taskMinutesByMonth(t);
+        for (const ym in bm) { minutesByMonth[ym] = (minutesByMonth[ym] || 0) + bm[ym]; cMin += bm[ym]; }
+      });
+    totalMinutes += cMin;
     byClient.push({ key: ci.key, client: who, tasksDone: cDone, minutes: cMin, openTasks: cOpen });
     forfaits.push({ key: ci.key, client: who, ...forfaitState(pc) });
   }
