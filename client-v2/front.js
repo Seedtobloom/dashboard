@@ -10229,7 +10229,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var h = '';
     for (var i = 1; i <= 5; i++){
       var on = STB_BILAN.rating >= i;
-      h += '<button type="button" onclick="window.stbBilanStar(' + i + ')" title="' + i + ' sur 5" style="background:none;border:none;cursor:pointer;font-size:32px;line-height:1;padding:0 4px;color:' + (on ? '#CD8F6E' : '#F8F6F2') + '">' + (on ? '★' : '☆') + '</button>';
+      h += '<button type="button" onclick="window.stbBilanStar(' + i + ')" title="' + i + ' sur 5" style="background:none;border:none;cursor:pointer;font-size:32px;line-height:1;padding:0 4px;color:' + (on ? '#CD8F6E' : 'rgba(17,7,4,.25)') + '">' + (on ? '★' : '☆') + '</button>';
     }
     return h;
   }
@@ -10264,12 +10264,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
   function stbBilanDone(b){
     var stars = '';
-    for (var i = 1; i <= 5; i++){ stars += '<span style="font-size:26px;color:' + ((b.rating >= i) ? '#CD8F6E' : '#F8F6F2') + '">' + ((b.rating >= i) ? '★' : '☆') + '</span>'; }
+    for (var i = 1; i <= 5; i++){ stars += '<span style="font-size:26px;color:' + ((b.rating >= i) ? '#CD8F6E' : 'rgba(17,7,4,.25)') + '">' + ((b.rating >= i) ? '★' : '☆') + '</span>'; }
     return '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5A2A11') + '</div>' +
       '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#110704);margin-bottom:6px">Merci pour votre retour</div>' +
-      '<div style="text-align:center;font-size:13px;color:#F8F6F2;margin-bottom:18px">Votre bilan a bien ete transmis au studio.</div>' +
+      '<div style="text-align:center;font-size:13px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:18px">Votre bilan a bien ete transmis au studio.</div>' +
       '<div style="text-align:center;margin-bottom:16px">' + stars + '</div>' +
-      (b.liked ? '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#F8F6F2;margin-bottom:4px">Ce qui vous a plu</div><div style="font-size:14px;color:var(--terre,#110704)">' + esc(b.liked) + '</div></div>' : '') +
+      (b.liked ? '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-600,#5A2A11);margin-bottom:4px">Ce qui vous a plu</div><div style="font-size:14px;color:var(--terre,#110704)">' + esc(b.liked) + '</div></div>' : '') +
       (b.testimonial ? '<div style="background:var(--brume,#C5DEFF);border-radius:11px;padding:14px 16px;font-style:italic;font-size:14px;color:var(--terre,#110704)">' + esc(b.testimonial) + '</div>' : '');
   }
   window.stbBilanSubmit = function(){
@@ -10308,10 +10308,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="width:min(560px,100%);max-height:calc(100vh - 48px);background:var(--bone,#F8F6F2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#F8F6F2);background:var(--card,#fff);flex-shrink:0">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#110704)">Bilan de collaboration</span>' +
-          '<button onclick="window.cpCloseBilan()" style="background:none;border:none;cursor:pointer;color:#C5DEFF;font-size:18px;line-height:1">✕</button>' +
+          '<button onclick="window.cpCloseBilan()" style="background:none;border:none;cursor:pointer;color:var(--terre-400,rgba(17,7,4,.5));font-size:18px;line-height:1">✕</button>' +
         '</div>' +
         '<div id="cp-bilan-body" style="flex:1;overflow-y:auto;padding:24px">' +
-          (submitted ? stbBilanDone(b) : ('<div style="font-size:13.5px;color:#F8F6F2;margin-bottom:20px">Prenez un instant pour partager votre ressenti sur notre collaboration. Cela compte beaucoup pour faire grandir le studio.</div>' + stbBilanForm())) +
+          (submitted ? stbBilanDone(b) : ('<div style="font-size:13.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:20px">Prenez un instant pour partager votre ressenti sur notre collaboration. Cela compte beaucoup pour faire grandir le studio.</div>' + stbBilanForm())) +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -10336,7 +10336,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var body = document.getElementById('cp-avis-body');
         if (body) body.innerHTML = '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5A2A11') + '</div>' +
           '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#110704);margin-bottom:6px">Merci</div>' +
-          '<div style="text-align:center;font-size:13px;color:#F8F6F2">Votre retour a bien ete transmis. Il aidera a ameliorer votre espace.</div>';
+          '<div style="text-align:center;font-size:13px;color:var(--muted,rgba(17,7,4,.55))">Votre retour a bien ete transmis. Il aidera a ameliorer votre espace.</div>';
       })
       .catch(function(){ if (btn){ btn.textContent = 'Envoyer'; btn.disabled = false; } alert('Une erreur est survenue, reessayez.'); });
   };
@@ -10351,10 +10351,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="width:min(540px,100%);max-height:calc(100vh - 48px);background:var(--bone,#F8F6F2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#F8F6F2);background:var(--card,#fff);flex-shrink:0">' +
           '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#110704)">Votre avis sur l espace</span>' +
-          '<button onclick="window.cpCloseAvis()" style="background:none;border:none;cursor:pointer;color:#C5DEFF;font-size:18px;line-height:1">✕</button>' +
+          '<button onclick="window.cpCloseAvis()" style="background:none;border:none;cursor:pointer;color:var(--terre-400,rgba(17,7,4,.5));font-size:18px;line-height:1">✕</button>' +
         '</div>' +
         '<div id="cp-avis-body" style="flex:1;overflow-y:auto;padding:24px">' +
-          '<div style="font-size:13.5px;color:#F8F6F2;margin-bottom:18px">Un manque, une chose peu claire, une idee pour rendre votre espace plus pratique. Tout retour nous aide a l ameliorer.</div>' +
+          '<div style="font-size:13.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:18px">Un manque, une chose peu claire, une idee pour rendre votre espace plus pratique. Tout retour nous aide a l ameliorer.</div>' +
           '<div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:6px">Type de retour</div>' +
           '<select id="cp-avis-cat" style="' + inS + ';margin-bottom:16px">' + stbAvisCat() + '</select>' +
           '<div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:6px">Votre message</div>' +
