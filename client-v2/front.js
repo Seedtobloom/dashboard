@@ -167,7 +167,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-home__inner { max-width: 1040px; margin: 0 auto; }
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
-.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
+.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
 .cp-proj-card { background: #F8F6F2; border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-card--static { cursor: default; }
@@ -179,6 +179,20 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .grain-overlay { position:absolute;inset:0;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");background-repeat:repeat;background-size:256px 256px;opacity:0.12;mix-blend-mode:screen; }
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: white; }
 .cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #5A2A11; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+/* Bannière image pleine (maquette) : toute l'illustration visible, hauteur auto */
+.cp-proj-banner--img { height: auto; background: none; border-radius: var(--radius-3) var(--radius-3) 0 0; }
+.cp-proj-banner--img::after { display: none; }
+.cp-proj-ban-img { display: block; width: 100%; height: auto; }
+/* Pied compact (façon maquette) : libellé + valeur + flèche, pour éviter les cartes trop longues */
+.cp-proj-ft { display: flex; align-items: center; gap: 14px; padding: 15px 20px 17px; margin-top: auto; }
+.cp-proj-ft__st { flex: 1; min-width: 0; }
+.cp-proj-ft__k { font-family: var(--font-micro); font-size: 10.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--terre-400); display: flex; align-items: center; gap: 7px; }
+.cp-proj-ft__k .req { color: #5A2A11; }
+.cp-proj-ft__v { font-family: var(--font-display); font-style: italic; font-size: 19px; color: var(--terre); margin-top: 4px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cp-proj-ft__arr { width: 40px; height: 40px; border-radius: 50%; background: var(--card); display: grid; place-items: center; flex-shrink: 0; color: var(--terre-600); transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+.cp-proj-card:hover .cp-proj-ft__arr { background: var(--glycine); color: #110704; }
+.cp-proj-ft__bar { height: 4px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin: 0 20px; }
+.cp-proj-ft__bar > span { display: block; height: 100%; background: var(--terre); border-radius: 999px; }
 .cp-proj-card__body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
 .cp-proj-card__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-style: italic; margin-bottom: 8px; line-height: 1.25; font-weight: 400; }
 .cp-proj-card__meta { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -1857,7 +1871,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         ? 'background:' + (_bcIsImg ? _band.deep : _bannerBg) + ' url(' + _bImg + ') center/cover no-repeat;height:150px'
         : 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#5A2A11') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
+      var _unreadKicker = _unread>0 ? ' · ' + _unread + ' non lu' + (_unread>1?'s':'') : '';
+      // Bannière : image d'offre PLEINE (toute l'illustration visible, hauteur auto) ou couleur franche.
+      function mkBanner(overlay){ return _bImg ? '<div class="cp-proj-banner cp-proj-banner--img"><img class="cp-proj-ban-img" src="' + _bImg + '" alt="">' + (overlay||'') + '</div>' : '<div class="cp-proj-banner" style="' + bannerStyle + '">' + (overlay||'') + '</div>'; }
+      var _arrow = '<span class="cp-proj-ft__arr"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -1868,47 +1885,26 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var partTasks = (p.tasks||[]).filter(function(t){ return !t.archived; });
         var openTasks = partTasks.filter(function(t){ return t.status !== 'done'; });
         var waitingPartStep = steps.find(function(s){ return s.status === 'waiting_client'; });
+        var pOverlay = waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">&#x26A1; Action requise</span>' : '';
+        var pKicker = (openTasks.length ? 'Prochaine demande' : (p.monthlyHours ? p.monthlyHours + ' h par mois' : 'Accompagnement')) + _unreadKicker;
+        var pValue = openTasks.length ? esc(openTasks[0].title||'Sans titre') : 'Accompagnement actif';
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-          '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-            '<span class="cp-proj-banner__badge">Accompagnement</span>' +
-            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">Action requise</span>' : '') +
-          '</div>' +
-          '<div class="cp-proj-card__body">' +
-            '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
-            '<div class="cp-proj-card__meta">' +
-              '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
-              (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
-            '</div>' +
-            (openTasks.length ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine demande : <span style="color:var(--terre);font-style:italic">' + esc(openTasks[0].title||'Sans titre') + '</span></div>' : '') +
-            _unreadBadge +
-            '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:100%;background:var(--terre)"></div></div>' +
-            '<div class="cp-proj-card__pct"><span style="color:var(--terre-600)">Accompagnement actif</span></div>' +
-          '</div>' +
+          mkBanner(pOverlay) +
+          '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + pKicker + '</div><div class="cp-proj-ft__v">' + pValue + '</div></div>' + _arrow + '</div>' +
         '</button>';
       }
       var nextStep = steps.find(function(s){ return s.status !== 'done'; });
-      var nextLine = nextStep
-        ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine étape : <span style="color:var(--terre);font-style:italic">' + esc(nextStep.title) + '</span></div>'
-        : '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">' + (steps.length ? 'Toutes les étapes sont faites ✓' : 'Projet en préparation') + '</div>';
+      var gWaiting = steps.some(function(s){ return s.status === 'waiting_client'; });
+      var gOverlay =
+        '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
+        (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '');
+      var gKicker = (nextStep ? 'Prochaine étape' : (steps.length ? 'Avancement' : 'Statut')) + (gWaiting ? ' · <span class="req">à vous de jouer</span>' : '') + _unreadKicker;
+      var gValue = nextStep ? esc(nextStep.title) : (steps.length ? 'Toutes les étapes sont faites' : 'Projet en préparation');
+      var gBar = steps.length ? '<div class="cp-proj-ft__bar"><span style="width:' + pct + '%"></span></div>' : '';
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-        '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
-          (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
-        '</div>' +
-        '<div class="cp-proj-card__body">' +
-          '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
-          '<div class="cp-proj-card__meta">' +
-            (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
-            (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
-            (duration ? '<span>' + duration + '</span>' : '') +
-          '</div>' +
-          nextLine +
-          _unreadBadge +
-          '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
-        '</div>' +
+        mkBanner(gOverlay) +
+        gBar +
+        '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + gKicker + '</div><div class="cp-proj-ft__v">' + gValue + '</div></div>' + _arrow + '</div>' +
       '</button>';
     }
 

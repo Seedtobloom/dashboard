@@ -1273,7 +1273,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         ? 'background:' + (_bcIsImg ? _band.deep : _bannerBg) + ' url(' + _bImg + ') center/cover no-repeat;height:150px'
         : 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#5A2A11') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
+      var _unreadKicker = _unread>0 ? ' · ' + _unread + ' non lu' + (_unread>1?'s':'') : '';
+      // Bannière : image d'offre PLEINE (toute l'illustration visible, hauteur auto) ou couleur franche.
+      function mkBanner(overlay){ return _bImg ? '<div class="cp-proj-banner cp-proj-banner--img"><img class="cp-proj-ban-img" src="' + _bImg + '" alt="">' + (overlay||'') + '</div>' : '<div class="cp-proj-banner" style="' + bannerStyle + '">' + (overlay||'') + '</div>'; }
+      var _arrow = '<span class="cp-proj-ft__arr"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -1284,47 +1287,26 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var partTasks = (p.tasks||[]).filter(function(t){ return !t.archived; });
         var openTasks = partTasks.filter(function(t){ return t.status !== 'done'; });
         var waitingPartStep = steps.find(function(s){ return s.status === 'waiting_client'; });
+        var pOverlay = waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">&#x26A1; Action requise</span>' : '';
+        var pKicker = (openTasks.length ? 'Prochaine demande' : (p.monthlyHours ? p.monthlyHours + ' h par mois' : 'Accompagnement')) + _unreadKicker;
+        var pValue = openTasks.length ? esc(openTasks[0].title||'Sans titre') : 'Accompagnement actif';
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-          '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-            '<span class="cp-proj-banner__badge">Accompagnement</span>' +
-            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">Action requise</span>' : '') +
-          '</div>' +
-          '<div class="cp-proj-card__body">' +
-            '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
-            '<div class="cp-proj-card__meta">' +
-              '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
-              (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
-            '</div>' +
-            (openTasks.length ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine demande : <span style="color:var(--terre);font-style:italic">' + esc(openTasks[0].title||'Sans titre') + '</span></div>' : '') +
-            _unreadBadge +
-            '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:100%;background:var(--terre)"></div></div>' +
-            '<div class="cp-proj-card__pct"><span style="color:var(--terre-600)">Accompagnement actif</span></div>' +
-          '</div>' +
+          mkBanner(pOverlay) +
+          '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + pKicker + '</div><div class="cp-proj-ft__v">' + pValue + '</div></div>' + _arrow + '</div>' +
         '</button>';
       }
       var nextStep = steps.find(function(s){ return s.status !== 'done'; });
-      var nextLine = nextStep
-        ? '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);margin:6px 0 10px;line-height:1.4">Prochaine étape : <span style="color:var(--terre);font-style:italic">' + esc(nextStep.title) + '</span></div>'
-        : '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">' + (steps.length ? 'Toutes les étapes sont faites ✓' : 'Projet en préparation') + '</div>';
+      var gWaiting = steps.some(function(s){ return s.status === 'waiting_client'; });
+      var gOverlay =
+        '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
+        (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '');
+      var gKicker = (nextStep ? 'Prochaine étape' : (steps.length ? 'Avancement' : 'Statut')) + (gWaiting ? ' · <span class="req">à vous de jouer</span>' : '') + _unreadKicker;
+      var gValue = nextStep ? esc(nextStep.title) : (steps.length ? 'Toutes les étapes sont faites' : 'Projet en préparation');
+      var gBar = steps.length ? '<div class="cp-proj-ft__bar"><span style="width:' + pct + '%"></span></div>' : '';
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
-        '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
-          (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
-        '</div>' +
-        '<div class="cp-proj-card__body">' +
-          '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
-          '<div class="cp-proj-card__meta">' +
-            (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
-            (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
-            (duration ? '<span>' + duration + '</span>' : '') +
-          '</div>' +
-          nextLine +
-          _unreadBadge +
-          '<div class="cp-proj-bar"><div class="cp-proj-bar__fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="cp-proj-card__pct"><span>' + pct + '% complété</span><span>' + done + '/' + steps.length + ' étapes</span></div>' +
-        '</div>' +
+        mkBanner(gOverlay) +
+        gBar +
+        '<div class="cp-proj-ft"><div class="cp-proj-ft__st"><div class="cp-proj-ft__k">' + gKicker + '</div><div class="cp-proj-ft__v">' + gValue + '</div></div>' + _arrow + '</div>' +
       '</button>';
     }
 

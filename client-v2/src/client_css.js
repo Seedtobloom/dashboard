@@ -148,7 +148,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-home__inner { max-width: 1040px; margin: 0 auto; }
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
-.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 32px; }
+.cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
 .cp-proj-card { background: #F8F6F2; border-radius: var(--radius-3); border: 1px solid var(--bone-d); overflow: hidden; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-card--static { cursor: default; }
@@ -160,6 +160,20 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .grain-overlay { position:absolute;inset:0;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");background-repeat:repeat;background-size:256px 256px;opacity:0.12;mix-blend-mode:screen; }
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: white; }
 .cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #5A2A11; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+/* Bannière image pleine (maquette) : toute l'illustration visible, hauteur auto */
+.cp-proj-banner--img { height: auto; background: none; border-radius: var(--radius-3) var(--radius-3) 0 0; }
+.cp-proj-banner--img::after { display: none; }
+.cp-proj-ban-img { display: block; width: 100%; height: auto; }
+/* Pied compact (façon maquette) : libellé + valeur + flèche, pour éviter les cartes trop longues */
+.cp-proj-ft { display: flex; align-items: center; gap: 14px; padding: 15px 20px 17px; margin-top: auto; }
+.cp-proj-ft__st { flex: 1; min-width: 0; }
+.cp-proj-ft__k { font-family: var(--font-micro); font-size: 10.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--terre-400); display: flex; align-items: center; gap: 7px; }
+.cp-proj-ft__k .req { color: #5A2A11; }
+.cp-proj-ft__v { font-family: var(--font-display); font-style: italic; font-size: 19px; color: var(--terre); margin-top: 4px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cp-proj-ft__arr { width: 40px; height: 40px; border-radius: 50%; background: var(--card); display: grid; place-items: center; flex-shrink: 0; color: var(--terre-600); transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+.cp-proj-card:hover .cp-proj-ft__arr { background: var(--glycine); color: #110704; }
+.cp-proj-ft__bar { height: 4px; background: var(--bone-d); border-radius: 999px; overflow: hidden; margin: 0 20px; }
+.cp-proj-ft__bar > span { display: block; height: 100%; background: var(--terre); border-radius: 999px; }
 .cp-proj-card__body { padding: 20px 22px 22px; }
 .cp-proj-card__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-style: italic; margin-bottom: 8px; line-height: 1.25; font-weight: 400; }
 .cp-proj-card__meta { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; letter-spacing: 0.06em; text-transform: uppercase; }
