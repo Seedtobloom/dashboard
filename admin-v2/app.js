@@ -1889,7 +1889,20 @@
         pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px;stroke-width:2"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>', 'Incidents', 'Tickets ouverts', nTickets || '', 'pj-indic__b--attn', "ADM.nav('incidents')") +
         pjIndic('', '<svg class="ico" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>', 'Ma semaine', 'La suite, jour par jour', nWeek || '', 'pj-indic__b--calm', "ADM.prioMainTab('semaine')") +
         '</div></div>';
-      var P2_jour = pjStat + pjLoad + '<div class="stackblocks">' + pjDom + pjAvoir + '</div>';
+      // Tâches actives SANS date (ni échéance ni « à faire le ») : elles ne
+      // remontent nulle part ailleurs (tout est trié par date). On les rassemble
+      // dans « À planifier » pour qu'une demande acceptée ne devienne jamais invisible.
+      var toPlan = mine.filter(function (x) { return !x.dueDate && !x.doDate; });
+      function planRow(x) {
+        return '<div class="pj-drow"><span class="pj-grip">⠿</span>' +
+          '<div><div class="pj-dt">' + esc(x.title) + '</div><div class="pj-dm">' + esc(x.client || '') + ' · ' + esc(x.projectLabel || 'Partenaire créative') + '</div></div>' +
+          '<div class="pj-rowr" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><input type="date" class="inp" id="plan-' + x.id + '" style="width:auto;padding:6px 8px">' +
+          '<button class="pbtn pbtn--ok" onclick="ADM.prioPlan(\'' + x.key + '\',\'' + x.id + '\')">Planifier</button>' +
+          '<button class="pbtn" onclick="ADM.openClient(\'' + x.key + '\')">Ouvrir</button></div></div>';
+      }
+      var planBlock = toPlan.length ? '<div class="pj-dom" style="margin-top:14px"><div class="pj-dom__h"><span class="pj-hic"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4M9 15h6"/></svg></span><h2>À planifier</h2><span class="n">' + toPlan.length + '</span></div>' +
+        '<p class="pj-hint">Des tâches acceptées sans date. Donne-leur une échéance pour qu\'elles rejoignent ton planning.</p>' + toPlan.map(planRow).join('') + '</div>' : '';
+      var P2_jour = pjStat + pjLoad + '<div class="stackblocks">' + pjDom + planBlock + pjAvoir + '</div>';
       // Projets en cours (cartes .cc) — présents dans la maquette « La semaine »
       var P2_projs = d.activeProjects || [];
       function p2CcCol(cat) { return cat === 'partner' ? 'cc--brun' : (cat === 'branding' ? 'cc--nuit' : 'cc--lav'); }
@@ -4803,6 +4816,17 @@
     document.querySelectorAll('.daycol--over').forEach(function (e) { e.classList.remove('daycol--over'); });
     if (!t || !iso) return;
     prioSetDoDate(t.key, t.id, iso);
+  }
+  // « Planifier » une tâche sans date depuis la section « À planifier » : on lui
+  // pose une échéance (dueDate). Sans e-mail à la cliente (c'est de l'organisation
+  // interne). Elle rejoint alors les vues triées par date.
+  function prioPlan(key, id) {
+    var inp = el('plan-' + id);
+    var v = inp ? (inp.value || '').trim() : '';
+    if (!v) { toast('Choisis une date'); return; }
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) {
+      if (r.ok) { toast('Planifié au ' + fmtDate(v)); refreshPriorities(); } else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
   }
   // Jour de travail perso (doDate) : ne touche pas l'échéance, ne prévient pas la cliente.
   function prioSetDoDate(key, id, iso) {
@@ -8288,7 +8312,7 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

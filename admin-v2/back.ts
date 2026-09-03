@@ -1871,7 +1871,7 @@ async function handleDashboard(env: Env): Promise<Response> {
         }
         // Tâche Partenaire créative active → agrégée dans « Ma semaine ».
         if (!t.archived && t.status !== 'done') {
-          weekTasks.push({ key: ci.key, client: who, id: t.id, title: t.title || '', dueDate: t.dueDate || '', doDate: t.doDate || null, estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, status: t.status || 'todo' });
+          weekTasks.push({ key: ci.key, client: who, id: t.id, title: t.title || '', dueDate: t.dueDate || '', doDate: t.doDate || null, estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, status: t.status || 'todo', stage: t.stage || '' });
         }
         // Projet à venir : une date de démarrage est posée et le travail n'a
         // pas encore réellement commencé (pas démarré / pas terminé).
@@ -1881,7 +1881,11 @@ async function handleDashboard(env: Env): Promise<Response> {
         }
         // Une tâche « à valider » (review) est en attente du client : on la
         // remonte même sans échéance, avec le lien et la date d'envoi.
-        if (t.status !== 'done' && (t.dueDate || t.status === 'review')) {
+        // On remonte AUSSI les vraies tâches actives SANS date (ni échéance ni
+        // « à faire le ») : une demande acceptée sans date atterrissait sinon
+        // nulle part → elle rejoint désormais la section « À planifier ».
+        const _realTask = t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused';
+        if (t.status !== 'done' && (t.dueDate || t.status === 'review' || (_realTask && !t.archived))) {
           const hist = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
           const atts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
           // Lien & fichiers saisis par le client dans sa tâche (propriété p_elements).
