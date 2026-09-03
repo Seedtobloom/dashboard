@@ -24,7 +24,7 @@ const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
   '<link rel="icon" type="image/svg+xml" href="/favicon.svg">' +
   '<link rel="apple-touch-icon" href="/favicon.svg">' +
   '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-  '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">' +
+  '<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">' +
   '<link rel="stylesheet" href="/admin.css?v=' + cssV + '"></head><body>' +
   '<div id="app"><div class="center"><div class="spin"></div></div></div>' +
   '<div class="toast" id="toast"></div><script>window.__APPV=' + JSON.stringify(jsV) + '</script>' +

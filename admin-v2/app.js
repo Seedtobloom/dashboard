@@ -2836,11 +2836,11 @@
     if (!a.length) { a = [kakemonoTrame(), defaultTrame()]; tramesSaveAll(a); }
     return a;
   }
-  function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; VIS_TRAME_OPEN = t.id; renderVisiosBody(); }
-  function trameSel(id) { CALL_TRAME_SEL = id; CALL_TRAME_EDIT = false; renderVisiosBody(); }
+  function trameNew() { var a = tramesGet(); var t = { id: 't' + Date.now(), title: 'Nouvelle trame', content: '' }; a.unshift(t); tramesSaveAll(a); CALL_TRAME_SEL = t.id; CALL_TRAME_EDIT = true; VIS_TRAME_OPEN = t.id; TRAME_ED.id = null; renderVisiosBody(); }
+  function trameSel(id) { CALL_TRAME_SEL = id; CALL_TRAME_EDIT = false; TRAME_ED.id = null; renderVisiosBody(); }
   function trameDel(id) { admConfirm({ title: 'Supprimer cette trame ?', danger: true, yes: 'Supprimer', no: 'Annuler' }, function () { var a = tramesGet().filter(function (t) { return t.id !== id; }); tramesSaveAll(a); if (CALL_TRAME_SEL === id) CALL_TRAME_SEL = null; if (VIS_TRAME_OPEN === id) VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; renderVisiosBody(); }); }
   function trameSet(id, field, val) { var a = tramesGet(); var t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return; t[field] = val; tramesSaveAll(a); }
-  function trameEditToggle() { CALL_TRAME_EDIT = !CALL_TRAME_EDIT; renderVisiosBody(); }
+  function trameEditToggle() { CALL_TRAME_EDIT = !CALL_TRAME_EDIT; TRAME_ED.id = null; renderVisiosBody(); }
   function callRight(mode) { CALL_RIGHT = mode; renderVisiosBody(); }
 
   // ── Onglet « Trames d'appel » : bibliothèque de cartes + mode appel interactif (cocher + noter) ──
@@ -2863,8 +2863,8 @@
     return secs.filter(function (s) { return s.questions.length || s.hint; });
   }
   function trameOpen(id) { VIS_TRAME_OPEN = id; CALL_TRAME_EDIT = false; renderVisiosBody(); window.scrollTo({ top: 0 }); }
-  function trameEditLib(id) { VIS_TRAME_OPEN = id; CALL_TRAME_SEL = id; CALL_TRAME_EDIT = true; renderVisiosBody(); window.scrollTo({ top: 0 }); }
-  function trameBackLib() { VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; renderVisiosBody(); }
+  function trameEditLib(id) { VIS_TRAME_OPEN = id; CALL_TRAME_SEL = id; CALL_TRAME_EDIT = true; TRAME_ED.id = null; renderVisiosBody(); window.scrollTo({ top: 0 }); }
+  function trameBackLib() { VIS_TRAME_OPEN = null; CALL_TRAME_EDIT = false; TRAME_ED.id = null; renderVisiosBody(); }
   function trameQToggle(k) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].c = !VIS_TRAME_ANS[k].c; renderVisiosBody(); }
   function trameQNote(k, v) { if (!VIS_TRAME_ANS[k]) VIS_TRAME_ANS[k] = {}; VIS_TRAME_ANS[k].n = v; }
   function visTramesHtml() {
@@ -2875,8 +2875,8 @@
       return '<div onclick="ADM.trameOpen(\'' + t.id + '\')" style="position:relative;cursor:pointer;background:var(--card);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column">' +
         '<button onclick="event.stopPropagation();ADM.trameEditLib(\'' + t.id + '\')" title="Modifier cette trame" style="position:absolute;top:14px;right:14px;border:none;background:var(--bone);border-radius:999px;width:32px;height:32px;cursor:pointer;color:var(--terre-600);font-size:14px;display:grid;place-items:center">✎</button>' +
         '<span style="width:40px;height:40px;border-radius:11px;background:var(--gold-chip);color:var(--terre);display:grid;place-items:center;margin-bottom:13px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' +
-        '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);line-height:1.1">' + esc(t.title || 'Sans titre') + '</span>' +
-        '<span style="font-family:var(--font-micro);font-size:12px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
+        '<span style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:23px;color:var(--terre);line-height:1.12">' + esc(t.title || 'Sans titre') + '</span>' +
+        '<span style="font-family:var(--font-micro);font-weight:300;font-size:12px;color:var(--muted);margin-top:6px">' + secs.length + ' étape' + (secs.length > 1 ? 's' : '') + ' · ' + nq + ' question' + (nq > 1 ? 's' : '') + '</span>' +
         '<span style="font-family:var(--font-micro);font-size:12px;font-weight:600;color:var(--terre-600);margin-top:14px;display:inline-flex;align-items:center;gap:6px">Ouvrir l\'appel <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
       '</div>';
     }).join('');
@@ -2898,20 +2898,20 @@
         var k = id + '_' + si + '_' + qi; var a = VIS_TRAME_ANS[k] || {}; var on = !!a.c;
         return '<div style="background:' + (on ? 'var(--gold-soft)' : 'var(--card)') + ';border-radius:13px;padding:14px 16px;margin-bottom:11px;display:flex;gap:13px">' +
           '<button onclick="ADM.trameQToggle(\'' + k + '\')" style="width:24px;height:24px;flex-shrink:0;margin-top:2px;border:none;cursor:pointer;border-radius:7px;background:' + (on ? 'var(--terre-600)' : 'var(--bone)') + ';box-shadow:' + (on ? 'none' : 'inset 0 0 0 1.5px var(--bone-d)') + ';display:grid;place-items:center;color:var(--paille)">' + (on ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '') + '</button>' +
-          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-size:21px;line-height:1.3;color:' + (on ? 'var(--terre-600)' : 'var(--terre)') + '">' + trameHi(q) + '</div>' +
-          '<textarea onchange="ADM.trameQNote(\'' + k + '\',this.value)" placeholder="Note la réponse…" style="width:100%;box-sizing:border-box;margin-top:9px;min-height:40px;resize:vertical;border:none;background:var(--bone);border-radius:9px;padding:10px 13px;font-family:var(--font-body);font-size:16px;color:var(--terre);outline:none;line-height:1.5">' + esc(a.n || '') + '</textarea></div></div>';
+          '<div style="flex:1;min-width:0"><div style="font-family:\'Alegreya\',Georgia,serif;font-size:22px;line-height:1.35;color:' + (on ? 'var(--terre-600)' : 'var(--terre)') + '">' + trameHi(q) + '</div>' +
+          '<textarea onchange="ADM.trameQNote(\'' + k + '\',this.value)" placeholder="Note la réponse…" style="width:100%;box-sizing:border-box;margin-top:9px;min-height:40px;resize:vertical;border:none;background:var(--bone);border-radius:9px;padding:10px 13px;font-family:var(--font-body);font-weight:300;font-size:16px;color:var(--terre);outline:none;line-height:1.5">' + esc(a.n || '') + '</textarea></div></div>';
       }).join('');
-      return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:var(--font-display);font-size:24px;font-weight:600;color:var(--terre)">' + esc(s.title || 'Étape') + '</span></div>' +
-        (s.hint ? '<div style="font-family:var(--font-micro);font-size:14px;color:var(--muted);font-style:italic;margin:0 0 13px 37px;line-height:1.55">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
+      return '<div style="margin-top:24px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span><span style="font-family:\'Alegreya\',Georgia,serif;font-size:25px;font-weight:500;color:var(--terre)">' + esc(s.title || 'Étape') + '</span></div>' +
+        (s.hint ? '<div style="font-family:var(--font-micro);font-weight:300;font-size:14px;color:var(--muted);font-style:italic;margin:0 0 13px 37px;line-height:1.55">' + esc(s.hint) + '</div>' : '') + qs + '</div>';
     }).join('');
     return '<div class="vis-wrap" style="max-width:760px;margin:0 auto">' +
       '<button class="btn btn--outline btn--sm" onclick="ADM.trameBackLib()">← Bibliothèque</button>' +
       '<div style="background:var(--terre);color:var(--paille);border-radius:18px;padding:22px 26px;margin-top:14px">' +
         '<div style="font-family:var(--font-micro);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-chip)">Appel en cours</div>' +
-        '<div style="font-family:var(--font-display);font-style:italic;font-size:27px;margin:7px 0 14px;line-height:1.05">' + esc(t.title || '') + '</div>' +
+        '<div style="font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:28px;margin:7px 0 14px;line-height:1.08">' + esc(t.title || '') + '</div>' +
         '<div style="height:8px;border-radius:99px;background:rgba(240,233,214,.18);overflow:hidden"><span style="display:block;height:100%;width:' + pct + '%;background:var(--gold-chip)"></span></div>' +
-        '<div style="font-family:var(--font-micro);font-size:12px;color:rgba(240,233,214,.72);margin-top:8px">' + done + ' / ' + total + ' questions cochées</div>' +
-        '<button class="btn btn--outline btn--sm" style="margin-top:15px;color:var(--paille);border-color:rgba(240,233,214,.4)" onclick="ADM.trameEditToggle()">✎ Modifier cette trame</button></div>' +
+        '<div style="font-family:var(--font-micro);font-weight:300;font-size:12px;color:rgba(240,233,214,.72);margin-top:8px">' + done + ' / ' + total + ' questions cochées</div>' +
+        '<button class="btn btn--sm" style="margin-top:15px;background:var(--gold-chip);color:var(--terre);border:none;font-weight:600" onclick="ADM.trameEditToggle()">✎ Modifier cette trame</button></div>' +
       body + '</div>';
   }
   // Surligne les passages entre guillemets « … » = ce que Cindy dit à l'oral.
@@ -2942,18 +2942,85 @@
       return trameNote(l, 7);
     }).join('');
   }
+  // ── Éditeur structuré d'une trame : étapes → titre + repères + questions ──
+  // On garde le stockage en texte (compatible mode appel) mais on édite par blocs.
+  var TRAME_ED = { id: null, secs: null };
+  var TRAME_NUM = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
+  function trameEdLoad(cur) {
+    if (TRAME_ED.id === cur.id && TRAME_ED.secs) return;
+    var secs = trameParse(cur.content).map(function (s) {
+      return {
+        title: s.title || '', hint: s.hint || '',
+        questions: (s.questions || []).map(function (q) {
+          var m = String(q).trim();
+          if (/^«[\s\S]*»$/.test(m)) return m.replace(/^«\s*/, '').replace(/\s*»$/, '');
+          return m;
+        })
+      };
+    });
+    if (!secs.length) secs = [{ title: '', hint: '', questions: [''] }];
+    TRAME_ED.id = cur.id; TRAME_ED.secs = secs;
+  }
+  function trameEdSerialize() {
+    return (TRAME_ED.secs || []).map(function (s, i) {
+      var out = [(TRAME_NUM[i] || '📝') + ' ' + (s.title || '')];
+      if (s.hint && s.hint.trim()) out.push(s.hint.trim());
+      (s.questions || []).forEach(function (q) {
+        var qq = String(q).trim(); if (!qq) return;
+        if (qq.indexOf('«') === -1) qq = '« ' + qq + ' »';
+        out.push(qq);
+      });
+      return out.join('\n');
+    }).join('\n\n');
+  }
+  function trameEdSave() {
+    var a = tramesGet(); var t = a.filter(function (x) { return x.id === TRAME_ED.id; })[0]; if (!t) return;
+    t.content = trameEdSerialize(); tramesSaveAll(a);
+  }
+  function trameEdField(si, field, val) { if (!TRAME_ED.secs || !TRAME_ED.secs[si]) return; TRAME_ED.secs[si][field] = val; trameEdSave(); }
+  function trameEdQ(si, qi, val) { if (!TRAME_ED.secs || !TRAME_ED.secs[si]) return; TRAME_ED.secs[si].questions[qi] = val; trameEdSave(); }
+  function trameEdQAdd(si) { if (!TRAME_ED.secs[si]) return; TRAME_ED.secs[si].questions.push(''); trameEdSave(); renderVisiosBody(); }
+  function trameEdQDel(si, qi) { if (!TRAME_ED.secs[si]) return; TRAME_ED.secs[si].questions.splice(qi, 1); trameEdSave(); renderVisiosBody(); }
+  function trameEdSecAdd() { TRAME_ED.secs.push({ title: '', hint: '', questions: [''] }); trameEdSave(); renderVisiosBody(); }
+  function trameEdSecDel(si) { TRAME_ED.secs.splice(si, 1); if (!TRAME_ED.secs.length) TRAME_ED.secs.push({ title: '', hint: '', questions: [''] }); trameEdSave(); renderVisiosBody(); }
+  function trameEdSecMove(si, dir) { var j = si + dir; if (j < 0 || j >= TRAME_ED.secs.length) return; var tmp = TRAME_ED.secs[si]; TRAME_ED.secs[si] = TRAME_ED.secs[j]; TRAME_ED.secs[j] = tmp; trameEdSave(); renderVisiosBody(); }
+  function trameStructEditor(cur) {
+    trameEdLoad(cur);
+    var secs = TRAME_ED.secs;
+    var titleInput = '<input value="' + esc(cur.title || '') + '" oninput="ADM.trameSet(\'' + cur.id + '\',\'title\',this.value)" placeholder="Titre de la trame" style="width:100%;box-sizing:border-box;border:none;outline:none;background:var(--card);border-radius:12px;padding:13px 16px;font-family:\'Alegreya\',Georgia,serif;font-style:italic;font-size:23px;color:var(--terre);margin-bottom:16px">';
+    var body = secs.map(function (s, si) {
+      var qs = (s.questions || []).map(function (q, qi) {
+        return '<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:8px">' +
+          '<span style="margin-top:10px;color:var(--gold-chip);flex-shrink:0;font-size:17px">«</span>' +
+          '<textarea oninput="ADM.trameEdQ(' + si + ',' + qi + ',this.value)" rows="1" placeholder="Ce que tu dis / demandes au client…" style="flex:1;min-width:0;box-sizing:border-box;resize:vertical;min-height:40px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:\'Alegreya\',Georgia,serif;font-size:18px;line-height:1.35;color:var(--terre);outline:none;box-shadow:inset 0 0 0 1px var(--bone-d)">' + esc(q) + '</textarea>' +
+          '<button onclick="ADM.trameEdQDel(' + si + ',' + qi + ')" title="Supprimer la question" style="margin-top:7px;flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:14px">✕</button>' +
+        '</div>';
+      }).join('');
+      return '<div style="background:var(--card);border-radius:15px;padding:15px 17px;margin-bottom:13px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+          '<span style="width:27px;height:27px;border-radius:50%;background:var(--terre-600);color:var(--paille);font-family:var(--font-micro);font-size:12px;font-weight:700;display:grid;place-items:center;flex-shrink:0">' + (si + 1) + '</span>' +
+          '<input value="' + esc(s.title) + '" oninput="ADM.trameEdField(' + si + ',\'title\',this.value)" placeholder="Titre de l\'étape" style="flex:1;min-width:0;border:none;outline:none;background:var(--bone);border-radius:8px;padding:9px 12px;font-family:\'Alegreya\',Georgia,serif;font-size:20px;font-weight:500;color:var(--terre)">' +
+          '<button onclick="ADM.trameEdSecMove(' + si + ',-1)" title="Monter" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">↑</button>' +
+          '<button onclick="ADM.trameEdSecMove(' + si + ',1)" title="Descendre" style="border:none;background:none;cursor:pointer;color:var(--muted);width:24px;height:26px;font-size:15px">↓</button>' +
+          '<button onclick="ADM.trameEdSecDel(' + si + ')" title="Supprimer l\'étape" style="border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:7px;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>' +
+        '</div>' +
+        '<textarea oninput="ADM.trameEdField(' + si + ',\'hint\',this.value)" rows="2" placeholder="Repères pour t\'aider (tu ne les lis pas au client)" style="width:100%;box-sizing:border-box;resize:vertical;min-height:46px;border:none;background:var(--bone);border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:300;font-style:italic;font-size:14px;line-height:1.5;color:var(--muted);outline:none;margin-bottom:13px">' + esc(s.hint) + '</textarea>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-chip);margin-bottom:8px">Questions à poser</div>' +
+        qs +
+        '<button onclick="ADM.trameEdQAdd(' + si + ')" style="border:none;background:none;cursor:pointer;color:var(--terre-600);font-family:var(--font-micro);font-size:13px;font-weight:600;padding:5px 0;display:inline-flex;align-items:center;gap:5px">+ Ajouter une question</button>' +
+      '</div>';
+    }).join('');
+    return '<div>' + titleInput + body +
+      '<button class="btn btn--outline btn--sm" style="width:100%;margin-top:2px" onclick="ADM.trameEdSecAdd()">+ Ajouter une étape</button>' +
+      '<div class="row" style="gap:8px;margin-top:18px"><button class="btn btn--dark btn--sm" onclick="ADM.trameEditToggle()">✓ Terminé</button><button class="btn btn--outline btn--sm" style="color:#8d2b21;margin-left:auto" onclick="ADM.trameDel(\'' + cur.id + '\')">Supprimer la trame</button></div>' +
+    '</div>';
+  }
   function callTrame() {
     var trames = tramesGet();
     if (CALL_TRAME_SEL && !trames.some(function (t) { return t.id === CALL_TRAME_SEL; })) CALL_TRAME_SEL = null;
     if (!CALL_TRAME_SEL) CALL_TRAME_SEL = trames[0].id;
     var cur = trames.filter(function (t) { return t.id === CALL_TRAME_SEL; })[0];
-    if (CALL_TRAME_EDIT) {
-      return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
-        '<input value="' + esc(cur.title || '') + '" oninput="ADM.trameSet(\'' + cur.id + '\',\'title\',this.value)" placeholder="Titre de la trame" style="width:100%;box-sizing:border-box;border:none;outline:none;background:#F8F6F2;border-radius:9px;padding:9px 12px;font-family:var(--font-micro);font-weight:700;font-size:15px;color:var(--terre);margin-bottom:10px">' +
-        '<textarea oninput="ADM.trameSet(\'' + cur.id + '\',\'content\',this.value)" placeholder="Écris ou colle ta trame ici… (une étape par bloc, mets un ① ou un titre en MAJUSCULES pour les sections)" style="width:100%;box-sizing:border-box;min-height:calc(100vh - 320px);resize:vertical;border:none;background:#F8F6F2;border-radius:11px;padding:12px 14px;font-family:var(--font-micro);font-size:13.5px;line-height:1.55;color:var(--terre);outline:none">' + esc(cur.content || '') + '</textarea>' +
-        '<div class="row" style="gap:8px;margin-top:10px"><button class="btn btn--dark btn--sm" onclick="ADM.trameEditToggle()">Terminé</button><button class="btn btn--outline btn--sm" style="color:#8d2b21;margin-left:auto" onclick="ADM.trameDel(\'' + cur.id + '\')">Supprimer</button></div>' +
-      '</div>';
-    }
+    if (CALL_TRAME_EDIT) return trameStructEditor(cur);
     var opts = trames.map(function (t) { return '<option value="' + t.id + '"' + (t.id === CALL_TRAME_SEL ? ' selected' : '') + '>' + esc(t.title || 'Sans titre') + '</option>'; }).join('');
     return '<div style="background:#fff;border-radius:14px;padding:14px 16px">' +
       '<div class="row" style="gap:8px;align-items:center;margin-bottom:12px"><select class="inp" style="flex:1;font-size:13px" onchange="ADM.trameSel(this.value)">' + opts + '</select>' +
@@ -8592,7 +8659,7 @@
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
-    visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
+    visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
