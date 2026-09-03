@@ -409,7 +409,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cpb-bar { position:sticky;top:0;z-index:200;background:#fff;border-bottom:1.5px solid var(--border);padding:10px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap; }
 .cpb-bar__title { font-size:13px;font-weight:600;color:var(--navy);flex:1 }
 .cpb-sec { position:relative;border-radius:12px;margin-bottom:14px;transition:border-color 0.15s; }
-.cpb-sec.cpb-over { outline:2px solid var(--lavender);background:rgba(228,209,254,0.07); }
+.cpb-sec.cpb-over { outline:2px solid var(--lavender);background:rgba(197,222,255,0.07); }
 .cpb-sec-hd { display:flex;align-items:center;gap:8px;padding:5px 8px 5px 6px;background:var(--surface);border-radius:8px 8px 0 0;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.4px;text-transform:uppercase;cursor:grab; }
 .cpb-sec-hd:active { cursor:grabbing; }
 .cpb-grip { font-size:15px;color:var(--muted);line-height:1;cursor:grab; }
@@ -418,7 +418,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cpb-abtn:hover { background:var(--surface);color:var(--navy); }
 .cpb-abtn.danger:hover { background:rgba(205,143,110,.15);border-color:#c44;color:#c44; }
 .cpb-add-sec { width:100%;margin-top:8px;padding:10px;border:2px dashed var(--border);background:none;border-radius:10px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;transition:all 0.15s; }
-.cpb-add-sec:hover { border-color:var(--lavender);color:var(--navy);background:rgba(228,209,254,0.08); }
+.cpb-add-sec:hover { border-color:var(--lavender);color:var(--navy);background:rgba(197,222,255,0.08); }
 .cpb-blk { border:1.5px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden; }
 .cpb-blk.cpb-over { border-color:var(--lavender); }
 .cpb-blk-hd { display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--surface);cursor:grab;font-size:11px;color:var(--muted); }
@@ -492,7 +492,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-sp__row { display: grid; grid-template-columns: 1.7fr 1fr; gap: clamp(16px,1.8vw,26px); margin-top: clamp(18px,2vw,28px); }
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
 .cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
-.cp-sp__card--cta { background: var(--paille); display: flex; flex-direction: column; }
+.cp-sp__card--cta { background: var(--card); box-shadow: inset 0 3px 0 var(--paille); display: flex; flex-direction: column; }
 .cp-sp__card--brown { background: var(--terre); }
 .cp-sp__card--brown .cp-sp__kick { color: var(--paille); }
 .cp-sp__card--brown .cp-sp__big { color: #fff; }
@@ -529,7 +529,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-ptl__n { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px var(--bone-d); display: flex; align-items: center; justify-content: center; color: var(--terre); }
 .cp-ptl__n .ic, .cp-ptl__n svg { width: 13px; height: 13px; }
 .cp-ptl__s.done .cp-ptl__n { background: var(--terre); color: #fff; box-shadow: none; }
-.cp-ptl__s.now .cp-ptl__n { background: var(--glycine); color: var(--nuit); box-shadow: 0 0 0 4px rgba(228,209,254,0.5); }
+.cp-ptl__s.now .cp-ptl__n { background: var(--glycine); color: var(--nuit); box-shadow: 0 0 0 4px rgba(197,222,255,0.5); }
 .cp-ptl__s.future { opacity: 0.55; }
 .cp-ptl__d { font-family: var(--font-display); font-style: italic; font-size: 17px; color: var(--terre); }
 .cp-ptl__t { font-family: var(--font-micro); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--terre-600); margin-top: 3px; }
@@ -1442,7 +1442,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
           '<div style="font-family:var(--font-body);font-size:14px;color:#F8F6F2;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#C5DEFF;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:rgba(197,222,255,0.3);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
     '</div>';
@@ -1520,7 +1520,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var mRemH = fmtMn(mRemain), mTotH = fmtMn(mQuotaMin), mUsedH = fmtMn(mUsedMin);
         var mHomeUnread = totalUnread();
 
-        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#F8F6F2;background:#F8F6F2':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
+        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#CD8F6E;background:rgba(205,143,110,.14)':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
           (mBaseMin
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#5A2A11':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
@@ -1704,7 +1704,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
           var fOver = f.over > 0;
           var fBarCol = fOver ? '#5A2A11' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
-          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#F8F6F2;background:#F8F6F2':'')+'">' +
+          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#CD8F6E;background:rgba(205,143,110,.14)':'')+'">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
             '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">' +
               '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#5A2A11':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
@@ -5602,7 +5602,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var ds = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + dd).slice(-2);
       var past = ds < todayStr, hol = !!cpHolidayFor(ds); var sel = ds === selIso;
       if (past || hol) {
-        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#F8F6F2;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#F8F6F2,#F8F6F2 4px,#F8F6F2 4px,#F8F6F2 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
+        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:var(--terre-400,rgba(17,7,4,.42));border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,rgba(17,7,4,.07),rgba(17,7,4,.07) 4px,transparent 4px,transparent 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
       } else {
         cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#110704)' : 'transparent') + ';color:' + (sel ? '#fff' : '#110704') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#F8F6F2)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#110704)' : 'transparent') + '\'">' + dd + '</button>';
       }
@@ -8258,7 +8258,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<h1 style="font-family:var(--font-display);font-size:clamp(40px,7vw,60px);font-weight:400;line-height:1.04;color:var(--brume);margin:0 0 22px">l\'atelier de <span style="font-style:italic;color:var(--glycine)">Cindy</span></h1>' +
           '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(242,229,194,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que je vous tiens au courant de tout, en toute confiance. Entrez le code que je vous ai transmis.</p>' +
           '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">' +
-            '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(228,209,254,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(228,209,254,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
+            '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(197,222,255,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(197,222,255,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
             '<button onclick="cpSubmitCode()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--glycine);color:var(--terre);border:0;border-radius:var(--radius-2);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Entrer ' + cpIcon('arrow', 14) + '</button>' +
           '</div>' +
           '<div id="_code-err" style="font-family:var(--font-micro);color:#CD8F6E;font-size:11px;min-height:18px;letter-spacing:0.06em;text-transform:uppercase"></div>' +
@@ -8569,7 +8569,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var rl = t.reviewLink || '';
     var lab = { a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' };
     var col = { a_valider:'#CD8F6E', valide:'#5A2A11', refuse:'#5A2A11' };
-    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)">Vos livrables</span></div>';
+    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,rgba(17,7,4,.55))">Vos livrables</span></div>';
     var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #F8F6F2;background:#F8F6F2;border-radius:10px;color:#5A2A11;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser vos retours</span></a>' : '';
     var rows = dlv.map(function(l){
       var dl = l.fileKey ? (API_BASE + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
@@ -8584,26 +8584,26 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         ? '<div style="margin-top:8px;font-size:12px;color:#5A2A11;background:#F8F6F2;border:1px solid #F8F6F2;border-radius:8px;padding:8px 10px">👀 Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
         : '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:9px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:9px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Demander une révision</button></div>';
       return '<div style="border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:12px 13px;margin-bottom:8px;background:#F8F6F2">'+
-        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#110704);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
+        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#110704);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#5A2A11;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
         '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(col[l.status]||'#999')+';color:#fff;white-space:nowrap">'+(lab[l.status]||l.status)+'</span></div>'+
         openBtn +
-        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,#C5DEFF);font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
+        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,rgba(17,7,4,.55));font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
         (!done ? decideRow : '')+
       '</div>';
     }).join('');
     // Versions précédentes (repliées, lecture seule) : simple historique.
     var prevHtml = prevDlv.length
-      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,#C5DEFF);padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
+      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,rgba(17,7,4,.55));padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
         prevDlv.slice().reverse().map(function(l){
           var u = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink)?l.reviewLink:'https://'+l.reviewLink) : (l.fileKey ? (API_BASE+'/files/'+encodeURIComponent(l.fileKey)+'/download') : '');
-          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,#C5DEFF)">'+
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,rgba(17,7,4,.55))">'+
             '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+' · '+(lab[l.status]||l.status)+'</span>'+
             (u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#5A2A11);text-decoration:none;flex-shrink:0">Ouvrir</a>' : '')+
           '</div>';
         }).join('')+'</details>'
       : '';
     var body = rlHtml + rows + prevHtml;
-    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,#C5DEFF);padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
+    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
     return hd + '<div style="margin-bottom:4px">' + body + '</div>' + sep;
   }
 
@@ -8846,7 +8846,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     m.id = 'stb-slash';
     m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
     m.innerHTML = STB_SLASH_ITEMS.map(function(it){
-      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#110704">'+esc(it[1])+'</span><span style="font-size:11px;color:#C5DEFF">'+esc(it[2])+'</span></button>';
+      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#110704">'+esc(it[1])+'</span><span style="font-size:11px;color:var(--muted,rgba(17,7,4,.55))">'+esc(it[2])+'</span></button>';
     }).join('');
     document.body.appendChild(m); _stbSlashMenu = m; return m;
   }
@@ -8973,8 +8973,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       btn('<span style=\'font-size:9px;vertical-align:1px\'>A</span><span style=\'font-size:8px\'>–</span>', "window.stbFmt('small')", 'Réduire le texte') +
       '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#F8F6F2;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
       btn('<span style=\'font-size:15px\'>A</span><span style=\'font-size:10px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte (par paliers)') + sep +
-      sw('#110704','color','rgba(255,255,255,0.35)') + sw('#5A2A11','color') + sw('#5A2A11','color') + sw('#5A2A11','color') + sep +
-      sw('#F8F6F2','bg') + sw('#C5DEFF','bg') + sw('#F8F6F2','bg') + sw('#F8F6F2','bg') + clearBg;
+      sw('#110704','color','rgba(255,255,255,0.35)') + sw('#5A2A11','color') + sw('#CD8F6E','color') + sw('#35608f','color') + sep +
+      sw('#F8F6F2','bg') + sw('#C5DEFF','bg') + sw('#E6E5B2','bg') + sw('#F0E2D6','bg') + clearBg;
     document.body.appendChild(tb);
     _stbTB = tb; return tb;
   }
@@ -9122,7 +9122,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
     }, true);
     var _stbPh = document.createElement('style');
-    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#F8F6F2;pointer-events:none}'
+    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:var(--terre-400,rgba(17,7,4,.5));pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
       + '[data-stb-rich] a{color:#5A2A11;text-decoration:underline;cursor:pointer}'
       + '.stb-row .stb-ctrl{opacity:.28;transition:opacity .12s}'
@@ -9204,20 +9204,20 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '</div>';
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
-      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;color:var(--navy,#110704);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
+      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;color:var(--navy,#110704);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#5A2A11;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
     } else if (b.type === 'image') {
       var iu = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '';
       inner = iu
         ? '<a href="'+iu+'" target="_blank" style="flex:1;min-width:0;display:block;line-height:0"><img src="'+iu+'" alt="'+esc(b.name||'')+'" style="max-width:100%;max-height:360px;border-radius:10px;display:block"></a>'
-        : '<div style="flex:1;padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Image…</div>';
+        : '<div style="flex:1;padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:var(--terre-400,rgba(17,7,4,.5));font-size:12.5px;text-align:center">Image…</div>';
     } else if (b.type === 'heading') {
       inner = stbLineInput(pid, taskId, b, 'Titre', 'font-family:\'Inter Tight\',sans-serif;font-size:21px;font-weight:600');
     } else if (b.type === 'subheading') {
       inner = stbLineInput(pid, taskId, b, 'Sous-titre', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:600');
     } else if (b.type === 'todo') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px">'+
-        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#F8F6F2;flex-shrink:0">'+
-        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#C5DEFF':'')+
+        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#5A2A11;flex-shrink:0">'+
+        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:var(--terre-400,rgba(17,7,4,.5))':'')+
       '</div>';
     } else if (b.type === 'list') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#CD8F6E;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
@@ -9251,13 +9251,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var lu = b.url || '';
       inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:10px 12px">'+
         '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#110704);outline:none">'+
-        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#F8F6F2;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#5A2A11;outline:none;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#5A2A11;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#5A2A11;outline:none;min-width:0">'+
         (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#5A2A11;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
       '</div>';
     } else if (b.type === 'embed') {
       var eu = b.url || ''; var emb = stbEmbedUrl(eu);
       inner = '<div style="flex:1;min-width:0">'+
-        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
+        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:var(--terre-400,rgba(17,7,4,.5));font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
         '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#F8F6F2);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
       '</div>';
     } else {
@@ -9275,10 +9275,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         : 'window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')';
     return '<button onclick="'+act+'" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
       '<span style="width:30px;height:30px;border-radius:8px;background:#F8F6F2;display:flex;align-items:center;justify-content:center;color:#5A2A11;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
-      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#110704)">'+label+'</span><span style="display:block;font-size:11px;color:#C5DEFF">'+desc+'</span></span>'+
+      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#110704)">'+label+'</span><span style="display:block;font-size:11px;color:var(--muted,rgba(17,7,4,.55))">'+desc+'</span></span>'+
     '</button>';
   }
-  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#F8F6F2;padding:8px 10px 4px">'+txt+'</div>'; }
+  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#5A2A11;padding:8px 10px 4px">'+txt+'</div>'; }
   function stbBlocksInner(pid, t){
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     var num = 0, hidden = false;
@@ -9311,7 +9311,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     '</div>';
     var addBar = '<div id="stb-bm-'+t.id+'" style="position:relative;margin-top:12px">'+
       '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#F8F6F2);border-radius:9px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
-      '<span style="font-size:11.5px;color:#C5DEFF;margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
+      '<span style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
       menu+
     '</div>';
     var empty = '<div style="font-size:13px;color:var(--muted,#C5DEFF);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
@@ -9364,7 +9364,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     }
     return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
       '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Votre demande</span></div>'+
-      '<div style="font-size:11.5px;color:#C5DEFF;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
+      '<div style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }
@@ -9554,7 +9554,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
   function dStatusPill(pid, t){
     var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider', done:'Livrée' };
-    var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#F8F6F2', done:'#F8F6F2' };
+    var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#E6E5B2', done:'#CD8F6E' };
     var cur = t.status || 'todo';
     var s = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[cur]||'#C5DEFF')+'">';
     ['todo','in_progress','review','done'].forEach(function(k){ s += '<option value="'+k+'"'+(cur===k?' selected':'')+'>'+map[k]+'</option>'; });
@@ -9583,10 +9583,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var t = (tasks||[]).find(function(x){ return x.id===taskId; });
     if (!t) return '';
 
-    var sep = '<hr style="border:none;border-top:1px solid #F8F6F2;margin:18px 0">';
+    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,rgba(17,7,4,.1));margin:18px 0">';
     var dueStr = (t.dueDate||'').slice(0,10);
 
-    var CLIENTBRIEF_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#C5DEFF' };
+    var CLIENTBRIEF_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#CD8F6E' };
     var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#CD8F6E', 'Besoin d\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };
     var TYPE_COL = {};
     var props = t.properties || {};
@@ -9598,14 +9598,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Lien & fichiers du brief (propriété composite p_elements)
     var bvc = briefVal(props.p_elements);
     var filesHtml = (bvc.files||[]).map(function(f){
-      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#F8F6F2')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#5A2A11')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
     }).join('');
     var linkFilesVal =
       '<input type="url" value="'+esc(bvc.link||'')+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="width:100%;border:none;background:#F8F6F2;border-radius:7px;padding:7px 11px;font-family:inherit;font-size:13px;color:var(--navy,#110704);box-sizing:border-box">'+
       filesHtml+
       '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #F8F6F2;border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
-    var MK_E = ' <span title="Modifiable par vous" style="color:#F8F6F2;font-size:11px">✎</span>';
+    var MK_E = ' <span title="Modifiable par vous" style="color:rgba(17,7,4,.5);font-size:11px">✎</span>';
     var MK_L = ' <span title="Suivi par Cindy" style="font-size:10px">🔒</span>';
     var propertiesHtml =
       // Champ de progression unique « Avancement » : reflète automatiquement
@@ -9613,7 +9613,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       // Livrée). Lecture seule pour le client, mis à jour par Cindy.
       dRow(cpIcon('chart', 15), 'Avancement' + (_isAdminEdit ? MK_E : MK_L), (function(){
         var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
-        var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#F8F6F2', done:'#F8F6F2' };
+        var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#E6E5B2', done:'#CD8F6E' };
         var s = t.status || 'todo';
         // Modifiable par Cindy (mode édition), synchronisé avec l'admin ;
         // lecture seule pour le client.
@@ -9650,14 +9650,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'#F8F6F2')+'">'+
-          '<div style="font-size:10px;font-weight:700;color:#C5DEFF;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:#5A2A11;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
           '<div style="font-size:13px;color:var(--navy,#110704)">'+esc(c.text)+'</div>'+
         '</div>'+
       '</div>';
     }).join('');
     var commentsBlock =
-      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF">Commentaires</span></div>'+
-      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:#C5DEFF;font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
+      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11">Commentaires</span></div>'+
+      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
       '<div style="display:flex;gap:6px">'+
         '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#F8F6F2;border-radius:999px;font-family:inherit">'+
         '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:9px 15px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px">→</button>'+
@@ -9669,17 +9669,17 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
       '<div style="display:flex;gap:8px">'+
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#110704)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+
-        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#C5DEFF">Archiver</button>'+
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#5A2A11">Archiver</button>'+
         '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #CD8F6E;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>'+
       '</div>';
 
     // Fichiers joints à la demande (pièces de la création de tâche)
     var atts = Array.isArray(t.attachments) ? t.attachments : [];
     var attachBlock = atts.length
-      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Fichiers joints à la demande</div>'+
+      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:8px">Fichiers joints à la demande</div>'+
         atts.map(function(a){
           var fk = a.fileKey || a.key || '';
-          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#F8F6F2')+
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#5A2A11')+
             '<a href="'+API_BASE+'/files/'+encodeURIComponent(fk)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
             '<button onclick="cliRemoveTaskAttachment(\''+pid+'\',\''+t.id+'\',\''+esc(fk)+'\')" title="Retirer ce fichier" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>'+
           '</div>';
@@ -9730,13 +9730,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Historique des révisions envoyées par Cindy (liens datés).
     var revHist = Array.isArray(t.reviewHistory) ? t.reviewHistory.slice().reverse() : [];
     var reviewHistHtml = revHist.length
-      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Historique des révisions</div>'+
+      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:8px">Historique des révisions</div>'+
         revHist.map(function(h, i){
           var u = /^https?:\/\//i.test(h.url) ? h.url : 'https://' + h.url;
           return '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+
             '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:14px;color:#5A2A11;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
             '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--navy,#110704);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.url)+'</a>'+
-            '<span style="font-size:11px;color:#C5DEFF;flex-shrink:0">'+fmtShort(h.at)+'</span>'+
+            '<span style="font-size:11px;color:var(--terre-400,rgba(17,7,4,.5));flex-shrink:0">'+fmtShort(h.at)+'</span>'+
           '</div>';
         }).join('')+'</div>'
       : '';
@@ -9750,7 +9750,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           proposeCallout +
           // 1) Infos (façon Notion) dans un compartiment blanc.
           dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
-            '<div style="font-size:11px;color:#C5DEFF;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
+            '<div style="font-size:11px;color:var(--muted,rgba(17,7,4,.55));margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
           // 2) Livrable (compartiment lavande).
           dWrapLav(stbTaskDeliverables(pid, project, t, ''))+
           // 3) Échanges + historique des révisions.
@@ -9768,7 +9768,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function stbTaskTable(pid, t){
     var tb = t.table;
     var has = tb && Array.isArray(tb.cols) && tb.cols.length;
-    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Tableau</div>';
+    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:8px">Tableau</div>';
     // Le tableau existe déjà comme bloc « / » : on n'affiche plus le bouton « Ajouter un tableau »
     // en double. On garde seulement l'affichage d'un ancien tableau déjà créé.
     if (!has) return '';
@@ -10372,7 +10372,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   window.cpMaintenanceView = function(project){
     var title = (project && project.projectTitle) || 'Cet espace';
     return '<div style="max-width:560px;margin:60px auto;text-align:center;padding:44px 34px;background:var(--card,#F8F6F2);border:1px solid var(--bone-d,#F8F6F2);border-radius:16px">' +
-      cpIcon('lock', 34, 'color:#F8F6F2;margin:0 auto 14px') +
+      cpIcon('lock', 34, 'color:#5A2A11;margin:0 auto 14px') +
       '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:var(--terre,#110704);margin-bottom:12px">' + esc(title) + '</div>' +
       '<div style="display:inline-block;font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border-radius:999px;padding:4px 12px;margin-bottom:18px">En préparation</div>' +
       '<div style="font-size:15px;color:#5A2A11;line-height:1.65">Cette offre est bien active, nous la préparons en ce moment. Vous y aurez accès très bientôt.</div>' +
@@ -10401,7 +10401,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
 </head>
 <body>
 <div id="app">
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:var(--cream)">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#fff">
     <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#110704;border-radius:50%;animation:spin 0.8s linear infinite"></div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
     <div style="color:#110704;font-size:14px;opacity:0.6">Chargement de votre espace...</div>

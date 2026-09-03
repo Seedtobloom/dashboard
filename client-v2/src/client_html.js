@@ -14,7 +14,7 @@ var CLIENT_HTML = `<!DOCTYPE html>
 </head>
 <body>
 <div id="app">
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:var(--cream)">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#fff">
     <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#110704;border-radius:50%;animation:spin 0.8s linear infinite"></div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
     <div style="color:#110704;font-size:14px;opacity:0.6">Chargement de votre espace...</div>

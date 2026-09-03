@@ -860,7 +860,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
           '<div style="font-family:var(--font-body);font-size:14px;color:#F8F6F2;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#C5DEFF;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:rgba(197,222,255,0.3);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
     '</div>';
@@ -938,7 +938,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var mRemH = fmtMn(mRemain), mTotH = fmtMn(mQuotaMin), mUsedH = fmtMn(mUsedMin);
         var mHomeUnread = totalUnread();
 
-        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#F8F6F2;background:#F8F6F2':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
+        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#CD8F6E;background:rgba(205,143,110,.14)':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
           (mBaseMin
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#5A2A11':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
@@ -1122,7 +1122,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
           var fOver = f.over > 0;
           var fBarCol = fOver ? '#5A2A11' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
-          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#F8F6F2;background:#F8F6F2':'')+'">' +
+          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#CD8F6E;background:rgba(205,143,110,.14)':'')+'">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
             '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">' +
               '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#5A2A11':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
@@ -5013,7 +5013,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var ds = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + dd).slice(-2);
       var past = ds < todayStr, hol = !!cpHolidayFor(ds); var sel = ds === selIso;
       if (past || hol) {
-        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#F8F6F2;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#F8F6F2,#F8F6F2 4px,#F8F6F2 4px,#F8F6F2 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
+        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:var(--terre-400,rgba(17,7,4,.42));border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,rgba(17,7,4,.07),rgba(17,7,4,.07) 4px,transparent 4px,transparent 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
       } else {
         cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#110704)' : 'transparent') + ';color:' + (sel ? '#fff' : '#110704') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#F8F6F2)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#110704)' : 'transparent') + '\'">' + dd + '</button>';
       }
@@ -7669,7 +7669,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<h1 style="font-family:var(--font-display);font-size:clamp(40px,7vw,60px);font-weight:400;line-height:1.04;color:var(--brume);margin:0 0 22px">l\'atelier de <span style="font-style:italic;color:var(--glycine)">Cindy</span></h1>' +
           '<p style="font-family:var(--font-body);font-size:16px;line-height:1.7;color:rgba(242,229,194,0.7);margin:0 auto 34px;max-width:380px">Vous entrez dans l\'espace prive dedie a votre projet. C\'est ici que je vous tiens au courant de tout, en toute confiance. Entrez le code que je vous ai transmis.</p>' +
           '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px">' +
-            '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(228,209,254,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(228,209,254,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
+            '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(197,222,255,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(197,222,255,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
             '<button onclick="cpSubmitCode()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--glycine);color:var(--terre);border:0;border-radius:var(--radius-2);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Entrer ' + cpIcon('arrow', 14) + '</button>' +
           '</div>' +
           '<div id="_code-err" style="font-family:var(--font-micro);color:#CD8F6E;font-size:11px;min-height:18px;letter-spacing:0.06em;text-transform:uppercase"></div>' +

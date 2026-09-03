@@ -16,7 +16,7 @@
   }
   function dStatusPill(pid, t){
     var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider', done:'Livrée' };
-    var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#F8F6F2', done:'#F8F6F2' };
+    var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#E6E5B2', done:'#CD8F6E' };
     var cur = t.status || 'todo';
     var s = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[cur]||'#C5DEFF')+'">';
     ['todo','in_progress','review','done'].forEach(function(k){ s += '<option value="'+k+'"'+(cur===k?' selected':'')+'>'+map[k]+'</option>'; });
@@ -45,10 +45,10 @@
     var t = (tasks||[]).find(function(x){ return x.id===taskId; });
     if (!t) return '';
 
-    var sep = '<hr style="border:none;border-top:1px solid #F8F6F2;margin:18px 0">';
+    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,rgba(17,7,4,.1));margin:18px 0">';
     var dueStr = (t.dueDate||'').slice(0,10);
 
-    var CLIENTBRIEF_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#C5DEFF' };
+    var CLIENTBRIEF_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#CD8F6E' };
     var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#CD8F6E', 'Besoin d\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };
     var TYPE_COL = {};
     var props = t.properties || {};
@@ -60,14 +60,14 @@
     // Lien & fichiers du brief (propriété composite p_elements)
     var bvc = briefVal(props.p_elements);
     var filesHtml = (bvc.files||[]).map(function(f){
-      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#F8F6F2')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#5A2A11')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
     }).join('');
     var linkFilesVal =
       '<input type="url" value="'+esc(bvc.link||'')+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="width:100%;border:none;background:#F8F6F2;border-radius:7px;padding:7px 11px;font-family:inherit;font-size:13px;color:var(--navy,#110704);box-sizing:border-box">'+
       filesHtml+
       '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #F8F6F2;border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
-    var MK_E = ' <span title="Modifiable par vous" style="color:#F8F6F2;font-size:11px">✎</span>';
+    var MK_E = ' <span title="Modifiable par vous" style="color:rgba(17,7,4,.5);font-size:11px">✎</span>';
     var MK_L = ' <span title="Suivi par Cindy" style="font-size:10px">🔒</span>';
     var propertiesHtml =
       // Champ de progression unique « Avancement » : reflète automatiquement
@@ -75,7 +75,7 @@
       // Livrée). Lecture seule pour le client, mis à jour par Cindy.
       dRow(cpIcon('chart', 15), 'Avancement' + (_isAdminEdit ? MK_E : MK_L), (function(){
         var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
-        var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#F8F6F2', done:'#F8F6F2' };
+        var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#E6E5B2', done:'#CD8F6E' };
         var s = t.status || 'todo';
         // Modifiable par Cindy (mode édition), synchronisé avec l'admin ;
         // lecture seule pour le client.
@@ -112,14 +112,14 @@
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
         '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'#F8F6F2')+'">'+
-          '<div style="font-size:10px;font-weight:700;color:#C5DEFF;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:#5A2A11;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
           '<div style="font-size:13px;color:var(--navy,#110704)">'+esc(c.text)+'</div>'+
         '</div>'+
       '</div>';
     }).join('');
     var commentsBlock =
-      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF">Commentaires</span></div>'+
-      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:#C5DEFF;font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
+      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11">Commentaires</span></div>'+
+      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
       '<div style="display:flex;gap:6px">'+
         '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#F8F6F2;border-radius:999px;font-family:inherit">'+
         '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:9px 15px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px">→</button>'+
@@ -131,17 +131,17 @@
       '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
       '<div style="display:flex;gap:8px">'+
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#110704)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+
-        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#C5DEFF">Archiver</button>'+
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#5A2A11">Archiver</button>'+
         '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #CD8F6E;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>'+
       '</div>';
 
     // Fichiers joints à la demande (pièces de la création de tâche)
     var atts = Array.isArray(t.attachments) ? t.attachments : [];
     var attachBlock = atts.length
-      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Fichiers joints à la demande</div>'+
+      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:8px">Fichiers joints à la demande</div>'+
         atts.map(function(a){
           var fk = a.fileKey || a.key || '';
-          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#F8F6F2')+
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#5A2A11')+
             '<a href="'+API_BASE+'/files/'+encodeURIComponent(fk)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
             '<button onclick="cliRemoveTaskAttachment(\''+pid+'\',\''+t.id+'\',\''+esc(fk)+'\')" title="Retirer ce fichier" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>'+
           '</div>';
@@ -192,13 +192,13 @@
     // Historique des révisions envoyées par Cindy (liens datés).
     var revHist = Array.isArray(t.reviewHistory) ? t.reviewHistory.slice().reverse() : [];
     var reviewHistHtml = revHist.length
-      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Historique des révisions</div>'+
+      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:8px">Historique des révisions</div>'+
         revHist.map(function(h, i){
           var u = /^https?:\/\//i.test(h.url) ? h.url : 'https://' + h.url;
           return '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+
             '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:14px;color:#5A2A11;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
             '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--navy,#110704);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.url)+'</a>'+
-            '<span style="font-size:11px;color:#C5DEFF;flex-shrink:0">'+fmtShort(h.at)+'</span>'+
+            '<span style="font-size:11px;color:var(--terre-400,rgba(17,7,4,.5));flex-shrink:0">'+fmtShort(h.at)+'</span>'+
           '</div>';
         }).join('')+'</div>'
       : '';
@@ -212,7 +212,7 @@
           proposeCallout +
           // 1) Infos (façon Notion) dans un compartiment blanc.
           dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
-            '<div style="font-size:11px;color:#C5DEFF;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
+            '<div style="font-size:11px;color:var(--muted,rgba(17,7,4,.55));margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
           // 2) Livrable (compartiment lavande).
           dWrapLav(stbTaskDeliverables(pid, project, t, ''))+
           // 3) Échanges + historique des révisions.
@@ -230,7 +230,7 @@
   function stbTaskTable(pid, t){
     var tb = t.table;
     var has = tb && Array.isArray(tb.cols) && tb.cols.length;
-    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Tableau</div>';
+    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:8px">Tableau</div>';
     // Le tableau existe déjà comme bloc « / » : on n'affiche plus le bouton « Ajouter un tableau »
     // en double. On garde seulement l'affichage d'un ancien tableau déjà créé.
     if (!has) return '';

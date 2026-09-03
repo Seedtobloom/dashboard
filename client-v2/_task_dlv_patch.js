@@ -16,7 +16,7 @@
     var rl = t.reviewLink || '';
     var lab = { a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' };
     var col = { a_valider:'#CD8F6E', valide:'#5A2A11', refuse:'#5A2A11' };
-    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)">Vos livrables</span></div>';
+    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,rgba(17,7,4,.55))">Vos livrables</span></div>';
     var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #F8F6F2;background:#F8F6F2;border-radius:10px;color:#5A2A11;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser vos retours</span></a>' : '';
     var rows = dlv.map(function(l){
       var dl = l.fileKey ? (API_BASE + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
@@ -31,25 +31,25 @@
         ? '<div style="margin-top:8px;font-size:12px;color:#5A2A11;background:#F8F6F2;border:1px solid #F8F6F2;border-radius:8px;padding:8px 10px">👀 Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
         : '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:9px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:9px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Demander une révision</button></div>';
       return '<div style="border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:12px 13px;margin-bottom:8px;background:#F8F6F2">'+
-        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#110704);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
+        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#110704);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#5A2A11;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
         '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(col[l.status]||'#999')+';color:#fff;white-space:nowrap">'+(lab[l.status]||l.status)+'</span></div>'+
         openBtn +
-        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,#C5DEFF);font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
+        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,rgba(17,7,4,.55));font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
         (!done ? decideRow : '')+
       '</div>';
     }).join('');
     // Versions précédentes (repliées, lecture seule) : simple historique.
     var prevHtml = prevDlv.length
-      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,#C5DEFF);padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
+      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,rgba(17,7,4,.55));padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
         prevDlv.slice().reverse().map(function(l){
           var u = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink)?l.reviewLink:'https://'+l.reviewLink) : (l.fileKey ? (API_BASE+'/files/'+encodeURIComponent(l.fileKey)+'/download') : '');
-          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,#C5DEFF)">'+
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,rgba(17,7,4,.55))">'+
             '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+' · '+(lab[l.status]||l.status)+'</span>'+
             (u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#5A2A11);text-decoration:none;flex-shrink:0">Ouvrir</a>' : '')+
           '</div>';
         }).join('')+'</details>'
       : '';
     var body = rlHtml + rows + prevHtml;
-    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,#C5DEFF);padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
+    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,rgba(17,7,4,.55));padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
     return hd + '<div style="margin-bottom:4px">' + body + '</div>' + sep;
   }

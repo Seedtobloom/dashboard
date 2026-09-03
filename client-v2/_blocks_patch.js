@@ -237,7 +237,7 @@
     m.id = 'stb-slash';
     m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
     m.innerHTML = STB_SLASH_ITEMS.map(function(it){
-      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#110704">'+esc(it[1])+'</span><span style="font-size:11px;color:#C5DEFF">'+esc(it[2])+'</span></button>';
+      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#110704">'+esc(it[1])+'</span><span style="font-size:11px;color:var(--muted,rgba(17,7,4,.55))">'+esc(it[2])+'</span></button>';
     }).join('');
     document.body.appendChild(m); _stbSlashMenu = m; return m;
   }
@@ -364,8 +364,8 @@
       btn('<span style=\'font-size:9px;vertical-align:1px\'>A</span><span style=\'font-size:8px\'>–</span>', "window.stbFmt('small')", 'Réduire le texte') +
       '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#F8F6F2;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
       btn('<span style=\'font-size:15px\'>A</span><span style=\'font-size:10px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte (par paliers)') + sep +
-      sw('#110704','color','rgba(255,255,255,0.35)') + sw('#5A2A11','color') + sw('#5A2A11','color') + sw('#5A2A11','color') + sep +
-      sw('#F8F6F2','bg') + sw('#C5DEFF','bg') + sw('#F8F6F2','bg') + sw('#F8F6F2','bg') + clearBg;
+      sw('#110704','color','rgba(255,255,255,0.35)') + sw('#5A2A11','color') + sw('#CD8F6E','color') + sw('#35608f','color') + sep +
+      sw('#F8F6F2','bg') + sw('#C5DEFF','bg') + sw('#E6E5B2','bg') + sw('#F0E2D6','bg') + clearBg;
     document.body.appendChild(tb);
     _stbTB = tb; return tb;
   }
@@ -513,7 +513,7 @@
       stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
     }, true);
     var _stbPh = document.createElement('style');
-    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#F8F6F2;pointer-events:none}'
+    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:var(--terre-400,rgba(17,7,4,.5));pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
       + '[data-stb-rich] a{color:#5A2A11;text-decoration:underline;cursor:pointer}'
       + '.stb-row .stb-ctrl{opacity:.28;transition:opacity .12s}'
@@ -595,20 +595,20 @@
       '</div>';
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
-      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;color:var(--navy,#110704);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
+      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;color:var(--navy,#110704);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#5A2A11;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
     } else if (b.type === 'image') {
       var iu = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '';
       inner = iu
         ? '<a href="'+iu+'" target="_blank" style="flex:1;min-width:0;display:block;line-height:0"><img src="'+iu+'" alt="'+esc(b.name||'')+'" style="max-width:100%;max-height:360px;border-radius:10px;display:block"></a>'
-        : '<div style="flex:1;padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Image…</div>';
+        : '<div style="flex:1;padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:var(--terre-400,rgba(17,7,4,.5));font-size:12.5px;text-align:center">Image…</div>';
     } else if (b.type === 'heading') {
       inner = stbLineInput(pid, taskId, b, 'Titre', 'font-family:\'Inter Tight\',sans-serif;font-size:21px;font-weight:600');
     } else if (b.type === 'subheading') {
       inner = stbLineInput(pid, taskId, b, 'Sous-titre', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:600');
     } else if (b.type === 'todo') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px">'+
-        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#F8F6F2;flex-shrink:0">'+
-        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#C5DEFF':'')+
+        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#5A2A11;flex-shrink:0">'+
+        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:var(--terre-400,rgba(17,7,4,.5))':'')+
       '</div>';
     } else if (b.type === 'list') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#CD8F6E;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
@@ -642,13 +642,13 @@
       var lu = b.url || '';
       inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:10px 12px">'+
         '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#110704);outline:none">'+
-        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#F8F6F2;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#5A2A11;outline:none;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#5A2A11;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#5A2A11;outline:none;min-width:0">'+
         (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#5A2A11;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
       '</div>';
     } else if (b.type === 'embed') {
       var eu = b.url || ''; var emb = stbEmbedUrl(eu);
       inner = '<div style="flex:1;min-width:0">'+
-        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
+        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:var(--terre-400,rgba(17,7,4,.5));font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
         '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#F8F6F2);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
       '</div>';
     } else {
@@ -666,10 +666,10 @@
         : 'window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')';
     return '<button onclick="'+act+'" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
       '<span style="width:30px;height:30px;border-radius:8px;background:#F8F6F2;display:flex;align-items:center;justify-content:center;color:#5A2A11;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
-      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#110704)">'+label+'</span><span style="display:block;font-size:11px;color:#C5DEFF">'+desc+'</span></span>'+
+      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#110704)">'+label+'</span><span style="display:block;font-size:11px;color:var(--muted,rgba(17,7,4,.55))">'+desc+'</span></span>'+
     '</button>';
   }
-  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#F8F6F2;padding:8px 10px 4px">'+txt+'</div>'; }
+  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#5A2A11;padding:8px 10px 4px">'+txt+'</div>'; }
   function stbBlocksInner(pid, t){
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     var num = 0, hidden = false;
@@ -702,7 +702,7 @@
     '</div>';
     var addBar = '<div id="stb-bm-'+t.id+'" style="position:relative;margin-top:12px">'+
       '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#F8F6F2);border-radius:9px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
-      '<span style="font-size:11.5px;color:#C5DEFF;margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
+      '<span style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
       menu+
     '</div>';
     var empty = '<div style="font-size:13px;color:var(--muted,#C5DEFF);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
@@ -755,7 +755,7 @@
     }
     return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
       '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Votre demande</span></div>'+
-      '<div style="font-size:11.5px;color:#C5DEFF;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
+      '<div style="font-size:11.5px;color:var(--muted,rgba(17,7,4,.55));margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }
