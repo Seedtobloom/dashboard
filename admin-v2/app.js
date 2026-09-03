@@ -2853,7 +2853,11 @@
       var isHead = /^[①②③④⑤⑥⑦⑧⑨🌱📝]/.test(t) || (t.length > 5 && t === t.toLocaleUpperCase('fr') && /[A-ZÀ-Ÿ]/.test(t) && t.indexOf('«') === -1);
       if (isHead) { cur = { title: t.replace(/^[①②③④⑤⑥⑦⑧⑨🌱📝]\s*/, ''), hint: '', questions: [] }; secs.push(cur); return; }
       if (!cur) { cur = { title: '', hint: '', questions: [] }; secs.push(cur); }
-      if (/«[^»]*»/.test(t)) cur.questions.push(t);
+      // Question = une réplique à dire : le « … » est en tête de ligne (éventuel
+      // court libellé « Label : » avant). Sinon = phrase d'aide/repère (même si
+      // elle cite un « … » en exemple) -> affichée en gris, sans case à cocher.
+      var qi = t.indexOf('«');
+      if (qi !== -1 && qi <= 20) cur.questions.push(t);
       else cur.hint = cur.hint ? (cur.hint + ' ' + t) : t;
     });
     return secs.filter(function (s) { return s.questions.length || s.hint; });
