@@ -17,6 +17,7 @@
     priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
     mytasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
     semaine: 'M4 4h4v16H4zM10 4h4v16h-4zM16 4h4v16h-4z',
+    alltasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
     planning: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
     kpi: 'M3 3v18h18M18 17V9M13 17V5M8 17v-3',
     temps: 'M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l3 2M9 2h6',
@@ -334,7 +335,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['semaine', 'Ma semaine'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
+      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Toutes les tâches'], ['semaine', 'Ma semaine'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];
@@ -577,6 +578,7 @@
     if (VIEW !== 'projtpl') { var pd = el('prj-drawer'); if (pd) pd.remove(); var pb = el('prj-drawer-bk'); if (pb) pb.remove(); PRJ_SEL = null; }
     if (VIEW === 'inbox') return renderInbox();
     if (VIEW === 'priorities') return renderPriorities();
+    if (VIEW === 'alltasks') return renderAllTasks();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'semaine') return renderMaSemaine();
     if (VIEW === 'mytasks') return renderMyTasks();
@@ -1311,6 +1313,146 @@
   function refreshPriorities() {
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; if (VIEW === 'priorities') renderPrioBody(d); }).catch(function () { });
   }
+
+  // ═══ Toutes les tâches : espace unique, filtrable, tous clients confondus ═══
+  var AT_D = null, AT_FILTER = 'all', AT_CLIENT = '', AT_OFFER = '', AT_Q = '';
+  var AT_SL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', waiting_client: 'Attente client' };
+  var AT_GROUPS = [['late', 'En retard', 'at-grp--late'], ['today', "Aujourd'hui", ''], ['week', 'Cette semaine', ''], ['later', 'Plus tard', ''], ['plan', 'À planifier', 'at-grp--plan'], ['attente', 'En attente client', '']];
+  function atDdiff(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); var td = new Date(); td.setHours(0, 0, 0, 0); return Math.round((t - td) / 86400000); }
+  function atOffer(x) { return (x.project === 'maintenance' || x.kind === 'ticket') ? 'maint' : 'part'; }
+  function atUrg(x) { if (x.status === 'review' || x.status === 'waiting_client') return 'attente'; if (!x.dueDate) return 'plan'; var n = atDdiff(x.dueDate); return n < 0 ? 'late' : n === 0 ? 'today' : n <= 7 ? 'week' : 'later'; }
+  function atList() { return ((AT_D && AT_D.deadlines) || []).slice(); }
+  function renderAllTasks() {
+    setMain(topbar('Toutes les tâches', '', 'Tout ton travail client au même endroit — filtre, trie, repère-toi') + '<div class="wrap atwrap" id="at-body" style="max-width:1000px"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>' +
+      '<div class="at-bk" id="at-bk" onclick="ADM.atClose()"></div><div class="at-dr" id="at-dr"><div id="at-dr-in"></div></div>');
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { AT_D = d; renderAllTasksBody(); }).catch(showError);
+  }
+  function atRefresh() { api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { AT_D = d; if (VIEW === 'alltasks') renderAllTasksBody(); }).catch(function () {}); }
+  function atSetFilter(f) { AT_FILTER = f; renderAllTasksBody(); }
+  function atClients() { var s = {}; atList().forEach(function (x) { if (x.client) s[x.client] = 1; }); return Object.keys(s).sort(); }
+  function atOnQ(v) { AT_Q = v || ''; atRenderBody(); }
+  function atOnClient(v) { AT_CLIENT = v || ''; atRenderBody(); }
+  function atOnOffer(v) { AT_OFFER = v || ''; atRenderBody(); }
+  function atMatch(x) {
+    var q = (AT_Q || '').toLowerCase().trim();
+    if (AT_CLIENT && x.client !== AT_CLIENT) return false;
+    if (AT_OFFER && atOffer(x) !== AT_OFFER) return false;
+    if (q && ((x.title || '') + ' ' + (x.client || '')).toLowerCase().indexOf(q) < 0) return false;
+    if (AT_FILTER !== 'all') {
+      var u = atUrg(x);
+      if (AT_FILTER === 'todo' && x.status !== 'todo') return false;
+      if (AT_FILTER === 'wip' && x.status !== 'in_progress') return false;
+      if (['attente', 'plan', 'late', 'today'].indexOf(AT_FILTER) !== -1 && u !== AT_FILTER) return false;
+    }
+    return true;
+  }
+  function atStIcon(s) {
+    if (s === 'review' || s === 'waiting_client') return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h0"/></svg>';
+    if (s === 'in_progress') return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/></svg>';
+  }
+  function atDueLbl(x) {
+    if (x.status === 'review' || x.status === 'waiting_client') return '<span class="at-due">chez la cliente</span>';
+    if (!x.dueDate) return '<span class="at-due">sans date</span>';
+    var n = atDdiff(x.dueDate), cls = n < 0 ? 'at-due--late' : n === 0 ? 'at-due--today' : '';
+    var t = n < 0 ? ((-n) + ' j de retard') : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : ('dans ' + n + ' j');
+    return '<span class="at-due ' + cls + '">' + t + '</span>';
+  }
+  function atRow(x) {
+    var otag = atOffer(x) === 'maint' ? ['Maintenance', 'at-otag--maint'] : ['Partenaire créative', 'at-otag--part'];
+    var oc = 'ADM.atOpen(\'' + x.key + '\',\'' + x.id + '\')';
+    var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
+      ? '<input type="date" class="at-plan" id="atp-' + x.id + '"><button class="pbtn pbtn--ok" onclick="ADM.atPlan(\'' + x.key + '\',\'' + x.id + '\')">Planifier</button>' : '';
+    return '<div class="at-task" onclick="' + oc + '"><span class="at-task__st">' + atStIcon(x.status) + '</span>' +
+      '<div class="at-task__b"><div class="at-task__t">' + esc(x.title || 'Tâche') + '</div>' +
+      '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span><span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atDueLbl(x) + '</div></div>' +
+      '<div class="at-act" onclick="event.stopPropagation()">' + plan + '<button class="pbtn" onclick="' + oc + '">Ouvrir</button></div></div>';
+  }
+  function atPlan(key, id) {
+    var inp = el('atp-' + id); var v = inp ? (inp.value || '').trim() : '';
+    if (!v) { toast('Choisis une date'); return; }
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  function renderAllTasksBody() {
+    var body = el('at-body'); if (!body) return;
+    var rows = atList().filter(atMatch);
+    // Bandeau de compteurs
+    var all = atList(), c = { all: all.length, late: 0, today: 0, plan: 0, attente: 0 };
+    all.forEach(function (x) { var u = atUrg(x); if (c[u] !== undefined) c[u]++; });
+    var strip = [['all', 'Toutes'], ['late', 'En retard'], ['today', "Aujourd'hui"], ['plan', 'À planifier'], ['attente', 'Attente client']].map(function (s) {
+      var on = AT_FILTER === s[0], al = (s[0] === 'late' || s[0] === 'today');
+      return '<button class="at-spill' + (on ? ' on' : '') + (al ? ' alert' : '') + '" onclick="ADM.atSetFilter(\'' + s[0] + '\')"><span class="n">' + c[s[0]] + '</span><span class="l">' + s[1] + '</span></button>';
+    }).join('');
+    var copts = '<option value="">Toutes les clientes</option>' + atClients().map(function (n) { return '<option' + (AT_CLIENT === n ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('');
+    var bar = '<div class="at-bar"><div class="at-search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--terre-600)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="at-q" value="' + esc(AT_Q) + '" placeholder="Rechercher une tâche, une cliente..." oninput="ADM.atOnQ(this.value)"></div>' +
+      '<select class="at-sel" id="at-client" onchange="ADM.atOnClient(this.value)">' + copts + '</select>' +
+      '<select class="at-sel" id="at-offer" onchange="ADM.atOnOffer(this.value)"><option value="">Toutes les offres</option><option value="part"' + (AT_OFFER === 'part' ? ' selected' : '') + '>Partenaire créative</option><option value="maint"' + (AT_OFFER === 'maint' ? ' selected' : '') + '>Maintenance</option></select></div>';
+    var chips = '<div class="at-chips">' + [['all', 'Toutes', ''], ['todo', 'À faire', 'rgba(17,7,4,.25)'], ['wip', 'En cours', 'var(--gold-chip)'], ['attente', 'Attente client', 'var(--brume)'], ['plan', 'Sans date', 'var(--terre-600)']].map(function (ch) {
+      var on = AT_FILTER === ch[0];
+      return '<span class="at-chip' + (on ? ' on' : '') + '" onclick="ADM.atSetFilter(\'' + ch[0] + '\')">' + (ch[2] ? '<i style="background:' + ch[2] + '"></i>' : '') + ch[1] + '</span>';
+    }).join('') + '</div>';
+    // Regroupé par urgence
+    var listHtml = AT_GROUPS.map(function (g) {
+      var gr = rows.filter(function (x) { return atUrg(x) === g[0]; });
+      if (!gr.length) return '';
+      return '<div class="at-grp ' + g[2] + '"><div class="at-grp__h"><span class="at-grp__t">' + g[1] + '</span><span class="at-grp__n">' + gr.length + '</span></div>' + gr.map(atRow).join('') + '</div>';
+    }).join('');
+    if (!listHtml) listHtml = '<div class="at-empty">Aucune tâche pour ces filtres.</div>';
+    body.innerHTML = '<div class="at-strip">' + strip + '</div>' + bar + chips + '<div id="at-list">' + listHtml + '</div>';
+  }
+  // Re-rendu léger sur saisie/filtre sans reconstruire les <select> (pour garder le focus).
+  function atRenderBody() {
+    var rows = atList().filter(atMatch);
+    var listHtml = AT_GROUPS.map(function (g) {
+      var gr = rows.filter(function (x) { return atUrg(x) === g[0]; });
+      if (!gr.length) return '';
+      return '<div class="at-grp ' + g[2] + '"><div class="at-grp__h"><span class="at-grp__t">' + g[1] + '</span><span class="at-grp__n">' + gr.length + '</span></div>' + gr.map(atRow).join('') + '</div>';
+    }).join('');
+    var l = el('at-list'); if (l) l.innerHTML = listHtml || '<div class="at-empty">Aucune tâche pour ces filtres.</div>';
+  }
+  // ── Panneau latéral : brief + échange (chargé de la fiche) ──
+  function atDeepFindTask(o, id) {
+    if (!o || typeof o !== 'object') return null;
+    if (o.id === id && typeof o.title !== 'undefined') return o;
+    for (var k in o) { if (!Object.prototype.hasOwnProperty.call(o, k)) continue; var v = o[k]; if (v && typeof v === 'object') { var r = atDeepFindTask(v, id); if (r) return r; } }
+    return null;
+  }
+  function atOpen(key, id) {
+    var x = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
+    if (!x) return;
+    var otag = atOffer(x) === 'maint' ? 'Maintenance' : 'Partenaire créative';
+    var briefTxt = (x.content || '').trim();
+    var brief = briefTxt ? esc(briefTxt) : '<span style="color:var(--muted)">Pas de brief renseigné pour cette tâche.</span>';
+    var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600)">🔗 Lien déposé par la cliente</a></div>' : '';
+    var atts = (x.attachments || []).filter(function (a) { return a.key; });
+    var files = atts.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + atts.map(function (a) { return '<a class="pbtn" href="/api/clients/' + key + '/files/' + encodeURIComponent(a.key) + '/download">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
+    var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
+      ? '<input type="date" class="at-plan" id="atp2-' + x.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.atPlan2(\'' + key + '\',\'' + x.id + '\')">Planifier</button>' : '';
+    el('at-dr-in').innerHTML =
+      '<div class="at-dr__top"><button class="at-dr__x" onclick="ADM.atClose()">✕</button>' +
+        '<div class="at-dr__meta">' + esc(otag) + ' · ' + esc(x.client || '') + '</div>' +
+        '<div class="at-dr__t">' + esc(x.title || 'Tâche') + '</div>' +
+        '<div>' + atDueLbl(x) + '</div></div>' +
+      '<div class="at-dr__body">' +
+        '<p class="at-dr__lab">Le brief</p><div class="at-dr__brief">' + brief + link + files + '</div>' +
+        '<p class="at-dr__lab" style="margin-top:24px">Échange avec la cliente</p><div id="at-dr-cmts"><div class="micro" style="color:var(--muted)">Chargement…</div></div>' +
+      '</div>' +
+      '<div class="at-dr__foot">' + plan + '<button class="btn btn--outline btn--sm" onclick="ADM.atClose();ADM.openClient(\'' + key + '\')">Ouvrir la fiche complète</button></div>';
+    el('at-dr').classList.add('on'); el('at-bk').classList.add('on');
+    // Charge la conversation depuis la fiche cliente.
+    api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (data) {
+      var t = atDeepFindTask(data, id); var cms = (t && Array.isArray(t.comments)) ? t.comments : [];
+      var box = el('at-dr-cmts'); if (!box) return;
+      if (!cms.length) { box.innerHTML = '<div class="micro" style="color:var(--muted);font-style:italic">Aucun échange sur cette tâche.</div>'; return; }
+      box.innerHTML = cms.map(function (cm) {
+        var mine = cm.author && cm.author !== 'client';
+        var when = (cm.at || cm.date || cm.createdAt || '');
+        return '<div class="at-dr__cmt' + (mine ? ' at-dr__cmt--c' : '') + '"><div class="at-dr__cmw">' + esc(mine ? 'Toi' : (x.client || 'Cliente')) + (when ? ' · ' + esc(fmtDate(when)) : '') + '</div><div class="at-dr__cmx">' + esc(cm.text || cm.message || cm.body || '') + '</div></div>';
+      }).join('');
+    }).catch(function () { var box = el('at-dr-cmts'); if (box) box.innerHTML = '<div class="micro" style="color:var(--muted)">Ouvre la fiche pour voir la conversation.</div>'; });
+  }
+  function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function atClose() { var d = el('at-dr'), b = el('at-bk'); if (d) d.classList.remove('on'); if (b) b.classList.remove('on'); }
   function renderPrioBody(d) {
       var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
       var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -8373,7 +8515,8 @@
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
-    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
+    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
