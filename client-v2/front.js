@@ -5261,7 +5261,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (!forfait) return '<div class="cp-card"><div class="cp-card__hd"><h2 class="cp-card__title">Suivi du forfait</h2></div>' +
       '<p style="color:var(--muted);font-size:14px;padding:8px 0">Le forfait sera défini par le studio.</p></div>';
 
-    // Grouper les tâches par mois (basé sur dueDate ou completedAt)
+    // Tâches facturables (mêmes exclusions que le compteur du haut).
+    var billable = tasks.filter(function(t) { return t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused'; });
+    // Grouper par mois pour lister les mois connus (basé sur dueDate ou completedAt).
     var byMonth = {};
     tasks.forEach(function(t) {
       var ref = (t.completedAt || t.dueDate || '');
@@ -5298,8 +5300,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var totalReel = 0;
     var totalForfait = 0;
     months.forEach(function(mk, idx) {
-      var mTasks = byMonth[mk] || [];
-      var reel = mTasks.reduce(function(s,t){ return s+(t.timeSpentMinutes||0); },0) / 60;
+      // Réel du mois = temps RÉELLEMENT travaillé ce mois-là (terminé ET en cours),
+      // même attribution que le compteur du haut (cpTaskMinByMonth), pour que
+      // l'historique reflète aussi le travail en cours.
+      var reel = billable.reduce(function(s,t){ return s + (cpTaskMinByMonth(t)[mk]||0)/60; }, 0);
       var ov = _ov(mk);
       var carryIn = (ov !== null) ? ov : carry;        // report entrant (forcé si exception)
       var avail = forfait + carryIn;
