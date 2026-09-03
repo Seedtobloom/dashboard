@@ -13,17 +13,17 @@
     var validated = l.status === 'valide' || l.status === 'refuse';
     var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
     // Pastilles + boutons alignés sur la nouvelle DA (Inter, arrondis 12px, palette terre/nuit).
-    var STCOL = { a_valider:['À valider','#efe1ff','#59409a'], valide:['Validé','#e3f0e7','#2f7d4e'], refuse:['Révision demandée','#f6e9d6','#8a6414'] };
+    var STCOL = { a_valider:['À valider','#C5DEFF','#5A2A11'], valide:['Validé','#F8F6F2','#5A2A11'], refuse:['Révision demandée','#F8F6F2','#5A2A11'] };
     var stc = STCOL[l.status] || ['', 'var(--surface)', 'var(--terre-600)'];
     var pill = stc[0] ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 11px;border-radius:99px;background:'+stc[1]+';color:'+stc[2]+';white-space:nowrap;flex-shrink:0">'+esc(stc[0])+'</span>' : '';
     var SOFT = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:var(--terre);box-shadow:inset 0 0 0 1px var(--bone-d);border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;text-decoration:none';
-    var PRIM = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--nuit);color:#f6efe6;border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer';
+    var PRIM = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--nuit);color:#F8F6F2;border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer';
     var openBtn = dl
       ? '<a style="'+SOFT+'" href="'+dl+'">'+cpIcon('download',14,'color:var(--terre)')+' Télécharger</a>'
       : (lnk ? '<a style="'+SOFT+'" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">'+cpIcon('external',14,'color:var(--terre)')+' Ouvrir le livrable</a>' : '');
     var decideRow = validated ? '' : (needConsult
       ? '<div style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);line-height:1.5">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
-      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="'+PRIM+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">'+cpIcon('check',14,'color:#f6efe6')+' Valider</button>'+
+      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="'+PRIM+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">'+cpIcon('check',14,'color:#F8F6F2')+' Valider</button>'+
         '<button style="'+SOFT+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une révision</button></div>');
     return '<div style="background:#fff;border:1px solid var(--bone-d);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:12px">'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="flex:1;min-width:0;font-family:var(--font-micro);font-size:14px;font-weight:500;color:var(--terre);word-break:break-word">'+esc(l.name)+'</span>'+pill+'</div>'+
@@ -92,14 +92,14 @@
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:18px';
     ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:540px;width:100%;padding:26px;box-shadow:0 24px 70px -24px rgba(0,0,0,0.45);max-height:92vh;overflow:auto">' +
-      '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#412F21);margin-bottom:6px">Demander une revision</div>' +
-      '<div style="font-size:13px;color:var(--muted,#8a7d6b);line-height:1.5;margin-bottom:16px">Expliquez ce qui doit etre modifie. Vous pouvez joindre des fichiers (visuels annotes, exemples...) et un lien.</div>' +
-      '<textarea id="_stbrev-txt" placeholder="Ce qui doit etre revu, le plus precisement possible..." style="width:100%;box-sizing:border-box;min-height:140px;resize:vertical;padding:13px 15px;border:1px solid #e2dbd0;border-radius:11px;font-family:inherit;font-size:14.5px;line-height:1.55;color:var(--navy,#1C1205)"></textarea>' +
-      '<input id="_stbrev-link" type="text" placeholder="Lien (Drive, Figma, WeTransfer...)" style="width:100%;box-sizing:border-box;margin-top:11px;padding:12px 15px;border:1px solid #e2dbd0;border-radius:11px;font-size:14px">' +
-      '<label style="display:block;margin-top:11px;font-size:13px;color:var(--terre,#412F21)">Pour quelle date souhaitez-vous la nouvelle version&nbsp;? <span style="color:var(--muted,#8a7d6b)">(optionnel)</span><input id="_stbrev-date" type="date" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px 15px;border:1px solid #e2dbd0;border-radius:11px;font-size:14px;color:var(--navy,#1C1205)"></label>' +
-      '<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--terre,#412F21);cursor:pointer;padding:10px 15px;border:1.5px dashed #cbb994;border-radius:11px;margin-top:11px">' + cpIcon('paperclip',15,'flex-shrink:0') + '<span>Joindre des fichiers</span><input id="_stbrev-file" type="file" multiple style="display:none"></label>' +
+      '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#110704);margin-bottom:6px">Demander une revision</div>' +
+      '<div style="font-size:13px;color:var(--muted,#F8F6F2);line-height:1.5;margin-bottom:16px">Expliquez ce qui doit etre modifie. Vous pouvez joindre des fichiers (visuels annotes, exemples...) et un lien.</div>' +
+      '<textarea id="_stbrev-txt" placeholder="Ce qui doit etre revu, le plus precisement possible..." style="width:100%;box-sizing:border-box;min-height:140px;resize:vertical;padding:13px 15px;border:1px solid #F8F6F2;border-radius:11px;font-family:inherit;font-size:14.5px;line-height:1.55;color:var(--navy,#110704)"></textarea>' +
+      '<input id="_stbrev-link" type="text" placeholder="Lien (Drive, Figma, WeTransfer...)" style="width:100%;box-sizing:border-box;margin-top:11px;padding:12px 15px;border:1px solid #F8F6F2;border-radius:11px;font-size:14px">' +
+      '<label style="display:block;margin-top:11px;font-size:13px;color:var(--terre,#110704)">Pour quelle date souhaitez-vous la nouvelle version&nbsp;? <span style="color:var(--muted,#F8F6F2)">(optionnel)</span><input id="_stbrev-date" type="date" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px 15px;border:1px solid #F8F6F2;border-radius:11px;font-size:14px;color:var(--navy,#110704)"></label>' +
+      '<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--terre,#110704);cursor:pointer;padding:10px 15px;border:1.5px dashed #F8F6F2;border-radius:11px;margin-top:11px">' + cpIcon('paperclip',15,'flex-shrink:0') + '<span>Joindre des fichiers</span><input id="_stbrev-file" type="file" multiple style="display:none"></label>' +
       '<div id="_stbrev-files" style="margin-top:9px;display:flex;flex-direction:column;gap:6px"></div>' +
-      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button id="_stbrev-cancel" style="padding:11px 18px;border:1px solid #e2dbd0;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;color:var(--navy,#1C1205)">Annuler</button><button id="_stbrev-ok" style="padding:11px 22px;border:none;border-radius:10px;background:var(--terre,#412F21);color:#fff;cursor:pointer;font-size:14px;font-weight:700">Envoyer la demande</button></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button id="_stbrev-cancel" style="padding:11px 18px;border:1px solid #F8F6F2;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;color:var(--navy,#110704)">Annuler</button><button id="_stbrev-ok" style="padding:11px 22px;border:none;border-radius:10px;background:var(--terre,#110704);color:#fff;cursor:pointer;font-size:14px;font-weight:700">Envoyer la demande</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     function close(){ ov.remove(); }
@@ -108,7 +108,7 @@
     var fileInput = ov.querySelector('#_stbrev-file');
     var filesBox = ov.querySelector('#_stbrev-files');
     function renderFiles(){
-      filesBox.innerHTML = files.map(function(f, i){ return '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--terre,#412F21);background:#f7f3ed;border-radius:8px;padding:6px 10px">' + cpIcon('paperclip',13,'flex-shrink:0;opacity:0.6') + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</span><button data-i="' + i + '" style="background:none;border:none;color:#c0533b;cursor:pointer;font-size:12px">Retirer</button></div>'; }).join('');
+      filesBox.innerHTML = files.map(function(f, i){ return '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--terre,#110704);background:#F8F6F2;border-radius:8px;padding:6px 10px">' + cpIcon('paperclip',13,'flex-shrink:0;opacity:0.6') + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</span><button data-i="' + i + '" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:12px">Retirer</button></div>'; }).join('');
       Array.prototype.forEach.call(filesBox.querySelectorAll('button'), function(b){ b.onclick = function(){ files.splice(parseInt(b.getAttribute('data-i'), 10), 1); renderFiles(); }; });
     }
     fileInput.onchange = function(){

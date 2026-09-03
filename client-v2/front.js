@@ -17,39 +17,44 @@ export default {
 const CLIENT_FAVICON = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" rx=\"14\" fill=\"#412F21\"/><g transform=\"translate(8 20.8) scale(0.367)\" fill=\"#F2E5C2\"><g><path d=\"M62.29,19.87v.63c.09.09.12.28.12.47s-.03.41-.03.44l-.41.35c0,1.69-1.63,2.26-2.7,3.33-.6.63-1.16.44-1.88.72h-1.04c-.75.38-1.22.41-1.91.41h-.31c-.06,0-.22.06-.28.09l-.16-.09h-.38c-.82,0-1.38-.06-1.95-.19-.41-.06-1.6-.19-2.35-.19-.03,0-.25-.09-.31-.13h-1.1c-1.29-1.07-1.32-.06-1.32-1.82v-.25c0-.09-.12-.28-.19-.31v-1.1c0-.28-.03-.66-.22-.82v-.85l-.09-.16c0-.6.63-.75,1.1-.75.63,0,2.01,2.6,2.42,3.17h1.35c.47.31.94,1,1.54,1l.16-.09h.88c.16,0,.19-.22.38-.22.16,0,.22.19.38.22l.25-.13c.56.03,1,.03,1.57.03.88,0,3.2-1.44,3.2-2.42v-1.16c0-.53-1.69-2.79-2.2-2.79h-.44c-.56,0-.63-.25-.97-.6-2.35-.63-4.61-1.63-6.91-2.51-.85-1.04-1.6-2.13-2.39-3.17v-.69s.09,0,.09-.06c-.13-.28-.41-.85-.41-1.13,0-1.57,2.45-5.15,3.99-5.46.09-.03.19-.03.28-.03.16,0,.35.03.5.03.38,0,.66-.22.91-.5.44-.06.82-.22,1.26-.22h.5l.22.13.09-.09h.94l.09.09h1.1l.09-.13h1.82c.78,0,1.1.6,3.11.6.16.25.34.47.6.63v.75c0,.38-.28.66-.28,1l.09.22v.66l-.09.22.09.22v.97c-.13.16-.25.31-.41.41h-.69c0-1.32-2.86-2.79-4.02-2.79-.97,0-1.82-.19-2.83-.19l-.16-.09c-.69,0-3.67,1.22-3.7,1.95l.25.28c-.16.16-.38.44-.38.66,0,1.07,2.98,3.8,4.08,3.8.03,0,.09-.03.13-.03.09,0,.22-.09.31-.09.44,0,1.76.66,2.07,1h1.35c1.07.82,2.42,1.16,3.45,2.01.35.25.38.66.53,1.04.12.28.28.53.66.63.16.31.6,1.69.63,1.69v.85c-.06,0-.09.06-.09.09,0,.06.06.19.09.25l-.09.22Z\"/><path d=\"M71.98,25.3c-.53.03-1.26,0-1.57.53h-.97l-.16.09c-.47-.03-.91-.25-1.29-.5h-.85c-.69-.35-2.1-1.07-2.1-1.95l.09-.16c-.44-.6-1.19-1.85-1.19-2.57,0-.35.09-.72.09-1.07l-.09-.13c.19-.63.5-1.32.5-1.98,0-.19-.03-.38-.09-.53.88-2.01,2.29-4.05,4.71-4.05h.13l.13-.09.41.09.31-.09c.22.13.44.25.66.28l.12-.09h.97c1,.66,1.82,1.57,2.6,2.51v.66c-1.73,1.22-3.77,1.92-5.84,2.32-.31.6-.94.94-1.6,1.07l-.13.35c0,1.32,2.32,2.92,3.52,2.95l.16-.09.28.03c0,.19.16.25.31.25,0,0,.19-.09.22-.09,1.44,0,2.2-1.1,2.76-1.1.28,0,.69.16.69.5,0,.82-2.2,2.29-2.79,2.86ZM69.69,14.98h-1.07l-.19.41c-.13-.03-.25-.19-.38-.19-1.26,0-1.19,1.66-1.63,2.48v.19c.16.16.06.66.25.66.75,0,3.3-1.91,3.92-2.48,0-.53-.63-.69-.91-1.07Z\"/><path d=\"M84,25.3c-.53.03-1.26,0-1.57.53h-.97l-.16.09c-.47-.03-.91-.25-1.29-.5h-.85c-.69-.35-2.1-1.07-2.1-1.95l.09-.16c-.44-.6-1.19-1.85-1.19-2.57,0-.35.09-.72.09-1.07l-.09-.13c.19-.63.5-1.32.5-1.98,0-.19-.03-.38-.09-.53.88-2.01,2.29-4.05,4.71-4.05h.13l.13-.09.41.09.31-.09c.22.13.44.25.66.28l.12-.09h.97c1,.66,1.82,1.57,2.6,2.51v.66c-1.73,1.22-3.77,1.92-5.84,2.32-.31.6-.94.94-1.6,1.07l-.13.35c0,1.32,2.32,2.92,3.52,2.95l.16-.09.28.03c0,.19.16.25.31.25,0,0,.19-.09.22-.09,1.44,0,2.2-1.1,2.76-1.1.28,0,.69.16.69.5,0,.82-2.2,2.29-2.79,2.86ZM81.71,14.98h-1.07l-.19.41c-.13-.03-.25-.19-.38-.19-1.26,0-1.19,1.66-1.63,2.48v.19c.16.16.06.66.25.66.75,0,3.3-1.91,3.92-2.48,0-.53-.63-.69-.91-1.07Z\"/><path d=\"M101.39,23.42c-.82.6-2.86,2.42-3.8,2.42-.57,0-.85-1.07-.85-1.51,0-.25.28-.47.28-.72,0-.16-.09-.25-.25-.25-.35,0-2.23,1.91-3.04,2.29h-1.44c-1.7,0-4.21-3.3-4.21-4.9v-.75l.09-.28c0-.19-.06-.38-.19-.53.03-.31.31-.69.31-.91,0-.13-.13-.25-.13-.41,0-.6.41-1.07.41-2.26,1.41-1.26,1.73-2.98,3.92-2.98.19,0,.34-.03.5-.13.72.03,1.29.6,1.98.6.16,0,.31-.09.47-.09.31,0,.6.22.94.22.31,0,.41-.31.63-.44v-.25c0-.19-.16-.5-.28-.63v-1.07l.09-.13-.09-.09v-1.66c0-1.1-2.1-.41-2.1-1.76,0-1.98,3.04-1.54,3.39-2.82h2.48c.09.19.31.53.31.72,0,.5-1.19,1.16-1.19,2.04,0,.31.19.56.19.85l-.09.19v.82l.09.06c-.16.22-.31.47-.31.72,0,.63.22,1.26.22,1.51s-.19.47-.19.72l.09.22c-.09.16-.22.31-.22.5,0,.28.31.5.31.78l-.09.19.09.13v.66l-.09.22v.16c0,.72-.22.85-.22,1.44l.09.19v.41c.03.09.06.25.13.35v1.41s-.09.03-.09.06v.63l-.12.19.09.16c0,.19-.03.44-.03.69,0,.82.13,1.79.94,1.79.22,0,.38-.22.6-.22.38,0,.5.53.5.82,0,.22-.09.44-.12.66ZM97.03,18.43c.06,0,.09-.06.09-.09v-1.22c-1.35-1-2.42-2.42-4.21-2.42-.91,0-2.64,1.26-2.64,2.23v.94l.09.22c0,2.32,1.54,4.3,3.83,4.3.13,0,.28,0,.44-.03l.25.09c.72,0,2.13-2.23,2.13-2.89,0-.13-.09-.25-.09-.38,0-.22.19-.38.22-.6l-.13-.16ZM98.82,19.78l-.19.09v.19h.19v-.28Z\"/></g><g><path d=\"M114.51,14.44c0,.28.03.44.03.6s-.03.31-.16.56c-.28,0-.53.09-.82.09-.35,0-.63-.31-.97-.31h-1.13c0,.06-.06.09-.09.13h-.6c-.16.35-.34.66-.34,1.07l.09.13v1.13s-.09.06-.09.09l.19.28v.75l-.09.22v.22c0,.53-.09.47-.09.66,0,.44.28.79.28,1.19l-.09.25c0,.35.6,1.35,1.1,1.35.06-.03.22-.09.31-.09.12,0,.25.09.38.09.53,0,1.13-.79,1.6-.79l.41.31v.94l.09.03c-.38,1.38-1.63,2.48-3.08,2.48-.16,0-.31-.09-.47-.09-.19,0-.28.28-.47.28-.5,0-2.57-1.66-2.92-2.1-.06-.28-.09-.53-.22-.78l.09-.22c0-.22-.03-.41-.03-.63l.13-.25v-1.44c.12-.16.19-.38.19-.56,0-.28,0-.63-.19-.88v-.66l.09-.25c0-.22-.03-.41-.03-.6,0-.38.03-.75.03-1.16,0-.31-.12-.66-.31-.88h-.85l-.13.09-.12-.09h-.75c-.12-.5-.31-.94-.31-1.44,0-.28.28-1,.5-1.16h1.44c1.07-1.1,1.57-2.64,2.86-3.58h.66c.13.22.41.94.41,1.16s-.19.72-.19,1.26c0,.13-.06.35-.12.53v.69c.16.06.28.16.41.16.34,0,.6-.31.94-.31.22,0,.41.09.63.09.16,0,.31-.06.44-.19.19,0,.34.03.53.03.06,0,.25,0,.25-.13.22.09.41.25.6.41v.75l.09.19c0,.13-.09.25-.09.38Z\"/><path d=\"M128.42,19.34l-.09.09v1.1c0,1.26-2.1,4.9-3.48,4.9l-.22-.09c-.28,0-.5.19-.79.19l-.31-.19-.28.19h-.53c-.12,0-.28.06-.34.22h-1.38c-.72-.63-1.6-.69-2.35-1.13-.75-.41-1.32-1.79-1.82-2.48v-.63c-.19-.06-.22-.25-.22-.5,0-.19,0-.41-.28-.44l.09-.41-.09-.19v-.97c.25-.38.28-.5.28-.78v-.41l.22-.31c0-.25-.09-.47-.09-.69,0-1.04,1.98-2.86,2.7-3.58.63-.03,1.16-.5,1.82-.5l.19.09.25-.09c.34,0,.85.38,1.13.6.19,0,.41-.09.47-.31h.47c.35.22.41.25.47.25.09,0,.16-.03.44-.03,1.79,0,3.8,4.14,3.8,5.84,0,.09-.03.19-.03.28ZM125.43,19.24v-.75c-.31-.44-.19-1.04-.5-1.48-.34-.5-1.07-.69-1.19-1.32l-.16.03c-.25,0-.44-.19-.63-.35h-.66l-.13-.19h-.79c-1.32,0-2.42,1.48-2.42,2.67l.12.25-.22.56v.88c.53.91.72,2.07,1.48,2.82.38.38,1.47.97,2.01.97l.16-.09.09.09c1.48-.03,2.73-1.22,2.73-2.64v-.25l.09-.22v-.66l.12-.16-.12-.19ZM126.03,16.8l-.19.09v.19h.19v-.28Z\"/></g><path d=\"M0,57.82c.73-4.62,1.44-9.09,2.13-13.4.69-4.32,1.29-8.21,1.79-11.67.51-3.46.91-6.29,1.22-8.48.3-2.19.46-3.46.46-3.83,0-1.58-.85-2.37-2.55-2.37H.55l.36-2.31c.85,0,1.85-.02,3.01-.06,1.16-.04,2.34-.09,3.56-.15,1.22-.06,2.29-.11,3.22-.15l.55.73c-.53,2.27-1.08,4.76-1.67,7.48-.59,2.72-1.15,5.49-1.7,8.33-.55,2.84-1.06,5.6-1.55,8.3-.49,2.7-.89,5.18-1.22,7.45l.18.12c1.38-2.92,2.63-5.39,3.77-7.42,1.13-2.03,2.26-3.73,3.37-5.11,1.11-1.38,2.26-2.55,3.43-3.52,1.82,0,3.31.88,4.47,2.64,1.15,1.76,1.73,4.06,1.73,6.9,0,2.47-.38,4.85-1.12,7.14-.75,2.29-1.77,4.34-3.07,6.14-1.3,1.8-2.76,3.23-4.38,4.28-1.62,1.05-3.32,1.58-5.11,1.58-.81,0-1.68-.06-2.61-.18-.93-.12-1.84-.29-2.73-.52-.89-.22-1.7-.48-2.43-.76L0,57.82ZM15.07,36.79c-.49,0-1.1.44-1.85,1.31-.75.87-1.61,2.13-2.58,3.77-.97,1.64-2.03,3.64-3.16,5.99-1.13,2.35-2.33,4.98-3.59,7.9,1.01.36,2.21.69,3.59.97,1.38.28,2.45.43,3.22.43,1.22,0,2.37-.62,3.46-1.85,1.09-1.24,1.98-2.85,2.67-4.83.69-1.98,1.03-4.07,1.03-6.26,0-1.3-.13-2.51-.39-3.65-.26-1.13-.61-2.05-1.03-2.74-.43-.69-.88-1.03-1.37-1.03Z\"/><path d=\"M31.42,56.3c.32,0,.77-.22,1.34-.67.57-.45,1.72-1.42,3.46-2.92l.73.06.79,1.46c-1.38,1.38-2.62,2.55-3.74,3.53-1.12.97-2.07,1.7-2.86,2.19s-1.43.73-1.92.73c-1.26,0-1.88-.59-1.88-1.76,0-.16.1-.93.3-2.31.2-1.38.48-3.15.82-5.32.34-2.17.72-4.55,1.12-7.14.4-2.59.81-5.21,1.22-7.84.4-2.63.78-5.08,1.12-7.32.34-2.25.62-4.13.82-5.65.2-1.52.3-2.46.3-2.83,0-1.62-.85-2.43-2.55-2.43h-2.49l.36-2.31c.93,0,1.95-.02,3.07-.06,1.11-.04,2.19-.08,3.22-.12,1.03-.04,2.2-.1,3.5-.18l.55.73c-.53,2.43-1.01,4.71-1.46,6.84-.45,2.13-.94,4.54-1.49,7.23-.55,2.7-1.1,5.54-1.67,8.54-.57,3-1.09,5.98-1.58,8.93-.49,2.96-.91,5.75-1.28,8.39l.18.24Z\"/><path d=\"M48.14,60.68c-1.99,0-3.62-.9-4.89-2.71-1.28-1.8-1.92-4.22-1.92-7.26,0-2.51.37-4.9,1.09-7.17.73-2.27,1.74-4.29,3.04-6.05s2.78-3.16,4.44-4.19c1.66-1.03,3.4-1.55,5.23-1.55,2.15,0,3.84.79,5.08,2.37,1.24,1.58,1.85,3.81,1.85,6.69,0,2.67-.37,5.21-1.09,7.6-.73,2.39-1.73,4.51-3.01,6.35-1.28,1.84-2.76,3.29-4.44,4.35s-3.47,1.58-5.38,1.58ZM50.57,57.34c1.34,0,2.53-.57,3.59-1.7,1.05-1.13,1.87-2.7,2.46-4.71.59-2.01.88-4.26.88-6.78,0-2.71-.44-4.85-1.31-6.41-.87-1.56-2.08-2.34-3.62-2.34-1.3,0-2.47.54-3.52,1.61-1.05,1.07-1.88,2.53-2.46,4.38-.59,1.84-.88,3.94-.88,6.29,0,2.84.46,5.16,1.37,6.96.91,1.8,2.08,2.7,3.5,2.7Z\"/><path d=\"M72.81,60.68c-1.99,0-3.62-.9-4.89-2.71-1.28-1.8-1.92-4.22-1.92-7.26,0-2.51.37-4.9,1.09-7.17.73-2.27,1.74-4.29,3.04-6.05s2.78-3.16,4.44-4.19c1.66-1.03,3.4-1.55,5.23-1.55,2.15,0,3.84.79,5.08,2.37,1.24,1.58,1.85,3.81,1.85,6.69,0,2.67-.37,5.21-1.09,7.6-.73,2.39-1.73,4.51-3.01,6.35-1.28,1.84-2.76,3.29-4.44,4.35s-3.47,1.58-5.38,1.58ZM75.25,57.34c1.34,0,2.53-.57,3.59-1.7,1.05-1.13,1.87-2.7,2.46-4.71.59-2.01.88-4.26.88-6.78,0-2.71-.44-4.85-1.31-6.41-.87-1.56-2.08-2.34-3.62-2.34-1.3,0-2.47.54-3.52,1.61-1.05,1.07-1.88,2.53-2.46,4.38-.59,1.84-.88,3.94-.88,6.29,0,2.84.46,5.16,1.37,6.96.91,1.8,2.08,2.7,3.5,2.7Z\"/><path d=\"M124.36,56.3c.2,0,.43-.07.7-.21.26-.14.71-.48,1.34-1,.63-.53,1.57-1.32,2.83-2.37l.73.06.79,1.46c-1.54,1.46-2.88,2.67-4.01,3.62-1.13.95-2.08,1.66-2.83,2.13-.75.47-1.35.7-1.79.7-1.26,0-1.88-.59-1.88-1.76,0-.73.17-1.71.52-2.95.34-1.24.76-2.6,1.25-4.1.49-1.5.97-3.01,1.46-4.53s.9-2.94,1.25-4.25c.34-1.32.52-2.38.52-3.19,0-.73-.19-1.33-.58-1.79-.39-.47-.88-.7-1.49-.7-.85,0-1.92.75-3.22,2.25-1.3,1.5-2.69,3.58-4.19,6.23-1.5,2.65-3,5.74-4.5,9.27l-.73,3.95c0,.12-.25.29-.76.52-.51.22-1.05.43-1.64.61-.59.18-1.04.27-1.37.27l-.42-.55c.4-1.74.76-3.3,1.06-4.68.3-1.38.63-2.88.97-4.5.34-1.62.67-3.19.97-4.71.3-1.52.56-2.84.76-3.95.2-1.11.3-1.85.3-2.22,0-.73-.19-1.33-.58-1.79-.39-.47-.88-.7-1.49-.7-.81,0-1.81.69-3.01,2.07-1.2,1.38-2.47,3.31-3.83,5.8-1.36,2.49-2.73,5.38-4.1,8.66l-.67,5.17c0,.12-.25.29-.76.52-.51.22-1.05.43-1.64.61-.59.18-1.04.27-1.37.27l-.43-.55c.32-1.98.61-3.77.85-5.35.24-1.58.52-3.28.82-5.11.3-1.82.58-3.58.82-5.26.24-1.68.45-3.13.61-4.35.16-1.22.24-1.98.24-2.31,0-.85-.2-1.47-.61-1.85-.41-.38-1.07-.58-2.01-.58h-2.49l.43-2.31c.93,0,1.95-.02,3.07-.06,1.11-.04,2.19-.08,3.22-.12,1.03-.04,2.22-.1,3.56-.18l.55.73c-.53,1.66-.99,3.18-1.4,4.56-.41,1.38-.82,2.93-1.25,4.65-.43,1.72-.78,3.47-1.06,5.26l.18.18c2.07-4.13,4.13-7.58,6.2-10.33,2.07-2.75,4.03-4.68,5.9-5.77,1.3,0,2.4.56,3.31,1.67.91,1.11,1.37,2.44,1.37,3.98,0,.53-.12,1.35-.36,2.46-.24,1.11-.54,2.27-.88,3.46-.34,1.2-.76,2.64-1.25,4.35l.18.18c2.03-3.97,4.13-7.36,6.32-10.18,2.19-2.82,4.27-4.79,6.26-5.93,1.3,0,2.37.54,3.22,1.61.85,1.07,1.28,2.42,1.28,4.04,0,1.09-.22,2.43-.67,4.01-.45,1.58-.97,3.25-1.58,5.01-.61,1.76-1.21,3.49-1.79,5.17-.59,1.68-1.04,3.17-1.37,4.47l.18.24Z\"/></g></svg>";
 const CLIENT_CSS = String.raw`/* Client portal  Ecrin Design System  Seed to Bloom */
 :root {
-  /* Ecrin palette */
-  --terre-900:#1a120a; --terre-800:#291f15; --terre:#412F21;
-  --terre-600:#412F21; --terre-400:#8a6f54; --terre-200:#c8b29a;
-  --nuit-900:#0d0803; --nuit:#1C1205; --nuit-700:#2a1d10;
-  --nuit-500:#5c4633; --nuit-300:#8a6f54;
-  --glycine-50:#f7efff; --glycine-200:#efddff; --glycine:#E4D1FE;
-  --glycine-700:#a98bd6; --glycine-900:#573b8a;
-  --brume-50:#f7efff; --brume-200:#efddff; --brume:#F0E8FF;
-  --brume-700:#a98bd6; --brume-900:#573b8a;
-  --paille-200:#fbf3d8; --paille:#F2E5C2; --paille-700:#c9b585;
-  --bone:#ffffff; --bone-d:#eae5dc; --card:#fffefb;
+  /* ═══ PALETTE OFFICIELLE Seed to Bloom  UNIQUEMENT ces 6 couleurs (+ opacités) ═══
+     Ébène #110704 · Azur #C5DEFF · Mimosa #E6E5B2 · Mandarine #CD8F6E · Cuivre #5A2A11 · Neige #F8F6F2
+     Page BLANCHE, blocs BEIGES (Neige). Texte foncé (Ébène/Cuivre) sur fonds clairs ;
+     texte clair (Neige) uniquement sur fonds foncés. Marron/beige/bleu majoritaires ;
+     Mandarine & Mimosa = accents ponctuels. */
+  --terre-900:#110704; --terre-800:#110704; --terre:#110704;
+  --terre-600:#5A2A11; --terre-400:rgba(17,7,4,.5); --terre-200:rgba(17,7,4,.2);
+  --nuit-900:#110704; --nuit:#110704; --nuit-700:#1c130a;
+  --nuit-500:#5A2A11; --nuit-300:rgba(17,7,4,.5);
+  --glycine-50:rgba(205,143,110,.12); --glycine-200:rgba(205,143,110,.22); --glycine:#CD8F6E;
+  --glycine-700:#CD8F6E; --glycine-900:#5A2A11;
+  --brume-50:rgba(197,222,255,.4); --brume-200:rgba(197,222,255,.6); --brume:#C5DEFF;
+  --brume-700:#5A2A11; --brume-900:#5A2A11;
+  --paille-200:rgba(230,229,178,.5); --paille:#E6E5B2; --paille-700:#5A2A11;
+  --bone:#ffffff; --bone-d:rgba(17,7,4,.1); --card:#F8F6F2;
   /* legacy aliases for compat */
-  --brown: #412F21;
-  --navy: #1C1205;
-  --sidebar-bg: #1C1205;
-  --lavender: #E4D1FE;
-  --blue-light: #E4D1FE;
-  --cream: #F2E5C2;
+  --brown: #110704;
+  --navy: #110704;
+  --sidebar-bg: #110704;
+  --lavender: #C5DEFF;
+  --blue-light: #C5DEFF;
+  --cream: #E6E5B2;
   --bg: #ffffff;
   --white: #FFFFFF;
-  --text: #412F21;
-  --muted: #6b533b;
-  --border: #eae5dc;
+  --text: #110704;
+  --muted: rgba(17,7,4,.55);
+  --border: rgba(17,7,4,.1);
   --surface: #F8F6F2;
-  --sage: #a98bd6;
-  --sky: #E4D1FE;
-  --sidebar-text: #E4D1FE;
-  --orange: #c9952f;
+  --sage: #5A2A11;
+  --sky: #C5DEFF;
+  --sidebar-text: #F8F6F2;
+  --orange: #CD8F6E;
+  --red: #5A2A11;
   --radius: 10px;
   --shadow: none;
   --sw: 256px;
   /* status */
-  --st-todo:#a98bd6; --st-progress:#a98bd6; --st-review:#c9952f; --st-done:#412F21;
+  --st-todo:rgba(17,7,4,.3); --st-progress:#CD8F6E; --st-review:#C5DEFF; --st-done:#5A2A11;
   /* fonts */
   --font-display:'Cormorant Garamond','EB Garamond',Georgia,serif;
   --font-body:'Inter Tight','Inter',ui-sans-serif,system-ui,sans-serif;
@@ -81,7 +86,7 @@ a, button, .cp-btn, label, summary, [onclick], [role="button"] { cursor: pointer
 .serif-it { font-family: var(--font-display); font-style: italic; }
 /* Ligne de mois dépliable : affordance claire (chevron qui pivote + survol) */
 .cp-mrow { border-radius: 10px; transition: background .15s; }
-.cp-mrow:hover { background: #efe7db; }
+.cp-mrow:hover { background: #F8F6F2; }
 .cp-chev { transition: transform .2s; }
 details[open] > .cp-mrow .cp-chev { transform: rotate(90deg); }
 details[open] > .cp-mrow .cp-see { opacity: 0; }
@@ -171,7 +176,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-ph__banner[data-img]::after { display: none; }
 .grain-overlay { position:absolute;inset:0;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");background-repeat:repeat;background-size:256px 256px;opacity:0.12;mix-blend-mode:screen; }
 .cp-proj-banner__badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: white; }
-.cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #9b3a2e; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+.cp-proj-banner__urgent { position: absolute; top: 12px; right: 12px; background: #5A2A11; color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-micro); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-card__body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
 .cp-proj-card__title { font-family: var(--font-display); font-size: 21px; color: var(--terre); font-style: italic; margin-bottom: 8px; line-height: 1.25; font-weight: 400; }
 .cp-proj-card__meta { font-family: var(--font-micro); font-size: 10px; color: var(--terre-600); margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -213,7 +218,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-drow__t { font-family: var(--font-micro); font-size: 14.5px; font-weight: 500; color: var(--nuit); line-height: 1.3; }
 .cp-drow__s { font-family: var(--font-micro); font-size: 11.5px; color: var(--terre-600); opacity: 0.65; margin-top: 2px; }
 .cp-drow__a { display: flex; gap: 8px; flex-shrink: 0; }
-.cp-cbtn { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 9px 16px; border-radius: 10px; border: none; cursor: pointer; background: var(--nuit); color: #f6efe6; transition: opacity 140ms; }
+.cp-cbtn { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 9px 16px; border-radius: 10px; border: none; cursor: pointer; background: var(--nuit); color: #F8F6F2; transition: opacity 140ms; }
 .cp-cbtn:hover { opacity: 0.88; }
 .cp-cbtn--soft { background: #fff; color: var(--terre); box-shadow: inset 0 0 0 1px var(--bone-d); }
 
@@ -239,10 +244,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 @media (max-width: 900px) { .cp-grid { grid-template-columns: 1fr; gap: 0; } }
 
 /* Action banner */
-.cp-action { display: flex; gap: 13px; align-items: center; background: #fbe7c8; border: none; border-radius: var(--radius-3); padding: 16px 20px; margin-bottom: 22px; }
-.cp-action__icon { flex-shrink: 0; display: flex; align-items: center; color: #c9772a; }
-.cp-action__title { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #a4561b; margin-bottom: 4px; }
-.cp-action__text { font-size: 14.5px; color: #5c4530; line-height: 1.55; font-weight: 500; }
+.cp-action { display: flex; gap: 13px; align-items: center; background: #F8F6F2; border: none; border-radius: var(--radius-3); padding: 16px 20px; margin-bottom: 22px; }
+.cp-action__icon { flex-shrink: 0; display: flex; align-items: center; color: #CD8F6E; }
+.cp-action__title { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5A2A11; margin-bottom: 4px; }
+.cp-action__text { font-size: 14.5px; color: #5A2A11; line-height: 1.55; font-weight: 500; }
 
 /* Cards */
 .cp-card { background: var(--card); border: 1px solid var(--bone-d); border-radius: var(--radius-3); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow-1); }
@@ -273,11 +278,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-step--done .cp-step__name { color: var(--terre-400); text-decoration: line-through; text-decoration-color: var(--bone-d); }
 .cp-step__badge { display: inline-block; font-family: var(--font-micro); font-size: 10px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--bone-d); color: var(--terre-600); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-step--active .cp-step__badge { background: var(--brume-200); color: var(--brume-900); }
-.cp-step--waiting .cp-step__badge { background: #faf1da; color: #6a4a0b; }
+.cp-step--waiting .cp-step__badge { background: #F8F6F2; color: #5A2A11; }
 .cp-step--done .cp-step__badge { background: rgba(92,70,51,0.1); color: var(--st-done); }
 .cp-step__desc { font-size: var(--fs-small); color: var(--terre-600); margin-top: 4px; line-height: 1.6; }
 .cp-step__action { margin-top: 8px; background: rgba(201,149,47,0.06); padding: 10px 14px; border-radius: var(--radius-2); font-size: var(--fs-small); color: var(--terre); line-height: 1.6; }
-.cp-step__action strong { display: block; color: #6a4a0b; font-family: var(--font-micro); font-size: 10px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em; }
+.cp-step__action strong { display: block; color: #5A2A11; font-family: var(--font-micro); font-size: 10px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em; }
 
 /* Tabs */
 .cp-tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
@@ -300,7 +305,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-msg__av--cindy { background: var(--terre); color: var(--paille); }
 .cp-msg__bubble { max-width: 68%; padding: 12px 16px; border-radius: 14px; font-size: 15.5px; line-height: 1.55; font-family: var(--font-body); color: var(--terre); }
 .cp-msg--cindy .cp-msg__bubble { background: #fff; border: 1px solid var(--bone-d); border-bottom-left-radius: 4px; border-bottom-right-radius: 14px; }
-.cp-msg--client .cp-msg__bubble { background: #E4D1FE; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
+.cp-msg--client .cp-msg__bubble { background: #C5DEFF; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
 .cp-msg__text { white-space: pre-wrap; overflow-wrap: break-word; }
 .cp-msg__date { font-family: var(--font-micro); font-size: 9.5px; color: var(--terre-600); opacity: 0.7; margin-top: 5px; letter-spacing: 0.04em; }
 .cp-msg-form textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--bone-d); border-radius: var(--radius-2); font-family: var(--font-body); font-size: var(--fs-small); resize: vertical; min-height: 80px; color: var(--terre); background: var(--card); outline: none; transition: border-color var(--dur) var(--ease); }
@@ -411,7 +416,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cpb-sec-lbl { flex:1; }
 .cpb-abtn { background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1.6;font-family:inherit;transition:all 0.12s; }
 .cpb-abtn:hover { background:var(--surface);color:var(--navy); }
-.cpb-abtn.danger:hover { background:#fde8e8;border-color:#c44;color:#c44; }
+.cpb-abtn.danger:hover { background:rgba(205,143,110,.15);border-color:#c44;color:#c44; }
 .cpb-add-sec { width:100%;margin-top:8px;padding:10px;border:2px dashed var(--border);background:none;border-radius:10px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;transition:all 0.15s; }
 .cpb-add-sec:hover { border-color:var(--lavender);color:var(--navy);background:rgba(228,209,254,0.08); }
 .cpb-blk { border:1.5px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden; }
@@ -469,17 +474,17 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 /* deadline pill */
 .cp-dpill { display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600); }
 .cp-dpill.done { color:var(--st-done); }
-.cp-dpill.late { color:#8d2b21; }
-.cp-dpill.soon { color:#6a4a0b; }
+.cp-dpill.late { color:#5A2A11; }
+.cp-dpill.soon { color:#5A2A11; }
 
 /* ============================================================
    Espace « Support de com »  vue client (portée de la maquette offers)
    Tokens maquette → tokens live :
    --brun→--terre  --lav→--glycine  --lav-clair→--brume  --creme→--paille
-   --surface→--surface  --nuit→--nuit  --ivoire→#f6efe6  --bg→#fff  --line→--bone-d
+   --surface→--surface  --nuit→--nuit  --ivoire→#F8F6F2  --bg→#fff  --line→--bone-d
    ============================================================ */
 .cp-sp { max-width: 1040px; margin: 0 auto; }
-.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 20px; background: var(--terre); color: #f6efe6; }
+.cp-sp__banner { position: relative; overflow: hidden; padding: clamp(30px,4vw,52px); border-radius: 20px; background: var(--terre); color: #F8F6F2; }
 .cp-sp__eyebrow { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paille); position: relative; }
 .cp-sp__h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(30px,3.4vw,48px); line-height: 1; color: #fff; margin-top: 12px; position: relative; }
 .cp-sp__lead { font-family: var(--font-micro); font-size: clamp(15px,1.4vw,18px); color: var(--paille); opacity: 0.9; margin-top: 10px; max-width: 44ch; position: relative; }
@@ -498,7 +503,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-sp__big .u { font-size: 0.5em; font-style: italic; }
 .cp-sp__cardlead { font-family: var(--font-micro); font-size: clamp(15px,1.4vw,18px); color: var(--terre); margin-top: 8px; }
 .cp-sp__hm { font-family: var(--font-display); font-style: italic; font-size: clamp(22px,2.4vw,30px); line-height: 1.05; color: var(--terre); margin-top: 12px; margin-bottom: 18px; }
-.cp-sp__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: auto; background: var(--nuit); color: #f6efe6; border: none; padding: 13px 22px; border-radius: 12px; font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; align-self: flex-start; }
+.cp-sp__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: auto; background: var(--nuit); color: #F8F6F2; border: none; padding: 13px 22px; border-radius: 12px; font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; align-self: flex-start; }
 
 .cp-sp__seclbl { font-family: var(--font-micro); font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--terre); margin: clamp(36px,4vw,56px) 2px 0; }
 
@@ -566,7 +571,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .mx-tools { display:flex; }
 .mx-input { flex:1; font-family:var(--font-micro); font-size:14px; color:var(--terre); background:#F8F6F2; border:1px solid var(--bone-d); border-radius:16px; padding:12px 16px; outline:none; resize:none; min-height:44px; max-height:160px; box-sizing:border-box; }
 .mx-input:focus { background:#fff; box-shadow:0 0 0 2px var(--glycine-700); }
-.mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#f6efe6; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
+.mx-send { font-family:var(--font-micro); font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:none; cursor:pointer; background:var(--nuit); color:#F8F6F2; padding:12px 18px; border-radius:999px; display:inline-flex; align-items:center; gap:7px; flex:none; }
 .mx-attach { flex:none; width:44px; height:44px; border-radius:14px; border:1px solid var(--bone-d); background:#F8F6F2; color:var(--terre); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .mx-attach:hover { background:var(--brume); }
 @media (max-width:720px) { .mx-rail { width:120px; } .mx-conv__snip, .mx-conv__ctx { display:none; } }
@@ -589,14 +594,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var TOKEN = getToken();
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
-  var STATUS_COLORS = { maintenance:'rgba(201,149,47,0.18)', discovery:'#f7efff', in_progress:'#efddff', waiting_client:'rgba(201,149,47,0.16)', review:'#efddff', delivered:'#5c4633', archived:'rgba(92,70,51,0.1)' };
+  var STATUS_COLORS = { maintenance:'rgba(201,149,47,0.18)', discovery:'#C5DEFF', in_progress:'#C5DEFF', waiting_client:'rgba(201,149,47,0.16)', review:'#C5DEFF', delivered:'#5A2A11', archived:'rgba(92,70,51,0.1)' };
 
   var ACCENTS = {
-    glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-    brume:  { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-    ocre:   { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12' },
-    terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21' },
-    nuit:   { soft:'#dde6f5', mid:'#b3c4e0', deep:'#8a6f54', ink:'#5c4633' },
+    glycine:{ soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11' },
+    brume:  { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11' },
+    ocre:   { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#CD8F6E', ink:'#5A2A11' },
+    terre:  { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#5A2A11', ink:'#110704' },
+    nuit:   { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#5A2A11', ink:'#5A2A11' },
   };
   function acc(name) { return ACCENTS[name] || ACCENTS.glycine; }
 
@@ -700,15 +705,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var days = Math.round((d - today) / 86400000);
     var calIcon = cpIcon('calendar', 13);
     if (done) return '<span class="cp-dpill done" style="display:inline-flex;align-items:center;gap:4px">'+cpIcon('check',12)+' Termine</span>';
-    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#8d2b21">'+calIcon+' retard '+Math.abs(days)+' j</span>';
-    if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#c9952f">'+calIcon+' dans '+days+' j</span>';
+    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#5A2A11">'+calIcon+' retard '+Math.abs(days)+' j</span>';
+    if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#CD8F6E">'+calIcon+' dans '+days+' j</span>';
     return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Échéance '+fmtShort(due)+'</span>';
   }
   var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Support de com', autre:'Autre' };
   var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'terre', support:'glycine', autre:'terre' };
   // Couleurs de bannière franches (charte Écrin) reprises de la maquette :
   // brun, lavande, crème, au lieu des tons « deep » délavés.
-  var CP_TYPE_BANNER = { identite:'#E4D1FE', site:'#F0E8FF', maintenance:'#412F21', partenaire:'#412F21', support:'#E4D1FE', autre:'#F2E5C2' };
+  var CP_TYPE_BANNER = { identite:'#C5DEFF', site:'#C5DEFF', maintenance:'#110704', partenaire:'#110704', support:'#C5DEFF', autre:'#F8F6F2' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
@@ -733,10 +738,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
   // RGAA 3.2, texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
-  var STATUS_TEXT = { discovery:'#1C1205', in_progress:'#1C1205', waiting_client:'#412F21', review:'#6c4ea4', delivered:'#ffffff', archived:'#8a6f54' };
+  var STATUS_TEXT = { discovery:'#110704', in_progress:'#110704', waiting_client:'#110704', review:'#5A2A11', delivered:'ffffff', archived:'#5A2A11' };
   function statusBadge(status) {
     var bg = STATUS_COLORS[status] || '#aaa';
-    var fg = STATUS_TEXT[status] || '#1a1a1a';
+    var fg = STATUS_TEXT[status] || '#110704';
     var label = STATUS_LABELS[status] || status;
     return '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;background:' + bg + ';color:' + fg + '">' + esc(label) + '</span>';
   }
@@ -792,14 +797,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   // Mise en forme légère des messages : **gras**, _italique_, [couleur]…[/],
   // puces « - » et retours à la ligne. On échappe d'abord (anti-injection), puis
   // on n'introduit que nos propres balises sûres. Partagé avec l'admin (même syntaxe).
-  var MSG_COLORS = { violet:'#6c4ea4', vert:'#4f7a52', bleu:'#35608f', orange:'#b5791f', rouge:'#9b3a2e' };
+  var MSG_COLORS = { violet:'#5A2A11', vert:'#5A2A11', bleu:'#5A2A11', orange:'#CD8F6E', rouge:'#5A2A11' };
   function fmtMsg(s) {
     s = esc(String(s == null ? '' : s));
     s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
     s = s.replace(/\[(grand|titre)\]([\s\S]+?)\[\/\]/g, function(m, sz, t){ return '<span style="' + (sz === 'titre' ? 'font-size:1.4em;font-weight:600' : 'font-size:1.18em') + ';line-height:1.35">' + t + '</span>'; });
     s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function(m, c, t){ return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
-    s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#6f5c44)">•</span> ');
+    s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#5A2A11)">•</span> ');
     s = s.replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
       var tail = ''; var m = u.match(/[.,;:!?)\]]+$/);
       if (m){ tail = m[0]; u = u.slice(0, u.length - tail.length); }
@@ -822,7 +827,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') +
       b('<span style="font-size:12px">A</span><span style="font-size:15px">+</span>', 'Grossir le texte', 'window.cpMsgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
       b('<span style="font-size:11px">A</span><span style="font-size:16px">+</span>', 'Titre (plus grand)', 'window.cpMsgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
-      sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
+      sw('#5A2A11', 'violet') + sw('#5A2A11', 'vert') + sw('#5A2A11', 'bleu') + sw('#CD8F6E', 'orange') + sw('#5A2A11', 'rouge') + sep +
       b('•', 'Liste à puces', 'window.cpMsgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'window.cpEmojiToggle(\'' + id + '\')') +
     '</div>' + pal;
@@ -870,7 +875,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var seg = '';
     for (var i=0;i<total;i++){
       var on = i < left;
-      seg += '<span style="flex:1;height:7px;border-radius:99px;background:' + (on ? color : '#e7ddcd') + ';opacity:' + (on ? '0.9' : '1') + '"></span>';
+      seg += '<span style="flex:1;height:7px;border-radius:99px;background:' + (on ? color : '#F8F6F2') + ';opacity:' + (on ? '0.9' : '1') + '"></span>';
     }
     return '<div style="display:flex;gap:5px;max-width:220px">' + seg + '</div>';
   }
@@ -888,12 +893,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:6px">' + title + '</div>' +
-      (label ? '<div style="font-size:13px;color:#485670;margin-bottom:12px">' + label + '</div>' : '') +
-      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#412F21" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<div style="font-size:16px;font-weight:600;color:#110704;margin-bottom:6px">' + title + '</div>' +
+      (label ? '<div style="font-size:13px;color:#5A2A11;margin-bottom:12px">' + label + '</div>' : '') +
+      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#110704" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
-        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11;font-size:14px">Annuler</button>' +
+        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#110704;color:#F8F6F2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -911,11 +916,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
-      '<div style="font-size:13.5px;color:#412F21;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
+      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#110704;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
+      '<div style="font-size:13.5px;color:#110704;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
-        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#412F21')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
+        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;color:#5A2A11;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#110704')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     function close(){ ov.remove(); }
@@ -983,7 +988,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function cpConfetti(opts) {
     try {
       if (cpReduceMotion()) return;
-      var colors = ['#6a4a9c', '#b06438', '#5f7d54', '#d3a83e', '#c9952f', '#8a5aa8'];
+      var colors = ['#5A2A11', '#5A2A11', '#5A2A11', '#CD8F6E', '#CD8F6E', '#5A2A11'];
       var cv = document.createElement('canvas');
       cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999';
       var dpr = window.devicePixelRatio || 1;
@@ -1018,10 +1023,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     try {
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none';
-      ov.innerHTML = '<div style="background:var(--card,#fffdf8);border:1px solid var(--bone-d,#e3d9c8);box-shadow:none;border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
+      ov.innerHTML = '<div style="background:var(--card,#F8F6F2);border:1px solid var(--bone-d,#F8F6F2);box-shadow:none;border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
         '<div style="font-size:44px;line-height:1;margin-bottom:8px">🎉</div>' +
-        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#412f21);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
-        (sub ? '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
+        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#110704);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
+        (sub ? '<div style="font-size:14px;color:var(--terre-600,#5A2A11);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
       '</div>';
       document.body.appendChild(ov);
       var box = ov.firstChild;
@@ -1308,7 +1313,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     }).join('');
     return '<div style="margin-bottom:24px">' +
       '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">Depuis le début</div>' +
-      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:#F8F6F2;overflow:hidden">' + tiles + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:F8F6F2;overflow:hidden">' + tiles + '</div>' +
     '</div>';
   }
 
@@ -1400,10 +1405,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var dPct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
     var wPct = availMin > 0 ? Math.max(0, Math.min(100 - dPct, wipMin / availMin * 100)) : 0;
     var trackBg = dark ? 'rgba(251,250,246,.14)' : 'rgba(65,47,33,.09)';
-    var doneCol = dark ? '#F4E7C0' : '#6b533b';
-    var wipCol = '#9a72d6';
-    var txt = dark ? '#e7dcc6' : 'var(--terre-600)';
-    var divider = dark ? '#2A1D10' : '#FFFDF9';
+    var doneCol = dark ? '#F8F6F2' : '#5A2A11';
+    var wipCol = '#C5DEFF';
+    var txt = dark ? '#F8F6F2' : 'var(--terre-600)';
+    var divider = dark ? '#110704' : '#F8F6F2';
     function lg(c, t) { return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11px;color:' + txt + ';font-variant-numeric:tabular-nums"><i style="width:11px;height:11px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + t + '</span>'; }
     return '<div style="height:12px;background:' + trackBg + ';border-radius:999px;overflow:hidden;margin:11px 0 10px;display:flex">' +
         '<span style="height:100%;width:' + dPct + '%;background:' + doneCol + '"></span>' +
@@ -1429,15 +1434,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     function hm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
     var donePct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
     var wipPct = availMin > 0 ? Math.max(0, Math.min(100 - donePct, wipMin / availMin * 100)) : 0;
-    function lg(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
-    return '<div style="background:#2A1D10;border-radius:20px;padding:24px 28px;color:#F2E5C2;margin-bottom:22px">' +
+    function lg(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    return '<div style="background:#110704;border-radius:20px;padding:24px 28px;color:#F8F6F2;margin-bottom:22px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
         '<div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">' + eyebrow + '</div>' +
-          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#e79a8a' : '#FBFAF6') + '">' + _cm.label + '</div>' +
-          '<div style="font-family:var(--font-body);font-size:14px;color:#d8c6a8;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#F8F6F2">' + eyebrow + '</div>' +
+          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
+          '<div style="font-family:var(--font-body);font-size:14px;color:#F8F6F2;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#C5DEFF;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
     '</div>';
@@ -1474,7 +1479,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
       });
       var nextTask = partTasks.find(function(t){ return t.status!=='done'; });
-      function partDiamond(urg){ var c=PART_URGENCY[urg]||'#c9952f'; return '<span style="display:inline-block;width:9px;height:9px;border-radius:1px;background:'+c+';transform:rotate(45deg);flex-shrink:0"></span>'; }
+      function partDiamond(urg){ var c=PART_URGENCY[urg]||'#CD8F6E'; return '<span style="display:inline-block;width:9px;height:9px;border-radius:1px;background:'+c+';transform:rotate(45deg);flex-shrink:0"></span>'; }
       var bannerStyle = p.bannerUrl
         ? 'background-image:url('+esc(p.bannerUrl)+');background-size:cover;background-position:center'
         : (p.bannerColor ? 'background:'+esc(p.bannerColor.split('|')[0]) : 'background:var(--terre)');
@@ -1511,17 +1516,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var mRemain   = mQuotaMin - mUsedMin;
         var mOver     = mRemain < 0;
         var mBarPct   = mQuotaMin>0 ? Math.min(100, Math.round(mUsedMin/mQuotaMin*100)) : (mUsedMin>0?100:0);
-        var mBarColor = mOver ? '#9b3a2e' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
+        var mBarColor = mOver ? '#5A2A11' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
         var mRemH = fmtMn(mRemain), mTotH = fmtMn(mQuotaMin), mUsedH = fmtMn(mUsedMin);
         var mHomeUnread = totalUnread();
 
-        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#e7c6bd;background:#fbf1ee':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
+        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#F8F6F2;background:#F8F6F2':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
           (mBaseMin
-            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#9b3a2e':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#5A2A11':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
               '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' ce mois'+(mCarryMin<0?' (report du dépassement)':(mCarryMin>0?' (report inclus)':''))+'</span></div>' +
-              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
+              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
             : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré, contactez le studio.</p>'
           ) +
         '</div>';
@@ -1534,7 +1539,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           (mOpen.length
             ? '<div style="display:grid;gap:8px">' + mOpen.slice(0,4).map(function(t){
                 return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--bone-d)">' +
-                  '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+(t.status==='in_progress'?'var(--st-progress)':'#e8a87c')+';transform:rotate(45deg)"></span>' +
+                  '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+(t.status==='in_progress'?'var(--st-progress)':'#CD8F6E')+';transform:rotate(45deg)"></span>' +
                   '<span style="flex:1;font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(t.title||'Sans titre') + '</span>' +
                   cpDeadlinePill(t.dueDate||t.deadline, false, true) +
                 '</div>';
@@ -1543,10 +1548,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           ) +
         '</div>';
 
-        var mMsgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;'+(mHomeUnread>0?'border-color:#e8a87c;background:#fdf3e8':'')+'" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-          cpIcon('chat',18, mHomeUnread>0?'color:#6a4a0b':'color:var(--terre)') +
-          '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:'+(mHomeUnread>0?'#7a3a0a':'var(--terre)')+'">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:'+(mHomeUnread>0?'#c46a1a':'var(--terre-600)')+';margin-top:2px">'+(mHomeUnread>0?mHomeUnread+' message'+(mHomeUnread>1?'s':'')+' non lu'+(mHomeUnread>1?'s':''):'Réponse sous 24 h')+'</div></div>' +
-          cpIcon('arrow',15, mHomeUnread>0?'color:#6a4a0b':'color:var(--terre-600)') +
+        var mMsgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;'+(mHomeUnread>0?'border-color:#CD8F6E;background:#F8F6F2':'')+'" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+          cpIcon('chat',18, mHomeUnread>0?'color:#5A2A11':'color:var(--terre)') +
+          '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:'+(mHomeUnread>0?'#5A2A11':'var(--terre)')+'">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:'+(mHomeUnread>0?'#CD8F6E':'var(--terre-600)')+';margin-top:2px">'+(mHomeUnread>0?mHomeUnread+' message'+(mHomeUnread>1?'s':'')+' non lu'+(mHomeUnread>1?'s':''):'Réponse sous 24 h')+'</div></div>' +
+          cpIcon('arrow',15, mHomeUnread>0?'color:#5A2A11':'color:var(--terre-600)') +
         '</button>';
 
         return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
@@ -1579,18 +1584,18 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var inProgressStep = steps.find(function(s){ return s.status === 'in_progress'; });
 
       if (isPart) {
-        nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
-          '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
+        nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#CD8F6E;background:#F8F6F2;margin-bottom:14px">' +
+          '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#CD8F6E;display:grid;place-items:center">' + cpIcon('zap',16,'color:#5A2A11') + '</div>' +
           '<div style="flex:1">' +
-            '<div style="font-family:var(--font-micro);font-size:10px;color:#6a4a0b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:#6a4a0b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:#5A2A11;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:#5A2A11;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
             (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
             (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
           '</div>' +
           '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none;flex-shrink:0" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir & répondre ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
         '</div>'
-        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#F2E5C2);background:var(--paille-50,#FBF3DC)">' +
+        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#F8F6F2);background:var(--paille-50,#F8F6F2)">' +
           partDiamond(nextTask.urgency) +
           '<div style="flex:1">' +
             '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine demande</div>' +
@@ -1601,11 +1606,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '</div>' : '');
       } else {
         if (waitingStep) {
-          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
-            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#CD8F6E;background:#F8F6F2;margin-bottom:14px">' +
+            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#CD8F6E;display:grid;place-items:center">' + cpIcon('zap',16,'color:#5A2A11') + '</div>' +
             '<div style="flex:1">' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:#6a4a0b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
-              '<div style="font-family:var(--font-micro);font-size:9px;color:#6a4a0b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:#5A2A11;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+              '<div style="font-family:var(--font-micro);font-size:9px;color:#5A2A11;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
               (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
               (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
@@ -1698,11 +1703,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         } else {
           var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
           var fOver = f.over > 0;
-          var fBarCol = fOver ? '#9b3a2e' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
-          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#e7c6bd;background:#fbf1ee':'')+'">' +
+          var fBarCol = fOver ? '#5A2A11' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
+          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#F8F6F2;background:#F8F6F2':'')+'">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
             '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">' +
-              '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#9b3a2e':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
+              '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#5A2A11':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
               '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600)">'+(fOver?'de dépassement':'restantes')+'</span>' +
             '</div>' +
             '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+fPctUsed+'%;background:'+fBarCol+';border-radius:999px"></div></div>' +
@@ -1710,8 +1715,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               '<span>'+cpFmtH(f.used)+' utilisées</span>' +
               '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':(f.carryIn<0?' (−'+cpFmtH(-f.carryIn)+' reportées du dépassement)':''))+'</span>' +
             '</div>' +
-            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
-            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8d2b21;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
+            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
           '</div>';
         }
       }
@@ -1739,10 +1744,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</div>';
 
       var homeUnread = totalUnread();
-      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms;' + (homeUnread > 0 ? 'border-color:#e8a87c;background:#fdf3e8' : '') + '" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-        cpIcon('chat',18, homeUnread > 0 ? 'color:#6a4a0b' : 'color:var(--terre)') +
-        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:' + (homeUnread > 0 ? '#7a3a0a' : 'var(--terre)') + '">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:' + (homeUnread > 0 ? '#c46a1a' : 'var(--terre-600)') + ';margin-top:2px">' + (homeUnread > 0 ? homeUnread+' message'+(homeUnread>1?'s':'')+' non lu'+(homeUnread>1?'s':'') : 'Réponse sous 24 h') + '</div></div>' +
-        cpIcon('arrow',15, homeUnread > 0 ? 'color:#6a4a0b' : 'color:var(--terre-600)') +
+      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms;' + (homeUnread > 0 ? 'border-color:#CD8F6E;background:#F8F6F2' : '') + '" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+        cpIcon('chat',18, homeUnread > 0 ? 'color:#5A2A11' : 'color:var(--terre)') +
+        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:' + (homeUnread > 0 ? '#5A2A11' : 'var(--terre)') + '">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:' + (homeUnread > 0 ? '#CD8F6E' : 'var(--terre-600)') + ';margin-top:2px">' + (homeUnread > 0 ? homeUnread+' message'+(homeUnread>1?'s':'')+' non lu'+(homeUnread>1?'s':'') : 'Réponse sous 24 h') + '</div></div>' +
+        cpIcon('arrow',15, homeUnread > 0 ? 'color:#5A2A11' : 'color:var(--terre-600)') +
       '</button>';
 
       // ── Barre récap mensuelle (partenaire) ──────────────────────────────────
@@ -1773,9 +1778,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           (mForfH ? '<div style="padding:16px 22px;flex:1;min-width:0">' +
             '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
               '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase">Forfait du mois</div>' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:'+(mOver?'#9b3a2e':'var(--terre-600)')+';font-weight:600">' + (mOver?'−'+cpFmtH(_mf.over)+' dépassé':cpFmtH(_mf.remaining)+' restantes') + '</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:'+(mOver?'#5A2A11':'var(--terre-600)')+';font-weight:600">' + (mOver?'−'+cpFmtH(_mf.over)+' dépassé':cpFmtH(_mf.remaining)+' restantes') + '</div>' +
             '</div>' +
-            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mOver?'#9b3a2e':(mFpct2>75?'var(--glycine-700)':'var(--terre)'))+';border-radius:999px"></div></div>' +
+            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mOver?'#5A2A11':(mFpct2>75?'var(--glycine-700)':'var(--terre)'))+';border-radius:999px"></div></div>' +
           '</div>' : '<div style="flex:1"></div>') +
         '</div>';
       }
@@ -1805,7 +1810,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
-            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#6a4a0b')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#6a4a0b')+'</div>'; })() : '') +
+            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#F8F6F2;border:1px solid #CD8F6E;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#5A2A11')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#5A2A11">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#5A2A11')+'</div>'; })() : '') +
             (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
@@ -1840,7 +1845,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var _bannerBg = (p.bannerColor ? String(p.bannerColor).split('|')[0] : '') || CP_TYPE_BANNER[p.type] || _band.deep;
       var bannerStyle = 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#6a4a0b') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
+      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#5A2A11') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -1854,11 +1859,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
           '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
             '<span class="cp-proj-banner__badge">Accompagnement</span>' +
-            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#6a4a0b">Action requise</span>' : '') +
+            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">Action requise</span>' : '') +
           '</div>' +
           '<div class="cp-proj-card__body">' +
             '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#6a4a0b;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
             '<div class="cp-proj-card__meta">' +
               '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
@@ -1876,12 +1881,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         : '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">' + (steps.length ? 'Toutes les étapes sont faites ✓' : 'Projet en préparation') + '</div>';
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
+          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
           (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
         '</div>' +
         '<div class="cp-proj-card__body">' +
           '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#6a4a0b;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
           '<div class="cp-proj-card__meta">' +
             (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
             (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
@@ -1913,13 +1918,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       : 'background:' + esc(hb.color || 'var(--navy)') + ';';
     var hbHex = hb.color && hb.color.charAt(0) === '#' ? hb.color : null;
     var hbAutoLight = !hb.imageUrl && hbHex && cpHexLum(hbHex) > 160;
-    var hbTx = hb.textColor || (hbAutoLight ? '#1C1205' : '#fff');
+    var hbTx = hb.textColor || (hbAutoLight ? '#110704' : '#fff');
     var hbEditCtrls = '';
     if (_isAdminEdit) {
       hbEditCtrls = '<div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;flex-wrap:wrap;justify-content:flex-end">' +
         '<label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;backdrop-filter:blur(4px)">Photo<input type="file" accept="image/*" style="display:none" onchange="cpHomeBannerPhoto(this)"></label>' +
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#1C1205')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Texte<input type="color" value="'+(hb.textColor||'#ffffff')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerTextColor(this.value)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#110704')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Texte<input type="color" value="'+(hb.textColor||'ffffff')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerTextColor(this.value)"></label>' +
         (hb.imageUrl ? '<button onclick="cpHomeBannerRemovePhoto()" style="padding:5px 11px;border:0;border-radius:999px;background:rgba(0,0,0,0.5);color:#fff;font-family:var(--font-micro);font-size:10px;cursor:pointer">Retirer</button>' : '') +
       '</div>';
     }
@@ -2139,7 +2144,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       cpIcon('arrow', 12, 'color:var(--terre-400)') +
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
-        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#6a4a0b;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#6a4a0b') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
+        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#5A2A11;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#5A2A11') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
         (bkUrl ? '<a class="cp-ptopbar__guide" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" title="Réserver un créneau">' + cpIcon('calendar',13) + ' Réserver</a>' : '') +
         '<button class="cp-ptopbar__guide" onclick="cpOpenMessages()" title="Une question ? Écrivez à Cindy">' + cpIcon('question',13) + ' Une question ?</button>' +
         '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('info',13) + ' Guide</button>' +
@@ -2172,7 +2177,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var bannerColor = card.bannerColor || 'var(--navy)';
       var bannerHex = card.bannerColor && card.bannerColor.charAt(0) === '#' ? card.bannerColor : null;
       var light = bannerHex && cpHexLum(bannerHex) > 160;
-      var badgeTx = light ? '#1C1205' : '#fff';
+      var badgeTx = light ? '#110704' : '#fff';
       var badgeBg = light ? 'rgba(28,18,5,0.12)' : 'rgba(255,255,255,0.22)';
       return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:none;display:block;width:100%">' +
         '<div class="cp-proj-banner" style="background:' + bannerColor + '">' +
@@ -2355,7 +2360,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var addBlockMenu = '<div id="_step-block-menu" style="margin-top:10px;display:none">' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
         addBlockTypes.map(function(bt) {
-          return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#ede8df)\'" onmouseout="this.style.background=\'var(--bone,#faf8f5)\'">' +
+          return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#F8F6F2);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#F8F6F2)\'" onmouseout="this.style.background=\'var(--bone,#F8F6F2)\'">' +
             cpIcon(bt.icon, 13) + ' ' + bt.label +
           '</button>';
         }).join('') +
@@ -2383,10 +2388,10 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         (_isAdminEdit ? addBlockBtn + addBlockMenu : '') +
       '</div>' +
       // Footer
-      '<div style="display:flex;align-items:center;justify-content:' + ((_isAdminEdit || (!_isAdminEdit && step.status === 'waiting_client')) ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
+      '<div style="display:flex;align-items:center;justify-content:' + ((_isAdminEdit || (!_isAdminEdit && step.status === 'waiting_client')) ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#F8F6F2)">' +
         (_isAdminEdit ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' : '') +
         // Côté cliente : quand l'étape attend son retour, un vrai bouton d'action.
-        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#a06a1a);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#a06a1a)') + ' Cette étape attend votre retour</span>' : '') +
+        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#5A2A11);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#5A2A11)') + ' Cette étape attend votre retour</span>' : '') +
         '<div style="display:flex;gap:10px;align-items:center">' +
           '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
           ((!_isAdminEdit && step.status === 'waiting_client') ? '<button onclick="cpValidateStep(\'' + pid + '\',\'' + stepId + '\')" style="padding:9px 22px;border-radius:8px;border:none;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">J\'ai fait ma part</button>' : '') +
@@ -2577,8 +2582,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var done = steps.filter(function (s) { return s.status === 'done'; }).length;
     var pct = Math.round(done / total * 100);
     var remaining = total - done;
-    var accent = (project.bannerColor && /^#[0-9a-fA-F]{3,6}$/.test(project.bannerColor.split('|')[0]) ? project.bannerColor.split('|')[0] : '') || '#6a4a9c';
-    var sage = '#5f7d54';
+    var accent = (project.bannerColor && /^#[0-9a-fA-F]{3,6}$/.test(project.bannerColor.split('|')[0]) ? project.bannerColor.split('|')[0] : '') || '#5A2A11';
+    var sage = '#5A2A11';
     var allDone = done >= total;
     var stage = cpStageMeta(done / total);
     // Étape « en ce moment » : la première en attente / en cours, sinon la prochaine à venir.
@@ -2607,7 +2612,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var isCur = i === curIdx && !allDone;
         var dotBg = isDone ? sage : (isCur ? esc(accent) : '#fff');
         var dotBd = isDone ? sage : (isCur ? esc(accent) : 'rgba(28,18,5,0.18)');
-        var dotFg = (isDone || isCur) ? '#fff' : 'var(--terre-400,#8a7d6b)';
+        var dotFg = (isDone || isCur) ? '#fff' : 'var(--terre-400,#F8F6F2)';
         var mark = isDone ? '✓' : cpStepEmoji(i, total);
         var lineL = i === 0 ? 'transparent' : (isDone || (isCur && steps[i - 1].status === 'done') ? sage : 'rgba(28,18,5,0.14)');
         var lineR = i === total - 1 ? 'transparent' : (isDone ? sage : 'rgba(28,18,5,0.14)');
@@ -2617,7 +2622,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             '<div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:' + dotBg + ';border:2px solid ' + dotBd + ';color:' + dotFg + ';font-size:' + (isDone ? '15px' : '15px') + ';font-weight:700' + (isCur ? ';box-shadow:0 0 0 4px ' + hexToRgba(accent, 0.18) : '') + '">' + mark + '</div>' +
             '<div style="flex:1;height:3px;background:' + lineR + '"></div>' +
           '</div>' +
-          '<div style="font-size:10.5px;line-height:1.25;margin-top:7px;max-width:90px;text-align:center;color:' + (isCur ? 'var(--terre)' : 'var(--terre-400,#8a7d6b)') + ';font-weight:' + (isCur ? '600' : '400') + ';overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(s.title || ('Étape ' + (i + 1))) + '</div>' +
+          '<div style="font-size:10.5px;line-height:1.25;margin-top:7px;max-width:90px;text-align:center;color:' + (isCur ? 'var(--terre)' : 'var(--terre-400,#F8F6F2)') + ';font-weight:' + (isCur ? '600' : '400') + ';overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(s.title || ('Étape ' + (i + 1))) + '</div>' +
         '</button>';
       }).join('') +
     '</div>';
@@ -2627,29 +2632,29 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     if (!allDone && current) {
       var waiting = current.status === 'waiting_client';
       var rel = current.dueDate ? cpRelDate(current.dueDate) : '';
-      var ensuite = next ? '<div style="margin-top:10px;font-size:13.5px;color:var(--terre-600,#5a4a3a)"><span style="opacity:0.7">Ensuite :</span> ' + esc(next.title) + '</div>' : '';
+      var ensuite = next ? '<div style="margin-top:10px;font-size:13.5px;color:var(--terre-600,#5A2A11)"><span style="opacity:0.7">Ensuite :</span> ' + esc(next.title) + '</div>' : '';
       if (waiting) {
         nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-radius:12px;padding:14px 16px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">🕓 En pause, on a besoin de toi</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#F8F6F2);margin-bottom:5px">🕓 En pause, on a besoin de toi</div>' +
           '<div style="font-size:15px;color:var(--terre);font-weight:600;margin-bottom:3px">' + esc(current.title) + '</div>' +
-          '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5">' + (current.clientAction ? esc(current.clientAction) : 'Cette étape attend ton retour.') + ' Dès que c’est fait, je reprends le travail.' + (rel ? ' <span style="color:var(--terre-400,#8a7d6b)">(souhaité ' + esc(rel) + ')</span>' : '') + '</div>' +
+          '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.5">' + (current.clientAction ? esc(current.clientAction) : 'Cette étape attend ton retour.') + ' Dès que c’est fait, je reprends le travail.' + (rel ? ' <span style="color:var(--terre-400,#F8F6F2)">(souhaité ' + esc(rel) + ')</span>' : '') + '</div>' +
           ensuite +
         '</div>';
       } else {
         nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-radius:12px;padding:14px 16px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">👉 En ce moment</div>' +
-          '<div style="font-size:15px;color:var(--terre);font-weight:600">' + esc(current.title) + (rel ? ' <span style="font-weight:400;font-size:12.5px;color:var(--terre-400,#8a7d6b)">· ' + esc(rel) + '</span>' : '') + '</div>' +
-          (current.description ? '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5;margin-top:4px">' + esc(current.description) + '</div>' : '') +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#F8F6F2);margin-bottom:5px">👉 En ce moment</div>' +
+          '<div style="font-size:15px;color:var(--terre);font-weight:600">' + esc(current.title) + (rel ? ' <span style="font-weight:400;font-size:12.5px;color:var(--terre-400,#F8F6F2)">· ' + esc(rel) + '</span>' : '') + '</div>' +
+          (current.description ? '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.5;margin-top:4px">' + esc(current.description) + '</div>' : '') +
           ensuite +
         '</div>';
       }
     }
 
-    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#fffdf8);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:none">' +
+    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#F8F6F2);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:none">' +
       '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
         '<div style="font-size:34px;line-height:1">' + stage.emoji + '</div>' +
         '<div style="flex:1;min-width:180px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400,#8a7d6b)">Ton parcours</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400,#F8F6F2)">Ton parcours</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);line-height:1.15">' + esc(stage.phrase) + '</div>' +
         '</div>' +
         '<div style="font-size:13.5px;font-weight:600;color:' + esc(accent) + ';white-space:nowrap">' + headline + '</div>' +
@@ -2700,32 +2705,32 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var planning = Array.isArray(project.planning) ? project.planning : [];
     if (!planning.length) return { banner:'', html:'' };
     var prows = planCompute(planning, project.planningStart);
-    var PL_ST = { a_venir:['À venir','#8a7d6b','#f2ede4'], en_cours:['En cours','#b0761c','#f3ebda'], fait:['Fait','#3f8f5b','#e6f2ea'] };
+    var PL_ST = { a_venir:['À venir','#F8F6F2','#F8F6F2'], en_cours:['En cours','#CD8F6E','#F8F6F2'], fait:['Fait','#5A2A11','#F8F6F2'] };
     var banner = '';
     if (!compact) {
       var mine = prows.filter(function(r){ return (r.j.owner === 'cliente' || r.j.owner === 'les_deux') && r.j.status !== 'fait'; });
       if (mine.length) {
         var nx = mine[0];
-        banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
-          cpIcon('arrow',18,'color:#573b8a;flex-shrink:0;margin-top:1px') +
-          '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
-          '<div style="font-size:13.5px;color:#573b8a;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
+        banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#F8F6F2;border:1px solid #C5DEFF;border-radius:14px;margin-bottom:22px">' +
+          cpIcon('arrow',18,'color:#5A2A11;flex-shrink:0;margin-top:1px') +
+          '<div><div style="font-size:14.5px;color:#5A2A11;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
+          '<div style="font-size:13.5px;color:#5A2A11;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
       }
     }
     var rows = '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
         var j = r.j;
         var st = PL_ST[j.status] || PL_ST.a_venir;
         var ownerChip = j.owner === 'cliente'
-          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f0ebfa;color:#573b8a;white-space:nowrap">Vous</span>'
+          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#C5DEFF;color:#5A2A11;white-space:nowrap">Vous</span>'
           : (j.owner === 'les_deux'
-            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef1ec;color:#3f5a37;white-space:nowrap">Vous &amp; Cindy</span>'
-            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e9f0f5;color:#305277;white-space:nowrap">Cindy</span>');
+            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#F8F6F2;color:#5A2A11;white-space:nowrap">Vous &amp; Cindy</span>'
+            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#C5DEFF;color:#5A2A11;white-space:nowrap">Cindy</span>');
         var done = j.status === 'fait';
         var last = i === prows.length - 1;
         var dot = '<span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;background:' + (done ? st[1] : '#fff') + ';border:2.5px solid ' + st[1] + ';box-shadow:0 0 0 4px ' + st[2] + '"></span>';
         return '<div style="display:flex;gap:16px;align-items:stretch">' +
-          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#6f5c44);line-height:1.3">' + esc(r.label || '') + '</span></div>' +
-          '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#e8e0d3);margin:3px 0"></span>') + '</div>' +
+          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#5A2A11);line-height:1.3">' + esc(r.label || '') + '</span></div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#F8F6F2);margin:3px 0"></span>') + '</div>' +
           '<div style="flex:1;padding-bottom:' + (last ? '2px' : '24px') + '">' +
             '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px">' +
               (j.jalon ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + st[1] + ';background:' + st[2] + ';padding:3px 9px;border-radius:6px">' + esc(j.jalon) + '</span>' : '') +
@@ -2762,7 +2767,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     var portal = appData.type === 'client';
     var extended = project.deadlineExtended
-      ? ' <span style="font-size:11px;background:#F2E5C2;color:#412F21;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
+      ? ' <span style="font-size:11px;background:#F8F6F2;color:#110704;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
       : '';
     var hdrBg = project.bannerUrl
       ? 'background:url(' + esc(project.bannerUrl) + ') center/cover no-repeat'
@@ -2772,15 +2777,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     // Contraste du texte selon la luminosite de la banniere (comme la card)
     var bannerHex = (!project.bannerUrl && project.bannerColor) ? project.bannerColor.split('|')[0] : null;
     var bannerLight = bannerHex && bannerHex.charAt(0) === '#' && cpHexLum(bannerHex) > 160;
-    var titleCol = bannerLight ? '#1C1205' : '#F2E5C2';
+    var titleCol = bannerLight ? '#110704' : '#F8F6F2';
     var metaCol  = bannerLight ? 'rgba(28,18,5,0.72)' : 'rgba(239,225,176,0.82)';
     var backBtnStyle = bannerLight
-      ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#1C1205'
-      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F2E5C2';
+      ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#110704'
+      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F8F6F2';
     // En-tête projet condensé (2 lignes) et aéré.
     var header = '<div style="padding:32px clamp(20px,4vw,52px) 0">' +
       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">' +
-        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
+        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#110704;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
         statusBadge(project.status) +
       '</div>' +
       '<h1 class="cp-header__title" style="color:var(--terre);margin:0 0 6px">' + esc(project.projectTitle) + '</h1>' +
@@ -3001,7 +3006,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         ? '<div class="cp-sp__card cp-sp__card--cta">' +
             '<p class="cp-sp__kick">' + cpIcon('chat', 15, 'color:var(--terre)') + ' À vous</p>' +
             '<h3 class="cp-sp__hm">Votre retour sur ' + esc(waitC ? waitC.name : (waitV.name || 'un livrable')) + '.</h3>' +
-            (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#f6efe6') + '</button>' : '') +
+            (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#F8F6F2') + '</button>' : '') +
           '</div>'
         : '<div class="cp-sp__card cp-sp__card--cta">' +
             '<p class="cp-sp__kick">' + cpIcon('check-circle', 15, 'color:var(--terre)') + ' À jour</p>' +
@@ -3080,7 +3085,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
                 return '<a href="' + fu + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cpIcon('paperclip',12) + esc(f.name || 'fichier') + '</a>'; }).join('')
             : '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400)">Aucun fichier déposé.</span>';
           var crCommentsHtml = crComments.length
-            ? crComments.map(function(m){ var mine = m.author !== 'cindy'; return '<div style="margin-bottom:9px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-400);margin-bottom:3px">' + (mine ? 'Vous' : 'Cindy') + ' · ' + fmtDate(m.createdAt) + '</div><div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.5;color:var(--terre);background:' + (mine ? '#F8F6F2' : 'var(--brume)') + ';border-radius:10px;padding:9px 12px">' + esc(m.text || '') + '</div></div>'; }).join('')
+            ? crComments.map(function(m){ var mine = m.author !== 'cindy'; return '<div style="margin-bottom:9px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-400);margin-bottom:3px">' + (mine ? 'Vous' : 'Cindy') + ' · ' + fmtDate(m.createdAt) + '</div><div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.5;color:var(--terre);background:' + (mine ? 'F8F6F2' : 'var(--brume)') + ';border-radius:10px;padding:9px 12px">' + esc(m.text || '') + '</div></div>'; }).join('')
             : '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);font-style:italic;margin-bottom:10px">Aucun commentaire. Laissez un mot à Cindy si besoin.</div>';
           var exchange = '<div style="border-top:1px solid var(--bone-d);margin-top:20px;padding-top:16px">' +
               '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Vos fichiers &amp; commentaires</div>' +
@@ -3090,7 +3095,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               crCommentsHtml +
               '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:4px">' +
                 '<textarea id="cp-crc-' + c.id + '" placeholder="Écrire un commentaire à Cindy…" style="flex:1;box-sizing:border-box;min-height:44px;max-height:140px;resize:vertical;border:1px solid var(--bone-d);background:#fff;border-radius:12px;padding:11px 13px;font-family:var(--font-micro);font-size:13.5px;color:var(--terre);outline:none" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\');}"></textarea>' +
-                '<button onclick="window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\')" style="border:none;background:var(--nuit);color:#f6efe6;border-radius:12px;padding:12px 17px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;flex:none">Envoyer</button>' +
+                '<button onclick="window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\')" style="border:none;background:var(--nuit);color:#F8F6F2;border-radius:12px;padding:12px 17px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;flex:none">Envoyer</button>' +
               '</div>' +
             '</div>';
           return '<div class="cp-spanel" id="cp-sp-' + c.id + '">' +
@@ -3555,12 +3560,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   };
 
   // ── Espace partenaire côté client ────────────────────────────────────────────
-  var CLI_URGENCY    = { basse:'#E4D1FE', moyenne:'#E4D1FE', haute:'#e8a87c' };
-  var CLI_URGENCY_TX = { basse:'#0a2a5e', moyenne:'#2a1d4a', haute:'#5a2c0e' };
+  var CLI_URGENCY    = { basse:'#C5DEFF', moyenne:'#C5DEFF', haute:'#CD8F6E' };
+  var CLI_URGENCY_TX = { basse:'#110704', moyenne:'#110704', haute:'#5A2A11' };
   var CLI_URG_LABEL  = { basse:'Basse', moyenne:'Normale', haute:'Haute' };
   // Urgences partenaire : tranquille / normal / urgent / critique
-  var PART_URGENCY    = { tranquille:'#E4D1FE', normal:'#F2E5C2', urgent:'#e7cd97', critique:'#e8a87c' };
-  var PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
+  var PART_URGENCY    = { tranquille:'#C5DEFF', normal:'#F8F6F2', urgent:'#F8F6F2', critique:'#CD8F6E' };
+  var PART_URGENCY_TX = { tranquille:'#110704', normal:'#5A2A11', urgent:'#110704', critique:'#5A2A11' };
   var PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
   var PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
@@ -3579,24 +3584,24 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
         label = label.charAt(0).toUpperCase()+label.slice(1);
         var rows = groups[k].map(function(t){
-          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
-            '<span style="color:'+(isArch?'#8a6f54':'#7a9a5a')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
-            '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#412F21);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
-            (t.pole?'<span style="font-size:10px;color:#5e4a2e;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
-            (t.timeSpentMinutes?'<span style="font-size:11px;color:#5e4a2e;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<span style="color:'+(isArch?'#5A2A11':'#F8F6F2')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
+            '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#110704);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
+            (t.pole?'<span style="font-size:10px;color:#5A2A11;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
+            (t.timeSpentMinutes?'<span style="font-size:11px;color:#5A2A11;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
             (isArch
-              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#6b533b;cursor:pointer;flex-shrink:0">Voir</button>'
-              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#6b533b;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
+              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #F8F6F2;border-radius:6px;background:#fff;color:#5A2A11;cursor:pointer;flex-shrink:0">Voir</button>'
+              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #F8F6F2;border-radius:6px;background:#fff;color:#5A2A11;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
           '</div>';
         }).join('');
-        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5e4a2e;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
       }).join('');
     }
     function section(list, isArch, opened){
       if (!list.length) return '';
       var title = isArch ? '🗄 Archivées · '+list.length+' tâche'+(list.length>1?'s':'') : '📁 Terminées · '+list.length+' tâche'+(list.length>1?'s':'');
-      return '<details' + (opened?' open':'') + ' style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6b533b;list-style:none">'+title+'</summary>' +
+      return '<details' + (opened?' open':'') + ' style="background:var(--card,#fff);border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;padding:14px 18px;margin-top:16px">' +
+        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;list-style:none">'+title+'</summary>' +
         '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+bodyFor(list, isArch)+'</div></details>';
     }
     // only='merged' → une seule liste (terminées + archivées), pour l'onglet
@@ -3621,12 +3626,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var CLI_TSTATUS    = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Terminée' };
   function cliTaskStatusMeta(s){
     var M = {
-      inbox:        { label:"En attente d'analyse", color:'#8a6f2e', bg:'#fbf0d8' },
-      out_of_scope: { label:'Hors forfait',         color:'#9b3a2e', bg:'#fbeae5' },
-      todo:        { label:'Pas commencé',        color:'#35608f', bg:'#e3edfb' },
-      in_progress: { label:'En cours',            color:'#6c4ea4', bg:'#efe6ff' },
-      review:      { label:'À valider chez vous', color:'#8a4a0e', bg:'#fdf3e8' },
-      done:        { label:'Terminée',            color:'#3a6b4a', bg:'#e7f0e9' }
+      inbox:        { label:"En attente d'analyse", color:'#5A2A11', bg:'#F8F6F2' },
+      out_of_scope: { label:'Hors forfait',         color:'#5A2A11', bg:'#F8F6F2' },
+      todo:        { label:'Pas commencé',        color:'#5A2A11', bg:'#C5DEFF' },
+      in_progress: { label:'En cours',            color:'#5A2A11', bg:'#C5DEFF' },
+      review:      { label:'À valider chez vous', color:'#5A2A11', bg:'#F8F6F2' },
+      done:        { label:'Terminée',            color:'#5A2A11', bg:'#F8F6F2' }
     };
     return M[s] || M.todo;
   }
@@ -3635,12 +3640,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   function cliDisplayStatus(t){ if(!t) return 'todo'; if(t.stage==='inbox') return 'inbox'; if(t.stage==='out_of_scope') return 'out_of_scope'; return t.status || 'todo'; }
   function cliStatusChip(s, stage){ var key = (stage==='inbox'||stage==='out_of_scope') ? stage : s; var m=cliTaskStatusMeta(key); return '<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;color:'+m.color+';background:'+m.bg+'">'+m.label+'</span>'; }
   var CLI_BRIEF = {
-    pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
-    brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
-    brief_pret:    { label:'Brief prêt',     bg:'#d8f0e8', tx:'#1a5c38' },
-    en_projet:     { label:'En projet',      bg:'#dce8ff', tx:'#1a3a7a' },
-    a_retravailler:{ label:'A retravailler', bg:'#fdf0d0', tx:'#7a5a00' },
-    archive:       { label:'Archivé',        bg:'#ebebeb', tx:'#6b6b6b' },
+    pas_commence:  { label:'Pas commencé',  bg:'#F8F6F2', tx:'#5A2A11' },
+    brief_en_cours:{ label:'Brief en cours', bg:'#F8F6F2', tx:'#5A2A11' },
+    brief_pret:    { label:'Brief prêt',     bg:'#F8F6F2', tx:'#5A2A11' },
+    en_projet:     { label:'En projet',      bg:'#C5DEFF', tx:'#5A2A11' },
+    a_retravailler:{ label:'A retravailler', bg:'#F8F6F2', tx:'#5A2A11' },
+    archive:       { label:'Archivé',        bg:'#F8F6F2', tx:'#5A2A11' },
   };
   var cliCalMonth    = {};
   var cliCalSelected = {};
@@ -3682,17 +3687,17 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<span style="font-size:14px;color:var(--navy);line-height:1">→</span>' +
         '<div style="display:flex;gap:4px">' +
           '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Modifier</button>' +
-          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#8d2b21">✕</button>' +
+          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #CD8F6E;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#5A2A11">✕</button>' +
         '</div>' +
       '</div>' +
       '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       ((t.v1Date||t.v2Date)?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#573b8a;background:#f2ebff;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
-        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#573b8a;background:#f2ebff;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
+        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:#C5DEFF;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
+        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:#C5DEFF;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
       '</div>':'') +
       ((Array.isArray(t.attachments)&&t.attachments.length)?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
-        t.attachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--navy,#1C1205);background:#f4f0e8;border-radius:8px;padding:4px 9px;text-decoration:none">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+
+        t.attachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--navy,#110704);background:#F8F6F2;border-radius:8px;padding:4px 9px;text-decoration:none">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+
       '</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
@@ -3768,9 +3773,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var threshold = Math.max(1.5, avail * 0.2); // « bientôt épuisé » : ≤ 20 % ou ≤ 1h30
     var over = rem < 0;
     if (!over && rem > threshold) return '';
-    var accent = over ? '#9b3a2e' : '#8a6f2e';
-    var bg = over ? '#fbeae5' : '#fbf5e6';
-    var circle = over ? '#f6d5cc' : '#f0e2b0';
+    var accent = over ? '#5A2A11' : '#5A2A11';
+    var bg = over ? '#F8F6F2' : '#F8F6F2';
+    var circle = over ? '#F8F6F2' : '#F8F6F2';
     var title = over
       ? 'Forfait dépassé de ' + cpFmtH(-rem) + ' ce mois'
       : 'Il vous reste ' + cpFmtH(rem) + ' sur votre forfait ce mois';
@@ -3783,8 +3788,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         '<li>Ajouter des heures ou passer à un forfait supérieur</li>' +
       '</ul>';
     var actions = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">' +
-        '<button onclick="cpOpenMessages()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--navy,#1C1205);color:#fff;font-size:13px;font-weight:600;cursor:pointer">En parler à Cindy</button>' +
-        '<button onclick="cliPartSwitch(\'' + pid + '\',\'forfait\')" style="padding:9px 16px;border-radius:10px;border:1.5px solid var(--bone-d,#e8e0d4);background:#fff;color:var(--navy,#1C1205);font-size:13px;font-weight:600;cursor:pointer">Voir mon forfait</button>' +
+        '<button onclick="cpOpenMessages()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--navy,#110704);color:#fff;font-size:13px;font-weight:600;cursor:pointer">En parler à Cindy</button>' +
+        '<button onclick="cliPartSwitch(\'' + pid + '\',\'forfait\')" style="padding:9px 16px;border-radius:10px;border:1.5px solid var(--bone-d,#F8F6F2);background:#fff;color:var(--navy,#110704);font-size:13px;font-weight:600;cursor:pointer">Voir mon forfait</button>' +
       '</div>';
     return '<div style="background:' + bg + ';border:1px solid ' + circle + ';border-radius:14px;padding:16px 18px;margin-bottom:16px">' +
       '<div style="display:flex;align-items:flex-start;gap:12px">' +
@@ -3819,35 +3824,35 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
     // ── Cartes récap (empilées dans la colonne de droite) ──
-    var cardCss = 'background:#F8F6F2;border:none;border-radius:18px;padding:20px 22px';
-    var statLbl = 'font-family:var(--font-micro);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--terre-400,#8a6f54);margin-bottom:10px';
+    var cardCss = 'background:F8F6F2;border:none;border-radius:18px;padding:20px 22px';
+    var statLbl = 'font-family:var(--font-micro);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--terre-400,#5A2A11);margin-bottom:10px';
     var statVal = 'font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:34px;line-height:1;font-weight:600';
     var statForfait = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Forfait restant</div>' +
         '<div style="'+statVal+';color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--terre)')+'">' +
           (forfaitH ? fmtHours(forfaitLeft) : '') +
         '</div>' +
-        (forfaitH ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">Forfait non défini</div>') +
+        (forfaitH ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">Forfait non défini</div>') +
         (forfaitH && _fnums ? cpForfaitInline(_fnums, false) : '') +
       '</div>';
     var statToday = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Tâches aujourd\'hui</div>' +
         '<div style="'+statVal+';color:var(--terre)">'+todayTasks.length+'</div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">à réaliser</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">à réaliser</div>' +
       '</div>';
     var statProg = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Progression</div>' +
         '<div style="'+statVal+';color:var(--terre)">'+pctDone+' %</div>' +
         '<div style="background:rgba(65,47,33,.12);border-radius:999px;height:7px;margin-top:12px"><div style="background:var(--terre);height:100%;border-radius:999px;width:'+pctDone+'%"></div></div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+'</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+'</div>' +
       '</div>';
     // Créneaux réservés : quand Cindy travaille sur ce projet (réglé côté studio).
     var _slots = Array.isArray(project.workSlots) ? project.workSlots : [];
     var cindyBanner = _slots.length
-      ? '<div style="background:var(--glycine-50,#f7efff);border:1px solid var(--glycine-200,#E4D1FE);border-radius:12px;padding:12px 16px">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + cpIcon('calendar',15,'color:var(--glycine-900,#6c4ea4)') +
-          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#6c4ea4)">Cindy travaille pour vous</span></div>' +
-          '<div style="font-size:13px;color:var(--navy,#1C1205);line-height:1.6">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join('<br>') + '</div>' +
+      ? '<div style="background:var(--glycine-50,#C5DEFF);border:1px solid var(--glycine-200,#C5DEFF);border-radius:12px;padding:12px 16px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + cpIcon('calendar',15,'color:var(--glycine-900,#5A2A11)') +
+          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#5A2A11)">Cindy travaille pour vous</span></div>' +
+          '<div style="font-size:13px;color:var(--navy,#110704);line-height:1.6">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join('<br>') + '</div>' +
         '</div>'
       : '';
     // Cartes récap côte à côte (rangée qui s'enroule), pas empilées en colonne.
@@ -3881,7 +3886,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
           action +
         '</button>';
       }).join('');
-      return '<section style="background:#EDE3FF;border-radius:22px;padding:22px 24px;margin-bottom:20px">' +
+      return '<section style="background:#C5DEFF;border-radius:22px;padding:22px 24px;margin-bottom:20px">' +
         '<div style="display:flex;align-items:baseline;gap:11px;margin-bottom:16px">' +
           '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:27px;color:var(--terre);margin:0">À faire en priorité</h2>' +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Classé par date</span>' +
@@ -3955,22 +3960,22 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '';
     var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '';
     var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '';
-    var barColor = over ? '#9b3a2e' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
-    var borderColor = over ? '#e7c6bd' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
+    var barColor = over ? '#5A2A11' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
+    var borderColor = over ? '#F8F6F2' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
     var quotaStrip = '<div style="margin-bottom:28px">' +
       // Forfait card first (masqué s'il n'y a pas de forfait d'heures)
       (showForfait ? (
-      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
+      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#F8F6F2':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
-          cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
+          cpIcon('timer', 16, 'color:'+(over?'#5A2A11':'var(--terre-600)')) +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
         '</div>' +
         (quotaMin
           ? '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-              '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#9b3a2e':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
+              '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#5A2A11':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
               '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);letter-spacing:0.04em">restant'+(over?' · dépassement':' · sur '+totalH+' / mois')+'</span>' +
             '</div>' +
-            '<div style="background:var(--bone-d,#e8dfd4);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
+            '<div style="background:var(--bone-d,#F8F6F2);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
               '<div style="height:100%;width:'+quotaBarPct+'%;background:'+barColor+';border-radius:20px;transition:width .4s ease"></div>' +
             '</div>' +
             '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)">' +
@@ -4013,7 +4018,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       // Status filter tabs
       var MAINT_ST_KEYS = ['all','open','in_progress','done','closed'];
       var MAINT_ST_LABELS = { all:'Tout', open:'À faire', in_progress:'En cours', done:'Fait', closed:'Fermé' };
-      var MAINT_ST_COLORS = { open:'#e8a87c', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
+      var MAINT_ST_COLORS = { open:'#CD8F6E', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
       var presentSt = MAINT_ST_KEYS.filter(function(sk){ return sk==='all'||tickets.some(function(t){ return t.status===sk; }); });
       var stTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
         presentSt.map(function(sk) {
@@ -4046,14 +4051,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       function ticketCard(t) {
         var isOpen = t.status!=='done' && t.status!=='closed';
         var prio = t.priority || t.urgency;
-        var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#9b3a2e;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
+        var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#5A2A11;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
         var catBadge = t.category ? '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--radius-2);background:var(--brume-50);color:var(--brume-900);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.03em">'+esc(t.category)+'</span>' : '';
         var proposeBanner = t.proposedDueDate
-          ? '<div style="margin-bottom:11px;padding:12px 14px;border-radius:10px;background:#eef4ea;border:1px solid #cfe0c6">'+
-              '<div style="font-size:12.5px;color:var(--terre,#412F21);line-height:1.5;margin-bottom:9px">📅 Cindy propose plutôt le <strong>'+esc(String(t.proposedDueDate).split('-').reverse().join('/'))+'</strong> pour cette demande. Est-ce que cela vous convient ?</div>'+
+          ? '<div style="margin-bottom:11px;padding:12px 14px;border-radius:10px;background:#F8F6F2;border:1px solid #F8F6F2">'+
+              '<div style="font-size:12.5px;color:var(--terre,#110704);line-height:1.5;margin-bottom:9px">📅 Cindy propose plutôt le <strong>'+esc(String(t.proposedDueDate).split('-').reverse().join('/'))+'</strong> pour cette demande. Est-ce que cela vous convient ?</div>'+
               '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',true)" style="padding:8px 14px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Accepter cette date</button>'+
-                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',false)" style="padding:8px 14px;border:1px solid #d9d2c6;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Refuser</button>'+
+                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',true)" style="padding:8px 14px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Accepter cette date</button>'+
+                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',false)" style="padding:8px 14px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Refuser</button>'+
               '</div>'+
             '</div>'
           : '';
@@ -4064,7 +4069,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
               '<span style="font-family:var(--font-display);font-size:17.5px;color:var(--terre);line-height:1.15">'+esc(t.title||'Sans titre')+'</span>' +
             '</div>' +
             (t.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin-bottom:11px">'+esc(t.description)+'</p>' : '') +
-            (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#faf7f1);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
+            (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#F8F6F2);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
             proposeBanner +
             '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
               catBadge +
@@ -4075,7 +4080,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             cpStatusPill(t.status) +
             (isOpen ? '<div style="display:flex;gap:8px">' +
               '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid var(--bone-d);background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--terre)">'+cpIcon('edit',14,'color:var(--terre-600)')+'Modifier</button>' +
-              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #f0d0cc;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#8d2b21">'+cpIcon('trash',14,'color:#8d2b21')+'Supprimer</button>' +
+              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #F8F6F2;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#5A2A11">'+cpIcon('trash',14,'color:#5A2A11')+'Supprimer</button>' +
             '</div>' : '') +
           '</div>' +
         '</div>';
@@ -4093,13 +4098,13 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
             label = label.charAt(0).toUpperCase()+label.slice(1);
             var rows = groups[k].map(function(t){
               return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px">' +
-                '<span style="color:#456039;font-size:13px;flex-shrink:0">✓</span>' +
-                '<span style="flex:1;font-size:12px;color:var(--terre,#412F21);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
-                (t.category?'<span style="font-size:10px;color:#5e4a2e;flex-shrink:0">'+esc(t.category)+'</span>':'') +
+                '<span style="color:#5A2A11;font-size:13px;flex-shrink:0">✓</span>' +
+                '<span style="flex:1;font-size:12px;color:var(--terre,#110704);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
+                (t.category?'<span style="font-size:10px;color:#5A2A11;flex-shrink:0">'+esc(t.category)+'</span>':'') +
                 '<button onclick="cliMaintReopenTicket(\''+pid+'\',\''+t.id+'\')" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid var(--bone-d);border-radius:6px;background:#fff;color:var(--terre-600);cursor:pointer;flex-shrink:0">Rouvrir</button>' +
               '</div>';
             }).join('');
-            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5e4a2e;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
           }).join('');
           histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
             '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique, '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
@@ -4118,11 +4123,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     else if (cat==='suivi')    mainContent = buildMaintSuiviClient(project);
     else if (cat==='conseils') {
       var addC = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddCounsel(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un conseil</button></div>';
-      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#8d2b21;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
+      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#5A2A11;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
     }
     else if (cat==='retours') {
       var addR = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddFeedback(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un retour</button></div>';
-      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#8d2b21;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
+      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#5A2A11;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
     }
 
     return quotaStrip + (showCats ? catTabsHtml : '') + mainContent;
@@ -4169,8 +4174,8 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '<div style="display:flex;align-items:flex-end;gap:14px;height:130px">' +
         chartMonths.map(function(m){ var v=byMonth[m]||0; var h=Math.round(v/maxM*100); var lab=new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'}); var over=quotaMin&&v>quotaMin;
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">' +
-            '<span style="font-family:var(--font-micro);font-size:10px;color:'+(over?'#9b3a2e':'var(--terre-600)')+'">'+fmtMin(v)+'</span>' +
-            '<div style="width:100%;height:'+h+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(over?'#9b3a2e':'var(--terre)')+'"></div>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:'+(over?'#5A2A11':'var(--terre-600)')+'">'+fmtMin(v)+'</span>' +
+            '<div style="width:100%;height:'+h+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(over?'#5A2A11':'var(--terre)')+'"></div>' +
             '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+lab+'</span>' +
           '</div>';
         }).join('') +
@@ -4181,11 +4186,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var c = byMonth[m]||0; var rest = quotaMin-c; var over = rest<0;
       var regVal = (reguls[m]!=null)?reguls[m]:0;
       var mLab = new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-      return '<tr style="'+(over?'background:#fbf1ee':'')+'">' +
+      return '<tr style="'+(over?'background:#F8F6F2':'')+'">' +
         '<td style="padding:9px 12px;font-size:13px;text-transform:capitalize;white-space:nowrap;color:var(--terre)">'+esc(mLab)+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(quotaMin||'')+(quotaMin?' min':'')+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre)">'+c+' min</td>' +
-        '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#9b3a2e':'var(--terre)')+'">'+fmtMin(rest)+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#5A2A11':'var(--terre)')+'">'+fmtMin(rest)+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(regVal?fmtMin(regVal):'')+'</td>' +
       '</tr>';
     }).join('');
@@ -4198,7 +4203,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       '</table>' +
     '</div>';
 
-    var noteCard = project.maintNote ? '<div style="background:var(--bone-50,#f3ece0);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:18px 20px;margin-top:18px">' +
+    var noteCard = project.maintNote ? '<div style="background:var(--bone-50,#F8F6F2);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:18px 20px;margin-top:18px">' +
       '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">A retenir</div>' +
       '<p style="font-family:var(--font-ui);font-size:13px;color:var(--terre);margin:0;white-space:pre-wrap">'+esc(project.maintNote)+'</p>' +
     '</div>' : '';
@@ -4226,14 +4231,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
 
     // ── Catégories : couleurs STABLES (mêmes dans le graphe et les moyennes),
     //    triées par total travaillé ; au-delà de 5, regroupées en « Autres ». ──
-    var CAT_PAL = ['#b491ea', '#e6b053', '#8fb573', '#7bb0c4', '#c98aa6', '#b98a3f'];
+    var CAT_PAL = ['#C5DEFF', '#CD8F6E', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#CD8F6E'];
     var catTot = {};
     tasks.forEach(function (t) { var c = catOf(t); var bm = cpTaskMinByMonth(t); var s = 0; for (var k in bm) s += bm[k]; catTot[c] = (catTot[c] || 0) + s; });
     var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
     var MAXCATS = 5;
-    var catColor = { 'Autres': '#c3b6a3' };
-    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#c3b6a3'; });
-    function colOf(c) { return catColor[c] || '#c3b6a3'; }
+    var catColor = { 'Autres': '#F8F6F2' };
+    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#F8F6F2'; });
+    function colOf(c) { return catColor[c] || '#F8F6F2'; }
     function catShown(c) { return catOrder.indexOf(c) < MAXCATS ? c : 'Autres'; }
     var stackOrder = catOrder.slice(0, MAXCATS).concat(catOrder.length > MAXCATS ? ['Autres'] : []);
 
@@ -4255,7 +4260,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var _wPct = _availMin > 0 ? Math.max(0, Math.min(100 - _dPct, _fwip / _availMin * 100)) : 0;
 
     // helpers markup
-    function card(inner, extra) { return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
+    function card(inner, extra) { return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
     function cardHead(title, ic, col) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:' + (col || 'var(--glycine-900)')) : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
     function chip(bg, col, txt) { return '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + bg + ';color:' + col + '">' + txt + '</span>'; }
@@ -4264,29 +4269,29 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var curM = months[months.length - 1], topCat = '', topMin = 0;
     for (var cc in curM.byCat) { if (curM.byCat[cc] > topMin) { topMin = curM.byCat[cc]; topCat = cc; } }
     var synthTxt = topCat
-      ? 'Ce mois-ci, votre temps est surtout allé à <b style="color:var(--warm-ink,#7a5a1e)">' + esc(topCat === 'Autres' ? 'plusieurs missions' : topCat) + '</b>' + (_restMin > 0 ? ', et il vous reste de la marge pour lancer une nouvelle demande.' : (_restMin < 0 ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
+      ? 'Ce mois-ci, votre temps est surtout allé à <b style="color:var(--warm-ink,#5A2A11)">' + esc(topCat === 'Autres' ? 'plusieurs missions' : topCat) + '</b>' + (_restMin > 0 ? ', et il vous reste de la marge pour lancer une nouvelle demande.' : (_restMin < 0 ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
       : 'Aucune heure travaillée ce mois-ci pour l\'instant. Dès que je bosse sur vos demandes, le détail apparaît ici.';
-    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#FBEFCF);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
-      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F6E4B8);color:var(--warm-ink,#7a5a1e);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
+    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#F8F6F2);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
+      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F8F6F2);color:var(--warm-ink,#5A2A11);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
       '<p style="margin:0;font-size:14.5px;color:var(--terre)">' + synthTxt + '</p></div>';
 
     // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
-    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
-    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#F8F6F2"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#C5DEFF' : '#F8F6F2') + '">' + val + '</b></div>'; }
+    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
     var _cm2 = cpMood(_availMin, _usedMin, _pf.cap);
-    var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
-      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre accompagnement · ' + esc(monthLbl2) + '</div>' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#e79a8a' : '#FBFAF6') + '">' + _cm2.label + '</div>' +
-      '<div style="font-size:15px;color:#d8c6a8;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
-      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + _wPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', 'terminé') + (_fwip > 0 ? flag('#9a72d6', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
+    var hero = forfaitH ? '<section style="background:#110704;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F8F6F2;height:100%">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#F8F6F2">Votre accompagnement · ' + esc(monthLbl2) + '</div>' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm2.label + '</div>' +
+      '<div style="font-size:15px;color:#F8F6F2;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
+      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F8F6F2"></span><span style="height:100%;width:' + _wPct + '%;background:#C5DEFF;box-shadow:inset 2.5px 0 0 #110704"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F8F6F2', 'terminé') + (_fwip > 0 ? flag('#C5DEFF', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
       '<details style="margin-top:20px;border-top:1px solid rgba(251,250,246,.14);padding-top:14px">' +
-        '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#c9b28c">' +
-          '<span class="cp-chev2" style="display:inline-flex;color:#c9b28c"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>Comment fonctionne votre forfait&nbsp;?' +
+        '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#F8F6F2">' +
+          '<span class="cp-chev2" style="display:inline-flex;color:#F8F6F2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>Comment fonctionne votre forfait&nbsp;?' +
         '</summary>' +
-        '<div style="font-size:13.5px;color:#d8c6a8;line-height:1.6;margin-top:13px;max-width:620px">' +
-          '<p style="margin:0 0 9px">Vous disposez de <b style="color:#F2E5C2">' + hmm(_baseMin) + ' par mois</b> pour avancer sur vos projets.</p>' +
-          '<p style="margin:0 0 9px">Le temps compte au mois où le travail est <b style="color:#F2E5C2">réellement fait</b>. Les heures non utilisées ne se reportent <b style="color:#F2E5C2">pas</b> d\'un mois à l\'autre (au-delà d\'un petit report de ' + hmm(Math.round((_pf.cap || 0) * 60)) + '), autant en profiter pour me confier vos sujets.</p>' +
+        '<div style="font-size:13.5px;color:#F8F6F2;line-height:1.6;margin-top:13px;max-width:620px">' +
+          '<p style="margin:0 0 9px">Vous disposez de <b style="color:#F8F6F2">' + hmm(_baseMin) + ' par mois</b> pour avancer sur vos projets.</p>' +
+          '<p style="margin:0 0 9px">Le temps compte au mois où le travail est <b style="color:#F8F6F2">réellement fait</b>. Les heures non utilisées ne se reportent <b style="color:#F8F6F2">pas</b> d\'un mois à l\'autre (au-delà d\'un petit report de ' + hmm(Math.round((_pf.cap || 0) * 60)) + '), autant en profiter pour me confier vos sujets.</p>' +
           '<p style="margin:0">Si un mois on va au-delà, les heures en plus sont simplement facturées en supplément, et on en parle ensemble avant.</p>' +
         '</div>' +
       '</details>' +
@@ -4300,7 +4305,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
-        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#E7DCF7') + '">' + segs + '</div>' +
+        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#C5DEFF') + '">' + segs + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
     }).join('') + '</div>';
@@ -4311,9 +4316,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var monthTasks = tasks.map(function (t) { return { t: t, mins: cpTaskMinByMonth(t)[curMonthKey] || 0 }; }).filter(function (o) { return o.mins > 0; }).sort(function (a, b) { return b.mins - a.mins; });
     var detailRows = monthTasks.map(function (o) {
       var t = o.t, wip = t.status !== 'done', cat = catOf(t);
-      var statusChip = wip ? chip('var(--glycine-50,#f4ecff)', 'var(--glycine-900,#573b8a)', 'En cours') : chip('#DFEBD3', '#4d6b3d', '✓ Terminée');
-      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#fbf0d8;color:var(--warm-ink,#7a5a1e)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
-      return '<div style="padding:14px 0' + (wip ? ';background:#EDE4FB;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
+      var statusChip = wip ? chip('var(--glycine-50,#C5DEFF)', 'var(--glycine-900,#5A2A11)', 'En cours') : chip('#F8F6F2', '#5A2A11', '✓ Terminée');
+      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:var(--warm-ink,#5A2A11)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
+      return '<div style="padding:14px 0' + (wip ? ';background:#C5DEFF;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
         '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || 'Tâche') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
@@ -4322,7 +4327,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       sub(monthTasks.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</b> décomptées, tâche par tâche.' : 'Le temps travaillé ce mois apparaîtra ici, tâche par tâche.') +
       (monthTasks.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#FBEFCF);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#7a5a1e)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
           '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté dans le mois où le travail est réellement fait, pas à la date de validation.</p>'
         : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>');
     var detailCard = card(detailInner);
@@ -4334,16 +4339,16 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var catInner = cardHead('En moyenne, par type') + sub('Un repère du temps que je consacre à chaque type de mission.') +
       cats.map(function (c, i) {
         var avg = c.n ? Math.round(c.min / c.n) : 0;
-        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #efe7db' : '') + '">' +
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #F8F6F2' : '') + '">' +
           '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' tâche' + (c.n > 1 ? 's' : '') + ' · ' + partFmtH(c.min) + ' au total</div></div></div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#a8701a;flex-shrink:0">' + partFmtH(avg) + '</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(avg) + '</div>' +
         '</div>';
       }).join('');
     var catCard = cats.length ? card(catInner) : '';
 
     // ── 6. Archivées (repliées) ──
     var archived2 = archived;
-    var archAccordion = '<details style="background:#ECE2D6;border-radius:14px;padding:2px 4px;margin-top:16px">' +
+    var archAccordion = '<details style="background:#F8F6F2;border-radius:14px;padding:2px 4px;margin-top:16px">' +
       '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('archive', 14) + ' Voir les tâches archivées (' + archived2.length + ')</summary>' +
       (archived2.length ? archived2.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600);text-decoration:line-through">' + esc(t.title || 'Tâche') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune tâche archivée.</div>') +
     '</details>';
@@ -4364,7 +4369,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var tot = rows.reduce(function (s, o) { return s + o.min; }, 0);
         var isCur = mk === curMonthKey;
         var dl = new Date(mk + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-        return '<details' + (isCur ? ' open' : '') + ' style="border-top:1px solid #efe7db">' +
+        return '<details' + (isCur ? ' open' : '') + ' style="border-top:1px solid #F8F6F2">' +
           '<summary class="cp-mrow" style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 12px">' +
             '<span class="cp-chev" style="flex-shrink:0;color:var(--terre-400)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>' +
             '<span style="flex:1;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);text-transform:capitalize">' + esc(dl) + (isCur ? ' <span style="font-family:var(--font-micro);font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">· en cours</span>' : '') + '</span>' +
@@ -4409,14 +4414,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var doneT = tickets.filter(function (t) { return t.status === 'done' || t.status === 'closed'; });
 
     // ── Catégories : couleurs stables (chart + moyennes), max 5 + « Autres ». ──
-    var CAT_PAL = ['#b491ea', '#e6b053', '#8fb573', '#7bb0c4', '#c98aa6', '#b98a3f'];
+    var CAT_PAL = ['#C5DEFF', '#CD8F6E', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#CD8F6E'];
     var catTot = {};
     tickets.forEach(function (t) { var c = catOf(t); catTot[c] = (catTot[c] || 0) + tkMin(t); });
     var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
     var MAXCATS = 5;
-    var catColor = { 'Autres': '#c3b6a3' };
-    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#c3b6a3'; });
-    function colOf(c) { return catColor[c] || '#c3b6a3'; }
+    var catColor = { 'Autres': '#F8F6F2' };
+    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#F8F6F2'; });
+    function colOf(c) { return catColor[c] || '#F8F6F2'; }
     function catShown(c) { return catOrder.indexOf(c) < MAXCATS ? c : 'Autres'; }
     var stackOrder = catOrder.slice(0, MAXCATS).concat(catOrder.length > MAXCATS ? ['Autres'] : []);
 
@@ -4445,7 +4450,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var mwPct = availMin > 0 ? Math.max(0, Math.min(100 - mdPct, mWip / availMin * 100)) : 0;
 
     // helpers markup
-    function card(inner) { return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
+    function card(inner) { return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
     function cardHead(title, ic) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:var(--glycine-900)') : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
 
@@ -4453,26 +4458,26 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var curM = months[months.length - 1], topCat = '', topMin = 0;
     for (var cc in curM.byCat) { if (curM.byCat[cc] > topMin) { topMin = curM.byCat[cc]; topCat = cc; } }
     var synthTxt = topCat
-      ? 'Ce mois-ci, l\'essentiel du temps est allé à <b style="color:var(--warm-ink,#7a5a1e)">' + esc(topCat === 'Autres' ? 'plusieurs types de demandes' : topCat) + '</b>' + (remMin > 0 ? ', et il vous reste de la marge sur votre forfait.' : (over ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
+      ? 'Ce mois-ci, l\'essentiel du temps est allé à <b style="color:var(--warm-ink,#5A2A11)">' + esc(topCat === 'Autres' ? 'plusieurs types de demandes' : topCat) + '</b>' + (remMin > 0 ? ', et il vous reste de la marge sur votre forfait.' : (over ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
       : 'Aucune heure sur vos demandes ce mois-ci pour l\'instant. Dès qu\'un ticket avance, le détail apparaît ici.';
-    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#FBEFCF);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
-      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F6E4B8);color:var(--warm-ink,#7a5a1e);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
+    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#F8F6F2);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
+      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F8F6F2);color:var(--warm-ink,#5A2A11);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
       '<p style="margin:0;font-size:14.5px;color:var(--terre)">' + synthTxt + '</p></div>';
 
     // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
-    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
-    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
-    var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
-      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#d8c6a8">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
-      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + mdPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + mwPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', hmm(mDone) + ' résolu') + (mWip > 0 ? flag('#9a72d6', hmm(mWip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
+    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#F8F6F2"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#C5DEFF' : '#F8F6F2') + '">' + val + '</b></div>'; }
+    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    var hero = forfaitH ? '<section style="background:#110704;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F8F6F2;height:100%">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#F8F6F2">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#CD8F6E' : '#F8F6F2') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#F8F6F2">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
+      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + mdPct + '%;background:#F8F6F2"></span><span style="height:100%;width:' + mwPct + '%;background:#C5DEFF;box-shadow:inset 2.5px 0 0 #110704"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F8F6F2', hmm(mDone) + ' résolu') + (mWip > 0 ? flag('#C5DEFF', hmm(mWip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
       '<div style="height:1px;background:rgba(251,250,246,.14);margin:26px 0"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px 40px">' +
-        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? fRow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin))) : '') + '</div>' +
-        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Demandes résolues', hmm(mDone)) + (mWip > 0 ? fRow('+ En cours (déjà compté)', hmm(mWip), true) : '') + '</div>' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F8F6F2;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? fRow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin))) : '') + '</div>' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F8F6F2;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Demandes résolues', hmm(mDone)) + (mWip > 0 ? fRow('+ En cours (déjà compté)', hmm(mWip), true) : '') + '</div>' +
       '</div>' +
-      (billedMin > 0 ? '<div style="font-size:12px;color:#e79a8a;margin-top:16px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
+      (billedMin > 0 ? '<div style="font-size:12px;color:#CD8F6E;margin-top:16px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
     '</section>' : card(sub('Renseignez un forfait pour suivre la consommation.'));
 
     // ── 3. Graphe empilé par catégorie ──
@@ -4483,7 +4488,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
-        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#E7DCF7') + '">' + segs + '</div>' +
+        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#C5DEFF') + '">' + segs + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
     }).join('') + '</div>';
@@ -4494,9 +4499,9 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var monthTk = tickets.filter(function (t) { return tkMonth(t) === curMonthKey && tkMin(t) > 0; }).map(function (t) { return { t: t, mins: tkMin(t) }; }).sort(function (a, b) { return b.mins - a.mins; });
     var detailRows = monthTk.map(function (o) {
       var t = o.t, wip = !(t.status === 'done' || t.status === 'closed'), cat = catOf(t);
-      var statusChip = wip ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--glycine-50,#f4ecff);color:var(--glycine-900,#573b8a)">En cours</span>' : '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#DFEBD3;color:#4d6b3d">✓ Résolue</span>';
-      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#fbf0d8;color:var(--warm-ink,#7a5a1e)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
-      return '<div style="padding:14px 0' + (wip ? ';background:#EDE4FB;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
+      var statusChip = wip ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--glycine-50,#C5DEFF);color:var(--glycine-900,#5A2A11)">En cours</span>' : '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:#5A2A11">✓ Résolue</span>';
+      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:var(--warm-ink,#5A2A11)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
+      return '<div style="padding:14px 0' + (wip ? ';background:#C5DEFF;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
         '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || t.subject || 'Demande') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
@@ -4505,7 +4510,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       sub(monthTk.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(usedMin) + '</b> décomptées, demande par demande.' : 'Le temps sur vos demandes ce mois apparaîtra ici.') +
       (monthTk.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#FBEFCF);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#7a5a1e)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
           '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté sur le mois où la demande a été traitée.</p>'
         : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure sur vos demandes ce mois-ci pour l\'instant.</p>');
     var detailCard = card(detailInner);
@@ -4514,15 +4519,15 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var cats = catOrder.map(function (name) { var n = tickets.filter(function (t) { return catOf(t) === name; }).length; return { name: name, min: catTot[name], n: n }; });
     var catInner = cardHead('Par type de demande') + sub('Le temps consacré à chaque type de demande.') +
       cats.map(function (c, i) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #efe7db' : '') + '">' +
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #F8F6F2' : '') + '">' +
           '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' demande' + (c.n > 1 ? 's' : '') + '</div></div></div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#a8701a;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
         '</div>';
       }).join('');
     var catCard = cats.length ? card(catInner) : '';
 
     // ── 6. Demandes résolues (repliées) ──
-    var resolvedAccordion = '<details style="background:#ECE2D6;border-radius:14px;padding:2px 4px;margin-top:16px">' +
+    var resolvedAccordion = '<details style="background:#F8F6F2;border-radius:14px;padding:2px 4px;margin-top:16px">' +
       '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('check', 14) + ' Voir les demandes résolues (' + doneT.length + ')</summary>' +
       (doneT.length ? doneT.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600)">' + esc(t.title || t.subject || 'Demande') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune demande résolue.</div>') +
     '</details>';
@@ -4568,44 +4573,44 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     var _fbNums = cpForfaitNums(project);
     var forfaitLeft = _pfBar.remaining;               // inclut le report du mois dernier
     var forfaitBar = (forfaitH && _fbNums)
-      ? '<div style="padding:16px 22px;background:#F8F6F2;border-radius:14px;margin-bottom:18px">' +
-          '<div style="display:flex;align-items:center;gap:9px">' + cpIcon('timer',15,'color:#6b533b') +
-            '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b533b">Forfait du mois</span></div>' +
+      ? '<div style="padding:16px 22px;background:F8F6F2;border-radius:14px;margin-bottom:18px">' +
+          '<div style="display:flex;align-items:center;gap:9px">' + cpIcon('timer',15,'color:#5A2A11') +
+            '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5A2A11">Forfait du mois</span></div>' +
           cpForfaitInline(_fbNums, false) +
         '</div>'
       : '';
 
     // Header: ← Mois → | AUJOURD'HUI | filtres statut | + AJOUTER
     var CAL_STATUS_F = [
-      { k:'',            label:'TOUTES',    col:'#1C1205' },
-      { k:'En attente du brief', label:'EN ATTENTE', col:'#B8A98F' },
-      { k:'En cours', label:'EN COURS', col:'#6E86B8' },
-      { k:'À retravailler', label:'À RETRAVAILLER', col:'#C8794E' },
-      { k:'Terminé', label:'TERMINÉ', col:'#7C8B5A' }
+      { k:'',            label:'TOUTES',    col:'#110704' },
+      { k:'En attente du brief', label:'EN ATTENTE', col:'#F8F6F2' },
+      { k:'En cours', label:'EN COURS', col:'#C5DEFF' },
+      { k:'À retravailler', label:'À RETRAVAILLER', col:'#CD8F6E' },
+      { k:'Terminé', label:'TERMINÉ', col:'#F8F6F2' }
     ];
     var urgFilters = CAL_STATUS_F.map(function(s){
       var active = (flt.status||'')===s.k;
       if (!s.k) {
-        return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#1C1205':'#e3ddd0')+';background:'+(active?'#1C1205':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+s.label+'</button>';
+        return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#110704':'#F8F6F2')+';background:'+(active?'#110704':'transparent')+';color:'+(active?'#fff':'#5A2A11')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+s.label+'</button>';
       }
-      return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s.k+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?s.col:'#e3ddd0')+';background:'+(active?s.col:'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(active?'#fff':s.col)+'"></span>'+s.label+'</button>';
+      return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s.k+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?s.col:'#F8F6F2')+';background:'+(active?s.col:'transparent')+';color:'+(active?'#fff':'#5A2A11')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(active?'#fff':s.col)+'"></span>'+s.label+'</button>';
     }).join('');
 
     var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
       '<div style="display:flex;align-items:center;gap:6px">' +
-        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#412F21);padding:4px 6px;line-height:1">←</button>' +
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#412F21);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
-        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#412F21);padding:4px 6px;line-height:1">→</button>' +
+        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#110704);padding:4px 6px;line-height:1">←</button>' +
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#110704);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
+        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#110704);padding:4px 6px;line-height:1">→</button>' +
       '</div>' +
-      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#ffffff);color:var(--terre,#412F21);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
+      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #F8F6F2;background:var(--surface,ffffff);color:var(--terre,#110704);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
     '</div>';
 
     // Grid cells, table unifiée bordurée
-    var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
+    var PART_URG_SOFT = { tranquille:'#C5DEFF', normal:'#F8F6F2', urgent:'#F8F6F2', critique:'#F8F6F2' };
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven'];
-    var BORD = '#ece4d6';
-    var emptyCell = '<div style="min-height:132px;border-radius:14px;background:#f3ede2;opacity:.5"></div>';
+    var BORD = '#F8F6F2';
+    var emptyCell = '<div style="min-height:132px;border-radius:14px;background:#F8F6F2;opacity:.5"></div>';
     var dayCells = [];
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow >= 5 ? 0 : firstDow;
@@ -4624,11 +4629,11 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       });
       var isToday = ds===todayStr;
       var numHtml = isToday
-        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#1C1205;color:#ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
-        : '<div style="font-size:13px;font-weight:600;color:#6b533b">'+dd+'</div>';
+        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#110704;color:ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
+        : '<div style="font-size:13px;font-weight:600;color:#5A2A11">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
-        var soft = PART_URG_SOFT[t.urgency]||'#f3ede2';
+        var soft = PART_URG_SOFT[t.urgency]||'#F8F6F2';
         var isDone = t.status==='done';
         var isActive = cliSelTask[pid]===t.id;
         var timeMin = t.timeSpentMinutes||0;
@@ -4636,12 +4641,12 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var propVals = t.properties || {};
         // Affichage compact : on ne montre une pastille que si la propriété a une valeur.
         // L'édition se fait dans la fiche de la tâche (clic sur la carte).
-        var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };
-        var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
+        var STATUT_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#C5DEFF' };
+        var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#CD8F6E', 'Besoin d\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };
         function propChip(val, colorMap){
           if (!val) return '';
-          var bg = colorMap[val] || '#efe8db';
-          return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
+          var bg = colorMap[val] || '#F8F6F2';
+          return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5A2A11;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
         }
         // Pastille = vrai statut de la tâche (jamais figé), pas la propriété
         // interne « avancement » qui restait sur « En cours » à tort.
@@ -4651,23 +4656,23 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
         var propChipsHtml = propChip(briefRaw, STATUT_COL) + statusPill;
         var _stIcMap = { todo:'clock', in_progress:'zap', review:'chat', done:'check' };
         var _stIc = cpIcon(_stIcMap[t.status] || 'clock', 12, 'color:' + sm.color + ';flex-shrink:0');
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:8px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(65,47,33,0.09);background:'+(isDone?'#f1ece3':'#ffffff')+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:8px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(65,47,33,0.09);background:'+(isDone?'#F8F6F2':'#ffffff')+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             _stIc +
-            '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:600;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
-          (t.dueDate ? '<div style="font-size:10px;color:#5e4a2e;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
+          (t.dueDate ? '<div style="font-size:10px;color:#5A2A11;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
-      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#5e4a2e;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#5A2A11;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       // Jour de congés : grisé, non déposable, avec un repère « congés » à la place du +.
-      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#f4ece1,#f4ece1 7px,#efe4d5 7px,#efe4d5 14px)' : (isWeekend ? '#f3ede2' : '#f8f5ef');
+      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#F8F6F2,#F8F6F2 7px,#F8F6F2 7px,#F8F6F2 14px)' : (isWeekend ? '#F8F6F2' : '#F8F6F2');
       var addBtn = isHol
         ? '<span title="Cindy est en congés ce jour-là" style="font-size:13px;opacity:0.65;line-height:1">🌴</span>'
-        : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
+        : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #F8F6F2;background:#fff;color:#110704;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
       dayCells.push('<div ' + (isHol ? '' : 'ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" ') + 'data-ds="'+ds+'" style="position:relative;min-height:132px;padding:12px;border-radius:14px;background:'+cellBg+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml + addBtn +
-        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5e4a2e;margin-top:2px">Congés</div>' : '') + pills +
+        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-top:2px">Congés</div>' : '') + pills +
       '</div>');
     }
     var allCells = [];
@@ -4676,7 +4681,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
     while (allCells.length % 5 !== 0) allCells.push(emptyCell);
 
     var calGrid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px">' +
-        dayNames.map(function(n,idx){return '<div style="padding:2px 8px;font-family:var(--font-micro);font-size:11px;font-weight:600;color:#8a7256;letter-spacing:0.08em;text-transform:uppercase">'+n+'</div>';}).join('') +
+        dayNames.map(function(n,idx){return '<div style="padding:2px 8px;font-family:var(--font-micro);font-size:11px;font-weight:600;color:#5A2A11;letter-spacing:0.08em;text-transform:uppercase">'+n+'</div>';}).join('') +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">'+allCells.join('')+'</div>';
 
@@ -4732,8 +4737,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var timeSpent = t.timeSpentMinutes || 0;
     var timeH = (timeSpent/60).toFixed(1);
 
-    var urgBg = PART_URGENCY[t.urgency] || '#F2E5C2';
-    var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
+    var urgBg = PART_URGENCY[t.urgency] || '#F8F6F2';
+    var urgTx = PART_URGENCY_TX[t.urgency] || '#5A2A11';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
     var statusMap = {todo:'Pas commencé',in_progress:'En cours',review:'À valider chez vous',done:'Terminée'};
@@ -4744,43 +4749,43 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var dueDateStr = (t.dueDate||'').slice(0,10);
     var daysUntilDue = dueDateStr ? Math.ceil((new Date(dueDateStr+'T12:00:00') - new Date()) / 86400000) : null;
     var daysLabel = daysUntilDue !== null
-      ? (daysUntilDue < 0 ? ' <span style="color:#8d2b21;font-size:10px">J'+daysUntilDue+'</span>'
-        : daysUntilDue===0 ? ' <span style="color:#8d2b21;font-size:10px">Aujourd\'hui</span>'
-        : ' <span style="font-size:10px;color:var(--muted,#8090a8)">J+'+daysUntilDue+'</span>') : '';
+      ? (daysUntilDue < 0 ? ' <span style="color:#5A2A11;font-size:10px">J'+daysUntilDue+'</span>'
+        : daysUntilDue===0 ? ' <span style="color:#5A2A11;font-size:10px">Aujourd\'hui</span>'
+        : ' <span style="font-size:10px;color:var(--muted,#C5DEFF)">J+'+daysUntilDue+'</span>') : '';
 
     var commentsHtml = comments.map(function(c){
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
-        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'var(--surface,#ffffff)')+';border:1px solid '+(isStudio?'#c9952f':'var(--bone-d,#e8e0d4)')+';">' +
-          '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#412F21':'var(--muted,#8090a8)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
-          '<div style="font-size:13px;color:'+(isStudio?'#412F21':'var(--navy,#1C1205)')+'">'+esc(c.text)+'</div>' +
+        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'var(--surface,ffffff)')+';border:1px solid '+(isStudio?'#CD8F6E':'var(--bone-d,#F8F6F2)')+';">' +
+          '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#110704':'var(--muted,#C5DEFF)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
+          '<div style="font-size:13px;color:'+(isStudio?'#110704':'var(--navy,#110704)')+'">'+esc(c.text)+'</div>' +
         '</div>' +
       '</div>';
     }).join('');
 
-    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
+    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#F8F6F2);margin:14px 0">';
 
-    return '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>' + '<div class="cp-task-overlay" style="background:#ffffff;border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
+    return '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>' + '<div class="cp-task-overlay" style="background:#ffffff;border:none;border-left:1.5px solid var(--bone-d,#F8F6F2);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both">' +
       // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +
-          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#fdf8ef;color:#6a4a0b;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
+          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#F8F6F2;color:#5A2A11;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
         '</div>' +
-        '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
+        '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#C5DEFF);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#110704);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#F8F6F2)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
       // Statut (la cliente a-t-elle terminé son brief ?) + Échéance
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px">Statut</div>' +
           (function(){
             var v = (t.properties||{}).p_clientbrief || '';
             var o = ['Brief en cours', 'Brief prêt'];
-            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value=""></option>' +
+            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value=""></option>' +
               o.map(function(x){ return '<option'+(v===x?' selected':'')+'>'+x+'</option>'; }).join('') + '</select>';
           })() + '</div>' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
-          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
+          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
       '</div>' +
       sep +
       // Informations : état du brief + type de mission + pièces jointes
@@ -4788,8 +4793,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var schema = (Array.isArray(project && project.propertySchema) ? project.propertySchema : []);
         function defOf(id){ return schema.find(function(d){ return d.id===id; }); }
         var props = t.properties || {};
-        var inpStyle = 'width:100%;font-size:13px;padding:6px 9px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box';
-        var lblS = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px';
+        var inpStyle = 'width:100%;font-size:13px;padding:6px 9px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-family:inherit;color:var(--navy,#110704);background:#fff;box-sizing:border-box';
+        var lblS = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px';
         function selectFor(id, slot){
           var d = defOf(id); if (!d || !Array.isArray(d.options) || !d.options.length) return '';
           var val = props[id]!=null ? props[id] : '';
@@ -4800,15 +4805,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         }
         var bvc = briefVal(props.p_elements);
         var filesHtml = bvc.files.map(function(f){
-          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#110704)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
         }).join('');
         var _dzId = '_pt-dz-'+t.id;
         var attach = '<div><div style="'+lblS+'">Lien &amp; fichiers</div>' +
           '<input id="_pt-link-'+t.id+'" type="url" value="'+esc(bvc.link)+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="'+inpStyle+';margin-bottom:6px">' +
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
-          '<div id="'+_dzId+'" ondragover="cliBriefDragOver(event,\''+_dzId+'\')" ondragleave="cliBriefDragLeave(event,\''+_dzId+'\')" ondrop="cliBriefDrop(event,\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+_dzId+'\')" style="border:1.5px dashed var(--border,#e2dbd0);border-radius:10px;padding:12px;text-align:center;transition:background .15s,border-color .15s">' +
-            '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Choisir un fichier</button>' +
-            '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:7px">ou glissez-déposez vos fichiers ici</div>' +
+          '<div id="'+_dzId+'" ondragover="cliBriefDragOver(event,\''+_dzId+'\')" ondragleave="cliBriefDragLeave(event,\''+_dzId+'\')" ondrop="cliBriefDrop(event,\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+_dzId+'\')" style="border:1.5px dashed var(--border,#F8F6F2);border-radius:10px;padding:12px;text-align:center;transition:background .15s,border-color .15s">' +
+            '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;background:#fff;color:var(--navy,#110704);cursor:pointer">⬆ Choisir un fichier</button>' +
+            '<div style="font-size:11px;color:var(--muted,#C5DEFF);margin-top:7px">ou glissez-déposez vos fichiers ici</div>' +
           '</div>' +
         '</div>';
         // Avancement = statut réel de la tâche. Modifiable par Cindy en mode
@@ -4823,9 +4828,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             '</select></div>';
         } else {
           prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">Avancement <span title="Mis à jour automatiquement" style="font-size:10px">🔒</span></div>' +
-            '<div style="font-size:13px;padding:8px 10px;background:#f7f2ea;border-radius:8px;color:var(--navy,#1C1205)">'+esc(_stMap[_stCur]||'Pas commencé')+'</div></div>';
+            '<div style="font-size:13px;padding:8px 10px;background:#F8F6F2;border-radius:8px;color:var(--navy,#110704)">'+esc(_stMap[_stCur]||'Pas commencé')+'</div></div>';
         }
-        return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
+        return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF);margin-bottom:10px">Informations</div>' +
           prog + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
       })() +
@@ -4834,21 +4839,21 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '' +
       sep +
       // Echanges
-      stbTaskDeliverables(pid, project, t, sep) + '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
+      stbTaskDeliverables(pid, project, t, sep) + '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)">Echange</span></div>' +
       '<div style="min-height:40px;margin-bottom:10px">' +
-        (commentsHtml || '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
+        (commentsHtml || '<div style="font-size:12px;color:var(--muted,#C5DEFF);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-family:inherit">' +
-        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#1C1205);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
+        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;font-family:inherit">' +
+        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
       '</div>' +
       sep +
       // Actions
-      stbBlocks(pid, t) + sep + '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
+      stbBlocks(pid, t) + sep + '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
       '<div style="display:flex;gap:8px">' +
-        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
-        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
-        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#8d2b21">Supprimer</button>' +
+        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#110704)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#C5DEFF)">Archiver</button>' +
+        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #CD8F6E;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#5A2A11">Supprimer</button>' +
       '</div>' +
     '</div>';
   }
@@ -4862,10 +4867,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var box = document.getElementById('_ptask-files-list');
     if (!box) return;
     box.innerHTML = cpNewTaskFiles.map(function(f, i) {
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:8px;margin-bottom:6px">' +
-        cpIcon('paperclip',13,'color:var(--muted,#8090a8);flex-shrink:0') +
-        '<span style="flex:1;min-width:0;font-size:12.5px;color:var(--navy,#1C1205);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name) + '</span>' +
-        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#8d2b21;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F8F6F2;border:1px solid var(--border,#F8F6F2);border-radius:8px;margin-bottom:6px">' +
+        cpIcon('paperclip',13,'color:var(--muted,#C5DEFF);flex-shrink:0') +
+        '<span style="flex:1;min-width:0;font-size:12.5px;color:var(--navy,#110704);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name) + '</span>' +
+        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#5A2A11;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
       '</div>';
     }).join('');
   }
@@ -4898,9 +4903,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var form = document.createElement('div');
     form.className = '_prop-new-form';
     form.style.cssText = 'display:flex;gap:6px;margin-top:8px;align-items:center';
-    form.innerHTML = '<input id="_pnk-'+taskId+'" placeholder="Nom" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #c9952f;border-radius:6px;font-family:inherit">' +
-      '<input id="_pnv-'+taskId+'" placeholder="Valeur" style="flex:2;font-size:12px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:6px;font-family:inherit">' +
-      '<button onclick="cliConfirmAddProp(\''+pid+'\',\''+taskId+'\')" style="padding:5px 12px;background:#e7cd97;color:#412F21;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">OK</button>' +
+    form.innerHTML = '<input id="_pnk-'+taskId+'" placeholder="Nom" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #CD8F6E;border-radius:6px;font-family:inherit">' +
+      '<input id="_pnv-'+taskId+'" placeholder="Valeur" style="flex:2;font-size:12px;padding:5px 8px;border:1.5px solid var(--border,#F8F6F2);border-radius:6px;font-family:inherit">' +
+      '<button onclick="cliConfirmAddProp(\''+pid+'\',\''+taskId+'\')" style="padding:5px 12px;background:#F8F6F2;color:#110704;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">OK</button>' +
       '<button onclick="this.closest(\'._prop-new-form\').remove()" style="background:none;border:none;cursor:pointer;color:#999;font-size:16px;padding:0 4px">✕</button>';
     zone.appendChild(form);
     form.querySelector('#_pnk-'+taskId).focus();
@@ -5086,7 +5091,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     input.click();
   };
   // Glisser-déposer de fichiers sur la zone « Lien & fichiers ».
-  window.cliBriefDragOver = function(e, dzId){ e.preventDefault(); e.stopPropagation(); var d = document.getElementById(dzId); if (d){ d.style.background = '#f2ecff'; d.style.borderColor = '#8267ab'; } };
+  window.cliBriefDragOver = function(e, dzId){ e.preventDefault(); e.stopPropagation(); var d = document.getElementById(dzId); if (d){ d.style.background = '#C5DEFF'; d.style.borderColor = '#5A2A11'; } };
   window.cliBriefDragLeave = function(e, dzId){ if (e) e.preventDefault(); var d = document.getElementById(dzId); if (d){ d.style.background = ''; d.style.borderColor = ''; } };
   window.cliBriefDrop = function(e, pid, taskId, propId, dzId){
     e.preventDefault(); e.stopPropagation();
@@ -5319,10 +5324,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var r = 54, circ = 2*Math.PI*r;
     var dash = (pct/100)*circ;
     var donut = '<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto">' +
-      '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="#e8e4dc" stroke-width="14"/>' +
+      '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="#F8F6F2" stroke-width="14"/>' +
       '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="var(--navy)" stroke-width="14" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+circ/4+'" stroke-linecap="round"/>' +
       '<text x="70" y="66" text-anchor="middle" font-size="22" font-weight="700" fill="var(--navy)" font-family="Inter Tight,sans-serif">'+pct+'%</text>' +
-      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#8a6f54" font-family="Inter Tight,sans-serif">heures utilisées</text>' +
+      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#5A2A11" font-family="Inter Tight,sans-serif">heures utilisées</text>' +
     '</svg>';
 
     function fmtH(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
@@ -5438,42 +5443,42 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var cats = ['Bug','Modification','Ajout de contenu','Performance','Sécurité','Autre'];
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:17px;font-weight:700;color:#1C1205;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
+      '<div style="font-size:17px;font-weight:700;color:#110704;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
       '<div style="margin-bottom:12px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
-        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
+        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704">' +
       '</div>' +
       '<div style="margin-bottom:12px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
-        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
+        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
         '<div>' +
-          '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
-          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
+          '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
+          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#110704;background:#fff">' +
             ['basse','moyenne','haute'].map(function(p){ return '<option value="'+p+'"'+(((edit&&edit.priority)||'moyenne')===p?' selected':'')+'>'+(p.charAt(0).toUpperCase()+p.slice(1))+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
         '<div>' +
-          '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
-          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
+          '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
+          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#110704;background:#fff">' +
             '<option value="">Catégorie </option>' +
             cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
       '</div>' +
       '<div style="margin-bottom:14px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5e4a2e">(optionnel)</span></label>' +
-        '<input id="_maint-t-due" type="text" readonly data-iso="'+esc(edit&&edit.dueDate||'')+'" value="'+((edit&&edit.dueDate)?cpMcFmt(edit.dueDate):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_maint-t-due\')" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;cursor:pointer;background:#fff">' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A2A11">(optionnel)</span></label>' +
+        '<input id="_maint-t-due" type="text" readonly data-iso="'+esc(edit&&edit.dueDate||'')+'" value="'+((edit&&edit.dueDate)?cpMcFmt(edit.dueDate):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_maint-t-due\')" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704;cursor:pointer;background:#fff">' +
       '</div>' +
       '<div style="margin-bottom:18px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
         '<div id="_maint-t-files" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>' +
-        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#6b533b;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#6b533b')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
+        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #F8F6F2;border-radius:10px;cursor:pointer;font-size:13px;color:#5A2A11;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#5A2A11')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
-        '<button id="_maint-t-ok" style="padding:9px 22px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
+        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11;font-size:14px">Annuler</button>' +
+        '<button id="_maint-t-ok" style="padding:9px 22px;background:#110704;color:#F8F6F2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -5488,11 +5493,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var box = ov.querySelector('#_maint-t-files');
       box.innerHTML = pending.length ? pending.map(function(f, i){
         var isImg = (f.type||'').indexOf('image')===0;
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7f3ed;border-radius:8px;font-size:13px;color:#1C1205">' +
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:13px;color:#110704">' +
           '<span>'+(isImg?'🖼️':'📎')+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name||'fichier')+'</span>' +
-          '<button data-rm="'+i+'" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1">×</button>' +
+          '<button data-rm="'+i+'" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:15px;line-height:1">×</button>' +
         '</div>';
-      }).join('') : '<div style="font-size:12px;color:#5e4a2e;font-style:italic">Aucun fichier joint.</div>';
+      }).join('') : '<div style="font-size:12px;color:#5A2A11;font-style:italic">Aucun fichier joint.</div>';
       box.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(){ pending.splice(parseInt(b.getAttribute('data-rm')),1); renderFiles(); }; });
     }
     renderFiles();
@@ -5502,7 +5507,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (!files.length) return;
       var tooBig = cliAnyTooBig(files); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
       var box = ov.querySelector('#_maint-t-files');
-      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#6b533b">Envoi en cours…</div>');
+      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#5A2A11">Envoi en cours…</div>');
       Promise.all(files.map(function(f){ return cliUploadFile(f, pid); })).then(function(res){
         res.forEach(function(f){ pending.push(f); });
         renderFiles();
@@ -5511,8 +5516,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.querySelector('#_maint-t-fileinput').onchange = function() { var f = this.files; this.value=''; uploadFiles(f); };
     // Glisser-déposer des fichiers sur la zone (et sur toute la fenêtre du modal)
     var dropL = ov.querySelector('#_maint-t-droplabel');
-    function dropOn(){ if(dropL){ dropL.style.background='#f7f3ed'; dropL.style.borderColor='#c9b89a'; } }
-    function dropOff(){ if(dropL){ dropL.style.background=''; dropL.style.borderColor='#e2dbd0'; } }
+    function dropOn(){ if(dropL){ dropL.style.background='#F8F6F2'; dropL.style.borderColor='#F8F6F2'; } }
+    function dropOff(){ if(dropL){ dropL.style.background=''; dropL.style.borderColor='#F8F6F2'; } }
     ['dragenter','dragover'].forEach(function(ev){ ov.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); dropOn(); }); });
     ['dragleave','dragend'].forEach(function(ev){ ov.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); if(e.target===ov||e.target===dropL) dropOff(); }); });
     ov.addEventListener('drop', function(e){ e.preventDefault(); e.stopPropagation(); dropOff(); if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); });
@@ -5590,25 +5595,25 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     var first = new Date(y, m, 1); var startDow = (first.getDay() + 6) % 7; var ndays = new Date(y, m + 1, 0).getDate();
     var inp = document.getElementById(_cpMc.inputId); var selIso = inp ? inp.getAttribute('data-iso') : '';
-    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#6b533b;padding:4px 0">' + x + '</div>'; }).join('');
+    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#5A2A11;padding:4px 0">' + x + '</div>'; }).join('');
     var cells = '';
     for (var i = 0; i < startDow; i++) cells += '<div></div>';
     for (var dd = 1; dd <= ndays; dd++) {
       var ds = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + dd).slice(-2);
       var past = ds < todayStr, hol = !!cpHolidayFor(ds); var sel = ds === selIso;
       if (past || hol) {
-        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#c9bda9;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#f4ece1,#f4ece1 4px,#efe4d5 4px,#efe4d5 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
+        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#F8F6F2;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#F8F6F2,#F8F6F2 4px,#F8F6F2 4px,#F8F6F2 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
       } else {
-        cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#412F21)' : 'transparent') + ';color:' + (sel ? '#fff' : '#1C1205') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#f0ece4)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#412F21)' : 'transparent') + '\'">' + dd + '</button>';
+        cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#110704)' : 'transparent') + ';color:' + (sel ? '#fff' : '#110704') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#F8F6F2)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#110704)' : 'transparent') + '\'">' + dd + '</button>';
       }
     }
     var html = '<div id="_cp-datepick" style="position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cpDateClose()">' +
       '<div style="background:#fff;border-radius:16px;box-shadow:none;padding:18px;width:310px;max-width:100%">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">‹</button>' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#1C1205)">' + MONTHS[m] + ' ' + y + '</span>' +
-          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">›</button></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5A2A11;line-height:1">‹</button>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#110704)">' + MONTHS[m] + ' ' + y + '</span>' +
+          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5A2A11;line-height:1">›</button></div>' +
         '<div style="display:grid;grid-template-columns:repeat(5,1fr)">' + dow + cells + '</div>' +
-        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#6b533b;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
+        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
       '</div>' +
     '</div>';
     document.body.insertAdjacentHTML('beforeend', html);
@@ -5694,27 +5699,27 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.id = 'cli-add-task-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
-    var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:none">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#1C1205;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#110704;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value=""></option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value=""></option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#485670">Annuler</button>' +
-        '<button id="clt-submit" style="padding:9px 20px;background:#1C1205;color:#E4D1FE;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
+        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11">Annuler</button>' +
+        '<button id="clt-submit" style="padding:9px 20px;background:#110704;color:#C5DEFF;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -5743,25 +5748,25 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ex = document.getElementById('_cp-demande-gate'); if (ex) ex.remove();
     var ov = document.createElement('div'); ov.id = '_cp-demande-gate';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#e2dbd0);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
+    var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#F8F6F2);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
     ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#1C1205)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
-      '<div style="font-size:13.5px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux, je m\'occupe du reste.</div>' +
-      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#110704)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
+      '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux, je m\'occupe du reste.</div>' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#110704)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#F8F6F2)\'">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
-          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#f0ece4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('zap', 18, 'color:var(--terre,#412F21)') + '</span>' +
-          '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205)">Une petite demande <span style="font-weight:500;font-size:12.5px;color:var(--terre-600,#6b5b4a)">· incluse dans ton forfait</span></div>' +
+          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#F8F6F2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('zap', 18, 'color:var(--terre,#110704)') + '</span>' +
+          '<div style="font-weight:700;font-size:16px;color:var(--navy,#110704)">Une petite demande <span style="font-weight:500;font-size:12.5px;color:var(--terre-600,#5A2A11)">· incluse dans ton forfait</span></div>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Modifier un texte · créer un visuel Instagram · mettre à jour une page · adapter un flyer · corriger une couleur…</div>' +
+        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.5">Modifier un texte · créer un visuel Instagram · mettre à jour une page · adapter un flyer · corriger une couleur…</div>' +
       '</button>' +
-      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + '" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + '" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#110704)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#F8F6F2)\'">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
-          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#f0ece4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('folder', 18, 'color:var(--terre,#412F21)') + '</span>' +
-          '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205)">Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:var(--terre,#b06438)">· nécessite un devis</span></div>' +
+          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#F8F6F2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('folder', 18, 'color:var(--terre,#110704)') + '</span>' +
+          '<div style="font-weight:700;font-size:16px;color:var(--navy,#110704)">Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:var(--terre,#5A2A11)">· nécessite un devis</span></div>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Refonte complète d\'un site · nouvelle identité visuelle · brochure de 40 pages · nouvelle landing page…</div>' +
+        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.5">Refonte complète d\'un site · nouvelle identité visuelle · brochure de 40 pages · nouvelle landing page…</div>' +
       '</button>' +
-      '<div style="font-size:12px;color:var(--muted,#8090a8);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid #f0ebe3">Les demandes du forfait concernent des interventions de quelques minutes à quelques heures. Si ton besoin demande plusieurs jours de travail ou une réflexion complète, il sera traité comme un nouveau projet.</div>' +
+      '<div style="font-size:12px;color:var(--muted,#C5DEFF);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid #F8F6F2">Les demandes du forfait concernent des interventions de quelques minutes à quelques heures. Si ton besoin demande plusieurs jours de travail ou une réflexion complète, il sera traité comme un nouveau projet.</div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
@@ -5770,17 +5775,17 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ex = document.getElementById('_cp-project-req'); if (ex) ex.remove();
     var ov = document.createElement('div'); ov.id = '_cp-project-req';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#110704)';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
-      '<div style="background:#fdf3e8;border:1px solid #f0d8b0;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#7a3a0a;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
-      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
+      '<div style="background:#F8F6F2;border:1px solid #F8F6F2;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#5A2A11;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
+      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
         '<input id="_preq-title" type="text" placeholder="Ex, refonte de mon site vitrine" style="' + S + '"></div>' +
-      '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Décris-le</label>' +
+      '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Décris-le</label>' +
         '<textarea id="_preq-desc" rows="5" placeholder="Objectifs, périmètre, délais souhaités, budget si tu en as une idée…" style="' + S + ';resize:vertical"></textarea></div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-        '<button onclick="document.getElementById(\'_cp-project-req\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-        '<button onclick="window.cliSendProjectRequest(\'' + pid + '\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
+        '<button onclick="document.getElementById(\'_cp-project-req\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#C5DEFF)">Annuler</button>' +
+        '<button onclick="window.cliSendProjectRequest(\'' + pid + '\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#110704);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
@@ -5812,38 +5817,38 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var ov = document.createElement('div');
       ov.id = '_cp-partenaire-task-ov';
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-      var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+      var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #F8F6F2);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#110704)';
       var urgPills = ['tranquille','normal','urgent','critique'].map(function(u){
         var bg = PART_URGENCY[u]; var tx = PART_URGENCY_TX[u];
         return '<button type="button" id="_ptask-urg-'+u+'" onclick="window._ptaskSelUrg(\''+u+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+bg+';background:transparent;color:'+tx+';font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.05em">'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Nouvelle demande</span>' +
-          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Nouvelle demande</span>' +
+          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la demande *</label>' +
+        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Titre de la demande *</label>' +
           '<input id="_ptask-title" type="text" placeholder="Ex, visuel Instagram pour la collection été" style="'+S+'"></div>' +
         '<input type="hidden" id="_ptask-urgency" value="normal">' +
-        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5e4a2e">(optionnel)</span></label>' +
+        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A2A11">(optionnel)</span></label>' +
           '<input id="_ptask-startDate" type="hidden">' +
           '<input id="_ptask-dueDate" type="text" readonly data-iso="'+(ds||'')+'" value="'+(ds?cpMcFmt(ds):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_ptask-dueDate\')" style="'+S+';cursor:pointer;background:#fff"></div>' +
-        '<div style="margin-bottom:14px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#1C1205);display:block;margin-bottom:6px">Votre brief</label>' +
-          '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
+        '<div style="margin-bottom:14px;background:#F8F6F2;border:1px solid var(--border,#F8F6F2);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#110704);display:block;margin-bottom:6px">Votre brief</label>' +
+          '<div style="font-size:11.5px;color:var(--muted,#C5DEFF);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
           '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge."></textarea></div>' +
-        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
+        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
           '<textarea id="_ptask-links" rows="2" style="'+S+';resize:vertical" placeholder="Collez des liens d\'inspiration, exemples, Pinterest, Drive..."></textarea></div>' +
-        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
+        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
           '<div id="_ptask-files-list"></div>' +
           '<input type="file" id="_ptask-file-input" style="display:none" onchange="window._ptaskAddFile(this)">' +
-          '<button type="button" onclick="document.getElementById(\'_ptask-file-input\').click()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1.5px dashed var(--border,#e2dbd0);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--navy,#1C1205);width:100%;justify-content:center">'+cpIcon('paperclip',14)+' Ajouter un fichier</button>' +
-          '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:5px">Cliquez pour ajouter un fichier, puis à nouveau pour en ajouter d\'autres.</div></div>' +
+          '<button type="button" onclick="document.getElementById(\'_ptask-file-input\').click()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1.5px dashed var(--border,#F8F6F2);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--navy,#110704);width:100%;justify-content:center">'+cpIcon('paperclip',14)+' Ajouter un fichier</button>' +
+          '<div style="font-size:11px;color:var(--muted,#C5DEFF);margin-top:5px">Cliquez pour ajouter un fichier, puis à nouveau pour en ajouter d\'autres.</div></div>' +
         (function(){
           var schema = (Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
           if (!schema.length) return '';
-          return '<div style="padding-top:12px;border-top:1px solid #f0ebe3;margin-bottom:14px">' +
-            '<div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#8090a8);margin-bottom:10px">Proprietes</div>' +
+          return '<div style="padding-top:12px;border-top:1px solid #F8F6F2;margin-bottom:14px">' +
+            '<div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#C5DEFF);margin-bottom:10px">Proprietes</div>' +
             schema.map(function(def){
               var fid = '_ptask-prop-'+def.id;
               var field;
@@ -5852,12 +5857,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
               else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="'+S+'">';
               else if (def.id==='p_elements') field = '<textarea id="'+fid+'" rows="2" style="'+S+';resize:vertical" placeholder="Note du brief (vous pourrez ajouter lien et fichiers ensuite)"></textarea>';
               else field = '<input type="text" id="'+fid+'" style="'+S+'">';
-              return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
+              return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#C5DEFF);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
             }).join('') + '</div>';
         })() +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Ajouter la tâche</button>' +
+          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#C5DEFF)">Annuler</button>' +
+          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#110704);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Ajouter la tâche</button>' +
         '</div>' +
       '</div>';
       document.body.appendChild(ov);
@@ -6006,7 +6011,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
 
   var _cliDragId = null;
   window.cliDragStart = function(e, id) { _cliDragId = id; if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; };
-  window.cliDragOver  = function(e, el) { e.preventDefault(); el.style.background = '#f5f0e8'; };
+  window.cliDragOver  = function(e, el) { e.preventDefault(); el.style.background = '#F8F6F2'; };
   window.cliDragLeave = function(el) { el.style.background = '#fff'; };
   window.cliDrop = function(e, pid, ds) {
     e.preventDefault(); if (e.currentTarget) e.currentTarget.style.background = '#fff';
@@ -6189,14 +6194,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   window.cliAddResource = function(pid) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;margin-bottom:12px';
+    var S = 'width:100%;padding:10px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704;margin-bottom:12px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:16px">Ajouter une ressource</div>' +
-      '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
-      '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
+      '<div style="font-size:16px;font-weight:600;color:#110704;margin-bottom:16px">Ajouter une ressource</div>' +
+      '<label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
+      '<label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">' +
-        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
-        '<button id="_res-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
+        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11;font-size:14px">Annuler</button>' +
+        '<button id="_res-ok" style="padding:9px 20px;background:#110704;color:#F8F6F2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     setTimeout(function(){ ov.querySelector('#_res-url').focus(); }, 60);
@@ -6469,10 +6474,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function fRow(pd, f){
       var pid = pd.project.id;
       var cindy = f.source !== 'client';
-      var bg = cindy ? 'var(--glycine-50,#f4ecff)' : '#fbefcf';
-      var icBg = cindy ? 'var(--glycine,#E4D1FE)' : '#F6E4B8';
-      var icCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
-      var metaCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
+      var bg = cindy ? 'var(--glycine-50,#C5DEFF)' : '#F8F6F2';
+      var icBg = cindy ? 'var(--glycine,#C5DEFF)' : '#F8F6F2';
+      var icCol = cindy ? 'var(--glycine-900,#5A2A11)' : '#5A2A11';
+      var metaCol = cindy ? 'var(--glycine-900,#5A2A11)' : '#5A2A11';
       var sub = (cindy ? 'Reçu de Cindy' : 'Déposé par vous') + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
       var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
       var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:var(--terre-400);cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
@@ -6492,7 +6497,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var rows = files.length ? files.map(function(f){ return fRow(pd, f); }).join('') : '<div style="font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-400);padding:2px 4px 6px">Vide pour l\'instant.</div>';
       var del = isFolder ? '<button onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(name) + '\')" style="margin-left:auto;font-family:var(--font-micro);font-size:11px;color:var(--terre-400);background:none;border:none;cursor:pointer">Supprimer</button>' : '';
       return '<div style="margin-bottom:12px">' +
-        '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F4EFe7);margin-bottom:9px">' +
+        '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F8F6F2);margin-bottom:9px">' +
           cpIcon('folder', 14, 'color:var(--terre-400)') +
           '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">' + esc(name) + '</span>' +
           '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400)">' + files.length + '</span>' + del +
@@ -6506,21 +6511,21 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var body = folderBlock(pd, 'Général', files.filter(function(f){ return !f.folder; }), false);
       folders.forEach(function(fn){ body += folderBlock(pd, fn, files.filter(function(f){ return f.folder === fn; }), true); });
       var folderOpts = '<option value="">Général</option>' + folders.map(function(fn){ return '<option value="' + esc(fn) + '">' + esc(fn) + '</option>'; }).join('');
-      var inS = 'border:none;border-radius:9px;padding:10px 13px;font-family:var(--font-micro);font-size:13px;color:var(--terre);background:var(--card,#fffefb)';
-      var ctl = '<div style="background:var(--surface,#F4EFe7);border-radius:14px;padding:16px 18px;margin-top:6px">' +
+      var inS = 'border:none;border-radius:9px;padding:10px 13px;font-family:var(--font-micro);font-size:13px;color:var(--terre);background:var(--card,#F8F6F2)';
+      var ctl = '<div style="background:var(--surface,#F8F6F2);border-radius:14px;padding:16px 18px;margin-top:6px">' +
         '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center">' +
           '<input id="cpf-newfolder-' + pid + '" placeholder="Créer un dossier…" style="' + inS + ';flex:1;min-width:170px">' +
           '<button onclick="window.stbFolderAdd(\'' + pid + '\')" style="border:none;border-radius:9px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;padding:10px 16px;cursor:pointer">+ Dossier</button>' +
         '</div>' +
-        '<label style="display:block;margin-top:11px;border-radius:12px;padding:20px;text-align:center;color:var(--glycine-900,#573b8a);font-family:var(--font-micro);font-size:13px;background:var(--glycine-50,#f4ecff);cursor:pointer" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
-          cpIcon('upload', 18, 'color:var(--glycine-900,#573b8a);display:block;margin:0 auto 6px') +
+        '<label style="display:block;margin-top:11px;border-radius:12px;padding:20px;text-align:center;color:var(--glycine-900,#5A2A11);font-family:var(--font-micro);font-size:13px;background:var(--glycine-50,#C5DEFF);cursor:pointer" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
+          cpIcon('upload', 18, 'color:var(--glycine-900,#5A2A11);display:block;margin:0 auto 6px') +
           '<span style="font-weight:600">Déposez un fichier ici</span> ou cliquez' +
           '<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400)">Déposer dans</span><select id="cpf-folder-' + pid + '" style="' + inS + '">' + folderOpts + '</select></div>' +
       '</div>';
-      return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px">' +
+      return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px">' +
         '<div style="display:flex;align-items:center;gap:11px;margin-bottom:2px"><span style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre)">' + esc(p.projectTitle || pid) + '</span>' +
-        (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#E4D1FE);color:var(--glycine-900,#573b8a)">Commun</span>' : '') + '</div>' +
+        (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#C5DEFF);color:var(--glycine-900,#5A2A11)">Commun</span>' : '') + '</div>' +
         '<p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">' + (common ? 'Partagé pour l\'ensemble de vos projets' : 'Vos fichiers pour ce projet') + '</p>' +
         body + ctl +
       '</section>';
@@ -6529,7 +6534,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var byTask = {};
     projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
     var demKeys = Object.keys(byTask).sort();
-    var demSection = demKeys.length ? '<section style="background:#412F21;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--paille);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:rgba(242,229,194,0.82);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
+    var demSection = demKeys.length ? '<section style="background:#110704;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--paille);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:rgba(242,229,194,0.82);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
       demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--paille);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
       '</section>' : '';
 
@@ -6563,10 +6568,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
     ov.onclick = function(e){ if (e.target === ov && ov.parentNode) ov.parentNode.removeChild(ov); };
-    ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#fffefb);border-radius:16px;padding:26px 24px;text-align:center">' +
+    ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#F8F6F2);border-radius:16px;padding:26px 24px;text-align:center">' +
       cpIcon('trash', 26, 'color:var(--terre);margin:0 auto 12px') +
-      '<div style="font-size:14.5px;color:var(--terre,#412F21);line-height:1.55;margin-bottom:20px">' + esc(message) + '</div>' +
-      '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--surface,#F4EFe7);color:var(--terre,#412F21);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>' +
+      '<div style="font-size:14.5px;color:var(--terre,#110704);line-height:1.55;margin-bottom:20px">' + esc(message) + '</div>' +
+      '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--surface,#F8F6F2);color:var(--terre,#110704);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>' +
       '<button id="cp-confirm-yes" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--terre);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + esc(confirmLabel || 'Supprimer') + '</button></div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -6648,7 +6653,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function openBtn(it, primary) {
       var pri = primary
         ? 'padding:11px 20px;font-weight:700;font-size:10.5px;background:var(--terre);color:var(--paille)'
-        : 'padding:9px 15px;font-weight:600;font-size:10px;background:#EFE3FE;color:#4a2f80';
+        : 'padding:9px 15px;font-weight:600;font-size:10px;background:#C5DEFF;color:#5A2A11';
       var base = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;text-decoration:none;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;';
       if (it.dlUrl) return '<a href="' + esc(it.dlUrl) + '" target="_blank" style="' + base + pri + '">' + cpIcon('download', 14) + ' Télécharger</a>';
       if (it.reviewLink) return '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="' + base + pri + '">' + cpIcon('external', 13) + ' Voir</a>';
@@ -6657,12 +6662,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function row(it) {
       var todo = it.status === 'a_valider' && it.id;
       var tone = todo ? 'todo' : 'ok';
-      var cardBg = todo ? '#FBEFCF' : '#DFEBD3';
-      var icBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var icCol = todo ? '#7a5a1e' : '#4d6b3d';
-      var metaCol = todo ? '#3f2c08' : '#284020';
-      var pillBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var pillCol = todo ? '#3f2c08' : '#284020';
+      var cardBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var icBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var icCol = todo ? '#5A2A11' : '#5A2A11';
+      var metaCol = todo ? '#110704' : '#5A2A11';
+      var pillBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var pillCol = todo ? '#110704' : '#5A2A11';
       var validated = it.status === 'valide' || it.status === 'validated';
       var pillTxt = todo ? 'À valider' : (validated ? '✓ Validé' : 'Reçu');
       var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
@@ -6671,14 +6676,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       // À valider : on invite à ouvrir le livrable, sans jamais bloquer la validation.
       var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
       var hint = (todo && needConsult)
-        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#3f2c08;background:rgba(255,255,255,0.7);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
+        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#110704;background:rgba(255,255,255,0.7);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
         : '';
       var priBtn = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:11px 20px;font-weight:700;font-size:10.5px;';
-      var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F4EFe7);color:var(--terre);';
+      var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F8F6F2);color:var(--terre);';
       var actions;
       if (todo) {
         actions = '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' +
-            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="' + priBtn + 'background:#38562c;color:#fff">' + cpIcon('check', 14, 'color:#fff') + ' Valider</button>' +
+            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="' + priBtn + 'background:#5A2A11;color:#fff">' + cpIcon('check', 14, 'color:#fff') + ' Valider</button>' +
             openBtn(it, false) +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="' + secBeige + '">Demander une révision</button>' +
           '</div>';
@@ -6687,7 +6692,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         actions = ob ? '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' + ob + '</div>' : '';
       }
       var comment = (it.status === 'refuse' && it.clientComment)
-        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8d2b21;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
+        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#5A2A11;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
         : '';
       return '<div style="background:' + cardBg + ';border-radius:16px;padding:20px 22px;margin-bottom:12px">' +
         '<div style="display:flex;align-items:flex-start;gap:14px">' +
@@ -6695,7 +6700,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<div style="flex:1;min-width:0">' +
             '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.25">' + esc(it.name) + vTag + '</div>' +
             (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:5px;font-weight:600;color:' + metaCol + '">' + esc(line1) + '</div>' : '') +
-            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#3d2c1a;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
+            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#110704;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
             comment +
           '</div>' +
           '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + pillBg + ';color:' + pillCol + ';flex-shrink:0">' + pillTxt + '</span>' +
@@ -6712,10 +6717,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var done = visible.filter(function(it){ return !(it.status === 'a_valider' && it.id); });
     function sectionHead(tone, title, n) {
       var todo = tone === 'todo';
-      var icBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var icCol = todo ? '#5c4210' : '#39512b';
-      var nBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var nCol = todo ? '#3f2c08' : '#284020';
+      var icBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var icCol = todo ? '#5A2A11' : '#5A2A11';
+      var nBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var nCol = todo ? '#110704' : '#5A2A11';
       var ic = todo
         ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="14" r="7"/><path d="M9 14l2 2 4-4"/></svg>'
         : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg>';
@@ -6733,7 +6738,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:6px">Pas encore de livrable</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Vos livrables apparaîtront ici dès que Cindy les dépose.</div></div>';
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:#47341f;line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Ce qui attend votre validation est mis en avant, tout en haut.</p>' +
+      '<p style="font-size:16px;color:#5A2A11;line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Ce qui attend votre validation est mis en avant, tout en haut.</p>' +
       chips + listHtml +
     '</div>';
   }
@@ -6771,10 +6776,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
    * avec autosave et écran de vérification avant envoi.
    * ──────────────────────────────────────────────────────────────────────── */
   var CP_QNR_STATUS = {
-    assigned:    ['À remplir',  '#8a6f2e', '#fbf0d8'],
-    in_progress: ['En cours',   '#35608f', '#e3edfb'],
-    to_review:   ['À revoir',   '#8a4a0e', '#fdf3e8'],
-    completed:   ['Complété ✓', '#3f6b3a', '#e7f0e3'],
+    assigned:    ['À remplir',  '#5A2A11', '#F8F6F2'],
+    in_progress: ['En cours',   '#5A2A11', '#C5DEFF'],
+    to_review:   ['À revoir',   '#5A2A11', '#F8F6F2'],
+    completed:   ['Complété ✓', '#5A2A11', '#F8F6F2'],
   };
   function cpQnrInstance() { return (appData.questionnaires || []).filter(function(q){ return q.id === cpQnrOpenId; })[0] || null; }
   function cpQnrIsStatic(t) { return t === 'title' || t === 'paragraph'; }
@@ -6794,12 +6799,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (!list.length) return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:640px;margin:0 auto"><h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:8px">Questionnaires</h1><p style="color:var(--muted)">Aucun questionnaire pour l\'instant. Cindy vous en enverra ici quand elle aura besoin de vos réponses.</p></div></div>';
     var cards = list.map(function(inst){
       var st = CP_QNR_STATUS[inst.status] || CP_QNR_STATUS.assigned;
-      var col = '#8267ab'; // lila (DA glycine) pour tous les questionnaires
+      var col = '#5A2A11'; // lila (DA glycine) pour tous les questionnaires
       var pr = cpQnrProgress(inst);
       var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
       var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
       var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
-      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #e6d9f5;background:#F7EFFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:none;margin-bottom:16px;display:block">' +
+      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #C5DEFF;background:#C5DEFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:none;margin-bottom:16px;display:block">' +
         '<div style="padding:20px 22px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
@@ -6832,7 +6837,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:6px 0 12px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
     // La question (énoncé) est clairement distincte de la zone de réponse.
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</label>' +
+    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</label>' +
       (b.help ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
     // Bordure encre + ombre légère : la zone de réponse est clairement blanche sur la carte crème.
@@ -6882,7 +6887,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     } else if (b.type === 'rating') {
       var mx = b.max || 5; var cur = typeof ans === 'number' ? ans : parseInt(ans, 10) || 0;
       var stars = '';
-      for (var i = 1; i <= mx; i++) stars += '<label style="cursor:pointer"><input type="radio" name="cpqn_' + b.id + '" value="' + i + '"' + (cur === i ? ' checked' : '') + ' style="position:absolute;opacity:0;width:0;height:0"><span style="font-size:30px;color:' + (cur >= i ? '#e0b83e' : '#d8cfbf') + ';padding:0 2px">★</span></label>';
+      for (var i = 1; i <= mx; i++) stars += '<label style="cursor:pointer"><input type="radio" name="cpqn_' + b.id + '" value="' + i + '"' + (cur === i ? ' checked' : '') + ' style="position:absolute;opacity:0;width:0;height:0"><span style="font-size:30px;color:' + (cur >= i ? '#CD8F6E' : '#F8F6F2') + ';padding:0 2px">★</span></label>';
       input = '<div data-qgroup="' + b.id + '" data-qtype="rating" style="display:flex;align-items:center;gap:2px">' + stars + '</div>';
     } else if (b.type === 'slider') {
       var smx = b.max || 10; var sv = typeof ans === 'number' ? ans : (parseInt(ans, 10) || 0);
@@ -6894,11 +6899,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       input = '<input type="' + it + '" data-qid="' + b.id + '" value="' + esc(typeof ans === 'string' ? ans : (typeof ans === 'number' ? String(ans) : '')) + '" style="' + box + '" placeholder="' + esc(b.placeholder || '') + '">';
     }
     // Carte crème = l'énoncé ; réponse en blanc à l'intérieur → hiérarchie claire.
-    return '<div style="background:var(--surface,#F5F2EC);border-radius:16px;padding:20px 22px;margin-bottom:16px">' + lab + '<div style="margin-top:16px">' + input + '</div></div>';
+    return '<div style="background:var(--surface,#F8F6F2);border-radius:16px;padding:20px 22px;margin-bottom:16px">' + lab + '<div style="margin-top:16px">' + input + '</div></div>';
   }
 
   function buildQnrFiller(inst) {
-    var col = '#8267ab'; // lila (DA glycine) pour tous les questionnaires
+    var col = '#5A2A11'; // lila (DA glycine) pour tous les questionnaires
     var steps = inst.steps || [];
     var back = '<button onclick="cpQnrClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13.5px;margin-bottom:16px">← Tous les questionnaires</button>';
     var wrap = function(inner){ return '<div class="cp-content" style="padding:32px 52px 90px"><div style="max-width:660px;margin:0 auto">' + back + inner + '</div></div>'; };
@@ -6912,7 +6917,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       return wrap(
         '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
-        (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a)">Prends un moment pour y répondre, tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre, tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
           '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
         '</div>' + due +
@@ -6932,7 +6937,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           if (Array.isArray(a)) disp = a.join(', ');
           else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = ''; }
           else disp = (a == null || a === '' ? '' : String(a));
-          return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '' ? 'var(--muted)' : 'var(--terre-600,#5a4a3a)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
@@ -6944,15 +6949,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
       if (isDone) {
         return wrap(header +
-          '<p style="color:#3f6b3a;font-weight:600;margin-bottom:20px">Complété ✓' + (inst.completedAt ? ' le ' + esc(String(inst.completedAt).slice(0,10).split('-').reverse().join('/')) : '') + '. Merci !</p>' +
+          '<p style="color:#5A2A11;font-weight:600;margin-bottom:20px">Complété ✓' + (inst.completedAt ? ' le ' + esc(String(inst.completedAt).slice(0,10).split('-').reverse().join('/')) : '') + '. Merci !</p>' +
           rows +
-          '<button onclick="cpQnrReopen()" style="margin-top:6px;padding:12px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:14px;font-weight:600">Modifier mes réponses</button>');
+          '<button onclick="cpQnrReopen()" style="margin-top:6px;padding:12px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:14px;font-weight:600">Modifier mes réponses</button>');
       }
       return wrap(header +
         '<p style="color:var(--muted);margin-bottom:20px">Vérifiez vos réponses avant de les envoyer à Cindy.</p>' +
         rows +
         '<div style="display:flex;gap:10px;margin-top:8px">' +
-          '<button onclick="cpQnrGoStep(' + Math.max(0, steps.length - 1) + ')" style="padding:12px 20px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:14px;font-weight:600">← Retour</button>' +
+          '<button onclick="cpQnrGoStep(' + Math.max(0, steps.length - 1) + ')" style="padding:12px 20px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:14px;font-weight:600">← Retour</button>' +
           '<button onclick="cpQnrSubmit()" style="flex:1;padding:13px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">Envoyer mes réponses</button>' +
         '</div>');
     }
@@ -6971,7 +6976,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin-bottom:' + (s.help ? '4px' : '18px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
       (s.help ? '<p style="color:var(--muted);line-height:1.55;margin-bottom:20px">' + esc(s.help) + '</p>' : '');
     var nav = '<div style="display:flex;gap:10px;margin-top:10px">' +
-      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
+      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
       '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
     '</div>';
     // « Pourquoi ce questionnaire ? » (idée 9), rassure sur la 1re étape.
@@ -7252,7 +7257,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (color) {
       var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
       var lum = 0.299*_r+0.587*_g+0.114*_b;
-      var accent = lum > 160 ? '#1C1205' : color;
+      var accent = lum > 160 ? '#110704' : color;
       vars += '--navy:'+accent+';--brown:'+color+';';
     }
     if (btn) {
@@ -7272,10 +7277,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
 
   var CP_TYPE_THEMES = {
-    partenaire:  { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    maintenance: { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    identite:    { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    support:     { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
+    partenaire:  { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
+    maintenance: { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
+    identite:    { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
+    support:     { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
   };
   function applyTypeTheme(type) {
     var t = CP_TYPE_THEMES[type] || CP_TYPE_THEMES.partenaire;
@@ -7331,12 +7336,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Apply studio accent mode to portal CSS variables
     if (data.studioAccentMode === 'forced' && data.studioAccentForced) {
       var TONE_VARS = {
-        glycine: { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#412F21' },
-        brume:   { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#1C1205' },
-        paille:  { soft:'#fdf8ec', mid:'#F2E5C2', deep:'#c9b585', ink:'#7a6030', btnBg:'#F2E5C2', btnFg:'#412F21' },
-        ocre:    { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12', btnBg:'#e7cd97', btnFg:'#412F21' },
-        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21', btnBg:'#c8b29a', btnFg:'#412F21' },
-        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#8a6f54', ink:'#5c4633', btnBg:'#5c4633', btnFg:'#E4D1FE' },
+        glycine: { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11', btnBg:'#C5DEFF', btnFg:'#110704' },
+        brume:   { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11', btnBg:'#C5DEFF', btnFg:'#110704' },
+        paille:  { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#F8F6F2', ink:'#5A2A11', btnBg:'#F8F6F2', btnFg:'#110704' },
+        ocre:    { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#CD8F6E', ink:'#5A2A11', btnBg:'#F8F6F2', btnFg:'#110704' },
+        terre:   { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#5A2A11', ink:'#110704', btnBg:'#F8F6F2', btnFg:'#110704' },
+        nuit:    { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#5A2A11', ink:'#5A2A11', btnBg:'#5A2A11', btnFg:'#C5DEFF' },
       };
       var tv = TONE_VARS[data.studioAccentForced] || TONE_VARS.glycine;
       var el = document.getElementById('cp-accent-style');
@@ -7418,7 +7423,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var on = _isAdminEdit;
     btn.textContent = on ? "✓ Quitter l'édition" : '✎ Mode édition';
     btn.style.cssText = 'position:fixed;bottom:22px;right:22px;z-index:99999;padding:11px 18px;border-radius:999px;border:1px solid ' +
-      (on ? '#412F21' : '#E4D1FE') + ';background:' + (on ? '#412F21' : '#fff') + ';color:' + (on ? '#F2E5C2' : '#412F21') +
+      (on ? '#110704' : '#C5DEFF') + ';background:' + (on ? '#110704' : '#fff') + ';color:' + (on ? '#F8F6F2' : '#110704') +
       ";font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.02em;cursor:pointer;box-shadow:none";
   }
 
@@ -7441,7 +7446,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var b = cpHome().banner; b.color = color; delete b.imageUrl; cpSaveHome(); renderShell();
   };
   window.cpHomeBannerTextColor = function(color) {
-    cpHome().banner.textColor = color || '#ffffff'; cpSaveHome(); renderShell();
+    cpHome().banner.textColor = color || 'ffffff'; cpSaveHome(); renderShell();
   };
   window.cpHomeBannerSubtitle = function(text) {
     var t = (text||'').trim();
@@ -7664,7 +7669,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin:6px 0 14px">Confirmez que vous avez fait votre part. Cindy est prévenue et reprend la suite, cette étape n\'attendra plus votre retour.</p>' +
       '<textarea id="_cpval-comment" placeholder="Un message pour Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;color:#5A2A11;font-size:14px;font-family:inherit">Annuler</button>' +
         '<button id="_cpval-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:var(--terre);color:var(--paille)">✓ J\'ai fait ma part</button>' +
       '</div>' +
     '</div>';
@@ -7805,24 +7810,24 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       } else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       el.innerHTML = spotlightHtml +
-        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#fffefb;border:1px solid #eae5dc;border-radius:14px;overflow:hidden;box-shadow:none">' +
-          '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #eae5dc">' +
-            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#1C1205;color:#E4D1FE">' + cpIcon(s.icon,18) + '</span>' +
+        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#F8F6F2;border:1px solid #F8F6F2;border-radius:14px;overflow:hidden;box-shadow:none">' +
+          '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #F8F6F2">' +
+            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#110704;color:#C5DEFF">' + cpIcon(s.icon,18) + '</span>' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#6b533b;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
-              '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#412F21;line-height:1.2">' + esc(s.title) + '</div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#5A2A11;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
+              '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#110704;line-height:1.2">' + esc(s.title) + '</div>' +
             '</div>' +
-            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#ffffff;border-radius:8px;cursor:pointer;color:#6b533b;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
+            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #F8F6F2;background:ffffff;border-radius:8px;cursor:pointer;color:#5A2A11;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
           '</div>' +
           '<div style="padding:18px 20px 20px">' +
-            '<p style="font-family:Georgia,serif;font-size:15px;color:#412F21;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
+            '<p style="font-family:Georgia,serif;font-size:15px;color:#110704;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
               '<div style="display:flex;gap:5px;align-items:center">' +
-                steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#412F21':'#eae5dc')+';transition:width 200ms"></span>'; }).join('') +
+                steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#110704':'#F8F6F2')+';transition:width 200ms"></span>'; }).join('') +
               '</div>' +
               '<div style="display:flex;gap:8px">' +
-                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #eae5dc;background:#ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">Precedent</button>' : '') +
-                '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#E4D1FE;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
+                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #F8F6F2;background:ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#110704;cursor:pointer">Precedent</button>' : '') +
+                '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#C5DEFF;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#110704;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -8070,13 +8075,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function showEmptySpace(name) {
     var hello = name ? ('Bienvenue ' + esc(name)) : 'Bienvenue';
     document.getElementById('app').innerHTML =
-      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F8F6F2;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
-        '<p style="color:#485670;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
-        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
-        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.</p>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#110704;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
+        '<p style="color:#5A2A11;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
+        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#110704;color:#F8F6F2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
+        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a>.</p>' +
       '</div></div>';
   }
   function showError(kind) {
@@ -8085,31 +8090,31 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var revoked = kind === 'revoked';
     var title = revoked ? 'Ce lien n\'est plus valide' : 'Impossible de charger votre espace';
     var body = revoked
-      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a> pour obtenir un nouveau lien.'
+      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a> pour obtenir un nouveau lien.'
       : 'Le chargement n\'a pas abouti, souvent à cause d\'une connexion instable.<br><br>' +
-        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Réessayer</button><br><br>' +
-        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.';
+        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#110704;color:#F8F6F2;font-size:14px;cursor:pointer">Réessayer</button><br><br>' +
+        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a>.';
     document.getElementById('app').innerHTML =
-      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F8F6F2;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
-        '<p style="color:#485670;line-height:1.7;font-size:15px">' + body + '</p>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#110704;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
+        '<p style="color:#5A2A11;line-height:1.7;font-size:15px">' + body + '</p>' +
       '</div></div>';
   }
 
 
   // ── Couleurs espace client ─────────────────────────────────────────────────
   var CP_COLOR_DEFAULTS = {
-    '--navy':        '#1C1205',
-    '--sidebar-bg':  '#1C1205',
-    '--brown':       '#412F21',
-    '--sidebar-text':'#E4D1FE',
-    '--cream':       '#F2E5C2',
-    '--lavender':    '#E4D1FE',
-    '--blue-light':  '#E4D1FE',
-    '--bg':          '#ffffff',
-    '--surface':     '#F5F2EC',
+    '--navy':        '#110704',
+    '--sidebar-bg':  '#110704',
+    '--brown':       '#110704',
+    '--sidebar-text':'#C5DEFF',
+    '--cream':       '#F8F6F2',
+    '--lavender':    '#C5DEFF',
+    '--blue-light':  '#C5DEFF',
+    '--bg':          'ffffff',
+    '--surface':     '#F8F6F2',
   };
 
   var CP_COLOR_LABELS = [
@@ -8174,16 +8179,16 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
 
     var panel = document.createElement('div');
     panel.id = '_cp-color-panel';
-    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:none;z-index:9999;border:1px solid #ebebeb;max-height:80vh;overflow-y:auto';
+    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:none;z-index:9999;border:1px solid #F8F6F2;max-height:80vh;overflow-y:auto';
 
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
     var title = document.createElement('strong');
-    title.style.cssText = 'font-size:14px;color:#1C1205';
+    title.style.cssText = 'font-size:14px;color:#110704';
     title.textContent = 'Couleurs';
     var resetBtn = document.createElement('button');
     resetBtn.textContent = 'Reinitialiser';
-    resetBtn.style.cssText = 'font-size:11px;color:#636363;background:none;border:1px solid #e0e0e0;border-radius:6px;padding:3px 8px;cursor:pointer';
+    resetBtn.style.cssText = 'font-size:11px;color:#5A2A11;background:none;border:1px solid #F8F6F2;border-radius:6px;padding:3px 8px;cursor:pointer';
     resetBtn.onclick = function() { resetCpColors(); };
     header.appendChild(title);
     header.appendChild(resetBtn);
@@ -8209,11 +8214,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
 
         var lbl = document.createElement('span');
-        lbl.style.cssText = 'font-size:13px;color:#1a1a1a';
+        lbl.style.cssText = 'font-size:13px;color:#110704';
         lbl.textContent = item.label;
 
         var swatch = document.createElement('span');
-        swatch.style.cssText = 'width:30px;height:30px;border-radius:6px;border:1.5px solid #e0e0e0;display:inline-block;cursor:pointer;position:relative';
+        swatch.style.cssText = 'width:30px;height:30px;border-radius:6px;border:1.5px solid #F8F6F2;display:inline-block;cursor:pointer;position:relative';
         swatch.style.background = val;
 
         var inp = document.createElement('input');
@@ -8256,7 +8261,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(228,209,254,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(228,209,254,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
             '<button onclick="cpSubmitCode()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--glycine);color:var(--terre);border:0;border-radius:var(--radius-2);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Entrer ' + cpIcon('arrow', 14) + '</button>' +
           '</div>' +
-          '<div id="_code-err" style="font-family:var(--font-micro);color:#e67e6a;font-size:11px;min-height:18px;letter-spacing:0.06em;text-transform:uppercase"></div>' +
+          '<div id="_code-err" style="font-family:var(--font-micro);color:#CD8F6E;font-size:11px;min-height:18px;letter-spacing:0.06em;text-transform:uppercase"></div>' +
         '</div>' +
       '</div>';
     setTimeout(function(){ var i=document.getElementById('_code-inp'); if(i){ i.focus(); i.style.outlineColor='var(--glycine-700)'; i.addEventListener('keydown', function(e){ if(e.key==='Enter') window.cpSubmitCode(); }); } }, 60);
@@ -8327,15 +8332,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function showLogin(err){
     var app=document.getElementById('app'); if(!app) return;
     app.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--surface,#F8F6F2);padding:24px;font-family:var(--font-micro,sans-serif)">'
-    +'<div style="width:100%;max-width:400px;background:var(--card,#fffefb);border:1px solid var(--bone-d,#eae5dc);border-radius:14px;box-shadow:0 14px 40px -18px rgba(28,18,5,0.35);padding:40px 34px">'
-    +'<div style="text-align:center;margin-bottom:26px"><div style="font-family:var(--font-display,Georgia);font-style:italic;font-size:30px;color:var(--terre,#412F21)">Seed to Bloom</div>'
-    +'<div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted,#8a6f54);margin-top:6px">Espace client</div></div>'
-    +'<div style="margin-bottom:16px"><label style="display:block;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8a6f54);font-weight:600;margin-bottom:7px">Email</label>'
-    +'<input id="_stb-email" type="email" autocomplete="email" placeholder="vous@entreprise.com" style="width:100%;padding:12px 14px;border:1px solid var(--bone-d,#eae5dc);border-radius:8px;font-size:15px;color:var(--terre,#412F21);background:#fff;outline:none;box-sizing:border-box"></div>'
-    +'<div style="margin-bottom:16px"><label style="display:block;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8a6f54);font-weight:600;margin-bottom:7px">Cle d\'acces</label>'
-    +'<input id="_stb-key" type="password" maxlength="32" autocomplete="current-password" placeholder="................................" style="width:100%;padding:12px 14px;border:1px solid var(--bone-d,#eae5dc);border-radius:8px;font-size:15px;letter-spacing:2px;color:var(--terre,#412F21);background:#fff;outline:none;box-sizing:border-box"></div>'
-    +'<div id="_stb-err" style="display:'+(err?'block':'none')+';color:#9b3a2e;font-size:13px;text-align:center;background:rgba(155,58,46,0.07);border:1px solid rgba(155,58,46,0.25);padding:9px;border-radius:8px;margin-bottom:16px">'+(err||'')+'</div>'
-    +'<button id="_stb-btn" onclick="window.__stbDoLogin()" style="width:100%;padding:13px;border:none;border-radius:8px;background:var(--terre,#412F21);color:var(--paille,#F2E5C2);font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer">Acceder a mon espace</button>'
+    +'<div style="width:100%;max-width:400px;background:var(--card,#F8F6F2);border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;box-shadow:0 14px 40px -18px rgba(28,18,5,0.35);padding:40px 34px">'
+    +'<div style="text-align:center;margin-bottom:26px"><div style="font-family:var(--font-display,Georgia);font-style:italic;font-size:30px;color:var(--terre,#110704)">Seed to Bloom</div>'
+    +'<div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted,#5A2A11);margin-top:6px">Espace client</div></div>'
+    +'<div style="margin-bottom:16px"><label style="display:block;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#5A2A11);font-weight:600;margin-bottom:7px">Email</label>'
+    +'<input id="_stb-email" type="email" autocomplete="email" placeholder="vous@entreprise.com" style="width:100%;padding:12px 14px;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;font-size:15px;color:var(--terre,#110704);background:#fff;outline:none;box-sizing:border-box"></div>'
+    +'<div style="margin-bottom:16px"><label style="display:block;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#5A2A11);font-weight:600;margin-bottom:7px">Cle d\'acces</label>'
+    +'<input id="_stb-key" type="password" maxlength="32" autocomplete="current-password" placeholder="................................" style="width:100%;padding:12px 14px;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;font-size:15px;letter-spacing:2px;color:var(--terre,#110704);background:#fff;outline:none;box-sizing:border-box"></div>'
+    +'<div id="_stb-err" style="display:'+(err?'block':'none')+';color:#5A2A11;font-size:13px;text-align:center;background:rgba(155,58,46,0.07);border:1px solid rgba(155,58,46,0.25);padding:9px;border-radius:8px;margin-bottom:16px">'+(err||'')+'</div>'
+    +'<button id="_stb-btn" onclick="window.__stbDoLogin()" style="width:100%;padding:13px;border:none;border-radius:8px;background:var(--terre,#110704);color:var(--paille,#F8F6F2);font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer">Acceder a mon espace</button>'
     +'</div></div>';
     var k=document.getElementById('_stb-key'); if(k){ k.addEventListener('keydown',function(e){ if(e.key==='Enter') window.__stbDoLogin(); }); }
     var em=document.getElementById('_stb-email'); if(em) em.focus();
@@ -8430,17 +8435,17 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var validated = l.status === 'valide' || l.status === 'refuse';
     var needConsult = !!(lnk && !dl && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
     // Pastilles + boutons alignés sur la nouvelle DA (Inter, arrondis 12px, palette terre/nuit).
-    var STCOL = { a_valider:['À valider','#efe1ff','#59409a'], valide:['Validé','#e3f0e7','#2f7d4e'], refuse:['Révision demandée','#f6e9d6','#8a6414'] };
+    var STCOL = { a_valider:['À valider','#C5DEFF','#5A2A11'], valide:['Validé','#F8F6F2','#5A2A11'], refuse:['Révision demandée','#F8F6F2','#5A2A11'] };
     var stc = STCOL[l.status] || ['', 'var(--surface)', 'var(--terre-600)'];
     var pill = stc[0] ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 11px;border-radius:99px;background:'+stc[1]+';color:'+stc[2]+';white-space:nowrap;flex-shrink:0">'+esc(stc[0])+'</span>' : '';
     var SOFT = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:var(--terre);box-shadow:inset 0 0 0 1px var(--bone-d);border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;text-decoration:none';
-    var PRIM = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--nuit);color:#f6efe6;border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer';
+    var PRIM = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--nuit);color:#F8F6F2;border:none;border-radius:12px;padding:11px 18px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer';
     var openBtn = dl
       ? '<a style="'+SOFT+'" href="'+dl+'">'+cpIcon('download',14,'color:var(--terre)')+' Télécharger</a>'
       : (lnk ? '<a style="'+SOFT+'" href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')">'+cpIcon('external',14,'color:var(--terre)')+' Ouvrir le livrable</a>' : '');
     var decideRow = validated ? '' : (needConsult
       ? '<div style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);line-height:1.5">Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
-      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="'+PRIM+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">'+cpIcon('check',14,'color:#f6efe6')+' Valider</button>'+
+      : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="'+PRIM+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')">'+cpIcon('check',14,'color:#F8F6F2')+' Valider</button>'+
         '<button style="'+SOFT+'" onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')">Demander une révision</button></div>');
     return '<div style="background:#fff;border:1px solid var(--bone-d);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:12px">'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="flex:1;min-width:0;font-family:var(--font-micro);font-size:14px;font-weight:500;color:var(--terre);word-break:break-word">'+esc(l.name)+'</span>'+pill+'</div>'+
@@ -8509,14 +8514,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:18px';
     ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:540px;width:100%;padding:26px;box-shadow:0 24px 70px -24px rgba(0,0,0,0.45);max-height:92vh;overflow:auto">' +
-      '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#412F21);margin-bottom:6px">Demander une revision</div>' +
-      '<div style="font-size:13px;color:var(--muted,#8a7d6b);line-height:1.5;margin-bottom:16px">Expliquez ce qui doit etre modifie. Vous pouvez joindre des fichiers (visuels annotes, exemples...) et un lien.</div>' +
-      '<textarea id="_stbrev-txt" placeholder="Ce qui doit etre revu, le plus precisement possible..." style="width:100%;box-sizing:border-box;min-height:140px;resize:vertical;padding:13px 15px;border:1px solid #e2dbd0;border-radius:11px;font-family:inherit;font-size:14.5px;line-height:1.55;color:var(--navy,#1C1205)"></textarea>' +
-      '<input id="_stbrev-link" type="text" placeholder="Lien (Drive, Figma, WeTransfer...)" style="width:100%;box-sizing:border-box;margin-top:11px;padding:12px 15px;border:1px solid #e2dbd0;border-radius:11px;font-size:14px">' +
-      '<label style="display:block;margin-top:11px;font-size:13px;color:var(--terre,#412F21)">Pour quelle date souhaitez-vous la nouvelle version&nbsp;? <span style="color:var(--muted,#8a7d6b)">(optionnel)</span><input id="_stbrev-date" type="date" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px 15px;border:1px solid #e2dbd0;border-radius:11px;font-size:14px;color:var(--navy,#1C1205)"></label>' +
-      '<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--terre,#412F21);cursor:pointer;padding:10px 15px;border:1.5px dashed #cbb994;border-radius:11px;margin-top:11px">' + cpIcon('paperclip',15,'flex-shrink:0') + '<span>Joindre des fichiers</span><input id="_stbrev-file" type="file" multiple style="display:none"></label>' +
+      '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#110704);margin-bottom:6px">Demander une revision</div>' +
+      '<div style="font-size:13px;color:var(--muted,#F8F6F2);line-height:1.5;margin-bottom:16px">Expliquez ce qui doit etre modifie. Vous pouvez joindre des fichiers (visuels annotes, exemples...) et un lien.</div>' +
+      '<textarea id="_stbrev-txt" placeholder="Ce qui doit etre revu, le plus precisement possible..." style="width:100%;box-sizing:border-box;min-height:140px;resize:vertical;padding:13px 15px;border:1px solid #F8F6F2;border-radius:11px;font-family:inherit;font-size:14.5px;line-height:1.55;color:var(--navy,#110704)"></textarea>' +
+      '<input id="_stbrev-link" type="text" placeholder="Lien (Drive, Figma, WeTransfer...)" style="width:100%;box-sizing:border-box;margin-top:11px;padding:12px 15px;border:1px solid #F8F6F2;border-radius:11px;font-size:14px">' +
+      '<label style="display:block;margin-top:11px;font-size:13px;color:var(--terre,#110704)">Pour quelle date souhaitez-vous la nouvelle version&nbsp;? <span style="color:var(--muted,#F8F6F2)">(optionnel)</span><input id="_stbrev-date" type="date" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px 15px;border:1px solid #F8F6F2;border-radius:11px;font-size:14px;color:var(--navy,#110704)"></label>' +
+      '<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--terre,#110704);cursor:pointer;padding:10px 15px;border:1.5px dashed #F8F6F2;border-radius:11px;margin-top:11px">' + cpIcon('paperclip',15,'flex-shrink:0') + '<span>Joindre des fichiers</span><input id="_stbrev-file" type="file" multiple style="display:none"></label>' +
       '<div id="_stbrev-files" style="margin-top:9px;display:flex;flex-direction:column;gap:6px"></div>' +
-      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button id="_stbrev-cancel" style="padding:11px 18px;border:1px solid #e2dbd0;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;color:var(--navy,#1C1205)">Annuler</button><button id="_stbrev-ok" style="padding:11px 22px;border:none;border-radius:10px;background:var(--terre,#412F21);color:#fff;cursor:pointer;font-size:14px;font-weight:700">Envoyer la demande</button></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px"><button id="_stbrev-cancel" style="padding:11px 18px;border:1px solid #F8F6F2;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;color:var(--navy,#110704)">Annuler</button><button id="_stbrev-ok" style="padding:11px 22px;border:none;border-radius:10px;background:var(--terre,#110704);color:#fff;cursor:pointer;font-size:14px;font-weight:700">Envoyer la demande</button></div>' +
     '</div>';
     document.body.appendChild(ov);
     function close(){ ov.remove(); }
@@ -8525,7 +8530,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var fileInput = ov.querySelector('#_stbrev-file');
     var filesBox = ov.querySelector('#_stbrev-files');
     function renderFiles(){
-      filesBox.innerHTML = files.map(function(f, i){ return '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--terre,#412F21);background:#f7f3ed;border-radius:8px;padding:6px 10px">' + cpIcon('paperclip',13,'flex-shrink:0;opacity:0.6') + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</span><button data-i="' + i + '" style="background:none;border:none;color:#c0533b;cursor:pointer;font-size:12px">Retirer</button></div>'; }).join('');
+      filesBox.innerHTML = files.map(function(f, i){ return '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--terre,#110704);background:#F8F6F2;border-radius:8px;padding:6px 10px">' + cpIcon('paperclip',13,'flex-shrink:0;opacity:0.6') + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</span><button data-i="' + i + '" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:12px">Retirer</button></div>'; }).join('');
       Array.prototype.forEach.call(filesBox.querySelectorAll('button'), function(b){ b.onclick = function(){ files.splice(parseInt(b.getAttribute('data-i'), 10), 1); renderFiles(); }; });
     }
     fileInput.onchange = function(){
@@ -8563,9 +8568,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var prevDlv = dlvAll.slice(0, Math.max(0, dlvAll.length - 1));
     var rl = t.reviewLink || '';
     var lab = { a_valider:'A valider', valide:'Valide', refuse:'Revision demandee' };
-    var col = { a_valider:'#c9952f', valide:'#3f8f5b', refuse:'#c0533b' };
-    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Vos livrables</span></div>';
-    var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #ecd9ad;background:#fbf3e1;border-radius:10px;color:#7a5a14;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser vos retours</span></a>' : '';
+    var col = { a_valider:'#CD8F6E', valide:'#5A2A11', refuse:'#5A2A11' };
+    var hd = '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)">Vos livrables</span></div>';
+    var rlHtml = rl ? '<a href="'+esc(rl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #F8F6F2;background:#F8F6F2;border-radius:10px;color:#5A2A11;text-decoration:none;font-size:12.5px;margin-bottom:8px">'+cpIcon('link',14)+'<span>Voir le lien de relecture et laisser vos retours</span></a>' : '';
     var rows = dlv.map(function(l){
       var dl = l.fileKey ? (API_BASE + '/files/' + encodeURIComponent(l.fileKey) + '/download') : null;
       var lnk = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink) ? l.reviewLink : 'https://' + l.reviewLink) : '';
@@ -8573,32 +8578,32 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       // Livrable-lien : la cliente doit ouvrir le lien avant de pouvoir décider.
       var needConsult = !!(lnk && typeof cpConsulted !== 'undefined' && !cpConsulted[l.id]);
       var openBtn = dl
-        ? '<div style="font-size:12px;color:#5d7a52;margin-top:8px">Votre livrable est prêt, vous pouvez le récupérer ici.</div><a href="'+dl+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:#3f8f5b;color:#fff;text-decoration:none">'+cpIcon('download',15)+'<span>Télécharger votre livrable</span></a>'
-        : (lnk ? '<div style="font-size:12px;color:#5d7a52;margin-top:8px">Votre livrable est disponible via ce lien.</div><a href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:var(--terre,#412F21);color:#fff;text-decoration:none">'+cpIcon('external',15)+'<span>Ouvrir le livrable</span></a>' : '');
+        ? '<div style="font-size:12px;color:#5A2A11;margin-top:8px">Votre livrable est prêt, vous pouvez le récupérer ici.</div><a href="'+dl+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:#5A2A11;color:#fff;text-decoration:none">'+cpIcon('download',15)+'<span>Télécharger votre livrable</span></a>'
+        : (lnk ? '<div style="font-size:12px;color:#5A2A11;margin-top:8px">Votre livrable est disponible via ce lien.</div><a href="'+esc(lnk)+'" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\''+l.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:13px;font-weight:700;padding:12px;border:none;border-radius:9px;background:var(--terre,#110704);color:#fff;text-decoration:none">'+cpIcon('external',15)+'<span>Ouvrir le livrable</span></a>' : '');
       var decideRow = needConsult
-        ? '<div style="margin-top:8px;font-size:12px;color:#7a5a14;background:#fbf3d9;border:1px solid #f0e2b0;border-radius:8px;padding:8px 10px">👀 Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
-        : '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:9px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:9px;border:1px solid #e2dbd0;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Demander une révision</button></div>';
-      return '<div style="border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:12px 13px;margin-bottom:8px;background:#fffdf8">'+
-        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#1C1205);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
+        ? '<div style="margin-top:8px;font-size:12px;color:#5A2A11;background:#F8F6F2;border:1px solid #F8F6F2;border-radius:8px;padding:8px 10px">👀 Ouvrez d\'abord le livrable pour pouvoir le valider ou demander une révision.</div>'
+        : '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'valide\')" style="flex:1;padding:9px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Valider</button><button onclick="window.stbValidate(\''+pid+'\',\''+l.id+'\',\'refuse\')" style="flex:1;padding:9px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Demander une révision</button></div>';
+      return '<div style="border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:12px 13px;margin-bottom:8px;background:#F8F6F2">'+
+        '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--navy,#110704);overflow:hidden">'+cpIcon(lnk && !dl ? 'link' : 'file-text',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+'</span></span>'+
         '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(col[l.status]||'#999')+';color:#fff;white-space:nowrap">'+(lab[l.status]||l.status)+'</span></div>'+
         openBtn +
-        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,#8090a8);font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
+        (l.clientComment ? '<div style="font-size:11px;color:var(--muted,#C5DEFF);font-style:italic;margin-top:6px">« '+esc(l.clientComment)+' »</div>' : '')+
         (!done ? decideRow : '')+
       '</div>';
     }).join('');
     // Versions précédentes (repliées, lecture seule) : simple historique.
     var prevHtml = prevDlv.length
-      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,#8090a8);padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
+      ? '<details style="margin-top:2px"><summary style="cursor:pointer;font-size:11px;color:var(--muted,#C5DEFF);padding:4px 0;list-style:none">Versions précédentes · '+prevDlv.length+'</summary>'+
         prevDlv.slice().reverse().map(function(l){
           var u = l.reviewLink ? (/^https?:\/\//i.test(l.reviewLink)?l.reviewLink:'https://'+l.reviewLink) : (l.fileKey ? (API_BASE+'/files/'+encodeURIComponent(l.fileKey)+'/download') : '');
-          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#faf7f0;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,#8090a8)">'+
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;font-size:12px;color:var(--muted,#C5DEFF)">'+
             '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.name)+' · '+(lab[l.status]||l.status)+'</span>'+
-            (u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#7a6030);text-decoration:none;flex-shrink:0">Ouvrir</a>' : '')+
+            (u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--terre-600,#5A2A11);text-decoration:none;flex-shrink:0">Ouvrir</a>' : '')+
           '</div>';
         }).join('')+'</details>'
       : '';
     var body = rlHtml + rows + prevHtml;
-    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,#8090a8);padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
+    if (!dlv.length && !rl) { body = '<div style="font-size:12.5px;color:var(--muted,#C5DEFF);padding:4px 0;line-height:1.5">Votre livrable apparaîtra ici dès qu\'il sera prêt. Vous pourrez le télécharger, puis le valider ou demander une révision en un clic.</div>'; }
     return hd + '<div style="margin-bottom:4px">' + body + '</div>' + sep;
   }
 
@@ -8660,7 +8665,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
    * couleur, surligne, taille). Le contenu est stocké en HTML nettoyé (liste
    * blanche de balises/styles), sûr à réafficher côté admin. */
   var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', S:'s', STRIKE:'s', DEL:'s', A:'a', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
-  var STB_LINK_STYLE = 'color:#5e3fa0;text-decoration:underline';
+  var STB_LINK_STYLE = 'color:#5A2A11;text-decoration:underline';
   function stbHrefSafe(h){
     h = String(h == null ? '' : h).trim();
     if (/^(https?:|mailto:)/i.test(h)) return h.replace(/["'<>\s]/g, '');
@@ -8839,9 +8844,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (_stbSlashMenu) return _stbSlashMenu;
     var m = document.createElement('div');
     m.id = 'stb-slash';
-    m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
+    m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
     m.innerHTML = STB_SLASH_ITEMS.map(function(it){
-      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#f7f2ea\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#1C1205">'+esc(it[1])+'</span><span style="font-size:11px;color:#9a93a5">'+esc(it[2])+'</span></button>';
+      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#110704">'+esc(it[1])+'</span><span style="font-size:11px;color:#C5DEFF">'+esc(it[2])+'</span></button>';
     }).join('');
     document.body.appendChild(m); _stbSlashMenu = m; return m;
   }
@@ -8895,8 +8900,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   window.stbCalloutIcon = function(pid, taskId, blockId){
     var old = document.getElementById('stb-emoji-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
     var pop = document.createElement('div'); pop.id = 'stb-emoji-pop';
-    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px';
-    pop.innerHTML = STB_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSetCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+e+'\')" style="border:none;background:none;font-size:19px;cursor:pointer;padding:4px;border-radius:6px" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">'+e+'</button>'; }).join('');
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px';
+    pop.innerHTML = STB_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSetCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+e+'\')" style="border:none;background:none;font-size:19px;cursor:pointer;padding:4px;border-radius:6px" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'">'+e+'</button>'; }).join('');
     document.body.appendChild(pop);
     var btn = document.getElementById('stb-cico-' + blockId);
     if (btn){ var r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + window.pageYOffset + 4) + 'px'; pop.style.left = (r.left + window.pageXOffset) + 'px'; }
@@ -8910,15 +8915,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   // Couleur de fond d'un bloc.
-  var STB_BLOCK_BG = ['', '#FCE79A', '#E4D1FE', '#F0E8FF', '#cfe9cf', '#f6c9d6', '#F2E5C2', '#F8F6F2', '#e7eef6', '#fbe7dd', '#efe7d7', '#1C1205'];
+  var STB_BLOCK_BG = ['', '#F8F6F2', '#C5DEFF', '#C5DEFF', '#F8F6F2', '#F8F6F2', '#F8F6F2', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#F8F6F2', '#110704'];
   window.stbBlockBg = function(pid, taskId, blockId){
     var old = document.getElementById('stb-bg-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
     var pop = document.createElement('div'); pop.id = 'stb-bg-pop';
-    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px';
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px';
     pop.innerHTML = STB_BLOCK_BG.map(function(c){
       var isNone = !c;
       var sw = isNone ? 'background:#fff;border:1px solid #ddd;position:relative' : 'background:'+c+';border:1px solid rgba(0,0,0,0.1)';
-      var cross = isNone ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#c0533b;font-size:13px">⦸</span>' : '';
+      var cross = isNone ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#5A2A11;font-size:13px">⦸</span>' : '';
       return '<button type="button" title="'+(isNone?'Aucune':c)+'" onmousedown="event.preventDefault()" onclick="window.stbSetBlockBg(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+c+'\')" style="width:24px;height:24px;border-radius:7px;cursor:pointer;padding:0;'+sw+'">'+cross+'</button>';
     }).join('');
     document.body.appendChild(pop);
@@ -8953,23 +8958,23 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (_stbTB) return _stbTB;
     var tb = document.createElement('div');
     tb.id = 'stb-rt-tb';
-    tb.style.cssText = 'position:absolute;z-index:99999;display:none;align-items:center;gap:1px;white-space:nowrap;background:#2a1d10;border:1px solid rgba(242,229,194,0.14);border-radius:12px;box-shadow:0 14px 34px -10px rgba(0,0,0,0.55);padding:5px 6px';
+    tb.style.cssText = 'position:absolute;z-index:99999;display:none;align-items:center;gap:1px;white-space:nowrap;background:#110704;border:1px solid rgba(242,229,194,0.14);border-radius:12px;box-shadow:0 14px 34px -10px rgba(0,0,0,0.55);padding:5px 6px';
     // b = bouton texte ; id optionnel pour l'état actif (gras/italique/souligné)
-    function btn(html, act, title, id){ return '<button type="button"'+(id?' id="'+id+'"':'')+' title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=this.getAttribute(\'data-on\')===\'1\'?\'rgba(242,229,194,0.22)\':\'none\'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;font-size:14px;min-width:30px;height:30px;border-radius:8px;line-height:1;padding:0 5px;transition:background .12s">'+html+'</button>'; }
+    function btn(html, act, title, id){ return '<button type="button"'+(id?' id="'+id+'"':'')+' title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=this.getAttribute(\'data-on\')===\'1\'?\'rgba(242,229,194,0.22)\':\'none\'" style="border:none;background:none;color:#F8F6F2;cursor:pointer;font-size:14px;min-width:30px;height:30px;border-radius:8px;line-height:1;padding:0 5px;transition:background .12s">'+html+'</button>'; }
     function sw(color, kind, ring){ return '<button type="button" title="'+(kind==='color'?'Couleur du texte':'Surligner')+'" onmousedown="event.preventDefault()" onclick="window.stbFmt(\''+kind+'\',\''+color+'\')" style="border:1px solid '+(ring||'rgba(255,255,255,0.22)')+';background:'+color+';cursor:pointer;width:19px;height:19px;border-radius:50%;padding:0;margin:0 2px;transition:transform .1s" onmouseover="this.style.transform=\'scale(1.18)\'" onmouseout="this.style.transform=\'none\'"></button>'; }
     var sep = '<span style="display:inline-block;width:1px;height:19px;background:rgba(242,229,194,0.22);margin:0 5px;vertical-align:middle"></span>';
     // Bouton « enlever le surlignement » (gomme)
-    var clearBg = '<button type="button" title="Enlever le surlignement" onmousedown="event.preventDefault()" onclick="window.stbFmt(\'nobg\')" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=\'none\'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;height:30px;min-width:30px;border-radius:8px;padding:0 5px;transition:background .12s;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path></svg></button>';
+    var clearBg = '<button type="button" title="Enlever le surlignement" onmousedown="event.preventDefault()" onclick="window.stbFmt(\'nobg\')" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=\'none\'" style="border:none;background:none;color:#F8F6F2;cursor:pointer;height:30px;min-width:30px;border-radius:8px;padding:0 5px;transition:background .12s;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path></svg></button>';
     tb.innerHTML =
       btn('<b>G</b>', "window.stbFmt('bold')", 'Gras', 'stb-b-b') +
       btn('<span style=\'font-style:italic;font-family:serif\'>I</span>', "window.stbFmt('italic')", 'Italique', 'stb-b-i') +
       btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') +
       btn('<span style=\'text-decoration:line-through\'>S</span>', "window.stbFmt('strike')", 'Barré', 'stb-b-s') + sep +
       btn('<span style=\'font-size:9px;vertical-align:1px\'>A</span><span style=\'font-size:8px\'>–</span>', "window.stbFmt('small')", 'Réduire le texte') +
-      '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#c9bfae;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
+      '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#F8F6F2;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
       btn('<span style=\'font-size:15px\'>A</span><span style=\'font-size:10px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte (par paliers)') + sep +
-      sw('#1C1205','color','rgba(255,255,255,0.35)') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
-      sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg') + sw('#f6c9d6','bg') + clearBg;
+      sw('#110704','color','rgba(255,255,255,0.35)') + sw('#5A2A11','color') + sw('#5A2A11','color') + sw('#5A2A11','color') + sep +
+      sw('#F8F6F2','bg') + sw('#C5DEFF','bg') + sw('#F8F6F2','bg') + sw('#F8F6F2','bg') + clearBg;
     document.body.appendChild(tb);
     _stbTB = tb; return tb;
   }
@@ -9117,15 +9122,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
     }, true);
     var _stbPh = document.createElement('style');
-    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
+    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#F8F6F2;pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
-      + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}'
+      + '[data-stb-rich] a{color:#5A2A11;text-decoration:underline;cursor:pointer}'
       + '.stb-row .stb-ctrl{opacity:.28;transition:opacity .12s}'
       + '.stb-row:hover .stb-ctrl{opacity:1}'
-      + '.stb-ctrl button:hover{background:#f4eee2!important;color:#412F21!important}'
+      + '.stb-ctrl button:hover{background:#F8F6F2!important;color:#110704!important}'
       + '.stb-del{opacity:.5;transition:opacity .12s,background .12s,color .12s}'
       + '.stb-row:hover .stb-del{opacity:.9}'
-      + '.stb-del:hover{opacity:1;background:#fdece9!important;color:#c0392b!important}';
+      + '.stb-del:hover{opacity:1;background:#F8F6F2!important;color:#5A2A11!important}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
@@ -9170,90 +9175,90 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
     return '<div id="stb-f-'+b.id+'" contenteditable="true" data-stb-rich="1" data-stb-block="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-ph="'+ph+'" '+
-      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" onkeydown="window.stbRichKey(event,this)" '+
-      'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
+      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#F8F6F2)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" onkeydown="window.stbRichKey(event,this)" '+
+      'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#110704);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   // Champs sur une ligne (titres, sections, listes) = texte simple : on retire
   // toute balise résiduelle (ex. « <br> » laissé par un champ vidé).
   function stbPlain(v){ return String(v == null ? '' : v).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/​/g, '').trim(); }
   function stbLineInput(pid, taskId, b, ph, extra){
-    return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
+    return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#110704);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
-    var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#e8e0d4);border-radius:5px;background:#fff;color:#8a6f54;cursor:pointer;font-size:11px;line-height:1;padding:0';
+    var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#F8F6F2);border-radius:5px;background:#fff;color:#5A2A11;cursor:pointer;font-size:11px;line-height:1;padding:0';
     var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
-      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?b.bg:'#8a6f54')+';font-size:11px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
+      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?b.bg:'#5A2A11')+';font-size:11px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
     '</div>';
-    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #efd9d4;border-radius:7px;background:#fbf1ef;color:#c0392b;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
+    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #F8F6F2;border-radius:7px;background:#F8F6F2;color:#5A2A11;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
     if (b.type === 'sep') {
-      inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#F8F6F2);margin:0"></div>';
     } else if (b.type === 'section') {
       var arrow = b.collapsed ? '▸' : '▾';
       inner = '<div style="flex:1;display:flex;align-items:center;gap:7px">'+
-        '<button type="button" onclick="window.stbSectionToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Dérouler / masquer" style="border:none;background:none;cursor:pointer;font-size:13px;color:#7a5ca8;padding:2px 5px;border-radius:5px;flex-shrink:0">'+arrow+'</button>'+
-        stbLineInput(pid, taskId, b, 'Titre de section', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:700;color:var(--navy,#1C1205)')+
+        '<button type="button" onclick="window.stbSectionToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Dérouler / masquer" style="border:none;background:none;cursor:pointer;font-size:13px;color:#5A2A11;padding:2px 5px;border-radius:5px;flex-shrink:0">'+arrow+'</button>'+
+        stbLineInput(pid, taskId, b, 'Titre de section', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:700;color:var(--navy,#110704)')+
       '</div>';
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
-      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
+      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;color:var(--navy,#110704);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
     } else if (b.type === 'image') {
       var iu = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '';
       inner = iu
         ? '<a href="'+iu+'" target="_blank" style="flex:1;min-width:0;display:block;line-height:0"><img src="'+iu+'" alt="'+esc(b.name||'')+'" style="max-width:100%;max-height:360px;border-radius:10px;display:block"></a>'
-        : '<div style="flex:1;padding:14px;background:#faf7f1;border:1px dashed var(--bone-d,#e8e0d4);border-radius:10px;color:#9a8a72;font-size:12.5px;text-align:center">Image…</div>';
+        : '<div style="flex:1;padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Image…</div>';
     } else if (b.type === 'heading') {
       inner = stbLineInput(pid, taskId, b, 'Titre', 'font-family:\'Inter Tight\',sans-serif;font-size:21px;font-weight:600');
     } else if (b.type === 'subheading') {
       inner = stbLineInput(pid, taskId, b, 'Sous-titre', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:600');
     } else if (b.type === 'todo') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px">'+
-        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#5fa873;flex-shrink:0">'+
-        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#9a93a5':'')+
+        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#F8F6F2;flex-shrink:0">'+
+        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#C5DEFF':'')+
       '</div>';
     } else if (b.type === 'list') {
-      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#CD8F6E;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
     } else if (b.type === 'numbered') {
-      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#CD8F6E;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
     } else if (b.type === 'quote') {
-      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#6f5a40;background:#f7f2ea');
+      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#5A2A11;background:#F8F6F2');
     } else if (b.type === 'callout') {
       var cico = b.icon || '💡';
-      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 8px">'+
-        '<button type="button" id="stb-cico-'+b.id+'" onclick="window.stbCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Changer l\'icône" style="flex-shrink:0;margin-top:6px;border:none;background:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 3px;border-radius:6px" onmouseover="this.style.background=\'#e3d3fa\'" onmouseout="this.style.background=\'none\'">'+esc(cico)+'</button>'+
+      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px;background:#C5DEFF;border-radius:10px;padding:6px 12px 6px 8px">'+
+        '<button type="button" id="stb-cico-'+b.id+'" onclick="window.stbCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Changer l\'icône" style="flex-shrink:0;margin-top:6px;border:none;background:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 3px;border-radius:6px" onmouseover="this.style.background=\'#C5DEFF\'" onmouseout="this.style.background=\'none\'">'+esc(cico)+'</button>'+
         stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
     } else if (b.type === 'table') {
       if (!Array.isArray(b.rows) || !b.rows.length) b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']];
       var ncol = b.rows[0].length;
       var thead = '<tr>' + b.rows[0].map(function(c, ci){
-        return '<th style="border:1px solid var(--bone-d,#e8e0d4);background:#f4eee2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#1C1205);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
+        return '<th style="border:1px solid var(--bone-d,#F8F6F2);background:#F8F6F2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#110704);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
       }).join('') + '<th style="border:none;width:20px"></th></tr>';
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
         return '<tr>' + row.map(function(c, ci){
-          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
+          return '<td style="border:1px solid var(--bone-d,#F8F6F2);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#110704);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
         }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
       }).join('');
       inner = '<div style="flex:1;min-width:0;overflow-x:auto"><table style="border-collapse:collapse;width:100%;background:#fff;border-radius:8px"><tbody>'+thead+tbody+'</tbody></table>'+
         '<div style="display:flex;gap:6px;margin-top:7px">'+
-          '<button onclick="window.stbTableAddRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Ligne</button>'+
-          '<button onclick="window.stbTableAddCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Colonne</button>'+
+          '<button onclick="window.stbTableAddRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Ligne</button>'+
+          '<button onclick="window.stbTableAddCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Colonne</button>'+
         '</div></div>';
     } else if (b.type === 'link') {
       var lu = b.url || '';
-      inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:10px 12px">'+
-        '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#1C1205);outline:none">'+
-        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#9a8a72;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#6f5a40;outline:none;min-width:0">'+
-        (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#7a5a14;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
+      inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:10px 12px">'+
+        '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#110704);outline:none">'+
+        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#F8F6F2;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#5A2A11;outline:none;min-width:0">'+
+        (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#5A2A11;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
       '</div>';
     } else if (b.type === 'embed') {
       var eu = b.url || ''; var emb = stbEmbedUrl(eu);
       inner = '<div style="flex:1;min-width:0">'+
-        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#faf7f1;border:1px dashed var(--bone-d,#e8e0d4);border-radius:10px;color:#9a8a72;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
-        '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#e8e0d4);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
+        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
+        '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#F8F6F2);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
       '</div>';
     } else {
       inner = stbBlockTA(pid, taskId, b, 'Écrire…');
@@ -9268,12 +9273,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       : (type==='image')
         ? 'window.stbBlockMenu(\''+taskId+'\');window.stbBlockAddImage(\''+pid+'\',\''+taskId+'\')'
         : 'window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')';
-    return '<button onclick="'+act+'" onmouseover="this.style.background=\'#f7f2ea\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
-      '<span style="width:30px;height:30px;border-radius:8px;background:#f4eee2;display:flex;align-items:center;justify-content:center;color:#6f5a40;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
-      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#1C1205)">'+label+'</span><span style="display:block;font-size:11px;color:#9a93a5">'+desc+'</span></span>'+
+    return '<button onclick="'+act+'" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
+      '<span style="width:30px;height:30px;border-radius:8px;background:#F8F6F2;display:flex;align-items:center;justify-content:center;color:#5A2A11;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
+      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#110704)">'+label+'</span><span style="display:block;font-size:11px;color:#C5DEFF">'+desc+'</span></span>'+
     '</button>';
   }
-  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#b3aa9a;padding:8px 10px 4px">'+txt+'</div>'; }
+  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#F8F6F2;padding:8px 10px 4px">'+txt+'</div>'; }
   function stbBlocksInner(pid, t){
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     var num = 0, hidden = false;
@@ -9283,7 +9288,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (b.type === 'numbered') num++; else num = 0;
       return stbBlockRow(pid, t.id, b, i, blocks.length, num);
     }).join('');
-    var menu = '<div id="stb-menu-'+t.id+'" style="display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:6;background:#fff;border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:262px;max-height:340px;overflow-y:auto">'+
+    var menu = '<div id="stb-menu-'+t.id+'" style="display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:6;background:#fff;border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:262px;max-height:340px;overflow-y:auto">'+
       stbMenuGroupTitle('Texte')+
       stbMI(pid, t.id, 'heading', 'heading', 'Titre', 'Grand titre de section')+
       stbMI(pid, t.id, 'subheading', 'heading', 'Sous-titre', 'Titre secondaire')+
@@ -9305,11 +9310,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       stbMI(pid, t.id, 'file', 'paperclip', 'Fichier', 'Joindre un document')+
     '</div>';
     var addBar = '<div id="stb-bm-'+t.id+'" style="position:relative;margin-top:12px">'+
-      '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#e2dbd0);border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
-      '<span style="font-size:11.5px;color:#9a93a5;margin-left:10px">ou tapez <b style="font-family:monospace;background:#f4eee2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
+      '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#F8F6F2);border-radius:9px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
+      '<span style="font-size:11.5px;color:#C5DEFF;margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
       menu+
     '</div>';
-    var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
+    var empty = '<div style="font-size:13px;color:var(--muted,#C5DEFF);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
     return (rows || empty) + addBar + stbHistoryHtml(pid, t);
   }
   // Aperçu court d'une version (pour l'historique).
@@ -9330,15 +9335,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (!h.length) return '';
     var rows = h.map(function(e, idx){ return { e: e, idx: idx }; }).reverse().map(function(o){
       var e = o.e; var who = e.by === 'studio' ? 'Studio' : 'Vous'; var when = e.at ? fmtShort(e.at) : '';
-      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;margin-top:6px;background:#fff">'+
+      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;background:#fff">'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:10px;font-weight:700;color:var(--muted,#8090a8);margin-bottom:3px">'+esc(who)+(when?' · '+esc(when):'')+'</div>'+
-          '<div style="font-size:12px;line-height:1.5;color:#6f5a40;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(stbBlocksPreview(e.blocks))+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:var(--muted,#C5DEFF);margin-bottom:3px">'+esc(who)+(when?' · '+esc(when):'')+'</div>'+
+          '<div style="font-size:12px;line-height:1.5;color:#5A2A11;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(stbBlocksPreview(e.blocks))+'</div>'+
         '</div>'+
-        '<button onclick="window.stbRestore(\''+pid+'\',\''+t.id+'\','+o.idx+')" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">Restaurer</button>'+
+        '<button onclick="window.stbRestore(\''+pid+'\',\''+t.id+'\','+o.idx+')" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">Restaurer</button>'+
       '</div>';
     }).join('');
-    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#8090a8);letter-spacing:0.04em">Historique, versions précédentes ('+h.length+')</summary>'+
+    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#C5DEFF);letter-spacing:0.04em">Historique, versions précédentes ('+h.length+')</summary>'+
       '<div style="margin-top:4px">'+rows+'</div></details>';
   }
   window.stbRestore = function(pid, taskId, index){
@@ -9357,9 +9362,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (!t.blocks.length) t.blocks = [{ id: stbBid(), type:'text', text:'' }];
       t._blkInit = true;
     }
-    return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:22px;padding-top:20px">'+
-      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Votre demande</span></div>'+
-      '<div style="font-size:11.5px;color:#9a93a5;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
+    return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
+      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Votre demande</span></div>'+
+      '<div style="font-size:11.5px;color:#C5DEFF;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }
@@ -9538,9 +9543,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
  * Cette déclaration arrive APRÈS l'originale : en JS, la dernière l'emporte.
  * Ni backtick ni séquence dollar-accolade (template String.raw).
  */
-  function dPillStyle(bg){ return 'border:none;-webkit-appearance:none;appearance:none;background:'+bg+';color:#412F21;font-family:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px;cursor:pointer;max-width:100%'; }
+  function dPillStyle(bg){ return 'border:none;-webkit-appearance:none;appearance:none;background:'+bg+';color:#110704;font-family:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px;cursor:pointer;max-width:100%'; }
   function dPropPill(pid, t, propId, current, opts, colorMap, ph){
-    var bg = (current && colorMap[current]) || '#EFEAF7';
+    var bg = (current && colorMap[current]) || '#C5DEFF';
     var s = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\''+propId+'\',this.value)" style="'+dPillStyle(bg)+'">';
     s += '<option value=""'+(!current?' selected':'')+'>'+ph+'</option>';
     opts.forEach(function(o){ s += '<option'+(current===o?' selected':'')+'>'+esc(o)+'</option>'; });
@@ -9549,16 +9554,16 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
   function dStatusPill(pid, t){
     var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider', done:'Livrée' };
-    var col = { todo:'#E9E2D2', in_progress:'#CBD8F5', review:'#F6E59E', done:'#C9E6CB' };
+    var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#F8F6F2', done:'#F8F6F2' };
     var cur = t.status || 'todo';
-    var s = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[cur]||'#EFEAF7')+'">';
+    var s = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[cur]||'#C5DEFF')+'">';
     ['todo','in_progress','review','done'].forEach(function(k){ s += '<option value="'+k+'"'+(cur===k?' selected':'')+'>'+map[k]+'</option>'; });
     s += '</select>';
     return s;
   }
   function dRow(icon, label, valueHtml){
-    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid #f4f0ea">'+
-      '<div style="display:flex;align-items:center;gap:8px;width:160px;flex-shrink:0;color:#8a7256;font-size:12.5px;padding-top:7px"><span style="opacity:0.85">'+icon+'</span><span>'+label+'</span></div>'+
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid #F8F6F2">'+
+      '<div style="display:flex;align-items:center;gap:8px;width:160px;flex-shrink:0;color:#5A2A11;font-size:12.5px;padding-top:7px"><span style="opacity:0.85">'+icon+'</span><span>'+label+'</span></div>'+
       '<div style="flex:1;min-width:0;padding-top:1px">'+valueHtml+'</div>'+
     '</div>';
   }
@@ -9570,7 +9575,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   // Compartiment lavande, utilisé pour le Livrable.
   function dWrapLav(inner){
     if (!inner || !String(inner).trim()) return '';
-    return '<div style="background:var(--brume,#F0E8FF);border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
+    return '<div style="background:var(--brume,#C5DEFF);border-radius:16px;padding:16px 18px;margin-bottom:13px">'+inner+'</div>';
   }
   function buildPartTaskDrawer(pid, tasks, files, project){
     var taskId = cliSelTask[pid];
@@ -9578,11 +9583,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var t = (tasks||[]).find(function(x){ return x.id===taskId; });
     if (!t) return '';
 
-    var sep = '<hr style="border:none;border-top:1px solid #ece6da;margin:18px 0">';
+    var sep = '<hr style="border:none;border-top:1px solid #F8F6F2;margin:18px 0">';
     var dueStr = (t.dueDate||'').slice(0,10);
 
-    var CLIENTBRIEF_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };
-    var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };
+    var CLIENTBRIEF_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#C5DEFF' };
+    var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#CD8F6E', 'Besoin d\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };
     var TYPE_COL = {};
     var props = t.properties || {};
 
@@ -9593,14 +9598,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Lien & fichiers du brief (propriété composite p_elements)
     var bvc = briefVal(props.p_elements);
     var filesHtml = (bvc.files||[]).map(function(f){
-      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#f7f2ea;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#9a8a72')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+      return '<div style="display:flex;align-items:center;gap:7px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:12px;margin-top:6px">'+cpIcon('paperclip',14,'color:#F8F6F2')+'<a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" style="background:none;border:none;color:#c44;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
     }).join('');
     var linkFilesVal =
-      '<input type="url" value="'+esc(bvc.link||'')+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="width:100%;border:none;background:#f7f2ea;border-radius:7px;padding:7px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);box-sizing:border-box">'+
+      '<input type="url" value="'+esc(bvc.link||'')+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="width:100%;border:none;background:#F8F6F2;border-radius:7px;padding:7px 11px;font-family:inherit;font-size:13px;color:var(--navy,#110704);box-sizing:border-box">'+
       filesHtml+
-      '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
+      '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;padding:7px 13px;border:1px solid #F8F6F2;border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('upload',14)+'<span>Ajouter un fichier</span></button>';
 
-    var MK_E = ' <span title="Modifiable par vous" style="color:#b8a98f;font-size:11px">✎</span>';
+    var MK_E = ' <span title="Modifiable par vous" style="color:#F8F6F2;font-size:11px">✎</span>';
     var MK_L = ' <span title="Suivi par Cindy" style="font-size:10px">🔒</span>';
     var propertiesHtml =
       // Champ de progression unique « Avancement » : reflète automatiquement
@@ -9608,16 +9613,16 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       // Livrée). Lecture seule pour le client, mis à jour par Cindy.
       dRow(cpIcon('chart', 15), 'Avancement' + (_isAdminEdit ? MK_E : MK_L), (function(){
         var map = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Livrée' };
-        var col = { todo:'#E9E2D2', in_progress:'#CBD8F5', review:'#F6E59E', done:'#C9E6CB' };
+        var col = { todo:'#F8F6F2', in_progress:'#C5DEFF', review:'#F8F6F2', done:'#F8F6F2' };
         var s = t.status || 'todo';
         // Modifiable par Cindy (mode édition), synchronisé avec l'admin ;
         // lecture seule pour le client.
         if (_isAdminEdit) {
-          var sel = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[s]||'#EFEAF7')+'">';
+          var sel = '<select onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'status\',this.value)" style="'+dPillStyle(col[s]||'#C5DEFF')+'">';
           ['todo','in_progress','review','done'].forEach(function(k){ sel += '<option value="'+k+'"'+(s===k?' selected':'')+'>'+map[k]+'</option>'; });
           return sel + '</select>';
         }
-        return '<span style="display:inline-block;background:'+(col[s]||'#EFEAF7')+';color:#412F21;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Mis à jour automatiquement">'+esc(map[s]||s)+'</span>';
+        return '<span style="display:inline-block;background:'+(col[s]||'#C5DEFF')+';color:#110704;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Mis à jour automatiquement">'+esc(map[s]||s)+'</span>';
       })()) +
       // Temps passé par Cindy sur la tâche (lecture seule) : la cliente voit le
       // temps investi. Affiché seulement s'il y a du temps enregistré.
@@ -9626,12 +9631,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         if (!secs || secs < 60) return '';
         var h = Math.floor(secs/3600), m = Math.round((secs%3600)/60);
         var lbl = (h>0 ? h+' h'+(m>0?' '+m+' min':'') : m+' min');
-        return dRow(cpIcon('clock', 15), 'Temps passé' + MK_L, '<span style="display:inline-block;background:#eef1ea;color:#3f5a37;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Temps investi par Cindy sur cette tâche">'+esc(lbl)+'</span>');
+        return dRow(cpIcon('clock', 15), 'Temps passé' + MK_L, '<span style="display:inline-block;background:#F8F6F2;color:#5A2A11;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px" title="Temps investi par Cindy sur cette tâche">'+esc(lbl)+'</span>');
       })() +
-      dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliSetTaskDue(\''+pid+'\',\''+t.id+'\',this.value,this)" style="border:none;background:#f7f2ea;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#1C1205);cursor:pointer">') +
+      dRow(cpIcon('calendar', 15), 'Échéance' + MK_E, '<input type="date" value="'+esc(dueStr)+'" onchange="cliSetTaskDue(\''+pid+'\',\''+t.id+'\',this.value,this)" style="border:none;background:#F8F6F2;border-radius:7px;padding:6px 11px;font-family:inherit;font-size:13px;color:var(--navy,#110704);cursor:pointer">') +
       dRow(cpIcon('zap', 15), 'Priorité' + MK_E, (function(){
         var cur = t.urgency || 'normal';
-        var sel = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'urgency\',this.value)" style="'+dPillStyle(PART_URGENCY[cur]||'#F2E5C2')+'">';
+        var sel = '<select onpointerdown="event.stopPropagation()" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'urgency\',this.value)" style="'+dPillStyle(PART_URGENCY[cur]||'#F8F6F2')+'">';
         ['tranquille','normal','urgent','critique'].forEach(function(u){ sel += '<option value="'+u+'"'+(cur===u?' selected':'')+'>'+(PART_URG_LABEL[u]||u)+'</option>'; });
         return sel + '</select>';
       })()) +
@@ -9644,64 +9649,64 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var commentsHtml = comments.map(function(c){
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">'+
-        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'#f7f2ea')+'">'+
-          '<div style="font-size:10px;font-weight:700;color:#9a93a5;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
-          '<div style="font-size:13px;color:var(--navy,#1C1205)">'+esc(c.text)+'</div>'+
+        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'#F8F6F2')+'">'+
+          '<div style="font-size:10px;font-weight:700;color:#C5DEFF;margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>'+
+          '<div style="font-size:13px;color:var(--navy,#110704)">'+esc(c.text)+'</div>'+
         '</div>'+
       '</div>';
     }).join('');
     var commentsBlock =
-      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5">Commentaires</span></div>'+
-      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:#9a93a5;font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
+      '<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF">Commentaires</span></div>'+
+      '<div style="margin-bottom:10px">'+(commentsHtml || '<div style="font-size:12.5px;color:#C5DEFF;font-style:italic">Aucun commentaire pour le moment.</div>')+'</div>'+
       '<div style="display:flex;gap:6px">'+
-        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#f7f2ea;border-radius:999px;font-family:inherit">'+
-        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:9px 15px;background:var(--navy,#1C1205);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px">→</button>'+
+        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ajouter un commentaire…" style="flex:1;font-size:13px;padding:9px 14px;border:none;background:#F8F6F2;border-radius:999px;font-family:inherit">'+
+        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:9px 15px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px">→</button>'+
       '</div>';
 
     // Actions
     var actions =
-      '<button onclick="cliEditPartTask(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:1.5px solid var(--terre,#412F21);border-radius:10px;background:none;color:var(--terre,#412F21);cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Modifier ma demande</button>'+
-      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
+      '<button onclick="cliEditPartTask(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:1.5px solid var(--terre,#110704);border-radius:10px;background:none;color:var(--terre,#110704);cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Modifier ma demande</button>'+
+      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
       '<div style="display:flex;gap:8px">'+
-        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #e2dbd0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+
-        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #e2dbd0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#9a93a5">Archiver</button>'+
-        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>'+
+        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#110704)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#C5DEFF">Archiver</button>'+
+        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:8px;border:1px solid #CD8F6E;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#c44">Supprimer</button>'+
       '</div>';
 
     // Fichiers joints à la demande (pièces de la création de tâche)
     var atts = Array.isArray(t.attachments) ? t.attachments : [];
     var attachBlock = atts.length
-      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Fichiers joints à la demande</div>'+
+      ? '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Fichiers joints à la demande</div>'+
         atts.map(function(a){
           var fk = a.fileKey || a.key || '';
-          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f7f2ea;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#9a8a72')+
-            '<a href="'+API_BASE+'/files/'+encodeURIComponent(fk)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+cpIcon('paperclip',14,'color:#F8F6F2')+
+            '<a href="'+API_BASE+'/files/'+encodeURIComponent(fk)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||'Fichier')+'</a>'+
             '<button onclick="cliRemoveTaskAttachment(\''+pid+'\',\''+t.id+'\',\''+esc(fk)+'\')" title="Retirer ce fichier" style="background:none;border:none;color:#c44;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0">×</button>'+
           '</div>';
         }).join('')+'</div>'
       : '';
 
     var backdrop = '<div class="cp-task-backdrop" onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both"></div>';
-    var cover = '<div style="height:104px;border-radius:22px 22px 0 0;background:' + ((project && project.bannerColor) || 'var(--terre,#412F21)') + '"></div>';
-    var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#412F21;line-height:1">✕</button>';
+    var cover = '<div style="height:104px;border-radius:22px 22px 0 0;background:' + ((project && project.bannerColor) || 'var(--terre,#110704)') + '"></div>';
+    var closeBtn = '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="position:absolute;top:16px;right:18px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#110704;line-height:1">✕</button>';
     // Bouton agrandir / réduire le tiroir (pratique pour éditer un tableau).
     if (window.cliTaskBig === undefined) window.cliTaskBig = true;
     var big = !!window.cliTaskBig;
-    var expandBtn = '<button onclick="cliToggleTaskBig()" title="'+(big?'Réduire':'Agrandir')+'" style="position:absolute;top:16px;right:58px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#412F21;line-height:1">'+(big?'⤡':'⤢')+'</button>';
+    var expandBtn = '<button onclick="cliToggleTaskBig()" title="'+(big?'Réduire':'Agrandir')+'" style="position:absolute;top:16px;right:58px;z-index:2;background:rgba(255,255,255,0.92);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#110704;line-height:1">'+(big?'⤡':'⤢')+'</button>';
     var icon = '<div style="margin:-32px 0 0 24px;width:62px;height:62px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(28,18,5,0.35)">'+cliUrgIcon(t.urgency, 28)+'</div>';
-    var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#1C1205);width:100%;margin:14px 0 2px;padding:0">';
+    var title = '<input value="'+esc(t.title||'')+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tâche" style="border:none;outline:none;background:none;font-family:\'Cormorant Garamond\',serif;font-size:30px;font-weight:600;color:var(--navy,#110704);width:100%;margin:14px 0 2px;padding:0">';
 
     // Lien de révision déposé par Cindy : appel à l'action mis en avant tant que
     // la tâche est en attente de la révision du client (statut « review »).
     var reviewCallout = (t.reviewLink && (t.status === 'review'))
       ? (function(){
           var u = /^https?:\/\//i.test(t.reviewLink) ? t.reviewLink : 'https://' + t.reviewLink;
-          return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#fbf3d9;border:1px solid #f0e2b0">'+
-            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#8a6f2e;margin-bottom:6px">À vérifier de votre côté</div>'+
-            '<div style="font-size:14px;color:var(--navy,#1C1205);line-height:1.5;margin-bottom:12px">Cindy vous invite à consulter ce travail et à donner votre retour. Une fois vos retours transmis (via le lien ou en commentaire), cliquez « J\'ai fait mes retours » pour la prévenir.</div>'+
+          return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#F8F6F2;border:1px solid #F8F6F2">'+
+            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:6px">À vérifier de votre côté</div>'+
+            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy vous invite à consulter ce travail et à donner votre retour. Une fois vos retours transmis (via le lien ou en commentaire), cliquez « J\'ai fait mes retours » pour la prévenir.</div>'+
             '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
-              '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#412F21);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
-              '<button onclick="cliFeedbackDone(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid var(--terre,#412F21);color:var(--terre,#412F21);cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' J\'ai fait mes retours</button>'+
+              '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:var(--terre,#110704);color:#fff;text-decoration:none;font-size:13px;font-weight:700">'+cpIcon('external',15)+' Vérifier le travail</a>'+
+              '<button onclick="cliFeedbackDone(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid var(--terre,#110704);color:var(--terre,#110704);cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' J\'ai fait mes retours</button>'+
             '</div>'+
           '</div>';
         })()
@@ -9711,12 +9716,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var proposeCallout = t.proposedDueDate
       ? (function(){
           var frd = String(t.proposedDueDate).split('-').reverse().join('/');
-          return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#eef4ea;border:1px solid #cfe0c6">'+
-            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#3f5a37;margin-bottom:6px">Nouvelle date proposée</div>'+
-            '<div style="font-size:14px;color:var(--navy,#1C1205);line-height:1.5;margin-bottom:12px">Cindy propose de reporter l\'échéance de cette tâche au <strong>'+esc(frd)+'</strong>. Est-ce que cela vous convient ?</div>'+
+          return '<div style="margin:18px 0 4px;padding:16px 18px;border-radius:14px;background:#F8F6F2;border:1px solid #F8F6F2">'+
+            '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#5A2A11;margin-bottom:6px">Nouvelle date proposée</div>'+
+            '<div style="font-size:14px;color:var(--navy,#110704);line-height:1.5;margin-bottom:12px">Cindy propose de reporter l\'échéance de cette tâche au <strong>'+esc(frd)+'</strong>. Est-ce que cela vous convient ?</div>'+
             '<div style="display:flex;flex-wrap:wrap;gap:8px">'+
-              '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',true)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#3f8f5b;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' Accepter le report</button>'+
-              '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',false)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid #d9d2c6;color:var(--navy,#1C1205);cursor:pointer;font-size:13px;font-weight:600">Refuser</button>'+
+              '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',true)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#5A2A11;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">'+cpIcon('check',15)+' Accepter le report</button>'+
+              '<button onclick="cliRespondProposedDate(\''+pid+'\',\''+t.id+'\',false)" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;background:#fff;border:1.5px solid #F8F6F2;color:var(--navy,#110704);cursor:pointer;font-size:13px;font-weight:600">Refuser</button>'+
             '</div>'+
           '</div>';
         })()
@@ -9725,13 +9730,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Historique des révisions envoyées par Cindy (liens datés).
     var revHist = Array.isArray(t.reviewHistory) ? t.reviewHistory.slice().reverse() : [];
     var reviewHistHtml = revHist.length
-      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Historique des révisions</div>'+
+      ? '<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Historique des révisions</div>'+
         revHist.map(function(h, i){
           var u = /^https?:\/\//i.test(h.url) ? h.url : 'https://' + h.url;
-          return '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#f7f2ea;border-radius:9px;font-size:13px;margin-bottom:6px">'+
-            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:14px;color:#8a6f54;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
-            '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.url)+'</a>'+
-            '<span style="font-size:11px;color:#9a93a5;flex-shrink:0">'+fmtShort(h.at)+'</span>'+
+          return '<div style="display:flex;align-items:center;gap:9px;padding:8px 12px;background:#F8F6F2;border-radius:9px;font-size:13px;margin-bottom:6px">'+
+            '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:14px;color:#5A2A11;flex-shrink:0">R'+(revHist.length - i)+'</span>'+
+            '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--navy,#110704);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.url)+'</a>'+
+            '<span style="font-size:11px;color:#C5DEFF;flex-shrink:0">'+fmtShort(h.at)+'</span>'+
           '</div>';
         }).join('')+'</div>'
       : '';
@@ -9745,7 +9750,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           proposeCallout +
           // 1) Infos (façon Notion) dans un compartiment blanc.
           dWrap('<div style="margin-bottom:2px">'+propertiesHtml+'</div>'+
-            '<div style="font-size:11px;color:#9a93a5;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
+            '<div style="font-size:11px;color:#C5DEFF;margin-top:10px">✎ modifiable par vous · 🔒 suivi par Cindy</div>')+
           // 2) Livrable (compartiment lavande).
           dWrapLav(stbTaskDeliverables(pid, project, t, ''))+
           // 3) Échanges + historique des révisions.
@@ -9763,19 +9768,19 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function stbTaskTable(pid, t){
     var tb = t.table;
     var has = tb && Array.isArray(tb.cols) && tb.cols.length;
-    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9a93a5;margin-bottom:8px">Tableau</div>';
+    var lbl = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#C5DEFF;margin-bottom:8px">Tableau</div>';
     // Le tableau existe déjà comme bloc « / » : on n'affiche plus le bouton « Ajouter un tableau »
     // en double. On garde seulement l'affichage d'un ancien tableau déjà créé.
     if (!has) return '';
     var cols = tb.cols, rows = Array.isArray(tb.rows) ? tb.rows : [];
-    var bd = '1px solid #e7e0d4';
-    var hCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy,#1C1205);padding:8px 9px;box-sizing:border-box;outline:none';
+    var bd = '1px solid #F8F6F2';
+    var hCss = 'width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy,#110704);padding:8px 9px;box-sizing:border-box;outline:none';
     // Cellules en texte enrichi (contenteditable) : elles grandissent toutes
     // seules avec le contenu (plus jamais de texte coupé) et acceptent du style
     // via la barre flottante partagée (stb*). Le contenu est nettoyé (stbSanitizeRich).
-    var ceCss = 'width:100%;font-family:inherit;font-size:13px;line-height:1.55;color:var(--navy,#1C1205);padding:9px 10px;box-sizing:border-box;outline:none;white-space:pre-wrap;word-break:break-word;min-height:42px';
+    var ceCss = 'width:100%;font-family:inherit;font-size:13px;line-height:1.55;color:var(--navy,#110704);padding:9px 10px;box-sizing:border-box;outline:none;white-space:pre-wrap;word-break:break-word;min-height:42px';
     var head = '<tr>'+cols.map(function(c,ci){
-      return '<th style="border:'+bd+';background:#f7f2ea;padding:0;min-width:180px;vertical-align:top"><div style="display:flex;align-items:flex-start">'+
+      return '<th style="border:'+bd+';background:#F8F6F2;padding:0;min-width:180px;vertical-align:top"><div style="display:flex;align-items:flex-start">'+
         '<input value="'+esc(c)+'" placeholder="Titre colonne" onchange="cliTableCol(\''+pid+'\',\''+t.id+'\','+ci+',this.value)" style="'+hCss+'">'+
         '<button onclick="cliTableDelCol(\''+pid+'\',\''+t.id+'\','+ci+')" title="Supprimer la colonne" style="background:none;border:none;color:#bba;cursor:pointer;font-size:12px;padding:8px 6px;flex-shrink:0">✕</button></div></th>';
     }).join('')+'<th style="border:none;width:26px"></th></tr>';
@@ -9788,8 +9793,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     return '<div style="margin-top:16px">'+lbl+
       '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%">'+head+body+'</table></div>'+
       '<div style="display:flex;gap:8px;margin-top:9px">'+
-        '<button onclick="cliTableAddRow(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Ligne</button>'+
-        '<button onclick="cliTableAddCol(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:1px solid #e2dbd0;border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Colonne</button>'+
+        '<button onclick="cliTableAddRow(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:1px solid #F8F6F2;border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Ligne</button>'+
+        '<button onclick="cliTableAddCol(\''+pid+'\',\''+t.id+'\')" style="font-size:12px;padding:6px 12px;border:1px solid #F8F6F2;border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Colonne</button>'+
       '</div></div>';
   }
   function _cliTbTask(pid, taskId){ var pd = getPD(pid); return pd && (pd.project.tasks || []).find(function(x){ return x.id === taskId; }); }
@@ -9887,27 +9892,27 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.id = '_cp-edit-task-ov';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9200;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#110704)';
     var urgSel = ['tranquille','normal','urgent','critique'].map(function(u){
       return '<option value="'+u+'"'+((t.urgency||'normal')===u?' selected':'')+'>'+(PART_URG_LABEL[u]||u)+'</option>';
     }).join('');
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(28,18,5,0.18)">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'+
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Modifier ma demande</span>'+
-        '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>'+
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Modifier ma demande</span>'+
+        '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>'+
       '</div>'+
-      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la demande</label>'+
+      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Titre de la demande</label>'+
         '<input id="_etask-title" type="text" value="'+esc(t.title||'')+'" style="'+S+'"></div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
-        '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Échéance souhaitée</label>'+
+        '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Échéance souhaitée</label>'+
           '<input id="_etask-due" type="date" value="'+esc((t.dueDate||'').slice(0,10))+'" style="'+S+'"></div>'+
-        '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Priorité</label>'+
+        '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Priorité</label>'+
           '<select id="_etask-urg" style="'+S+'">'+urgSel+'</select></div>'+
       '</div>'+
-      '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:18px">Le texte du brief et les fichiers se modifient directement dans la tâche, section « Votre demande ».</div>'+
+      '<div style="font-size:11.5px;color:var(--muted,#C5DEFF);line-height:1.5;margin-bottom:18px">Le texte du brief et les fichiers se modifient directement dans la tâche, section « Votre demande ».</div>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end">'+
-        '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>'+
-        '<button onclick="cliSaveEditPartTask(\''+pid+'\',\''+taskId+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>'+
+        '<button onclick="document.getElementById(\'_cp-edit-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#C5DEFF)">Annuler</button>'+
+        '<button onclick="cliSaveEditPartTask(\''+pid+'\',\''+taskId+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#110704);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>'+
       '</div>'+
     '</div>';
     document.body.appendChild(ov);
@@ -9979,7 +9984,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     while (true){
       var idx = low.indexOf(ql, i);
       if (idx === -1){ out += esc(s.slice(i)); break; }
-      out += esc(s.slice(i, idx)) + '<mark style="background:#fbe39a;border-radius:3px;padding:0 1px">' + esc(s.slice(idx, idx + ql.length)) + '</mark>';
+      out += esc(s.slice(i, idx)) + '<mark style="background:#F8F6F2;border-radius:3px;padding:0 1px">' + esc(s.slice(idx, idx + ql.length)) + '</mark>';
       i = idx + ql.length;
     }
     return out;
@@ -10002,7 +10007,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
   function stbSubPill(pd, label, topicVal, on){
     var u = stbSubUnread(pd, topicVal);
-    var bg = on ? 'var(--terre)' : 'var(--brume,#F0E8FF)';
+    var bg = on ? 'var(--terre)' : 'var(--brume,#C5DEFF)';
     var col = on ? 'var(--paille)' : 'var(--terre-600)';
     return '<button onclick="window.stbInboxSetTopic(\''+pd.project.id+'\',\''+topicVal+'\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;background:'+bg+';color:'+col+'">'+esc(label)+(u?' · '+u:'')+'</button>';
   }
@@ -10042,7 +10047,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (/\.(jpe?g|png|webp|gif|avif|svg)$/i.test(a.name||'')){
         return '<a href="'+u+'" target="_blank" rel="noopener" title="'+esc(a.name||'')+'" style="display:block;border-radius:9px;overflow:hidden;border:1px solid var(--bone-d);line-height:0"><img src="'+u+'" alt="'+esc(a.name||'')+'" loading="lazy" style="max-height:130px;max-width:190px;display:block;object-fit:cover"></a>';
       }
-      return '<a href="'+u+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#128206;</span>'+esc(a.name||'fichier')+'</a>';
+      return '<a href="'+u+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#C5DEFF);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#5A2A11;</span>'+esc(a.name||'fichier')+'</a>';
     }).join('')+'</div>';
   }
   window.stbInboxSearch = function(pid, v){
@@ -10224,7 +10229,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var h = '';
     for (var i = 1; i <= 5; i++){
       var on = STB_BILAN.rating >= i;
-      h += '<button type="button" onclick="window.stbBilanStar(' + i + ')" title="' + i + ' sur 5" style="background:none;border:none;cursor:pointer;font-size:32px;line-height:1;padding:0 4px;color:' + (on ? '#d8a93a' : '#d9cfbe') + '">' + (on ? '★' : '☆') + '</button>';
+      h += '<button type="button" onclick="window.stbBilanStar(' + i + ')" title="' + i + ' sur 5" style="background:none;border:none;cursor:pointer;font-size:32px;line-height:1;padding:0 4px;color:' + (on ? '#CD8F6E' : '#F8F6F2') + '">' + (on ? '★' : '☆') + '</button>';
     }
     return h;
   }
@@ -10236,17 +10241,17 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (no) no.style.cssText = stbBilanRecoStyle(v === false);
   };
   function stbBilanRecoStyle(on){
-    return 'cursor:pointer;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:' + (on ? 'var(--terre,#412F21)' : '#ffffff') + ';color:' + (on ? '#fff' : 'var(--terre,#412F21)') + ';border:1px solid ' + (on ? 'var(--terre,#412F21)' : 'var(--bone-d,#e8e0d4)') + '';
+    return 'cursor:pointer;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:' + (on ? 'var(--terre,#110704)' : '#ffffff') + ';color:' + (on ? '#fff' : 'var(--terre,#110704)') + ';border:1px solid ' + (on ? 'var(--terre,#110704)' : 'var(--bone-d,#F8F6F2)') + '';
   }
   window.stbBilanAllow = function(cb){ STB_BILAN.allow = !!cb.checked; };
   function stbBilanField(label, id, ph){
-    return '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:6px">' + esc(label) + '</div>' +
-      '<textarea id="' + id + '" placeholder="' + esc(ph) + '" style="width:100%;box-sizing:border-box;min-height:74px;resize:vertical;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px;color:var(--terre,#412F21);background:var(--card,#fff)"></textarea></div>';
+    return '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:6px">' + esc(label) + '</div>' +
+      '<textarea id="' + id + '" placeholder="' + esc(ph) + '" style="width:100%;box-sizing:border-box;min-height:74px;resize:vertical;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px;color:var(--terre,#110704);background:var(--card,#fff)"></textarea></div>';
   }
   function stbBilanForm(){
-    return '<div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:6px">Votre satisfaction globale</div>' +
+    return '<div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:6px">Votre satisfaction globale</div>' +
       '<div id="cp-bilan-stars" style="margin-bottom:18px">' + stbBilanStars() + '</div>' +
-      '<div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:8px">Recommanderiez-vous le studio autour de vous</div>' +
+      '<div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:8px">Recommanderiez-vous le studio autour de vous</div>' +
       '<div style="display:flex;gap:10px;margin-bottom:18px">' +
         '<button type="button" id="cp-bilan-reco-y" onclick="window.stbBilanReco(true)" style="' + stbBilanRecoStyle(false) + '">Oui, avec plaisir</button>' +
         '<button type="button" id="cp-bilan-reco-n" onclick="window.stbBilanReco(false)" style="' + stbBilanRecoStyle(false) + '">Pas encore</button>' +
@@ -10254,18 +10259,18 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       stbBilanField('Ce qui vous a plu', 'cp-bilan-liked', 'Les moments, livrables ou echanges marquants') +
       stbBilanField('Ce que l on pourrait ameliorer', 'cp-bilan-improve', 'En toute franchise, cela aide a progresser') +
       stbBilanField('Un temoignage (optionnel)', 'cp-bilan-testi', 'Quelques mots que je pourrais partager') +
-      '<label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--terre,#412F21);margin-bottom:20px;cursor:pointer"><input type="checkbox" onchange="window.stbBilanAllow(this)" style="width:16px;height:16px"> J autorise la publication de ce temoignage</label>' +
-      '<button onclick="window.stbBilanSubmit()" style="width:100%;background:var(--terre,#412F21);color:#fff;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Envoyer mon bilan</button>';
+      '<label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--terre,#110704);margin-bottom:20px;cursor:pointer"><input type="checkbox" onchange="window.stbBilanAllow(this)" style="width:16px;height:16px"> J autorise la publication de ce temoignage</label>' +
+      '<button onclick="window.stbBilanSubmit()" style="width:100%;background:var(--terre,#110704);color:#fff;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Envoyer mon bilan</button>';
   }
   function stbBilanDone(b){
     var stars = '';
-    for (var i = 1; i <= 5; i++){ stars += '<span style="font-size:26px;color:' + ((b.rating >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((b.rating >= i) ? '★' : '☆') + '</span>'; }
-    return '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5d7a52') + '</div>' +
-      '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#412F21);margin-bottom:6px">Merci pour votre retour</div>' +
-      '<div style="text-align:center;font-size:13px;color:#9a8a72;margin-bottom:18px">Votre bilan a bien ete transmis au studio.</div>' +
+    for (var i = 1; i <= 5; i++){ stars += '<span style="font-size:26px;color:' + ((b.rating >= i) ? '#CD8F6E' : '#F8F6F2') + '">' + ((b.rating >= i) ? '★' : '☆') + '</span>'; }
+    return '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5A2A11') + '</div>' +
+      '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#110704);margin-bottom:6px">Merci pour votre retour</div>' +
+      '<div style="text-align:center;font-size:13px;color:#F8F6F2;margin-bottom:18px">Votre bilan a bien ete transmis au studio.</div>' +
       '<div style="text-align:center;margin-bottom:16px">' + stars + '</div>' +
-      (b.liked ? '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#9a8a72;margin-bottom:4px">Ce qui vous a plu</div><div style="font-size:14px;color:var(--terre,#412F21)">' + esc(b.liked) + '</div></div>' : '') +
-      (b.testimonial ? '<div style="background:var(--brume,#F0E8FF);border-radius:11px;padding:14px 16px;font-style:italic;font-size:14px;color:var(--terre,#412F21)">' + esc(b.testimonial) + '</div>' : '');
+      (b.liked ? '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#F8F6F2;margin-bottom:4px">Ce qui vous a plu</div><div style="font-size:14px;color:var(--terre,#110704)">' + esc(b.liked) + '</div></div>' : '') +
+      (b.testimonial ? '<div style="background:var(--brume,#C5DEFF);border-radius:11px;padding:14px 16px;font-style:italic;font-size:14px;color:var(--terre,#110704)">' + esc(b.testimonial) + '</div>' : '');
   }
   window.stbBilanSubmit = function(){
     if (!STB_BILAN.rating){ alert('Indiquez une note de satisfaction avant d envoyer.'); return; }
@@ -10300,13 +10305,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
     ov.onclick = function(e){ if (e.target === ov) window.cpCloseBilan(); };
     ov.innerHTML =
-      '<div style="width:min(560px,100%);max-height:calc(100vh - 48px);background:var(--bone,#faf7f1);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#e8e0d4);background:var(--card,#fff);flex-shrink:0">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#412F21)">Bilan de collaboration</span>' +
-          '<button onclick="window.cpCloseBilan()" style="background:none;border:none;cursor:pointer;color:#9a93a5;font-size:18px;line-height:1">✕</button>' +
+      '<div style="width:min(560px,100%);max-height:calc(100vh - 48px);background:var(--bone,#F8F6F2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#F8F6F2);background:var(--card,#fff);flex-shrink:0">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#110704)">Bilan de collaboration</span>' +
+          '<button onclick="window.cpCloseBilan()" style="background:none;border:none;cursor:pointer;color:#C5DEFF;font-size:18px;line-height:1">✕</button>' +
         '</div>' +
         '<div id="cp-bilan-body" style="flex:1;overflow-y:auto;padding:24px">' +
-          (submitted ? stbBilanDone(b) : ('<div style="font-size:13.5px;color:#9a8a72;margin-bottom:20px">Prenez un instant pour partager votre ressenti sur notre collaboration. Cela compte beaucoup pour faire grandir le studio.</div>' + stbBilanForm())) +
+          (submitted ? stbBilanDone(b) : ('<div style="font-size:13.5px;color:#F8F6F2;margin-bottom:20px">Prenez un instant pour partager votre ressenti sur notre collaboration. Cela compte beaucoup pour faire grandir le studio.</div>' + stbBilanForm())) +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -10329,9 +10334,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       .then(function(res){
         if (!res.ok){ if (btn){ btn.textContent = 'Envoyer'; btn.disabled = false; } alert('Une erreur est survenue, reessayez.'); return; }
         var body = document.getElementById('cp-avis-body');
-        if (body) body.innerHTML = '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5d7a52') + '</div>' +
-          '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#412F21);margin-bottom:6px">Merci</div>' +
-          '<div style="text-align:center;font-size:13px;color:#9a8a72">Votre retour a bien ete transmis. Il aidera a ameliorer votre espace.</div>';
+        if (body) body.innerHTML = '<div style="text-align:center;padding:14px 0 6px">' + cpIcon('check', 40, 'color:#5A2A11') + '</div>' +
+          '<div style="text-align:center;font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--terre,#110704);margin-bottom:6px">Merci</div>' +
+          '<div style="text-align:center;font-size:13px;color:#F8F6F2">Votre retour a bien ete transmis. Il aidera a ameliorer votre espace.</div>';
       })
       .catch(function(){ if (btn){ btn.textContent = 'Envoyer'; btn.disabled = false; } alert('Une erreur est survenue, reessayez.'); });
   };
@@ -10341,20 +10346,20 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.id = 'cp-avis';
     ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
     ov.onclick = function(e){ if (e.target === ov) window.cpCloseAvis(); };
-    var inS = 'width:100%;box-sizing:border-box;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px;color:var(--terre,#412F21);background:var(--card,#fff)';
+    var inS = 'width:100%;box-sizing:border-box;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px;color:var(--terre,#110704);background:var(--card,#fff)';
     ov.innerHTML =
-      '<div style="width:min(540px,100%);max-height:calc(100vh - 48px);background:var(--bone,#faf7f1);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#e8e0d4);background:var(--card,#fff);flex-shrink:0">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#412F21)">Votre avis sur l espace</span>' +
-          '<button onclick="window.cpCloseAvis()" style="background:none;border:none;cursor:pointer;color:#9a93a5;font-size:18px;line-height:1">✕</button>' +
+      '<div style="width:min(540px,100%);max-height:calc(100vh - 48px);background:var(--bone,#F8F6F2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(28,18,5,0.55)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:17px 24px;border-bottom:1px solid var(--bone-d,#F8F6F2);background:var(--card,#fff);flex-shrink:0">' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:23px;color:var(--terre,#110704)">Votre avis sur l espace</span>' +
+          '<button onclick="window.cpCloseAvis()" style="background:none;border:none;cursor:pointer;color:#C5DEFF;font-size:18px;line-height:1">✕</button>' +
         '</div>' +
         '<div id="cp-avis-body" style="flex:1;overflow-y:auto;padding:24px">' +
-          '<div style="font-size:13.5px;color:#9a8a72;margin-bottom:18px">Un manque, une chose peu claire, une idee pour rendre votre espace plus pratique. Tout retour nous aide a l ameliorer.</div>' +
-          '<div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:6px">Type de retour</div>' +
+          '<div style="font-size:13.5px;color:#F8F6F2;margin-bottom:18px">Un manque, une chose peu claire, une idee pour rendre votre espace plus pratique. Tout retour nous aide a l ameliorer.</div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:6px">Type de retour</div>' +
           '<select id="cp-avis-cat" style="' + inS + ';margin-bottom:16px">' + stbAvisCat() + '</select>' +
-          '<div style="font-size:13px;font-weight:600;color:var(--terre,#412F21);margin-bottom:6px">Votre message</div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--terre,#110704);margin-bottom:6px">Votre message</div>' +
           '<textarea id="cp-avis-msg" placeholder="Decrivez en quelques mots" style="' + inS + ';min-height:120px;resize:vertical;margin-bottom:18px"></textarea>' +
-          '<button onclick="window.stbAvisSubmit()" style="width:100%;background:var(--terre,#412F21);color:#fff;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Envoyer</button>' +
+          '<button onclick="window.stbAvisSubmit()" style="width:100%;background:var(--terre,#110704);color:#fff;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Envoyer</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -10366,11 +10371,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
  */
   window.cpMaintenanceView = function(project){
     var title = (project && project.projectTitle) || 'Cet espace';
-    return '<div style="max-width:560px;margin:60px auto;text-align:center;padding:44px 34px;background:var(--card,#fffefb);border:1px solid var(--bone-d,#e8e0d4);border-radius:16px">' +
-      cpIcon('lock', 34, 'color:#9a8a72;margin:0 auto 14px') +
-      '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:var(--terre,#412F21);margin-bottom:12px">' + esc(title) + '</div>' +
-      '<div style="display:inline-block;font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a4a0e;background:#fdf3e8;border-radius:999px;padding:4px 12px;margin-bottom:18px">En préparation</div>' +
-      '<div style="font-size:15px;color:#6b5b4a;line-height:1.65">Cette offre est bien active, nous la préparons en ce moment. Vous y aurez accès très bientôt.</div>' +
+    return '<div style="max-width:560px;margin:60px auto;text-align:center;padding:44px 34px;background:var(--card,#F8F6F2);border:1px solid var(--bone-d,#F8F6F2);border-radius:16px">' +
+      cpIcon('lock', 34, 'color:#F8F6F2;margin:0 auto 14px') +
+      '<div style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:26px;color:var(--terre,#110704);margin-bottom:12px">' + esc(title) + '</div>' +
+      '<div style="display:inline-block;font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border-radius:999px;padding:4px 12px;margin-bottom:18px">En préparation</div>' +
+      '<div style="font-size:15px;color:#5A2A11;line-height:1.65">Cette offre est bien active, nous la préparons en ce moment. Vous y aurez accès très bientôt.</div>' +
     '</div>';
   };
 
@@ -10397,12 +10402,12 @@ const CLIENT_HTML = `<!DOCTYPE html>
 <body>
 <div id="app">
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:var(--cream)">
-    <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#2a1d10;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#110704;border-radius:50%;animation:spin 0.8s linear infinite"></div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-    <div style="color:#2a1d10;font-size:14px;opacity:0.6">Chargement de votre espace...</div>
+    <div style="color:#110704;font-size:14px;opacity:0.6">Chargement de votre espace...</div>
   </div>
 </div>
-<div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#2a1d10;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
+<div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#110704;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
 <script>${CLIENT_JS}<\/script>
 </body>
 </html>`;

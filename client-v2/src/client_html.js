@@ -15,12 +15,12 @@ var CLIENT_HTML = `<!DOCTYPE html>
 <body>
 <div id="app">
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:var(--cream)">
-    <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#2a1d10;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div style="width:36px;height:36px;border:3px solid rgba(26,39,68,0.15);border-top-color:#110704;border-radius:50%;animation:spin 0.8s linear infinite"></div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-    <div style="color:#2a1d10;font-size:14px;opacity:0.6">Chargement de votre espace...</div>
+    <div style="color:#110704;font-size:14px;opacity:0.6">Chargement de votre espace...</div>
   </div>
 </div>
-<div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#2a1d10;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
+<div class="toast" id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#110704;color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;z-index:100;transition:transform 0.3s ease;pointer-events:none"></div>
 <script>${CLIENT_JS}<\/script>
 </body>
 </html>`;

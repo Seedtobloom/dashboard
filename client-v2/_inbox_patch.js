@@ -44,7 +44,7 @@
     while (true){
       var idx = low.indexOf(ql, i);
       if (idx === -1){ out += esc(s.slice(i)); break; }
-      out += esc(s.slice(i, idx)) + '<mark style="background:#fbe39a;border-radius:3px;padding:0 1px">' + esc(s.slice(idx, idx + ql.length)) + '</mark>';
+      out += esc(s.slice(i, idx)) + '<mark style="background:#F8F6F2;border-radius:3px;padding:0 1px">' + esc(s.slice(idx, idx + ql.length)) + '</mark>';
       i = idx + ql.length;
     }
     return out;
@@ -67,7 +67,7 @@
   }
   function stbSubPill(pd, label, topicVal, on){
     var u = stbSubUnread(pd, topicVal);
-    var bg = on ? 'var(--terre)' : 'var(--brume,#F0E8FF)';
+    var bg = on ? 'var(--terre)' : 'var(--brume,#C5DEFF)';
     var col = on ? 'var(--paille)' : 'var(--terre-600)';
     return '<button onclick="window.stbInboxSetTopic(\''+pd.project.id+'\',\''+topicVal+'\')" style="padding:5px 12px;border-radius:999px;border:none;cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:600;background:'+bg+';color:'+col+'">'+esc(label)+(u?' · '+u:'')+'</button>';
   }
@@ -107,7 +107,7 @@
       if (/\.(jpe?g|png|webp|gif|avif|svg)$/i.test(a.name||'')){
         return '<a href="'+u+'" target="_blank" rel="noopener" title="'+esc(a.name||'')+'" style="display:block;border-radius:9px;overflow:hidden;border:1px solid var(--bone-d);line-height:0"><img src="'+u+'" alt="'+esc(a.name||'')+'" loading="lazy" style="max-height:130px;max-width:190px;display:block;object-fit:cover"></a>';
       }
-      return '<a href="'+u+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#f7efff);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#128206;</span>'+esc(a.name||'fichier')+'</a>';
+      return '<a href="'+u+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:11.5px;color:var(--terre);background:var(--glycine-50,#C5DEFF);border:1px solid var(--bone-d);border-radius:9px;padding:5px 10px;text-decoration:none"><span style="font-size:12px;line-height:1">&#5A2A11;</span>'+esc(a.name||'fichier')+'</a>';
     }).join('')+'</div>';
   }
   window.stbInboxSearch = function(pid, v){

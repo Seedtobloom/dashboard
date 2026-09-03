@@ -12,14 +12,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var TOKEN = getToken();
   var API_BASE = TOKEN ? '/api/client/' + TOKEN : null;
 
-  var STATUS_COLORS = { maintenance:'rgba(201,149,47,0.18)', discovery:'#f7efff', in_progress:'#efddff', waiting_client:'rgba(201,149,47,0.16)', review:'#efddff', delivered:'#5c4633', archived:'rgba(92,70,51,0.1)' };
+  var STATUS_COLORS = { maintenance:'rgba(201,149,47,0.18)', discovery:'#C5DEFF', in_progress:'#C5DEFF', waiting_client:'rgba(201,149,47,0.16)', review:'#C5DEFF', delivered:'#5A2A11', archived:'rgba(92,70,51,0.1)' };
 
   var ACCENTS = {
-    glycine:{ soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-    brume:  { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4' },
-    ocre:   { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12' },
-    terre:  { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21' },
-    nuit:   { soft:'#dde6f5', mid:'#b3c4e0', deep:'#8a6f54', ink:'#5c4633' },
+    glycine:{ soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11' },
+    brume:  { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11' },
+    ocre:   { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#CD8F6E', ink:'#5A2A11' },
+    terre:  { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#5A2A11', ink:'#110704' },
+    nuit:   { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#5A2A11', ink:'#5A2A11' },
   };
   function acc(name) { return ACCENTS[name] || ACCENTS.glycine; }
 
@@ -123,15 +123,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var days = Math.round((d - today) / 86400000);
     var calIcon = cpIcon('calendar', 13);
     if (done) return '<span class="cp-dpill done" style="display:inline-flex;align-items:center;gap:4px">'+cpIcon('check',12)+' Termine</span>';
-    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#8d2b21">'+calIcon+' retard '+Math.abs(days)+' j</span>';
-    if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#c9952f">'+calIcon+' dans '+days+' j</span>';
+    if (days < 0) return '<span class="cp-dpill late" style="display:inline-flex;align-items:center;gap:4px;color:#5A2A11">'+calIcon+' retard '+Math.abs(days)+' j</span>';
+    if (days <= 5) return '<span class="cp-dpill soon" style="display:inline-flex;align-items:center;gap:4px;color:#CD8F6E">'+calIcon+' dans '+days+' j</span>';
     return '<span class="cp-dpill" style="display:inline-flex;align-items:center;gap:4px;color:var(--terre-600)">'+calIcon+' Échéance '+fmtShort(due)+'</span>';
   }
   var CP_TYPE_LABELS = { identite:'Identite', site:'Site web', maintenance:'Maintenance', partenaire:'Partenaire', support:'Support de com', autre:'Autre' };
   var CP_TYPE_TONES  = { identite:'glycine', site:'brume', maintenance:'terre', partenaire:'terre', support:'glycine', autre:'terre' };
   // Couleurs de bannière franches (charte Écrin) reprises de la maquette :
   // brun, lavande, crème — au lieu des tons « deep » délavés.
-  var CP_TYPE_BANNER = { identite:'#E4D1FE', site:'#F0E8FF', maintenance:'#412F21', partenaire:'#412F21', support:'#E4D1FE', autre:'#F2E5C2' };
+  var CP_TYPE_BANNER = { identite:'#C5DEFF', site:'#C5DEFF', maintenance:'#110704', partenaire:'#110704', support:'#C5DEFF', autre:'#F8F6F2' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';
@@ -156,10 +156,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     return '<div style="width:100%;height:'+height+'px;background:'+a.soft+';border-radius:'+height+'px;overflow:hidden"><div style="width:'+Math.min(100,Math.max(0,value))+'%;height:100%;background:'+a.deep+';border-radius:'+height+'px;transition:width .3s"></div></div>';
   }
   // RGAA 3.2 — texte lisible sur le fond du badge (foncé sur teinte claire, blanc sur le bleu nuit)
-  var STATUS_TEXT = { discovery:'#1C1205', in_progress:'#1C1205', waiting_client:'#412F21', review:'#6c4ea4', delivered:'#ffffff', archived:'#8a6f54' };
+  var STATUS_TEXT = { discovery:'#110704', in_progress:'#110704', waiting_client:'#110704', review:'#5A2A11', delivered:'ffffff', archived:'#5A2A11' };
   function statusBadge(status) {
     var bg = STATUS_COLORS[status] || '#aaa';
-    var fg = STATUS_TEXT[status] || '#1a1a1a';
+    var fg = STATUS_TEXT[status] || '#110704';
     var label = STATUS_LABELS[status] || status;
     return '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;background:' + bg + ';color:' + fg + '">' + esc(label) + '</span>';
   }
@@ -215,14 +215,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // Mise en forme légère des messages : **gras**, _italique_, [couleur]…[/],
   // puces « - » et retours à la ligne. On échappe d'abord (anti-injection), puis
   // on n'introduit que nos propres balises sûres. Partagé avec l'admin (même syntaxe).
-  var MSG_COLORS = { violet:'#6c4ea4', vert:'#4f7a52', bleu:'#35608f', orange:'#b5791f', rouge:'#9b3a2e' };
+  var MSG_COLORS = { violet:'#5A2A11', vert:'#5A2A11', bleu:'#5A2A11', orange:'#CD8F6E', rouge:'#5A2A11' };
   function fmtMsg(s) {
     s = esc(String(s == null ? '' : s));
     s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<em>$2</em>');
     s = s.replace(/\[(grand|titre)\]([\s\S]+?)\[\/\]/g, function(m, sz, t){ return '<span style="' + (sz === 'titre' ? 'font-size:1.4em;font-weight:600' : 'font-size:1.18em') + ';line-height:1.35">' + t + '</span>'; });
     s = s.replace(/\[(violet|vert|bleu|orange|rouge)\]([\s\S]+?)\[\/\]/g, function(m, c, t){ return '<span style="color:' + MSG_COLORS[c] + ';font-weight:600">' + t + '</span>'; });
-    s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#6f5c44)">•</span> ');
+    s = s.replace(/(^|\n)[-•]\s+/g, '$1<span style="color:var(--terre-600,#5A2A11)">•</span> ');
     s = s.replace(/(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/g, function(u){
       var tail = ''; var m = u.match(/[.,;:!?)\]]+$/);
       if (m){ tail = m[0]; u = u.slice(0, u.length - tail.length); }
@@ -245,7 +245,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       b('<em>I</em>', 'Italique', 'window.cpMsgWrap(\'' + id + '\',\'_\',\'_\')') +
       b('<span style="font-size:12px">A</span><span style="font-size:15px">+</span>', 'Grossir le texte', 'window.cpMsgWrap(\'' + id + '\',\'[grand]\',\'[/]\')') +
       b('<span style="font-size:11px">A</span><span style="font-size:16px">+</span>', 'Titre (plus grand)', 'window.cpMsgWrap(\'' + id + '\',\'[titre]\',\'[/]\')') + sep +
-      sw('#6c4ea4', 'violet') + sw('#4f7a52', 'vert') + sw('#35608f', 'bleu') + sw('#b5791f', 'orange') + sw('#9b3a2e', 'rouge') + sep +
+      sw('#5A2A11', 'violet') + sw('#5A2A11', 'vert') + sw('#5A2A11', 'bleu') + sw('#CD8F6E', 'orange') + sw('#5A2A11', 'rouge') + sep +
       b('•', 'Liste à puces', 'window.cpMsgBullet(\'' + id + '\')') +
       b('😊', 'Emoji', 'window.cpEmojiToggle(\'' + id + '\')') +
     '</div>' + pal;
@@ -293,7 +293,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var seg = '';
     for (var i=0;i<total;i++){
       var on = i < left;
-      seg += '<span style="flex:1;height:7px;border-radius:99px;background:' + (on ? color : '#e7ddcd') + ';opacity:' + (on ? '0.9' : '1') + '"></span>';
+      seg += '<span style="flex:1;height:7px;border-radius:99px;background:' + (on ? color : '#F8F6F2') + ';opacity:' + (on ? '0.9' : '1') + '"></span>';
     }
     return '<div style="display:flex;gap:5px;max-width:220px">' + seg + '</div>';
   }
@@ -311,12 +311,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var inputType = opts.type || 'text';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:6px">' + title + '</div>' +
-      (label ? '<div style="font-size:13px;color:#485670;margin-bottom:12px">' + label + '</div>' : '') +
-      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#412F21" placeholder="' + esc(opts.placeholder||'') + '">' +
+      '<div style="font-size:16px;font-weight:600;color:#110704;margin-bottom:6px">' + title + '</div>' +
+      (label ? '<div style="font-size:13px;color:#5A2A11;margin-bottom:12px">' + label + '</div>' : '') +
+      '<input id="_cpprompt-inp" type="' + inputType + '" value="' + esc(String(defaultVal||'')) + '" style="width:100%;padding:10px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;margin-bottom:18px;color:#110704" placeholder="' + esc(opts.placeholder||'') + '">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
-        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
+        '<button id="_cpprompt-cancel" style="padding:9px 20px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11;font-size:14px">Annuler</button>' +
+        '<button id="_cpprompt-ok" style="padding:9px 20px;background:#110704;color:#F8F6F2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">' + (opts.okLabel || 'Valider') + '</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -334,11 +334,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
-      '<div style="font-size:13.5px;color:#412F21;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
+      (opts.title ? '<div style="font-size:16px;font-weight:600;color:#110704;margin-bottom:8px">'+esc(opts.title)+'</div>' : '') +
+      '<div style="font-size:13.5px;color:#110704;line-height:1.5;margin-bottom:18px">'+esc(msg)+'</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
-        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#412F21')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
+        '<button id="_cpcf-cancel" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;color:#5A2A11;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpcf-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:'+(opts.danger?'#c44':'#110704')+';color:#fff">'+(opts.okLabel||'Confirmer')+'</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     function close(){ ov.remove(); }
@@ -406,7 +406,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cpConfetti(opts) {
     try {
       if (cpReduceMotion()) return;
-      var colors = ['#6a4a9c', '#b06438', '#5f7d54', '#d3a83e', '#c9952f', '#8a5aa8'];
+      var colors = ['#5A2A11', '#5A2A11', '#5A2A11', '#CD8F6E', '#CD8F6E', '#5A2A11'];
       var cv = document.createElement('canvas');
       cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999';
       var dpr = window.devicePixelRatio || 1;
@@ -441,10 +441,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     try {
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none';
-      ov.innerHTML = '<div style="background:var(--card,#fffdf8);border:1px solid var(--bone-d,#e3d9c8);box-shadow:none;border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
+      ov.innerHTML = '<div style="background:var(--card,#F8F6F2);border:1px solid var(--bone-d,#F8F6F2);box-shadow:none;border-radius:20px;padding:26px 32px;text-align:center;max-width:340px;transform:scale(0.9);opacity:0;transition:transform 260ms cubic-bezier(.2,1.3,.4,1),opacity 200ms">' +
         '<div style="font-size:44px;line-height:1;margin-bottom:8px">🎉</div>' +
-        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#412f21);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
-        (sub ? '<div style="font-size:14px;color:var(--terre-600,#5a4a3a);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
+        '<div style="font-family:var(--font-display,serif);font-style:italic;font-size:24px;color:var(--terre,#110704);line-height:1.15">' + esc(title || 'Bravo !') + '</div>' +
+        (sub ? '<div style="font-size:14px;color:var(--terre-600,#5A2A11);margin-top:6px;line-height:1.5">' + esc(sub) + '</div>' : '') +
       '</div>';
       document.body.appendChild(ov);
       var box = ov.firstChild;
@@ -731,7 +731,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     }).join('');
     return '<div style="margin-bottom:24px">' +
       '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400);margin-bottom:8px">Depuis le début</div>' +
-      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:#F8F6F2;overflow:hidden">' + tiles + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;border:1px solid var(--bone-d);border-radius:14px;background:F8F6F2;overflow:hidden">' + tiles + '</div>' +
     '</div>';
   }
 
@@ -823,10 +823,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var dPct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
     var wPct = availMin > 0 ? Math.max(0, Math.min(100 - dPct, wipMin / availMin * 100)) : 0;
     var trackBg = dark ? 'rgba(251,250,246,.14)' : 'rgba(65,47,33,.09)';
-    var doneCol = dark ? '#F4E7C0' : '#6b533b';
-    var wipCol = '#9a72d6';
-    var txt = dark ? '#e7dcc6' : 'var(--terre-600)';
-    var divider = dark ? '#2A1D10' : '#FFFDF9';
+    var doneCol = dark ? '#F8F6F2' : '#5A2A11';
+    var wipCol = '#C5DEFF';
+    var txt = dark ? '#F8F6F2' : 'var(--terre-600)';
+    var divider = dark ? '#110704' : '#F8F6F2';
     function lg(c, t) { return '<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-micro);font-size:11px;color:' + txt + ';font-variant-numeric:tabular-nums"><i style="width:11px;height:11px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + t + '</span>'; }
     return '<div style="height:12px;background:' + trackBg + ';border-radius:999px;overflow:hidden;margin:11px 0 10px;display:flex">' +
         '<span style="height:100%;width:' + dPct + '%;background:' + doneCol + '"></span>' +
@@ -852,15 +852,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function hm(min) { min = Math.round(min); var neg = min < 0; min = Math.abs(min); var h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
     var donePct = availMin > 0 ? Math.max(0, Math.min(100, doneMin / availMin * 100)) : 0;
     var wipPct = availMin > 0 ? Math.max(0, Math.min(100 - donePct, wipMin / availMin * 100)) : 0;
-    function lg(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
-    return '<div style="background:#2A1D10;border-radius:20px;padding:24px 28px;color:#F2E5C2;margin-bottom:22px">' +
+    function lg(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11.5px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    return '<div style="background:#110704;border-radius:20px;padding:24px 28px;color:#F8F6F2;margin-bottom:22px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
         '<div>' +
-          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#c9b28c">' + eyebrow + '</div>' +
-          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#e79a8a' : '#FBFAF6') + '">' + _cm.label + '</div>' +
-          '<div style="font-family:var(--font-body);font-size:14px;color:#d8c6a8;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#F8F6F2">' + eyebrow + '</div>' +
+          '<div style="margin-top:10px;max-width:560px"><div style="font-family:var(--font-display);font-style:italic;font-size:29px;line-height:1;color:' + (_cm.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm.label + '</div>' +
+          '<div style="font-family:var(--font-body);font-size:14px;color:#F8F6F2;margin-top:9px;line-height:1.5">' + _cm.note + '</div></div>' +
         '</div>' +
-        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#E4D1FE;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
+        '<button onclick="cpOpenStats(\'' + pid + '\')" style="font-family:var(--font-micro);font-size:11.5px;font-weight:600;letter-spacing:0.03em;color:#C5DEFF;background:rgba(228,209,254,0.12);border:none;border-radius:999px;padding:9px 15px;cursor:pointer">Voir ce qui avance →</button>' +
       '</div>' +
       cpForfaitInline(nums, true) +
     '</div>';
@@ -897,7 +897,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
       });
       var nextTask = partTasks.find(function(t){ return t.status!=='done'; });
-      function partDiamond(urg){ var c=PART_URGENCY[urg]||'#c9952f'; return '<span style="display:inline-block;width:9px;height:9px;border-radius:1px;background:'+c+';transform:rotate(45deg);flex-shrink:0"></span>'; }
+      function partDiamond(urg){ var c=PART_URGENCY[urg]||'#CD8F6E'; return '<span style="display:inline-block;width:9px;height:9px;border-radius:1px;background:'+c+';transform:rotate(45deg);flex-shrink:0"></span>'; }
       var bannerStyle = p.bannerUrl
         ? 'background-image:url('+esc(p.bannerUrl)+');background-size:cover;background-position:center'
         : (p.bannerColor ? 'background:'+esc(p.bannerColor.split('|')[0]) : 'background:var(--terre)');
@@ -934,17 +934,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var mRemain   = mQuotaMin - mUsedMin;
         var mOver     = mRemain < 0;
         var mBarPct   = mQuotaMin>0 ? Math.min(100, Math.round(mUsedMin/mQuotaMin*100)) : (mUsedMin>0?100:0);
-        var mBarColor = mOver ? '#9b3a2e' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
+        var mBarColor = mOver ? '#5A2A11' : (mBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
         var mRemH = fmtMn(mRemain), mTotH = fmtMn(mQuotaMin), mUsedH = fmtMn(mUsedMin);
         var mHomeUnread = totalUnread();
 
-        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#e7c6bd;background:#fbf1ee':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
+        var mForfaitCard = '<div class="card" style="padding:22px 24px;'+(mOver?'border-color:#F8F6F2;background:#F8F6F2':'')+(mBarPct>75&&!mOver?'border-color:var(--glycine-200)':'')+ '">' +
           '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:14px">Forfait du mois</div>' +
           (mBaseMin
-            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#9b3a2e':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
+            ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font-family:var(--font-display);font-style:italic;font-size:36px;color:'+(mOver?'#5A2A11':mBarColor)+'">'+(mOver?'-':'')+mRemH+'</span><span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-600)">restant'+(mOver?' · dépassement':' · sur '+mTotH)+'</span></div>' +
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
               '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' ce mois'+(mCarryMin<0?' (report du dépassement)':(mCarryMin>0?' (report inclus)':''))+'</span></div>' +
-              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
+              (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
             : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré — contactez le studio.</p>'
           ) +
         '</div>';
@@ -957,7 +957,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (mOpen.length
             ? '<div style="display:grid;gap:8px">' + mOpen.slice(0,4).map(function(t){
                 return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--bone-d)">' +
-                  '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+(t.status==='in_progress'?'var(--st-progress)':'#e8a87c')+';transform:rotate(45deg)"></span>' +
+                  '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+(t.status==='in_progress'?'var(--st-progress)':'#CD8F6E')+';transform:rotate(45deg)"></span>' +
                   '<span style="flex:1;font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(t.title||'Sans titre') + '</span>' +
                   cpDeadlinePill(t.dueDate||t.deadline, false, true) +
                 '</div>';
@@ -966,10 +966,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           ) +
         '</div>';
 
-        var mMsgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;'+(mHomeUnread>0?'border-color:#e8a87c;background:#fdf3e8':'')+'" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-          cpIcon('chat',18, mHomeUnread>0?'color:#6a4a0b':'color:var(--terre)') +
-          '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:'+(mHomeUnread>0?'#7a3a0a':'var(--terre)')+'">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:'+(mHomeUnread>0?'#c46a1a':'var(--terre-600)')+';margin-top:2px">'+(mHomeUnread>0?mHomeUnread+' message'+(mHomeUnread>1?'s':'')+' non lu'+(mHomeUnread>1?'s':''):'Réponse sous 24 h')+'</div></div>' +
-          cpIcon('arrow',15, mHomeUnread>0?'color:#6a4a0b':'color:var(--terre-600)') +
+        var mMsgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;'+(mHomeUnread>0?'border-color:#CD8F6E;background:#F8F6F2':'')+'" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+          cpIcon('chat',18, mHomeUnread>0?'color:#5A2A11':'color:var(--terre)') +
+          '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:'+(mHomeUnread>0?'#5A2A11':'var(--terre)')+'">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:'+(mHomeUnread>0?'#CD8F6E':'var(--terre-600)')+';margin-top:2px">'+(mHomeUnread>0?mHomeUnread+' message'+(mHomeUnread>1?'s':'')+' non lu'+(mHomeUnread>1?'s':''):'Réponse sous 24 h')+'</div></div>' +
+          cpIcon('arrow',15, mHomeUnread>0?'color:#5A2A11':'color:var(--terre-600)') +
         '</button>';
 
         return '<div class="cp-home"><div class="cp-home__inner fade-up">' +
@@ -1002,18 +1002,18 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var inProgressStep = steps.find(function(s){ return s.status === 'in_progress'; });
 
       if (isPart) {
-        nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
-          '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
+        nextCard = waitingStep ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#CD8F6E;background:#F8F6F2;margin-bottom:14px">' +
+          '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#CD8F6E;display:grid;place-items:center">' + cpIcon('zap',16,'color:#5A2A11') + '</div>' +
           '<div style="flex:1">' +
-            '<div style="font-family:var(--font-micro);font-size:10px;color:#6a4a0b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
-            '<div style="font-family:var(--font-micro);font-size:9px;color:#6a4a0b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
+            '<div style="font-family:var(--font-micro);font-size:10px;color:#5A2A11;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+            '<div style="font-family:var(--font-micro);font-size:9px;color:#5A2A11;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
             '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
             (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
             (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
           '</div>' +
           '<button class="cp-btn" style="padding:8px 16px;font-size:10px;background:var(--terre);color:var(--paille);border:none;flex-shrink:0" onclick="cpValidateStep(\''+p.id+'\',\''+waitingStep.id+'\','+JSON.stringify(waitingStep.title)+')">Voir & répondre ' + cpIcon('arrow',12,'color:var(--paille)') + '</button>' +
         '</div>'
-        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#F2E5C2);background:var(--paille-50,#FBF3DC)">' +
+        : (nextTask ? '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:center;border-color:var(--paille,#F8F6F2);background:var(--paille-50,#F8F6F2)">' +
           partDiamond(nextTask.urgency) +
           '<div style="flex:1">' +
             '<div style="font-family:var(--font-micro);font-size:10px;color:var(--terre-600);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px">Prochaine demande</div>' +
@@ -1024,11 +1024,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '</div>' : '');
       } else {
         if (waitingStep) {
-          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#e8a87c;background:#fdf3e8;margin-bottom:14px">' +
-            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#e8a87c;display:grid;place-items:center">' + cpIcon('zap',16,'color:#7a3a0a') + '</div>' +
+          nextCard = '<div class="card" style="padding:22px 26px;display:flex;gap:18px;align-items:flex-start;border-color:#CD8F6E;background:#F8F6F2;margin-bottom:14px">' +
+            '<div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#CD8F6E;display:grid;place-items:center">' + cpIcon('zap',16,'color:#5A2A11') + '</div>' +
             '<div style="flex:1">' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:#6a4a0b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
-              '<div style="font-family:var(--font-micro);font-size:9px;color:#6a4a0b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:#5A2A11;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-weight:700">À vous de jouer</div>' +
+              '<div style="font-family:var(--font-micro);font-size:9px;color:#5A2A11;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;opacity:0.8">1 élément attend votre retour</div>' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">' + esc(waitingStep.title) + '</div>' +
               (waitingStep.clientAction ? '<div style="margin-top:8px;font-size:14px;color:var(--terre-600);line-height:1.5">' + esc(waitingStep.clientAction) + '</div>' : '') +
               (waitingStep.dueDate ? '<div style="margin-top:8px">' + cpDeadlinePill(waitingStep.dueDate, false, true) + '</div>' : '') +
@@ -1121,11 +1121,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         } else {
           var fPctUsed = f.available ? Math.min(100, Math.round(f.used/f.available*100)) : 0;
           var fOver = f.over > 0;
-          var fBarCol = fOver ? '#9b3a2e' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
-          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#e7c6bd;background:#fbf1ee':'')+'">' +
+          var fBarCol = fOver ? '#5A2A11' : (fPctUsed>80 ? 'var(--glycine-700)' : 'var(--terre)');
+          forfaitCard = '<div class="card" style="padding:22px 24px'+(fOver?';border-color:#F8F6F2;background:#F8F6F2':'')+'">' +
             '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Forfait du mois</div>' +
             '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">' +
-              '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#9b3a2e':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
+              '<span style="font-family:var(--font-display);font-style:italic;font-size:34px;color:'+(fOver?'#5A2A11':'var(--terre)')+'">'+(fOver?'−'+cpFmtH(f.over):cpFmtH(f.remaining))+'</span>' +
               '<span style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-600)">'+(fOver?'de dépassement':'restantes')+'</span>' +
             '</div>' +
             '<div style="height:6px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+fPctUsed+'%;background:'+fBarCol+';border-radius:999px"></div></div>' +
@@ -1133,8 +1133,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span>'+cpFmtH(f.used)+' utilisées</span>' +
               '<span>sur '+cpFmtH(f.available)+(f.carryIn>0?' (dont +'+cpFmtH(f.carryIn)+' reportées)':(f.carryIn<0?' (−'+cpFmtH(-f.carryIn)+' reportées du dépassement)':''))+'</span>' +
             '</div>' +
-            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#6a4a0b;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
-            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#8d2b21;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
+            (f.carryIn<0 ? '<div style="margin-top:9px;font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45">'+cpFmtH(-f.carryIn)+' de dépassement du mois dernier ont été déduites de ce mois'+(f.billedCarry>0?', et '+cpFmtH(f.billedCarry)+' facturées à '+f.rate+' €/h':'')+'.</div>' : '') +
+            (fOver ? '<div style="margin-top:11px;font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45">Dépassement facturé '+f.rate+' €/h. Si ça se répète, je réajuste le forfait avec vous.</div>' : '') +
           '</div>';
         }
       }
@@ -1162,10 +1162,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</div>';
 
       var homeUnread = totalUnread();
-      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms;' + (homeUnread > 0 ? 'border-color:#e8a87c;background:#fdf3e8' : '') + '" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
-        cpIcon('chat',18, homeUnread > 0 ? 'color:#6a4a0b' : 'color:var(--terre)') +
-        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:' + (homeUnread > 0 ? '#7a3a0a' : 'var(--terre)') + '">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:' + (homeUnread > 0 ? '#c46a1a' : 'var(--terre-600)') + ';margin-top:2px">' + (homeUnread > 0 ? homeUnread+' message'+(homeUnread>1?'s':'')+' non lu'+(homeUnread>1?'s':'') : 'Réponse sous 24 h') + '</div></div>' +
-        cpIcon('arrow',15, homeUnread > 0 ? 'color:#6a4a0b' : 'color:var(--terre-600)') +
+      var msgCard = '<button onclick="cpOpenMessages()" class="card" style="padding:18px 22px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;width:100%;border:none;transition:box-shadow 180ms;' + (homeUnread > 0 ? 'border-color:#CD8F6E;background:#F8F6F2' : '') + '" onmouseenter="this.style.boxShadow=\'var(--shadow-2)\'" onmouseleave="this.style.boxShadow=\'none\'">' +
+        cpIcon('chat',18, homeUnread > 0 ? 'color:#5A2A11' : 'color:var(--terre)') +
+        '<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:' + (homeUnread > 0 ? '#5A2A11' : 'var(--terre)') + '">Écrire à Cindy</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:' + (homeUnread > 0 ? '#CD8F6E' : 'var(--terre-600)') + ';margin-top:2px">' + (homeUnread > 0 ? homeUnread+' message'+(homeUnread>1?'s':'')+' non lu'+(homeUnread>1?'s':'') : 'Réponse sous 24 h') + '</div></div>' +
+        cpIcon('arrow',15, homeUnread > 0 ? 'color:#5A2A11' : 'color:var(--terre-600)') +
       '</button>';
 
       // ── Barre récap mensuelle (partenaire) ──────────────────────────────────
@@ -1196,9 +1196,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           (mForfH ? '<div style="padding:16px 22px;flex:1;min-width:0">' +
             '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
               '<div style="font-family:var(--font-micro);font-size:9px;color:var(--terre-400);letter-spacing:0.1em;text-transform:uppercase">Forfait du mois</div>' +
-              '<div style="font-family:var(--font-micro);font-size:10px;color:'+(mOver?'#9b3a2e':'var(--terre-600)')+';font-weight:600">' + (mOver?'−'+cpFmtH(_mf.over)+' dépassé':cpFmtH(_mf.remaining)+' restantes') + '</div>' +
+              '<div style="font-family:var(--font-micro);font-size:10px;color:'+(mOver?'#5A2A11':'var(--terre-600)')+';font-weight:600">' + (mOver?'−'+cpFmtH(_mf.over)+' dépassé':cpFmtH(_mf.remaining)+' restantes') + '</div>' +
             '</div>' +
-            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mOver?'#9b3a2e':(mFpct2>75?'var(--glycine-700)':'var(--terre)'))+';border-radius:999px"></div></div>' +
+            '<div style="height:5px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+mFpct2+'%;background:'+(mOver?'#5A2A11':(mFpct2>75?'var(--glycine-700)':'var(--terre)'))+';border-radius:999px"></div></div>' +
           '</div>' : '<div style="flex:1"></div>') +
         '</div>';
       }
@@ -1228,7 +1228,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<div class="cp-ph__cols">' +
           '<div class="cp-ph__left">' +
             cpBuildEditableIntro(p.id, isPart) +
-            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#fdf3e8;border:1px solid #e8a87c;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#6a4a0b')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#7a3a0a">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#6a4a0b')+'</div>'; })() : '') +
+            (isPart ? (function(){ var rv=partTasks.filter(function(t){return t.status==='review'&&!t.archived;}); if(!rv.length) return ''; var n=rv.length; return '<div onclick="cliOpenTaskFromHome(\''+p.id+'\',\''+rv[0].id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-3);background:#F8F6F2;border:1px solid #CD8F6E;margin-bottom:20px;cursor:pointer">'+cpIcon('check',18,'color:#5A2A11')+'<div style="flex:1"><div style="font-family:var(--font-display);font-size:18px;color:#5A2A11">'+n+' livrable'+(n>1?'s':'')+' attend'+(n>1?'ent':'')+' votre validation</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-top:2px">À valider chez vous</div></div>'+cpIcon('arrow',15,'color:#5A2A11')+'</div>'; })() : '') +
             (isPart ? '<button onclick="cliNewDemande(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;max-width:420px;padding:16px 24px;border:none;border-radius:var(--radius-3);background:var(--terre);color:var(--paille);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:none;margin-bottom:22px;transition:opacity .15s" onmouseover="this.style.opacity=\'.88\'" onmouseout="this.style.opacity=\'1\'"><span style="font-size:18px;line-height:1">+</span> Nouvelle demande</button>' : '') +
             cpBuildHomeBlocks(p.id) +
             cpSecWrap(p.id, 'prochaine', nextCard) +
@@ -1263,7 +1263,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var _bannerBg = (p.bannerColor ? String(p.bannerColor).split('|')[0] : '') || CP_TYPE_BANNER[p.type] || _band.deep;
       var bannerStyle = 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
-      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6a4a0b;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#6a4a0b') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
+      var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#5A2A11') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
       var duration = '';
       if (!isPart && p.startDate && p.deadline) {
         var weeks = Math.round((new Date(p.deadline) - new Date(p.startDate)) / 604800000);
@@ -1277,11 +1277,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
           '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
             '<span class="cp-proj-banner__badge">Accompagnement</span>' +
-            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#fdf3e8;color:#6a4a0b">Action requise</span>' : '') +
+            (waitingPartStep ? '<span class="cp-proj-banner__urgent" style="background:#F8F6F2;color:#5A2A11">Action requise</span>' : '') +
           '</div>' +
           '<div class="cp-proj-card__body">' +
             '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#6a4a0b;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+            (waitingPartStep ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
             '<div class="cp-proj-card__meta">' +
               '<span>' + (p.monthlyHours ? (p.monthlyHours + ' h par mois') : 'Accompagnement mensuel') + '</span>' +
               (openTasks.length ? '<span>' + openTasks.length + ' demande' + (openTasks.length > 1 ? 's' : '') + ' en cours</span>' : '') +
@@ -1299,12 +1299,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         : '<div style="font-family:var(--font-body);font-size:13.5px;color:var(--terre-600);font-style:italic;margin:6px 0 10px">' + (steps.length ? 'Toutes les étapes sont faites ✓' : 'Projet en préparation') + '</div>';
       return '<button type="button" class="cp-proj-card" aria-label="Ouvrir ' + esc(p.projectTitle) + '" onclick="cpSelHome(\'' + p.id + '\')">' +
         '<div class="cp-proj-banner" style="' + bannerStyle + '">'+
-          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#1a1a1a') + ';backdrop-filter:none">' + esc(label) + '</span>' +
+          '<span class="cp-proj-banner__badge" style="background:' + col + ';color:' + (STATUS_TEXT[p.status]||'#110704') + ';backdrop-filter:none">' + esc(label) + '</span>' +
           (urgent ? '<span class="cp-proj-banner__urgent">' + days + ' j</span>' : '') +
         '</div>' +
         '<div class="cp-proj-card__body">' +
           '<div class="cp-proj-card__title">' + esc(p.projectTitle) + '</div>' +
-          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#6a4a0b;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
+          (steps.some(function(s){ return s.status === 'waiting_client'; }) ? '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:8px;padding:4px 10px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;color:#5A2A11;letter-spacing:0.06em;text-transform:uppercase">&#x26A1; Action requise</div>' : '') +
           '<div class="cp-proj-card__meta">' +
             (p.deadline ? '<span>' + fmtShort(p.deadline) + '</span>' : '') +
             (p.deadlineExtended ? '<span class="cp-proj-card__ext">&#x21A9; Date prolongée</span>' : '') +
@@ -1336,13 +1336,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       : 'background:' + esc(hb.color || 'var(--navy)') + ';';
     var hbHex = hb.color && hb.color.charAt(0) === '#' ? hb.color : null;
     var hbAutoLight = !hb.imageUrl && hbHex && cpHexLum(hbHex) > 160;
-    var hbTx = hb.textColor || (hbAutoLight ? '#1C1205' : '#fff');
+    var hbTx = hb.textColor || (hbAutoLight ? '#110704' : '#fff');
     var hbEditCtrls = '';
     if (_isAdminEdit) {
       hbEditCtrls = '<div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2;flex-wrap:wrap;justify-content:flex-end">' +
         '<label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;letter-spacing:0.06em;backdrop-filter:blur(4px)">Photo<input type="file" accept="image/*" style="display:none" onchange="cpHomeBannerPhoto(this)"></label>' +
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#1C1205')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Texte<input type="color" value="'+(hb.textColor||'#ffffff')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerTextColor(this.value)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Fond<input type="color" value="'+(hbHex||'#110704')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerColor(this.value)"></label>' +
+        '<label style="cursor:pointer;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,0.38);color:#fff;font-family:var(--font-micro);font-size:10px;backdrop-filter:blur(4px);position:relative">Texte<input type="color" value="'+(hb.textColor||'ffffff')+'" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer" onchange="cpHomeBannerTextColor(this.value)"></label>' +
         (hb.imageUrl ? '<button onclick="cpHomeBannerRemovePhoto()" style="padding:5px 11px;border:0;border-radius:999px;background:rgba(0,0,0,0.5);color:#fff;font-family:var(--font-micro);font-size:10px;cursor:pointer">Retirer</button>' : '') +
       '</div>';
     }
@@ -1562,7 +1562,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       cpIcon('arrow', 12, 'color:var(--terre-400)') +
       '<span class="cp-ptopbar__title">' + pageTitle + '</span>' +
       '<div class="cp-ptopbar__right">' +
-        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#fdf3e8;border:1px solid #e8a87c;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#6a4a0b;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#6a4a0b') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
+        (pendingActions > 0 ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;font-family:var(--font-micro);font-size:10.5px;font-weight:600;color:#5A2A11;letter-spacing:0.04em;cursor:pointer" onclick="cpOpenFirstPending()" title="Actions en attente">' + cpIcon('zap',12,'color:#5A2A11') + ' ' + pendingActions + ' action' + (pendingActions > 1 ? 's requises' : ' requise') + '</span>' : '') +
         (bkUrl ? '<a class="cp-ptopbar__guide" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" title="Réserver un créneau">' + cpIcon('calendar',13) + ' Réserver</a>' : '') +
         '<button class="cp-ptopbar__guide" onclick="cpOpenMessages()" title="Une question ? Écrivez à Cindy">' + cpIcon('question',13) + ' Une question ?</button>' +
         '<button class="cp-ptopbar__guide" onclick="cpOpenGuide()" title="Guide">' + cpIcon('info',13) + ' Guide</button>' +
@@ -1595,7 +1595,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var bannerColor = card.bannerColor || 'var(--navy)';
       var bannerHex = card.bannerColor && card.bannerColor.charAt(0) === '#' ? card.bannerColor : null;
       var light = bannerHex && cpHexLum(bannerHex) > 160;
-      var badgeTx = light ? '#1C1205' : '#fff';
+      var badgeTx = light ? '#110704' : '#fff';
       var badgeBg = light ? 'rgba(28,18,5,0.12)' : 'rgba(255,255,255,0.22)';
       return '<button type="button" class="cp-proj-card" onclick="cpOpenClientCard(\'' + card.id + '\',\'' + project.id + '\')" style="text-align:left;border:none;padding:0;background:none;cursor:pointer;border-radius:14px;overflow:hidden;box-shadow:none;display:block;width:100%">' +
         '<div class="cp-proj-banner" style="background:' + bannerColor + '">' +
@@ -1778,7 +1778,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var addBlockMenu = '<div id="_step-block-menu" style="margin-top:10px;display:none">' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
         addBlockTypes.map(function(bt) {
-          return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#faf8f5);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#ede8df)\'" onmouseout="this.style.background=\'var(--bone,#faf8f5)\'">' +
+          return '<button onclick="cliAddStepBlock(\'' + pid + '\',\'' + stepId + '\',\'' + bt.type + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--bone-d);background:var(--bone,#F8F6F2);color:var(--terre-600);font-size:12.5px;cursor:pointer" onmouseover="this.style.background=\'var(--bone-d,#F8F6F2)\'" onmouseout="this.style.background=\'var(--bone,#F8F6F2)\'">' +
             cpIcon(bt.icon, 13) + ' ' + bt.label +
           '</button>';
         }).join('') +
@@ -1806,10 +1806,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         (_isAdminEdit ? addBlockBtn + addBlockMenu : '') +
       '</div>' +
       // Footer
-      '<div style="display:flex;align-items:center;justify-content:' + ((_isAdminEdit || (!_isAdminEdit && step.status === 'waiting_client')) ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#faf8f5)">' +
+      '<div style="display:flex;align-items:center;justify-content:' + ((_isAdminEdit || (!_isAdminEdit && step.status === 'waiting_client')) ? 'space-between' : 'flex-end') + ';gap:12px;padding:14px 24px;border-top:1px solid var(--bone-d);flex-shrink:0;background:var(--bone,#F8F6F2)">' +
         (_isAdminEdit ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('check', 11, 'color:var(--terre-400)') + ' Enregistré automatiquement</span>' : '') +
         // Côté cliente : quand l'étape attend son retour, un vrai bouton d'action.
-        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#a06a1a);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#a06a1a)') + ' Cette étape attend votre retour</span>' : '') +
+        ((!_isAdminEdit && step.status === 'waiting_client') ? '<span style="font-family:var(--font-micro);font-size:10px;color:var(--st-review,#5A2A11);letter-spacing:0.06em;text-transform:uppercase">' + cpIcon('clock', 11, 'color:var(--st-review,#5A2A11)') + ' Cette étape attend votre retour</span>' : '') +
         '<div style="display:flex;gap:10px;align-items:center">' +
           '<button onclick="cpCloseStepModal()" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--bone-d);background:transparent;color:var(--terre-600);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.07em;cursor:pointer">FERMER</button>' +
           ((!_isAdminEdit && step.status === 'waiting_client') ? '<button onclick="cpValidateStep(\'' + pid + '\',\'' + stepId + '\')" style="padding:9px 22px;border-radius:8px;border:none;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">J\'ai fait ma part</button>' : '') +
@@ -2000,8 +2000,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var done = steps.filter(function (s) { return s.status === 'done'; }).length;
     var pct = Math.round(done / total * 100);
     var remaining = total - done;
-    var accent = (project.bannerColor && /^#[0-9a-fA-F]{3,6}$/.test(project.bannerColor.split('|')[0]) ? project.bannerColor.split('|')[0] : '') || '#6a4a9c';
-    var sage = '#5f7d54';
+    var accent = (project.bannerColor && /^#[0-9a-fA-F]{3,6}$/.test(project.bannerColor.split('|')[0]) ? project.bannerColor.split('|')[0] : '') || '#5A2A11';
+    var sage = '#5A2A11';
     var allDone = done >= total;
     var stage = cpStageMeta(done / total);
     // Étape « en ce moment » : la première en attente / en cours, sinon la prochaine à venir.
@@ -2030,7 +2030,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var isCur = i === curIdx && !allDone;
         var dotBg = isDone ? sage : (isCur ? esc(accent) : '#fff');
         var dotBd = isDone ? sage : (isCur ? esc(accent) : 'rgba(28,18,5,0.18)');
-        var dotFg = (isDone || isCur) ? '#fff' : 'var(--terre-400,#8a7d6b)';
+        var dotFg = (isDone || isCur) ? '#fff' : 'var(--terre-400,#F8F6F2)';
         var mark = isDone ? '✓' : cpStepEmoji(i, total);
         var lineL = i === 0 ? 'transparent' : (isDone || (isCur && steps[i - 1].status === 'done') ? sage : 'rgba(28,18,5,0.14)');
         var lineR = i === total - 1 ? 'transparent' : (isDone ? sage : 'rgba(28,18,5,0.14)');
@@ -2040,7 +2040,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:' + dotBg + ';border:2px solid ' + dotBd + ';color:' + dotFg + ';font-size:' + (isDone ? '15px' : '15px') + ';font-weight:700' + (isCur ? ';box-shadow:0 0 0 4px ' + hexToRgba(accent, 0.18) : '') + '">' + mark + '</div>' +
             '<div style="flex:1;height:3px;background:' + lineR + '"></div>' +
           '</div>' +
-          '<div style="font-size:10.5px;line-height:1.25;margin-top:7px;max-width:90px;text-align:center;color:' + (isCur ? 'var(--terre)' : 'var(--terre-400,#8a7d6b)') + ';font-weight:' + (isCur ? '600' : '400') + ';overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(s.title || ('Étape ' + (i + 1))) + '</div>' +
+          '<div style="font-size:10.5px;line-height:1.25;margin-top:7px;max-width:90px;text-align:center;color:' + (isCur ? 'var(--terre)' : 'var(--terre-400,#F8F6F2)') + ';font-weight:' + (isCur ? '600' : '400') + ';overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(s.title || ('Étape ' + (i + 1))) + '</div>' +
         '</button>';
       }).join('') +
     '</div>';
@@ -2050,29 +2050,29 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!allDone && current) {
       var waiting = current.status === 'waiting_client';
       var rel = current.dueDate ? cpRelDate(current.dueDate) : '';
-      var ensuite = next ? '<div style="margin-top:10px;font-size:13.5px;color:var(--terre-600,#5a4a3a)"><span style="opacity:0.7">Ensuite :</span> ' + esc(next.title) + '</div>' : '';
+      var ensuite = next ? '<div style="margin-top:10px;font-size:13.5px;color:var(--terre-600,#5A2A11)"><span style="opacity:0.7">Ensuite :</span> ' + esc(next.title) + '</div>' : '';
       if (waiting) {
         nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-radius:12px;padding:14px 16px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">🕓 En pause, on a besoin de toi</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#F8F6F2);margin-bottom:5px">🕓 En pause, on a besoin de toi</div>' +
           '<div style="font-size:15px;color:var(--terre);font-weight:600;margin-bottom:3px">' + esc(current.title) + '</div>' +
-          '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5">' + (current.clientAction ? esc(current.clientAction) : 'Cette étape attend ton retour.') + ' Dès que c’est fait, je reprends le travail.' + (rel ? ' <span style="color:var(--terre-400,#8a7d6b)">(souhaité ' + esc(rel) + ')</span>' : '') + '</div>' +
+          '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.5">' + (current.clientAction ? esc(current.clientAction) : 'Cette étape attend ton retour.') + ' Dès que c’est fait, je reprends le travail.' + (rel ? ' <span style="color:var(--terre-400,#F8F6F2)">(souhaité ' + esc(rel) + ')</span>' : '') + '</div>' +
           ensuite +
         '</div>';
       } else {
         nowBlock = '<div style="margin-top:18px;background:#fff;border:1px solid rgba(28,18,5,0.09);border-radius:12px;padding:14px 16px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#8a7d6b);margin-bottom:5px">👉 En ce moment</div>' +
-          '<div style="font-size:15px;color:var(--terre);font-weight:600">' + esc(current.title) + (rel ? ' <span style="font-weight:400;font-size:12.5px;color:var(--terre-400,#8a7d6b)">· ' + esc(rel) + '</span>' : '') + '</div>' +
-          (current.description ? '<div style="font-size:13.5px;color:var(--terre-600,#5a4a3a);line-height:1.5;margin-top:4px">' + esc(current.description) + '</div>' : '') +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-400,#F8F6F2);margin-bottom:5px">👉 En ce moment</div>' +
+          '<div style="font-size:15px;color:var(--terre);font-weight:600">' + esc(current.title) + (rel ? ' <span style="font-weight:400;font-size:12.5px;color:var(--terre-400,#F8F6F2)">· ' + esc(rel) + '</span>' : '') + '</div>' +
+          (current.description ? '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.5;margin-top:4px">' + esc(current.description) + '</div>' : '') +
           ensuite +
         '</div>';
       }
     }
 
-    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#fffdf8);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:none">' +
+    return '<div style="background:linear-gradient(180deg,' + hexToRgba(accent, 0.07) + ',rgba(255,255,255,0)),var(--card,#F8F6F2);border:1px solid rgba(28,18,5,0.08);border-radius:18px;padding:22px 24px;margin-bottom:22px;box-shadow:none">' +
       '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
         '<div style="font-size:34px;line-height:1">' + stage.emoji + '</div>' +
         '<div style="flex:1;min-width:180px">' +
-          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400,#8a7d6b)">Ton parcours</div>' +
+          '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--terre-400,#F8F6F2)">Ton parcours</div>' +
           '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre);line-height:1.15">' + esc(stage.phrase) + '</div>' +
         '</div>' +
         '<div style="font-size:13.5px;font-weight:600;color:' + esc(accent) + ';white-space:nowrap">' + headline + '</div>' +
@@ -2123,32 +2123,32 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var planning = Array.isArray(project.planning) ? project.planning : [];
     if (!planning.length) return { banner:'', html:'' };
     var prows = planCompute(planning, project.planningStart);
-    var PL_ST = { a_venir:['À venir','#8a7d6b','#f2ede4'], en_cours:['En cours','#b0761c','#f3ebda'], fait:['Fait','#3f8f5b','#e6f2ea'] };
+    var PL_ST = { a_venir:['À venir','#F8F6F2','#F8F6F2'], en_cours:['En cours','#CD8F6E','#F8F6F2'], fait:['Fait','#5A2A11','#F8F6F2'] };
     var banner = '';
     if (!compact) {
       var mine = prows.filter(function(r){ return (r.j.owner === 'cliente' || r.j.owner === 'les_deux') && r.j.status !== 'fait'; });
       if (mine.length) {
         var nx = mine[0];
-        banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#f4f1fa;border:1px solid #dcd2f0;border-radius:14px;margin-bottom:22px">' +
-          cpIcon('arrow',18,'color:#573b8a;flex-shrink:0;margin-top:1px') +
-          '<div><div style="font-size:14.5px;color:#4a3a6b;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
-          '<div style="font-size:13.5px;color:#573b8a;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
+        banner = '<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 18px;background:#F8F6F2;border:1px solid #C5DEFF;border-radius:14px;margin-bottom:22px">' +
+          cpIcon('arrow',18,'color:#5A2A11;flex-shrink:0;margin-top:1px') +
+          '<div><div style="font-size:14.5px;color:#5A2A11;font-weight:700;margin-bottom:2px">Une action vous est demandée</div>' +
+          '<div style="font-size:13.5px;color:#5A2A11;line-height:1.5">' + esc(nx.j.title || nx.j.jalon || 'Votre retour') + (nx.label ? ' · ' + esc(nx.label) : '') + '</div></div></div>';
       }
     }
     var rows = '<div style="display:flex;flex-direction:column">' + prows.map(function(r, i){
         var j = r.j;
         var st = PL_ST[j.status] || PL_ST.a_venir;
         var ownerChip = j.owner === 'cliente'
-          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f0ebfa;color:#573b8a;white-space:nowrap">Vous</span>'
+          ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#C5DEFF;color:#5A2A11;white-space:nowrap">Vous</span>'
           : (j.owner === 'les_deux'
-            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef1ec;color:#3f5a37;white-space:nowrap">Vous &amp; Cindy</span>'
-            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e9f0f5;color:#305277;white-space:nowrap">Cindy</span>');
+            ? '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#F8F6F2;color:#5A2A11;white-space:nowrap">Vous &amp; Cindy</span>'
+            : '<span style="font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#C5DEFF;color:#5A2A11;white-space:nowrap">Cindy</span>');
         var done = j.status === 'fait';
         var last = i === prows.length - 1;
         var dot = '<span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;background:' + (done ? st[1] : '#fff') + ';border:2.5px solid ' + st[1] + ';box-shadow:0 0 0 4px ' + st[2] + '"></span>';
         return '<div style="display:flex;gap:16px;align-items:stretch">' +
-          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#6f5c44);line-height:1.3">' + esc(r.label || '—') + '</span></div>' +
-          '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#e8e0d3);margin:3px 0"></span>') + '</div>' +
+          '<div style="width:82px;flex-shrink:0;text-align:right;padding-top:1px"><span style="font-family:var(--font-display);font-style:italic;font-size:14.5px;color:var(--terre-600,#5A2A11);line-height:1.3">' + esc(r.label || '—') + '</span></div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">' + dot + (last ? '' : '<span style="flex:1;width:2px;background:var(--bone-d,#F8F6F2);margin:3px 0"></span>') + '</div>' +
           '<div style="flex:1;padding-bottom:' + (last ? '2px' : '24px') + '">' +
             '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px">' +
               (j.jalon ? '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:' + st[1] + ';background:' + st[2] + ';padding:3px 9px;border-radius:6px">' + esc(j.jalon) + '</span>' : '') +
@@ -2184,7 +2184,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var portal = appData.type === 'client';
     var extended = project.deadlineExtended
-      ? ' <span style="font-size:11px;background:#F2E5C2;color:#412F21;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
+      ? ' <span style="font-size:11px;background:#F8F6F2;color:#110704;padding:2px 8px;border-radius:999px;font-weight:600;font-style:normal">Prolongee</span>'
       : '';
     var hdrBg = project.bannerUrl
       ? 'background:url(' + esc(project.bannerUrl) + ') center/cover no-repeat'
@@ -2194,15 +2194,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     // Contraste du texte selon la luminosite de la banniere (comme la card)
     var bannerHex = (!project.bannerUrl && project.bannerColor) ? project.bannerColor.split('|')[0] : null;
     var bannerLight = bannerHex && bannerHex.charAt(0) === '#' && cpHexLum(bannerHex) > 160;
-    var titleCol = bannerLight ? '#1C1205' : '#F2E5C2';
+    var titleCol = bannerLight ? '#110704' : '#F8F6F2';
     var metaCol  = bannerLight ? 'rgba(28,18,5,0.72)' : 'rgba(239,225,176,0.82)';
     var backBtnStyle = bannerLight
-      ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#1C1205'
-      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F2E5C2';
+      ? 'background:rgba(28,18,5,0.07);border:1.5px solid rgba(28,18,5,0.22);color:#110704'
+      : 'background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,0.35);color:#F8F6F2';
     // En-tête projet condensé (2 lignes) et aéré.
     var header = '<div style="padding:32px clamp(20px,4vw,52px) 0">' +
       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">' +
-        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#412F21;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
+        (portal ? '<button onclick="cpGoHome()" aria-label="Retour à la liste de mes projets" style="background:rgba(28,18,5,0.06);border:1.5px solid rgba(28,18,5,0.2);color:#110704;font-size:13px;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600">← Mes projets</button>' : '') +
         statusBadge(project.status) +
       '</div>' +
       '<h1 class="cp-header__title" style="color:var(--terre);margin:0 0 6px">' + esc(project.projectTitle) + '</h1>' +
@@ -2420,7 +2420,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         ? '<div class="cp-sp__card cp-sp__card--cta">' +
             '<p class="cp-sp__kick">' + cpIcon('chat', 15, 'color:var(--terre)') + ' À vous</p>' +
             '<h3 class="cp-sp__hm">Votre retour sur ' + esc(waitC ? waitC.name : (waitV.name || 'un livrable')) + '.</h3>' +
-            (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#f6efe6') + '</button>' : '') +
+            (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#F8F6F2') + '</button>' : '') +
           '</div>'
         : '<div class="cp-sp__card cp-sp__card--cta">' +
             '<p class="cp-sp__kick">' + cpIcon('check-circle', 15, 'color:var(--terre)') + ' À jour</p>' +
@@ -2499,7 +2499,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
                 return '<a href="' + fu + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bone-d);border-radius:9px;padding:6px 11px;font-family:var(--font-micro);font-size:12px;color:var(--terre);text-decoration:none">' + cpIcon('paperclip',12) + esc(f.name || 'fichier') + '</a>'; }).join('')
             : '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400)">Aucun fichier déposé.</span>';
           var crCommentsHtml = crComments.length
-            ? crComments.map(function(m){ var mine = m.author !== 'cindy'; return '<div style="margin-bottom:9px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-400);margin-bottom:3px">' + (mine ? 'Vous' : 'Cindy') + ' · ' + fmtDate(m.createdAt) + '</div><div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.5;color:var(--terre);background:' + (mine ? '#F8F6F2' : 'var(--brume)') + ';border-radius:10px;padding:9px 12px">' + esc(m.text || '') + '</div></div>'; }).join('')
+            ? crComments.map(function(m){ var mine = m.author !== 'cindy'; return '<div style="margin-bottom:9px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--terre-400);margin-bottom:3px">' + (mine ? 'Vous' : 'Cindy') + ' · ' + fmtDate(m.createdAt) + '</div><div style="font-family:var(--font-micro);font-size:13.5px;line-height:1.5;color:var(--terre);background:' + (mine ? 'F8F6F2' : 'var(--brume)') + ';border-radius:10px;padding:9px 12px">' + esc(m.text || '') + '</div></div>'; }).join('')
             : '<div style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);font-style:italic;margin-bottom:10px">Aucun commentaire. Laissez un mot à Cindy si besoin.</div>';
           var exchange = '<div style="border-top:1px solid var(--bone-d);margin-top:20px;padding-top:16px">' +
               '<div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:12px">Vos fichiers &amp; commentaires</div>' +
@@ -2509,7 +2509,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               crCommentsHtml +
               '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:4px">' +
                 '<textarea id="cp-crc-' + c.id + '" placeholder="Écrire un commentaire à Cindy…" style="flex:1;box-sizing:border-box;min-height:44px;max-height:140px;resize:vertical;border:1px solid var(--bone-d);background:#fff;border-radius:12px;padding:11px 13px;font-family:var(--font-micro);font-size:13.5px;color:var(--terre);outline:none" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\');}"></textarea>' +
-                '<button onclick="window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\')" style="border:none;background:var(--nuit);color:#f6efe6;border-radius:12px;padding:12px 17px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;flex:none">Envoyer</button>' +
+                '<button onclick="window.cpCrComment(\'' + supPid + '\',\'' + c.id + '\')" style="border:none;background:var(--nuit);color:#F8F6F2;border-radius:12px;padding:12px 17px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;flex:none">Envoyer</button>' +
               '</div>' +
             '</div>';
           return '<div class="cp-spanel" id="cp-sp-' + c.id + '">' +
@@ -2974,12 +2974,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   };
 
   // ── Espace partenaire côté client ────────────────────────────────────────────
-  var CLI_URGENCY    = { basse:'#E4D1FE', moyenne:'#E4D1FE', haute:'#e8a87c' };
-  var CLI_URGENCY_TX = { basse:'#0a2a5e', moyenne:'#2a1d4a', haute:'#5a2c0e' };
+  var CLI_URGENCY    = { basse:'#C5DEFF', moyenne:'#C5DEFF', haute:'#CD8F6E' };
+  var CLI_URGENCY_TX = { basse:'#110704', moyenne:'#110704', haute:'#5A2A11' };
   var CLI_URG_LABEL  = { basse:'Basse', moyenne:'Normale', haute:'Haute' };
   // Urgences partenaire : tranquille / normal / urgent / critique
-  var PART_URGENCY    = { tranquille:'#E4D1FE', normal:'#F2E5C2', urgent:'#e7cd97', critique:'#e8a87c' };
-  var PART_URGENCY_TX = { tranquille:'#0a2a5e', normal:'#5c3d00', urgent:'#412F21', critique:'#5a2c0e' };
+  var PART_URGENCY    = { tranquille:'#C5DEFF', normal:'#F8F6F2', urgent:'#F8F6F2', critique:'#CD8F6E' };
+  var PART_URGENCY_TX = { tranquille:'#110704', normal:'#5A2A11', urgent:'#110704', critique:'#5A2A11' };
   var PART_URG_LABEL  = { tranquille:'Tranquille', normal:'Normal', urgent:'Urgent', critique:'Critique' };
   var PART_URG_ORDER  = ['tranquille','normal','urgent','critique'];
   var PART_POLES      = ['Reseaux sociaux','Print','Web','Identite','Autre'];
@@ -2998,24 +2998,24 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var label = k ? new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
         label = label.charAt(0).toUpperCase()+label.slice(1);
         var rows = groups[k].map(function(t){
-          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#faf6f0\'" onmouseout="this.style.background=\'transparent\'">' +
-            '<span style="color:'+(isArch?'#8a6f54':'#7a9a5a')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
-            '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#412F21);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
-            (t.pole?'<span style="font-size:10px;color:#5e4a2e;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
-            (t.timeSpentMinutes?'<span style="font-size:11px;color:#5e4a2e;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<span style="color:'+(isArch?'#5A2A11':'#F8F6F2')+';font-size:13px;flex-shrink:0">'+(isArch?'🗄':'✓')+'</span>' +
+            '<span onclick="'+mkOpen(t.id)+'" style="flex:1;font-size:12px;color:var(--terre,#110704);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isArch?'':'text-decoration:line-through;')+'opacity:0.85">'+esc(t.title)+'</span>' +
+            (t.pole?'<span style="font-size:10px;color:#5A2A11;flex-shrink:0">'+esc(t.pole)+'</span>':'') +
+            (t.timeSpentMinutes?'<span style="font-size:11px;color:#5A2A11;flex-shrink:0">'+partFmtH(t.timeSpentMinutes)+'</span>':'') +
             (isArch
-              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#6b533b;cursor:pointer;flex-shrink:0">Voir</button>'
-              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #EDE9E1;border-radius:6px;background:#fff;color:#6b533b;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
+              ? '<button onclick="'+mkOpen(t.id)+'" title="Voir la tâche" style="font-size:10px;padding:2px 8px;border:1px solid #F8F6F2;border-radius:6px;background:#fff;color:#5A2A11;cursor:pointer;flex-shrink:0">Voir</button>'
+              : '<button onclick="'+mkReopen(t.id)+'" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid #F8F6F2;border-radius:6px;background:#fff;color:#5A2A11;cursor:pointer;flex-shrink:0">Rouvrir</button>') +
           '</div>';
         }).join('');
-        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5e4a2e;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+        return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
       }).join('');
     }
     function section(list, isArch, opened){
       if (!list.length) return '';
       var title = isArch ? '🗄 Archivées · '+list.length+' tâche'+(list.length>1?'s':'') : '📁 Terminées · '+list.length+' tâche'+(list.length>1?'s':'');
-      return '<details' + (opened?' open':'') + ' style="background:var(--card,#fff);border:1px solid var(--bone-d,#e3ddd0);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6b533b;list-style:none">'+title+'</summary>' +
+      return '<details' + (opened?' open':'') + ' style="background:var(--card,#fff);border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;padding:14px 18px;margin-top:16px">' +
+        '<summary style="cursor:pointer;font-family:var(--font-micro,inherit);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;list-style:none">'+title+'</summary>' +
         '<div style="margin-top:12px;max-height:360px;overflow-y:auto">'+bodyFor(list, isArch)+'</div></details>';
     }
     // only='merged' → une seule liste (terminées + archivées), pour l'onglet
@@ -3040,12 +3040,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var CLI_TSTATUS    = { todo:'Pas commencé', in_progress:'En cours', review:'À valider chez vous', done:'Terminée' };
   function cliTaskStatusMeta(s){
     var M = {
-      inbox:        { label:"En attente d'analyse", color:'#8a6f2e', bg:'#fbf0d8' },
-      out_of_scope: { label:'Hors forfait',         color:'#9b3a2e', bg:'#fbeae5' },
-      todo:        { label:'Pas commencé',        color:'#35608f', bg:'#e3edfb' },
-      in_progress: { label:'En cours',            color:'#6c4ea4', bg:'#efe6ff' },
-      review:      { label:'À valider chez vous', color:'#8a4a0e', bg:'#fdf3e8' },
-      done:        { label:'Terminée',            color:'#3a6b4a', bg:'#e7f0e9' }
+      inbox:        { label:"En attente d'analyse", color:'#5A2A11', bg:'#F8F6F2' },
+      out_of_scope: { label:'Hors forfait',         color:'#5A2A11', bg:'#F8F6F2' },
+      todo:        { label:'Pas commencé',        color:'#5A2A11', bg:'#C5DEFF' },
+      in_progress: { label:'En cours',            color:'#5A2A11', bg:'#C5DEFF' },
+      review:      { label:'À valider chez vous', color:'#5A2A11', bg:'#F8F6F2' },
+      done:        { label:'Terminée',            color:'#5A2A11', bg:'#F8F6F2' }
     };
     return M[s] || M.todo;
   }
@@ -3054,12 +3054,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   function cliDisplayStatus(t){ if(!t) return 'todo'; if(t.stage==='inbox') return 'inbox'; if(t.stage==='out_of_scope') return 'out_of_scope'; return t.status || 'todo'; }
   function cliStatusChip(s, stage){ var key = (stage==='inbox'||stage==='out_of_scope') ? stage : s; var m=cliTaskStatusMeta(key); return '<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;color:'+m.color+';background:'+m.bg+'">'+m.label+'</span>'; }
   var CLI_BRIEF = {
-    pas_commence:  { label:'Pas commencé',  bg:'#f0ede8', tx:'#6b5a4e' },
-    brief_en_cours:{ label:'Brief en cours', bg:'#fde8d8', tx:'#7a3510' },
-    brief_pret:    { label:'Brief prêt',     bg:'#d8f0e8', tx:'#1a5c38' },
-    en_projet:     { label:'En projet',      bg:'#dce8ff', tx:'#1a3a7a' },
-    a_retravailler:{ label:'A retravailler', bg:'#fdf0d0', tx:'#7a5a00' },
-    archive:       { label:'Archivé',        bg:'#ebebeb', tx:'#6b6b6b' },
+    pas_commence:  { label:'Pas commencé',  bg:'#F8F6F2', tx:'#5A2A11' },
+    brief_en_cours:{ label:'Brief en cours', bg:'#F8F6F2', tx:'#5A2A11' },
+    brief_pret:    { label:'Brief prêt',     bg:'#F8F6F2', tx:'#5A2A11' },
+    en_projet:     { label:'En projet',      bg:'#C5DEFF', tx:'#5A2A11' },
+    a_retravailler:{ label:'A retravailler', bg:'#F8F6F2', tx:'#5A2A11' },
+    archive:       { label:'Archivé',        bg:'#F8F6F2', tx:'#5A2A11' },
   };
   var cliCalMonth    = {};
   var cliCalSelected = {};
@@ -3101,17 +3101,17 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="font-size:14px;color:var(--navy);line-height:1">→</span>' +
         '<div style="display:flex;gap:4px">' +
           '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Modifier</button>' +
-          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #ffd0d0;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#8d2b21">✕</button>' +
+          '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #CD8F6E;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#5A2A11">✕</button>' +
         '</div>' +
       '</div>' +
       '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;color:var(--navy);line-height:1.4;margin-bottom:10px">'+esc(t.title)+'</div>' +
       (t.dueDate?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="font-weight:600;color:var(--text)">Deadline :</span> '+fmtDate(t.dueDate)+'</div>':'') +
       ((t.v1Date||t.v2Date)?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#573b8a;background:#f2ebff;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
-        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#573b8a;background:#f2ebff;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
+        (t.v1Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:#C5DEFF;border-radius:999px;padding:3px 10px">V1 · '+fmtDate(t.v1Date)+'</span>':'')+
+        (t.v2Date?'<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;color:#5A2A11;background:#C5DEFF;border-radius:999px;padding:3px 10px">V2 · '+fmtDate(t.v2Date)+'</span>':'')+
       '</div>':'') +
       ((Array.isArray(t.attachments)&&t.attachments.length)?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
-        t.attachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--navy,#1C1205);background:#f4f0e8;border-radius:8px;padding:4px 9px;text-decoration:none">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+
+        t.attachments.map(function(a){ return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--navy,#110704);background:#F8F6F2;border-radius:8px;padding:4px 9px;text-decoration:none">'+cpIcon('paperclip',12)+esc(a.name||'fichier')+'</a>'; }).join('')+
       '</div>':'') +
       faitLeHtml +
       (t.content?'<div style="font-size:13px;color:var(--muted);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">'+esc(t.content)+'</div>':'') +
@@ -3187,9 +3187,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var threshold = Math.max(1.5, avail * 0.2); // « bientôt épuisé » : ≤ 20 % ou ≤ 1h30
     var over = rem < 0;
     if (!over && rem > threshold) return '';
-    var accent = over ? '#9b3a2e' : '#8a6f2e';
-    var bg = over ? '#fbeae5' : '#fbf5e6';
-    var circle = over ? '#f6d5cc' : '#f0e2b0';
+    var accent = over ? '#5A2A11' : '#5A2A11';
+    var bg = over ? '#F8F6F2' : '#F8F6F2';
+    var circle = over ? '#F8F6F2' : '#F8F6F2';
     var title = over
       ? 'Forfait dépassé de ' + cpFmtH(-rem) + ' ce mois'
       : 'Il vous reste ' + cpFmtH(rem) + ' sur votre forfait ce mois';
@@ -3202,8 +3202,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<li>Ajouter des heures ou passer à un forfait supérieur</li>' +
       '</ul>';
     var actions = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">' +
-        '<button onclick="cpOpenMessages()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--navy,#1C1205);color:#fff;font-size:13px;font-weight:600;cursor:pointer">En parler à Cindy</button>' +
-        '<button onclick="cliPartSwitch(\'' + pid + '\',\'forfait\')" style="padding:9px 16px;border-radius:10px;border:1.5px solid var(--bone-d,#e8e0d4);background:#fff;color:var(--navy,#1C1205);font-size:13px;font-weight:600;cursor:pointer">Voir mon forfait</button>' +
+        '<button onclick="cpOpenMessages()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--navy,#110704);color:#fff;font-size:13px;font-weight:600;cursor:pointer">En parler à Cindy</button>' +
+        '<button onclick="cliPartSwitch(\'' + pid + '\',\'forfait\')" style="padding:9px 16px;border-radius:10px;border:1.5px solid var(--bone-d,#F8F6F2);background:#fff;color:var(--navy,#110704);font-size:13px;font-weight:600;cursor:pointer">Voir mon forfait</button>' +
       '</div>';
     return '<div style="background:' + bg + ';border:1px solid ' + circle + ';border-radius:14px;padding:16px 18px;margin-bottom:16px">' +
       '<div style="display:flex;align-items:flex-start;gap:12px">' +
@@ -3238,35 +3238,35 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     function fmtHours(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
 
     // ── Cartes récap (empilées dans la colonne de droite) ──
-    var cardCss = 'background:#F8F6F2;border:none;border-radius:18px;padding:20px 22px';
-    var statLbl = 'font-family:var(--font-micro);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--terre-400,#8a6f54);margin-bottom:10px';
+    var cardCss = 'background:F8F6F2;border:none;border-radius:18px;padding:20px 22px';
+    var statLbl = 'font-family:var(--font-micro);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--terre-400,#5A2A11);margin-bottom:10px';
     var statVal = 'font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:34px;line-height:1;font-weight:600';
     var statForfait = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Forfait restant</div>' +
         '<div style="'+statVal+';color:'+(forfaitLeft<0?'var(--red)':forfaitLeft<2?'var(--orange)':'var(--terre)')+'">' +
           (forfaitH ? fmtHours(forfaitLeft) : '—') +
         '</div>' +
-        (forfaitH ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">Forfait non défini</div>') +
+        (forfaitH ? '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">sur '+cpFmtH(_pf.available)+' ce mois'+(_pf.carryIn>0?' (dont +'+cpFmtH(_pf.carryIn)+' report.)':'')+'</div>' : '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">Forfait non défini</div>') +
         (forfaitH && _fnums ? cpForfaitInline(_fnums, false) : '') +
       '</div>';
     var statToday = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Tâches aujourd\'hui</div>' +
         '<div style="'+statVal+';color:var(--terre)">'+todayTasks.length+'</div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">à réaliser</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">à réaliser</div>' +
       '</div>';
     var statProg = '<div style="' + cardCss + '">' +
         '<div style="'+statLbl+'">Progression</div>' +
         '<div style="'+statVal+';color:var(--terre)">'+pctDone+' %</div>' +
         '<div style="background:rgba(65,47,33,.12);border-radius:999px;height:7px;margin-top:12px"><div style="background:var(--terre);height:100%;border-radius:999px;width:'+pctDone+'%"></div></div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#8a6f54);margin-top:9px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+'</div>' +
+        '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400,#5A2A11);margin-top:9px">'+doneTasks.length+' / '+tasks.length+' tâche'+(tasks.length!==1?'s':'')+' terminée'+(doneTasks.length!==1?'s':'')+'</div>' +
       '</div>';
     // Créneaux réservés : quand Cindy travaille sur ce projet (réglé côté studio).
     var _slots = Array.isArray(project.workSlots) ? project.workSlots : [];
     var cindyBanner = _slots.length
-      ? '<div style="background:var(--glycine-50,#f7efff);border:1px solid var(--glycine-200,#E4D1FE);border-radius:12px;padding:12px 16px">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + cpIcon('calendar',15,'color:var(--glycine-900,#6c4ea4)') +
-          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#6c4ea4)">Cindy travaille pour vous</span></div>' +
-          '<div style="font-size:13px;color:var(--navy,#1C1205);line-height:1.6">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join('<br>') + '</div>' +
+      ? '<div style="background:var(--glycine-50,#C5DEFF);border:1px solid var(--glycine-200,#C5DEFF);border-radius:12px;padding:12px 16px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + cpIcon('calendar',15,'color:var(--glycine-900,#5A2A11)') +
+          '<span style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--glycine-900,#5A2A11)">Cindy travaille pour vous</span></div>' +
+          '<div style="font-size:13px;color:var(--navy,#110704);line-height:1.6">' + _slots.map(function(s){ return esc(s.day) + ' ' + esc((s.from||'').replace(':','h')) + (s.to ? '–' + esc((s.to||'').replace(':','h')) : ''); }).join('<br>') + '</div>' +
         '</div>'
       : '';
     // Cartes récap côte à côte (rangée qui s'enroule), pas empilées en colonne.
@@ -3300,7 +3300,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
           action +
         '</button>';
       }).join('');
-      return '<section style="background:#EDE3FF;border-radius:22px;padding:22px 24px;margin-bottom:20px">' +
+      return '<section style="background:#C5DEFF;border-radius:22px;padding:22px 24px;margin-bottom:20px">' +
         '<div style="display:flex;align-items:baseline;gap:11px;margin-bottom:16px">' +
           '<h2 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:27px;color:var(--terre);margin:0">À faire en priorité</h2>' +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Classé par date</span>' +
@@ -3373,22 +3373,22 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var remainH = quotaMin ? (Math.abs(remaining) >= 60 ? Math.floor(Math.abs(remaining)/60)+'h'+(Math.abs(remaining)%60?String(Math.abs(remaining)%60).padStart(2,'0'):'') : Math.abs(remaining)+' min') : '—';
     var totalH  = quotaMin ? (quotaMin >= 60 ? Math.floor(quotaMin/60)+'h'+(quotaMin%60?String(quotaMin%60).padStart(2,'0'):'') : quotaMin+' min') : '—';
     var usedH   = quotaMin ? (usedMin  >= 60 ? Math.floor(usedMin/60)+'h'+(usedMin%60?String(usedMin%60).padStart(2,'0'):'')   : usedMin+' min') : '—';
-    var barColor = over ? '#9b3a2e' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
-    var borderColor = over ? '#e7c6bd' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
+    var barColor = over ? '#5A2A11' : (quotaBarPct > 75 ? 'var(--glycine-700)' : 'var(--terre)');
+    var borderColor = over ? '#F8F6F2' : (quotaBarPct > 75 ? 'var(--glycine-200)' : 'var(--bone-d)');
     var quotaStrip = '<div style="margin-bottom:28px">' +
       // Forfait card first (masqué s'il n'y a pas de forfait d'heures)
       (showForfait ? (
-      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#fbf1ee':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
+      '<div style="padding:18px 22px;margin-bottom:18px;background:'+(over?'#F8F6F2':'var(--card)')+';border:1.5px solid '+borderColor+';border-radius:var(--radius-3)">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
-          cpIcon('timer', 16, 'color:'+(over?'#9b3a2e':'var(--terre-600)')) +
+          cpIcon('timer', 16, 'color:'+(over?'#5A2A11':'var(--terre-600)')) +
           '<span style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);font-weight:600">Forfait mensuel</span>' +
         '</div>' +
         (quotaMin
           ? '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-              '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#9b3a2e':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
+              '<span style="font-family:var(--font-display);font-style:italic;font-size:40px;line-height:1;color:'+(over?'#5A2A11':barColor)+'">'+(over?'-':'')+remainH+'</span>' +
               '<span style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600);letter-spacing:0.04em">restant'+(over?' · dépassement':' · sur '+totalH+' / mois')+'</span>' +
             '</div>' +
-            '<div style="background:var(--bone-d,#e8dfd4);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
+            '<div style="background:var(--bone-d,#F8F6F2);border-radius:20px;height:10px;overflow:hidden;margin-bottom:9px">' +
               '<div style="height:100%;width:'+quotaBarPct+'%;background:'+barColor+';border-radius:20px;transition:width .4s ease"></div>' +
             '</div>' +
             '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10.5px;color:var(--terre-400)">' +
@@ -3431,7 +3431,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       // Status filter tabs
       var MAINT_ST_KEYS = ['all','open','in_progress','done','closed'];
       var MAINT_ST_LABELS = { all:'Tout', open:'À faire', in_progress:'En cours', done:'Fait', closed:'Fermé' };
-      var MAINT_ST_COLORS = { open:'#e8a87c', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
+      var MAINT_ST_COLORS = { open:'#CD8F6E', in_progress:'var(--st-progress)', done:'var(--st-done)', closed:'#ccc' };
       var presentSt = MAINT_ST_KEYS.filter(function(sk){ return sk==='all'||tickets.some(function(t){ return t.status===sk; }); });
       var stTabsHtml = '<div style="display:flex;gap:2px;border-bottom:1px solid var(--bone-d);flex-wrap:wrap;margin-bottom:22px">' +
         presentSt.map(function(sk) {
@@ -3464,14 +3464,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       function ticketCard(t) {
         var isOpen = t.status!=='done' && t.status!=='closed';
         var prio = t.priority || t.urgency;
-        var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#9b3a2e;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
+        var prioHtml = (prio==='haute'||prio===true) ? '<span title="Urgent" style="width:8px;height:8px;border-radius:2px;background:#5A2A11;transform:rotate(45deg);flex:0 0 auto;display:inline-block"></span>' : '';
         var catBadge = t.category ? '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--radius-2);background:var(--brume-50);color:var(--brume-900);font-family:var(--font-micro);font-size:10px;font-weight:500;letter-spacing:0.03em">'+esc(t.category)+'</span>' : '';
         var proposeBanner = t.proposedDueDate
-          ? '<div style="margin-bottom:11px;padding:12px 14px;border-radius:10px;background:#eef4ea;border:1px solid #cfe0c6">'+
-              '<div style="font-size:12.5px;color:var(--terre,#412F21);line-height:1.5;margin-bottom:9px">📅 Cindy propose plutôt le <strong>'+esc(String(t.proposedDueDate).split('-').reverse().join('/'))+'</strong> pour cette demande. Est-ce que cela vous convient ?</div>'+
+          ? '<div style="margin-bottom:11px;padding:12px 14px;border-radius:10px;background:#F8F6F2;border:1px solid #F8F6F2">'+
+              '<div style="font-size:12.5px;color:var(--terre,#110704);line-height:1.5;margin-bottom:9px">📅 Cindy propose plutôt le <strong>'+esc(String(t.proposedDueDate).split('-').reverse().join('/'))+'</strong> pour cette demande. Est-ce que cela vous convient ?</div>'+
               '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',true)" style="padding:8px 14px;border:none;border-radius:8px;background:#3f8f5b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Accepter cette date</button>'+
-                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',false)" style="padding:8px 14px;border:1px solid #d9d2c6;border-radius:8px;background:#fff;color:var(--navy,#1C1205);font-size:12px;cursor:pointer">Refuser</button>'+
+                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',true)" style="padding:8px 14px;border:none;border-radius:8px;background:#5A2A11;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Accepter cette date</button>'+
+                '<button onclick="cliRespondTicketDate(\''+pid+'\',\''+t.id+'\',false)" style="padding:8px 14px;border:1px solid #F8F6F2;border-radius:8px;background:#fff;color:var(--navy,#110704);font-size:12px;cursor:pointer">Refuser</button>'+
               '</div>'+
             '</div>'
           : '';
@@ -3482,7 +3482,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<span style="font-family:var(--font-display);font-size:17.5px;color:var(--terre);line-height:1.15">'+esc(t.title||'Sans titre')+'</span>' +
             '</div>' +
             (t.description ? '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin-bottom:11px">'+esc(t.description)+'</p>' : '') +
-            (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#faf7f1);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
+            (Array.isArray(t.attachments)&&t.attachments.length ? '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px">'+t.attachments.map(function(a){ var isImg=(a.type||'').indexOf('image')===0; return '<a href="'+API_BASE+'/files/'+encodeURIComponent(a.key)+'/download" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface,#F8F6F2);border:1px solid var(--bone-d);border-radius:8px;font-size:11.5px;color:var(--terre);text-decoration:none">'+(isImg?'🖼️':'📎')+' '+esc(a.name||'fichier')+'</a>'; }).join('')+'</div>' : '') +
             proposeBanner +
             '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
               catBadge +
@@ -3493,7 +3493,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             cpStatusPill(t.status) +
             (isOpen ? '<div style="display:flex;gap:8px">' +
               '<button onclick="cliMaintEditTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid var(--bone-d);background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--terre)">'+cpIcon('edit',14,'color:var(--terre-600)')+'Modifier</button>' +
-              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #f0d0cc;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#8d2b21">'+cpIcon('trash',14,'color:#8d2b21')+'Supprimer</button>' +
+              '<button onclick="cliMaintDeleteTicket(\''+pid+'\',\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:1px solid #F8F6F2;background:#fff;border-radius:9px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#5A2A11">'+cpIcon('trash',14,'color:#5A2A11')+'Supprimer</button>' +
             '</div>' : '') +
           '</div>' +
         '</div>';
@@ -3511,13 +3511,13 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             label = label.charAt(0).toUpperCase()+label.slice(1);
             var rows = groups[k].map(function(t){
               return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px">' +
-                '<span style="color:#456039;font-size:13px;flex-shrink:0">✓</span>' +
-                '<span style="flex:1;font-size:12px;color:var(--terre,#412F21);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
-                (t.category?'<span style="font-size:10px;color:#5e4a2e;flex-shrink:0">'+esc(t.category)+'</span>':'') +
+                '<span style="color:#5A2A11;font-size:13px;flex-shrink:0">✓</span>' +
+                '<span style="flex:1;font-size:12px;color:var(--terre,#110704);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;opacity:0.85">'+esc(t.title||'Sans titre')+'</span>' +
+                (t.category?'<span style="font-size:10px;color:#5A2A11;flex-shrink:0">'+esc(t.category)+'</span>':'') +
                 '<button onclick="cliMaintReopenTicket(\''+pid+'\',\''+t.id+'\')" title="Rouvrir" style="font-size:10px;padding:2px 8px;border:1px solid var(--bone-d);border-radius:6px;background:#fff;color:var(--terre-600);cursor:pointer;flex-shrink:0">Rouvrir</button>' +
               '</div>';
             }).join('');
-            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5e4a2e;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
+            return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
           }).join('');
           histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
             '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique — '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
@@ -3536,11 +3536,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     else if (cat==='suivi')    mainContent = buildMaintSuiviClient(project);
     else if (cat==='conseils') {
       var addC = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddCounsel(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un conseil</button></div>';
-      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#8d2b21;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
+      mainContent = addC + (counsels.length ? '<div style="display:grid;gap:11px">' + counsels.map(function(c){ return '<div class="card" style="padding:15px 18px;position:relative">' + (c.author==='client'?'<span style="position:absolute;top:12px;right:14px;font-family:var(--font-micro);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre-400)">Vous</span>':'') + '<div style="font-family:var(--font-display);font-size:16px;color:var(--terre);padding-right:50px">' + esc(c.title||c) + '</div>' + (c.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(c.body) + '</p>' : '') + (c.author==='client'?'<button onclick="cliDeleteCounsel(\''+pid+'\',\''+c.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#5A2A11;cursor:pointer;padding:0">Supprimer</button>':'') + '</div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun conseil pour le moment.</p>');
     }
     else if (cat==='retours') {
       var addR = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button onclick="cliAddFeedback(\''+pid+'\')" class="cp-btn cp-btn--dark" style="padding:8px 16px;font-size:10px">+ Ajouter un retour</button></div>';
-      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#8d2b21;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
+      mainContent = addR + (feedbacks.length ? '<div style="display:grid;gap:11px">' + feedbacks.map(function(f){ return '<div class="card" style="padding:15px 18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:var(--font-display);font-size:16px;color:var(--terre)">' + esc(f.author||'Retour') + '</div>'+(f.createdAt?'<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+fmtDate(f.createdAt)+'</span>':'')+'</div>' + (f.content||f.body ? '<p style="font-size:13px;color:var(--terre-600);margin-top:6px">' + esc(f.content||f.body) + '</p>' : '') + '<button onclick="cliDeleteFeedback(\''+pid+'\',\''+f.id+'\')" style="margin-top:8px;font-size:11px;background:none;border:none;color:#5A2A11;cursor:pointer;padding:0">Supprimer</button></div>'; }).join('') + '</div>' : '<p style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Aucun retour pour le moment.</p>');
     }
 
     return quotaStrip + (showCats ? catTabsHtml : '') + mainContent;
@@ -3587,8 +3587,8 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '<div style="display:flex;align-items:flex-end;gap:14px;height:130px">' +
         chartMonths.map(function(m){ var v=byMonth[m]||0; var h=Math.round(v/maxM*100); var lab=new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'short'}); var over=quotaMin&&v>quotaMin;
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">' +
-            '<span style="font-family:var(--font-micro);font-size:10px;color:'+(over?'#9b3a2e':'var(--terre-600)')+'">'+fmtMin(v)+'</span>' +
-            '<div style="width:100%;height:'+h+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(over?'#9b3a2e':'var(--terre)')+'"></div>' +
+            '<span style="font-family:var(--font-micro);font-size:10px;color:'+(over?'#5A2A11':'var(--terre-600)')+'">'+fmtMin(v)+'</span>' +
+            '<div style="width:100%;height:'+h+'%;min-height:4px;border-radius:6px 6px 0 0;background:'+(over?'#5A2A11':'var(--terre)')+'"></div>' +
             '<span style="font-family:var(--font-micro);font-size:10px;color:var(--terre-400)">'+lab+'</span>' +
           '</div>';
         }).join('') +
@@ -3599,11 +3599,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       var c = byMonth[m]||0; var rest = quotaMin-c; var over = rest<0;
       var regVal = (reguls[m]!=null)?reguls[m]:0;
       var mLab = new Date(m+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-      return '<tr style="'+(over?'background:#fbf1ee':'')+'">' +
+      return '<tr style="'+(over?'background:#F8F6F2':'')+'">' +
         '<td style="padding:9px 12px;font-size:13px;text-transform:capitalize;white-space:nowrap;color:var(--terre)">'+esc(mLab)+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(quotaMin||'—')+(quotaMin?' min':'')+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre)">'+c+' min</td>' +
-        '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#9b3a2e':'var(--terre)')+'">'+fmtMin(rest)+'</td>' +
+        '<td style="padding:9px 12px;font-size:13px;text-align:center;font-weight:600;color:'+(over?'#5A2A11':'var(--terre)')+'">'+fmtMin(rest)+'</td>' +
         '<td style="padding:9px 12px;font-size:13px;text-align:center;color:var(--terre-600)">'+(regVal?fmtMin(regVal):'—')+'</td>' +
       '</tr>';
     }).join('');
@@ -3616,7 +3616,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       '</table>' +
     '</div>';
 
-    var noteCard = project.maintNote ? '<div style="background:var(--bone-50,#f3ece0);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:18px 20px;margin-top:18px">' +
+    var noteCard = project.maintNote ? '<div style="background:var(--bone-50,#F8F6F2);border:1px solid var(--bone-d);border-radius:var(--radius-3);padding:18px 20px;margin-top:18px">' +
       '<div style="font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">A retenir</div>' +
       '<p style="font-family:var(--font-ui);font-size:13px;color:var(--terre);margin:0;white-space:pre-wrap">'+esc(project.maintNote)+'</p>' +
     '</div>' : '';
@@ -3644,14 +3644,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     // ── Catégories : couleurs STABLES (mêmes dans le graphe et les moyennes),
     //    triées par total travaillé ; au-delà de 5, regroupées en « Autres ». ──
-    var CAT_PAL = ['#b491ea', '#e6b053', '#8fb573', '#7bb0c4', '#c98aa6', '#b98a3f'];
+    var CAT_PAL = ['#C5DEFF', '#CD8F6E', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#CD8F6E'];
     var catTot = {};
     tasks.forEach(function (t) { var c = catOf(t); var bm = cpTaskMinByMonth(t); var s = 0; for (var k in bm) s += bm[k]; catTot[c] = (catTot[c] || 0) + s; });
     var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
     var MAXCATS = 5;
-    var catColor = { 'Autres': '#c3b6a3' };
-    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#c3b6a3'; });
-    function colOf(c) { return catColor[c] || '#c3b6a3'; }
+    var catColor = { 'Autres': '#F8F6F2' };
+    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#F8F6F2'; });
+    function colOf(c) { return catColor[c] || '#F8F6F2'; }
     function catShown(c) { return catOrder.indexOf(c) < MAXCATS ? c : 'Autres'; }
     var stackOrder = catOrder.slice(0, MAXCATS).concat(catOrder.length > MAXCATS ? ['Autres'] : []);
 
@@ -3673,7 +3673,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var _wPct = _availMin > 0 ? Math.max(0, Math.min(100 - _dPct, _fwip / _availMin * 100)) : 0;
 
     // helpers markup
-    function card(inner, extra) { return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
+    function card(inner, extra) { return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;height:100%' + (extra || '') + '">' + inner + '</section>'; }
     function cardHead(title, ic, col) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:' + (col || 'var(--glycine-900)')) : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
     function chip(bg, col, txt) { return '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + bg + ';color:' + col + '">' + txt + '</span>'; }
@@ -3682,29 +3682,29 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var curM = months[months.length - 1], topCat = '', topMin = 0;
     for (var cc in curM.byCat) { if (curM.byCat[cc] > topMin) { topMin = curM.byCat[cc]; topCat = cc; } }
     var synthTxt = topCat
-      ? 'Ce mois-ci, votre temps est surtout allé à <b style="color:var(--warm-ink,#7a5a1e)">' + esc(topCat === 'Autres' ? 'plusieurs missions' : topCat) + '</b>' + (_restMin > 0 ? ', et il vous reste de la marge pour lancer une nouvelle demande.' : (_restMin < 0 ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
+      ? 'Ce mois-ci, votre temps est surtout allé à <b style="color:var(--warm-ink,#5A2A11)">' + esc(topCat === 'Autres' ? 'plusieurs missions' : topCat) + '</b>' + (_restMin > 0 ? ', et il vous reste de la marge pour lancer une nouvelle demande.' : (_restMin < 0 ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
       : 'Aucune heure travaillée ce mois-ci pour l\'instant. Dès que je bosse sur vos demandes, le détail apparaît ici.';
-    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#FBEFCF);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
-      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F6E4B8);color:var(--warm-ink,#7a5a1e);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
+    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#F8F6F2);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
+      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F8F6F2);color:var(--warm-ink,#5A2A11);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
       '<p style="margin:0;font-size:14.5px;color:var(--terre)">' + synthTxt + '</p></div>';
 
     // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
-    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
-    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#F8F6F2"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#C5DEFF' : '#F8F6F2') + '">' + val + '</b></div>'; }
+    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
     var _cm2 = cpMood(_availMin, _usedMin, _pf.cap);
-    var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
-      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre accompagnement · ' + esc(monthLbl2) + '</div>' +
-      '<div style="font-family:var(--font-display);font-style:italic;font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#e79a8a' : '#FBFAF6') + '">' + _cm2.label + '</div>' +
-      '<div style="font-size:15px;color:#d8c6a8;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
-      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + _wPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', 'terminé') + (_fwip > 0 ? flag('#9a72d6', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
+    var hero = forfaitH ? '<section style="background:#110704;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F8F6F2;height:100%">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#F8F6F2">Votre accompagnement · ' + esc(monthLbl2) + '</div>' +
+      '<div style="font-family:var(--font-display);font-style:italic;font-size:clamp(30px,4.5vw,42px);line-height:1;margin:12px 0 0;color:' + (_cm2.tone === 'over' ? '#CD8F6E' : '#F8F6F2') + '">' + _cm2.label + '</div>' +
+      '<div style="font-size:15px;color:#F8F6F2;margin-top:12px;line-height:1.55;max-width:560px">' + _cm2.note + '</div>' +
+      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + _dPct + '%;background:#F8F6F2"></span><span style="height:100%;width:' + _wPct + '%;background:#C5DEFF;box-shadow:inset 2.5px 0 0 #110704"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F8F6F2', 'terminé') + (_fwip > 0 ? flag('#C5DEFF', 'en cours') : '') + flag('rgba(251,250,246,.22)', 'disponible') + '</div>' +
       '<details style="margin-top:20px;border-top:1px solid rgba(251,250,246,.14);padding-top:14px">' +
-        '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#c9b28c">' +
-          '<span class="cp-chev2" style="display:inline-flex;color:#c9b28c"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>Comment fonctionne votre forfait&nbsp;?' +
+        '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#F8F6F2">' +
+          '<span class="cp-chev2" style="display:inline-flex;color:#F8F6F2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>Comment fonctionne votre forfait&nbsp;?' +
         '</summary>' +
-        '<div style="font-size:13.5px;color:#d8c6a8;line-height:1.6;margin-top:13px;max-width:620px">' +
-          '<p style="margin:0 0 9px">Vous disposez de <b style="color:#F2E5C2">' + hmm(_baseMin) + ' par mois</b> pour avancer sur vos projets.</p>' +
-          '<p style="margin:0 0 9px">Le temps compte au mois où le travail est <b style="color:#F2E5C2">réellement fait</b>. Les heures non utilisées ne se reportent <b style="color:#F2E5C2">pas</b> d\'un mois à l\'autre (au-delà d\'un petit report de ' + hmm(Math.round((_pf.cap || 0) * 60)) + ') — autant en profiter pour me confier vos sujets.</p>' +
+        '<div style="font-size:13.5px;color:#F8F6F2;line-height:1.6;margin-top:13px;max-width:620px">' +
+          '<p style="margin:0 0 9px">Vous disposez de <b style="color:#F8F6F2">' + hmm(_baseMin) + ' par mois</b> pour avancer sur vos projets.</p>' +
+          '<p style="margin:0 0 9px">Le temps compte au mois où le travail est <b style="color:#F8F6F2">réellement fait</b>. Les heures non utilisées ne se reportent <b style="color:#F8F6F2">pas</b> d\'un mois à l\'autre (au-delà d\'un petit report de ' + hmm(Math.round((_pf.cap || 0) * 60)) + ') — autant en profiter pour me confier vos sujets.</p>' +
           '<p style="margin:0">Si un mois on va au-delà, les heures en plus sont simplement facturées en supplément, et on en parle ensemble avant.</p>' +
         '</div>' +
       '</details>' +
@@ -3718,7 +3718,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
-        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#E7DCF7') + '">' + segs + '</div>' +
+        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#C5DEFF') + '">' + segs + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
     }).join('') + '</div>';
@@ -3729,9 +3729,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var monthTasks = tasks.map(function (t) { return { t: t, mins: cpTaskMinByMonth(t)[curMonthKey] || 0 }; }).filter(function (o) { return o.mins > 0; }).sort(function (a, b) { return b.mins - a.mins; });
     var detailRows = monthTasks.map(function (o) {
       var t = o.t, wip = t.status !== 'done', cat = catOf(t);
-      var statusChip = wip ? chip('var(--glycine-50,#f4ecff)', 'var(--glycine-900,#573b8a)', 'En cours') : chip('#DFEBD3', '#4d6b3d', '✓ Terminée');
-      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#fbf0d8;color:var(--warm-ink,#7a5a1e)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
-      return '<div style="padding:14px 0' + (wip ? ';background:#EDE4FB;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
+      var statusChip = wip ? chip('var(--glycine-50,#C5DEFF)', 'var(--glycine-900,#5A2A11)', 'En cours') : chip('#F8F6F2', '#5A2A11', '✓ Terminée');
+      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:var(--warm-ink,#5A2A11)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
+      return '<div style="padding:14px 0' + (wip ? ';background:#C5DEFF;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
         '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || 'Tâche') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
@@ -3740,7 +3740,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       sub(monthTasks.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</b> décomptées, tâche par tâche.' : 'Le temps travaillé ce mois apparaîtra ici, tâche par tâche.') +
       (monthTasks.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#FBEFCF);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#7a5a1e)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total travaillé · ' + esc(monthLbl2) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(Math.round(monthReel * 60)) + '</span></div>' +
           '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté dans le mois où le travail est réellement fait, pas à la date de validation.</p>'
         : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure travaillée ce mois-ci pour l\'instant.</p>');
     var detailCard = card(detailInner);
@@ -3752,16 +3752,16 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var catInner = cardHead('En moyenne, par type') + sub('Un repère du temps que je consacre à chaque type de mission.') +
       cats.map(function (c, i) {
         var avg = c.n ? Math.round(c.min / c.n) : 0;
-        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #efe7db' : '') + '">' +
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #F8F6F2' : '') + '">' +
           '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' tâche' + (c.n > 1 ? 's' : '') + ' · ' + partFmtH(c.min) + ' au total</div></div></div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#a8701a;flex-shrink:0">' + partFmtH(avg) + '</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(avg) + '</div>' +
         '</div>';
       }).join('');
     var catCard = cats.length ? card(catInner) : '';
 
     // ── 6. Archivées (repliées) ──
     var archived2 = archived;
-    var archAccordion = '<details style="background:#ECE2D6;border-radius:14px;padding:2px 4px;margin-top:16px">' +
+    var archAccordion = '<details style="background:#F8F6F2;border-radius:14px;padding:2px 4px;margin-top:16px">' +
       '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('archive', 14) + ' Voir les tâches archivées (' + archived2.length + ')</summary>' +
       (archived2.length ? archived2.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600);text-decoration:line-through">' + esc(t.title || 'Tâche') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune tâche archivée.</div>') +
     '</details>';
@@ -3782,7 +3782,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var tot = rows.reduce(function (s, o) { return s + o.min; }, 0);
         var isCur = mk === curMonthKey;
         var dl = new Date(mk + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-        return '<details' + (isCur ? ' open' : '') + ' style="border-top:1px solid #efe7db">' +
+        return '<details' + (isCur ? ' open' : '') + ' style="border-top:1px solid #F8F6F2">' +
           '<summary class="cp-mrow" style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 12px">' +
             '<span class="cp-chev" style="flex-shrink:0;color:var(--terre-400)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>' +
             '<span style="flex:1;font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre);text-transform:capitalize">' + esc(dl) + (isCur ? ' <span style="font-family:var(--font-micro);font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--terre-400)">· en cours</span>' : '') + '</span>' +
@@ -3827,14 +3827,14 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var doneT = tickets.filter(function (t) { return t.status === 'done' || t.status === 'closed'; });
 
     // ── Catégories : couleurs stables (chart + moyennes), max 5 + « Autres ». ──
-    var CAT_PAL = ['#b491ea', '#e6b053', '#8fb573', '#7bb0c4', '#c98aa6', '#b98a3f'];
+    var CAT_PAL = ['#C5DEFF', '#CD8F6E', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#CD8F6E'];
     var catTot = {};
     tickets.forEach(function (t) { var c = catOf(t); catTot[c] = (catTot[c] || 0) + tkMin(t); });
     var catOrder = Object.keys(catTot).filter(function (c) { return catTot[c] > 0; }).sort(function (a, b) { return catTot[b] - catTot[a]; });
     var MAXCATS = 5;
-    var catColor = { 'Autres': '#c3b6a3' };
-    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#c3b6a3'; });
-    function colOf(c) { return catColor[c] || '#c3b6a3'; }
+    var catColor = { 'Autres': '#F8F6F2' };
+    catOrder.forEach(function (c, i) { catColor[c] = i < MAXCATS ? CAT_PAL[i] : '#F8F6F2'; });
+    function colOf(c) { return catColor[c] || '#F8F6F2'; }
     function catShown(c) { return catOrder.indexOf(c) < MAXCATS ? c : 'Autres'; }
     var stackOrder = catOrder.slice(0, MAXCATS).concat(catOrder.length > MAXCATS ? ['Autres'] : []);
 
@@ -3863,7 +3863,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var mwPct = availMin > 0 ? Math.max(0, Math.min(100 - mdPct, mWip / availMin * 100)) : 0;
 
     // helpers markup
-    function card(inner) { return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
+    function card(inner) { return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;height:100%">' + inner + '</section>'; }
     function cardHead(title, ic) { return '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">' + (ic ? cpIcon(ic, 15, 'color:var(--glycine-900)') : '') + '<span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre)">' + title + '</span></div>'; }
     function sub(txt) { return '<p style="font-size:12.5px;color:var(--terre-600);line-height:1.5;margin:0 0 14px">' + txt + '</p>'; }
 
@@ -3871,26 +3871,26 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var curM = months[months.length - 1], topCat = '', topMin = 0;
     for (var cc in curM.byCat) { if (curM.byCat[cc] > topMin) { topMin = curM.byCat[cc]; topCat = cc; } }
     var synthTxt = topCat
-      ? 'Ce mois-ci, l\'essentiel du temps est allé à <b style="color:var(--warm-ink,#7a5a1e)">' + esc(topCat === 'Autres' ? 'plusieurs types de demandes' : topCat) + '</b>' + (remMin > 0 ? ', et il vous reste de la marge sur votre forfait.' : (over ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
+      ? 'Ce mois-ci, l\'essentiel du temps est allé à <b style="color:var(--warm-ink,#5A2A11)">' + esc(topCat === 'Autres' ? 'plusieurs types de demandes' : topCat) + '</b>' + (remMin > 0 ? ', et il vous reste de la marge sur votre forfait.' : (over ? '. Le forfait est dépassé ce mois-ci, on en parle quand vous voulez.' : '.'))
       : 'Aucune heure sur vos demandes ce mois-ci pour l\'instant. Dès qu\'un ticket avance, le détail apparaît ici.';
-    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#FBEFCF);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
-      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F6E4B8);color:var(--warm-ink,#7a5a1e);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
+    var synth = '<div style="display:flex;align-items:center;gap:12px;background:var(--warm-soft,#F8F6F2);border-radius:16px;padding:15px 20px;margin-bottom:18px">' +
+      '<span style="width:36px;height:36px;border-radius:10px;background:var(--warm,#F8F6F2);color:var(--warm-ink,#5A2A11);display:grid;place-items:center;flex-shrink:0">' + cpIcon('chart', 17) + '</span>' +
       '<p style="margin:0;font-size:14.5px;color:var(--terre)">' + synthTxt + '</p></div>';
 
     // ── 2. Forfait (bloc marron dominant, aéré, sans répéter les totaux) ──
-    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#e7dcc6"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#E4D1FE' : '#FBFAF6') + '">' + val + '</b></div>'; }
-    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#e7dcc6"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
-    var hero = forfaitH ? '<section style="background:#2A1D10;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F2E5C2;height:100%">' +
-      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#c9b28c">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#e79a8a' : '#FBFAF6') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#d8c6a8">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
-      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + mdPct + '%;background:#F4E7C0"></span><span style="height:100%;width:' + mwPct + '%;background:#9a72d6;box-shadow:inset 2.5px 0 0 #2A1D10"></span></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F4E7C0', hmm(mDone) + ' résolu') + (mWip > 0 ? flag('#9a72d6', hmm(mWip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
+    function fRow(lbl, val, wip) { return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;color:#F8F6F2"><span>' + lbl + '</span><b style="font-weight:600;color:' + (wip ? '#C5DEFF' : '#F8F6F2') + '">' + val + '</b></div>'; }
+    function flag(c, txt) { return '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#F8F6F2"><i style="width:12px;height:12px;border-radius:3px;background:' + c + ';flex-shrink:0"></i>' + txt + '</span>'; }
+    var hero = forfaitH ? '<section style="background:#110704;border-radius:20px;padding:clamp(24px,3vw,32px);color:#F8F6F2;height:100%">' +
+      '<div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#F8F6F2">Votre forfait · ' + esc(mMoisLbl) + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:12px 0 0"><span style="font-family:var(--font-display);font-style:italic;font-size:clamp(46px,6vw,64px);line-height:.8;color:' + (over ? '#CD8F6E' : '#F8F6F2') + '">' + hmm(Math.abs(remMin)) + '</span><span style="font-size:15px;color:#F8F6F2">' + (over ? 'de dépassement' : 'restantes sur ' + hmm(availMin) + ' ce mois') + '</span></div>' +
+      '<div style="height:15px;background:rgba(251,250,246,.14);border-radius:999px;overflow:hidden;display:flex;margin:26px 0 13px"><span style="height:100%;width:' + mdPct + '%;background:#F8F6F2"></span><span style="height:100%;width:' + mwPct + '%;background:#C5DEFF;box-shadow:inset 2.5px 0 0 #110704"></span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px 24px">' + flag('#F8F6F2', hmm(mDone) + ' résolu') + (mWip > 0 ? flag('#C5DEFF', hmm(mWip) + ' en cours') : '') + flag('rgba(251,250,246,.22)', 'le reste, disponible') + '</div>' +
       '<div style="height:1px;background:rgba(251,250,246,.14);margin:26px 0"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px 40px">' +
-        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? fRow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin))) : '') + '</div>' +
-        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a8916b;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Demandes résolues', hmm(mDone)) + (mWip > 0 ? fRow('+ En cours (déjà compté)', hmm(mWip), true) : '') + '</div>' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F8F6F2;margin-bottom:10px">Ce dont vous disposez</div>' + fRow('Forfait de base', hmm(baseMin)) + (carryMin !== 0 ? fRow((carryMin > 0 ? '+ Report du mois dernier' : '− Dépassement reporté'), (carryMin > 0 ? '+' : '−') + hmm(Math.abs(carryMin))) : '') + '</div>' +
+        '<div><div style="font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F8F6F2;margin-bottom:10px">Ce qui est consommé</div>' + fRow('Demandes résolues', hmm(mDone)) + (mWip > 0 ? fRow('+ En cours (déjà compté)', hmm(mWip), true) : '') + '</div>' +
       '</div>' +
-      (billedMin > 0 ? '<div style="font-size:12px;color:#e79a8a;margin-top:16px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
+      (billedMin > 0 ? '<div style="font-size:12px;color:#CD8F6E;margin-top:16px;line-height:1.45">' + partFmtH(billedMin) + ' de dépassement facturées ce mois.</div>' : '') +
     '</section>' : card(sub('Renseignez un forfait pour suivre la consommation.'));
 
     // ── 3. Graphe empilé par catégorie ──
@@ -3901,7 +3901,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       if (m.min) stackOrder.forEach(function (c) { var mn = m.byCat[c]; if (!mn) return; segs += '<span style="width:100%;height:' + Math.round(mn / m.min * barH) + 'px;background:' + colOf(c) + '"></span>'; });
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">' +
         '<div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:' + (m.min ? 'var(--terre)' : 'var(--terre-200)') + ';line-height:1">' + (m.min ? hmm(m.min) : '·') + '</div>' +
-        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#E7DCF7') + '">' + segs + '</div>' +
+        '<div style="width:100%;max-width:54px;border-radius:8px 8px 0 0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;height:' + barH + 'px;' + (m.min ? '' : 'background:#C5DEFF') + '">' + segs + '</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:.04em;color:' + (isCur ? 'var(--glycine-900)' : 'var(--terre-400)') + '">' + esc(m.label) + '</div>' +
       '</div>';
     }).join('') + '</div>';
@@ -3912,9 +3912,9 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var monthTk = tickets.filter(function (t) { return tkMonth(t) === curMonthKey && tkMin(t) > 0; }).map(function (t) { return { t: t, mins: tkMin(t) }; }).sort(function (a, b) { return b.mins - a.mins; });
     var detailRows = monthTk.map(function (o) {
       var t = o.t, wip = !(t.status === 'done' || t.status === 'closed'), cat = catOf(t);
-      var statusChip = wip ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--glycine-50,#f4ecff);color:var(--glycine-900,#573b8a)">En cours</span>' : '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#DFEBD3;color:#4d6b3d">✓ Résolue</span>';
-      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#fbf0d8;color:var(--warm-ink,#7a5a1e)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
-      return '<div style="padding:14px 0' + (wip ? ';background:#EDE4FB;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
+      var statusChip = wip ? '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--glycine-50,#C5DEFF);color:var(--glycine-900,#5A2A11)">En cours</span>' : '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:#5A2A11">✓ Résolue</span>';
+      var catChip = '<span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#F8F6F2;color:var(--warm-ink,#5A2A11)"><i style="width:9px;height:9px;border-radius:2px;background:' + colOf(cat) + '"></i>' + esc(cat) + '</span>';
+      return '<div style="padding:14px 0' + (wip ? ';background:#C5DEFF;border-radius:12px;padding:13px 15px;margin:6px 0' : '') + '">' +
         '<div style="display:flex;justify-content:space-between;gap:14px;align-items:baseline"><span style="font-size:15px;color:var(--terre)">' + esc(t.title || t.subject || 'Demande') + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:22px;color:' + (wip ? 'var(--glycine-900)' : 'var(--terre)') + ';flex-shrink:0">' + hmm(o.mins) + '</span></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">' + statusChip + catChip + '</div>' +
       '</div>';
@@ -3923,7 +3923,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       sub(monthTk.length ? 'D\'où viennent les <b style="color:var(--terre)">' + hmm(usedMin) + '</b> décomptées, demande par demande.' : 'Le temps sur vos demandes ce mois apparaîtra ici.') +
       (monthTk.length
         ? detailRows +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#FBEFCF);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#7a5a1e)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:var(--warm-soft,#F8F6F2);border-radius:12px;margin-top:12px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-ink,#5A2A11)">Total ce mois · ' + esc(mMoisLbl) + '</span><span style="font-family:var(--font-display);font-style:italic;font-size:23px;color:var(--terre)">' + hmm(usedMin) + '</span></div>' +
           '<p style="font-size:12px;color:var(--terre-400);line-height:1.5;margin-top:12px">Compté sur le mois où la demande a été traitée.</p>'
         : '<p style="font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--terre-600)">Aucune heure sur vos demandes ce mois-ci pour l\'instant.</p>');
     var detailCard = card(detailInner);
@@ -3932,15 +3932,15 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var cats = catOrder.map(function (name) { var n = tickets.filter(function (t) { return catOf(t) === name; }).length; return { name: name, min: catTot[name], n: n }; });
     var catInner = cardHead('Par type de demande') + sub('Le temps consacré à chaque type de demande.') +
       cats.map(function (c, i) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #efe7db' : '') + '">' +
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0' + (i ? ';border-top:1px solid #F8F6F2' : '') + '">' +
           '<div style="display:flex;align-items:center;gap:10px;min-width:0"><i style="width:12px;height:12px;border-radius:3px;background:' + colOf(c.name) + ';flex-shrink:0"></i><div><div style="font-size:14px;color:var(--terre)">' + esc(c.name) + '</div><div style="font-family:var(--font-micro);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--terre-400);margin-top:2px">' + c.n + ' demande' + (c.n > 1 ? 's' : '') + '</div></div></div>' +
-          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#a8701a;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
+          '<div style="font-family:var(--font-display);font-style:italic;font-size:23px;color:#CD8F6E;flex-shrink:0">' + partFmtH(c.min) + '</div>' +
         '</div>';
       }).join('');
     var catCard = cats.length ? card(catInner) : '';
 
     // ── 6. Demandes résolues (repliées) ──
-    var resolvedAccordion = '<details style="background:#ECE2D6;border-radius:14px;padding:2px 4px;margin-top:16px">' +
+    var resolvedAccordion = '<details style="background:#F8F6F2;border-radius:14px;padding:2px 4px;margin-top:16px">' +
       '<summary style="list-style:none;cursor:pointer;padding:15px 20px;display:flex;align-items:center;gap:10px;font-family:var(--font-micro);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--terre-600)">' + cpIcon('check', 14) + ' Voir les demandes résolues (' + doneT.length + ')</summary>' +
       (doneT.length ? doneT.map(function (t) { return '<div style="padding:10px 20px;font-size:14px;color:var(--terre-600)">' + esc(t.title || t.subject || 'Demande') + '</div>'; }).join('') : '<div style="padding:10px 20px;font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-600)">Aucune demande résolue.</div>') +
     '</details>';
@@ -3986,43 +3986,43 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var _fbNums = cpForfaitNums(project);
     var forfaitLeft = _pfBar.remaining;               // inclut le report du mois dernier
     var forfaitBar = (forfaitH && _fbNums)
-      ? '<div style="padding:16px 22px;background:#F8F6F2;border-radius:14px;margin-bottom:18px">' +
-          '<div style="display:flex;align-items:center;gap:9px">' + cpIcon('timer',15,'color:#6b533b') +
-            '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b533b">Forfait du mois</span></div>' +
+      ? '<div style="padding:16px 22px;background:F8F6F2;border-radius:14px;margin-bottom:18px">' +
+          '<div style="display:flex;align-items:center;gap:9px">' + cpIcon('timer',15,'color:#5A2A11') +
+            '<span style="font-family:var(--font-micro,inherit);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5A2A11">Forfait du mois</span></div>' +
           cpForfaitInline(_fbNums, false) +
         '</div>'
       : '';
 
     // Header: ← Mois → | AUJOURD'HUI | filtres statut | + AJOUTER
     var CAL_STATUS_F = [
-      { k:'',            label:'TOUTES',    col:'#1C1205' },
-      { k:'todo',        label:'REÇUE',     col:'#b08968' },
-      { k:'in_progress', label:'EN COURS',  col:'#7da2e0' },
-      { k:'review',      label:'À VALIDER', col:'#c9952f' }
+      { k:'',            label:'TOUTES',    col:'#110704' },
+      { k:'todo',        label:'REÇUE',     col:'#CD8F6E' },
+      { k:'in_progress', label:'EN COURS',  col:'#C5DEFF' },
+      { k:'review',      label:'À VALIDER', col:'#CD8F6E' }
     ];
     var urgFilters = CAL_STATUS_F.map(function(s){
       var active = (flt.status||'')===s.k;
       if (!s.k) {
-        return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#1C1205':'#e3ddd0')+';background:'+(active?'#1C1205':'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+s.label+'</button>';
+        return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+(active?'#110704':'#F8F6F2')+';background:'+(active?'#110704':'transparent')+';color:'+(active?'#fff':'#5A2A11')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">'+s.label+'</button>';
       }
-      return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s.k+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?s.col:'#e3ddd0')+';background:'+(active?s.col:'transparent')+';color:'+(active?'#fff':'#8a6f54')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(active?'#fff':s.col)+'"></span>'+s.label+'</button>';
+      return '<button onclick="cliSetFilter(\''+pid+'\',\'status\',\''+s.k+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px solid '+(active?s.col:'#F8F6F2')+';background:'+(active?s.col:'transparent')+';color:'+(active?'#fff':'#5A2A11')+';font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(active?'#fff':s.col)+'"></span>'+s.label+'</button>';
     }).join('');
 
     var calHeader = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">' +
       '<div style="display:flex;align-items:center;gap:6px">' +
-        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#412F21);padding:4px 6px;line-height:1">←</button>' +
-        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#412F21);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
-        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#412F21);padding:4px 6px;line-height:1">→</button>' +
+        '<button onclick="cliCalNav(\''+pid+'\',-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#110704);padding:4px 6px;line-height:1">←</button>' +
+        '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--terre,#110704);min-width:150px;text-align:center">'+monthNameCap+'</span>' +
+        '<button onclick="cliCalNav(\''+pid+'\',1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--terre,#110704);padding:4px 6px;line-height:1">→</button>' +
       '</div>' +
-      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #e3ddd0;background:var(--surface,#ffffff);color:var(--terre,#412F21);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
+      '<button onclick="cliCalGoToday(\''+pid+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid #F8F6F2;background:var(--surface,ffffff);color:var(--terre,#110704);font-size:11px;font-weight:700;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">AUJOURD\'HUI</button>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + urgFilters + '</div>' +
     '</div>';
 
     // Grid cells — table unifiée bordurée
-    var PART_URG_SOFT = { tranquille:'#eaf1fd', normal:'#f9f1d8', urgent:'#f5e8cc', critique:'#f7e1d2' };
+    var PART_URG_SOFT = { tranquille:'#C5DEFF', normal:'#F8F6F2', urgent:'#F8F6F2', critique:'#F8F6F2' };
     var dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-    var BORD = '#ece4d6';
-    var emptyCell = '<div style="min-height:132px;border-radius:14px;background:#f3ede2;opacity:.5"></div>';
+    var BORD = '#F8F6F2';
+    var emptyCell = '<div style="min-height:132px;border-radius:14px;background:#F8F6F2;opacity:.5"></div>';
     var dayCells = [];
     var firstDow = (new Date(year,month,1).getDay()+6)%7;
     var offset = firstDow;
@@ -4040,11 +4040,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
       });
       var isToday = ds===todayStr;
       var numHtml = isToday
-        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#1C1205;color:#ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
-        : '<div style="font-size:13px;font-weight:600;color:#6b533b">'+dd+'</div>';
+        ? '<div style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#110704;color:ffffff;font-size:12px;font-weight:700">'+dd+'</div>'
+        : '<div style="font-size:13px;font-weight:600;color:#5A2A11">'+dd+'</div>';
       var pills = dt.slice(0,3).map(function(t){
         var urg = PART_URGENCY[t.urgency]||'#ddd';
-        var soft = PART_URG_SOFT[t.urgency]||'#f3ede2';
+        var soft = PART_URG_SOFT[t.urgency]||'#F8F6F2';
         var isDone = t.status==='done';
         var isActive = cliSelTask[pid]===t.id;
         var timeMin = t.timeSpentMinutes||0;
@@ -4052,12 +4052,12 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var propVals = t.properties || {};
         // Affichage compact : on ne montre une pastille que si la propriété a une valeur.
         // L'édition se fait dans la fiche de la tâche (clic sur la carte).
-        var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'Brief terminé':'#dcecd3' };
-        var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };
+        var STATUT_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#F8F6F2', 'Brief terminé':'#F8F6F2' };
+        var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#F8F6F2', 'Besoin d\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };
         function propChip(val, colorMap){
           if (!val) return '';
-          var bg = colorMap[val] || '#efe8db';
-          return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5c4530;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
+          var bg = colorMap[val] || '#F8F6F2';
+          return '<span style="border-radius:999px;padding:2px 9px;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:600;color:#5A2A11;background:'+bg+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(val)+'</span>';
         }
         // Pastille = vrai statut de la tâche (jamais figé), pas la propriété
         // interne « avancement » qui restait sur « En cours » à tort.
@@ -4067,23 +4067,23 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var propChipsHtml = propChip(briefRaw, STATUT_COL) + statusPill;
         var _stIcMap = { todo:'clock', in_progress:'zap', review:'chat', done:'check' };
         var _stIc = cpIcon(_stIcMap[t.status] || 'clock', 12, 'color:' + sm.color + ';flex-shrink:0');
-        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#f3ede2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
+        return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:6px 8px;border-radius:7px;background:'+(isDone?'#F8F6F2':soft)+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             _stIc +
-            '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:400;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
           '</div>' +
-          (t.dueDate ? '<div style="font-size:10px;color:#5e4a2e;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
+          (t.dueDate ? '<div style="font-size:10px;color:#5A2A11;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
         '</div>';
-      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#5e4a2e;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
+      }).join('') + (dt.length>3?'<div style="font-size:10px;color:#5A2A11;text-align:center;margin-top:3px">+'+(dt.length-3)+'</div>':'');
       // Jour de congés : grisé, non déposable, avec un repère « congés » à la place du +.
-      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#f4ece1,#f4ece1 7px,#efe4d5 7px,#efe4d5 14px)' : (isWeekend ? '#f3ede2' : '#f8f5ef');
+      var cellBg = isHol ? 'repeating-linear-gradient(135deg,#F8F6F2,#F8F6F2 7px,#F8F6F2 7px,#F8F6F2 14px)' : (isWeekend ? '#F8F6F2' : '#F8F6F2');
       var addBtn = isHol
         ? '<span title="Cindy est en congés ce jour-là" style="font-size:13px;opacity:0.65;line-height:1">🌴</span>'
-        : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #EDE9E1;background:#fff;color:#412F21;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
+        : '<button onclick="cliOpenAddTask(\''+pid+'\',\''+ds+'\')" title="Nouvelle demande" style="width:20px;height:20px;border-radius:50%;border:1px solid #F8F6F2;background:#fff;color:#110704;cursor:pointer;font-size:13px;line-height:1;padding:0">+</button>';
       dayCells.push('<div ' + (isHol ? '' : 'ondragover="cliDragOver(event,this)" ondragleave="cliDragLeave(this)" ondrop="cliDrop(event,\''+pid+'\',\''+ds+'\')" ') + 'data-ds="'+ds+'" style="position:relative;min-height:132px;padding:12px;border-radius:14px;background:'+cellBg+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' + numHtml + addBtn +
-        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5e4a2e;margin-top:2px">Congés</div>' : '') + pills +
+        '</div>' + (isHol ? '<div style="font-family:var(--font-micro);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;margin-top:2px">Congés</div>' : '') + pills +
       '</div>');
     }
     var allCells = [];
@@ -4092,7 +4092,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     while (allCells.length % 7 !== 0) allCells.push(emptyCell);
 
     var calGrid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:10px">' +
-        dayNames.map(function(n,idx){return '<div style="padding:2px 8px;font-family:var(--font-micro);font-size:11px;font-weight:600;color:#8a7256;letter-spacing:0.08em;text-transform:uppercase">'+n+'</div>';}).join('') +
+        dayNames.map(function(n,idx){return '<div style="padding:2px 8px;font-family:var(--font-micro);font-size:11px;font-weight:600;color:#5A2A11;letter-spacing:0.08em;text-transform:uppercase">'+n+'</div>';}).join('') +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">'+allCells.join('')+'</div>';
 
@@ -4148,8 +4148,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var timeSpent = t.timeSpentMinutes || 0;
     var timeH = (timeSpent/60).toFixed(1);
 
-    var urgBg = PART_URGENCY[t.urgency] || '#F2E5C2';
-    var urgTx = PART_URGENCY_TX[t.urgency] || '#5c3d00';
+    var urgBg = PART_URGENCY[t.urgency] || '#F8F6F2';
+    var urgTx = PART_URGENCY_TX[t.urgency] || '#5A2A11';
     var urgLabel = (PART_URG_LABEL[t.urgency]||'').toUpperCase();
 
     var statusMap = {todo:'Pas commencé',in_progress:'En cours',review:'À valider chez vous',done:'Terminée'};
@@ -4160,43 +4160,43 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var dueDateStr = (t.dueDate||'').slice(0,10);
     var daysUntilDue = dueDateStr ? Math.ceil((new Date(dueDateStr+'T12:00:00') - new Date()) / 86400000) : null;
     var daysLabel = daysUntilDue !== null
-      ? (daysUntilDue < 0 ? ' <span style="color:#8d2b21;font-size:10px">J'+daysUntilDue+'</span>'
-        : daysUntilDue===0 ? ' <span style="color:#8d2b21;font-size:10px">Aujourd\'hui</span>'
-        : ' <span style="font-size:10px;color:var(--muted,#8090a8)">J+'+daysUntilDue+'</span>') : '';
+      ? (daysUntilDue < 0 ? ' <span style="color:#5A2A11;font-size:10px">J'+daysUntilDue+'</span>'
+        : daysUntilDue===0 ? ' <span style="color:#5A2A11;font-size:10px">Aujourd\'hui</span>'
+        : ' <span style="font-size:10px;color:var(--muted,#C5DEFF)">J+'+daysUntilDue+'</span>') : '';
 
     var commentsHtml = comments.map(function(c){
       var isStudio = c.author === 'studio';
       return '<div style="display:flex;'+(isStudio?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:8px">' +
-        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#e7cd97':'var(--surface,#ffffff)')+';border:1px solid '+(isStudio?'#c9952f':'var(--bone-d,#e8e0d4)')+';">' +
-          '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#412F21':'var(--muted,#8090a8)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
-          '<div style="font-size:13px;color:'+(isStudio?'#412F21':'var(--navy,#1C1205)')+'">'+esc(c.text)+'</div>' +
+        '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isStudio?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(isStudio?'#F8F6F2':'var(--surface,ffffff)')+';border:1px solid '+(isStudio?'#CD8F6E':'var(--bone-d,#F8F6F2)')+';">' +
+          '<div style="font-size:10px;font-weight:700;color:'+(isStudio?'#110704':'var(--muted,#C5DEFF)')+';margin-bottom:3px">'+(isStudio?'Studio':'Vous')+' · '+fmtShort(c.createdAt)+'</div>' +
+          '<div style="font-size:13px;color:'+(isStudio?'#110704':'var(--navy,#110704)')+'">'+esc(c.text)+'</div>' +
         '</div>' +
       '</div>';
     }).join('');
 
-    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#e8e0d4);margin:14px 0">';
+    var sep = '<hr style="border:none;border-top:1px solid var(--bone-d,#F8F6F2);margin:14px 0">';
 
-    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
+    return '<div style="background:var(--card,#fff);border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh">' +
       // Top row: épingle + close
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
         '<div style="display:flex;align-items:center;gap:6px">' +
-          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#fdf8ef;color:#6a4a0b;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
+          (t.pinned ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:#F8F6F2;color:#5A2A11;font-size:10px;font-weight:600">📌 Épinglé</span>' : '') +
         '</div>' +
-        '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#8090a8);padding:2px 6px;line-height:1">✕</button>' +
+        '<button onclick="cliCloseTaskDrawer(\''+pid+'\')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted,#C5DEFF);padding:2px 6px;line-height:1">✕</button>' +
       '</div>' +
       // Titre (editable)
-      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#1C1205);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#e2dbd0)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
+      '<input id="_pt-title-'+t.id+'" value="'+esc(t.title)+'" oninput="cliTaskAutosave(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'title\',this.value)" placeholder="Titre de la tache" style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--navy,#110704);line-height:1.3;margin-bottom:14px;width:100%;border:none;border-bottom:1.5px solid transparent;background:none;padding:2px 0;outline:none" onfocus="this.style.borderBottomColor=\'var(--border,#F8F6F2)\'" onblur="this.style.borderBottomColor=\'transparent\'">' +
       // Statut (la cliente a-t-elle terminé son brief ?) + Échéance
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Statut</div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px">Statut</div>' +
           (function(){
             var v = (t.properties||{}).p_clientbrief || '';
             var o = ['Brief en cours', 'Brief prêt'];
-            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>' +
+            return '<select onchange="cliEditTaskProp(\''+pid+'\',\''+t.id+'\',\'p_clientbrief\',this.value)" style="width:100%;padding:6px 10px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer;box-sizing:border-box"><option value="">—</option>' +
               o.map(function(x){ return '<option'+(v===x?' selected':'')+'>'+x+'</option>'; }).join('') + '</select>';
           })() + '</div>' +
-        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
-          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
+        '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px">Échéance'+daysLabel+'</div>' +
+          '<input id="_pt-due-'+t.id+'" type="date" value="'+esc(dueDateStr)+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'dueDate\',this.value)" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-family:inherit;box-sizing:border-box"></div>' +
       '</div>' +
       sep +
       // Informations : état du brief + type de mission + pièces jointes
@@ -4204,8 +4204,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var schema = (Array.isArray(project && project.propertySchema) ? project.propertySchema : []);
         function defOf(id){ return schema.find(function(d){ return d.id===id; }); }
         var props = t.properties || {};
-        var inpStyle = 'width:100%;font-size:13px;padding:6px 9px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box';
-        var lblS = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);margin-bottom:4px';
+        var inpStyle = 'width:100%;font-size:13px;padding:6px 9px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-family:inherit;color:var(--navy,#110704);background:#fff;box-sizing:border-box';
+        var lblS = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);margin-bottom:4px';
         function selectFor(id, slot){
           var d = defOf(id); if (!d || !Array.isArray(d.options) || !d.options.length) return '';
           var val = props[id]!=null ? props[id] : '';
@@ -4216,15 +4216,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         }
         var bvc = briefVal(props.p_elements);
         var filesHtml = bvc.files.map(function(f){
-          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#1C1205)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#1C1205);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
+          return '<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:rgba(0,0,0,0.05);border-radius:8px;font-size:12px;color:var(--navy,#110704)">📎 <a href="'+API_BASE+'/files/'+encodeURIComponent(f.key)+'/download" target="_blank" style="color:var(--navy,#110704);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</a><button onclick="cliRemoveBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+esc(f.key)+'\')" title="Retirer" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:14px;line-height:1">×</button></div>';
         }).join('');
         var _dzId = '_pt-dz-'+t.id;
         var attach = '<div><div style="'+lblS+'">Lien &amp; fichiers</div>' +
           '<input id="_pt-link-'+t.id+'" type="url" value="'+esc(bvc.link)+'" onchange="cliEditBriefLink(\''+pid+'\',\''+t.id+'\',this.value)" placeholder="Lien (https://…)" style="'+inpStyle+';margin-bottom:6px">' +
           (bvc.files.length ? '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px">'+filesHtml+'</div>' : '') +
-          '<div id="'+_dzId+'" ondragover="cliBriefDragOver(event,\''+_dzId+'\')" ondragleave="cliBriefDragLeave(event,\''+_dzId+'\')" ondrop="cliBriefDrop(event,\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+_dzId+'\')" style="border:1.5px dashed var(--border,#e2dbd0);border-radius:10px;padding:12px;text-align:center;transition:background .15s,border-color .15s">' +
-            '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">⬆ Choisir un fichier</button>' +
-            '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:7px">ou glissez-déposez vos fichiers ici</div>' +
+          '<div id="'+_dzId+'" ondragover="cliBriefDragOver(event,\''+_dzId+'\')" ondragleave="cliBriefDragLeave(event,\''+_dzId+'\')" ondrop="cliBriefDrop(event,\''+pid+'\',\''+t.id+'\',\'p_elements\',\''+_dzId+'\')" style="border:1.5px dashed var(--border,#F8F6F2);border-radius:10px;padding:12px;text-align:center;transition:background .15s,border-color .15s">' +
+            '<button onclick="cliAddBriefFile(\''+pid+'\',\''+t.id+'\',\'p_elements\')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;background:#fff;color:var(--navy,#110704);cursor:pointer">⬆ Choisir un fichier</button>' +
+            '<div style="font-size:11px;color:var(--muted,#C5DEFF);margin-top:7px">ou glissez-déposez vos fichiers ici</div>' +
           '</div>' +
         '</div>';
         // Avancement = statut réel de la tâche. Modifiable par Cindy en mode
@@ -4239,32 +4239,32 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             '</select></div>';
         } else {
           prog = '<div style="margin-bottom:12px"><div style="'+lblS+'">Avancement <span title="Mis à jour automatiquement" style="font-size:10px">🔒</span></div>' +
-            '<div style="font-size:13px;padding:8px 10px;background:#f7f2ea;border-radius:8px;color:var(--navy,#1C1205)">'+esc(_stMap[_stCur]||'Pas commencé')+'</div></div>';
+            '<div style="font-size:13px;padding:8px 10px;background:#F8F6F2;border-radius:8px;color:var(--navy,#110704)">'+esc(_stMap[_stCur]||'Pas commencé')+'</div></div>';
         }
-        return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8);margin-bottom:10px">Informations</div>' +
+        return '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF);margin-bottom:10px">Informations</div>' +
           prog + selectFor('p_typemission','type') + attach +
         '</div>' + sep;
       })() +
       // Détails & contexte (champ unique)
-      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Détails &amp; contexte</span></div>' +
-      '<textarea id="_pt-desc-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'content\',this.value)" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Format, ton, références, liens, contraintes…">'+esc(t.content||'')+'</textarea>' +
+      '<div style="margin-bottom:2px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)">Détails &amp; contexte</span></div>' +
+      '<textarea id="_pt-desc-'+t.id+'" onchange="cliEditTaskField(\''+pid+'\',\''+t.id+'\',\'content\',this.value)" style="width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#110704);background:#fff;box-sizing:border-box;margin-top:4px" placeholder="Format, ton, références, liens, contraintes…">'+esc(t.content||'')+'</textarea>' +
       sep +
       // Echanges
-      '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)">Echange</span></div>' +
+      '<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)">Echange</span></div>' +
       '<div style="min-height:40px;margin-bottom:10px">' +
-        (commentsHtml || '<div style="font-size:12px;color:var(--muted,#8090a8);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
+        (commentsHtml || '<div style="font-size:12px;color:var(--muted,#C5DEFF);font-style:italic;text-align:center;padding:10px 0">Aucun echange pour le moment.</div>') +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;font-family:inherit">' +
-        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#1C1205);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
+        '<input type="text" id="cli-tc-'+t.id+'" placeholder="Ecrire un message..." style="flex:1;font-size:12px;padding:8px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;font-family:inherit">' +
+        '<button onclick="cliAddComment(\''+pid+'\',\''+t.id+'\')" style="padding:8px 14px;background:var(--navy,#110704);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px">→</button>' +
       '</div>' +
       sep +
       // Actions
-      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
+      '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:11px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">Marquer terminé &amp; prévenir</button>' +
       '<div style="display:flex;gap:8px">' +
-        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#1C1205)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
-        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#8090a8)">Archiver</button>' +
-        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #ffd0d0;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#8d2b21">Supprimer</button>' +
+        '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:7px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#110704)">'+(t.pinned?'Désépingler':'Épingler')+'</button>' +
+        '<button onclick="cliArchiveTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted,#C5DEFF)">Archiver</button>' +
+        '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="flex:1;padding:7px;border:1.5px solid #CD8F6E;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#5A2A11">Supprimer</button>' +
       '</div>' +
     '</div>';
   }
@@ -4278,10 +4278,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var box = document.getElementById('_ptask-files-list');
     if (!box) return;
     box.innerHTML = cpNewTaskFiles.map(function(f, i) {
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:8px;margin-bottom:6px">' +
-        cpIcon('paperclip',13,'color:var(--muted,#8090a8);flex-shrink:0') +
-        '<span style="flex:1;min-width:0;font-size:12.5px;color:var(--navy,#1C1205);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name) + '</span>' +
-        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#8d2b21;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F8F6F2;border:1px solid var(--border,#F8F6F2);border-radius:8px;margin-bottom:6px">' +
+        cpIcon('paperclip',13,'color:var(--muted,#C5DEFF);flex-shrink:0') +
+        '<span style="flex:1;min-width:0;font-size:12.5px;color:var(--navy,#110704);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(f.name) + '</span>' +
+        '<button type="button" onclick="window._ptaskRemoveFile(' + i + ')" style="background:none;border:none;cursor:pointer;color:#5A2A11;font-size:15px;line-height:1;flex-shrink:0" title="Retirer">✕</button>' +
       '</div>';
     }).join('');
   }
@@ -4314,9 +4314,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var form = document.createElement('div');
     form.className = '_prop-new-form';
     form.style.cssText = 'display:flex;gap:6px;margin-top:8px;align-items:center';
-    form.innerHTML = '<input id="_pnk-'+taskId+'" placeholder="Nom" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #c9952f;border-radius:6px;font-family:inherit">' +
-      '<input id="_pnv-'+taskId+'" placeholder="Valeur" style="flex:2;font-size:12px;padding:5px 8px;border:1.5px solid var(--border,#e2dbd0);border-radius:6px;font-family:inherit">' +
-      '<button onclick="cliConfirmAddProp(\''+pid+'\',\''+taskId+'\')" style="padding:5px 12px;background:#e7cd97;color:#412F21;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">OK</button>' +
+    form.innerHTML = '<input id="_pnk-'+taskId+'" placeholder="Nom" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #CD8F6E;border-radius:6px;font-family:inherit">' +
+      '<input id="_pnv-'+taskId+'" placeholder="Valeur" style="flex:2;font-size:12px;padding:5px 8px;border:1.5px solid var(--border,#F8F6F2);border-radius:6px;font-family:inherit">' +
+      '<button onclick="cliConfirmAddProp(\''+pid+'\',\''+taskId+'\')" style="padding:5px 12px;background:#F8F6F2;color:#110704;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">OK</button>' +
       '<button onclick="this.closest(\'._prop-new-form\').remove()" style="background:none;border:none;cursor:pointer;color:#999;font-size:16px;padding:0 4px">✕</button>';
     zone.appendChild(form);
     form.querySelector('#_pnk-'+taskId).focus();
@@ -4502,7 +4502,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     input.click();
   };
   // Glisser-déposer de fichiers sur la zone « Lien & fichiers ».
-  window.cliBriefDragOver = function(e, dzId){ e.preventDefault(); e.stopPropagation(); var d = document.getElementById(dzId); if (d){ d.style.background = '#f2ecff'; d.style.borderColor = '#8267ab'; } };
+  window.cliBriefDragOver = function(e, dzId){ e.preventDefault(); e.stopPropagation(); var d = document.getElementById(dzId); if (d){ d.style.background = '#C5DEFF'; d.style.borderColor = '#5A2A11'; } };
   window.cliBriefDragLeave = function(e, dzId){ if (e) e.preventDefault(); var d = document.getElementById(dzId); if (d){ d.style.background = ''; d.style.borderColor = ''; } };
   window.cliBriefDrop = function(e, pid, taskId, propId, dzId){
     e.preventDefault(); e.stopPropagation();
@@ -4735,10 +4735,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var r = 54, circ = 2*Math.PI*r;
     var dash = (pct/100)*circ;
     var donut = '<svg width="140" height="140" viewBox="0 0 140 140" style="display:block;margin:0 auto">' +
-      '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="#e8e4dc" stroke-width="14"/>' +
+      '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="#F8F6F2" stroke-width="14"/>' +
       '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="var(--navy)" stroke-width="14" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+circ/4+'" stroke-linecap="round"/>' +
       '<text x="70" y="66" text-anchor="middle" font-size="22" font-weight="700" fill="var(--navy)" font-family="Inter Tight,sans-serif">'+pct+'%</text>' +
-      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#8a6f54" font-family="Inter Tight,sans-serif">heures utilisées</text>' +
+      '<text x="70" y="84" text-anchor="middle" font-size="11" fill="#5A2A11" font-family="Inter Tight,sans-serif">heures utilisées</text>' +
     '</svg>';
 
     function fmtH(h){ var hh=Math.floor(Math.abs(h)); var mm=Math.round((Math.abs(h)-hh)*60); return (h<0?'-':'')+hh+'h'+String(mm).padStart(2,'0'); }
@@ -4854,42 +4854,42 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
     var cats = ['Bug','Modification','Ajout de contenu','Performance','Sécurité','Autre'];
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:17px;font-weight:700;color:#1C1205;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
+      '<div style="font-size:17px;font-weight:700;color:#110704;margin-bottom:16px">'+(edit?'Modifier la demande':'Nouvelle demande')+'</div>' +
       '<div style="margin-bottom:12px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
-        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205">' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Titre</label>' +
+        '<input id="_maint-t-title" type="text" value="'+esc(edit&&edit.title||'')+'" placeholder="Ex : Formulaire de contact cassé" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704">' +
       '</div>' +
       '<div style="margin-bottom:12px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
-        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Description</label>' +
+        '<textarea id="_maint-t-desc" rows="3" placeholder="Décrivez le problème ou la demande…" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704;resize:vertical;line-height:1.5">'+esc(edit&&edit.description||'')+'</textarea>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
         '<div>' +
-          '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
-          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
+          '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Priorité</label>' +
+          '<select id="_maint-t-prio" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#110704;background:#fff">' +
             ['basse','moyenne','haute'].map(function(p){ return '<option value="'+p+'"'+(((edit&&edit.priority)||'moyenne')===p?' selected':'')+'>'+(p.charAt(0).toUpperCase()+p.slice(1))+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
         '<div>' +
-          '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
-          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#1C1205;background:#fff">' +
+          '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
+          '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#110704;background:#fff">' +
             '<option value="">— Catégorie —</option>' +
             cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
       '</div>' +
       '<div style="margin-bottom:14px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5e4a2e">(optionnel)</span></label>' +
-        '<input id="_maint-t-due" type="text" readonly data-iso="'+esc(edit&&edit.dueDate||'')+'" value="'+((edit&&edit.dueDate)?cpMcFmt(edit.dueDate):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_maint-t-due\')" style="width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;cursor:pointer;background:#fff">' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Pour quand ? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A2A11">(optionnel)</span></label>' +
+        '<input id="_maint-t-due" type="text" readonly data-iso="'+esc(edit&&edit.dueDate||'')+'" value="'+((edit&&edit.dueDate)?cpMcFmt(edit.dueDate):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_maint-t-due\')" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704;cursor:pointer;background:#fff">' +
       '</div>' +
       '<div style="margin-bottom:18px">' +
-        '<label style="font-size:12px;font-weight:600;color:#485670;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
+        '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Images / fichiers</label>' +
         '<div id="_maint-t-files" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>' +
-        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #e2dbd0;border-radius:10px;cursor:pointer;font-size:13px;color:#6b533b;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#6b533b')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
+        '<label id="_maint-t-droplabel" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border:1.5px dashed #F8F6F2;border-radius:10px;cursor:pointer;font-size:13px;color:#5A2A11;text-align:center;transition:background .15s,border-color .15s">'+cpIcon('upload',15,'color:#5A2A11')+'<span>Glissez vos fichiers ici ou cliquez pour parcourir</span><input id="_maint-t-fileinput" type="file" multiple accept="image/*,.pdf,.doc,.docx" style="display:none"></label>' +
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
-        '<button id="_maint-t-ok" style="padding:9px 22px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
+        '<button id="_maint-t-cancel" style="padding:9px 20px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11;font-size:14px">Annuler</button>' +
+        '<button id="_maint-t-ok" style="padding:9px 22px;background:#110704;color:#F8F6F2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">'+(edit?'Enregistrer':'Envoyer la demande')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -4904,11 +4904,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var box = ov.querySelector('#_maint-t-files');
       box.innerHTML = pending.length ? pending.map(function(f, i){
         var isImg = (f.type||'').indexOf('image')===0;
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f7f3ed;border-radius:8px;font-size:13px;color:#1C1205">' +
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#F8F6F2;border-radius:8px;font-size:13px;color:#110704">' +
           '<span>'+(isImg?'🖼️':'📎')+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name||'fichier')+'</span>' +
-          '<button data-rm="'+i+'" style="background:none;border:none;color:#8d2b21;cursor:pointer;font-size:15px;line-height:1">×</button>' +
+          '<button data-rm="'+i+'" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-size:15px;line-height:1">×</button>' +
         '</div>';
-      }).join('') : '<div style="font-size:12px;color:#5e4a2e;font-style:italic">Aucun fichier joint.</div>';
+      }).join('') : '<div style="font-size:12px;color:#5A2A11;font-style:italic">Aucun fichier joint.</div>';
       box.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(){ pending.splice(parseInt(b.getAttribute('data-rm')),1); renderFiles(); }; });
     }
     renderFiles();
@@ -4918,7 +4918,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (!files.length) return;
       var tooBig = cliAnyTooBig(files); if (tooBig) { toast(cliBigMsg(tooBig), true); return; }
       var box = ov.querySelector('#_maint-t-files');
-      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#6b533b">Envoi en cours…</div>');
+      box.insertAdjacentHTML('beforeend', '<div id="_maint-t-uploading" style="font-size:12px;color:#5A2A11">Envoi en cours…</div>');
       Promise.all(files.map(function(f){ return cliUploadFile(f, pid); })).then(function(res){
         res.forEach(function(f){ pending.push(f); });
         renderFiles();
@@ -4927,8 +4927,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     ov.querySelector('#_maint-t-fileinput').onchange = function() { var f = this.files; this.value=''; uploadFiles(f); };
     // Glisser-déposer des fichiers sur la zone (et sur toute la fenêtre du modal)
     var dropL = ov.querySelector('#_maint-t-droplabel');
-    function dropOn(){ if(dropL){ dropL.style.background='#f7f3ed'; dropL.style.borderColor='#c9b89a'; } }
-    function dropOff(){ if(dropL){ dropL.style.background=''; dropL.style.borderColor='#e2dbd0'; } }
+    function dropOn(){ if(dropL){ dropL.style.background='#F8F6F2'; dropL.style.borderColor='#F8F6F2'; } }
+    function dropOff(){ if(dropL){ dropL.style.background=''; dropL.style.borderColor='#F8F6F2'; } }
     ['dragenter','dragover'].forEach(function(ev){ ov.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); dropOn(); }); });
     ['dragleave','dragend'].forEach(function(ev){ ov.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); if(e.target===ov||e.target===dropL) dropOff(); }); });
     ov.addEventListener('drop', function(e){ e.preventDefault(); e.stopPropagation(); dropOff(); if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); });
@@ -5006,25 +5006,25 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     var first = new Date(y, m, 1); var startDow = (first.getDay() + 6) % 7; var ndays = new Date(y, m + 1, 0).getDate();
     var inp = document.getElementById(_cpMc.inputId); var selIso = inp ? inp.getAttribute('data-iso') : '';
-    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#6b533b;padding:4px 0">' + x + '</div>'; }).join('');
+    var dow = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(function(x) { return '<div style="text-align:center;font-family:var(--font-micro);font-size:10px;color:#5A2A11;padding:4px 0">' + x + '</div>'; }).join('');
     var cells = '';
     for (var i = 0; i < startDow; i++) cells += '<div></div>';
     for (var dd = 1; dd <= ndays; dd++) {
       var ds = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + dd).slice(-2);
       var past = ds < todayStr, hol = !!cpHolidayFor(ds); var sel = ds === selIso;
       if (past || hol) {
-        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#c9bda9;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#f4ece1,#f4ece1 4px,#efe4d5 4px,#efe4d5 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
+        cells += '<div title="' + (hol ? 'Cindy est en congés ce jour-là' : 'Date passée') + '" style="text-align:center;padding:9px 0;font-size:13px;color:#F8F6F2;border-radius:9px;' + (hol ? 'background:repeating-linear-gradient(135deg,#F8F6F2,#F8F6F2 4px,#F8F6F2 4px,#F8F6F2 8px);text-decoration:line-through' : '') + '">' + dd + '</div>';
       } else {
-        cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#412F21)' : 'transparent') + ';color:' + (sel ? '#fff' : '#1C1205') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#f0ece4)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#412F21)' : 'transparent') + '\'">' + dd + '</button>';
+        cells += '<button type="button" onclick="cpDatePick(\'' + ds + '\')" style="text-align:center;padding:9px 0;font-size:13px;border:none;border-radius:9px;cursor:pointer;font-family:inherit;background:' + (sel ? 'var(--terre,#110704)' : 'transparent') + ';color:' + (sel ? '#fff' : '#110704') + '" onmouseenter="if(!this.style.background.includes(\'65\'))this.style.background=\'var(--brume,#F8F6F2)\'" onmouseleave="this.style.background=\'' + (sel ? 'var(--terre,#110704)' : 'transparent') + '\'">' + dd + '</button>';
       }
     }
     var html = '<div id="_cp-datepick" style="position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cpDateClose()">' +
       '<div style="background:#fff;border-radius:16px;box-shadow:none;padding:18px;width:310px;max-width:100%">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">‹</button>' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#1C1205)">' + MONTHS[m] + ' ' + y + '</span>' +
-          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b533b;line-height:1">›</button></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><button type="button" onclick="cpDateNav(-1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5A2A11;line-height:1">‹</button>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:18px;color:var(--nuit,#110704)">' + MONTHS[m] + ' ' + y + '</span>' +
+          '<button type="button" onclick="cpDateNav(1)" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5A2A11;line-height:1">›</button></div>' +
         '<div style="display:grid;grid-template-columns:repeat(7,1fr)">' + dow + cells + '</div>' +
-        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#6b533b;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
+        '<div style="text-align:center;margin-top:8px"><button type="button" onclick="cpDateClose()" style="background:none;border:none;color:#5A2A11;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase">Fermer</button></div>' +
       '</div>' +
     '</div>';
     document.body.insertAdjacentHTML('beforeend', html);
@@ -5110,27 +5110,27 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.id = 'cli-add-task-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
-    var S = 'width:100%;padding:9px 12px;border:1.5px solid #e2dbd0;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:9px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 24px;max-width:520px;width:100%;box-shadow:none">' +
-      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#1C1205;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
+      '<h3 style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:#110704;font-size:18px;margin-bottom:16px">'+(opts.taskId?'Modifier la demande':'Nouvelle demande')+'</h3>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Mission / Titre</label><input type="text" id="clt-title" value="'+esc(opts.title||'')+'" style="'+S+'"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">État du brief</label><select id="clt-brief" style="'+S+'">'+briefSel+'</select></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Priorité</label><select id="clt-urgency" style="'+S+'"><option value="basse"'+(opts.urgency==='basse'?' selected':'')+'>Basse</option><option value="moyenne"'+((!opts.urgency||opts.urgency==='moyenne')?' selected':'')+'>Normale</option><option value="haute"'+(opts.urgency==='haute'?' selected':'')+'>Haute</option></select></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value="">—</option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Deadline</label><input type="date" id="clt-due" value="'+esc(opts.dueDate||'')+'" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Pôle</label><select id="clt-pole" style="'+S+'"><option value="">—</option><option value="Pôle client"'+(opts.pole==='Pôle client'?' selected':'')+'>Pôle client</option><option value="Pôle marketing"'+(opts.pole==='Pôle marketing'?' selected':'')+'>Pôle marketing</option><option value="Pôle créa"'+(opts.pole==='Pôle créa'?' selected':'')+'>Pôle créa</option><option value="Autre"'+(opts.pole==='Autre'?' selected':'')+'>Autre</option></select></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
-      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Type de mission</label><input type="text" id="clt-type" value="'+esc(opts.missionType||'')+'" placeholder="Communication, Site internet…" style="'+S+'"></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Notes / description</label><textarea id="clt-content" rows="2" style="'+S+';resize:vertical">'+esc(opts.content||'')+'</textarea></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
-        '<div><label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">URL image</label><input type="url" id="clt-image" value="'+esc(opts.imageUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
+        '<div><label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Lien livrable</label><input type="url" id="clt-livrable" value="'+esc(opts.livrableUrl||'')+'" placeholder="https://…" style="'+S+'"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#485670">Annuler</button>' +
-        '<button id="clt-submit" style="padding:9px 20px;background:#1C1205;color:#E4D1FE;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
+        '<button onclick="document.getElementById(\'cli-add-task-overlay\').remove()" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11">Annuler</button>' +
+        '<button id="clt-submit" style="padding:9px 20px;background:#110704;color:#C5DEFF;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500">'+(opts.submitLabel||'Ajouter')+'</button>' +
       '</div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -5159,25 +5159,25 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ex = document.getElementById('_cp-demande-gate'); if (ex) ex.remove();
     var ov = document.createElement('div'); ov.id = '_cp-demande-gate';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#e2dbd0);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
+    var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#F8F6F2);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
     ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#1C1205)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
-      '<div style="font-size:13.5px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux — je m\'occupe du reste.</div>' +
-      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#110704)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
+      '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux — je m\'occupe du reste.</div>' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#110704)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#F8F6F2)\'">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
-          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#f0ece4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('zap', 18, 'color:var(--terre,#412F21)') + '</span>' +
-          '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205)">Une petite demande <span style="font-weight:500;font-size:12.5px;color:var(--terre-600,#6b5b4a)">· incluse dans ton forfait</span></div>' +
+          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#F8F6F2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('zap', 18, 'color:var(--terre,#110704)') + '</span>' +
+          '<div style="font-weight:700;font-size:16px;color:var(--navy,#110704)">Une petite demande <span style="font-weight:500;font-size:12.5px;color:var(--terre-600,#5A2A11)">· incluse dans ton forfait</span></div>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Modifier un texte · créer un visuel Instagram · mettre à jour une page · adapter un flyer · corriger une couleur…</div>' +
+        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.5">Modifier un texte · créer un visuel Instagram · mettre à jour une page · adapter un flyer · corriger une couleur…</div>' +
       '</button>' +
-      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + '" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#412F21)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#e2d9c8)\'">' +
+      '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenProjectRequest(\'' + pid + '\');})()" style="' + card + '" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#110704)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#F8F6F2)\'">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
-          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#f0ece4);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('folder', 18, 'color:var(--terre,#412F21)') + '</span>' +
-          '<div style="font-weight:700;font-size:16px;color:var(--navy,#1C1205)">Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:var(--terre,#b06438)">· nécessite un devis</span></div>' +
+          '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#F8F6F2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('folder', 18, 'color:var(--terre,#110704)') + '</span>' +
+          '<div style="font-weight:700;font-size:16px;color:var(--navy,#110704)">Un nouveau projet <span style="font-weight:500;font-size:12.5px;color:var(--terre,#5A2A11)">· nécessite un devis</span></div>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.5">Refonte complète d\'un site · nouvelle identité visuelle · brochure de 40 pages · nouvelle landing page…</div>' +
+        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.5">Refonte complète d\'un site · nouvelle identité visuelle · brochure de 40 pages · nouvelle landing page…</div>' +
       '</button>' +
-      '<div style="font-size:12px;color:var(--muted,#8090a8);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid #f0ebe3">Les demandes du forfait concernent des interventions de quelques minutes à quelques heures. Si ton besoin demande plusieurs jours de travail ou une réflexion complète, il sera traité comme un nouveau projet.</div>' +
+      '<div style="font-size:12px;color:var(--muted,#C5DEFF);line-height:1.5;margin-top:16px;padding-top:14px;border-top:1px solid #F8F6F2">Les demandes du forfait concernent des interventions de quelques minutes à quelques heures. Si ton besoin demande plusieurs jours de travail ou une réflexion complète, il sera traité comme un nouveau projet.</div>' +
     '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
@@ -5186,17 +5186,17 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ex = document.getElementById('_cp-project-req'); if (ex) ex.remove();
     var ov = document.createElement('div'); ov.id = '_cp-project-req';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+    var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#110704)';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button></div>' +
-      '<div style="background:#fdf3e8;border:1px solid #f0d8b0;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#7a3a0a;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
-      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Parle-moi de ton projet</span><button onclick="document.getElementById(\'_cp-project-req\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
+      '<div style="background:#F8F6F2;border:1px solid #F8F6F2;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#5A2A11;line-height:1.55">Ce type de demande sort du cadre de ton forfait Partenaire créative. Écris-moi quelques lignes, je reviendrai vers toi avec une proposition adaptée. 💛</div>' +
+      '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Ton projet en quelques mots *</label>' +
         '<input id="_preq-title" type="text" placeholder="Ex, refonte de mon site vitrine" style="' + S + '"></div>' +
-      '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Décris-le</label>' +
+      '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Décris-le</label>' +
         '<textarea id="_preq-desc" rows="5" placeholder="Objectifs, périmètre, délais souhaités, budget si tu en as une idée…" style="' + S + ';resize:vertical"></textarea></div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-        '<button onclick="document.getElementById(\'_cp-project-req\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-        '<button onclick="window.cliSendProjectRequest(\'' + pid + '\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
+        '<button onclick="document.getElementById(\'_cp-project-req\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#C5DEFF)">Annuler</button>' +
+        '<button onclick="window.cliSendProjectRequest(\'' + pid + '\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#110704);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer ma demande</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
@@ -5228,38 +5228,38 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var ov = document.createElement('div');
       ov.id = '_cp-partenaire-task-ov';
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-      var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #e2dbd0);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#1C1205)';
+      var S = 'width:100%;padding:9px 12px;border:1.5px solid var(--border, #F8F6F2);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;color:var(--navy,#110704)';
       var urgPills = ['tranquille','normal','urgent','critique'].map(function(u){
         var bg = PART_URGENCY[u]; var tx = PART_URGENCY_TX[u];
         return '<button type="button" id="_ptask-urg-'+u+'" onclick="window._ptaskSelUrg(\''+u+'\')" style="padding:6px 14px;border-radius:999px;border:1.5px solid '+bg+';background:transparent;color:'+tx+';font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.05em">'+(PART_URG_LABEL[u]||u).toUpperCase()+'</button>';
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#1C1205)">Nouvelle demande</span>' +
-          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#8090a8);line-height:1">✕</button>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Nouvelle demande</span>' +
+          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#6b5b4a);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>' +
-        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Titre de la demande *</label>' +
+        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>' +
+        '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Titre de la demande *</label>' +
           '<input id="_ptask-title" type="text" placeholder="Ex, visuel Instagram pour la collection été" style="'+S+'"></div>' +
         '<input type="hidden" id="_ptask-urgency" value="normal">' +
-        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5e4a2e">(optionnel)</span></label>' +
+        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A2A11">(optionnel)</span></label>' +
           '<input id="_ptask-startDate" type="hidden">' +
           '<input id="_ptask-dueDate" type="text" readonly data-iso="'+(ds||'')+'" value="'+(ds?cpMcFmt(ds):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_ptask-dueDate\')" style="'+S+';cursor:pointer;background:#fff"></div>' +
-        '<div style="margin-bottom:14px;background:#faf7f1;border:1px solid var(--border,#e2dbd0);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#1C1205);display:block;margin-bottom:6px">Votre brief</label>' +
-          '<div style="font-size:11.5px;color:var(--muted,#8090a8);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
+        '<div style="margin-bottom:14px;background:#F8F6F2;border:1px solid var(--border,#F8F6F2);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#110704);display:block;margin-bottom:6px">Votre brief</label>' +
+          '<div style="font-size:11.5px;color:var(--muted,#C5DEFF);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
           '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge."></textarea></div>' +
-        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
+        '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
           '<textarea id="_ptask-links" rows="2" style="'+S+';resize:vertical" placeholder="Collez des liens d\'inspiration, exemples, Pinterest, Drive..."></textarea></div>' +
-        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#8090a8);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
+        '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
           '<div id="_ptask-files-list"></div>' +
           '<input type="file" id="_ptask-file-input" style="display:none" onchange="window._ptaskAddFile(this)">' +
-          '<button type="button" onclick="document.getElementById(\'_ptask-file-input\').click()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1.5px dashed var(--border,#e2dbd0);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--navy,#1C1205);width:100%;justify-content:center">'+cpIcon('paperclip',14)+' Ajouter un fichier</button>' +
-          '<div style="font-size:11px;color:var(--muted,#8090a8);margin-top:5px">Cliquez pour ajouter un fichier, puis à nouveau pour en ajouter d\'autres.</div></div>' +
+          '<button type="button" onclick="document.getElementById(\'_ptask-file-input\').click()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1.5px dashed var(--border,#F8F6F2);border-radius:10px;background:none;cursor:pointer;font-size:13px;color:var(--navy,#110704);width:100%;justify-content:center">'+cpIcon('paperclip',14)+' Ajouter un fichier</button>' +
+          '<div style="font-size:11px;color:var(--muted,#C5DEFF);margin-top:5px">Cliquez pour ajouter un fichier, puis à nouveau pour en ajouter d\'autres.</div></div>' +
         (function(){
           var schema = (Array.isArray(pd && pd.project && pd.project.propertySchema) ? pd.project.propertySchema : []).filter(function(d){ return !cliHiddenProp(d.id); });
           if (!schema.length) return '';
-          return '<div style="padding-top:12px;border-top:1px solid #f0ebe3;margin-bottom:14px">' +
-            '<div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#8090a8);margin-bottom:10px">Proprietes</div>' +
+          return '<div style="padding-top:12px;border-top:1px solid #F8F6F2;margin-bottom:14px">' +
+            '<div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#C5DEFF);margin-bottom:10px">Proprietes</div>' +
             schema.map(function(def){
               var fid = '_ptask-prop-'+def.id;
               var field;
@@ -5268,12 +5268,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
               else if (def.type==='Date') field = '<input type="date" id="'+fid+'" style="'+S+'">';
               else if (def.id==='p_elements') field = '<textarea id="'+fid+'" rows="2" style="'+S+';resize:vertical" placeholder="Note du brief (vous pourrez ajouter lien et fichiers ensuite)"></textarea>';
               else field = '<input type="text" id="'+fid+'" style="'+S+'">';
-              return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#8090a8);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
+              return '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted,#C5DEFF);display:block;margin-bottom:4px">'+esc(def.name)+'</label>'+field+'</div>';
             }).join('') + '</div>';
         })() +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#e2dbd0);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#8090a8)">Annuler</button>' +
-          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#1C1205);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Ajouter la tâche</button>' +
+          '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="padding:9px 18px;border:1.5px solid var(--border,#F8F6F2);border-radius:999px;background:none;cursor:pointer;font-size:13px;color:var(--muted,#C5DEFF)">Annuler</button>' +
+          '<button onclick="window.cliSavePartenaireTask(\''+pid+'\')" style="padding:9px 20px;border:none;border-radius:999px;background:var(--navy,#110704);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Ajouter la tâche</button>' +
         '</div>' +
       '</div>';
       document.body.appendChild(ov);
@@ -5422,7 +5422,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
 
   var _cliDragId = null;
   window.cliDragStart = function(e, id) { _cliDragId = id; if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; };
-  window.cliDragOver  = function(e, el) { e.preventDefault(); el.style.background = '#f5f0e8'; };
+  window.cliDragOver  = function(e, el) { e.preventDefault(); el.style.background = '#F8F6F2'; };
   window.cliDragLeave = function(el) { el.style.background = '#fff'; };
   window.cliDrop = function(e, pid, ds) {
     e.preventDefault(); if (e.currentTarget) e.currentTarget.style.background = '#fff';
@@ -5605,14 +5605,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   window.cliAddResource = function(pid) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.45);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px';
-    var S = 'width:100%;padding:10px 12px;border:1.5px solid #e2dbd0;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#1C1205;margin-bottom:12px';
+    var S = 'width:100%;padding:10px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;box-sizing:border-box;color:#110704;margin-bottom:12px';
     ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:none;font-family:\'Inter Tight\',sans-serif">' +
-      '<div style="font-size:16px;font-weight:600;color:#1C1205;margin-bottom:16px">Ajouter une ressource</div>' +
-      '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
-      '<label style="font-size:12px;color:#485670;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
+      '<div style="font-size:16px;font-weight:600;color:#110704;margin-bottom:16px">Ajouter une ressource</div>' +
+      '<label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">URL *</label><input id="_res-url" type="url" placeholder="https://…" style="'+S+'">' +
+      '<label style="font-size:12px;color:#5A2A11;display:block;margin-bottom:4px">Nom (optionnel)</label><input id="_res-title" type="text" placeholder="ex: Brief Figma, Charte graphique…" style="'+S+'">' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">' +
-        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#6b533b;font-size:14px">Annuler</button>' +
-        '<button id="_res-ok" style="padding:9px 20px;background:#412F21;color:#F2E5C2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
+        '<button id="_res-cancel" style="padding:9px 20px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;color:#5A2A11;font-size:14px">Annuler</button>' +
+        '<button id="_res-ok" style="padding:9px 20px;background:#110704;color:#F8F6F2;border:none;border-radius:10px;cursor:pointer;font-family:\'Inter Tight\',sans-serif;font-weight:500;font-size:14px">Ajouter</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     setTimeout(function(){ ov.querySelector('#_res-url').focus(); }, 60);
@@ -5885,10 +5885,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function fRow(pd, f){
       var pid = pd.project.id;
       var cindy = f.source !== 'client';
-      var bg = cindy ? 'var(--glycine-50,#f4ecff)' : '#fbefcf';
-      var icBg = cindy ? 'var(--glycine,#E4D1FE)' : '#F6E4B8';
-      var icCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
-      var metaCol = cindy ? 'var(--glycine-900,#573b8a)' : '#7a5a1e';
+      var bg = cindy ? 'var(--glycine-50,#C5DEFF)' : '#F8F6F2';
+      var icBg = cindy ? 'var(--glycine,#C5DEFF)' : '#F8F6F2';
+      var icCol = cindy ? 'var(--glycine-900,#5A2A11)' : '#5A2A11';
+      var metaCol = cindy ? 'var(--glycine-900,#5A2A11)' : '#5A2A11';
       var sub = (cindy ? 'Reçu de Cindy' : 'Déposé par vous') + (f.uploadedAt ? ' · ' + fmtShort(f.uploadedAt) : '');
       var dl = API_BASE + '/files/' + encodeURIComponent(f.key) + '/download';
       var del = (!cindy && !f.locked) ? '<button onclick="window.stbFileDelete(\'' + pid + '\',\'' + encodeURIComponent(f.key) + '\')" title="Supprimer" style="width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:none;border:none;color:var(--terre-400);cursor:pointer;flex-shrink:0">' + cpIcon('trash', 15) + '</button>' : '';
@@ -5908,7 +5908,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var rows = files.length ? files.map(function(f){ return fRow(pd, f); }).join('') : '<div style="font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--terre-400);padding:2px 4px 6px">Vide pour l\'instant.</div>';
       var del = isFolder ? '<button onclick="window.stbFolderDel(\'' + pid + '\',\'' + encodeURIComponent(name) + '\')" style="margin-left:auto;font-family:var(--font-micro);font-size:11px;color:var(--terre-400);background:none;border:none;cursor:pointer">Supprimer</button>' : '';
       return '<div style="margin-bottom:12px">' +
-        '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F4EFe7);margin-bottom:9px">' +
+        '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--surface,#F8F6F2);margin-bottom:9px">' +
           cpIcon('folder', 14, 'color:var(--terre-400)') +
           '<span style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terre)">' + esc(name) + '</span>' +
           '<span style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400)">' + files.length + '</span>' + del +
@@ -5922,21 +5922,21 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var body = folderBlock(pd, 'Général', files.filter(function(f){ return !f.folder; }), false);
       folders.forEach(function(fn){ body += folderBlock(pd, fn, files.filter(function(f){ return f.folder === fn; }), true); });
       var folderOpts = '<option value="">Général</option>' + folders.map(function(fn){ return '<option value="' + esc(fn) + '">' + esc(fn) + '</option>'; }).join('');
-      var inS = 'border:none;border-radius:9px;padding:10px 13px;font-family:var(--font-micro);font-size:13px;color:var(--terre);background:var(--card,#fffefb)';
-      var ctl = '<div style="background:var(--surface,#F4EFe7);border-radius:14px;padding:16px 18px;margin-top:6px">' +
+      var inS = 'border:none;border-radius:9px;padding:10px 13px;font-family:var(--font-micro);font-size:13px;color:var(--terre);background:var(--card,#F8F6F2)';
+      var ctl = '<div style="background:var(--surface,#F8F6F2);border-radius:14px;padding:16px 18px;margin-top:6px">' +
         '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center">' +
           '<input id="cpf-newfolder-' + pid + '" placeholder="Créer un dossier…" style="' + inS + ';flex:1;min-width:170px">' +
           '<button onclick="window.stbFolderAdd(\'' + pid + '\')" style="border:none;border-radius:9px;background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:12.5px;font-weight:600;padding:10px 16px;cursor:pointer">+ Dossier</button>' +
         '</div>' +
-        '<label style="display:block;margin-top:11px;border-radius:12px;padding:20px;text-align:center;color:var(--glycine-900,#573b8a);font-family:var(--font-micro);font-size:13px;background:var(--glycine-50,#f4ecff);cursor:pointer" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
-          cpIcon('upload', 18, 'color:var(--glycine-900,#573b8a);display:block;margin:0 auto 6px') +
+        '<label style="display:block;margin-top:11px;border-radius:12px;padding:20px;text-align:center;color:var(--glycine-900,#5A2A11);font-family:var(--font-micro);font-size:13px;background:var(--glycine-50,#C5DEFF);cursor:pointer" ondragover="event.preventDefault()" ondrop="event.preventDefault();window.stbFilesUpload(\'' + pid + '\',event.dataTransfer.files)">' +
+          cpIcon('upload', 18, 'color:var(--glycine-900,#5A2A11);display:block;margin:0 auto 6px') +
           '<span style="font-weight:600">Déposez un fichier ici</span> ou cliquez' +
           '<input type="file" multiple style="display:none" onchange="window.stbFilesUpload(\'' + pid + '\',this.files)"></label>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span style="font-family:var(--font-micro);font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--terre-400)">Déposer dans</span><select id="cpf-folder-' + pid + '" style="' + inS + '">' + folderOpts + '</select></div>' +
       '</div>';
-      return '<section style="background:#F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px">' +
+      return '<section style="background:F8F6F2;border-radius:18px;padding:22px 24px;margin-bottom:20px">' +
         '<div style="display:flex;align-items:center;gap:11px;margin-bottom:2px"><span style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--terre)">' + esc(p.projectTitle || pid) + '</span>' +
-        (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#E4D1FE);color:var(--glycine-900,#573b8a)">Commun</span>' : '') + '</div>' +
+        (common ? '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--glycine,#C5DEFF);color:var(--glycine-900,#5A2A11)">Commun</span>' : '') + '</div>' +
         '<p style="font-family:var(--font-micro);font-size:12.5px;color:var(--terre-400);margin:0 0 16px">' + (common ? 'Partagé pour l\'ensemble de vos projets' : 'Vos fichiers pour ce projet') + '</p>' +
         body + ctl +
       '</section>';
@@ -5945,7 +5945,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var byTask = {};
     projects.forEach(function(pd){ (pd.files || []).forEach(function(f){ if (taskOfFile[f.key]) { (byTask[taskOfFile[f.key]] = byTask[taskOfFile[f.key]] || []).push({ pd: pd, f: f }); } }); });
     var demKeys = Object.keys(byTask).sort();
-    var demSection = demKeys.length ? '<section style="background:#412F21;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--paille);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:rgba(242,229,194,0.82);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
+    var demSection = demKeys.length ? '<section style="background:#110704;border-radius:18px;padding:22px 24px;margin-bottom:20px"><div style="font-family:var(--font-display);font-style:italic;font-size:25px;color:var(--paille);margin-bottom:2px">Fichiers de vos demandes</div><p style="font-family:var(--font-micro);font-size:12.5px;color:rgba(242,229,194,0.82);margin:0 0 16px">Les pièces jointes à vos demandes partenaire créative</p>' +
       demKeys.map(function(tt){ return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--paille);margin-bottom:8px">' + esc(tt) + '</div><div style="display:flex;flex-direction:column;gap:8px">' + byTask[tt].map(function(x){ return fRow(x.pd, x.f); }).join('') + '</div></div>'; }).join('') +
       '</section>' : '';
 
@@ -5979,10 +5979,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.createElement('div');
     ov.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(28,18,5,0.42)');
     ov.onclick = function(e){ if (e.target === ov && ov.parentNode) ov.parentNode.removeChild(ov); };
-    ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#fffefb);border-radius:16px;padding:26px 24px;text-align:center">' +
+    ov.innerHTML = '<div style="width:min(380px,100%);background:var(--card,#F8F6F2);border-radius:16px;padding:26px 24px;text-align:center">' +
       cpIcon('trash', 26, 'color:var(--terre);margin:0 auto 12px') +
-      '<div style="font-size:14.5px;color:var(--terre,#412F21);line-height:1.55;margin-bottom:20px">' + esc(message) + '</div>' +
-      '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--surface,#F4EFe7);color:var(--terre,#412F21);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>' +
+      '<div style="font-size:14.5px;color:var(--terre,#110704);line-height:1.55;margin-bottom:20px">' + esc(message) + '</div>' +
+      '<div style="display:flex;gap:10px"><button id="cp-confirm-no" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--surface,#F8F6F2);color:var(--terre,#110704);font-size:13px;cursor:pointer;font-family:inherit">Annuler</button>' +
       '<button id="cp-confirm-yes" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--terre);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + esc(confirmLabel || 'Supprimer') + '</button></div>' +
     '</div>';
     document.body.appendChild(ov);
@@ -6064,7 +6064,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function openBtn(it, primary) {
       var pri = primary
         ? 'padding:11px 20px;font-weight:700;font-size:10.5px;background:var(--terre);color:var(--paille)'
-        : 'padding:9px 15px;font-weight:600;font-size:10px;background:#EFE3FE;color:#4a2f80';
+        : 'padding:9px 15px;font-weight:600;font-size:10px;background:#C5DEFF;color:#5A2A11';
       var base = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;text-decoration:none;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;';
       if (it.dlUrl) return '<a href="' + esc(it.dlUrl) + '" target="_blank" style="' + base + pri + '">' + cpIcon('download', 14) + ' Télécharger</a>';
       if (it.reviewLink) return '<a href="' + esc(/^https?:\/\//i.test(it.reviewLink) ? it.reviewLink : 'https://' + it.reviewLink) + '" target="_blank" rel="noopener" onclick="window.cpMarkConsulted(\'' + esc(it.id) + '\')" style="' + base + pri + '">' + cpIcon('external', 13) + ' Voir</a>';
@@ -6073,12 +6073,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     function row(it) {
       var todo = it.status === 'a_valider' && it.id;
       var tone = todo ? 'todo' : 'ok';
-      var cardBg = todo ? '#FBEFCF' : '#DFEBD3';
-      var icBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var icCol = todo ? '#7a5a1e' : '#4d6b3d';
-      var metaCol = todo ? '#3f2c08' : '#284020';
-      var pillBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var pillCol = todo ? '#3f2c08' : '#284020';
+      var cardBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var icBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var icCol = todo ? '#5A2A11' : '#5A2A11';
+      var metaCol = todo ? '#110704' : '#5A2A11';
+      var pillBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var pillCol = todo ? '#110704' : '#5A2A11';
       var validated = it.status === 'valide' || it.status === 'validated';
       var pillTxt = todo ? 'À valider' : (validated ? '✓ Validé' : 'Reçu');
       var dateLbl = it.date ? ((validated ? 'Validé le ' : 'Reçu le ') + fmtDate(it.date)) : '';
@@ -6087,14 +6087,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       // À valider : on invite à ouvrir le livrable, sans jamais bloquer la validation.
       var needConsult = !!(it.reviewLink && it.id && !cpConsulted[it.id]);
       var hint = (todo && needConsult)
-        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#3f2c08;background:rgba(255,255,255,0.7);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
+        ? '<div style="margin-top:12px;font-family:var(--font-body);font-size:12.5px;color:#110704;background:rgba(255,255,255,0.7);border-radius:10px;padding:9px 13px">👀 Ouvrez le livrable avec « Voir » avant de vous prononcer.</div>'
         : '';
       var priBtn = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:11px 20px;font-weight:700;font-size:10.5px;';
-      var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F4EFe7);color:var(--terre);';
+      var secBeige = 'display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-family:var(--font-micro);letter-spacing:0.06em;text-transform:uppercase;border:none;cursor:pointer;padding:9px 15px;font-weight:600;font-size:10px;background:var(--surface,#F8F6F2);color:var(--terre);';
       var actions;
       if (todo) {
         actions = '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' +
-            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="' + priBtn + 'background:#38562c;color:#fff">' + cpIcon('check', 14, 'color:#fff') + ' Valider</button>' +
+            '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'valide\')" style="' + priBtn + 'background:#5A2A11;color:#fff">' + cpIcon('check', 14, 'color:#fff') + ' Valider</button>' +
             openBtn(it, false) +
             '<button onclick="window.stbValidate(\'' + esc(it.pid) + '\',\'' + esc(it.id) + '\',\'refuse\')" style="' + secBeige + '">Demander une révision</button>' +
           '</div>';
@@ -6103,7 +6103,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         actions = ob ? '<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px">' + ob + '</div>' : '';
       }
       var comment = (it.status === 'refuse' && it.clientComment)
-        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#8d2b21;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
+        ? '<div style="font-family:var(--font-body);font-style:italic;font-size:12.5px;color:#5A2A11;margin-top:6px;line-height:1.45">Votre retour : « ' + esc(it.clientComment) + ' »</div>'
         : '';
       return '<div style="background:' + cardBg + ';border-radius:16px;padding:20px 22px;margin-bottom:12px">' +
         '<div style="display:flex;align-items:flex-start;gap:14px">' +
@@ -6111,7 +6111,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<div style="flex:1;min-width:0">' +
             '<div style="font-family:var(--font-display);font-size:19px;color:var(--terre);line-height:1.25">' + esc(it.name) + vTag + '</div>' +
             (line1 ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;margin-top:5px;font-weight:600;color:' + metaCol + '">' + esc(line1) + '</div>' : '') +
-            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#3d2c1a;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
+            (it.taskTitle ? '<div style="font-size:12.5px;font-style:italic;color:#110704;margin-top:4px">Pour la tâche « ' + esc(it.taskTitle) + ' »</div>' : '') +
             comment +
           '</div>' +
           '<span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:' + pillBg + ';color:' + pillCol + ';flex-shrink:0">' + pillTxt + '</span>' +
@@ -6128,10 +6128,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var done = visible.filter(function(it){ return !(it.status === 'a_valider' && it.id); });
     function sectionHead(tone, title, n) {
       var todo = tone === 'todo';
-      var icBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var icCol = todo ? '#5c4210' : '#39512b';
-      var nBg = todo ? '#F6E4B8' : '#CFE0C0';
-      var nCol = todo ? '#3f2c08' : '#284020';
+      var icBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var icCol = todo ? '#5A2A11' : '#5A2A11';
+      var nBg = todo ? '#F8F6F2' : '#F8F6F2';
+      var nCol = todo ? '#110704' : '#5A2A11';
       var ic = todo
         ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="14" r="7"/><path d="M9 14l2 2 4-4"/></svg>'
         : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg>';
@@ -6149,7 +6149,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<div style="font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--terre);margin-bottom:6px">Pas encore de livrable</div>' +
         '<div style="font-family:var(--font-micro);font-size:11px;color:var(--terre-400);letter-spacing:0.06em">Vos livrables apparaîtront ici dès que Cindy les dépose.</div></div>';
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:#47341f;line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Ce qui attend votre validation est mis en avant, tout en haut.</p>' +
+      '<p style="font-size:16px;color:#5A2A11;line-height:1.6;margin-bottom:24px;max-width:560px">Tous vos livrables réunis au même endroit. Ce qui attend votre validation est mis en avant, tout en haut.</p>' +
       chips + listHtml +
     '</div>';
   }
@@ -6187,10 +6187,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
    * avec autosave et écran de vérification avant envoi.
    * ──────────────────────────────────────────────────────────────────────── */
   var CP_QNR_STATUS = {
-    assigned:    ['À remplir',  '#8a6f2e', '#fbf0d8'],
-    in_progress: ['En cours',   '#35608f', '#e3edfb'],
-    to_review:   ['À revoir',   '#8a4a0e', '#fdf3e8'],
-    completed:   ['Complété ✓', '#3f6b3a', '#e7f0e3'],
+    assigned:    ['À remplir',  '#5A2A11', '#F8F6F2'],
+    in_progress: ['En cours',   '#5A2A11', '#C5DEFF'],
+    to_review:   ['À revoir',   '#5A2A11', '#F8F6F2'],
+    completed:   ['Complété ✓', '#5A2A11', '#F8F6F2'],
   };
   function cpQnrInstance() { return (appData.questionnaires || []).filter(function(q){ return q.id === cpQnrOpenId; })[0] || null; }
   function cpQnrIsStatic(t) { return t === 'title' || t === 'paragraph'; }
@@ -6210,12 +6210,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (!list.length) return '<div class="cp-content" style="padding:36px 52px 80px"><div style="max-width:640px;margin:0 auto"><h1 style="font-family:var(--font-display);font-style:italic;font-size:30px;margin-bottom:8px">Questionnaires</h1><p style="color:var(--muted)">Aucun questionnaire pour l\'instant. Cindy vous en enverra ici quand elle aura besoin de vos réponses.</p></div></div>';
     var cards = list.map(function(inst){
       var st = CP_QNR_STATUS[inst.status] || CP_QNR_STATUS.assigned;
-      var col = '#8267ab'; // lila (DA glycine) pour tous les questionnaires
+      var col = '#5A2A11'; // lila (DA glycine) pour tous les questionnaires
       var pr = cpQnrProgress(inst);
       var pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
       var cta = inst.status === 'completed' ? 'Voir mes réponses' : (inst.status === 'in_progress' ? 'Continuer' : (inst.status === 'to_review' ? 'Revoir' : 'Commencer'));
       var due = inst.dueDate ? '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
-      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #e6d9f5;background:#F7EFFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:none;margin-bottom:16px;display:block">' +
+      return '<button type="button" onclick="cpQnrFill(\'' + esc(inst.id) + '\')" style="width:100%;text-align:left;border:1px solid #C5DEFF;background:#C5DEFF;cursor:pointer;border-radius:16px;overflow:hidden;box-shadow:none;margin-bottom:16px;display:block">' +
         '<div style="padding:20px 22px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0">' +
@@ -6248,7 +6248,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:6px 0 12px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
     // La question (énoncé) est clairement distincte de la zone de réponse.
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</label>' +
+    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</label>' +
       (b.help ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
     // Bordure encre + ombre légère : la zone de réponse est clairement blanche sur la carte crème.
@@ -6298,7 +6298,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     } else if (b.type === 'rating') {
       var mx = b.max || 5; var cur = typeof ans === 'number' ? ans : parseInt(ans, 10) || 0;
       var stars = '';
-      for (var i = 1; i <= mx; i++) stars += '<label style="cursor:pointer"><input type="radio" name="cpqn_' + b.id + '" value="' + i + '"' + (cur === i ? ' checked' : '') + ' style="position:absolute;opacity:0;width:0;height:0"><span style="font-size:30px;color:' + (cur >= i ? '#e0b83e' : '#d8cfbf') + ';padding:0 2px">★</span></label>';
+      for (var i = 1; i <= mx; i++) stars += '<label style="cursor:pointer"><input type="radio" name="cpqn_' + b.id + '" value="' + i + '"' + (cur === i ? ' checked' : '') + ' style="position:absolute;opacity:0;width:0;height:0"><span style="font-size:30px;color:' + (cur >= i ? '#CD8F6E' : '#F8F6F2') + ';padding:0 2px">★</span></label>';
       input = '<div data-qgroup="' + b.id + '" data-qtype="rating" style="display:flex;align-items:center;gap:2px">' + stars + '</div>';
     } else if (b.type === 'slider') {
       var smx = b.max || 10; var sv = typeof ans === 'number' ? ans : (parseInt(ans, 10) || 0);
@@ -6310,11 +6310,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       input = '<input type="' + it + '" data-qid="' + b.id + '" value="' + esc(typeof ans === 'string' ? ans : (typeof ans === 'number' ? String(ans) : '')) + '" style="' + box + '" placeholder="' + esc(b.placeholder || '') + '">';
     }
     // Carte crème = l'énoncé ; réponse en blanc à l'intérieur → hiérarchie claire.
-    return '<div style="background:var(--surface,#F5F2EC);border-radius:16px;padding:20px 22px;margin-bottom:16px">' + lab + '<div style="margin-top:16px">' + input + '</div></div>';
+    return '<div style="background:var(--surface,#F8F6F2);border-radius:16px;padding:20px 22px;margin-bottom:16px">' + lab + '<div style="margin-top:16px">' + input + '</div></div>';
   }
 
   function buildQnrFiller(inst) {
-    var col = '#8267ab'; // lila (DA glycine) pour tous les questionnaires
+    var col = '#5A2A11'; // lila (DA glycine) pour tous les questionnaires
     var steps = inst.steps || [];
     var back = '<button onclick="cpQnrClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13.5px;margin-bottom:16px">← Tous les questionnaires</button>';
     var wrap = function(inner){ return '<div class="cp-content" style="padding:32px 52px 90px"><div style="max-width:660px;margin:0 auto">' + back + inner + '</div></div>'; };
@@ -6328,7 +6328,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       return wrap(
         '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
-        (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5a4a3a)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
           '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
         '</div>' + due +
@@ -6348,7 +6348,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           if (Array.isArray(a)) disp = a.join(', ');
           else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = '—'; }
           else disp = (a == null || a === '' ? '—' : String(a));
-          return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5a4a3a)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
@@ -6360,15 +6360,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
       if (isDone) {
         return wrap(header +
-          '<p style="color:#3f6b3a;font-weight:600;margin-bottom:20px">Complété ✓' + (inst.completedAt ? ' le ' + esc(String(inst.completedAt).slice(0,10).split('-').reverse().join('/')) : '') + '. Merci !</p>' +
+          '<p style="color:#5A2A11;font-weight:600;margin-bottom:20px">Complété ✓' + (inst.completedAt ? ' le ' + esc(String(inst.completedAt).slice(0,10).split('-').reverse().join('/')) : '') + '. Merci !</p>' +
           rows +
-          '<button onclick="cpQnrReopen()" style="margin-top:6px;padding:12px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:14px;font-weight:600">Modifier mes réponses</button>');
+          '<button onclick="cpQnrReopen()" style="margin-top:6px;padding:12px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:14px;font-weight:600">Modifier mes réponses</button>');
       }
       return wrap(header +
         '<p style="color:var(--muted);margin-bottom:20px">Vérifiez vos réponses avant de les envoyer à Cindy.</p>' +
         rows +
         '<div style="display:flex;gap:10px;margin-top:8px">' +
-          '<button onclick="cpQnrGoStep(' + Math.max(0, steps.length - 1) + ')" style="padding:12px 20px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:14px;font-weight:600">← Retour</button>' +
+          '<button onclick="cpQnrGoStep(' + Math.max(0, steps.length - 1) + ')" style="padding:12px 20px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:14px;font-weight:600">← Retour</button>' +
           '<button onclick="cpQnrSubmit()" style="flex:1;padding:13px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">Envoyer mes réponses</button>' +
         '</div>');
     }
@@ -6387,7 +6387,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin-bottom:' + (s.help ? '4px' : '18px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
       (s.help ? '<p style="color:var(--muted);line-height:1.55;margin-bottom:20px">' + esc(s.help) + '</p>' : '');
     var nav = '<div style="display:flex;gap:10px;margin-top:10px">' +
-      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#e2d9c8);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
+      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
       '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
     '</div>';
     // « Pourquoi ce questionnaire ? » (idée 9) — rassure sur la 1re étape.
@@ -6668,7 +6668,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     if (color) {
       var _bc = color.replace('#',''); var _r=parseInt(_bc.substring(0,2),16),_g=parseInt(_bc.substring(2,4),16),_b=parseInt(_bc.substring(4,6),16);
       var lum = 0.299*_r+0.587*_g+0.114*_b;
-      var accent = lum > 160 ? '#1C1205' : color;
+      var accent = lum > 160 ? '#110704' : color;
       vars += '--navy:'+accent+';--brown:'+color+';';
     }
     if (btn) {
@@ -6688,10 +6688,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   }
 
   var CP_TYPE_THEMES = {
-    partenaire:  { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    maintenance: { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    identite:    { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
-    support:     { dk:'#1C1205', lt:'#F2E5C2', rgb:'242,229,194' },
+    partenaire:  { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
+    maintenance: { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
+    identite:    { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
+    support:     { dk:'#110704', lt:'#F8F6F2', rgb:'242,229,194' },
   };
   function applyTypeTheme(type) {
     var t = CP_TYPE_THEMES[type] || CP_TYPE_THEMES.partenaire;
@@ -6747,12 +6747,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // Apply studio accent mode to portal CSS variables
     if (data.studioAccentMode === 'forced' && data.studioAccentForced) {
       var TONE_VARS = {
-        glycine: { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#412F21' },
-        brume:   { soft:'#f7efff', mid:'#E4D1FE', deep:'#a98bd6', ink:'#6c4ea4', btnBg:'#E4D1FE', btnFg:'#1C1205' },
-        paille:  { soft:'#fdf8ec', mid:'#F2E5C2', deep:'#c9b585', ink:'#7a6030', btnBg:'#F2E5C2', btnFg:'#412F21' },
-        ocre:    { soft:'#f6efe0', mid:'#e7cd97', deep:'#c9952f', ink:'#8a5a12', btnBg:'#e7cd97', btnFg:'#412F21' },
-        terre:   { soft:'#ece2d0', mid:'#c8b29a', deep:'#8a6f54', ink:'#412F21', btnBg:'#c8b29a', btnFg:'#412F21' },
-        nuit:    { soft:'#dde6f5', mid:'#b3c4e0', deep:'#8a6f54', ink:'#5c4633', btnBg:'#5c4633', btnFg:'#E4D1FE' },
+        glycine: { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11', btnBg:'#C5DEFF', btnFg:'#110704' },
+        brume:   { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#C5DEFF', ink:'#5A2A11', btnBg:'#C5DEFF', btnFg:'#110704' },
+        paille:  { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#F8F6F2', ink:'#5A2A11', btnBg:'#F8F6F2', btnFg:'#110704' },
+        ocre:    { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#CD8F6E', ink:'#5A2A11', btnBg:'#F8F6F2', btnFg:'#110704' },
+        terre:   { soft:'#F8F6F2', mid:'#F8F6F2', deep:'#5A2A11', ink:'#110704', btnBg:'#F8F6F2', btnFg:'#110704' },
+        nuit:    { soft:'#C5DEFF', mid:'#C5DEFF', deep:'#5A2A11', ink:'#5A2A11', btnBg:'#5A2A11', btnFg:'#C5DEFF' },
       };
       var tv = TONE_VARS[data.studioAccentForced] || TONE_VARS.glycine;
       var el = document.getElementById('cp-accent-style');
@@ -6834,7 +6834,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var on = _isAdminEdit;
     btn.textContent = on ? "✓ Quitter l'édition" : '✎ Mode édition';
     btn.style.cssText = 'position:fixed;bottom:22px;right:22px;z-index:99999;padding:11px 18px;border-radius:999px;border:1px solid ' +
-      (on ? '#412F21' : '#E4D1FE') + ';background:' + (on ? '#412F21' : '#fff') + ';color:' + (on ? '#F2E5C2' : '#412F21') +
+      (on ? '#110704' : '#C5DEFF') + ';background:' + (on ? '#110704' : '#fff') + ';color:' + (on ? '#F8F6F2' : '#110704') +
       ";font-family:'Inter Tight',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.02em;cursor:pointer;box-shadow:none";
   }
 
@@ -6857,7 +6857,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var b = cpHome().banner; b.color = color; delete b.imageUrl; cpSaveHome(); renderShell();
   };
   window.cpHomeBannerTextColor = function(color) {
-    cpHome().banner.textColor = color || '#ffffff'; cpSaveHome(); renderShell();
+    cpHome().banner.textColor = color || 'ffffff'; cpSaveHome(); renderShell();
   };
   window.cpHomeBannerSubtitle = function(text) {
     var t = (text||'').trim();
@@ -7080,7 +7080,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin:6px 0 14px">Confirmez que vous avez fait votre part. Cindy est prévenue et reprend la suite — cette étape n\'attendra plus votre retour.</p>' +
       '<textarea id="_cpval-comment" placeholder="Un message pour Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #e2dbd0;border-radius:10px;cursor:pointer;color:#6b533b;font-size:14px;font-family:inherit">Annuler</button>' +
+        '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;color:#5A2A11;font-size:14px;font-family:inherit">Annuler</button>' +
         '<button id="_cpval-ok" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;background:var(--terre);color:var(--paille)">✓ J\'ai fait ma part</button>' +
       '</div>' +
     '</div>';
@@ -7221,24 +7221,24 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       } else { cardLeft = '50%'; cardTop = '50%'; cardTransform = 'translate(-50%,-50%)'; }
       el.innerHTML = spotlightHtml +
-        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#fffefb;border:1px solid #eae5dc;border-radius:14px;overflow:hidden;box-shadow:none">' +
-          '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #eae5dc">' +
-            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#1C1205;color:#E4D1FE">' + cpIcon(s.icon,18) + '</span>' +
+        '<div style="position:fixed;left:'+cardLeft+';top:'+cardTop+';transform:'+cardTransform+';z-index:180;width:360px;max-width:calc(100vw - 32px);background:#F8F6F2;border:1px solid #F8F6F2;border-radius:14px;overflow:hidden;box-shadow:none">' +
+          '<div style="display:flex;align-items:center;gap:12px;padding:18px 20px 16px;border-bottom:1px solid #F8F6F2">' +
+            '<span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:#110704;color:#C5DEFF">' + cpIcon(s.icon,18) + '</span>' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#6b533b;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
-              '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#412F21;line-height:1.2">' + esc(s.title) + '</div>' +
+              '<div style="font-family:\'Inter Tight\',sans-serif;font-size:9px;color:#5A2A11;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px">Étape '+(idx+1)+' / '+steps.length+'</div>' +
+              '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-size:21px;font-style:italic;color:#110704;line-height:1.2">' + esc(s.title) + '</div>' +
             '</div>' +
-            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #eae5dc;background:#ffffff;border-radius:8px;cursor:pointer;color:#6b533b;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
+            '<button onclick="document.getElementById(\'cp-guide-overlay\').remove()" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid #F8F6F2;background:ffffff;border-radius:8px;cursor:pointer;color:#5A2A11;flex-shrink:0">' + cpIcon('x',14) + '</button>' +
           '</div>' +
           '<div style="padding:18px 20px 20px">' +
-            '<p style="font-family:Georgia,serif;font-size:15px;color:#412F21;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
+            '<p style="font-family:Georgia,serif;font-size:15px;color:#110704;line-height:1.7;margin-bottom:18px">' + esc(s.text) + '</p>' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
               '<div style="display:flex;gap:5px;align-items:center">' +
-                steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#412F21':'#eae5dc')+';transition:width 200ms"></span>'; }).join('') +
+                steps.map(function(_,j){ return '<span style="display:inline-block;width:'+(j===idx?18:6)+'px;height:6px;border-radius:999px;background:'+(j===idx?'#110704':'#F8F6F2')+';transition:width 200ms"></span>'; }).join('') +
               '</div>' +
               '<div style="display:flex;gap:8px">' +
-                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #eae5dc;background:#ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">Precedent</button>' : '') +
-                '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#E4D1FE;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#412F21;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
+                (idx > 0 ? '<button onclick="window._cpGuideNav(-1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid #F8F6F2;background:ffffff;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#110704;cursor:pointer">Precedent</button>' : '') +
+                '<button onclick="window._cpGuideNav(1)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;background:#C5DEFF;font-family:\'Inter Tight\',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#110704;cursor:pointer">' + (last ? 'Terminer' : 'Suivant ' + cpIcon('arrow',13)) + '</button>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -7486,13 +7486,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function showEmptySpace(name) {
     var hello = name ? ('Bienvenue ' + esc(name)) : 'Bienvenue';
     document.getElementById('app').innerHTML =
-      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F8F6F2;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:440px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
-        '<p style="color:#485670;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
-        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
-        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.</p>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#110704;font-size:24px;margin-bottom:12px;font-weight:400;font-style:italic">' + hello + '</h1>' +
+        '<p style="color:#5A2A11;line-height:1.7;font-size:15px">Votre espace est en cours de préparation. Cindy y ajoutera très bientôt vos projets, votre suivi et vos livrables.<br><br>' +
+        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#110704;color:#F8F6F2;font-size:14px;cursor:pointer">Actualiser</button><br><br>' +
+        'Une question ? Écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a>.</p>' +
       '</div></div>';
   }
   function showError(kind) {
@@ -7501,31 +7501,31 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var revoked = kind === 'revoked';
     var title = revoked ? 'Ce lien n\'est plus valide' : 'Impossible de charger votre espace';
     var body = revoked
-      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a> pour obtenir un nouveau lien.'
+      ? 'Le lien a expiré ou a été révoqué.<br><br>Contactez <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a> pour obtenir un nouveau lien.'
       : 'Le chargement n\'a pas abouti, souvent à cause d\'une connexion instable.<br><br>' +
-        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#412F21;color:#F2E5C2;font-size:14px;cursor:pointer">Réessayer</button><br><br>' +
-        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#573b8a">Cindy</a>.';
+        '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:999px;background:#110704;color:#F8F6F2;font-size:14px;cursor:pointer">Réessayer</button><br><br>' +
+        'Si le problème persiste, écrivez à <a href="mailto:hello@seedtobloom.fr" style="color:#5A2A11">Cindy</a>.';
     document.getElementById('app').innerHTML =
-      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8;padding:20px">' +
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F8F6F2;padding:20px">' +
       '<div style="background:#fff;border-radius:20px;padding:48px 40px;max-width:400px;width:100%;text-align:center;box-shadow:none">' +
         '<div style="font-size:44px;margin-bottom:20px">🌸</div>' +
-        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#1C1205;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
-        '<p style="color:#485670;line-height:1.7;font-size:15px">' + body + '</p>' +
+        '<h1 style="font-family:\'Cormorant Garamond\',serif;color:#110704;font-size:22px;margin-bottom:12px;font-weight:400;font-style:italic">' + title + '</h1>' +
+        '<p style="color:#5A2A11;line-height:1.7;font-size:15px">' + body + '</p>' +
       '</div></div>';
   }
 
 
   // ── Couleurs espace client ─────────────────────────────────────────────────
   var CP_COLOR_DEFAULTS = {
-    '--navy':        '#1C1205',
-    '--sidebar-bg':  '#1C1205',
-    '--brown':       '#412F21',
-    '--sidebar-text':'#E4D1FE',
-    '--cream':       '#F2E5C2',
-    '--lavender':    '#E4D1FE',
-    '--blue-light':  '#E4D1FE',
-    '--bg':          '#ffffff',
-    '--surface':     '#F5F2EC',
+    '--navy':        '#110704',
+    '--sidebar-bg':  '#110704',
+    '--brown':       '#110704',
+    '--sidebar-text':'#C5DEFF',
+    '--cream':       '#F8F6F2',
+    '--lavender':    '#C5DEFF',
+    '--blue-light':  '#C5DEFF',
+    '--bg':          'ffffff',
+    '--surface':     '#F8F6F2',
   };
 
   var CP_COLOR_LABELS = [
@@ -7590,16 +7590,16 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
 
     var panel = document.createElement('div');
     panel.id = '_cp-color-panel';
-    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:none;z-index:9999;border:1px solid #ebebeb;max-height:80vh;overflow-y:auto';
+    panel.style.cssText = 'position:fixed;bottom:56px;left:12px;width:256px;background:#fff;border-radius:12px;padding:18px;box-shadow:none;z-index:9999;border:1px solid #F8F6F2;max-height:80vh;overflow-y:auto';
 
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
     var title = document.createElement('strong');
-    title.style.cssText = 'font-size:14px;color:#1C1205';
+    title.style.cssText = 'font-size:14px;color:#110704';
     title.textContent = 'Couleurs';
     var resetBtn = document.createElement('button');
     resetBtn.textContent = 'Reinitialiser';
-    resetBtn.style.cssText = 'font-size:11px;color:#636363;background:none;border:1px solid #e0e0e0;border-radius:6px;padding:3px 8px;cursor:pointer';
+    resetBtn.style.cssText = 'font-size:11px;color:#5A2A11;background:none;border:1px solid #F8F6F2;border-radius:6px;padding:3px 8px;cursor:pointer';
     resetBtn.onclick = function() { resetCpColors(); };
     header.appendChild(title);
     header.appendChild(resetBtn);
@@ -7625,11 +7625,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
 
         var lbl = document.createElement('span');
-        lbl.style.cssText = 'font-size:13px;color:#1a1a1a';
+        lbl.style.cssText = 'font-size:13px;color:#110704';
         lbl.textContent = item.label;
 
         var swatch = document.createElement('span');
-        swatch.style.cssText = 'width:30px;height:30px;border-radius:6px;border:1.5px solid #e0e0e0;display:inline-block;cursor:pointer;position:relative';
+        swatch.style.cssText = 'width:30px;height:30px;border-radius:6px;border:1.5px solid #F8F6F2;display:inline-block;cursor:pointer;position:relative';
         swatch.style.background = val;
 
         var inp = document.createElement('input');
@@ -7672,7 +7672,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
             '<input id="_code-inp" type="text" placeholder="CODE" style="max-width:200px;padding:12px 16px;text-align:center;font-size:16px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;border:1px solid rgba(228,209,254,0.2);border-radius:var(--radius-2);font-family:var(--font-micro);box-sizing:border-box;background:rgba(228,209,254,0.08);color:var(--brume);outline:none;width:100%" maxlength="20" oninput="this.value=this.value.toUpperCase()">' +
             '<button onclick="cpSubmitCode()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--glycine);color:var(--terre);border:0;border-radius:var(--radius-2);font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Entrer ' + cpIcon('arrow', 14) + '</button>' +
           '</div>' +
-          '<div id="_code-err" style="font-family:var(--font-micro);color:#e67e6a;font-size:11px;min-height:18px;letter-spacing:0.06em;text-transform:uppercase"></div>' +
+          '<div id="_code-err" style="font-family:var(--font-micro);color:#CD8F6E;font-size:11px;min-height:18px;letter-spacing:0.06em;text-transform:uppercase"></div>' +
         '</div>' +
       '</div>';
     setTimeout(function(){ var i=document.getElementById('_code-inp'); if(i){ i.focus(); i.style.outlineColor='var(--glycine-700)'; i.addEventListener('keydown', function(e){ if(e.key==='Enter') window.cpSubmitCode(); }); } }, 60);

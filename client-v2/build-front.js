@@ -112,14 +112,14 @@ css = css.replace(".cp-proj-bar { height: 5px; background: var(--bone-d); border
 must(css.indexOf(".cp-action {\r\n  display: flex; gap: 14px; align-items: flex-start;\r\n  background: var(--glycine-50); border: 1px solid var(--glycine-200);\r\n  border-radius: var(--radius-3); padding: 16px 18px; margin-bottom: 22px;\r\n}") !== -1, 'cp-action box');
 css = css.replace(
   ".cp-action {\r\n  display: flex; gap: 14px; align-items: flex-start;\r\n  background: var(--glycine-50); border: 1px solid var(--glycine-200);\r\n  border-radius: var(--radius-3); padding: 16px 18px; margin-bottom: 22px;\r\n}",
-  ".cp-action { display: flex; gap: 13px; align-items: center; background: #fbe7c8; border: none; border-radius: var(--radius-3); padding: 16px 20px; margin-bottom: 22px; }"
+  ".cp-action { display: flex; gap: 13px; align-items: center; background: #F8F6F2; border: none; border-radius: var(--radius-3); padding: 16px 20px; margin-bottom: 22px; }"
 );
 must(css.indexOf(".cp-action__icon { flex-shrink: 0; margin-top: 1px; color: var(--glycine-900); }") !== -1, 'cp-action icon');
-css = css.replace(".cp-action__icon { flex-shrink: 0; margin-top: 1px; color: var(--glycine-900); }", ".cp-action__icon { flex-shrink: 0; display: flex; align-items: center; color: #c9772a; }");
+css = css.replace(".cp-action__icon { flex-shrink: 0; margin-top: 1px; color: var(--glycine-900); }", ".cp-action__icon { flex-shrink: 0; display: flex; align-items: center; color: #CD8F6E; }");
 must(css.indexOf(".cp-action__title { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terre); margin-bottom: 3px; }") !== -1, 'cp-action title');
-css = css.replace(".cp-action__title { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terre); margin-bottom: 3px; }", ".cp-action__title { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #a4561b; margin-bottom: 4px; }");
+css = css.replace(".cp-action__title { font-family: var(--font-micro); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terre); margin-bottom: 3px; }", ".cp-action__title { font-family: var(--font-micro); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5A2A11; margin-bottom: 4px; }");
 must(css.indexOf(".cp-action__text { font-size: var(--fs-small); color: var(--terre-600); line-height: 1.6; }") !== -1, 'cp-action text');
-css = css.replace(".cp-action__text { font-size: var(--fs-small); color: var(--terre-600); line-height: 1.6; }", ".cp-action__text { font-size: 14.5px; color: #5c4530; line-height: 1.55; font-weight: 500; }");
+css = css.replace(".cp-action__text { font-size: var(--fs-small); color: var(--terre-600); line-height: 1.6; }", ".cp-action__text { font-size: 14.5px; color: #5A2A11; line-height: 1.55; font-weight: 500; }");
 // icône plus parlante (cloche) en blanc dans la pastille
 must(js.indexOf("'<div class=\"cp-action__icon\">'+cpIcon('arrow',18,'color:var(--terre)')+'</div>'") !== -1, 'cp-action icon js');
 js = js.replace("'<div class=\"cp-action__icon\">'+cpIcon('arrow',18,'color:var(--terre)')+'</div>'", "'<div class=\"cp-action__icon\">'+cpIcon('bell',20)+'</div>'");
@@ -171,19 +171,19 @@ js = js.replace("              (mQuotaMin ? mForfaitCard : '') + mMsgCard +", " 
 must(js.indexOf("            msgCard +") !== -1, 'home msgCard');
 js = js.replace("            msgCard +", "            '' +");
 // ── Lisibilité des pastilles du calendrier (titre sur 2 lignes + meilleur contraste) ──
-must(js.indexOf("font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;") !== -1, 'pill title');
+must(js.indexOf("font-size:13px;font-weight:400;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;") !== -1, 'pill title');
 js = js.replace(
-  "font-size:13px;font-weight:400;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;",
-  "font-size:13px;font-weight:600;color:'+(isDone?'#a89a86':'var(--terre,#412F21)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;"
+  "font-size:13px;font-weight:400;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;",
+  "font-size:13px;font-weight:600;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;"
 );
 // fonds plus saturés pour distinguer les deux familles de pastilles
-must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'Brief terminé':'#dcecd3' };") !== -1, 'pill statut col');
-js = js.replace("var STATUT_COL = { 'Brief en cours':'#f3e6c8', 'Brief prêt':'#dcecd3', 'Brief terminé':'#dcecd3' };", "var STATUT_COL = { 'Brief en cours':'#F3D9A0', 'Brief prêt':'#DEC8F7', 'Brief terminé':'#DEC8F7' };");
-must(js.indexOf("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };") !== -1, 'pill prog col');
-js = js.replace("var PROG_COL = { 'En attente du brief':'#ece6da', 'En cours':'#dbe7f5', 'À retravailler':'#f7ddcc', 'Besoin d\\'une info':'#f3e6c8', 'Terminé':'#dcecd3' };", "var PROG_COL = { 'En attente du brief':'#E9E2D2', 'En cours':'#CBD8F5', 'À retravailler':'#F4CDB2', 'Besoin d\\'une info':'#F6E59E', 'Terminé':'#C9E6CB' };");
+must(js.indexOf("var STATUT_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#F8F6F2', 'Brief terminé':'#F8F6F2' };") !== -1, 'pill statut col');
+js = js.replace("var STATUT_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#F8F6F2', 'Brief terminé':'#F8F6F2' };", "var STATUT_COL = { 'Brief en cours':'#F8F6F2', 'Brief prêt':'#C5DEFF', 'Brief terminé':'#C5DEFF' };");
+must(js.indexOf("var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#F8F6F2', 'Besoin d\\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };") !== -1, 'pill prog col');
+js = js.replace("var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#F8F6F2', 'Besoin d\\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };", "var PROG_COL = { 'En attente du brief':'#F8F6F2', 'En cours':'#C5DEFF', 'À retravailler':'#CD8F6E', 'Besoin d\\'une info':'#F8F6F2', 'Terminé':'#F8F6F2' };");
 // fond des cartes de tâche : beige (DA) au lieu du dégradé d'urgence
-must(js.indexOf("background:'+(isDone?'#f3ede2':soft)+'") !== -1, 'card beige bg');
-js = js.replace("background:'+(isDone?'#f3ede2':soft)+'", "background:'+(isDone?'#f1ece3':'#ffffff')+'");
+must(js.indexOf("background:'+(isDone?'#F8F6F2':soft)+'") !== -1, 'card beige bg');
+js = js.replace("background:'+(isDone?'#F8F6F2':soft)+'", "background:'+(isDone?'#F8F6F2':'#ffffff')+'");
 // carte de tâche blanche (DA Écrin) : plus de padding, coins ronds, ombre douce
 must(js.indexOf("padding:6px 8px;border-radius:7px;") !== -1, 'card pretty');
 js = js.replace("padding:6px 8px;border-radius:7px;", "padding:8px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(65,47,33,0.09);");
@@ -193,12 +193,12 @@ js = js.replace("if (t.archived || t.status==='done') return false;", "if (t.arc
 must(js.indexOf("if (flt.status && t.status !== flt.status) return false;") !== -1, 'cal filter status');
 js = js.replace("if (flt.status && t.status !== flt.status) return false;", "if (flt.status) { if (flt.status==='Terminé') { if (_prog!=='Terminé' && t.status!=='done') return false; } else if (_prog !== flt.status) return false; } else if (t.status==='done') return false;");
 // chips de filtre alignés sur les libellés d'avancement (+ TERMINÉ)
-must(js.indexOf("{ k:'todo',        label:'REÇUE',     col:'#b08968' },") !== -1, 'cal chip recue');
-js = js.replace("{ k:'todo',        label:'REÇUE',     col:'#b08968' },", "{ k:'En attente du brief', label:'EN ATTENTE', col:'#B8A98F' },");
-must(js.indexOf("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },") !== -1, 'cal chip encours');
-js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#7da2e0' },", "{ k:'En cours', label:'EN COURS', col:'#6E86B8' },");
-must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#c9952f' }") !== -1, 'cal chip avalider');
-js = js.replace("{ k:'review',      label:'À VALIDER', col:'#c9952f' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#C8794E' },\n      { k:'Terminé', label:'TERMINÉ', col:'#7C8B5A' }");
+must(js.indexOf("{ k:'todo',        label:'REÇUE',     col:'#CD8F6E' },") !== -1, 'cal chip recue');
+js = js.replace("{ k:'todo',        label:'REÇUE',     col:'#CD8F6E' },", "{ k:'En attente du brief', label:'EN ATTENTE', col:'#F8F6F2' },");
+must(js.indexOf("{ k:'in_progress', label:'EN COURS',  col:'#C5DEFF' },") !== -1, 'cal chip encours');
+js = js.replace("{ k:'in_progress', label:'EN COURS',  col:'#C5DEFF' },", "{ k:'En cours', label:'EN COURS', col:'#C5DEFF' },");
+must(js.indexOf("{ k:'review',      label:'À VALIDER', col:'#CD8F6E' }") !== -1, 'cal chip avalider');
+js = js.replace("{ k:'review',      label:'À VALIDER', col:'#CD8F6E' }", "{ k:'À retravailler', label:'À RETRAVAILLER', col:'#CD8F6E' },\n      { k:'Terminé', label:'TERMINÉ', col:'#F8F6F2' }");
 
 // la sauvegarde d'une propriété recolore la pastille (re-render) — fiable aussi depuis la carte
 must(js.indexOf("toast('Enregistré ✓'); })") !== -1, 'prop save rerender');
@@ -206,33 +206,33 @@ js = js.replace("toast('Enregistré ✓'); })", "toast('Enregistré ✓'); rende
 
 // ── Drawer de tâche : grand panneau overlay à droite (le calendrier garde toute sa largeur) ──
 // 1) la racine du drawer devient un grand panneau fixe à droite (façon Notion peek)
-must(js.indexOf("'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +") !== -1, 'drawer root');
+must(js.indexOf("'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +") !== -1, 'drawer root');
 js = js.replace(
-  "'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +",
-  "'<div class=\"cp-task-backdrop\" onclick=\"cliCloseTaskDrawer(\\''+pid+'\\')\" style=\"position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both\"></div>' + '<div class=\"cp-task-overlay\" style=\"background:#ffffff;border:none;border-left:1.5px solid var(--bone-d,#e8e0d4);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both\">' +"
+  "'<div style=\"background:var(--card,#fff);border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;padding:28px 24px;position:sticky;top:24px;overflow-y:auto;max-height:90vh\">' +",
+  "'<div class=\"cp-task-backdrop\" onclick=\"cliCloseTaskDrawer(\\''+pid+'\\')\" style=\"position:fixed;inset:0;background:rgba(28,18,5,0.32);z-index:90;animation:cpFadeIn .2s var(--ease) both\"></div>' + '<div class=\"cp-task-overlay\" style=\"background:#ffffff;border:none;border-left:1.5px solid var(--bone-d,#F8F6F2);border-radius:0;padding:34px 44px;position:fixed;top:0;right:0;height:100vh;width:min(780px,96vw);overflow-y:auto;z-index:100;box-shadow:-26px 0 64px -18px rgba(28,18,5,0.5);animation:cpDrawerIn .24s var(--ease) both\">' +"
 );
 // 2) on ne réserve plus la colonne de 360px : le calendrier reste pleine largeur sous l'overlay
 must(js.indexOf("grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start") !== -1, 'cal reserved col');
 js = js.replace("grid-template-columns:'+(cliSelTask[pid]?'minmax(0,1fr) minmax(0,360px)':'minmax(0,1fr)')+';gap:20px;align-items:start", "grid-template-columns:minmax(0,1fr);gap:20px;align-items:start");
 
 // ── Drawer de tâche : on retire l'ancien champ « Détails & contexte » (remplacé par le bloc Contenu en bas) ──
-must(js.indexOf("'<div style=\"margin-bottom:2px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Détails &amp; contexte</span></div>' +") !== -1, 'drawer details label');
-js = js.replace("'<div style=\"margin-bottom:2px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Détails &amp; contexte</span></div>' +", "'' +");
-must(js.indexOf("'<textarea id=\"_pt-desc-'+t.id+'\" onchange=\"cliEditTaskField(\\''+pid+'\\',\\''+t.id+'\\',\\'content\\',this.value)\" style=\"width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px\" placeholder=\"Format, ton, références, liens, contraintes…\">'+esc(t.content||'')+'</textarea>' +") !== -1, 'drawer details textarea');
-js = js.replace("'<textarea id=\"_pt-desc-'+t.id+'\" onchange=\"cliEditTaskField(\\''+pid+'\\',\\''+t.id+'\\',\\'content\\',this.value)\" style=\"width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#e2dbd0);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#1C1205);background:#fff;box-sizing:border-box;margin-top:4px\" placeholder=\"Format, ton, références, liens, contraintes…\">'+esc(t.content||'')+'</textarea>' +", "'' +");
+must(js.indexOf("'<div style=\"margin-bottom:2px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)\">Détails &amp; contexte</span></div>' +") !== -1, 'drawer details label');
+js = js.replace("'<div style=\"margin-bottom:2px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)\">Détails &amp; contexte</span></div>' +", "'' +");
+must(js.indexOf("'<textarea id=\"_pt-desc-'+t.id+'\" onchange=\"cliEditTaskField(\\''+pid+'\\',\\''+t.id+'\\',\\'content\\',this.value)\" style=\"width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#110704);background:#fff;box-sizing:border-box;margin-top:4px\" placeholder=\"Format, ton, références, liens, contraintes…\">'+esc(t.content||'')+'</textarea>' +") !== -1, 'drawer details textarea');
+js = js.replace("'<textarea id=\"_pt-desc-'+t.id+'\" onchange=\"cliEditTaskField(\\''+pid+'\\',\\''+t.id+'\\',\\'content\\',this.value)\" style=\"width:100%;min-height:90px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border,#F8F6F2);border-radius:8px;resize:vertical;font-family:inherit;color:var(--navy,#110704);background:#fff;box-sizing:border-box;margin-top:4px\" placeholder=\"Format, ton, références, liens, contraintes…\">'+esc(t.content||'')+'</textarea>' +", "'' +");
 
 // ── Drawer de tâche : grand espace « Contenu » par blocs (façon Notion) tout en bas, avant les actions ──
-must(js.indexOf("'<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +") !== -1, 'drawer actions anchor');
+must(js.indexOf("'<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +") !== -1, 'drawer actions anchor');
 js = js.replace(
-  "'<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +",
-  "stbBlocks(pid, t) + sep + '<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#e7cd97;color:#412F21;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +"
+  "'<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +",
+  "stbBlocks(pid, t) + sep + '<button onclick=\"cliMarkDoneAndNotify(\\''+pid+'\\',\\''+t.id+'\\')\" style=\"width:100%;padding:11px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px\">Marquer terminé &amp; prévenir</button>' +"
 );
 
 // ── Drawer de tâche : section « Livrables & révision » rattachée à la tâche ──
-must(js.indexOf("'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +") !== -1, 'drawer echange anchor');
+must(js.indexOf("'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)\">Echange</span></div>' +") !== -1, 'drawer echange anchor');
 js = js.replace(
-  "'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +",
-  "stbTaskDeliverables(pid, project, t, sep) + '<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#8090a8)\">Echange</span></div>' +"
+  "'<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)\">Echange</span></div>' +",
+  "stbTaskDeliverables(pid, project, t, sep) + '<div style=\"margin-bottom:8px\"><span style=\"font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#C5DEFF)\">Echange</span></div>' +"
 );
 
 // Injecte les greffes (login + chat + livrables) juste avant le boot (loadCpColors();)

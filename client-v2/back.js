@@ -577,7 +577,7 @@ async function handleConversation(request, env, method, masterKey, data) {
         espace.conversation.push(entry);
         await save(env, masterKey, data);
         await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> vous a écrit :</p>` +
-            `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>`);
+            `<p style="background:#F8F6F2;border-radius:8px;padding:14px 16px;color:#110704">${escHtml(content)}</p>`);
         return json({ message: mapChatToMessages([entry])[0] }, 201);
     }
     return json({ error: 'Method not allowed' }, 405);
@@ -599,7 +599,7 @@ async function handleMessage(request, env, masterKey, data) {
     container.chat.push(entry);
     await save(env, masterKey, data);
     await notifyAdmin(env, `Nouveau message · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> vous a écrit (${escHtml((body.projectId || '').toString())}) :</p>` +
-        `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(content)}</p>`);
+        `<p style="background:#F8F6F2;border-radius:8px;padding:14px 16px;color:#110704">${escHtml(content)}</p>`);
     return json({ message: mapChatToMessages([entry])[0] }, 201);
 }
 // Validation d'un livrable par le client : POST /deliverables/:id {projectId, decision, comment}
@@ -639,7 +639,7 @@ async function handleDeliverable(request, env, masterKey, data, id) {
     const who = clientFullName(data);
     const doneLine = decision === 'valide' && liv.taskId ? ` La tâche est maintenant marquée <strong>terminée</strong> ✓.` : ``;
     await notifyAdmin(env, `Livrable ${decision === 'valide' ? 'validé' : 'à revoir'} · ${who}`, `<p><strong>${escHtml(who)}</strong> ${decision === 'valide' ? 'a validé' : 'a demandé une révision sur'} le livrable <em>${escHtml(liv.name || '')}</em>.${doneLine}</p>` +
-        (liv.clientComment ? `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(liv.clientComment)}</p>` : ''));
+        (liv.clientComment ? `<p style="background:#F8F6F2;border-radius:8px;padding:14px 16px;color:#110704">${escHtml(liv.clientComment)}</p>` : ''));
     return json({ deliverable: mapDeliverables([liv])[0] });
 }
 // Marque lus (côté client) les messages d'un projet : POST /message/read {projectId}
@@ -728,9 +728,9 @@ async function handleTaskCreate(request, env, masterKey, data) {
     tasksOf(container).push(task);
     await save(env, masterKey, data);
     await notifyAdmin(env, `Nouvelle tâche · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a créé une tâche partenaire créative :</p>` +
-        `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px"><strong>${escHtml(task.title)}</strong>` +
-        (task.dueDate ? `<br><span style="color:#8a6f54">Échéance : ${escHtml(task.dueDate)}</span>` : '') +
-        (task.content ? `<br><span style="color:#412F21">${escHtml(task.content)}</span>` : '') + `</p>`);
+        `<p style="background:#F8F6F2;border-radius:8px;padding:14px 16px"><strong>${escHtml(task.title)}</strong>` +
+        (task.dueDate ? `<br><span style="color:#5A2A11">Échéance : ${escHtml(task.dueDate)}</span>` : '') +
+        (task.content ? `<br><span style="color:#110704">${escHtml(task.content)}</span>` : '') + `</p>`);
     return json(task, 201);
 }
 const TASK_ALLOWED = ['content', 'status', 'briefStatus', 'timeSpentMinutes', 'archived', 'pinned', 'dueDate', 'startDate', 'title', 'urgency', 'pole', 'missionType', 'imageUrl', 'livrableUrl', 'deliverableFileKey', 'customProps', 'blocks', 'v1Date', 'v2Date', 'attachments', 'table'];
@@ -839,7 +839,7 @@ async function handleTaskComment(request, env, masterKey, data, taskId) {
     await save(env, masterKey, data);
     await notifyAdmin(env, `Commentaire · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a commenté la tâche <strong>${escHtml(found.task.title || '')}</strong>` +
         (wasReview ? ` (en réponse à votre demande de révision)` : ``) + ` :</p>` +
-        `<p style="background:#F2E5C2;border-radius:8px;padding:14px 16px;color:#412F21">${escHtml(text)}</p>`);
+        `<p style="background:#F8F6F2;border-radius:8px;padding:14px 16px;color:#110704">${escHtml(text)}</p>`);
     return json(comment, 201);
 }
 function findTask(espace, taskId, projectId) {
@@ -1088,7 +1088,7 @@ async function handleTicketCreate(request, env, masterKey, data) {
     ticketsOf(container).unshift(ticket);
     await save(env, masterKey, data);
     await notifyAdmin(env, `Nouvelle demande · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a ouvert un ticket : <strong>${escHtml(ticket.title)}</strong></p>` +
-        (ticket.description ? `<p style="color:#412F21">${escHtml(ticket.description)}</p>` : ''));
+        (ticket.description ? `<p style="color:#110704">${escHtml(ticket.description)}</p>` : ''));
     return json(ticket, 201);
 }
 async function handleTicketUpdate(request, env, masterKey, data, ticketId) {
@@ -1128,7 +1128,7 @@ async function handleSpaceFeedback(request, env, masterKey, data) {
     esp.spaceFeedback.unshift(item);
     await save(env, masterKey, data);
     await notifyAdmin(env, `Avis sur l'espace · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a laissé un retour sur son espace` + (item.category ? ` (${escHtml(item.category)})` : '') + ` :</p>` +
-        `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(content)}</p>`);
+        `<p style="background:#F8F6F2;padding:12px 16px;border-radius:8px">${escHtml(content)}</p>`);
     return json(item, 201);
 }
 async function handleBilanSubmit(request, env, masterKey, data) {
@@ -1149,7 +1149,7 @@ async function handleBilanSubmit(request, env, masterKey, data) {
     await notifyAdmin(env, `Bilan de collaboration · ${clientFullName(data)}`, `<p><strong>${escHtml(clientFullName(data))}</strong> a partagé son bilan de fin de collaboration.</p>` +
         `<p>Note de satisfaction : <strong>${b.rating}/5</strong></p>` +
         (b.liked ? `<p>Ce qui a plu : ${escHtml(b.liked)}</p>` : '') +
-        (b.testimonial ? `<p style="background:#F2E5C2;padding:12px 16px;border-radius:8px">${escHtml(b.testimonial)}</p>` + (b.allowTestimonial ? '<p style="color:#5d7a52">Le client autorise la publication de ce témoignage.</p>' : '') : ''));
+        (b.testimonial ? `<p style="background:#F8F6F2;padding:12px 16px;border-radius:8px">${escHtml(b.testimonial)}</p>` + (b.allowTestimonial ? '<p style="color:#5A2A11">Le client autorise la publication de ce témoignage.</p>' : '') : ''));
     return json(b);
 }
 async function handleCRAdd(request, env, masterKey, data, field) {
@@ -1190,11 +1190,11 @@ function escHtml(s) {
 }
 function emailWrapper(title, bodyHtml) {
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><style>
-  body{font-family:'Inter Tight',Arial,sans-serif;background:#F2E5C2;margin:0;padding:0}
-  .c{max-width:560px;margin:40px auto;background:#fffefb;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(28,18,5,0.1)}
-  .h{background:#1C1205;padding:32px 40px;text-align:center}.h h1{color:#F2E5C2;font-size:22px;margin:0;font-weight:400;font-style:italic}
-  .b{padding:36px 40px}.b p{color:#412F21;line-height:1.7;font-size:15px;margin:0 0 16px}
-  .f{background:#F2E5C2;padding:20px 40px;text-align:center}.f p{color:#8a6f54;font-size:12px;margin:0}
+  body{font-family:'Inter Tight',Arial,sans-serif;background:#F8F6F2;margin:0;padding:0}
+  .c{max-width:560px;margin:40px auto;background:#F8F6F2;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(28,18,5,0.1)}
+  .h{background:#110704;padding:32px 40px;text-align:center}.h h1{color:#F8F6F2;font-size:22px;margin:0;font-weight:400;font-style:italic}
+  .b{padding:36px 40px}.b p{color:#110704;line-height:1.7;font-size:15px;margin:0 0 16px}
+  .f{background:#F8F6F2;padding:20px 40px;text-align:center}.f p{color:#5A2A11;font-size:12px;margin:0}
   </style></head><body><div class="c"><div class="h"><h1>Seed to Bloom</h1></div>
   <div class="b"><p><strong>${escHtml(title)}</strong></p>${bodyHtml}</div>
   <div class="f"><p>Seed to Bloom · seedtobloom.fr</p></div></div></body></html>`;

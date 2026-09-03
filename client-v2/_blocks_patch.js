@@ -56,7 +56,7 @@
    * couleur, surligne, taille). Le contenu est stocké en HTML nettoyé (liste
    * blanche de balises/styles) — sûr à réafficher côté admin. */
   var STB_RICH_TAGS = { B:'b', STRONG:'b', I:'i', EM:'i', U:'u', S:'s', STRIKE:'s', DEL:'s', A:'a', SPAN:'span', BR:'br', FONT:'span', DIV:'div', P:'div' };
-  var STB_LINK_STYLE = 'color:#5e3fa0;text-decoration:underline';
+  var STB_LINK_STYLE = 'color:#5A2A11;text-decoration:underline';
   function stbHrefSafe(h){
     h = String(h == null ? '' : h).trim();
     if (/^(https?:|mailto:)/i.test(h)) return h.replace(/["'<>\s]/g, '');
@@ -235,9 +235,9 @@
     if (_stbSlashMenu) return _stbSlashMenu;
     var m = document.createElement('div');
     m.id = 'stb-slash';
-    m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
+    m.style.cssText = 'position:absolute;z-index:99998;display:none;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:236px;max-height:300px;overflow-y:auto;font-family:inherit';
     m.innerHTML = STB_SLASH_ITEMS.map(function(it){
-      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#f7f2ea\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#1C1205">'+esc(it[1])+'</span><span style="font-size:11px;color:#9a93a5">'+esc(it[2])+'</span></button>';
+      return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSlashPick(\''+it[0]+'\')" style="display:flex;flex-direction:column;gap:1px;width:100%;border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;text-align:left" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'"><span style="font-size:13px;color:#110704">'+esc(it[1])+'</span><span style="font-size:11px;color:#C5DEFF">'+esc(it[2])+'</span></button>';
     }).join('');
     document.body.appendChild(m); _stbSlashMenu = m; return m;
   }
@@ -291,8 +291,8 @@
   window.stbCalloutIcon = function(pid, taskId, blockId){
     var old = document.getElementById('stb-emoji-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
     var pop = document.createElement('div'); pop.id = 'stb-emoji-pop';
-    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px';
-    pop.innerHTML = STB_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSetCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+e+'\')" style="border:none;background:none;font-size:19px;cursor:pointer;padding:4px;border-radius:6px" onmouseover="this.style.background=\'#f4eee2\'" onmouseout="this.style.background=\'none\'">'+e+'</button>'; }).join('');
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px';
+    pop.innerHTML = STB_EMOJIS.map(function(e){ return '<button type="button" onmousedown="event.preventDefault()" onclick="window.stbSetCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+e+'\')" style="border:none;background:none;font-size:19px;cursor:pointer;padding:4px;border-radius:6px" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'">'+e+'</button>'; }).join('');
     document.body.appendChild(pop);
     var btn = document.getElementById('stb-cico-' + blockId);
     if (btn){ var r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + window.pageYOffset + 4) + 'px'; pop.style.left = (r.left + window.pageXOffset) + 'px'; }
@@ -306,15 +306,15 @@
     stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   // Couleur de fond d'un bloc.
-  var STB_BLOCK_BG = ['', '#FCE79A', '#E4D1FE', '#F0E8FF', '#cfe9cf', '#f6c9d6', '#F2E5C2', '#F8F6F2', '#e7eef6', '#fbe7dd', '#efe7d7', '#1C1205'];
+  var STB_BLOCK_BG = ['', '#F8F6F2', '#C5DEFF', '#C5DEFF', '#F8F6F2', '#F8F6F2', '#F8F6F2', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#F8F6F2', '#110704'];
   window.stbBlockBg = function(pid, taskId, blockId){
     var old = document.getElementById('stb-bg-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
     var pop = document.createElement('div'); pop.id = 'stb-bg-pop';
-    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #e8e0d4;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px';
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px';
     pop.innerHTML = STB_BLOCK_BG.map(function(c){
       var isNone = !c;
       var sw = isNone ? 'background:#fff;border:1px solid #ddd;position:relative' : 'background:'+c+';border:1px solid rgba(0,0,0,0.1)';
-      var cross = isNone ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#c0533b;font-size:13px">⦸</span>' : '';
+      var cross = isNone ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#5A2A11;font-size:13px">⦸</span>' : '';
       return '<button type="button" title="'+(isNone?'Aucune':c)+'" onmousedown="event.preventDefault()" onclick="window.stbSetBlockBg(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+c+'\')" style="width:24px;height:24px;border-radius:7px;cursor:pointer;padding:0;'+sw+'">'+cross+'</button>';
     }).join('');
     document.body.appendChild(pop);
@@ -349,23 +349,23 @@
     if (_stbTB) return _stbTB;
     var tb = document.createElement('div');
     tb.id = 'stb-rt-tb';
-    tb.style.cssText = 'position:absolute;z-index:99999;display:none;align-items:center;gap:1px;white-space:nowrap;background:#2a1d10;border:1px solid rgba(242,229,194,0.14);border-radius:12px;box-shadow:0 14px 34px -10px rgba(0,0,0,0.55);padding:5px 6px';
+    tb.style.cssText = 'position:absolute;z-index:99999;display:none;align-items:center;gap:1px;white-space:nowrap;background:#110704;border:1px solid rgba(242,229,194,0.14);border-radius:12px;box-shadow:0 14px 34px -10px rgba(0,0,0,0.55);padding:5px 6px';
     // b = bouton texte ; id optionnel pour l'état actif (gras/italique/souligné)
-    function btn(html, act, title, id){ return '<button type="button"'+(id?' id="'+id+'"':'')+' title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=this.getAttribute(\'data-on\')===\'1\'?\'rgba(242,229,194,0.22)\':\'none\'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;font-size:14px;min-width:30px;height:30px;border-radius:8px;line-height:1;padding:0 5px;transition:background .12s">'+html+'</button>'; }
+    function btn(html, act, title, id){ return '<button type="button"'+(id?' id="'+id+'"':'')+' title="'+title+'" onmousedown="event.preventDefault()" onclick="'+act+'" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=this.getAttribute(\'data-on\')===\'1\'?\'rgba(242,229,194,0.22)\':\'none\'" style="border:none;background:none;color:#F8F6F2;cursor:pointer;font-size:14px;min-width:30px;height:30px;border-radius:8px;line-height:1;padding:0 5px;transition:background .12s">'+html+'</button>'; }
     function sw(color, kind, ring){ return '<button type="button" title="'+(kind==='color'?'Couleur du texte':'Surligner')+'" onmousedown="event.preventDefault()" onclick="window.stbFmt(\''+kind+'\',\''+color+'\')" style="border:1px solid '+(ring||'rgba(255,255,255,0.22)')+';background:'+color+';cursor:pointer;width:19px;height:19px;border-radius:50%;padding:0;margin:0 2px;transition:transform .1s" onmouseover="this.style.transform=\'scale(1.18)\'" onmouseout="this.style.transform=\'none\'"></button>'; }
     var sep = '<span style="display:inline-block;width:1px;height:19px;background:rgba(242,229,194,0.22);margin:0 5px;vertical-align:middle"></span>';
     // Bouton « enlever le surlignement » (gomme)
-    var clearBg = '<button type="button" title="Enlever le surlignement" onmousedown="event.preventDefault()" onclick="window.stbFmt(\'nobg\')" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=\'none\'" style="border:none;background:none;color:#F2E5C2;cursor:pointer;height:30px;min-width:30px;border-radius:8px;padding:0 5px;transition:background .12s;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path></svg></button>';
+    var clearBg = '<button type="button" title="Enlever le surlignement" onmousedown="event.preventDefault()" onclick="window.stbFmt(\'nobg\')" onmouseover="this.style.background=\'rgba(242,229,194,0.14)\'" onmouseout="this.style.background=\'none\'" style="border:none;background:none;color:#F8F6F2;cursor:pointer;height:30px;min-width:30px;border-radius:8px;padding:0 5px;transition:background .12s;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M6 6l12 12"></path></svg></button>';
     tb.innerHTML =
       btn('<b>G</b>', "window.stbFmt('bold')", 'Gras', 'stb-b-b') +
       btn('<span style=\'font-style:italic;font-family:serif\'>I</span>', "window.stbFmt('italic')", 'Italique', 'stb-b-i') +
       btn('<span style=\'text-decoration:underline\'>S</span>', "window.stbFmt('underline')", 'Souligné', 'stb-b-u') +
       btn('<span style=\'text-decoration:line-through\'>S</span>', "window.stbFmt('strike')", 'Barré', 'stb-b-s') + sep +
       btn('<span style=\'font-size:9px;vertical-align:1px\'>A</span><span style=\'font-size:8px\'>–</span>', "window.stbFmt('small')", 'Réduire le texte') +
-      '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#c9bfae;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
+      '<span id="stb-b-size" style="min-width:36px;text-align:center;color:#F8F6F2;font-family:var(--font-micro,inherit);font-size:11px;letter-spacing:0.02em">14 px</span>' +
       btn('<span style=\'font-size:15px\'>A</span><span style=\'font-size:10px;vertical-align:2px\'>+</span>', "window.stbFmt('big')", 'Agrandir le texte (par paliers)') + sep +
-      sw('#1C1205','color','rgba(255,255,255,0.35)') + sw('#9b3a2e','color') + sw('#5e3fa0','color') + sw('#3f6b3a','color') + sep +
-      sw('#FCE79A','bg') + sw('#E4D1FE','bg') + sw('#cfe9cf','bg') + sw('#f6c9d6','bg') + clearBg;
+      sw('#110704','color','rgba(255,255,255,0.35)') + sw('#5A2A11','color') + sw('#5A2A11','color') + sw('#5A2A11','color') + sep +
+      sw('#F8F6F2','bg') + sw('#C5DEFF','bg') + sw('#F8F6F2','bg') + sw('#F8F6F2','bg') + clearBg;
     document.body.appendChild(tb);
     _stbTB = tb; return tb;
   }
@@ -513,15 +513,15 @@
       stbUndoInit(el); stbCellSave(el, false); stbSnapSoon(el);
     }, true);
     var _stbPh = document.createElement('style');
-    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#b9b1a4;pointer-events:none}'
+    _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:#F8F6F2;pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
-      + '[data-stb-rich] a{color:#5e3fa0;text-decoration:underline;cursor:pointer}'
+      + '[data-stb-rich] a{color:#5A2A11;text-decoration:underline;cursor:pointer}'
       + '.stb-row .stb-ctrl{opacity:.28;transition:opacity .12s}'
       + '.stb-row:hover .stb-ctrl{opacity:1}'
-      + '.stb-ctrl button:hover{background:#f4eee2!important;color:#412F21!important}'
+      + '.stb-ctrl button:hover{background:#F8F6F2!important;color:#110704!important}'
       + '.stb-del{opacity:.5;transition:opacity .12s,background .12s,color .12s}'
       + '.stb-row:hover .stb-del{opacity:.9}'
-      + '.stb-del:hover{opacity:1;background:#fdece9!important;color:#c0392b!important}';
+      + '.stb-del:hover{opacity:1;background:#F8F6F2!important;color:#5A2A11!important}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
@@ -566,90 +566,90 @@
   function stbBlockTA(pid, taskId, b, ph, extra){
     extra = extra || '';
     return '<div id="stb-f-'+b.id+'" contenteditable="true" data-stb-rich="1" data-stb-block="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-ph="'+ph+'" '+
-      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#e2dbd0)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" onkeydown="window.stbRichKey(event,this)" '+
-      'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#1C1205);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
+      'onfocus="window.stbCellFocus(this);this.style.borderColor=\'var(--border,#F8F6F2)\'" onblur="window.stbCellBlur(this);this.style.borderColor=\'transparent\'" oninput="window.stbCellInput(this)" onkeydown="window.stbRichKey(event,this)" '+
+      'style="flex:1;min-height:36px;font-size:14px;line-height:1.55;padding:7px 10px;border:1px solid transparent;border-radius:8px;font-family:inherit;color:var(--navy,#110704);background:transparent;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap;'+extra+'">'+stbCellToHtml(b.text||'')+'</div>';
   }
   // Champ ligne unique (titres, cases à cocher, listes) : Entrée gère les blocs.
   // Champs sur une ligne (titres, sections, listes) = texte simple : on retire
   // toute balise résiduelle (ex. « <br> » laissé par un champ vidé).
   function stbPlain(v){ return String(v == null ? '' : v).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/​/g, '').trim(); }
   function stbLineInput(pid, taskId, b, ph, extra){
-    return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#1C1205);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
+    return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#110704);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
-    var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#e8e0d4);border-radius:5px;background:#fff;color:#8a6f54;cursor:pointer;font-size:11px;line-height:1;padding:0';
+    var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#F8F6F2);border-radius:5px;background:#fff;color:#5A2A11;cursor:pointer;font-size:11px;line-height:1;padding:0';
     var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
-      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?b.bg:'#8a6f54')+';font-size:11px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
+      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?b.bg:'#5A2A11')+';font-size:11px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
     '</div>';
-    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #efd9d4;border-radius:7px;background:#fbf1ef;color:#c0392b;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
+    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #F8F6F2;border-radius:7px;background:#F8F6F2;color:#5A2A11;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
     if (b.type === 'sep') {
-      inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#e8e0d4);margin:0"></div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#F8F6F2);margin:0"></div>';
     } else if (b.type === 'section') {
       var arrow = b.collapsed ? '▸' : '▾';
       inner = '<div style="flex:1;display:flex;align-items:center;gap:7px">'+
-        '<button type="button" onclick="window.stbSectionToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Dérouler / masquer" style="border:none;background:none;cursor:pointer;font-size:13px;color:#7a5ca8;padding:2px 5px;border-radius:5px;flex-shrink:0">'+arrow+'</button>'+
-        stbLineInput(pid, taskId, b, 'Titre de section', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:700;color:var(--navy,#1C1205)')+
+        '<button type="button" onclick="window.stbSectionToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Dérouler / masquer" style="border:none;background:none;cursor:pointer;font-size:13px;color:#5A2A11;padding:2px 5px;border-radius:5px;flex-shrink:0">'+arrow+'</button>'+
+        stbLineInput(pid, taskId, b, 'Titre de section', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:700;color:var(--navy,#110704)')+
       '</div>';
     } else if (b.type === 'file') {
       var dl = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '#';
-      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;color:var(--navy,#1C1205);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#9a8a72;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
+      inner = '<a href="'+dl+'" target="_blank" style="flex:1;display:flex;align-items:center;gap:9px;padding:10px 12px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;color:var(--navy,#110704);text-decoration:none;font-size:13px;overflow:hidden">'+cpIcon('paperclip',15,'color:#F8F6F2;flex-shrink:0')+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.name||'fichier')+'</span></a>';
     } else if (b.type === 'image') {
       var iu = b.fileKey ? (API_BASE + '/files/' + encodeURIComponent(b.fileKey) + '/download') : '';
       inner = iu
         ? '<a href="'+iu+'" target="_blank" style="flex:1;min-width:0;display:block;line-height:0"><img src="'+iu+'" alt="'+esc(b.name||'')+'" style="max-width:100%;max-height:360px;border-radius:10px;display:block"></a>'
-        : '<div style="flex:1;padding:14px;background:#faf7f1;border:1px dashed var(--bone-d,#e8e0d4);border-radius:10px;color:#9a8a72;font-size:12.5px;text-align:center">Image…</div>';
+        : '<div style="flex:1;padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Image…</div>';
     } else if (b.type === 'heading') {
       inner = stbLineInput(pid, taskId, b, 'Titre', 'font-family:\'Inter Tight\',sans-serif;font-size:21px;font-weight:600');
     } else if (b.type === 'subheading') {
       inner = stbLineInput(pid, taskId, b, 'Sous-titre', 'font-family:\'Inter Tight\',sans-serif;font-size:17px;font-weight:600');
     } else if (b.type === 'todo') {
       inner = '<div style="flex:1;display:flex;align-items:center;gap:9px">'+
-        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#5fa873;flex-shrink:0">'+
-        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#9a93a5':'')+
+        '<input type="checkbox" '+(b.done?'checked':'')+' onchange="window.stbBlockToggle(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="width:16px;height:16px;cursor:pointer;accent-color:#F8F6F2;flex-shrink:0">'+
+        stbLineInput(pid, taskId, b, 'À faire…', b.done?'text-decoration:line-through;color:#C5DEFF':'')+
       '</div>';
     } else if (b.type === 'list') {
-      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#CD8F6E;font-size:16px;flex-shrink:0;min-width:12px;text-align:center">•</span>'+stbLineInput(pid, taskId, b, 'Élément de liste')+'</div>';
     } else if (b.type === 'numbered') {
-      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#b08968;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
+      inner = '<div style="flex:1;display:flex;align-items:center;gap:9px"><span style="color:#CD8F6E;font-size:13px;flex-shrink:0;min-width:16px;text-align:right">'+(num||1)+'.</span>'+stbLineInput(pid, taskId, b, 'Élément')+'</div>';
     } else if (b.type === 'quote') {
-      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#6f5a40;background:#f7f2ea');
+      inner = stbBlockTA(pid, taskId, b, 'Citation…', 'border-radius:10px;padding:13px 16px;font-style:italic;font-size:16px;color:#5A2A11;background:#F8F6F2');
     } else if (b.type === 'callout') {
       var cico = b.icon || '💡';
-      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px;background:#F0E8FF;border-radius:10px;padding:6px 12px 6px 8px">'+
-        '<button type="button" id="stb-cico-'+b.id+'" onclick="window.stbCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Changer l\'icône" style="flex-shrink:0;margin-top:6px;border:none;background:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 3px;border-radius:6px" onmouseover="this.style.background=\'#e3d3fa\'" onmouseout="this.style.background=\'none\'">'+esc(cico)+'</button>'+
+      inner = '<div style="flex:1;display:flex;align-items:flex-start;gap:8px;background:#C5DEFF;border-radius:10px;padding:6px 12px 6px 8px">'+
+        '<button type="button" id="stb-cico-'+b.id+'" onclick="window.stbCalloutIcon(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" title="Changer l\'icône" style="flex-shrink:0;margin-top:6px;border:none;background:none;font-size:18px;line-height:1;cursor:pointer;padding:2px 3px;border-radius:6px" onmouseover="this.style.background=\'#C5DEFF\'" onmouseout="this.style.background=\'none\'">'+esc(cico)+'</button>'+
         stbBlockTA(pid, taskId, b, 'Encadré / note importante…', 'background:none')+'</div>';
     } else if (b.type === 'table') {
       if (!Array.isArray(b.rows) || !b.rows.length) b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']];
       var ncol = b.rows[0].length;
       var thead = '<tr>' + b.rows[0].map(function(c, ci){
-        return '<th style="border:1px solid var(--bone-d,#e8e0d4);background:#f4eee2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#1C1205);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
+        return '<th style="border:1px solid var(--bone-d,#F8F6F2);background:#F8F6F2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#110704);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
       }).join('') + '<th style="border:none;width:20px"></th></tr>';
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
         return '<tr>' + row.map(function(c, ci){
-          return '<td style="border:1px solid var(--bone-d,#e8e0d4);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#1C1205);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
+          return '<td style="border:1px solid var(--bone-d,#F8F6F2);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#110704);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
         }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
       }).join('');
       inner = '<div style="flex:1;min-width:0;overflow-x:auto"><table style="border-collapse:collapse;width:100%;background:#fff;border-radius:8px"><tbody>'+thead+tbody+'</tbody></table>'+
         '<div style="display:flex;gap:6px;margin-top:7px">'+
-          '<button onclick="window.stbTableAddRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Ligne</button>'+
-          '<button onclick="window.stbTableAddCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">+ Colonne</button>'+
+          '<button onclick="window.stbTableAddRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Ligne</button>'+
+          '<button onclick="window.stbTableAddCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Colonne</button>'+
         '</div></div>';
     } else if (b.type === 'link') {
       var lu = b.url || '';
-      inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#faf7f1;border:1px solid var(--bone-d,#e8e0d4);border-radius:10px;padding:10px 12px">'+
-        '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#1C1205);outline:none">'+
-        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#9a8a72;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#6f5a40;outline:none;min-width:0">'+
-        (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#7a5a14;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
+      inner = '<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#F8F6F2;border:1px solid var(--bone-d,#F8F6F2);border-radius:10px;padding:10px 12px">'+
+        '<input value="'+esc(b.text||'')+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'text\',this.value)" placeholder="Intitulé du lien" style="border:none;background:none;font-size:13.5px;font-weight:600;color:var(--navy,#110704);outline:none">'+
+        '<div style="display:flex;align-items:center;gap:7px">'+cpIcon('link',14,'color:#F8F6F2;flex-shrink:0')+'<input type="url" value="'+esc(lu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://…" style="flex:1;border:none;background:none;font-size:12.5px;color:#5A2A11;outline:none;min-width:0">'+
+        (lu?'<a href="'+esc(lu)+'" target="_blank" style="font-size:11px;color:#5A2A11;text-decoration:none;white-space:nowrap">Ouvrir ↗</a>':'')+'</div>'+
       '</div>';
     } else if (b.type === 'embed') {
       var eu = b.url || ''; var emb = stbEmbedUrl(eu);
       inner = '<div style="flex:1;min-width:0">'+
-        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#faf7f1;border:1px dashed var(--bone-d,#e8e0d4);border-radius:10px;color:#9a8a72;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
-        '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#e8e0d4);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
+        (emb?'<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000"><iframe src="'+esc(emb)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>':'<div style="padding:14px;background:#F8F6F2;border:1px dashed var(--bone-d,#F8F6F2);border-radius:10px;color:#F8F6F2;font-size:12.5px;text-align:center">Collez un lien YouTube ou Vimeo ci-dessous</div>')+
+        '<input type="url" value="'+esc(eu)+'" onchange="window.stbBlockSetField(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',\'url\',this.value)" placeholder="https://youtube.com/… ou vimeo.com/…" style="width:100%;margin-top:6px;border:1px solid var(--bone-d,#F8F6F2);background:#fff;border-radius:8px;font-size:12px;padding:7px 10px;box-sizing:border-box;outline:none">'+
       '</div>';
     } else {
       inner = stbBlockTA(pid, taskId, b, 'Écrire…');
@@ -664,12 +664,12 @@
       : (type==='image')
         ? 'window.stbBlockMenu(\''+taskId+'\');window.stbBlockAddImage(\''+pid+'\',\''+taskId+'\')'
         : 'window.stbBlockAdd(\''+pid+'\',\''+taskId+'\',\''+type+'\')';
-    return '<button onclick="'+act+'" onmouseover="this.style.background=\'#f7f2ea\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
-      '<span style="width:30px;height:30px;border-radius:8px;background:#f4eee2;display:flex;align-items:center;justify-content:center;color:#6f5a40;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
-      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#1C1205)">'+label+'</span><span style="display:block;font-size:11px;color:#9a93a5">'+desc+'</span></span>'+
+    return '<button onclick="'+act+'" onmouseover="this.style.background=\'#F8F6F2\'" onmouseout="this.style.background=\'none\'" style="display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:8px 9px;border-radius:8px;cursor:pointer;text-align:left">'+
+      '<span style="width:30px;height:30px;border-radius:8px;background:#F8F6F2;display:flex;align-items:center;justify-content:center;color:#5A2A11;flex-shrink:0">'+cpIcon(iconName,16)+'</span>'+
+      '<span style="min-width:0"><span style="display:block;font-size:13px;color:var(--navy,#110704)">'+label+'</span><span style="display:block;font-size:11px;color:#C5DEFF">'+desc+'</span></span>'+
     '</button>';
   }
-  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#b3aa9a;padding:8px 10px 4px">'+txt+'</div>'; }
+  function stbMenuGroupTitle(txt){ return '<div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#F8F6F2;padding:8px 10px 4px">'+txt+'</div>'; }
   function stbBlocksInner(pid, t){
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     var num = 0, hidden = false;
@@ -679,7 +679,7 @@
       if (b.type === 'numbered') num++; else num = 0;
       return stbBlockRow(pid, t.id, b, i, blocks.length, num);
     }).join('');
-    var menu = '<div id="stb-menu-'+t.id+'" style="display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:6;background:#fff;border:1px solid var(--bone-d,#e8e0d4);border-radius:14px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:262px;max-height:340px;overflow-y:auto">'+
+    var menu = '<div id="stb-menu-'+t.id+'" style="display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:6;background:#fff;border:1px solid var(--bone-d,#F8F6F2);border-radius:14px;box-shadow:0 16px 40px -12px rgba(28,18,5,0.32);padding:6px;width:262px;max-height:340px;overflow-y:auto">'+
       stbMenuGroupTitle('Texte')+
       stbMI(pid, t.id, 'heading', 'heading', 'Titre', 'Grand titre de section')+
       stbMI(pid, t.id, 'subheading', 'heading', 'Sous-titre', 'Titre secondaire')+
@@ -701,11 +701,11 @@
       stbMI(pid, t.id, 'file', 'paperclip', 'Fichier', 'Joindre un document')+
     '</div>';
     var addBar = '<div id="stb-bm-'+t.id+'" style="position:relative;margin-top:12px">'+
-      '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#e2dbd0);border-radius:9px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
-      '<span style="font-size:11.5px;color:#9a93a5;margin-left:10px">ou tapez <b style="font-family:monospace;background:#f4eee2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
+      '<button onclick="window.stbBlockMenu(\''+t.id+'\')" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;padding:9px 15px;border:1.5px dashed var(--border,#F8F6F2);border-radius:9px;background:#fff;color:var(--navy,#110704);cursor:pointer">'+cpIcon('plus',16)+'<span>Ajouter un bloc</span></button>'+
+      '<span style="font-size:11.5px;color:#C5DEFF;margin-left:10px">ou tapez <b style="font-family:monospace;background:#F8F6F2;padding:1px 5px;border-radius:4px">/</b> dans une ligne vide</span>'+
       menu+
     '</div>';
-    var empty = '<div style="font-size:13px;color:var(--muted,#8090a8);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
+    var empty = '<div style="font-size:13px;color:var(--muted,#C5DEFF);font-style:italic;padding:8px 0 4px">Votre espace de travail : titres, listes, cases à cocher, citations, fichiers…</div>';
     return (rows || empty) + addBar + stbHistoryHtml(pid, t);
   }
   // Aperçu court d'une version (pour l'historique).
@@ -726,15 +726,15 @@
     if (!h.length) return '';
     var rows = h.map(function(e, idx){ return { e: e, idx: idx }; }).reverse().map(function(o){
       var e = o.e; var who = e.by === 'studio' ? 'Studio' : 'Vous'; var when = e.at ? fmtShort(e.at) : '';
-      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--bone-d,#e8e0d4);border-radius:8px;margin-top:6px;background:#fff">'+
+      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;margin-top:6px;background:#fff">'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:10px;font-weight:700;color:var(--muted,#8090a8);margin-bottom:3px">'+esc(who)+(when?' · '+esc(when):'')+'</div>'+
-          '<div style="font-size:12px;line-height:1.5;color:#6f5a40;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(stbBlocksPreview(e.blocks))+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:var(--muted,#C5DEFF);margin-bottom:3px">'+esc(who)+(when?' · '+esc(when):'')+'</div>'+
+          '<div style="font-size:12px;line-height:1.5;color:#5A2A11;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(stbBlocksPreview(e.blocks))+'</div>'+
         '</div>'+
-        '<button onclick="window.stbRestore(\''+pid+'\',\''+t.id+'\','+o.idx+')" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid var(--border,#e2dbd0);border-radius:7px;background:#fff;color:var(--navy,#1C1205);cursor:pointer">Restaurer</button>'+
+        '<button onclick="window.stbRestore(\''+pid+'\',\''+t.id+'\','+o.idx+')" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">Restaurer</button>'+
       '</div>';
     }).join('');
-    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#8090a8);letter-spacing:0.04em">Historique — versions précédentes ('+h.length+')</summary>'+
+    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#C5DEFF);letter-spacing:0.04em">Historique — versions précédentes ('+h.length+')</summary>'+
       '<div style="margin-top:4px">'+rows+'</div></details>';
   }
   window.stbRestore = function(pid, taskId, index){
@@ -753,9 +753,9 @@
       if (!t.blocks.length) t.blocks = [{ id: stbBid(), type:'text', text:'' }];
       t._blkInit = true;
     }
-    return '<div style="border-top:2px solid var(--bone-d,#e8e0d4);margin-top:22px;padding-top:20px">'+
-      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#1C1205)">Votre demande</span></div>'+
-      '<div style="font-size:11.5px;color:#9a93a5;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
+    return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
+      '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Votre demande</span></div>'+
+      '<div style="font-size:11.5px;color:#C5DEFF;margin-bottom:12px">Le brief que vous avez rédigé. Cliquez dans le texte pour le compléter ou le modifier à tout moment.</div>'+
       '<div id="stb-blocks-'+t.id+'" style="min-height:120px">'+stbBlocksInner(pid, t)+'</div>'+
     '</div>';
   }
