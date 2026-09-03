@@ -1466,23 +1466,27 @@
   function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   // Saisie du temps depuis le panneau « Toutes les tâches » : PATCH la bonne
   // ressource selon l'offre (tâche partenaire vs ticket maintenance).
+  // Enregistre le temps ET le mois de rattachement ENSEMBLE (un seul PATCH avec
+  // forceTime) : sinon le serveur ne recalcule pas l'attribution mensuelle.
   function atSetTime(key, id, isMaint) {
-    var hEl = el('att-h-' + id), mEl = el('att-m-' + id);
+    var hEl = el('att-h-' + id), mEl = el('att-m-' + id), wEl = el('att-wm-' + id);
     var h = Math.max(0, parseInt(hEl && hEl.value, 10) || 0);
     var mm = Math.max(0, parseInt(mEl && mEl.value, 10) || 0);
     var m = h * 60 + mm;
+    var wm = wEl ? String(wEl.value || '') : '';
+    var loc = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
+    if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; if (!isMaint) loc.workMonth = wm; }
     var url = isMaint ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
     var body = isMaint
       ? { projectId: 'maintenance', timeSpentMinutes: m, timeSpentSeconds: m * 60 }
-      : { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60, forceTime: true };
-    var loc = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
-    if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; }
-    jpost(url, body, 'PATCH').then(function (r) { toast(r.ok ? 'Temps enregistré ✓' : 'Erreur'); }).catch(function () { toast('Erreur'); });
+      : { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60, forceTime: true, workMonth: wm };
+    jpost(url, body, 'PATCH').then(function (r) {
+      if (r.ok) { toast(wm ? ('Enregistré · compté en ' + wm) : 'Temps enregistré ✓'); atRefresh(); }
+      else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
   }
-  function atSetMonth(key, id, wm) {
-    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', workMonth: wm || null }, 'PATCH')
-      .then(function (r) { toast(r.ok ? (wm ? 'Rattaché à ' + wm : 'Mois automatique') : 'Erreur'); }).catch(function () { toast('Erreur'); });
-  }
+  // Changement du mois : on ré-enregistre temps + mois ensemble (même save).
+  function atSetMonth(key, id) { atSetTime(key, id, false); }
   function atClose() { var d = el('at-dr'), b = el('at-bk'); if (d) d.classList.remove('on'); if (b) b.classList.remove('on'); }
   function renderPrioBody(d) {
       var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
