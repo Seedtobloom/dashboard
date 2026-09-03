@@ -1847,10 +1847,14 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
       var _band = acc(_tone);
       // Bannière de couleur franche (brun / lavande / crème), placeholder de la
       // future image de couverture, reprise de la maquette validée.
-      var _bannerBg = (p.bannerColor ? String(p.bannerColor).split('|')[0] : '') || CP_TYPE_BANNER[p.type] || _band.deep;
-      var _bImg = (!p.bannerColor && CP_TYPE_BANNER_IMG[p.type]) ? CP_TYPE_BANNER_IMG[p.type] : '';
+      var _bcRaw = p.bannerColor ? String(p.bannerColor).split('|')[0] : '';
+      // Une bannière perso n'est respectée que si c'est une vraie IMAGE (URL / data:).
+      // Sinon (couleur placeholder ou rien) l'image d'offre de la maquette prime.
+      var _bcIsImg = /^(https?:|data:|\/)/.test(_bcRaw);
+      var _bannerBg = _bcRaw || CP_TYPE_BANNER[p.type] || _band.deep;
+      var _bImg = _bcIsImg ? _bcRaw : (CP_TYPE_BANNER_IMG[p.type] || '');
       var bannerStyle = _bImg
-        ? 'background:' + _bannerBg + ' url(' + _bImg + ') center/cover no-repeat;height:150px'
+        ? 'background:' + (_bcIsImg ? _band.deep : _bannerBg) + ' url(' + _bImg + ') center/cover no-repeat;height:150px'
         : 'background:' + _bannerBg + ';height:150px';
       var _unread = (pd.messages||[]).filter(function(m){ return m.author==='cindy' && !m.readByClient; }).length;
       var _unreadBadge = _unread>0 ? '<div><span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5A2A11;background:#F8F6F2;border:1px solid #CD8F6E;border-radius:999px;padding:3px 9px;margin-bottom:10px">' + cpIcon('chat',11,'color:#5A2A11') + ' ' + _unread + ' message' + (_unread>1?'s':'') + ' non lu' + (_unread>1?'s':'') + '</span></div>' : '';
