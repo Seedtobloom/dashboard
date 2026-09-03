@@ -1428,6 +1428,15 @@
     var files = atts.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + atts.map(function (a) { return '<a class="pbtn" href="/api/clients/' + key + '/files/' + encodeURIComponent(a.key) + '/download">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
     var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
       ? '<input type="date" class="at-plan" id="atp2-' + x.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.atPlan2(\'' + key + '\',\'' + x.id + '\')">Planifier</button>' : '';
+    // Saisie du temps passé directement depuis ce panneau (sans ouvrir la fiche).
+    var isMaint = atOffer(x) === 'maint';
+    var curMin = x.timeSpentMinutes || Math.round((x.timeSpentSeconds || 0) / 60) || 0;
+    var timeBlock =
+      '<p class="at-dr__lab" style="margin-top:24px">Temps passé</p>' +
+      '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' +
+        '<input class="inp" id="att-min-' + x.id + '" type="number" min="0" step="15" value="' + curMin + '" style="width:92px" onchange="ADM.atSetTime(\'' + key + '\',\'' + x.id + '\',' + isMaint + ',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
+        (isMaint ? '' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-left:6px">Compté en</span><input class="inp" id="att-wm-' + x.id + '" type="month" value="' + esc(x.workMonth || '') + '" style="width:158px" onchange="ADM.atSetMonth(\'' + key + '\',\'' + x.id + '\',this.value)" title="Forcer le mois de rattachement (laisser vide = automatique)">') +
+      '</div>';
     el('at-dr-in').innerHTML =
       '<div class="at-dr__top"><button class="at-dr__x" onclick="ADM.atClose()">✕</button>' +
         '<div class="at-dr__meta">' + esc(otag) + ' · ' + esc(x.client || '') + '</div>' +
@@ -1435,6 +1444,7 @@
         '<div>' + atDueLbl(x) + '</div></div>' +
       '<div class="at-dr__body">' +
         '<p class="at-dr__lab">Le brief</p><div class="at-dr__brief">' + brief + link + files + '</div>' +
+        timeBlock +
         '<p class="at-dr__lab" style="margin-top:24px">Échange avec la cliente</p><div id="at-dr-cmts"><div class="micro" style="color:var(--muted)">Chargement…</div></div>' +
       '</div>' +
       '<div class="at-dr__foot">' + plan + '<button class="btn btn--outline btn--sm" onclick="ADM.atClose();ADM.openClient(\'' + key + '\')">Ouvrir la fiche complète</button></div>';
@@ -1452,6 +1462,22 @@
     }).catch(function () { var box = el('at-dr-cmts'); if (box) box.innerHTML = '<div class="micro" style="color:var(--muted)">Ouvre la fiche pour voir la conversation.</div>'; });
   }
   function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  // Saisie du temps depuis le panneau « Toutes les tâches » : PATCH la bonne
+  // ressource selon l'offre (tâche partenaire vs ticket maintenance).
+  function atSetTime(key, id, isMaint, mn) {
+    var m = Math.max(0, parseInt(mn, 10) || 0);
+    var url = isMaint ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
+    var body = isMaint
+      ? { projectId: 'maintenance', timeSpentMinutes: m, timeSpentSeconds: m * 60 }
+      : { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60, forceTime: true };
+    var loc = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
+    if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; }
+    jpost(url, body, 'PATCH').then(function (r) { toast(r.ok ? 'Temps enregistré ✓' : 'Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  function atSetMonth(key, id, wm) {
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', workMonth: wm || null }, 'PATCH')
+      .then(function (r) { toast(r.ok ? (wm ? 'Rattaché à ' + wm : 'Mois automatique') : 'Erreur'); }).catch(function () { toast('Erreur'); });
+  }
   function atClose() { var d = el('at-dr'), b = el('at-bk'); if (d) d.classList.remove('on'); if (b) b.classList.remove('on'); }
   function renderPrioBody(d) {
       var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
@@ -8669,7 +8695,7 @@
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
-    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, atSetTime: atSetTime, atSetMonth: atSetMonth, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
