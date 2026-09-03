@@ -168,7 +168,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 .cp-home__greeting { font-family: var(--font-display); font-size: var(--fs-h4); color: var(--terre); font-style: italic; margin-bottom: 6px; font-weight: 400; }
 .cp-home__sub { font-family: var(--font-micro); font-size: var(--fs-micro); color: var(--terre-600); margin-bottom: 32px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cp-proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
-.cp-proj-card { background: #F8F6F2; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
+.cp-proj-card { background: #F8F6F2; border: none; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); text-align: left; width: 100%; box-shadow: var(--shadow-1); }
 .cp-proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .cp-proj-card--static { cursor: default; }
 .cp-proj-card--static:hover { transform: none; box-shadow: var(--shadow-1); }
@@ -507,7 +507,7 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 .cp-sp__row { display: grid; grid-template-columns: 1.7fr 1fr; gap: clamp(16px,1.8vw,26px); margin-top: clamp(18px,2vw,28px); }
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
 .cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
-.cp-sp__card--cta { background: var(--card); box-shadow: var(--shadow-1); display: flex; flex-direction: column; }
+.cp-sp__card--cta { background: var(--card); border: none; box-shadow: var(--shadow-1); display: flex; flex-direction: column; }
 .cp-sp__card--brown { background: var(--terre); }
 .cp-sp__card--brown .cp-sp__kick { color: var(--paille); }
 .cp-sp__card--brown .cp-sp__big { color: #fff; }
