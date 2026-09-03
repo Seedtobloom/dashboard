@@ -729,7 +729,7 @@ const CLIENT_JS = String.raw`// Client portal SPA, multi-project
   var CP_TYPE_BANNER = { identite:'#C5DEFF', site:'#C5DEFF', maintenance:'#110704', partenaire:'#110704', support:'#C5DEFF', autre:'#F8F6F2' };
   // Images de bannières réelles (maquette) servies par le worker, par type d'offre.
   // Repli sur la couleur franche CP_TYPE_BANNER quand aucune image (ou bannière perso).
-  var CP_TYPE_BANNER_IMG = { identite:'/assets/banner-identite.png', partenaire:'/assets/banner-partenaire.png', support:'/assets/banner-supports.png' };
+  var CP_TYPE_BANNER_IMG = { identite:'/assets/banner-identite.png?v=0415883b', partenaire:'/assets/banner-partenaire.png?v=3099464b', support:'/assets/banner-supports.png?v=d499cef7' };
   function cpTypeBadge(type, size, onColor) {
     size = size || 'sm';
     var label = CP_TYPE_LABELS[type] || type || '';

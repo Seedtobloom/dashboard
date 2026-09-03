@@ -23,8 +23,13 @@ const favicon = read('favicon.svg');
 // servies par le worker sous /assets/banner-<offre>.png (référencées par URL
 // dans les cartes d'accueil, donc mises en cache à part du HTML).
 const bannerFiles = { identite: 'banners/banner-identite.png', supports: 'banners/banner-supports.png', partenaire: 'banners/banner-partenaire.png' };
+const crypto = require('crypto');
 const bannerB64 = {};
-Object.keys(bannerFiles).forEach(function (k) { bannerB64[k] = fs.readFileSync(path.join(ROOT, bannerFiles[k])).toString('base64'); });
+const bannerVer = {};
+Object.keys(bannerFiles).forEach(function (k) {
+  bannerB64[k] = fs.readFileSync(path.join(ROOT, bannerFiles[k])).toString('base64');
+  bannerVer[k] = crypto.createHash('sha1').update(bannerB64[k]).digest('hex').slice(0, 8);
+});
 const patch = read('_login_patch.js');
 const chatPatch = read('_chat_patch.js');
 const livPatch = read('_deliverables_patch.js');
@@ -267,6 +272,12 @@ css = css.split('—').join('');
 // NB : le SPA client est INLINE dans le HTML (<script>${CLIENT_JS}</script>) et
 // le HTML n'est pas mis en cache → aucune URL d'asset à versionner ici (au
 // contraire de l'admin, dont le JS est un fichier /admin.js servi à part).
+// Versionne les URLs de bannières : servies avec un cache 7j immuable, il faut
+// que l'URL change quand l'image change (sinon l'ancienne reste en cache).
+Object.keys(bannerVer).forEach(function (k) {
+  js = js.split('/assets/banner-' + k + '.png').join('/assets/banner-' + k + '.png?v=' + bannerVer[k]);
+});
+
 const handler = [
   'export default {',
   '  async fetch(request, env) {',
