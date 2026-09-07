@@ -1356,6 +1356,23 @@ function stbFmtMin(min) {
     { key:'support', label:'Supports de communication' },
     { key:'custom', label:'Autres' },
   ];
+  // La réservation de créneau n'est incluse que dans l'accompagnement créatif et
+  // la maintenance de site : ce sont les offres où des points réguliers sont
+  // prévus. Une cliente qui n'a que des supports de communication n'a pas de
+  // créneau à réserver, il ne faut donc pas le lui proposer. Règle UNIQUE,
+  // utilisée par les trois endroits où le bouton apparaît (panneau latéral,
+  // barre du haut, pastilles mobiles).
+  var CP_BOOKING_TYPES = { partenaire: 1, maintenance: 1 };
+  function cpBookingUrl() {
+    var raw = ((appData && appData.bookingLink) || '').trim();
+    if (!raw) return '';
+    var eligible = ((appData && appData.projects) || []).some(function(pd) {
+      var p = pd && pd.project;
+      return !!(p && p.status !== 'archived' && CP_BOOKING_TYPES[p.type]);
+    });
+    if (!eligible) return '';
+    return raw.indexOf('http') === 0 ? raw : 'https://' + raw;
+  }
   function typeGroupKey(t) {
     if (t === 'identite' || t === 'site' || t === 'partenaire' || t === 'maintenance' || t === 'support') return t;
     return 'custom';
@@ -2324,9 +2341,10 @@ function stbFmtMin(min) {
         '<div style="font-family:var(--font-micro);font-size:8px;opacity:0.7;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(visioLink.replace(/^https?:\/\//,'')) + '</div>' +
       '</div>' +
     '</a>' : '';
-    // Réservation de créneau (Cal.com) : lien global réglé côté admin
-    var bookingLink = (appData.bookingLink || '').trim();
-    var bookingHtml = bookingLink ? '<a href="' + esc(bookingLink.startsWith('http') ? bookingLink : 'https://'+bookingLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:rgba(242,229,194,0.14);color:var(--paille);border:1px solid rgba(242,229,194,0.25)">' +
+    // Réservation de créneau (Cal.com) : lien global réglé côté admin, proposé
+    // uniquement aux offres qui incluent des points réguliers (cpBookingUrl).
+    var bookingLink = cpBookingUrl();
+    var bookingHtml = bookingLink ? '<a href="' + esc(bookingLink) + '" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 13px;border-radius:var(--radius-2);text-decoration:none;background:rgba(242,229,194,0.14);color:var(--paille);border:1px solid rgba(242,229,194,0.25)">' +
       cpIcon('calendar',15,'color:var(--paille)') +
       '<div style="line-height:1.15;flex:1;min-width:0">' +
         '<div style="font-family:var(--font-micro);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase">Réserver un créneau</div>' +
@@ -2395,8 +2413,7 @@ function stbFmtMin(min) {
     if (portalTb) pills.push(mPill('Ressources', 'cpGoHub()', currentView === 'hub', 0));
     // Réservation de créneau (Cal.com) : lien global, visible partout (le
     // panneau latéral est masqué sur mobile, on l'ajoute aussi ici).
-    var bkLink = (appData.bookingLink || '').trim();
-    var bkUrl = bkLink ? (bkLink.startsWith('http') ? bkLink : 'https://' + bkLink) : '';
+    var bkUrl = cpBookingUrl();
     if (bkUrl) pills.push('<a class="cp-pill" href="' + esc(bkUrl) + '" target="_blank" rel="noreferrer" style="text-decoration:none">📅 Réserver</a>');
     var mobilePills = '<div class="cp-pills">' + pills.join('') + '</div>';
     var pageTitles = { home:'Accueil', project:'Votre projet', messages:'Messagerie', hub:'Ressources', fichiers:'Fichiers', ressources:'Ressources', interventions:'Tickets', cal:'Calendrier partage', stats:'Statistiques', questionnaires:'Questionnaires' };
