@@ -3268,19 +3268,33 @@ function stbFmtMin(min) {
       }
       var globalPct = creations.length ? Math.round(creations.reduce(function(s,c){ return s + crProgress(c); }, 0) / creations.length) : 0;
 
-      // Carte « À vous » : prochaine version en attente de validation.
+      // Carte « À vous ». D'abord une version qui attend un retour, car on sait
+      // alors pointer la création concernée. Sinon la première action en attente
+      // TOUTES CATÉGORIES confondues (questionnaire, étape, date proposée), via
+      // cpCollectActions, la même source que la carte « À toi de jouer » des
+      // autres espaces. Cette carte ne regardait que les livrables : elle
+      // annonçait « rien à valider » à une cliente qui avait un questionnaire
+      // à remplir, avec la pastille « 1 » juste à côté dans le menu.
       var waitV = allDlv.filter(function(d){ return d.status === 'a_valider'; })[0];
       var waitC = waitV ? creations.filter(function(c){ return c.id === waitV.creationId; })[0] : null;
+      var avAct = null;
+      if (!waitV) { try { avAct = cpCollectActions()[0] || null; } catch(e) { avAct = null; } }
       var avCard = waitV
         ? '<div class="cp-sp__card cp-sp__card--cta">' +
             '<p class="cp-sp__kick">' + cpIcon('chat', 15, 'color:var(--terre)') + ' À vous</p>' +
             '<h3 class="cp-sp__hm">Votre retour sur ' + esc(waitC ? waitC.name : (waitV.name || 'un livrable')) + '.</h3>' +
             (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#F8F6F2') + '</button>' : '') +
           '</div>'
-        : '<div class="cp-sp__card cp-sp__card--cta">' +
-            '<p class="cp-sp__kick">' + cpIcon('check-circle', 15, 'color:var(--terre)') + ' À jour</p>' +
-            '<h3 class="cp-sp__hm">Rien à valider pour le moment.</h3>' +
-          '</div>';
+        : (avAct
+          ? '<div class="cp-sp__card cp-sp__card--cta">' +
+              '<p class="cp-sp__kick">' + cpIcon(cpActIcon(avAct.cta), 15, 'color:var(--terre)') + ' À vous</p>' +
+              '<h3 class="cp-sp__hm">' + esc(avAct.label) + '</h3>' +
+              '<button class="cp-sp__cta" onclick="' + avAct.onclick + '">' + esc(avAct.cta) + ' ' + cpIcon('arrow-right', 14, 'color:#F8F6F2') + '</button>' +
+            '</div>'
+          : '<div class="cp-sp__card cp-sp__card--cta">' +
+              '<p class="cp-sp__kick">' + cpIcon('check-circle', 15, 'color:var(--terre)') + ' À jour</p>' +
+              '<h3 class="cp-sp__hm">Rien à valider pour le moment.</h3>' +
+            '</div>');
       var vpCard = '<div class="cp-sp__card cp-sp__card--brown">' +
           '<div class="cp-sp__cardtop">' +
             '<p class="cp-sp__kick">Votre projet</p>' +
