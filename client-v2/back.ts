@@ -253,7 +253,11 @@ async function handleClientApi(
  * ────────────────────────────────────────────────────────────────────────── */
 
 function json(obj: unknown, status = 200, extra: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...extra } });
+  // `no-store` explicite : l'espace d'une cliente change dès que le studio lui
+  // envoie quelque chose. Sans en-tête, on dépendait du fait qu'aucun cache ne
+  // s'en mêle par défaut ; on l'affirme plutôt que de l'espérer. `extra` peut
+  // toujours l'écraser (les téléchargements de fichiers ont leur propre règle).
+  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra } });
 }
 function genHex(bytes: number): string {
   const b = new Uint8Array(bytes);

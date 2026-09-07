@@ -8217,10 +8217,52 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       if (msgBtn) { var b = document.createElement('span'); b.className = 'cp-nav__badge'; b.textContent = String(unreadNow); msgBtn.appendChild(b); }
     }
   }
+  // Ingestion d'un payload frais. UNE seule implémentation, partagée par le
+  // rafraîchissement au retour d'onglet ET par le poll : les deux doivent lire
+  // les données exactement pareil. Avant, le poll testait « data.projects », qui
+  // n'existe QUE pour les espaces multi-projets : chez une cliente à une seule
+  // offre il abandonnait à chaque passage, donc rien n'arrivait jamais tout seul.
+  function applyFreshData(data) {
+    if (!data || data.wrongCode || data.locked) return false;
+    var norm = normalizeAppData(data);
+    if (!norm) return false;
+    var h = data.home || {};
+    norm.home = { intro:(typeof h.intro==='string'?h.intro:null), blocks:Array.isArray(h.blocks)?h.blocks:[], hidden:(h.hidden&&typeof h.hidden==='object')?h.hidden:{}, banner:(h.banner&&typeof h.banner==='object')?h.banner:{} };
+    appData = norm;
+    convData = Array.isArray(data.conversation) ? data.conversation : convData;
+    cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : cpHolidays;
+    var ids = (appData.projects||[]).map(function(p){ return p.project.id; });
+    if (ids.indexOf(currentId) === -1 && ids.length) currentId = ids[0];
+    return true;
+  }
+  // Empreinte de ce que la cliente doit voir ARRIVER sans recharger : un
+  // questionnaire assigné, une étape qui attend son retour, un message non lu.
+  function cpActionSig() {
+    var q = ((appData && appData.questionnaires) || []).map(function(x){ return x.id + ':' + x.status; }).join(',');
+    var v = ((appData && appData.projects) || []).map(function(pd){
+      var p = (pd && pd.project) || {};
+      var st = (p.steps || []).filter(function(s){ return s.status === 'waiting_client'; }).length;
+      return (p.id || '') + ':' + st;
+    }).join('|');
+    var u = 0; try { u = totalUnread(); } catch(e) {}
+    return q + '#' + v + '#' + u;
+  }
+  // On ne re-rend JAMAIS sous les doigts de la cliente : pas pendant qu'elle
+  // remplit un questionnaire, pas avec une fiche ouverte, pas en pleine saisie.
+  function cpCanRerender() {
+    if (_isAdminEdit) return false;
+    if (typeof document === 'undefined') return false;
+    if (cpQnrOpenId) return false;
+    if (document.querySelector('.cp-task-overlay')) return false;
+    if (document.querySelector('[class*="overlay"], [class*="modal"], dialog[open]')) return false;
+    var ae = document.activeElement;
+    if (ae && (/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable)) return false;
+    return true;
+  }
   var _pollBusy = false;
   function startPoll() {
-    // Rafraîchissement doux : badge de messages non lus partout, et fil de
-    // conversation ouvert mis à jour sans toucher au brouillon en cours.
+    // Rafraîchissement doux : badges, fil de conversation ouvert, et apparition
+    // de ce qui vient d'être envoyé par le studio (questionnaire, validation).
     setInterval(function() {
       if (!API_BASE || !appData) return;
       if (_isAdminEdit) return; // pas de remplacement des données pendant l'édition
@@ -8231,15 +8273,18 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       fetch(API_BASE, { headers: headers })
         .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
         .then(function(data) {
-          if (!data || data.wrongCode || data.locked || !data.projects) return;
-          appData = data;
+          var before = cpActionSig();
+          if (!applyFreshData(data)) return;
           cpRefreshBadge();
           // Messagerie ouverte : mise à jour en direct (messages + fichiers reçus).
           if (typeof window.stbInboxRefresh === 'function') { try { window.stbInboxRefresh(); } catch(e){} }
+          // Quelque chose d'actionnable est arrivé : on rafraîchit l'écran pour
+          // qu'il apparaisse tout de suite, sans rechargement manuel.
+          if (cpActionSig() !== before && cpCanRerender()) renderShell();
         })
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
-    }, 90000);
+    }, 45000);
     wireReturnRefresh();
   }
 
@@ -8258,19 +8303,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     try { var sc = sessionStorage.getItem('_sc'); if (sc) headers['x-space-code'] = sc; } catch(e) {}
     fetch(API_BASE, { headers: headers })
       .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(data){
-        if (!data || data.wrongCode || data.locked) return;
-        var norm = normalizeAppData(data);
-        if (!norm) return;
-        var h = data.home || {};
-        norm.home = { intro:(typeof h.intro==='string'?h.intro:null), blocks:Array.isArray(h.blocks)?h.blocks:[], hidden:(h.hidden&&typeof h.hidden==='object')?h.hidden:{}, banner:(h.banner&&typeof h.banner==='object')?h.banner:{} };
-        appData = norm;
-        convData = Array.isArray(data.conversation) ? data.conversation : convData;
-        cpHolidays = Array.isArray(data.studioHolidays) ? data.studioHolidays : cpHolidays;
-        var ids = (appData.projects||[]).map(function(p){ return p.project.id; });
-        if (ids.indexOf(currentId) === -1 && ids.length) currentId = ids[0];
-        renderShell();
-      })
+      .then(function(data){ if (applyFreshData(data)) renderShell(); })
       .catch(function(){});
   }
   function wireReturnRefresh() {
