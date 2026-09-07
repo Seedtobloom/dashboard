@@ -159,10 +159,10 @@
   // « Erreur, réessaie » sans comprendre que le fichier est trop lourd.
   var ADM_MAX_MB = 100;
   function admTooBig(f) { return (f && typeof f.size === 'number' && f.size > ADM_MAX_MB * 1024 * 1024) ? Math.round(f.size / 1048576) : 0; }
-  function admBigMsg(f) { if (!admTooBig(f)) return ''; var mo = (f.size / 1048576).toFixed(1); return 'Ce fichier fait ' + mo + ' Mo, au-delà du plafond de ' + ADM_MAX_MB + ' Mo (limite technique). Pour un livrable lourd (zip, vidéo…), dépose-le en lien via le bouton « Lien » (WeTransfer, Drive, Figma…) — la cliente pourra le valider pareil.'; }
+  function admBigMsg(f) { if (!admTooBig(f)) return ''; var mo = (f.size / 1048576).toFixed(1); return 'Ce fichier fait ' + mo + ' Mo, au-delà du plafond de ' + ADM_MAX_MB + ' Mo (limite technique). Pour un livrable lourd (zip, vidéo…), dépose-le en lien via le bouton « Lien » (WeTransfer, Drive, Figma…), la cliente pourra le valider pareil.'; }
   // Ne jette jamais sur une réponse non-JSON (413/500 HTML) : renvoie {ok,status,d}.
   function admUploadResult(r) { return r.text().then(function (t) { var d = {}; try { d = t ? JSON.parse(t) : {}; } catch (e) { d = {}; } return { ok: r.ok, status: r.status, d: d }; }); }
-  function admUploadErrMsg(status, base) { return status === 413 ? 'Fichier trop lourd (' + ADM_MAX_MB + ' Mo max). Pour un fichier volumineux (zip, vidéo…), dépose-le en lien (WeTransfer, Drive, Figma…).' : (base || 'Erreur — envoi impossible, réessaie'); }
+  function admUploadErrMsg(status, base) { return status === 413 ? 'Fichier trop lourd (' + ADM_MAX_MB + ' Mo max). Pour un fichier volumineux (zip, vidéo…), dépose-le en lien (WeTransfer, Drive, Figma…).' : (base || 'Erreur : envoi impossible, réessaie'); }
   // Confirmation oui / non stylée pour les boutons importants (envois d'e-mail, suppressions…)
   function admConfirm(opts, onYes) {
     opts = opts || {};
@@ -731,7 +731,7 @@
   // Sélecteur d'insertion depuis un composeur (msg-<pid> ou gmsg).
   function qrPick(targetId) {
     var open = function () {
-      if (!QREPLIES.length) { toast('Aucune réponse rapide — ajoute-en dans Réglages ▸ Réponses rapides.'); return; }
+      if (!QREPLIES.length) { toast('Aucune réponse rapide : ajoute-en dans Réglages ▸ Réponses rapides.'); return; }
       var ov = document.createElement('div'); ov.className = 'admconfirm';
       ov.innerHTML = '<div class="admconfirm__box" style="max-width:520px;text-align:left">' +
         '<div class="admconfirm__title">Insérer une réponse rapide</div>' +
@@ -817,7 +817,7 @@
   }
   function bookingSave() {
     jpost('/api/booking-link', { link: (el('bk-link').value || '').trim() }, 'PUT').then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) { if (res.ok) toast(res.d.link ? 'Lien enregistré — bouton visible chez tes clients ✓' : 'Lien retiré, bouton masqué'); else toast((res.d && res.d.error) || 'Erreur'); })
+      .then(function (res) { if (res.ok) toast(res.d.link ? 'Lien enregistré : bouton visible chez tes clients ✓' : 'Lien retiré, bouton masqué'); else toast((res.d && res.d.error) || 'Erreur'); })
       .catch(function () { toast('Erreur'); });
   }
   /* ── Congés du studio ── */
@@ -880,7 +880,7 @@
         'Utilise un <b>mot de passe pour app</b> (jamais ton mot de passe Apple principal) : <a href="https://account.apple.com" target="_blank" rel="noopener" style="color:var(--glycine-900)">account.apple.com</a> → Connexion et sécurité → Mots de passe des apps → en créer un.' +
       '</div>' +
       '<div class="field"><label>Apple ID (e-mail)</label><input class="inp" id="cal-user" value="' + esc(d.user || '') + '" placeholder="prenom@icloud.com" style="' + S + '"></div>' +
-      '<div class="field mt"><label>Mot de passe pour app</label><input class="inp" id="cal-pass" type="password" placeholder="' + (on ? '•••• enregistré — laisser vide pour ne pas changer' : 'xxxx-xxxx-xxxx-xxxx') + '" style="' + S + '"></div>' +
+      '<div class="field mt"><label>Mot de passe pour app</label><input class="inp" id="cal-pass" type="password" placeholder="' + (on ? '•••• enregistré : laisser vide pour ne pas changer' : 'xxxx-xxxx-xxxx-xxxx') + '" style="' + S + '"></div>' +
       '<div class="field mt"><label>Nom du calendrier (optionnel)</label><input class="inp" id="cal-name" value="' + esc(d.calName || '') + '" placeholder="Vide = tous tes calendriers (Personnel, Travail…)" style="' + S + '"></div>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">Laisse vide pour afficher les rendez-vous de <b>tous</b> tes calendriers iCloud. Indique un nom seulement si tu veux te limiter à un seul.</div>' +
       '<div class="row mt" style="gap:8px;flex-wrap:wrap;align-items:center">' +
@@ -964,7 +964,7 @@
     revision:  { icon: 'stepStudio',      label: 'Livrable à revoir',      ic: '#8a4a2c', bg: '#F0E2D6' }
   };
   function renderInbox() {
-    setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes — traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes. Traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { INBOX_D = d; renderInboxBody(); }).catch(showError);
   }
   function fmtMin(m) { m = Math.round(m || 0); if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + r : ''); }
@@ -988,7 +988,7 @@
   function renderInboxBody() {
     var b = el('inbox-body'); if (!b) return;
     var items = inboxItems();
-    if (!items.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card);max-width:720px"><div class="empty" style="padding:34px 20px">🌾 Boîte vide — tout est traité.<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Les demandes, questionnaires, retours, commentaires et validations de tes clientes arriveront ici.</div></div></div>'; return; }
+    if (!items.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card);max-width:720px"><div class="empty" style="padding:34px 20px">🌾 Boîte vide : tout est traité.<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Les demandes, questionnaires, retours, commentaires et validations de tes clientes arriveront ici.</div></div></div>'; return; }
     var today = new Date(); today.setHours(0, 0, 0, 0);
     function bucket(at) { if (!at) return 'Plus tôt'; var t = new Date(at); if (isNaN(t)) return 'Plus tôt'; t.setHours(0, 0, 0, 0); var diff = Math.round((today - t) / 86400000); if (diff <= 0) return "Aujourd'hui"; if (diff === 1) return 'Hier'; if (diff <= 7) return 'Cette semaine'; return 'Plus tôt'; }
     var order = ["Aujourd'hui", 'Hier', 'Cette semaine', 'Plus tôt'], groups = {};
@@ -1094,7 +1094,7 @@
         toast('Envoi de la version…');
         api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
           .then(function (res) { cleanup(); if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-          .catch(function () { cleanup(); toast('Erreur — version non envoyée, réessaie'); });
+          .catch(function () { cleanup(); toast('Erreur : version non envoyée, réessaie'); });
       });
     };
     inp.click();
@@ -1117,7 +1117,7 @@
       notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
         jpost('/api/clients/' + key + '/deliverables', { projectId: project, creationId: cid || null, taskId: tid || null, link: url, name: name, notify: notify }).then(admUploadResult)
           .then(function (res) { if (res.ok) { toast('Nouvelle version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); inboxResendDone(key, project, oldId); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-          .catch(function () { toast('Erreur — version non envoyée, réessaie'); });
+          .catch(function () { toast('Erreur : version non envoyée, réessaie'); });
       });
     };
     document.body.appendChild(ov);
@@ -1256,7 +1256,7 @@
     var souhait = curDue ? '<strong>' + esc(String(curDue).slice(0, 10).split('-').reverse().join('/')) + '</strong>' : 'une date';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:440px">' +
       '<div class="admconfirm__title">Proposer une autre date</div>' +
-      '<div class="admconfirm__msg">La cliente souhaitait ' + souhait + '. Proposez la date qui vous convient — elle sera prévenue et pourra l\'accepter depuis son espace.</div>' +
+      '<div class="admconfirm__msg">La cliente souhaitait ' + souhait + '. Proposez la date qui vous convient : elle sera prévenue et pourra l\'accepter depuis son espace.</div>' +
       '<div class="field mt"><label>Nouvelle date proposée</label><input id="ipd-date" class="inp" type="date" value="' + esc((curDue || '').slice(0, 10)) + '"></div>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button><button class="btn btn--dark btn--sm" data-yes>Proposer</button></div>' +
     '</div>';
@@ -1323,7 +1323,7 @@
   function atUrg(x) { if (x.status === 'review' || x.status === 'waiting_client') return 'attente'; if (!x.dueDate) return 'plan'; var n = atDdiff(x.dueDate); return n < 0 ? 'late' : n === 0 ? 'today' : n <= 7 ? 'week' : 'later'; }
   function atList() { return ((AT_D && AT_D.deadlines) || []).slice(); }
   function renderAllTasks() {
-    setMain(topbar('Toutes les tâches', '', 'Tout ton travail client au même endroit — filtre, trie, repère-toi') + '<div class="wrap atwrap" id="at-body" style="max-width:1000px"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>' +
+    setMain(topbar('Toutes les tâches', '', 'Tout ton travail client au même endroit. Filtre, trie, repère-toi') + '<div class="wrap atwrap" id="at-body" style="max-width:1000px"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>' +
       '<div class="at-bk" id="at-bk" onclick="ADM.atClose()"></div><div class="at-dr" id="at-dr"><div id="at-dr-in"></div></div>');
     api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { AT_D = d; renderAllTasksBody(); }).catch(showError);
   }
@@ -1740,7 +1740,7 @@
         var low = !over && f.remaining <= f.base * 0.2;
         var restCol = over ? '#8a4a2c' : (low ? 'var(--orange)' : 'var(--green)');
         var restLabel = over ? ('dépassé de ' + Math.abs(f.remaining) + ' h') : ('reste ' + f.remaining + ' h');
-        var lossLine = f.lossAlert ? '<div class="micro" style="margin-top:5px;text-transform:none;letter-spacing:0;color:#824426;font-weight:600">⚠️ ~' + f.lost3 + ' h perdues sur 3 mois — forfait à revoir avec la cliente</div>' : '';
+        var lossLine = f.lossAlert ? '<div class="micro" style="margin-top:5px;text-transform:none;letter-spacing:0;color:#824426;font-weight:600">⚠️ ~' + f.lost3 + ' h perdues sur 3 mois : forfait à revoir avec la cliente</div>' : '';
         return '<div class="prow" style="display:block;padding:12px 4px">' +
           '<div class="between" style="align-items:baseline">' + nameLink +
             '<span style="font-weight:700;font-size:15px;color:' + restCol + '">' + restLabel + '</span></div>' +
@@ -1898,7 +1898,7 @@
           return '<div class="wday"' + drop + '><div class="wday__h">' + p2DayLabel(k) + '</div><div class="wday__body">' + P2_days[k].join('') + '</div></div>';
         }
         // Jour vide : une seule ligne fine (reste une cible de dépôt).
-        return '<div class="wday wday--empty"' + drop + '><span class="wday__h">' + p2DayLabel(k) + '</span><span class="wday__free">libre — dépose une tâche</span></div>';
+        return '<div class="wday wday--empty"' + drop + '><span class="wday__h">' + p2DayLabel(k) + '</span><span class="wday__free">libre : dépose une tâche</span></div>';
       }
       // ── « La semaine » reconstruite a l'identique de la maquette ──
       var wcap = d.weeklyCapacity || 0;
@@ -1972,11 +1972,11 @@
       } else if (PRIO_TAB === 'engagement') {
         tabBody = '<div class="card infocard" style="background:var(--card)"><h3>Engagement des clientes</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Qui a des éléments « dans son camp » (à valider, à réviser, à renvoyer) et depuis combien de temps. Celles au-delà de 5 jours méritent une relance plus personnelle.</div>' +
-          (engList.map(engRow).join('') || '<div class="empty">Aucune cliente n\'a d\'action en attente — tout est de ton côté.</div>') + '</div>';
+          (engList.map(engRow).join('') || '<div class="empty">Aucune cliente n\'a d\'action en attente : tout est de ton côté.</div>') + '</div>';
       } else if (PRIO_TAB === 'risks') {
         tabBody = '<div class="card"><h3 style="color:#8a4a2c">Risques · 7 jours</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ce qui menace de glisser : en retard, ou pas encore démarré avec une échéance proche. Anticipe pour éviter le coup de feu.</div>' +
-          (riskItems.map(riskRow).join('') || '<div class="empty">Aucun risque — tout est sous contrôle.</div>') + '</div>';
+          (riskItems.map(riskRow).join('') || '<div class="empty">Aucun risque : tout est sous contrôle.</div>') + '</div>';
       } else if (PRIO_TAB === 'revisions') {
         tabBody = '<div class="card"><h3 style="color:#8a4a2c">Révisions demandées</h3>' +
           '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--muted)">Le client a demandé une révision. Déposez la nouvelle version pour repasser le livrable en « à valider ».</div>' +
@@ -1993,7 +1993,7 @@
           (monthlyCap > 0
             ? '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-family:var(--font-display);font-style:italic;font-size:32px;color:' + (capOver ? '#8a4a2c' : 'var(--terre)') + '">' + engagedMonthly + ' h</span><span class="micro" style="text-transform:none;letter-spacing:0">engagées sur ~' + monthlyCap + ' h · ' + capPct + '%</span></div>' +
               '<div class="bar' + (capOver ? ' over' : '') + '"><span style="width:' + capPct + '%"></span></div>' +
-              (capOver ? '<div class="micro" style="color:#8a4a2c;margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité — prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
+              (capOver ? '<div class="micro" style="color:#8a4a2c;margin-top:7px;text-transform:none;letter-spacing:0">Au-delà de ta capacité : prudence sur les nouveaux engagements.</div>' : '<div class="micro" style="color:var(--muted);margin-top:7px;text-transform:none;letter-spacing:0">Il te reste ~' + (Math.round((monthlyCap - engagedMonthly) * 10) / 10) + ' h de marge ce mois.</div>')
             : '<div style="font-family:var(--font-display);font-style:italic;font-size:28px;color:var(--terre)">' + engagedMonthly + ' h engagées ce mois</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Renseigne ta capacité hebdomadaire pour voir ta marge.</div>') +
         '</div>';
         tabBody = '<div class="pcols">' + capCard +
@@ -2007,7 +2007,7 @@
       var qd = d.qnrDone || [];
       var qnrDoneCard = qd.length ? '<div class="card infocard" style="background:var(--card)">' +
         '<h3><span class="infocard__dot" style="background:#CD8F6E"></span>Questionnaires reçus · ' + qd.length + '</h3>' +
-        '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ces clientes ont complété un questionnaire — consulte leurs réponses.</div>' +
+        '<div class="micro mb" style="text-transform:none;letter-spacing:0;color:var(--terre-600)">Ces clientes ont complété un questionnaire : consulte leurs réponses.</div>' +
         qd.map(function (q) {
           return '<div class="file" style="gap:10px"><span class="nm">' + esc(q.name) + ' <span class="micro" style="color:var(--muted)">· ' + esc(q.client) + (q.completedAt ? ' · ' + fmtDate(q.completedAt) : '') + '</span></span>' +
             '<button class="btn btn--dark btn--sm" onclick="ADM.prioConsultQnr(\'' + q.key + '\',\'' + q.id + '\')">Consulter</button></div>';
@@ -2053,7 +2053,7 @@
       var pjDomRows = P2_late.map(function (x) { return pjRow(x, true); }).join('') + P2_today.map(function (x) { return pjRow(x, false); }).join('');
       var pjDom = '<div class="pj-dom"><div class="pj-dom__h"><span class="pj-hic"><svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><h2>À faire aujourd\'hui</h2><span class="n">' + (P2_late.length + P2_today.length) + '</span></div>' +
         (pjDomRows ? '<p class="pj-hint">Dans l\'ordre, du haut vers le bas : commence par le retard, puis le reste de ta journée.</p>' + pjDomRows
-                   : '<div class="pj-empty">Rien d\'imposé aujourd\'hui — tu peux prendre de l\'avance sur la semaine.</div>') + '</div>';
+                   : '<div class="pj-empty">Rien d\'imposé aujourd\'hui, tu peux prendre de l\'avance sur la semaine.</div>') + '</div>';
       var nInbox = inboxUnifiedCount(d), nTickets = mine.filter(function (x) { return x.kind === 'ticket'; }).length;
       function pjIndic(cls, ic, title, sub, badge, bcls, onclick) {
         return '<button class="pj-indic' + (cls ? ' ' + cls : '') + '" type="button"' + (onclick ? ' onclick="' + onclick + '"' : '') + '>' +
@@ -2543,7 +2543,7 @@
           '<select class="inp" id="mte-energy" style="flex:1" title="Énergie">' + enOpts + '</select>' +
           '<select class="inp" id="mte-impact" style="flex:1" title="Impact">' + impOpts + '</select></div>' +
         '<input class="inp" id="mte-tags" value="' + esc(tagsVal) + '" placeholder="Étiquettes séparées par des virgules">' +
-        '<div class="field"><label>Temps passé (minutes) — corrige le chrono si besoin</label><input class="inp" id="mte-time" type="number" min="0" step="5" value="' + Math.round((t.timeSpentSeconds || 0) / 60) + '" style="width:140px"></div>' +
+        '<div class="field"><label>Temps passé (minutes) : corrige le chrono si besoin</label><input class="inp" id="mte-time" type="number" min="0" step="5" value="' + Math.round((t.timeSpentSeconds || 0) / 60) + '" style="width:140px"></div>' +
         '<textarea class="inp" id="mte-notes" style="min-height:64px;resize:vertical" placeholder="Note, lien (https://…), détails…">' + esc(t.notes || '') + '</textarea>' +
       '</div>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
@@ -2706,7 +2706,7 @@
       r: ["« Des projets / échéances à venir ? »", "🔑 « Dans 6 mois, qu'est-ce qui te ferait dire que ça a été utile ? »"],
       e: "professionnaliser · gagner du temps · cohérence · se différencier · nouveaux clients · événement" },
     { n: '5', t: 'Je reformule → je propose', q: "« Si je résume : vous avez [X], la difficulté est [Y], vous aimeriez [Z]. C'est bien ça ? »",
-      r: ["🌱 Identité — souci d'image / charte", "🌿 Supports — identité OK + besoin ponctuel", "🌳 360° — besoins récurrents + peu de temps", "Puis : « Est-ce que ça correspond ? »"] }
+      r: ["🌱 Identité, souci d'image / charte", "🌿 Supports, identité OK + besoin ponctuel", "🌳 360°, besoins récurrents + peu de temps", "Puis : « Est-ce que ça correspond ? »"] }
   ];
   var CALL_REBONDS = [
     ['🟢', 'Un fait', '« Concrètement ? »'],
@@ -2754,7 +2754,7 @@
   // Trame d'appel « Découverte projet print » (kakémonos H2Eau) — pré-remplie.
   function kakemonoTrame() {
     var L = [
-      "🌱 Découverte projet print — kakémonos",
+      "🌱 Découverte projet print, kakémonos",
       "Fil : Besoin → Valider les 2 kakémonos → Rôle sur le salon → Messages → Planning → Qui décide",
       "",
       "① COMMENCER PAR LE BESOIN",
@@ -2796,7 +2796,7 @@
       "🌱 Trame d'appel découverte",
       "Durée 30 min · Fil : Pourquoi il est là → Où ils en sont → Ce qui coince → Ce qu'ils veulent → Ce que tu proposes → Suite",
       "",
-      "① ACCUEIL — 2 min",
+      "① ACCUEIL · 2 min",
       "Tu peux quasiment lire cette partie.",
       "« Bonjour Victor, merci d'avoir pris le temps pour cet échange ! Comment vas-tu ? »",
       "« Pour te donner le cadre : l'idée aujourd'hui est surtout de mieux comprendre Coup de Pousses, votre fonctionnement et vos enjeux en communication. Et à partir de là, voir si je peux éventuellement vous être utile. »",
@@ -2805,7 +2805,7 @@
       "S'il dit « On a justement des besoins » → « Ah oui, lesquels ? »",
       "S'il dit « Je voulais en savoir plus » → « Bien sûr. Et de votre côté, comment gérez-vous votre communication aujourd'hui ? »",
       "",
-      "② COMPRENDRE LEUR SITUATION — 7 min",
+      "② COMPRENDRE LEUR SITUATION · 7 min",
       "« Est-ce que tu peux me raconter un peu où en est Coup de Pousses aujourd'hui et ce que vous cherchez à développer ? »",
       "⚠️ Ici, tu le laisses parler. Tu notes seulement des mots-clés.",
       "Ex. : développement / collectivités / équipe / recrutement / supports / temps",
@@ -2814,14 +2814,14 @@
       "Équipe → « Qui s'occupe principalement de la communication aujourd'hui ? »",
       "Beaucoup de projets → « Comment vous faites pour gérer toute la communication autour de ces projets ? »",
       "",
-      "③ COMPRENDRE COMMENT ILS PRODUISENT — 5 min",
+      "③ COMPRENDRE COMMENT ILS PRODUISENT · 5 min",
       "« Aujourd'hui, comment ça se passe quand vous avez besoin de créer un nouveau support ? »",
       "Rebonds : « Qui s'en occupe ? » · « Vous avez des modèles déjà prêts ou vous repartez de zéro ? » · « Quels supports créez-vous le plus souvent ? »",
       "« On fait tout en interne » → « Vous avez suffisamment de temps pour le faire comme vous aimeriez ? »",
       "« On utilise Canva » → « Vous avez aujourd'hui une vraie base de templates qui vous fait gagner du temps ? »",
       "« On n'a pas vraiment de méthode » → « Qu'est-ce que ça entraîne concrètement au quotidien ? »",
       "",
-      "④ IDENTIFIER LE PROBLÈME — 7 min",
+      "④ IDENTIFIER LE PROBLÈME · 7 min",
       "« Et aujourd'hui, qu'est-ce qui est le plus compliqué pour vous dans tout ça ? »",
       "→ Tu laisses parler.",
       "« On manque de temps » → « Sur quoi vous en perdez le plus ? » puis « Qu'est-ce que ça vous empêche de faire ? »",
@@ -2829,27 +2829,27 @@
       "« Notre identité commence à dater » → « Qu'est-ce qui te donne cette impression ? » puis « Coup de Pousses a beaucoup évolué depuis sa création ? »",
       "« On n'a pas vraiment de problème » → (ne force pas) « Et s'il y avait quand même une chose à améliorer, ce serait quoi ? »",
       "",
-      "⑤ COMPRENDRE CE QU'ILS VEULENT — 4 min",
+      "⑤ COMPRENDRE CE QU'ILS VEULENT · 4 min",
       "« Et idéalement, qu'est-ce que vous aimeriez avoir à la place ? »",
       "« Qu'est-ce que ça changerait pour vous au quotidien ? »",
       "« Des projets ou échéances particulières dans les prochains mois qui pourraient faire évoluer vos besoins ? »",
       "",
-      "⑥ REVENIR SUR TON ÉTUDE DE CAS — 2 min",
+      "⑥ REVENIR SUR TON ÉTUDE DE CAS · 2 min",
       "« Au fait, tu as eu le temps de regarder l'étude de cas Envol que je t'avais envoyée ? »",
       "Oui → « Qu'est-ce qui t'a parlé dans ce projet ? » puis « Tu retrouves certaines problématiques chez Coup de Pousses ? »",
       "Non → « Aucun souci, je voulais simplement savoir. » (et tu continues)",
       "",
-      "⑦ TA SYNTHÈSE — 2 min",
+      "⑦ TA SYNTHÈSE · 2 min",
       "« Si je résume ce que j'ai compris : aujourd'hui vous [situation]. Votre principale difficulté est [problème], et vous aimeriez surtout [objectif]. C'est bien ça ? »",
       "Le « oui, mais… » est précieux : une dernière info à récupérer.",
       "",
-      "⑧ TA RECOMMANDATION — 2 min",
+      "⑧ TA RECOMMANDATION · 2 min",
       "Problème d'identité → « Je pense que l'identité visuelle serait la piste la plus pertinente : poser un socle graphique clair et cohérent, puis vous donner les outils pour l'utiliser facilement au quotidien. »",
       "Identité OK mais supports → « Je pense qu'il serait plus pertinent de travailler directement sur vos supports et de créer des bases réutilisables. »",
       "Besoins réguliers → « L'accompagnement 360° pourrait être intéressant, parce que votre besoin semble régulier et assez transversal. »",
       "Puis : « Est-ce que ça correspond à ce que tu imaginais en acceptant cet échange ? »",
       "",
-      "⑨ LA SUITE — 1 min",
+      "⑨ LA SUITE · 1 min",
       "Intéressé → « Super. Je reprends ce qu'on s'est dit et je te prépare une proposition adaptée. Je te l'enverrai sous 48 h. »",
       "Hésite → « Bien sûr. Qu'est-ce que tu aimerais encore clarifier avant de pouvoir te positionner ? »",
       "Pas le moment → « Je comprends. Qu'est-ce qui ferait que ce serait le bon moment pour vous ? »",
@@ -3213,7 +3213,7 @@
   function visNameField(c) {
     if (c.category === 'suivi') {
       var picked = c.clientKey && NAV_CLIENTS.filter(function (k) { return k.key === c.clientKey; })[0];
-      var opts = '<option value="">— Choisir une cliente —</option>' +
+      var opts = '<option value="">Choisir une cliente</option>' +
         NAV_CLIENTS.map(function (k) { return '<option value="' + esc(k.key) + '"' + (c.clientKey === k.key ? ' selected' : '') + '>' + esc(clientName(k)) + '</option>'; }).join('') +
         (c.clientKey && !picked ? '<option value="' + esc(c.clientKey) + '" selected>' + esc(c.client || 'Cliente') + '</option>' : '');
       return '<select class="inp" style="flex:1;min-width:160px;font-weight:600" onchange="ADM.visSetClient(\'' + c.id + '\',this.value)">' + opts + '</select>' +
@@ -3258,7 +3258,7 @@
           VIS_TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (c.visioType === t[0] ? ' selected' : '') + '>' + esc(t[1]) + '</option>'; }).join('') + '</select>' +
           (c.visioType ? visTypeChip(c.visioType) : '') + '</div>' +
         '<div class="row" style="gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap"><span class="micro">Date & heure</span><input class="inp" type="datetime-local" style="width:auto" value="' + esc(c.date || '') + '" onchange="ADM.visSet(\'' + c.id + '\',\'date\',this.value)">' +
-          (c.date ? '<button class="btn btn--outline btn--sm" title="Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)" onclick="ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ Dans iCloud — réajouter' : '＋ Ajouter à iCloud') + '</button>' : '') + '</div>' +
+          (c.date ? '<button class="btn btn--outline btn--sm" title="Ajouter ce rendez-vous à ton calendrier iCloud (visible dans Spark)" onclick="ADM.visPushICloud(\'' + c.id + '\')">' + (c.icalPushed ? '✓ Dans iCloud : réajouter' : '＋ Ajouter à iCloud') + '</button>' : '') + '</div>' +
         '<div class="field" style="margin-bottom:20px"><label>Lien pour rejoindre la visio</label><input class="inp" style="width:100%;box-sizing:border-box" value="' + esc(c.meetingUrl || '') + '" placeholder="https://kmeet.infomaniak.com/… (colle le lien de ta salle)" onchange="ADM.visSet(\'' + c.id + '\',\'meetingUrl\',this.value)"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">Un bouton « Rejoindre » apparaîtra sur la visio.</div></div>' +
         tplOpts +
         '<div class="between" style="margin-bottom:10px"><h3 style="margin:0">Déroulé</h3><button class="btn btn--outline btn--sm" onclick="ADM.visStepAdd(\'' + c.id + '\')">+ Étape</button></div>' +
@@ -3354,7 +3354,7 @@
     return b('bold', '<b>B</b>', 'Gras') + b('italic', '<i>I</i>', 'Italique') + b('underline', '<u>U</u>', 'Souligné') + sep +
       b('fontSize', 'A<span style="font-size:9px;vertical-align:super">+</span>', 'Grand texte', '5') + b('fontSize', 'A', 'Texte normal', '3') + b('fontSize', '<span style="font-size:10px">a</span>', 'Petit texte', '2') + sep +
       b('insertUnorderedList', '• Liste', 'Liste à puces') + b('insertOrderedList', '1. Liste', 'Liste numérotée') + sep +
-      sw + sep + b('insertHorizontalRule', '— Séparateur', 'Insérer un séparateur');
+      sw + sep + b('insertHorizontalRule', 'Séparateur', 'Insérer un séparateur');
   }
   function visRichEditor(domId, html, blurCall, minH) {
     var tb = '<div style="position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px;background:var(--surface-2,#f3ede1);border:1.5px solid var(--bone-d);border-bottom:none;border-radius:10px 10px 0 0">' + visBtns(false) + '<input type="color" onchange="ADM.visFmt(\'foreColor\',this.value)" style="width:26px;height:24px;border:none;border-radius:5px;padding:1px;cursor:pointer" title="Couleur personnalisée"></div>';
@@ -3649,7 +3649,7 @@
     var focusMsg, focusTone = 'calm';
     if (overdueA.length) {
       var t0 = overdueA[0]; var billLate = overdueA.filter(billable).length;
-      focusMsg = 'Commence par ' + advTaskLbl(t0) + (billLate ? ' — en retard, et c\'est du <b>facturable</b>. Cale-la ce matin pour rentabiliser ta semaine.' : ' — en retard. Cale-la dans ton prochain créneau libre.');
+      focusMsg = 'Commence par ' + advTaskLbl(t0) + (billLate ? ' : en retard, et c\'est du <b>facturable</b>. Cale-la ce matin pour rentabiliser ta semaine.' : ' : en retard. Cale-la dans ton prochain créneau libre.');
       focusTone = 'attn';
     } else if (over) {
       focusMsg = '<b>Semaine chargée</b> · ' + msHours(weekPlanned) + ' planifiées pour ' + msHours(weekAvail) + ' dispo. Reporte le moins urgent pour garder de la marge.';
@@ -3685,7 +3685,7 @@
     // Éditeur des disponibilités par jour — masqué par défaut, ouvert via le ⚙.
     var capEdit = MS_CAPOPEN ? '<div class="mss-capedit"><div class="mss-capedit__row">' +
       [1, 2, 3, 4, 5].map(function (k) { return '<label>' + MS_DOW[k - 1] + ' (h)<input class="inp" type="number" min="0" max="14" step="0.5" value="' + (MS_DAYS[k] ? (Math.round(MS_DAYS[k] / 60 * 100) / 100) : '') + '" onchange="ADM.msSaveCap(' + k + ',this.value)"></label>'; }).join('') +
-      '</div><div class="mss-capedit__note">Les heures que tu peux consacrer à tes tâches chaque jour — le reste du temps libre est calculé autour de tes blocs iCloud.</div></div>' : '';
+      '</div><div class="mss-capedit__note">Les heures que tu peux consacrer à tes tâches chaque jour : le reste du temps libre est calculé autour de tes blocs iCloud.</div></div>' : '';
 
     // ── Pastille tâche « à caler » (backlog & rail) ──
     function chip(t) {
@@ -3726,7 +3726,7 @@
       var cls = msWt(t), done = t.status === 'done';
       var late = (t.dueDate && t.dueDate.slice(0, 10) < todayIso && !done) ? '<span class="mss-tblock__late">retard</span>' : '';
       return '<div class="mss-tblock' + (done ? ' is-done' : '') + '" draggable="true" ondragstart="ADM.msDragStart(event,\'' + t.id + '\')" ondragend="ADM.msDragEnd()">' +
-        '<button class="mss-chk' + (done ? ' is-on' : '') + '" title="' + (done ? 'Fait — décocher' : 'Marquer comme fait') + '" onclick="ADM.msDone(\'' + t.id + '\',' + (done ? 'false' : 'true') + ')">' + (done ? '✓' : '') + '</button>' +
+        '<button class="mss-chk' + (done ? ' is-on' : '') + '" title="' + (done ? 'Fait : décocher' : 'Marquer comme fait') + '" onclick="ADM.msDone(\'' + t.id + '\',' + (done ? 'false' : 'true') + ')">' + (done ? '✓' : '') + '</button>' +
         '<span class="mss-tblock__dot" style="background:' + msCatColor(cls) + '"></span>' +
         '<span class="mss-tblock__t">' + esc(t.title) + (t.clientName ? ' · ' + esc(t.clientName) : '') + '</span>' + late +
         (t.estMinutes ? '<span class="mss-tblock__min">' + msDur2(t.estMinutes) + '</span>' : '') +
@@ -3817,7 +3817,7 @@
           var lbl = (it.label ? esc(it.label) : 'Libre') + (dur ? ' · ' + msDur2(dur) : '');
           var tHtml = it.tasks.map(tblock).join('');
           return '<div class="mss-wfree" ondragover="ADM.msSlotOver(event,this)" ondragleave="ADM.msDayLeave(this)" ondrop="ADM.msDrop(event,\'' + diso + '\',this)"><div class="mss-wfree__l">' + lbl + '</div>' +
-            (tHtml ? '<div class="mss-wfree__body">' + tHtml + '</div>' : '<div class="mss-wfree__hint">temps libre — déposer une tâche</div>') + '</div>';
+            (tHtml ? '<div class="mss-wfree__body">' + tHtml + '</div>' : '<div class="mss-wfree__hint">temps libre : déposer une tâche</div>') + '</div>';
         }).join('');
         body += tl.done.map(tblock).join('');
         if (!tl.items.length && !tl.done.length) body = '<div class="mss-day__free">Journée qui respire.</div>';
@@ -3834,7 +3834,7 @@
     setMain(topbar('') + html);
   }
   function msDaySelect(days, cur) {
-    var opts = '<option value=""' + (!cur ? ' selected' : '') + '>— à placer</option>';
+    var opts = '<option value=""' + (!cur ? ' selected' : '') + '>À placer</option>';
     for (var i = 0; i < days.length; i++) { var diso = msIso(days[i]); opts += '<option value="' + diso + '"' + (diso === cur ? ' selected' : '') + '>' + MS_DOW[(days[i].getDay() + 6) % 7] + ' ' + days[i].getDate() + '</option>'; }
     return opts;
   }
@@ -4261,7 +4261,7 @@
     var idBlock = '<div id="mt-sec-idee" style="margin-top:22px">' +
       (idees.length
         ? sec('idee', 'Idées', '', idees)
-        : '<div class="sec__h">' + mtSvg('idee', 19) + '<h3>Idées</h3></div><div class="secempty">Note ici tout ce qui te passe par la tête — via « + Nouveau » → Idée.</div>') +
+        : '<div class="sec__h">' + mtSvg('idee', 19) + '<h3>Idées</h3></div><div class="secempty">Note ici tout ce qui te passe par la tête, via « + Nouveau » → Idée.</div>') +
     '</div>';
     return tiles + todayPanel + grid + idBlock;
   }
@@ -4276,7 +4276,7 @@
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:420px;text-align:left"><div class="admconfirm__title">Que veux-tu créer ?</div>' +
       '<div style="margin-top:14px">' +
         opt('task', '✅', 'Une tâche', 'Un truc concret à faire, avec un mode et une durée.') +
-        opt('idee', '💡', 'Une idée', 'À garder sous le coude — aucune date, aucune pression.') +
+        opt('idee', '💡', 'Une idée', 'À garder sous le coude : aucune date, aucune pression.') +
         opt('routine', '↻', 'Une routine', 'Une tâche qui revient (chaque jour, semaine ou mois).') +
       '</div><div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Annuler</button></div></div>';
     function close() { ov.remove(); }
@@ -4315,7 +4315,7 @@
           '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Date limite">Échéance <input class="inp" id="mt-due" type="date" style="width:auto"></label>' +
           '<button class="btn btn--dark" onclick="ADM.myTaskAdd()">Ajouter</button></div>' +
         '<div class="row mt">' +
-          '<select class="inp" id="mt-mode" style="flex:1;min-width:150px" title="Mode de travail — l\'axe qui organise ta page">' + modeOpts + '</select>' +
+          '<select class="inp" id="mt-mode" style="flex:1;min-width:150px" title="Mode de travail : l\'axe qui organise ta page">' + modeOpts + '</select>' +
           '<select class="inp" id="mt-energy" style="flex:1;min-width:130px" title="Énergie / durée ressentie">' + enOpts + '</select>' +
           '<select class="inp" id="mt-impact" style="flex:1;min-width:130px" title="Impact">' + impOpts + '</select>' +
         '</div>' +
@@ -4980,8 +4980,8 @@
   // Classer une révision déjà traitée (sans redéposer) : la sort de « Cette semaine ».
   function revResolve(key, id, project) {
     jpost('/api/clients/' + key + '/deliverables/' + id, { projectId: project || 'partner', resolved: true, seenByAdmin: true }, 'PATCH')
-      .then(function (r) { if (r && r.ok) { toast('Révision classée ✓'); refreshPriorities(); if (CURKEY === key) refreshClient(); } else toast('Erreur — réessaie'); })
-      .catch(function () { toast('Erreur — réessaie'); });
+      .then(function (r) { if (r && r.ok) { toast('Révision classée ✓'); refreshPriorities(); if (CURKEY === key) refreshClient(); } else toast('Erreur, réessaie'); })
+      .catch(function () { toast('Erreur, réessaie'); });
   }
   function prioAddDlv(key, id) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
@@ -4997,7 +4997,7 @@
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
         .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; refreshPriorities(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-        .catch(function () { cleanup(); toast('Erreur — livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
+        .catch(function () { cleanup(); toast('Erreur, livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
       });
     };
     inp.click();
@@ -5031,7 +5031,7 @@
             toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; refreshPriorities();
           } else toast(admUploadErrMsg(res.status, res.d && res.d.error));
         })
-        .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
+        .catch(function () { toast('Erreur, livrable non envoyé, réessaie'); });
       });
     };
     ov.querySelector('[data-yes]').onclick = send;
@@ -5223,8 +5223,8 @@
   function prioSetDoDate(key, id, iso) {
     if (PRIO_D && Array.isArray(PRIO_D.deadlines)) { var it = PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0]; if (it) { it.doDate = iso; renderPrioBody(PRIO_D); } }
     jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', doDate: iso }, 'PATCH').then(function (r) {
-      if (r.ok) { toast('Placé au ' + fmtDate(iso)); refreshPriorities(); } else { toast('Erreur — réessaie'); refreshPriorities(); }
-    }).catch(function () { toast('Erreur — réessaie'); });
+      if (r.ok) { toast('Placé au ' + fmtDate(iso)); refreshPriorities(); } else { toast('Erreur, réessaie'); refreshPriorities(); }
+    }).catch(function () { toast('Erreur, réessaie'); });
   }
   // Retirer le jour de travail perso (revenir au placement par échéance).
   function prioClearDoDate(key, id) {
@@ -5389,7 +5389,7 @@
     jpost('/api/clients/' + CURKEY + '/edit-token', {}).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.etk) { toast('Erreur'); return; }
       copy('?edit=1&etk=' + d.etk);
-      toast('Code copié — colle-le à la fin de l\'adresse de l\'espace client');
+      toast('Code copié, colle-le à la fin de l\'adresse de l\'espace client');
     }).catch(function () { toast('Erreur'); });
   }
 
@@ -5695,7 +5695,7 @@
           '<button class="pbtn" title="Descendre"' + (idx === items.length - 1 ? ' disabled style="opacity:0.3"' : '') + ' onclick="ADM.qnMove(\'' + d.id + '\',\'' + q.id + '\',1)">↓</button>' +
           '<button class="pbtn" style="color:#8d2b21" onclick="ADM.qnDel(\'' + d.id + '\',\'' + q.id + '\')">×</button>' +
         '</div>' +
-        '<textarea class="inp" placeholder="Aide / précisions (exemples…) — optionnel" style="width:100%;box-sizing:border-box;min-height:40px;resize:vertical;font-size:13px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
+        '<textarea class="inp" placeholder="Aide / précisions (exemples…), optionnel" style="width:100%;box-sizing:border-box;min-height:40px;resize:vertical;font-size:13px" onchange="ADM.qnSet(\'' + d.id + '\',\'' + q.id + '\',\'help\',this.value)">' + esc(q.help || '') + '</textarea>' +
         (withOpts ? '<div style="margin-top:8px"><div class="micro" style="text-transform:none;letter-spacing:0;margin-bottom:3px">Choix proposés (une ligne = un choix)</div><textarea class="inp" style="width:100%;box-sizing:border-box;min-height:64px;resize:vertical;font-size:13px" placeholder="Mariage\nChef à domicile\nBuffets…" onchange="ADM.qnSetOptions(\'' + d.id + '\',\'' + q.id + '\',this.value)">' + esc((q.options || []).join('\n')) + '</textarea></div>' : '') +
         (!isSec && ansTxt ? '<div style="margin-top:8px;background:#eef4ea;border:1px solid #cfe0c6;border-radius:8px;padding:8px 10px;font-size:13px;color:var(--terre);white-space:pre-wrap"><span class="micro" style="text-transform:none;letter-spacing:0;color:#3f5a37;display:block;margin-bottom:3px">Réponse de la cliente</span>' + esc(ansTxt) + '</div>' : '') +
       '</div>';
@@ -5749,7 +5749,7 @@
     }).join('');
     var ov = document.createElement('div'); ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left;max-height:88vh;overflow-y:auto">' +
-      '<div class="micro" style="letter-spacing:0.06em">Aperçu — tel que la cliente le voit</div>' +
+      '<div class="micro" style="letter-spacing:0.06em">Aperçu, tel que la cliente le voit</div>' +
       '<div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:var(--terre);margin:2px 0 16px">' + esc(title) + '</div>' +
       (body || '<div class="empty">Aucune question.</div>') +
       '<div class="admconfirm__row"><button class="btn btn--sm" data-no style="background:var(--terre);color:#fff;border-color:var(--terre)">Fermer</button></div></div>';
@@ -5980,7 +5980,7 @@
     var unclassed = livr.filter(function (l) { return !l.creationId; });
     var unclassedHtml = unclassed.length ? '<div class="cg-card" style="margin-top:16px"><div class="cg-lbl">Versions non classées (dépôts d\'avant les créations)</div>' + unclassed.map(verRow).join('') + '</div>' : '';
     return '<div class="card infocard" style="background:#fff"><h3>Créations</h3>' +
-      '<div class="cg-lead">Chaque création (flyer, carte, brochure…) a sa catégorie, son statut et ses versions. Dépose une version par fichier ou par lien — la cliente la retrouve dans son espace pour la valider ou demander une révision.</div>' +
+      '<div class="cg-lead">Chaque création (flyer, carte, brochure…) a sa catégorie, son statut et ses versions. Dépose une version par fichier ou par lien, la cliente la retrouve dans son espace pour la valider ou demander une révision.</div>' +
       '<div class="cg-list">' + listHtml + '</div>' + newcr + unclassedHtml +
     '</div>';
   }
@@ -6168,7 +6168,7 @@
   function renameSupport(pid, name) { jpost('/api/clients/' + CURKEY + '/support/' + pid, { name: name }, 'PATCH').then(function (r) { if (r.ok) { toast('Nom enregistré'); loadClient(); } else toast('Erreur'); }); }
   function addSupport() { var name = (el('new-support-name').value || '').trim(); jpost('/api/clients/' + CURKEY + '/supports', { name: name }).then(function (r) { if (r.ok) { toast('Support ajouté'); loadClient(); } else toast('Erreur'); }); }
   // Ajout rapide d'un support de com depuis la carte « Offres / espaces ».
-  function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Support de com ajouté ✓ — coche « visible » quand la cliente a signé'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
+  function addSupportQuick() { jpost('/api/clients/' + CURKEY + '/supports', { name: 'Support de com' }).then(function (r) { if (r.ok) { toast('Support de com ajouté ✓, coche « visible » quand la cliente a signé'); loadClient(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function delSupport(pid) {
     admConfirm({ title: 'Supprimer ce projet de com ?', message: 'Le projet et tout son contenu (créations, versions, messages) seront supprimés.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
       api('/api/clients/' + CURKEY + '/support/' + pid, { method: 'DELETE' }).then(function (r) { if (r.ok) { toast('Projet supprimé'); refreshClient(); } else toast('Erreur'); });
@@ -6204,7 +6204,7 @@
         toast('Envoi de la version…');
         api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
           .then(function (res) { cleanup(); if (res.ok) { toast('Version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-          .catch(function () { cleanup(); toast('Erreur — version non envoyée, réessaie'); });
+          .catch(function () { cleanup(); toast('Erreur : version non envoyée, réessaie'); });
       });
     };
     inp.click();
@@ -6226,7 +6226,7 @@
       notifyConfirm('Prévenir la cliente par e-mail de cette nouvelle version ?', function (notify) {
         jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'support-' + pid, creationId: cid, link: url, name: name, notify: notify }).then(admUploadResult)
           .then(function (res) { if (res.ok) { toast('Version envoyée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-          .catch(function () { toast('Erreur — version non envoyée, réessaie'); });
+          .catch(function () { toast('Erreur : version non envoyée, réessaie'); });
       });
     };
     document.body.appendChild(ov);
@@ -6274,7 +6274,7 @@
   }
   function addOffer(type) {
     jpost('/api/clients/' + CURKEY + '/offers', { type: type }).then(function (r) {
-      if (r.ok) { toast('Offre ajoutée ✓ — activez-la quand le client a signé'); loadClient(); }
+      if (r.ok) { toast('Offre ajoutée ✓, activez-la quand le client a signé'); loadClient(); }
       else r.json().then(function (d) { toast(d.error || 'Erreur'); }).catch(function () { toast('Erreur'); });
     }).catch(function () { toast('Erreur'); });
   }
@@ -6382,8 +6382,8 @@
     var setup = '<div class="card"><div class="between" style="flex-wrap:wrap;gap:12px"><h3 style="margin:0">Forfait Partenaire créative</h3>' +
       '<div class="row" style="gap:14px;flex-wrap:wrap;align-items:center">' +
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)">Base <input id="pf-h" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.base || 0) + '"> h/mois</label>' +
-        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Heures non utilisées reportées au mois suivant. Par défaut 2 h — augmente-le si tu veux reporter plus.">Report max <input id="pf-cap" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.cap != null ? f.cap : 2) + '"> h</label>' +
-        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Mois où l\'accompagnement a commencé — rien n\'est compté avant. Laisse vide pour détecter automatiquement.">Début <input id="pf-start" class="inp" type="month" style="width:auto" value="' + esc(f.start || '') + '"' + (f.startAuto && !f.start ? ' placeholder="' + esc(f.startAuto) + '"' : '') + '></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Heures non utilisées reportées au mois suivant. Par défaut 2 h. Augmente-le si tu veux reporter plus.">Report max <input id="pf-cap" class="inp" type="number" min="0" step="0.5" style="width:76px" value="' + (f.cap != null ? f.cap : 2) + '"> h</label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;color:var(--terre-600)" title="Mois où l\'accompagnement a commencé, rien n\'est compté avant. Laisse vide pour détecter automatiquement.">Début <input id="pf-start" class="inp" type="month" style="width:auto" value="' + esc(f.start || '') + '"' + (f.startAuto && !f.start ? ' placeholder="' + esc(f.startAuto) + '"' : '') + '></label>' +
         '<button class="btn btn--sm" onclick="ADM.saveForfait()">OK</button>' +
       '</div></div>';
     if (!f.configured) { return setup + '<div class="micro mt" style="text-transform:none;letter-spacing:0;color:var(--muted)">Renseigne un nombre d\'heures par mois pour activer le suivi de consommation et le report.</div></div>' + workSlotsSection(); }
@@ -6510,8 +6510,8 @@
       '<h3 style="margin:0 0 4px;font-size:16px">Contrôle · tout est compté&nbsp;?</h3>' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);line-height:1.55;margin-bottom:6px"><strong>' + _bill.length + ' tâche' + (_bill.length > 1 ? 's' : '') + '</strong> dans le forfait (archivées comprises) · <strong>' + fmtHrs(_billMin / 60) + '</strong> enregistrées au total. Une tâche que tu as faite n\'apparaît pas&nbsp;? Elle est forcément dans un de ces cas :</div>' +
       (noTimeDone.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:#824426;margin:4px 0 2px;font-weight:600">• ' + noTimeDone.length + ' terminée' + (noTimeDone.length > 1 ? 's' : '') + ' sans temps saisi → onglet « Ce mois » pour les renseigner</div>' : '') +
-      (_oos.length ? '<details style="margin-top:6px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#8a4a2c;background:#F0E2D6;border-radius:999px;padding:5px 12px;display:inline-block">• Hors forfait · ' + _oos.length + ' tâche' + (_oos.length > 1 ? 's' : '') + ' avec ' + fmtHrs(_oosMin / 60) + ' (non compté — facturé à part)</summary><div style="margin-top:6px">' + _oos.map(_exLine).join('') + '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Si l\'une devrait compter dans le forfait, rouvre-la et enlève « hors forfait ».</div></div></details>' : '') +
-      (!noTimeDone.length && !_oos.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">✓ Aucune tâche exclue — tout ton travail facturable est compté.</div>' : '') +
+      (_oos.length ? '<details style="margin-top:6px"><summary style="cursor:pointer;list-style:none;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.02em;color:#8a4a2c;background:#F0E2D6;border-radius:999px;padding:5px 12px;display:inline-block">• Hors forfait · ' + _oos.length + ' tâche' + (_oos.length > 1 ? 's' : '') + ' avec ' + fmtHrs(_oosMin / 60) + ' (non compté, facturé à part)</summary><div style="margin-top:6px">' + _oos.map(_exLine).join('') + '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:6px">Si l\'une devrait compter dans le forfait, rouvre-la et enlève « hors forfait ».</div></div></details>' : '') +
+      (!noTimeDone.length && !_oos.length ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">✓ Aucune tâche exclue, tout ton travail facturable est compté.</div>' : '') +
     '</div>';
     var histView = (f.history && f.history.length) ? histBlock : '<div class="card" style="margin-top:0"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Pas encore d\'historique — il se remplit au fil des mois.</div></div>';
     // ── Forfait EXCEPTIONNEL pour un mois (n'affecte que ce mois, pas la base) ──
@@ -6525,11 +6525,11 @@
     var _capH = (f.cap != null ? f.cap : 2);
     var excBlock = '<div class="card" style="margin-top:0">' +
       '<h3 style="margin:0 0 4px;font-size:16px">Report exceptionnel pour un mois</h3>' +
-      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:12px;line-height:1.55">Normalement le report d\'un mois sur l\'autre est plafonné à <strong>' + fmtHrs(_capH) + '</strong>. Pour <strong>un mois précis</strong>, tu peux autoriser un report plus grand (ex. septembre&nbsp;: on reporte 3 h 50). La base (<strong>' + fmtHrs(f.base || 0) + '/mois</strong>) ne change pas — ce mois-là aura <em>base + report saisi</em>.</div>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);margin-bottom:12px;line-height:1.55">Normalement le report d\'un mois sur l\'autre est plafonné à <strong>' + fmtHrs(_capH) + '</strong>. Pour <strong>un mois précis</strong>, tu peux autoriser un report plus grand (ex. septembre&nbsp;: on reporte 3 h 50). La base (<strong>' + fmtHrs(f.base || 0) + '/mois</strong>) ne change pas, ce mois-là aura <em>base + report saisi</em>.</div>' +
       '<div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end">' +
         '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Mois<input id="ovf-mo" class="inp" type="month" value="' + _cm3 + '" style="width:auto"></label>' +
-        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Report — heures<input id="ovf-h" class="inp" type="number" min="0" step="1" style="width:92px" placeholder="3"></label>' +
-        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Report — minutes<input id="ovf-m" class="inp" type="number" min="0" max="59" step="5" style="width:98px" placeholder="50"></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Report, heures<input id="ovf-h" class="inp" type="number" min="0" step="1" style="width:92px" placeholder="3"></label>' +
+        '<label class="micro" style="text-transform:none;letter-spacing:0;display:flex;flex-direction:column;gap:4px;color:var(--terre-600)">Report, minutes<input id="ovf-m" class="inp" type="number" min="0" max="59" step="5" style="width:98px" placeholder="50"></label>' +
         '<button class="btn btn--sm" onclick="ADM.forfaitOverrideAdd()">Appliquer</button>' +
       '</div>' +
       (_ovKeys.length ? '<div style="margin-top:14px"><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:4px">Reports exceptionnels en cours</div>' + _ovRows + '</div>' : '') +
@@ -6631,7 +6631,7 @@
             '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               (t.dueDate ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">Souhaité pour ' + fmtDate(t.dueDate) + '</span>' : '') +
               (t.proposedDueDate
-                ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente</span><button class="btn btn--outline btn--sm" onclick="ADM.ticketProposeDate(\'' + t.id + '\',\'\')">Annuler</button>'
+                ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ', en attente</span><button class="btn btn--outline btn--sm" onclick="ADM.ticketProposeDate(\'' + t.id + '\',\'\')">Annuler</button>'
                 : '<label class="micro" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0">Proposer une autre date <input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.dueDate ? ' value="' + esc(t.dueDate) + '"' : '') + ' onchange="ADM.ticketProposeDate(\'' + t.id + '\',this.value)"></label>') +
             '</div></div>';
       return '<div class="card" style="background:var(--card);padding:20px 22px' + (t.seenByAdmin === false ? ';box-shadow:var(--shadow-2)' : '') + '">' +
@@ -6883,7 +6883,7 @@
         // Report d'échéance : proposé à la cliente, qui doit l'accepter.
         '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
           (t.proposedDueDate
-            ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ' — en attente de la cliente</span>' +
+            ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:#6a4a0b;background:#fbf0d8;padding:5px 11px;border-radius:999px">⏳ Report proposé au ' + fmtDate(t.proposedDueDate) + ', en attente de la cliente</span>' +
               '<button class="btn btn--outline btn--sm" onclick="ADM.taskProposeDate(\'' + t.id + '\',\'\')">Annuler la proposition</button>'
             : '<span class="micro" style="text-transform:none;letter-spacing:0">Proposer un report d\'échéance</span><input class="inp" type="date" style="width:auto;padding:5px 8px"' + (t.dueDate ? ' value="' + esc(t.dueDate) + '"' : '') + ' onchange="ADM.taskProposeDate(\'' + t.id + '\',this.value)"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">la cliente devra l\'accepter</span>') +
         '</div>' +
@@ -7051,7 +7051,7 @@
     notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
       jpost('/api/clients/' + CURKEY + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
         .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast((mins ? 'Livrable envoyé · ' + mins + ' min ajoutées' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-        .catch(function () { toast('Erreur — livrable non envoyé, réessaie'); });
+        .catch(function () { toast('Erreur, livrable non envoyé, réessaie'); });
     });
   }
   function delDeliverable(id) {
@@ -7069,7 +7069,7 @@
     if (!link) { toast('Ajoute d\'abord un lien de révision'); return; }
     notifyConfirm('Envoyer ce lien de révision à la cliente et la prévenir par e-mail ?', function (notify) {
       jpost('/api/clients/' + CURKEY + '/tasks/' + id, { projectId: 'partner', reviewLink: link, status: 'review', logReview: true, notify: notify }, 'PATCH').then(function (r) {
-        if (r.ok) { toast('Lien envoyé — tâche en « À valider »' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast('Erreur');
+        if (r.ok) { toast('Lien envoyé, tâche en « À valider »' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); loadClient(); } else toast('Erreur');
       });
     });
   }
@@ -7083,7 +7083,7 @@
       toast('Envoi du livrable…');
       api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
         .then(function (res) { if (res.ok) { dlvApplyTime(id, mins); toast('Livrable envoyé à ' + cname + (mins ? ' · ' + mins + ' min' : '') + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); refreshClient(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-        .catch(function () { toast('Erreur — livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
+        .catch(function () { toast('Erreur, livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
     });
   }
   function commentsBlock(pid, t) {
@@ -7143,7 +7143,7 @@
       var sm = stMeta[inst.status] || stMeta.assigned;
       var when = inst.completedAt ? ' · le ' + fmtDate(inst.completedAt) : '';
       var hasAns = inst.status === 'completed' || inst.status === 'to_review' || (inst.answers && Object.keys(inst.answers).length);
-      var body = hasAns ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses — la cliente ne l\'a pas encore rempli.</div>';
+      var body = hasAns ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses, la cliente ne l\'a pas encore rempli.</div>';
       var pill = '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + when + '</span>';
       var del = '<button class="btn btn--danger btn--sm" title="Supprimer ce questionnaire" onclick="ADM.qnrDelete(\'' + inst.id + '\',\'' + esc((inst.name || '').replace(/'/g, "\\'")) + '\')">Suppr.</button>';
       var pdf = '<button class="btn btn--outline btn--sm" title="Télécharger en PDF (via Imprimer)" onclick="ADM.qnrExportPdf(\'' + inst.id + '\')">PDF</button>';
@@ -7180,7 +7180,7 @@
       '.qa.empty{color:#5e4a2e;font-style:italic}.qt{font-size:17px;font-style:italic;color:#412F21;margin:18px 0 4px}.qp{font-size:13px;color:#5e4a2e;margin:0 0 8px}' +
       'footer{margin-top:34px;padding-top:14px;border-top:1px solid #e8ddc9;font-size:11px;color:#5e4a2e;text-align:center}' +
       '@media print{body{padding:0}@page{margin:16mm}}';
-    var doc = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc(inst.name || 'Questionnaire') + (cn ? ' — ' + esc(cn) : '') + '</title><style>' + css + '</style></head><body>' +
+    var doc = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc(inst.name || 'Questionnaire') + (cn ? ', ' + esc(cn) : '') + '</title><style>' + css + '</style></head><body>' +
       '<h1>' + esc(inst.name || 'Questionnaire') + '</h1>' +
       '<div class="meta">' + (cn ? esc(cn) : '') + (cn && when ? ' · ' : '') + (when ? 'Complété le ' + esc(when) : '') + '</div>' +
       (inst.description ? '<p style="font-size:13.5px;color:#5e4a2e;margin:-14px 0 22px">' + esc(inst.description) + '</p>' : '') +
@@ -7409,12 +7409,12 @@
       avanHtml = '<div class="tline">' + (total ? steps.map(function (s) {
         var st = stMap[s.status] || 'up';
         return '<div class="tstep ' + st + '"><span class="dm"></span><div class="tstep__t">' + esc(s.title) + '</div><div class="tstep__d">' + (s.date ? 'prévu ' + fmtDate(s.date) : '—') + (s.status === 'done' && s.completedAt ? ' · <b>fait ' + fmtDate(s.completedAt) + '</b>' : '') + '</div></div>';
-      }).join('') : '<div class="prjmuted">Aucune étape encore — ajoute-les dans « Étapes ».</div>') + '</div>';
-      livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Déposer une nouvelle version — ' + esc(l.name || 'livrable'), 'liv']); });
+      }).join('') : '<div class="prjmuted">Aucune étape encore, ajoute-les dans « Étapes ».</div>') + '</div>';
+      livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Déposer une nouvelle version, ' + esc(l.name || 'livrable'), 'liv']); });
       steps.filter(function (s) { return s.status === 'in_progress'; }).forEach(function (s) { todos.push(['Étape', 'Avancer : ' + esc(s.title), 'suivi']); });
-      nextAction = current ? current.title : (nextStep ? nextStep.title : 'Projet à jour — rien dans l\'immédiat.');
+      nextAction = current ? current.title : (nextStep ? nextStep.title : 'Projet à jour, rien dans l\'immédiat.');
       var waitSteps = steps.filter(function (s) { return s.status === 'waiting_client'; });
-      blocker = waitSteps.length ? ('En attente de la cliente — ' + esc(waitSteps[0].title)) : (aValider.length ? ('En attente de validation — ' + esc(aValider[0].name || 'livrable')) : '');
+      blocker = waitSteps.length ? ('En attente de la cliente, ' + esc(waitSteps[0].title)) : (aValider.length ? ('En attente de validation, ' + esc(aValider[0].name || 'livrable')) : '');
       var jst = steps.filter(function (s) { return s.status === 'done' && (s.completedAt || s.date); }).sort(function (a, b) { return String(b.completedAt || b.date).localeCompare(String(a.completedAt || a.date)); }).slice(0, 5);
       jHtml = jst.length ? jst.map(function (s) { return '<div class="jent"><div class="jent__d">' + fmtDate(s.completedAt || s.date) + '</div><div class="jent__t">Étape terminée : ' + esc(s.title) + '.</div></div>'; }).join('') : '<div class="prjmuted">L\'historique s\'écrira au fil des étapes.</div>';
       enbref = '<div class="kv"><span class="k">Offre</span><span class="v">' + esc(label) + '</span></div>' +
@@ -7434,11 +7434,11 @@
       }).join('') : '<div class="prjmuted">Aucune tâche en cours.</div>') + '</div>';
       taches.filter(function (t) { return t.needsRework; }).forEach(function (t) { todos.push(['À retravailler', esc(t.title), 'taches']); });
       taches.filter(function (t) { return t.status === 'in_progress'; }).slice(0, 4).forEach(function (t) { todos.push(['En cours', esc(t.title), 'taches']); });
-      livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Nouvelle version — ' + esc(l.name || 'livrable'), 'taches']); });
+      livr.filter(function (l) { return l.status === 'revision' || l.status === 'refuse'; }).forEach(function (l) { todos.push(['Livrable', 'Nouvelle version, ' + esc(l.name || 'livrable'), 'taches']); });
       if (d.unread) todos.push(['Messages', d.unread + ' message' + (d.unread > 1 ? 's' : '') + ' à lire', 'msg']);
       nextAction = todo0 ? todo0.title : 'Tout est traité côté studio.';
       var reviewN = taches.filter(function (t) { return t.status === 'review'; });
-      blocker = reviewN.length ? (reviewN.length + ' tâche' + (reviewN.length > 1 ? 's' : '') + ' en attente de validation de la cliente') : (aValider.length ? ('En attente de validation — ' + esc(aValider[0].name || 'livrable')) : '');
+      blocker = reviewN.length ? (reviewN.length + ' tâche' + (reviewN.length > 1 ? 's' : '') + ' en attente de validation de la cliente') : (aValider.length ? ('En attente de validation, ' + esc(aValider[0].name || 'livrable')) : '');
       var jt = taches.filter(function (t) { return t.status === 'done' && t.completedAt; }).sort(function (a, b) { return String(b.completedAt).localeCompare(String(a.completedAt)); }).slice(0, 5);
       jHtml = jt.length ? jt.map(function (t) { return '<div class="jent"><div class="jent__d">' + fmtDate(t.completedAt) + '</div><div class="jent__t">Tâche terminée : ' + esc(t.title) + '.</div></div>'; }).join('') : '<div class="prjmuted">L\'historique s\'écrira au fil des tâches terminées.</div>';
       enbref = '<div class="kv"><span class="k">Offre</span><span class="v">' + esc(label) + '</span></div>' +
@@ -7580,7 +7580,7 @@
   function msgUnread(pid, id) {
     api('/api/clients/' + CURKEY + '/message/' + id + '/unread', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: pid }) }).then(function (r) {
       if (!r.ok) { toast('Erreur'); return; }
-      toast('Marqué comme non lu — réapparaîtra dans tes non-lus');
+      toast('Marqué comme non lu, réapparaîtra dans tes non-lus');
       // On ne recharge pas la conversation ici (la ré-ouvrir la remarquerait lue) ;
       // le badge « non lus » se met à jour au prochain rafraîchissement automatique.
     }).catch(function () { toast('Erreur'); });
@@ -7806,7 +7806,7 @@
     var btn = el('up-btn'); btn.disabled = true; btn.textContent = 'Envoi…';
     api('/api/clients/' + CURKEY + '/files', { method: 'POST', body: fd }).then(admUploadResult)
       .then(function (res) { btn.disabled = false; btn.textContent = 'Uploader'; if (res.ok) { toast('Document déposé'); el('up-file').value = ''; loadAllDocs(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
-      .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur — envoi impossible (fichier volumineux ? envoie-le en lien).'); });
+      .catch(function () { btn.disabled = false; btn.textContent = 'Uploader'; toast('Erreur, envoi impossible (fichier volumineux ? envoie-le en lien).'); });
   }
   function delDoc(k) {
     admConfirm({ title: 'Supprimer ce document ?', message: 'Le fichier sera supprimé pour vous et pour le client.', yes: 'Oui, supprimer', no: 'Non', danger: true }, function () {
@@ -8052,7 +8052,7 @@
       var raw = ov.querySelector('#qnr-json-txt').value || '';
       if (!raw.trim()) { toast('Colle d\'abord un JSON'); return; }
       var t;
-      try { t = JSON.parse(raw); } catch (e) { toast('JSON invalide — vérifie le copier-coller'); return; }
+      try { t = JSON.parse(raw); } catch (e) { toast('JSON invalide, vérifie le copier-coller'); return; }
       if (!t || typeof t !== 'object' || Array.isArray(t)) { toast('Le JSON doit être un modèle unique'); return; }
       if (!Array.isArray(t.steps) || !t.steps.length) { toast('Aucune étape trouvée dans ce JSON'); return; }
       // Identifiants neufs + valeurs par défaut sûres pour chaque bloc.
@@ -8161,7 +8161,7 @@
       '</div>' +
       '<div style="padding:20px 24px 90px;max-width:720px">' +
         '<input class="inp" value="' + esc(t.name || '') + '" placeholder="Nom du questionnaire (ex. Questions de démarrage)" style="width:100%;box-sizing:border-box;font-size:20px;font-weight:600;margin-bottom:10px" onchange="ADM.qnrSet(\'' + t.id + '\',\'name\',this.value)">' +
-        '<textarea class="inp" placeholder="Description courte (optionnel) — visible par la cliente en haut du questionnaire" style="width:100%;box-sizing:border-box;min-height:56px;resize:vertical;font-size:14px;line-height:1.5;margin-bottom:14px" onchange="ADM.qnrSet(\'' + t.id + '\',\'description\',this.value)">' + esc(t.description || '') + '</textarea>' +
+        '<textarea class="inp" placeholder="Description courte (optionnel), visible par la cliente en haut du questionnaire" style="width:100%;box-sizing:border-box;min-height:56px;resize:vertical;font-size:14px;line-height:1.5;margin-bottom:14px" onchange="ADM.qnrSet(\'' + t.id + '\',\'description\',this.value)">' + esc(t.description || '') + '</textarea>' +
         '<div class="row" style="gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:22px">' +
           '<span class="row" style="gap:8px;align-items:center"><span class="micro">Catégorie</span>' + catSel + '</span>' +
           '<span class="row" style="gap:6px;align-items:center"><span class="micro">Couleur</span>' + colorDots + '</span>' +
@@ -8328,7 +8328,7 @@
       else t.steps = (t.steps || []).concat(parsed);
       close();
       qnrSave(); renderQnrDrawer(); renderQnrBody();
-      toast(parsed.length + ' étape' + (parsed.length > 1 ? 's' : '') + ' · ' + nQ + ' question' + (nQ > 1 ? 's' : '') + ' créées — ajuste si besoin');
+      toast(parsed.length + ' étape' + (parsed.length > 1 ? 's' : '') + ' · ' + nQ + ' question' + (nQ > 1 ? 's' : '') + ' créées, ajuste si besoin');
     };
     document.body.appendChild(ov);
     var ta = ov.querySelector('#qnr-import-txt'); if (ta) ta.focus();
@@ -8365,8 +8365,8 @@
     var chip = 'display:flex;gap:9px;align-items:center;padding:12px 14px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:8px;background:#fff;cursor:pointer;font-size:16px';
     if (b.type === 'long') f = '<textarea style="' + inpBox + ';min-height:70px;resize:vertical"></textarea>';
     else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:none;border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
-    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:none;border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer — 1 = priorité.</div>';
-    else if (b.type === 'dropdown') f = '<select style="' + inpBox + '"><option>— choisir —</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option>Autre…</option>' : '') + '</select>';
+    else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:none;border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer, 1 = priorité.</div>';
+    else if (b.type === 'dropdown') f = '<select style="' + inpBox + '"><option>Choisir…</option>' + (b.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option>Autre…</option>' : '') + '</select>';
     else if (b.type === 'rating') f = '<div style="font-size:22px;color:#e0c060">' + new Array((b.max || 5) + 1).join('★') + '</div>';
     else if (b.type === 'slider') f = '<input type="range" min="0" max="' + (b.max || 10) + '" style="width:100%">';
     else if (b.type === 'file') f = '<button type="button" class="btn btn--outline btn--sm" onclick="return false">📎 Joindre un fichier</button>';
@@ -8405,12 +8405,12 @@
       var desc = (t.description || '').trim();
       body =
         '<div style="height:8px;border-radius:999px;background:' + esc(col) + ';width:60px;margin-bottom:22px"></div>' +
-        '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:10px">Questionnaire</div>' +
+        '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:11px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
         (desc
           ? '<div style="font-size:17px;line-height:1.75;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
-          : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
-        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
+          : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre : tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
         '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer →</button>';
     } else {
       if (QNR_PREV_STEP >= steps.length) QNR_PREV_STEP = steps.length - 1;
@@ -8418,7 +8418,7 @@
       var isFirst = QNR_PREV_STEP === 0, isLast = QNR_PREV_STEP === steps.length - 1;
       var pct = Math.round((QNR_PREV_STEP + 1) / steps.length * 100);
       var progress = '<div style="margin-bottom:18px">' +
-        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:13px;color:var(--muted);margin-bottom:7px"><span>Étape ' + (QNR_PREV_STEP + 1) + ' sur ' + steps.length + '</span><span>' + pct + '%</span></div>' +
         '<div style="height:7px;background:var(--bone-d);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + esc(col) + ';transition:width .2s"></div></div></div>';
       // Rappel discret pour revoir l'intro depuis la 1re étape (comme la cliente).
       var whyBlock = isFirst
@@ -8430,7 +8430,7 @@
         (!isFirst ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrPreviewNav(-1)">← Précédent</button>' : '') +
         (!isLast ? '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewNav(1)">Suivant →</button>'
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
-      var testHint = '<div class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;margin-bottom:14px;padding:8px 11px;background:var(--card);border:none;border-radius:9px">Aperçu interactif — tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
+      var testHint = '<div style="font-size:14.5px;line-height:1.5;color:var(--terre-600);margin-bottom:16px;padding:12px 15px;background:var(--card);border:none;border-radius:11px">Aperçu interactif : tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
       body = progress + whyBlock + testHint +
         (s.title ? '<h2 style="margin:2px 0 6px;font-family:var(--font-display);font-style:italic;font-size:26px;line-height:1.15">' + esc(s.title) + '</h2>' : '') +
         (s.help ? '<div style="font-size:16px;color:var(--muted);line-height:1.6;margin-bottom:12px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
@@ -8693,7 +8693,7 @@
         var key = sel.value; close(); toast('Instanciation en cours…');
         jpost('/api/clients/' + key + '/project-template', { template: t, projectId: pid }, 'POST')
           .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
-          .then(function (res) { if (res.ok) toast('Projet instancié ✓ · offre « ' + esc(prjOfferLabel(t.offer)) + ' »'); else toast(res.b && res.b.error ? res.b.error : 'Erreur — l\'offre existe-t-elle pour cette cliente ?'); })
+          .then(function (res) { if (res.ok) toast('Projet instancié ✓ · offre « ' + esc(prjOfferLabel(t.offer)) + ' »'); else toast(res.b && res.b.error ? res.b.error : 'Erreur, l\'offre existe-t-elle pour cette cliente ?'); })
           .catch(function () { toast('Erreur'); });
       };
       document.body.appendChild(ov);
@@ -8746,7 +8746,7 @@
   function renderIncBody(){
     var b = el('inc-body'); if (!b) return;
     if (!INC.length){ b.innerHTML = '<div class="card" style="background:var(--card)"><div class="empty">Aucun incident. 🎉 Tout roule pour tes clientes.</div></div>'; return; }
-    var ctxLbl = { 'upload-ticket':'Upload — ticket', 'upload-brief':'Upload — demande', 'js':'Erreur technique', 'promise':'Erreur technique' };
+    var ctxLbl = { 'upload-ticket':'Upload, ticket', 'upload-brief':'Upload, demande', 'js':'Erreur technique', 'promise':'Erreur technique' };
     var icon = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h0M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
     b.innerHTML = '<div class="inclist">' + INC.map(function(e){
       var isNew = !e.seen;

@@ -303,10 +303,10 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   // Message d'accompagnement qui évolue selon les séries restantes.
   function cliRevMsg(total, used) {
     var left = total - used;
-    if (left >= total) return ['Vous disposez de toutes vos séries de retours.', 'Prenez le temps — on ajuste jusqu’à ce que ce soit juste.'];
+    if (left >= total) return ['Vous disposez de toutes vos séries de retours.', 'Prenez le temps : on ajuste jusqu’à ce que ce soit juste.'];
     if (left >= 2) return ['Il vous reste ' + left + ' séries de retours.', 'Je vous conseille de regrouper toutes vos remarques en une fois.'];
-    if (left === 1) return ['Dernière série de retours.', 'Prenez le temps de vérifier chaque détail avant de me répondre — je suis là pour vous accompagner.'];
-    return ['Toutes les séries incluses ont été utilisées.', 'Si nécessaire, nous pouvons prévoir une prestation complémentaire — on en parle quand vous voulez.'];
+    if (left === 1) return ['Dernière série de retours.', 'Prenez le temps de vérifier chaque détail avant de me répondre : je suis là pour vous accompagner.'];
+    return ['Toutes les séries incluses ont été utilisées.', 'Si nécessaire, nous pouvons prévoir une prestation complémentaire : on en parle quand vous voulez.'];
   }
   function cpShowPrompt(title, label, defaultVal, onOk, opts) {
     opts = opts || {};
@@ -631,7 +631,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     if (!acts.length) {
       return '<section class="cp-todo">' +
         '<div class="cp-todo__h"><h2>À toi de jouer</h2></div>' +
-        '<div style="font-family:var(--font-micro);font-size:14.5px;color:var(--terre-600);line-height:1.55">Rien à valider pour le moment, ' + esc(first) + ' ☀️ Tout est à jour — je te préviens dès qu’un élément aura besoin de toi.</div>' +
+        '<div style="font-family:var(--font-micro);font-size:14.5px;color:var(--terre-600);line-height:1.55">Rien à valider pour le moment, ' + esc(first) + ' ☀️ Tout est à jour : je te préviens dès qu’un élément aura besoin de toi.</div>' +
       '</section>';
     }
     var shown = acts.slice(0, 5);
@@ -795,7 +795,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
     var rest = availMin - usedMin;
     var cap = (capH != null ? capH : 2);
     function hm(min) { min = Math.round(Math.abs(min)); var h = Math.floor(min / 60), m = min % 60; return (m ? (h + 'h' + String(m).padStart(2, '0')) : (h + ' h')); }
-    if (rest < 0) return { tone: 'over', label: 'Forfait complété ce mois', note: 'On a un peu dépassé — les demandes en plus sont facturées en supplément. On en parle quand vous voulez, et je réajuste le forfait avec vous si besoin.' };
+    if (rest < 0) return { tone: 'over', label: 'Forfait complété ce mois', note: 'On a un peu dépassé : les demandes en plus sont facturées en supplément. On en parle quand vous voulez, et je réajuste le forfait avec vous si besoin.' };
     if (availMin > 0 && rest <= availMin * 0.12) return { tone: 'low', label: 'Il reste ' + hm(rest) + ' ce mois', note: 'On arrive au bout du forfait de ce mois. Si un sujet presse, dites-le-moi et on le priorise ensemble.' };
     return { tone: 'ok', label: 'Il vous reste ' + hm(rest) + ' ce mois', note: 'Profitez-en : les heures non utilisées ne se reportent pas d\'un mois à l\'autre (au-delà d\'un petit report de ' + hm(cap * 60) + '). C\'est le bon moment pour me confier vos sujets.' };
   }
@@ -938,7 +938,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
               '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+mBarPct+'%;background:'+mBarColor+';border-radius:999px"></div></div>' +
               '<div style="display:flex;justify-content:space-between;font-family:var(--font-micro);font-size:10px;color:var(--terre-400)"><span>'+mUsedH+' utilisé</span><span>'+mTotH+' ce mois'+(mCarryMin<0?' (report du dépassement)':(mCarryMin>0?' (report inclus)':''))+'</span></div>' +
               (mCarryMin<0 ? '<div style="font-family:var(--font-body);font-size:12px;color:#5A2A11;line-height:1.45;margin-top:10px">'+fmtMn(-mCarryMin)+' de dépassement du mois dernier ont été déduites'+(mBilledMin>0?', et '+fmtMn(mBilledMin)+' facturées':'')+'.</div>':'')
-            : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré — contactez le studio.</p>'
+            : '<p style="font-family:var(--font-micro);font-size:12px;color:var(--terre-400);margin:0">Forfait non encore configuré : contactez le studio.</p>'
           ) +
         '</div>';
 
@@ -955,7 +955,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
                   cpDeadlinePill(t.dueDate||t.deadline, false, true) +
                 '</div>';
               }).join('') + '</div>'
-            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400)">Aucun ticket ouvert — tout est à jour !</div>'
+            : '<div style="font-family:var(--font-body);font-size:14px;font-style:italic;color:var(--terre-400)">Aucun ticket ouvert : tout est à jour !</div>'
           ) +
         '</div>';
 
@@ -1055,7 +1055,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             '<div style="flex:1">' +
               '<div style="font-family:var(--font-micro);font-size:10px;color:var(--glycine-900);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-weight:700">✨ Projet terminé</div>' +
               '<div style="font-family:var(--font-display);font-size:22px;color:var(--terre)">Toutes les étapes sont complètes !</div>' +
-              '<div style="margin-top:6px;font-size:13px;color:var(--terre-600)">Merci pour votre confiance — à très bientôt pour de nouveaux projets.</div>' +
+              '<div style="margin-top:6px;font-size:13px;color:var(--terre-600)">Merci pour votre confiance. À très bientôt pour de nouveaux projets.</div>' +
             '</div>' +
           '</div>';
         } else {
@@ -2296,7 +2296,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
 
     var progress = '<div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px;flex-wrap:wrap">' +
-        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les étapes une à une — cliquez pour ouvrir sa page.</p>' +
+        '<p style="flex:1;min-width:240px;font-size:16px;color:var(--terre-600);line-height:1.6;max-width:560px">Suivez les étapes une à une : cliquez pour ouvrir sa page.</p>' +
         svToggle +
       '</div>' +
       svStatusTabsHtml +
@@ -2518,7 +2518,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         var unclassed = allDlv.filter(function(d){ return !d.creationId; });
         crBody = spanels + (unclassed.length ? '<div class="cp-spanel"><div class="cp-spanel__t" style="margin-bottom:10px">Autres livrables</div>' + stbVersionsList(project.id, unclassed) + '</div>' : '');
       } else {
-        crBody = '<div class="cp-spanel"><p style="font-family:var(--font-micro);font-size:14.5px;color:var(--terre-600);line-height:1.55">Votre première création arrivera bientôt ici — je vous préviens dès qu\'une version est prête.</p>' + stbDeliverables(project.id) + '</div>';
+        crBody = '<div class="cp-spanel"><p style="font-family:var(--font-micro);font-size:14.5px;color:var(--terre-600);line-height:1.55">Votre première création arrivera bientôt ici : je vous préviens dès qu\'une version est prête.</p>' + stbDeliverables(project.id) + '</div>';
       }
 
       var supportSide = pracPanel.replace(' hidden', '') + helpCard;
@@ -3513,7 +3513,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
             return '<div style="margin-bottom:10px"><div style="font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5A2A11;margin-bottom:4px">'+esc(label)+' · '+groups[k].length+'</div>'+rows+'</div>';
           }).join('');
           histHtml = '<details style="background:var(--card,#fff);border:1px solid var(--bone-d);border-radius:14px;padding:14px 18px;margin-top:16px">' +
-            '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique — '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
+            '<summary style="cursor:pointer;font-family:var(--font-micro);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terre-600);list-style:none">📁 Historique, '+resolved.length+' demande'+(resolved.length>1?'s':'')+' résolue'+(resolved.length>1?'s':'')+'</summary>' +
             '<div style="margin-top:12px;max-height:340px;overflow-y:auto">'+body+'</div></details>';
         }
       }
@@ -4406,7 +4406,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), keepalive: true })
       .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
       .then(function(d){ if (d && Array.isArray(d.contentHistory)) t.contentHistory = d.contentHistory; if (!silent) toast('Enregistré ✓'); if (field === 'status') renderShell(); })
-      .catch(function(){ if (!silent) toast('Erreur — réessayez'); });
+      .catch(function(){ if (!silent) toast('Erreur, réessaie'); });
   };
   // Autosave anti-perte : débounce pendant la saisie (titre, détails). Silencieux.
   var _cliTaskSaveTimers = {};
@@ -4439,7 +4439,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var patch = { projectId: pid, properties: {} }; patch.properties[propId] = value;
     fetch(API_BASE+'/tasks/'+taskId, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) })
       .then(function(r){ if (!r.ok) throw new Error(); toast('Enregistré ✓'); })
-      .catch(function(){ toast('Erreur — réessayez'); });
+      .catch(function(){ toast('Erreur, réessaie'); });
   };
   // Sauvegarde immédiate du lien du brief (propriété composite p_elements).
   window.cliEditBriefLink = function(pid, taskId, value){
@@ -4764,7 +4764,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           var pd = getPD(pid);
           if (pd) pd.project.tickets = (pd.project.tickets||[]).filter(function(x){return x.id!==ticketId;});
           toast('Demande supprimée'); renderShell();
-        }).catch(function(){ toast('Erreur, réessayez.'); });
+        }).catch(function(){ toast('Erreur, réessaie.'); });
     }, { title:'Supprimer la demande', okLabel:'Supprimer', danger:true });
   };
 
@@ -4775,7 +4775,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var pd = getPD(pid);
         if (pd) { if(!Array.isArray(pd.project[field])) pd.project[field]=[]; pd.project[field].unshift(item); }
         toast(okMsg); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
   }
   function cliCRDelete(pid, field, id) {
     fetch(API_BASE + '/' + field + '/' + id + '?projectId=' + pid, { method:'DELETE' })
@@ -4784,7 +4784,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var pd = getPD(pid);
         if (pd && Array.isArray(pd.project[field])) pd.project[field] = pd.project[field].filter(function(x){return x.id!==id;});
         renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
   }
   window.cliAddCounsel = function(pid) {
     cpShowPrompt('Ajouter un conseil', 'Titre du conseil', '', function(title) {
@@ -4833,7 +4833,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         '<div>' +
           '<label style="font-size:12px;font-weight:600;color:#5A2A11;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Catégorie</label>' +
           '<select id="_maint-t-cat" style="width:100%;padding:9px 12px;border:1.5px solid #F8F6F2;border-radius:10px;font-family:\'Inter Tight\',sans-serif;font-size:14px;color:#110704;background:#fff">' +
-            '<option value="">— Catégorie —</option>' +
+            '<option value="">Catégorie</option>' +
             cats.map(function(c){ return '<option value="'+c+'"'+((edit&&edit.category)===c?' selected':'')+'>'+c+'</option>'; }).join('') +
           '</select>' +
         '</div>' +
@@ -5012,7 +5012,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         toast(accept ? 'Nouvelle date acceptée ✓' : 'Report refusé, Cindy est prévenue');
         renderShell();
       })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+      .catch(function(){ toast('Erreur, réessaie.'); });
   };
   window.cliMaintReopenTicket = function(pid, ticketId) { window.cliMaintSetStatus(pid, ticketId, 'open'); };
   window.cliMaintSetStatus = function(pid, ticketId, status) {
@@ -5122,7 +5122,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var card = 'width:100%;background:#fff;border:1.5px solid var(--border,#F8F6F2);border-radius:16px;padding:18px 20px;cursor:pointer;text-align:left;transition:box-shadow .15s';
     ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:30px;max-width:560px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:24px;color:var(--navy,#110704)">De quoi as-tu besoin ?</span><button onclick="document.getElementById(\'_cp-demande-gate\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button></div>' +
-      '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux — je m\'occupe du reste.</div>' +
+      '<div style="font-size:13.5px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:20px">Choisis ce qui correspond le mieux, je m\'occupe du reste.</div>' +
       '<button onclick="(function(){document.getElementById(\'_cp-demande-gate\').remove();window.cliOpenAddTask(\'' + pid + '\',\'\');})()" style="' + card + ';margin-bottom:14px" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(28,18,5,0.1)\';this.style.borderColor=\'var(--terre,#110704)\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border,#F8F6F2)\'">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
           '<span style="width:38px;height:38px;border-radius:50%;background:var(--brume,#F8F6F2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">' + cpIcon('zap', 18, 'color:var(--terre,#110704)') + '</span>' +
@@ -5353,7 +5353,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var pd = getPD(pid);
         if (pd) { var idx=(pd.project.tasks||[]).findIndex(function(x){return x.id===taskId;}); if(idx>=0) pd.project.tasks[idx]=updated; }
         toast('Tâche mise à jour ✓'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
   }
 
   window.cliUploadClientFile = function(pid, input) {
@@ -5464,7 +5464,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var pd = getPD(pid);
         if (pd) pd.project.tasks = (pd.project.tasks||[]).filter(function(x){return x.id!==taskId;});
         toast('Tâche supprimée'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
     }, { title: 'Supprimer la tâche', okLabel: 'Supprimer', danger: true }); return;
   };
 
@@ -5480,13 +5480,13 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         .then(function(proj) {
           if (pd) { pd.project.monthlyHours = proj.monthlyHours; pd.project.forfaitOverrides = proj.forfaitOverrides || pd.project.forfaitOverrides; }
           toast('Forfait mis à jour ✓'); renderShell();
-        }).catch(function(){ toast('Erreur, réessayez.'); });
+        }).catch(function(){ toast('Erreur, réessaie.'); });
     }, { type:'number', placeholder:'ex: 10', okLabel:'Enregistrer' }); return;
   };
 
   window.cliRegulOverride = function(pid, monthKey, currentVal) {
     var cur = currentVal !== undefined ? String(currentVal) : '';
-    cpShowPrompt('Report manuel — ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
+    cpShowPrompt('Report manuel, ' + monthKey, 'Heures à reporter (ex: 2.5, -1). Laisser vide pour supprimer.', cur, function(val) {
       if (val.trim() === '') {
         var pd = getPD(pid);
         var overrides = Object.assign({}, pd && pd.project.forfaitOverrides || {});
@@ -5495,7 +5495,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides }) })
           .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
           .then(function(proj) { if (pd) pd.project.forfaitOverrides = proj.forfaitOverrides || {}; toast('Report supprimé ✓'); renderShell(); })
-          .catch(function(){ toast('Erreur, réessayez.'); });
+          .catch(function(){ toast('Erreur, réessaie.'); });
         return;
       }
       var hours = parseFloat(val);
@@ -5507,7 +5507,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         body: JSON.stringify({ projectId: pid, forfaitOverrides: overrides2 }) })
         .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
         .then(function(proj) { if (pd2) pd2.project.forfaitOverrides = proj.forfaitOverrides || {}; toast('Report mis à jour ✓'); renderShell(); })
-        .catch(function(){ toast('Erreur, réessayez.'); });
+        .catch(function(){ toast('Erreur, réessaie.'); });
     }, { placeholder:'ex: 2.5', okLabel:'Enregistrer', hint:'Laisser vide pour réinitialiser au calcul automatique' }); return;
   };
 
@@ -5522,7 +5522,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         }
         renderShell();
       })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+      .catch(function(){ toast('Erreur, réessaie.'); });
   };
 
   window.cliOpenTask = function(pid, taskId) {
@@ -5545,7 +5545,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         toast('Commentaire ajouté ✓');
         renderShell();
       })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+      .catch(function(){ toast('Erreur, réessaie.'); });
   };
 
   window.cliSaveNotes = function(pid) {
@@ -5559,7 +5559,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         var pd = getPD(pid);
         if (pd) pd.project.notes = proj.notes;
         toast('Notes enregistrées ✓');
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
   };
 
   window.cliAddResource = function(pid) {
@@ -5593,7 +5593,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       .then(function(proj) {
         if (pd) { pd.project.resources = proj.resources; }
         toast('Ressource ajoutée ✓'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
     }; return;
   };
 
@@ -5607,7 +5607,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       .then(function(proj) {
         if (pd) { pd.project.resources = proj.resources; }
         toast('Supprimé'); renderShell();
-      }).catch(function(){ toast('Erreur, réessayez.'); });
+      }).catch(function(){ toast('Erreur, réessaie.'); });
   };
 
   // ── Vue conversation unifiée espace client (un seul fil) ─────────────────────
@@ -5911,7 +5911,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
 
     var hasAny = projects.some(function(pd){ return (pd.files || []).length; });
     return '<div class="fade-up">' +
-      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:24px;max-width:560px">Tout ce que Cindy vous partage et tout ce que vous déposez, au même endroit — par projet et par dossier.</p>' +
+      '<p style="font-size:16px;color:var(--terre-600);line-height:1.6;margin-bottom:24px;max-width:560px">Tout ce que Cindy vous partage et tout ce que vous déposez, au même endroit, par projet et par dossier.</p>' +
       (hasAny ? projects.map(projBlock).join('') + demSection : '<div class="cp-empty">Aucun fichier pour le moment. Déposez-en un depuis un projet.</div>') +
     '</div>';
   }
@@ -6209,7 +6209,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     // (aplat clair, texte foncé : la règle de contraste de la charte).
     if (b.type === 'paragraph') return '<div style="font-size:16.5px;color:var(--nuit);line-height:1.65;background:rgba(197,222,255,0.36);border-radius:14px;padding:16px 18px;margin:16px 0 20px;white-space:pre-wrap">' + esc(b.label || '') + '</div>';
     // La question (énoncé) est clairement distincte de la zone de réponse.
-    var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:9px">Question ' + qnum + '</div>' : '';
+    var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:9px">Question ' + qnum + '</div>' : '';
     var lab = num + '<label style="display:block;font-size:18.5px;font-weight:600;color:var(--nuit);line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</label>' +
       (b.help ? '<div style="font-size:15.5px;color:var(--muted);line-height:1.6;margin-top:7px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
@@ -6226,7 +6226,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var otherField = b.allowOther ? '<input type="text" data-other="' + b.id + '" value="' + esc(otherVal) + '" placeholder="Précise ta réponse…" oninput="cpQnrPickOther(this)" style="' + box + ';margin-top:2px">' : '';
       if (b.type === 'dropdown') {
         var selOther = b.allowOther && otherVal ? ' selected' : '';
-        input = '<select data-qid="' + b.id + '" data-hasother="' + (b.allowOther ? '1' : '') + '" onchange="cpQnrDropOther(this)" style="' + box + '"><option value="">— choisir —</option>' + opts.map(function(o){ return '<option' + (ans === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option value="__other__"' + selOther + '>Autre…</option>' : '') + '</select>' + (b.allowOther ? '<div data-otherwrap="' + b.id + '" style="margin-top:8px' + (otherVal ? '' : ';display:none') + '">' + otherField + '</div>' : '');
+        input = '<select data-qid="' + b.id + '" data-hasother="' + (b.allowOther ? '1' : '') + '" onchange="cpQnrDropOther(this)" style="' + box + '"><option value="">Choisir…</option>' + opts.map(function(o){ return '<option' + (ans === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + (b.allowOther ? '<option value="__other__"' + selOther + '>Autre…</option>' : '') + '</select>' + (b.allowOther ? '<div data-otherwrap="' + b.id + '" style="margin-top:8px' + (otherVal ? '' : ';display:none') + '">' + otherField + '</div>' : '');
       } else {
         input = '<div data-qgroup="' + b.id + '" data-qtype="single">' + opts.map(function(o){
           var on = ans === o;
@@ -6256,7 +6256,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '</span>' +
           '<span data-rankhandle style="flex-shrink:0;color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px;line-height:1" title="Glisser pour classer">⠿</span>' +
         '</div>';
-      }).join('') + '<div style="font-size:13px;color:var(--muted);margin-top:6px">Glisse (poignée ⠿) ou utilise ▲▼ pour classer — 1 = ta priorité.</div></div>';
+      }).join('') + '<div style="font-size:14.5px;color:var(--muted);line-height:1.5;margin-top:8px">Glisse (poignée ⠿) ou utilise ▲▼ pour classer, 1 = ta priorité.</div></div>';
     } else if (b.type === 'rating') {
       var mx = b.max || 5; var cur = typeof ans === 'number' ? ans : parseInt(ans, 10) || 0;
       var stars = '';
@@ -6288,10 +6288,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var due = inst.dueDate ? '<div style="font-size:13.5px;color:var(--muted);margin-top:14px">À rendre pour le ' + esc(inst.dueDate.split('-').reverse().join('/')) + '</div>' : '';
       var desc = (inst.description || '').trim();
       return wrap(
-        '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
+        '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
-        (desc ? '<div style="font-size:17.5px;line-height:1.75;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:62ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
-        '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
+        (desc ? '<div style="font-size:17.5px;line-height:1.75;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:62ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre, tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
           '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
         '</div>' + due +
         '<button onclick="cpQnrStart()" style="margin-top:32px;padding:15px 34px;border-radius:14px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:17px;font-weight:600;box-shadow:none">' + (cpQnrProgress(inst).done > 0 ? 'Reprendre' : 'Commencer') + ' →</button>'
@@ -6308,9 +6308,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           var a = cpQnrAnswers[b.id];
           var disp;
           if (Array.isArray(a)) disp = a.join(', ');
-          else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = '—'; }
-          else disp = (a == null || a === '' ? '—' : String(a));
-          return '<div style="margin-bottom:15px"><div style="font-size:15px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:16px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = 'Sans réponse'; }
+          else disp = (a == null || a === '' ? 'Sans réponse' : String(a));
+          return '<div style="margin-bottom:15px"><div style="font-size:15px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:16px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
@@ -6318,7 +6318,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           qs +
         '</div>';
       }).join('');
-      var header = '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:8px">Questionnaire</div>' +
+      var header = '<div style="font-family:var(--font-micro);font-size:12.5px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:8px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:28px;margin-bottom:4px">' + esc(inst.name || 'Questionnaire') + '</h1>';
       if (isDone) {
         return wrap(header +
@@ -6359,7 +6359,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     return wrap(progress + why +
       '<div id="cp-qnr-step" oninput="window.cpQnrTouch&&window.cpQnrTouch()" onchange="window.cpQnrTouch&&window.cpQnrTouch()">' + stepHead + (fields || '<p style="color:var(--muted)">Cette étape ne contient pas de question.</p>') + '</div>' +
       nav +
-      '<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">Vos réponses sont enregistrées automatiquement.</div>');
+      '<div style="text-align:center;margin-top:16px;font-size:13.5px;color:var(--muted)">Vos réponses sont enregistrées automatiquement.</div>');
   }
 
   // Lecture des réponses de l'étape affichée depuis le DOM.
@@ -6902,7 +6902,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     fetch(API_BASE + '/support/' + pid + '/creations/' + cid + '/comment', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: v }) })
       .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
       .then(function(m){ var c = _cpFindCreation(pid, cid); if (c){ if (!Array.isArray(c.comments)) c.comments = []; c.comments.push(m); } toast('Commentaire envoyé'); renderShell(); })
-      .catch(function(){ toast('Erreur, réessayez.'); });
+      .catch(function(){ toast('Erreur, réessaie.'); });
   };
   window.cpCrFile = function(pid, cid) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
@@ -6914,7 +6914,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       fetch(API_BASE + '/support/' + pid + '/creations/' + cid + '/file', { method:'POST', body: fd })
         .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
         .then(function(e){ var c = _cpFindCreation(pid, cid); if (c){ if (!Array.isArray(c.files)) c.files = []; c.files.push(e); } toast('Fichier envoyé'); renderShell(); })
-        .catch(function(){ toast('Erreur, réessayez.'); })
+        .catch(function(){ toast('Erreur, réessaie.'); })
         .then(function(){ if (inp.parentNode) inp.parentNode.removeChild(inp); });
     };
     inp.click();
@@ -7039,7 +7039,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:6px">' + esc(stepTitle) + '</div>' +
       (ask ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.55;margin-bottom:' + (desc ? '8' : '14') + 'px"><strong style="color:var(--terre)">Ce qui vous est demandé :</strong> ' + esc(ask) + '</div>' : '') +
       (desc ? '<div style="font-size:13px;color:var(--terre-400);line-height:1.5;margin-bottom:14px">' + esc(desc) + '</div>' : '') +
-      '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin:6px 0 14px">Confirmez que vous avez fait votre part. Cindy est prévenue et reprend la suite — cette étape n\'attendra plus votre retour.</p>' +
+      '<p style="font-size:13.5px;color:var(--terre-600);line-height:1.5;margin:6px 0 14px">Confirmez que vous avez fait votre part. Cindy est prévenue et reprend la suite : cette étape n\'attendra plus votre retour.</p>' +
       '<textarea id="_cpval-comment" placeholder="Un message pour Cindy (optionnel)…" rows="3" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bone-d);border-radius:10px;font-family:inherit;font-size:13px;color:var(--terre);resize:vertical;outline:none;margin-bottom:16px"></textarea>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end">' +
         '<button id="_cpval-cancel" style="padding:9px 18px;background:none;border:1.5px solid #F8F6F2;border-radius:10px;cursor:pointer;color:#5A2A11;font-size:14px;font-family:inherit">Annuler</button>' +
@@ -7079,18 +7079,18 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       ? [
           { icon:'tasks', text: 'Ouvrez un ticket pour chaque besoin : bug, mise à jour de contenu, question technique…' },
           { icon:'clock', text: 'La barre de forfait indique les heures utilisées ce mois-ci sur votre contrat.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy. Réponse sous 24h.' },
         ]
       : clientType === 'partenaire'
       ? [
           { icon:'tasks', text: 'Suivez vos demandes en cours et leur statut en temps réel depuis le tableau de bord.' },
-          { icon:'zap', text: 'Quand votre retour est attendu, une bannière orange apparaît — cliquez pour confirmer.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+          { icon:'zap', text: 'Quand votre retour est attendu, une bannière orange apparaît : cliquez pour confirmer.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy. Réponse sous 24h.' },
         ]
       : [
           { icon:'tasks', text: 'Suivez les étapes de votre projet et leur statut en temps réel.' },
           { icon:'zap', text: 'Quand votre action est requise (valider un rendu, fournir des éléments), une bannière orange apparaît.' },
-          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy — réponse sous 24h.' },
+          { icon:'chat', text: 'La messagerie vous connecte directement à Cindy. Réponse sous 24h.' },
         ];
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(28,18,5,0.55);z-index:9900;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -7145,7 +7145,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         { icon:'flower', title:'Votre espace identité', text:'Bienvenue ! Cet espace réunit tout votre projet d\'identité visuelle avec le studio. Découvrez les étapes, partagez vos réponses et suivez l\'avancement en temps réel.' },
         { icon:'tasks', title:'Les étapes du projet', nav:'project', text:'Votre projet se découpe en phases (Découverte, Création, Validation, Livraison…). Chaque étape a un statut et une échéance. Cliquez dessus pour voir le détail et les actions attendues de votre part.' },
         { icon:'check', title:'Votre rôle dans le projet', nav:'project', text:'Certaines étapes nécessitent une action de votre part (retour, validation, contenu à fournir). Elles sont signalées clairement. Votre réactivité influence directement le calendrier du projet.' },
-        { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible — il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
+        { icon:'home', title:'Le questionnaire', nav:'home', text:'Si un questionnaire est disponible, remplissez-le dès que possible : il permet au studio de cerner votre univers, vos goûts et vos attentes avant de commencer la création.' },
         { icon:'chat', title:'Messagerie', nav:'messages', text:'Posez vos questions, partagez vos inspirations ou faites vos retours directement ici. Tout reste au même endroit, sans passer par e-mail.' },
         { icon:'folder', title:'Vos fichiers et ressources', nav:'fichiers', text:'La section Fichiers réunit vos ressources, votre identité visuelle, des exemples et vos photos, rangés par projet. Vous pouvez aussi y déposer vos éléments. Les livrables finaux se récupèrent, eux, sur l\'étape ou la tâche concernée.' },
         { icon:'flower', title:'C\'est parti !', text:'Ce guide est toujours accessible via « Guide » en haut. Écrivez-moi dans la Messagerie, je suis là pour que le projet se passe au mieux.' },
@@ -7337,7 +7337,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           form.content.value = '';
           toast('Message envoyé ✓');
         })
-        .catch(function() { toast('Erreur, réessayez.'); })
+        .catch(function() { toast('Erreur, réessaie.'); })
         .finally(function() { btn.disabled = false; btn.textContent = 'Envoyer →'; });
     });
   }
@@ -7677,7 +7677,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           var etkm = window.location.search.match(/[?&]etk=([a-f0-9]{16,64})/);
           if (etkm && API_BASE) {
             fetch(API_BASE + '/edit-unlock', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ etk: etkm[1] }) })
-              .then(function(r){ if (!r.ok) toast('Code d’édition invalide ou expiré — les enregistrements seront refusés.'); })
+              .then(function(r){ if (!r.ok) toast('Code d’édition invalide ou expiré, les enregistrements seront refusés.'); })
               .catch(function(){});
           }
           _canEdit = true;
