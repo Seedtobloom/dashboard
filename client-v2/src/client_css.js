@@ -492,6 +492,13 @@ a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visib
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
 .cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
 .cp-sp__card--cta { background: var(--card); border: none; box-shadow: var(--shadow-1); display: flex; flex-direction: column; }
+/* Carte « À vous » quand ce qui attend la cliente est un QUESTIONNAIRE : fond
+   Azur, la couleur des questionnaires dans son espace (pastille de statut,
+   barre de progression). Aplat clair, donc texte foncé. */
+.cp-sp__card--qnr { background: #C5DEFF; }
+.cp-sp__card--qnr .cp-sp__kick,
+.cp-sp__card--qnr .cp-sp__hm { color: var(--nuit); }
+.cp-sp__card--qnr .cp-sp__cta { background: var(--nuit); color: #F8F6F2; }
 .cp-sp__card--brown { background: var(--terre); }
 .cp-sp__card--brown .cp-sp__kick { color: var(--paille); }
 .cp-sp__card--brown .cp-sp__big { color: #fff; }

@@ -515,6 +515,13 @@ body:has(.cp-task-overlay) .cp-fab{display:none}
 @media (max-width: 760px) { .cp-sp__row { grid-template-columns: 1fr; } }
 .cp-sp__card { padding: clamp(22px,2.5vw,34px); border-radius: 20px; background: var(--surface); }
 .cp-sp__card--cta { background: var(--card); border: none; box-shadow: var(--shadow-1); display: flex; flex-direction: column; }
+/* Carte « À vous » quand ce qui attend la cliente est un QUESTIONNAIRE : fond
+   Azur, la couleur des questionnaires dans son espace (pastille de statut,
+   barre de progression). Aplat clair, donc texte foncé. */
+.cp-sp__card--qnr { background: #C5DEFF; }
+.cp-sp__card--qnr .cp-sp__kick,
+.cp-sp__card--qnr .cp-sp__hm { color: var(--nuit); }
+.cp-sp__card--qnr .cp-sp__cta { background: var(--nuit); color: #F8F6F2; }
 .cp-sp__card--brown { background: var(--terre); }
 .cp-sp__card--brown .cp-sp__kick { color: var(--paille); }
 .cp-sp__card--brown .cp-sp__big { color: #fff; }
@@ -1469,7 +1476,7 @@ function stbFmtMin(min) {
     (appData.questionnaires || []).forEach(function(q) {
       if (q.status === 'completed') return;
       var verb = q.status === 'in_progress' ? 'Continuer' : (q.status === 'to_review' ? 'Revoir' : 'Remplir');
-      acts.push({ pr: 2, label: verb.toLowerCase() === 'continuer' ? ('Continuer ton questionnaire « ' + q.name + ' »') : (verb + ' ton questionnaire « ' + q.name + ' »'), cta: verb, onclick: "cpQnrFill('" + q.id + "')" });
+      acts.push({ pr: 2, kind: 'qnr', label: verb.toLowerCase() === 'continuer' ? ('Continuer ton questionnaire « ' + q.name + ' »') : (verb + ' ton questionnaire « ' + q.name + ' »'), cta: verb, onclick: "cpQnrFill('" + q.id + "')" });
     });
     acts.sort(function(a, b) { return a.pr - b.pr; });
     return acts;
@@ -3286,8 +3293,8 @@ function stbFmtMin(min) {
             (waitC ? '<button class="cp-sp__cta" onclick="var e=document.getElementById(\'cp-sp-' + waitC.id + '\');if(e)e.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Ouvrir ' + cpIcon('arrow-right', 14, 'color:#F8F6F2') + '</button>' : '') +
           '</div>'
         : (avAct
-          ? '<div class="cp-sp__card cp-sp__card--cta">' +
-              '<p class="cp-sp__kick">' + cpIcon(cpActIcon(avAct.cta), 15, 'color:var(--terre)') + ' À vous</p>' +
+          ? '<div class="cp-sp__card cp-sp__card--cta' + (avAct.kind === 'qnr' ? ' cp-sp__card--qnr' : '') + '">' +
+              '<p class="cp-sp__kick">' + cpIcon(cpActIcon(avAct.cta), 15, avAct.kind === 'qnr' ? 'color:var(--nuit)' : 'color:var(--terre)') + ' À vous</p>' +
               '<h3 class="cp-sp__hm">' + esc(avAct.label) + '</h3>' +
               '<button class="cp-sp__cta" onclick="' + avAct.onclick + '">' + esc(avAct.cta) + ' ' + cpIcon('arrow-right', 14, 'color:#F8F6F2') + '</button>' +
             '</div>'
