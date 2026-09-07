@@ -6205,7 +6205,9 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var col = 'var(--nuit)';
     // Titres et paragraphes = intertitres de section, hors carte.
     if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin:34px 0 6px;color:' + col + '">' + esc(b.label || '') + '</h2>';
-    if (b.type === 'paragraph') return '<p style="font-size:16px;color:var(--muted);line-height:1.65;margin:6px 0 14px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
+    // Consigne = ENCADRÉ, pas un petit gris qu'on saute. Fond Azur + texte Ébène
+    // (aplat clair, texte foncé : la règle de contraste de la charte).
+    if (b.type === 'paragraph') return '<div style="font-size:16.5px;color:var(--nuit);line-height:1.65;background:rgba(197,222,255,0.36);border-radius:14px;padding:16px 18px;margin:16px 0 20px;white-space:pre-wrap">' + esc(b.label || '') + '</div>';
     // La question (énoncé) est clairement distincte de la zone de réponse.
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:9px">Question ' + qnum + '</div>' : '';
     var lab = num + '<label style="display:block;font-size:18.5px;font-weight:600;color:var(--nuit);line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</label>' +
@@ -6345,7 +6347,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       '<div style="height:7px;background:var(--brume,#eee);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%;background:' + esc(col) + ';transition:width 220ms"></div></div>' +
     '</div>';
     var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:31px;line-height:1.15;margin-bottom:' + (s.help ? '6px' : '20px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
-      (s.help ? '<p style="font-size:16.5px;color:var(--muted);line-height:1.6;margin-bottom:22px">' + esc(s.help) + '</p>' : '');
+      (s.help ? '<p style="font-size:16.5px;color:var(--muted);line-height:1.6;margin-bottom:22px;white-space:pre-wrap">' + esc(s.help) + '</p>' : '');
     var nav = '<div style="display:flex;gap:10px;margin-top:10px">' +
       (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:16px;font-weight:600">← Précédent</button>' : '') +
       '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16.5px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +

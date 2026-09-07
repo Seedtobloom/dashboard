@@ -1,7 +1,7 @@
 {
   "id": "tbriefkakemonoh2eau",
-  "name": "Questionnaire de brief — kakémonos H2Eau",
-  "description": "Bonjour Benoît, merci encore pour notre échange ! Ce questionnaire nous permet de centraliser les éléments évoqués ensemble et de préciser les derniers points du projet. L'objectif est aussi de mieux comprendre les personnes qui découvriront H2Eau sur les salons : leurs préoccupations, les questions qu'elles se posent et les mots qu'elles utilisent. Cela me permettra de créer des supports qui leur parlent immédiatement, plutôt que de simplement présenter une liste de services. Pas besoin de rédiger de longues réponses : quelques phrases, exemples ou mots-clés suffisent — et plus ils viennent de situations réelles, mieux c'est.",
+  "name": "Questionnaire de brief : kakémonos H2Eau",
+  "description": "Bonjour Benoît,\n\nMerci encore pour notre échange !\n\nAvant de passer à la création, ce questionnaire va nous permettre de centraliser les éléments évoqués ensemble et de préciser les derniers points du projet.\n\nL'objectif est aussi de mieux comprendre les personnes qui découvriront H2Eau sur les salons : leurs préoccupations, les questions qu'elles se posent et les mots qu'elles utilisent. Cela me permettra de créer des supports qui leur parlent immédiatement, plutôt que de simplement présenter une liste de services.\n\nPas besoin de rédiger de longues réponses. Quelques phrases, exemples ou mots-clés suffisent, et plus ils viennent de situations réelles, mieux c'est.",
   "category": "demarrage",
   "color": "#110704",
   "archived": false,
@@ -20,10 +20,10 @@
     {
       "id": "s2",
       "title": "Ce qui les préoccupe vraiment",
-      "help": "Ici, je veux surtout comprendre ce que tu entends sur le terrain. Les mots réels de tes prospects valent bien plus qu'une formulation parfaitement rédigée.",
+      "help": "Ici, je veux surtout comprendre ce que tu entends sur le terrain.\n\nLes mots réels de tes prospects valent bien plus qu'une formulation parfaitement rédigée.",
       "blocks": [
         { "id": "b201", "type": "long", "label": "Quand tes prospects viennent te parler de leur consommation d'eau, quels problèmes ou préoccupations reviennent le plus souvent ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b202", "type": "long", "label": "Quelles phrases ou expressions as-tu déjà entendues de leur part ?", "help": "Même si elles te semblent banales, note-les telles que tu t'en souviens, avec leurs mots. Par exemple : « On sait qu'on consomme beaucoup, mais on ne sait pas où. »", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b202", "type": "long", "label": "Quelles phrases ou expressions as-tu déjà entendues de leur part ?", "help": "Même si elles te semblent banales, note-les telles que tu t'en souviens, avec leurs mots.\n\nPar exemple : « On sait qu'on consomme beaucoup, mais on ne sait pas où. »", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b203", "type": "long", "label": "Quelles questions te posent-ils le plus souvent lorsqu'ils découvrent H2Eau ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b204", "type": "long", "label": "Y a-t-il une question ou une remarque qui revient quasiment à chaque salon ou rendez-vous ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
       ]
@@ -55,7 +55,7 @@
       "blocks": [
         { "id": "b501", "type": "long", "label": "Pourquoi un client fait-il appel à H2Eau plutôt que de gérer le sujet seul ou de faire appel à une autre entreprise ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b502", "type": "long", "label": "Qu'est-ce que tes clients apprécient particulièrement dans votre façon de les accompagner ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b503", "type": "long", "label": "As-tu un exemple concret de client pour lequel votre intervention a particulièrement bien fonctionné ?", "help": "Tu peux simplement m'indiquer : son problème au départ, ce que vous avez mis en place, et le résultat obtenu.", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+        { "id": "b503", "type": "long", "label": "As-tu un exemple concret de client pour lequel votre intervention a particulièrement bien fonctionné ?", "help": "Tu peux simplement m'indiquer :\n• son problème au départ\n• ce que vous avez mis en place\n• le résultat obtenu", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
       ]
     },
     {
@@ -75,13 +75,13 @@
       "title": "Le kakémono en 3 étapes",
       "help": "Ne cherche pas à rédiger le texte final : explique-moi avec tes mots ce que fait concrètement H2Eau, je m'occuperai ensuite de le synthétiser.",
       "blocks": [
-        { "id": "b701", "type": "paragraph", "label": "Sur le support actuel, le parcours est présenté comme : 1. L'étude et le conseil — 2. L'installation et le suivi — 3. Le résultat financier.", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b702", "type": "short", "label": "Étape 1 — son intitulé", "help": "", "placeholder": "Ex. L'étude et le conseil", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b703", "type": "long", "label": "Étape 1 — que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b704", "type": "short", "label": "Étape 2 — son intitulé", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b705", "type": "long", "label": "Étape 2 — que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b706", "type": "short", "label": "Étape 3 — son intitulé", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b707", "type": "long", "label": "Étape 3 — que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b701", "type": "paragraph", "label": "Sur le support actuel, le parcours est présenté comme :\n1. L'étude et le conseil\n2. L'installation et le suivi\n3. Le résultat financier", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b702", "type": "short", "label": "Étape 1 : son intitulé", "help": "", "placeholder": "Ex. L'étude et le conseil", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b703", "type": "long", "label": "Étape 1 : que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b704", "type": "short", "label": "Étape 2 : son intitulé", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b705", "type": "long", "label": "Étape 2 : que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b706", "type": "short", "label": "Étape 3 : son intitulé", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b707", "type": "long", "label": "Étape 3 : que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b708", "type": "long", "label": "Qu'est-ce qui est important dans votre méthode ou votre approche, et qu'on ne comprend pas forcément en lisant le kakémono actuel ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
       ]
     },
@@ -90,7 +90,7 @@
       "title": "Les chiffres à mettre en avant",
       "help": "",
       "blocks": [
-        { "id": "b801", "type": "paragraph", "label": "Nous avons identifié deux arguments importants : 15 à 30 % d'économies, et un retour sur investissement de 12 à 36 mois. Pour que je les présente correctement :", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b801", "type": "paragraph", "label": "Nous avons identifié deux arguments importants :\n• 15 à 30 % d'économies\n• un retour sur investissement de 12 à 36 mois\n\nPour que je les présente correctement :", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b802", "type": "long", "label": "À quoi correspondent précisément les 15 à 30 % ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b803", "type": "long", "label": "Ce résultat est-il constaté en moyenne, estimé, potentiel, ou dépend-il de certaines conditions ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
         { "id": "b804", "type": "long", "label": "À quoi correspondent précisément les 12 à 36 mois de retour sur investissement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
@@ -104,7 +104,7 @@
       "blocks": [
         { "id": "b901", "type": "single", "label": "As-tu des photos de véritables installations ou réalisations H2Eau que nous pouvons utiliser ?", "help": "", "placeholder": "", "required": false, "options": ["Oui", "Non", "Je dois vérifier"], "max": 0, "allowOther": false },
         { "id": "b902", "type": "long", "label": "Parmi tes réalisations, y en a-t-il une qui serait particulièrement pertinente pour les publics rencontrés sur les salons ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
-        { "id": "b903", "type": "paragraph", "label": "Tu peux déposer directement dans ton espace client les photos d'installations, de réalisations ou tout autre élément visuel utile à la création.", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+        { "id": "b903", "type": "paragraph", "label": "Pour tes visuels, c'est ici\n\nTu peux déposer directement dans ton espace client les photos d'installations, de réalisations, ou tout autre élément visuel utile à la création.\n\nInutile de les trier ou de les retoucher : envoie-les telles quelles, je fais le tri.", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
       ]
     },
     {

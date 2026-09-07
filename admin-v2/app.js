@@ -8355,7 +8355,8 @@
   }
   function qnrFieldPreview(b, qnum) {
     if (b.type === 'title') return '<h3 style="margin:26px 0 6px;font-family:var(--font-display);font-style:italic;font-size:22px">' + esc(b.label || 'Titre de section') + '</h3>';
-    if (b.type === 'paragraph') return '<p style="font-size:15.5px;color:var(--muted);line-height:1.6;margin:6px 0 14px">' + esc(b.label || '') + '</p>';
+    // Même encadré que côté cliente, pour que l'aperçu dise la vérité.
+    if (b.type === 'paragraph') return '<div style="font-size:16px;color:var(--nuit,#1c1205);line-height:1.65;background:rgba(197,222,255,0.36);border-radius:14px;padding:15px 17px;margin:14px 0 18px;white-space:pre-wrap">' + esc(b.label || '') + '</div>';
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
     var lab = num + '<div style="font-weight:600;font-size:17.5px;line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</div>' + (b.help ? '<div style="font-size:15px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     // Aperçu interactif : tu peux cocher / écrire pour tester (rien n'est enregistré).
