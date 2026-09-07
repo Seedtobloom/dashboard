@@ -7946,12 +7946,25 @@
    * instantané à chaque cliente (ses réponses ne cassent pas si on édite après).
    * ──────────────────────────────────────────────────────────────────────── */
   var QNR = [], QNR_LOADED = false, QNR_SEL = null, QNR_SHOW_ARCH = false;
+  // Teintes des questionnaires : UNIQUEMENT la palette Seed to Bloom. Ces
+  // couleurs servent d'aplat sous du texte blanc (bouton, barre de progression),
+  // donc seules les teintes FONCÉES conviennent : Ébène, Cuivre et Mandarine
+  // foncé (déjà utilisé ailleurs dans l'admin). Avant : des bleus/verts/violets
+  // génériques — le bleu marine ressortait en gros aplat dans l'aperçu.
   var QNR_CATS = [
-    ['demarrage', 'Démarrage', '#2c4a72'], ['strategie', 'Stratégie', '#2f6b8a'],
-    ['seo', 'SEO', '#3f8a5e'], ['ux', 'UX / UI', '#8a5e2f'], ['branding', 'Branding', '#a03f7a'],
-    ['copywriting', 'Copywriting', '#8a2f4a'], ['projet', 'Projet', '#3f5aa0'],
-    ['livraison', 'Livraison', '#2f8a8a'], ['support', 'Support', '#6b6b2f'], ['autre', 'Autre', '#6b5e4a'],
+    ['demarrage', 'Démarrage', '#110704'], ['strategie', 'Stratégie', '#5A2A11'],
+    ['seo', 'SEO', '#8A4A2C'], ['ux', 'UX / UI', '#110704'], ['branding', 'Branding', '#8A4A2C'],
+    ['copywriting', 'Copywriting', '#5A2A11'], ['projet', 'Projet', '#110704'],
+    ['livraison', 'Livraison', '#5A2A11'], ['support', 'Support', '#8A4A2C'], ['autre', 'Autre', '#110704'],
   ];
+  // Teinte d'un questionnaire : on ignore une couleur enregistrée qui n'est plus
+  // dans la palette (anciens modèles bleus/violets) et on retombe sur celle de
+  // sa catégorie — les modèles déjà créés se corrigent tout seuls.
+  function qnrColor(t) {
+    var c = String((t && t.color) || '');
+    for (var i = 0; i < QNR_CATS.length; i++) if (QNR_CATS[i][2].toLowerCase() === c.toLowerCase()) return QNR_CATS[i][2];
+    return qnrCatMeta((t && t.category) || 'autre')[2];
+  }
   // Types de blocs proposés dans l'éditeur (alignés sur le back).
   var QNR_BLOCKS = [
     ['title', 'Titre de section', '¶'], ['paragraph', 'Texte / consigne', '≡'],
@@ -8341,14 +8354,14 @@
     document.addEventListener('pointermove', admRankMove, { passive: false }); document.addEventListener('pointerup', admRankUp); document.addEventListener('pointercancel', admRankUp);
   }
   function qnrFieldPreview(b, qnum) {
-    if (b.type === 'title') return '<h3 style="margin:22px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(b.label || 'Titre de section') + '</h3>';
-    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.5;margin:6px 0 12px">' + esc(b.label || '') + '</p>';
+    if (b.type === 'title') return '<h3 style="margin:26px 0 6px;font-family:var(--font-display);font-style:italic;font-size:22px">' + esc(b.label || 'Titre de section') + '</h3>';
+    if (b.type === 'paragraph') return '<p style="font-size:15.5px;color:var(--muted);line-height:1.6;margin:6px 0 14px">' + esc(b.label || '') + '</p>';
     var num = (typeof qnum === 'number' && qnum > 0) ? '<div class="micro" style="color:var(--terre-600);margin-bottom:7px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<div style="font-weight:600;font-size:15.5px;line-height:1.35">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</div>' + (b.help ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:5px">' + esc(b.help) + '</div>' : '');
+    var lab = num + '<div style="font-weight:600;font-size:17.5px;line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#8d2b21">*</span>' : '') + '</div>' + (b.help ? '<div style="font-size:15px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     // Aperçu interactif : tu peux cocher / écrire pour tester (rien n'est enregistré).
     var f = '';
-    var inpBox = 'width:100%;box-sizing:border-box;background:#fff;border:1.5px solid var(--bone-d);border-radius:10px;padding:10px 12px;font-family:inherit';
-    var chip = 'display:flex;gap:9px;align-items:center;padding:10px 12px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:7px;background:#fff;cursor:pointer';
+    var inpBox = 'width:100%;box-sizing:border-box;background:#fff;border:1.5px solid var(--bone-d);border-radius:10px;padding:12px 14px;font-family:inherit;font-size:16px';
+    var chip = 'display:flex;gap:9px;align-items:center;padding:12px 14px;border:1.5px solid var(--bone-d);border-radius:10px;margin-bottom:8px;background:#fff;cursor:pointer;font-size:16px';
     if (b.type === 'long') f = '<textarea style="' + inpBox + ';min-height:70px;resize:vertical"></textarea>';
     else if (b.type === 'single' || b.type === 'multi') { var it0 = (b.type === 'single' ? 'radio' : 'checkbox'); f = (b.options || []).map(function (o) { return '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> ' + esc(o) + '</label>'; }).join(''); if (b.allowOther) f += '<label style="' + chip + '"><input type="' + it0 + '" name="qprev_' + b.id + '"> Autre : <input type="text" placeholder="champ libre" style="flex:1;background:#fff;border:none;border-radius:8px;padding:6px 9px;font-family:inherit"></label>'; }
     else if (b.type === 'ranking') f = '<div data-admrankgroup>' + (b.options || []).map(function (o, i) { return '<div data-admrankitem onpointerdown="ADM.rankDown(event,this)" style="display:flex;gap:11px;align-items:center;padding:10px 12px;border:none;border-radius:12px;margin-bottom:8px;background:#fff;user-select:none"><span data-rankn style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--nuit,#1c1205);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">' + (i + 1) + '</span><span style="flex:1">' + esc(o) + '</span><span data-rankhandle style="color:var(--muted);font-size:19px;cursor:grab;touch-action:none;padding:4px 6px">⠿</span></div>'; }).join('') + '</div><div class="micro" style="color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:0">Glisser (poignée ⠿) pour classer — 1 = priorité.</div>';
@@ -8379,7 +8392,7 @@
   function qnrPreviewRender() {
     var ex = el('qnr-preview-ov'); if (ex) ex.remove();
     var t = qnrTpl(QNR_PREV_ID); if (!t) return;
-    var col = t.color || '#2c4a72';
+    var col = qnrColor(t);
     var steps = t.steps || [];
     if (!steps.length) steps = [{ title: '', help: '', blocks: [] }];
     var header = '<div class="between" style="margin-bottom:12px"><div class="micro" style="color:var(--muted)">Aperçu · ' + esc(t.name || '') + '</div><button class="btn btn--outline btn--sm" data-no>Fermer</button></div>';
@@ -8394,7 +8407,7 @@
         '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:10px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:32px;line-height:1.1;margin:0 0 18px">' + esc(t.name || 'Questionnaire') + '</h1>' +
         (desc
-          ? '<div style="font-size:15px;line-height:1.7;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
+          ? '<div style="font-size:17px;line-height:1.75;color:var(--terre-600);white-space:pre-wrap">' + esc(desc) + '</div>'
           : '<div style="font-size:15px;line-height:1.7;color:var(--terre-600)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:14px;margin-top:22px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)"><span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span></div>' +
         '<button class="btn btn--sm" style="margin-top:26px;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" onclick="ADM.qnrPreviewStart()">Commencer →</button>';
@@ -8418,8 +8431,8 @@
                  : '<button class="btn btn--sm" style="flex:1;background:' + esc(col) + ';color:#fff;border-color:' + esc(col) + '" data-no>Fin de l\'aperçu ✓</button>') + '</div>';
       var testHint = '<div class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;margin-bottom:14px;padding:8px 11px;background:var(--card);border:none;border-radius:9px">Aperçu interactif — tu peux cocher et écrire pour tester, rien n\'est enregistré.</div>';
       body = progress + whyBlock + testHint +
-        (s.title ? '<h2 style="margin:2px 0 4px;font-family:var(--font-display);font-style:italic">' + esc(s.title) + '</h2>' : '') +
-        (s.help ? '<div style="color:var(--muted);margin-bottom:10px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
+        (s.title ? '<h2 style="margin:2px 0 6px;font-family:var(--font-display);font-style:italic;font-size:26px;line-height:1.15">' + esc(s.title) + '</h2>' : '') +
+        (s.help ? '<div style="font-size:16px;color:var(--muted);line-height:1.6;margin-bottom:12px;white-space:pre-wrap">' + esc(s.help) + '</div>' : '') +
         fields + nav;
     }
     var ov = document.createElement('div'); ov.id = 'qnr-preview-ov'; ov.className = 'admconfirm';
@@ -8507,7 +8520,7 @@
     body.innerHTML = grid + archBtn + archGrid;
   }
   function prjCardHtml(t) {
-    var col = t.color || '#2c4a72';
+    var col = qnrColor(t);
     var nP = (t.phases || []).length, nS = prjCountSteps(t), nD = prjCountDeliv(t);
     var wk = t.totalWeeks ? esc(t.totalWeeks) + ' sem. · ' : '';
     var head = (t.icon ? '<span style="font-size:18px;line-height:1">' + esc(t.icon) + '</span>' : admIcon('projtpl'));
@@ -8564,7 +8577,7 @@
     if (keepScroll) d.scrollTop = keepScroll;
   }
   function prjDrawerHtml(t) {
-    var col = t.color || '#2c4a72';
+    var col = qnrColor(t);
     var offSel = '<select class="inp" style="width:auto" onchange="ADM.prjSet(\'' + t.id + '\',\'offer\',this.value)">' +
       PRJ_OFFERS.map(function (o) { return '<option value="' + o[0] + '"' + (t.offer === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
     var swatches = ['#2c4a72', '#CD8F6E', '#4a6fa5', '#3f9a6a', '#c98a2b', '#b5546a'];
@@ -8631,7 +8644,7 @@
   }
   function prjDelivHtml(t, p, d) {
     return '<div class="row" style="gap:7px;align-items:center;margin-bottom:6px">' +
-      '<span style="color:' + esc(t.color || '#2c4a72') + ';display:flex;flex-shrink:0">' + admIcon('deliv') + '</span>' +
+      '<span style="color:' + esc(qnrColor(t)) + ';display:flex;flex-shrink:0">' + admIcon('deliv') + '</span>' +
       '<input class="inp" value="' + esc(d.name || '') + '" placeholder="Nom du livrable (ex. Maquette Figma accueil)" style="flex:1;font-size:13px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'name\',this.value)">' +
       '<span class="micro" style="text-transform:none;letter-spacing:0">révisions</span>' +
       '<input class="inp" type="number" min="0" max="20" value="' + esc(d.revisionsIncluded || 0) + '" title="Révisions incluses" style="width:60px;font-size:12px" onchange="ADM.prjDelivSet(\'' + t.id + '\',\'' + p.id + '\',\'' + d.id + '\',\'revisionsIncluded\',this.value)">' +

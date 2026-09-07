@@ -6204,17 +6204,17 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   function cpQnrField(b, ans, qnum) {
     var col = 'var(--nuit)';
     // Titres et paragraphes = intertitres de section, hors carte.
-    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:23px;margin:30px 0 4px;color:' + col + '">' + esc(b.label || '') + '</h2>';
-    if (b.type === 'paragraph') return '<p style="color:var(--muted);line-height:1.6;margin:6px 0 12px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
+    if (b.type === 'title') return '<h2 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin:34px 0 6px;color:' + col + '">' + esc(b.label || '') + '</h2>';
+    if (b.type === 'paragraph') return '<p style="font-size:16px;color:var(--muted);line-height:1.65;margin:6px 0 14px;white-space:pre-wrap">' + esc(b.label || '') + '</p>';
     // La question (énoncé) est clairement distincte de la zone de réponse.
-    var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:8px">Question ' + qnum + '</div>' : '';
-    var lab = num + '<label style="display:block;font-size:16px;font-weight:600;color:var(--nuit);line-height:1.4">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</label>' +
-      (b.help ? '<div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
+    var num = (typeof qnum === 'number' && qnum > 0) ? '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--terre-600);margin-bottom:9px">Question ' + qnum + '</div>' : '';
+    var lab = num + '<label style="display:block;font-size:18.5px;font-weight:600;color:var(--nuit);line-height:1.45">' + esc(b.label || 'Question') + (b.required ? ' <span style="color:#5A2A11">*</span>' : '') + '</label>' +
+      (b.help ? '<div style="font-size:15.5px;color:var(--muted);line-height:1.6;margin-top:7px;white-space:pre-wrap">' + esc(b.help) + '</div>' : '');
     var opts = Array.isArray(b.options) ? b.options : [];
     // Bordure encre + ombre légère : la zone de réponse est clairement blanche sur la carte crème.
     var bd = 'rgba(28,18,5,0.22)';
     var wellShadow = 'box-shadow:none';
-    var box = 'width:100%;padding:12px 15px;border:1.5px solid ' + bd + ';border-radius:12px;font-size:15px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--nuit);' + wellShadow;
+    var box = 'width:100%;padding:14px 16px;border:1.5px solid ' + bd + ';border-radius:12px;font-size:16.5px;font-family:inherit;box-sizing:border-box;background:#fff;color:var(--nuit);' + wellShadow;
     var input;
     if (b.type === 'long' || b.type === 'address') {
       input = '<textarea data-qid="' + b.id + '" rows="' + (b.type === 'address' ? 3 : 4) + '" style="' + box + ';resize:vertical" placeholder="' + esc(b.placeholder || '') + '">' + esc(typeof ans === 'string' ? ans : '') + '</textarea>';
@@ -6228,8 +6228,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       } else {
         input = '<div data-qgroup="' + b.id + '" data-qtype="single">' + opts.map(function(o){
           var on = ans === o;
-          return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + ';' + (on ? '' : wellShadow) + '"><input type="radio" name="cpqn_' + b.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
-        }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherVal ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:#fff"><input type="radio" name="cpqn_' + b.id + '" value="__other__" data-otheropt' + (otherVal ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherField : '') + '</div>';
+          return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:9px;cursor:pointer;font-size:16.5px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + ';' + (on ? '' : wellShadow) + '"><input type="radio" name="cpqn_' + b.id + '" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
+        }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherVal ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:9px;cursor:pointer;font-size:16.5px;color:var(--nuit);background:#fff"><input type="radio" name="cpqn_' + b.id + '" value="__other__" data-otheropt' + (otherVal ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherField : '') + '</div>';
       }
     } else if (b.type === 'multi') {
       var arr = Array.isArray(ans) ? ans : [];
@@ -6237,8 +6237,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       var otherFieldM = b.allowOther ? '<input type="text" data-other="' + b.id + '" value="' + esc(otherM) + '" placeholder="Précise ta réponse…" oninput="cpQnrPickOther(this)" style="' + box + ';margin-top:2px">' : '';
       input = '<div data-qgroup="' + b.id + '" data-qtype="multi">' + opts.map(function(o){
         var on = arr.indexOf(o) !== -1;
-        return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + ';' + (on ? '' : wellShadow) + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
-      }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherM ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:15px;color:var(--nuit);background:#fff"><input type="checkbox" value="__other__" data-otheropt' + (otherM ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherFieldM : '') + '</div>';
+        return '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (on ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:9px;cursor:pointer;font-size:16.5px;color:var(--nuit);background:' + (on ? 'rgba(28,18,5,0.05)' : '#fff') + ';' + (on ? '' : wellShadow) + '"><input type="checkbox" value="' + esc(o) + '"' + (on ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> ' + esc(o) + '</label>';
+      }).join('') + (b.allowOther ? '<label style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid ' + (otherM ? 'var(--nuit)' : bd) + ';border-radius:12px;margin-bottom:9px;cursor:pointer;font-size:16.5px;color:var(--nuit);background:#fff"><input type="checkbox" value="__other__" data-otheropt' + (otherM ? ' checked' : '') + ' style="width:17px;height:17px;flex-shrink:0"> Autre</label>' + otherFieldM : '') + '</div>';
     } else if (b.type === 'ranking') {
       var ro = (ans && typeof ans === 'object' && !Array.isArray(ans)) ? ans : {};
       // Ordre initial : selon le classement déjà enregistré, sinon l'ordre des options.
@@ -6247,7 +6247,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       input = '<div data-qgroup="' + b.id + '" data-qtype="ranking" data-rankgroup="' + b.id + '">' + order.map(function(o, i){
         return '<div data-rankitem data-opt="' + esc(o) + '" onpointerdown="cpRankPointerDown(event,this)" style="display:flex;align-items:center;gap:12px;padding:11px 13px;border:1.5px solid ' + bd + ';border-radius:12px;margin-bottom:8px;background:#fff;user-select:none;' + wellShadow + '">' +
           '<span data-rankn style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--nuit);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;font-family:var(--font-micro)">' + (i + 1) + '</span>' +
-          '<span style="flex:1;font-size:15px;color:var(--nuit)">' + esc(o) + '</span>' +
+          '<span style="flex:1;font-size:16.5px;color:var(--nuit)">' + esc(o) + '</span>' +
           '<span style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">' +
             '<button type="button" onclick="cpRankMove(this,-1)" aria-label="Monter" style="width:26px;height:20px;display:flex;align-items:center;justify-content:center;border:1px solid ' + bd + ';border-radius:6px;background:#fff;color:var(--nuit);cursor:pointer;padding:0;line-height:1">▲</button>' +
             '<button type="button" onclick="cpRankMove(this,1)" aria-label="Descendre" style="width:26px;height:20px;display:flex;align-items:center;justify-content:center;border:1px solid ' + bd + ';border-radius:6px;background:#fff;color:var(--nuit);cursor:pointer;padding:0;line-height:1">▼</button>' +
@@ -6288,11 +6288,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       return wrap(
         '<div style="font-family:var(--font-micro);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:' + esc(col) + ';margin-bottom:12px">Questionnaire</div>' +
         '<h1 style="font-family:var(--font-display);font-style:italic;font-size:clamp(32px,5vw,44px);line-height:1.08;color:var(--nuit);margin:0 0 20px">' + esc(inst.name || 'Questionnaire') + '</h1>' +
-        (desc ? '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:60ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
+        (desc ? '<div style="font-size:17.5px;line-height:1.75;color:var(--terre-600,#5A2A11);white-space:pre-wrap;max-width:62ch">' + esc(desc) + '</div>' : '<div style="font-size:16px;line-height:1.7;color:var(--terre-600,#5A2A11)">Prends un moment pour y répondre — tes réponses sont enregistrées automatiquement, tu peux revenir quand tu veux.</div>') +
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;font-family:var(--font-micro);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)">' +
           '<span>' + nS + ' étape' + (nS > 1 ? 's' : '') + '</span><span>·</span><span>' + nQ + ' question' + (nQ > 1 ? 's' : '') + '</span>' +
         '</div>' + due +
-        '<button onclick="cpQnrStart()" style="margin-top:32px;padding:15px 34px;border-radius:14px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16px;font-weight:600;box-shadow:none">' + (cpQnrProgress(inst).done > 0 ? 'Reprendre' : 'Commencer') + ' →</button>'
+        '<button onclick="cpQnrStart()" style="margin-top:32px;padding:15px 34px;border-radius:14px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:17px;font-weight:600;box-shadow:none">' + (cpQnrProgress(inst).done > 0 ? 'Reprendre' : 'Commencer') + ' →</button>'
       );
     }
 
@@ -6308,7 +6308,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           if (Array.isArray(a)) disp = a.join(', ');
           else if (a && typeof a === 'object') { disp = Object.keys(a).map(function(k){ return k + ' : ' + a[k]; }).sort(function(x,y){ return (parseInt(x.split(' : ')[1],10)||99) - (parseInt(y.split(' : ')[1],10)||99); }).join(' · '); if (!disp) disp = '—'; }
           else disp = (a == null || a === '' ? '—' : String(a));
-          return '<div style="margin-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:14.5px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          return '<div style="margin-bottom:15px"><div style="font-size:15px;font-weight:600;color:var(--nuit)">' + esc(b.label || '') + '</div><div style="font-size:16px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600,#5A2A11)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
         }).join('');
         return '<div style="background:#fff;border-radius:14px;box-shadow:none;padding:18px 20px;margin-bottom:14px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;font-family:var(--font-display);font-style:italic;font-size:19px">' + esc(s.title || ('Étape ' + (si+1))) + '</h3>' +
@@ -6329,7 +6329,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         rows +
         '<div style="display:flex;gap:10px;margin-top:8px">' +
           '<button onclick="cpQnrGoStep(' + Math.max(0, steps.length - 1) + ')" style="padding:12px 20px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:14px;font-weight:600">← Retour</button>' +
-          '<button onclick="cpQnrSubmit()" style="flex:1;padding:13px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">Envoyer mes réponses</button>' +
+          '<button onclick="cpQnrSubmit()" style="flex:1;padding:13px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16.5px;font-weight:600">Envoyer mes réponses</button>' +
         '</div>');
     }
 
@@ -6341,14 +6341,14 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var fields = (s.blocks || []).map(function(b){ var n = cpQnrIsStatic(b.type) ? 0 : (++_qn); return cpQnrField(b, cpQnrAnswers[b.id], n); }).join('');
     var isLast = cpQnrStep === steps.length - 1;
     var progress = '<div style="margin-bottom:22px">' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (cpQnrStep + 1) + ' sur ' + steps.length + '</span><span>' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%</span></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px"><span>Étape ' + (cpQnrStep + 1) + ' sur ' + steps.length + '</span><span>' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%</span></div>' +
       '<div style="height:7px;background:var(--brume,#eee);border-radius:999px;overflow:hidden"><div style="height:100%;width:' + Math.round((cpQnrStep + 1) / steps.length * 100) + '%;background:' + esc(col) + ';transition:width 220ms"></div></div>' +
     '</div>';
-    var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:27px;margin-bottom:' + (s.help ? '4px' : '18px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
-      (s.help ? '<p style="color:var(--muted);line-height:1.55;margin-bottom:20px">' + esc(s.help) + '</p>' : '');
+    var stepHead = '<h1 style="font-family:var(--font-display);font-style:italic;font-size:31px;line-height:1.15;margin-bottom:' + (s.help ? '6px' : '20px') + '">' + esc(s.title || inst.name || 'Questionnaire') + '</h1>' +
+      (s.help ? '<p style="font-size:16.5px;color:var(--muted);line-height:1.6;margin-bottom:22px">' + esc(s.help) + '</p>' : '');
     var nav = '<div style="display:flex;gap:10px;margin-top:10px">' +
-      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:15px;font-weight:600">← Précédent</button>' : '') +
-      '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:15px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
+      (cpQnrStep > 0 ? '<button onclick="cpQnrPrev()" style="padding:13px 22px;border-radius:12px;border:1.5px solid var(--border,#F8F6F2);background:#fff;cursor:pointer;font-size:16px;font-weight:600">← Précédent</button>' : '') +
+      '<button onclick="cpQnrNext()" style="flex:1;padding:14px 22px;border-radius:12px;border:none;background:' + esc(col) + ';color:#fff;cursor:pointer;font-size:16.5px;font-weight:600">' + (isLast ? 'Vérifier mes réponses →' : 'Suivant →') + '</button>' +
     '</div>';
     // « Pourquoi ce questionnaire ? » (idée 9) — rassure sur la 1re étape.
     // Le « pourquoi » vit désormais sur la page de couverture ; on met juste un
