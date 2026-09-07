@@ -1,0 +1,121 @@
+{
+  "id": "tbriefkakemonoh2eau",
+  "name": "Questionnaire de brief — kakémonos H2Eau",
+  "description": "Bonjour Benoît, merci encore pour notre échange ! Ce questionnaire nous permet de centraliser les éléments évoqués ensemble et de préciser les derniers points du projet. L'objectif est aussi de mieux comprendre les personnes qui découvriront H2Eau sur les salons : leurs préoccupations, les questions qu'elles se posent et les mots qu'elles utilisent. Cela me permettra de créer des supports qui leur parlent immédiatement, plutôt que de simplement présenter une liste de services. Pas besoin de rédiger de longues réponses : quelques phrases, exemples ou mots-clés suffisent — et plus ils viennent de situations réelles, mieux c'est.",
+  "category": "demarrage",
+  "color": "#2c4a72",
+  "archived": false,
+  "createdAt": "2026-09-07T09:00:00.000Z",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Les personnes à qui on s'adresse",
+      "help": "",
+      "blocks": [
+        { "id": "b101", "type": "multi", "label": "Parmi les différents profils que tu rencontres sur les salons, lesquels souhaites-tu toucher en priorité avec ces kakémonos ?", "help": "", "placeholder": "", "required": false, "options": ["Élus", "Mairies", "Communautés d'agglomération", "Autres collectivités", "Entreprises privées"], "max": 0, "allowOther": true },
+        { "id": "b102", "type": "long", "label": "Parmi eux, qui est généralement la personne avec laquelle tu échanges directement ?", "help": "Si tu connais son métier ou sa fonction, précise-le.", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b103", "type": "long", "label": "Est-ce que ces différents publics viennent généralement avec les mêmes problématiques, ou observes-tu des différences importantes ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s2",
+      "title": "Ce qui les préoccupe vraiment",
+      "help": "Ici, je veux surtout comprendre ce que tu entends sur le terrain. Les mots réels de tes prospects valent bien plus qu'une formulation parfaitement rédigée.",
+      "blocks": [
+        { "id": "b201", "type": "long", "label": "Quand tes prospects viennent te parler de leur consommation d'eau, quels problèmes ou préoccupations reviennent le plus souvent ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b202", "type": "long", "label": "Quelles phrases ou expressions as-tu déjà entendues de leur part ?", "help": "Même si elles te semblent banales, note-les telles que tu t'en souviens, avec leurs mots. Par exemple : « On sait qu'on consomme beaucoup, mais on ne sait pas où. »", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b203", "type": "long", "label": "Quelles questions te posent-ils le plus souvent lorsqu'ils découvrent H2Eau ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b204", "type": "long", "label": "Y a-t-il une question ou une remarque qui revient quasiment à chaque salon ou rendez-vous ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s3",
+      "title": "Ce qui peut les freiner",
+      "help": "",
+      "blocks": [
+        { "id": "b301", "type": "multi", "label": "Qu'est-ce qui les fait généralement hésiter avant de passer à l'action ?", "help": "", "placeholder": "", "required": false, "options": ["Le coût de l'investissement", "La peur de travaux importants", "Le manque de temps", "La complexité technique", "Le doute sur les économies réellement réalisables", "Le délai de retour sur investissement", "Les contraintes budgétaires d'une collectivité"], "max": 0, "allowOther": true },
+        { "id": "b302", "type": "long", "label": "Qu'entends-tu concrètement à ce sujet pendant tes échanges ?", "help": "Si tu te souviens d'une phrase ou d'une objection exacte, note-la telle quelle.", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b303", "type": "long", "label": "Qu'est-ce qui les rassure généralement lorsque tu leur expliques ta solution ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s4",
+      "title": "Ce qu'ils comprennent parfois mal",
+      "help": "",
+      "blocks": [
+        { "id": "b401", "type": "long", "label": "Quand tu présentes H2Eau pour la première fois, qu'est-ce que les personnes comprennent parfois mal, ou ne comprennent pas immédiatement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b402", "type": "long", "label": "Y a-t-il quelque chose dans votre façon de travailler qui provoque souvent une réaction du type « Ah d'accord, je ne pensais pas que vous faisiez aussi ça » ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b403", "type": "long", "label": "Si tu devais expliquer en une phrase très simple ce que fait H2Eau à quelqu'un qui ne connaît pas du tout l'entreprise, que lui dirais-tu ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s5",
+      "title": "Ce qui fait la différence H2Eau",
+      "help": "",
+      "blocks": [
+        { "id": "b501", "type": "long", "label": "Pourquoi un client fait-il appel à H2Eau plutôt que de gérer le sujet seul ou de faire appel à une autre entreprise ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b502", "type": "long", "label": "Qu'est-ce que tes clients apprécient particulièrement dans votre façon de les accompagner ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b503", "type": "long", "label": "As-tu un exemple concret de client pour lequel votre intervention a particulièrement bien fonctionné ?", "help": "Tu peux simplement m'indiquer : son problème au départ, ce que vous avez mis en place, et le résultat obtenu.", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s6",
+      "title": "Le nouveau kakémono principal",
+      "help": "",
+      "blocks": [
+        { "id": "b601", "type": "paragraph", "label": "Tu m'as transmis une première proposition pour remplacer le kakémono « Allo… ». Elle me servira notamment à identifier les informations que tu souhaites mettre en avant.", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b602", "type": "single", "label": "Cette proposition représente plutôt pour toi :", "help": "", "placeholder": "", "required": false, "options": ["Une base dont tu souhaites rester assez proche", "Une inspiration pour les contenus, avec davantage de liberté sur le design", "Un mélange des deux"], "max": 0, "allowOther": false },
+        { "id": "b603", "type": "multi", "label": "Parmi ces éléments, lesquels sont indispensables sur le nouveau kakémono ?", "help": "", "placeholder": "", "required": false, "options": ["La réduction durable des consommations d'eau", "15 à 30 % d'économies d'eau", "Audit", "Solutions hydro-économes", "Suivi des consommations", "Accompagnement au financement", "QR code vers les solutions / réalisations", "Coordonnées de contact", "Adresses du siège et du bureau"], "max": 0, "allowOther": true },
+        { "id": "b604", "type": "single", "label": "Si cela permet d'obtenir un message plus direct et un support plus lisible, jusqu'où puis-je intervenir sur les textes ?", "help": "", "placeholder": "", "required": false, "options": ["Tu peux reformuler et raccourcir librement, je validerai ensuite", "Tu peux proposer des ajustements sans trop t'éloigner des formulations actuelles", "Je préfère conserver les formulations actuelles"], "max": 0, "allowOther": false },
+        { "id": "b605", "type": "long", "label": "Si quelqu'un ne regarde ce kakémono que pendant 3 secondes, quelle information doit-il absolument avoir vue ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s7",
+      "title": "Le kakémono en 3 étapes",
+      "help": "Ne cherche pas à rédiger le texte final : explique-moi avec tes mots ce que fait concrètement H2Eau, je m'occuperai ensuite de le synthétiser.",
+      "blocks": [
+        { "id": "b701", "type": "paragraph", "label": "Sur le support actuel, le parcours est présenté comme : 1. L'étude et le conseil — 2. L'installation et le suivi — 3. Le résultat financier.", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b702", "type": "short", "label": "Étape 1 — son intitulé", "help": "", "placeholder": "Ex. L'étude et le conseil", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b703", "type": "long", "label": "Étape 1 — que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b704", "type": "short", "label": "Étape 2 — son intitulé", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b705", "type": "long", "label": "Étape 2 — que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b706", "type": "short", "label": "Étape 3 — son intitulé", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b707", "type": "long", "label": "Étape 3 — que faites-vous concrètement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b708", "type": "long", "label": "Qu'est-ce qui est important dans votre méthode ou votre approche, et qu'on ne comprend pas forcément en lisant le kakémono actuel ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s8",
+      "title": "Les chiffres à mettre en avant",
+      "help": "",
+      "blocks": [
+        { "id": "b801", "type": "paragraph", "label": "Nous avons identifié deux arguments importants : 15 à 30 % d'économies, et un retour sur investissement de 12 à 36 mois. Pour que je les présente correctement :", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b802", "type": "long", "label": "À quoi correspondent précisément les 15 à 30 % ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b803", "type": "long", "label": "Ce résultat est-il constaté en moyenne, estimé, potentiel, ou dépend-il de certaines conditions ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b804", "type": "long", "label": "À quoi correspondent précisément les 12 à 36 mois de retour sur investissement ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b805", "type": "long", "label": "Y a-t-il d'autres chiffres ou résultats concrets que tu cites régulièrement et qui font réagir tes prospects ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s9",
+      "title": "Les visuels",
+      "help": "",
+      "blocks": [
+        { "id": "b901", "type": "single", "label": "As-tu des photos de véritables installations ou réalisations H2Eau que nous pouvons utiliser ?", "help": "", "placeholder": "", "required": false, "options": ["Oui", "Non", "Je dois vérifier"], "max": 0, "allowOther": false },
+        { "id": "b902", "type": "long", "label": "Parmi tes réalisations, y en a-t-il une qui serait particulièrement pertinente pour les publics rencontrés sur les salons ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b903", "type": "paragraph", "label": "Tu peux déposer directement dans ton espace client les photos d'installations, de réalisations ou tout autre élément visuel utile à la création.", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    },
+    {
+      "id": "s10",
+      "title": "Pour terminer",
+      "help": "",
+      "blocks": [
+        { "id": "b1001", "type": "long", "label": "Y a-t-il quelque chose que tu veux absolument retrouver sur les nouveaux kakémonos ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b1002", "type": "long", "label": "À l'inverse, y a-t-il quelque chose que tu ne souhaites surtout pas retrouver ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false },
+        { "id": "b1003", "type": "long", "label": "Y a-t-il un élément important évoqué pendant notre appel que je n'ai pas repris dans ce questionnaire ?", "help": "", "placeholder": "", "required": false, "options": [], "max": 0, "allowOther": false }
+      ]
+    }
+  ]
+}

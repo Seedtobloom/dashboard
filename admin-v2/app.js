@@ -7985,7 +7985,7 @@
     var active = QNR.filter(function (t) { return !t.archived; });
     var archived = QNR.filter(function (t) { return t.archived; });
     var head = '<div class="clhead"><div><p class="hello">Questionnaires</p><p class="hello__s">Tes questionnaires-types, prêts à assigner à tes clientes.</p></div></div>' +
-      '<div class="qbar"><p style="font-family:var(--font-body);font-size:12.5px;color:var(--muted);margin:0">Crée un modèle, envoie-le, consulte les réponses dans chaque fiche cliente.</p><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div>';
+      '<div class="qbar"><p style="font-family:var(--font-body);font-size:12.5px;color:var(--muted);margin:0">Crée un modèle, envoie-le, consulte les réponses dans chaque fiche cliente.</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div></div>';
     var list = active.length
       ? active.map(qnrTplCardHtml).join('')
       : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
@@ -8011,12 +8011,92 @@
         '<button class="ibbtn" onclick="ADM.qnrOpen(\'' + t.id + '\')">Modifier</button>' +
         '<button class="ibbtn" onclick="ADM.qnrPreview(\'' + t.id + '\')">Aperçu</button>' +
         '<button class="ibbtn" onclick="ADM.qnrDup(\'' + t.id + '\')">Dupliquer</button>' +
+        '<button class="ibbtn" onclick="ADM.qnrExportJson(\'' + t.id + '\')">Exporter</button>' +
         '<button class="ibbtn" onclick="ADM.qnrArchive(\'' + t.id + '\')">' + (t.archived ? 'Désarchiver' : 'Archiver') + '</button>' +
         '<button class="ibbtn ibbtn--del" onclick="ADM.qnrDel(\'' + t.id + '\')">Supprimer</button>' +
       '</div>' +
     '</div>';
   }
   function qnrToggleArch() { QNR_SHOW_ARCH = !QNR_SHOW_ARCH; renderQnrBody(); }
+  // Import d'un modèle complet au format JSON (celui que renvoie « Exporter »).
+  // Sert à créer un questionnaire long sans le re-saisir question par question.
+  // Les identifiants sont TOUJOURS régénérés : on ne risque pas d'écraser un
+  // modèle existant ni de coller deux questions sur le même id.
+  function qnrImportJson() {
+    var ov = document.createElement('div'); ov.className = 'admconfirm';
+    ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
+      '<div class="admconfirm__title">Importer un modèle (JSON)</div>' +
+      '<div class="admconfirm__msg">Colle le JSON d\'un questionnaire. Il est ajouté comme un nouveau modèle — rien n\'est écrasé.</div>' +
+      '<textarea id="qnr-json-txt" class="inp" style="width:100%;box-sizing:border-box;min-height:220px;resize:vertical;font-size:12.5px;line-height:1.5;font-family:var(--font-micro,monospace)" placeholder="{ &quot;name&quot;: &quot;...&quot;, &quot;steps&quot;: [ ... ] }"></textarea>' +
+      '<div class="admconfirm__row" style="margin-top:14px">' +
+        '<button class="btn btn--outline btn--sm" data-no>Annuler</button>' +
+        '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Importer</button>' +
+      '</div></div>';
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('[data-no]').onclick = close;
+    ov.querySelector('[data-yes]').onclick = function () {
+      var raw = ov.querySelector('#qnr-json-txt').value || '';
+      if (!raw.trim()) { toast('Colle d\'abord un JSON'); return; }
+      var t;
+      try { t = JSON.parse(raw); } catch (e) { toast('JSON invalide — vérifie le copier-coller'); return; }
+      if (!t || typeof t !== 'object' || Array.isArray(t)) { toast('Le JSON doit être un modèle unique'); return; }
+      if (!Array.isArray(t.steps) || !t.steps.length) { toast('Aucune étape trouvée dans ce JSON'); return; }
+      // Identifiants neufs + valeurs par défaut sûres pour chaque bloc.
+      t.id = qnrId('t');
+      t.name = String(t.name || 'Questionnaire importé');
+      t.description = String(t.description || '');
+      t.category = QNR_CATS.some(function (c) { return c[0] === t.category; }) ? t.category : 'autre';
+      t.color = qnrCatMeta(t.category)[2];
+      t.archived = false;
+      var nQ = 0;
+      t.steps = t.steps.map(function (s) {
+        return {
+          id: qnrId('s'), title: String((s && s.title) || ''), help: String((s && s.help) || ''),
+          blocks: (Array.isArray(s && s.blocks) ? s.blocks : []).map(function (b) {
+            var type = (b && QNR_BLOCKS.some(function (x) { return x[0] === b.type; })) ? b.type : 'short';
+            if (!qnrIsStatic(type)) nQ++;
+            return {
+              id: qnrId('b'), type: type,
+              label: String((b && b.label) || ''), help: String((b && b.help) || ''),
+              placeholder: String((b && b.placeholder) || ''),
+              required: !!(b && b.required),
+              options: qnrHasOptions(type) && Array.isArray(b && b.options) ? b.options.map(String) : [],
+              max: (b && typeof b.max === 'number') ? b.max : (type === 'rating' ? 5 : (type === 'slider' ? 10 : 0)),
+              allowOther: qnrHasOptions(type) && type !== 'ranking' && !!(b && b.allowOther)
+            };
+          })
+        };
+      });
+      QNR.unshift(t); close(); qnrSave(); renderQnrBody();
+      toast('« ' + t.name +' » importé · ' + t.steps.length + ' sections · ' + nQ + ' questions');
+    };
+    document.body.appendChild(ov);
+    var ta = ov.querySelector('#qnr-json-txt'); if (ta) ta.focus();
+  }
+  // Export du modèle courant, pour le réimporter ailleurs ou le versionner.
+  function qnrExportJson(id) {
+    var t = qnrTpl(id); if (!t) return;
+    var out = JSON.parse(JSON.stringify(t));
+    delete out.usedCount; delete out.assignments; delete out.updatedAt;
+    var txt = JSON.stringify(out, null, 2);
+    function showBox() {
+      var ov = document.createElement('div'); ov.className = 'admconfirm';
+      ov.innerHTML = '<div class="admconfirm__box" style="max-width:600px;text-align:left">' +
+        '<div class="admconfirm__title">JSON du modèle</div>' +
+        '<div class="admconfirm__msg">Sélectionne tout et copie.</div>' +
+        '<textarea class="inp" readonly style="width:100%;box-sizing:border-box;min-height:240px;resize:vertical;font-size:12.5px;font-family:var(--font-micro,monospace)"></textarea>' +
+        '<div class="admconfirm__row" style="margin-top:14px"><button class="btn btn--outline btn--sm" data-no>Fermer</button></div></div>';
+      ov.querySelector('textarea').value = txt;
+      ov.querySelector('[data-no]').onclick = function () { ov.remove(); };
+      ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+      document.body.appendChild(ov);
+      var ta = ov.querySelector('textarea'); if (ta) { ta.focus(); ta.select(); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { toast('JSON copié'); }, showBox);
+    } else { showBox(); }
+  }
   function qnrAdd() {
     var t = { id: qnrId('t'), name: '', description: '', category: 'demarrage', color: qnrCatMeta('demarrage')[2], archived: false, steps: [{ id: qnrId('s'), title: '', help: '', blocks: [] }] };
     QNR.unshift(t); qnrSave(); renderQnrBody(); qnrOpen(t.id);
@@ -8690,7 +8770,7 @@
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
+    qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
     sendMsg: sendMsg, loadAllDocs: loadAllDocs, docUploadToggle: docUploadToggle, setDocFilter: setDocFilter, filterAllDocs: filterAllDocs, upload: upload, delDoc: delDoc, lockDoc: lockDoc,
