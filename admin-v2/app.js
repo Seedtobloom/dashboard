@@ -5414,6 +5414,12 @@
     var _projTabs = (CUR.domains || []).concat(CUR.supports || []);
     var tabs = [['apercu', 'Vue d\'ensemble', 0]];
     _projTabs.forEach(function (x) { tabs.push([x.id, DOMAIN_LABELS[x.id] || x.label || 'Projet', x.unread || 0]); });
+    // Réponses aux questionnaires de la plateforme. La pastille compte les
+    // questionnaires remplis que tu n'as pas encore ouverts.
+    var _qnrNew = (CUR.questionnaires || []).filter(function (q) {
+      return (q.status === 'completed' || q.status === 'to_review') && q.seenByAdmin !== true;
+    }).length;
+    tabs.push(['qnranswers', 'Questionnaires', _qnrNew]);
     tabs.push(['fichiers', 'Fichiers', 0]);
     tabs.push(['echanges', 'Échanges', 0]);
     tabs.push(['forfait', 'Réglages', 0]);
@@ -5605,6 +5611,9 @@
   function renderTab() {
     var body = el('tabbody'); if (!body) return;
     if (TAB === 'apercu') return body.innerHTML = apercuTab();
+    // Réponses aux questionnaires. Les ouvrir vaut consultation : la pastille
+    // du dashboard et celle de l'onglet retombent.
+    if (TAB === 'qnranswers') { body.innerHTML = qnrAnswersTab(); qnrMarkSeen(); return; }
     if (TAB === 'fichiers') return renderDocuments(body);
     if (TAB === 'echanges') return body.innerHTML = journalTab();
     if (TAB === 'forfait') return body.innerHTML = tabInfos();
@@ -7106,10 +7115,10 @@
   function bilanStars(n) { var h = ''; for (var i = 1; i <= 5; i++) { h += '<span style="font-size:20px;color:' + ((n >= i) ? '#d8a93a' : '#d9cfbe') + '">' + ((n >= i) ? '★' : '☆') + '</span>'; } return h; }
   // ── Réponses aux questionnaires envoyés à cette cliente (lecture) ──
   function qnrFmtAnswer(a) {
-    if (a == null || a === '') return '—';
-    if (Array.isArray(a)) return a.length ? a.join(', ') : '—';
+    if (a == null || a === '') return 'Sans réponse';
+    if (Array.isArray(a)) return a.length ? a.join(', ') : 'Sans réponse';
     if (typeof a === 'object') {
-      var keys = Object.keys(a); if (!keys.length) return '—';
+      var keys = Object.keys(a); if (!keys.length) return 'Sans réponse';
       return keys.map(function (k) { return k + ' : ' + a[k]; })
         .sort(function (x, y) { return (parseInt(x.split(' : ')[1], 10) || 99) - (parseInt(y.split(' : ')[1], 10) || 99); })
         .join(' · ');
@@ -7124,7 +7133,7 @@
       var qs = blocks.map(function (b) {
         var disp = qnrFmtAnswer(ans[b.id]);
         return '<div style="margin-bottom:12px"><div style="font-weight:600;font-size:13.5px;color:var(--terre)">' + esc(b.label || '') + '</div>' +
-          '<div style="font-size:14px;color:' + (disp === '—' ? 'var(--muted)' : 'var(--terre-600)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
+          '<div style="font-size:14px;color:' + (disp === 'Sans réponse' ? 'var(--muted)' : 'var(--terre-600)') + ';white-space:pre-wrap;margin-top:2px">' + esc(disp) + '</div></div>';
       }).join('');
       return '<div style="margin-top:16px"><div class="micro" style="text-transform:none;letter-spacing:0.04em;color:var(--muted);margin-bottom:8px;font-weight:700">' + esc(s.title || '') + '</div>' + qs + '</div>';
     }).join('');
