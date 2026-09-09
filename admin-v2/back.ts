@@ -1634,6 +1634,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const inbox: AnyObj[] = [];
   const validated: AnyObj[] = []; // livrables validés par la cliente, pas encore consultés
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
+  const plannings: AnyObj[] = []; // plannings prévisionnels, tous espaces confondus
   const weekTasks: AnyObj[] = []; // tâches Partenaire créative actives, à agréger dans « Ma semaine »
   const activeProjects: AnyObj[] = []; // projets en cours (avancement) pour « Tes projets en cours »
   // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
@@ -1652,6 +1653,32 @@ async function handleDashboard(env: Env): Promise<Response> {
         qnrDone.push({ key: ci.key, client: who, id: q.id, name: q.name || 'Questionnaire', completedAt: q.completedAt || null });
       }
     });
+    // ── Plannings prévisionnels ──────────────────────────────────────────
+    // On transmet les jalons BRUTS, avec leur T0. Le calcul des dates reste
+    // une SEULE implémentation, côté studio (planCompute) : la refaire ici
+    // ferait diverger la vue transversale et la fiche cliente.
+    const collectPlanning = (container: AnyObj | null, label: string, projectId: string) => {
+      if (!container) return;
+      const push = (jal: unknown, t0: unknown, creationId: string, creationName: string) => {
+        if (!Array.isArray(jal) || !jal.length) return;
+        plannings.push({
+          key: ci.key, client: who, projectLabel: label, projectId,
+          creationId, creationName,
+          planningStart: t0 ? String(t0).slice(0, 10) : '',
+          jalons: jal.map((j: AnyObj) => ({
+            id: String(j.id || ''), title: String(j.title || '').slice(0, 300),
+            owner: String(j.owner || 'studio'), status: String(j.status || 'a_venir'),
+            dateMode: String(j.dateMode || ''), date: String(j.date || ''),
+            dateStart: String(j.dateStart || ''), dateEnd: String(j.dateEnd || ''),
+            durationValue: Number(j.durationValue) || 0, durationUnit: String(j.durationUnit || ''),
+          })),
+        });
+      };
+      push(container.planning, container.planningStart, '', '');
+      (Array.isArray(container.creations) ? container.creations : []).forEach((c: AnyObj) => {
+        push(c.planning, c.planningStart, String(c.id || ''), String(c.name || ''));
+      });
+    };
     // livrables : en attente de validation client, ou révision demandée par le client
     const collectLiv = (container: AnyObj | null, label: string, projectId: string) => {
       if (!container || !Array.isArray(container.livrables)) return;
@@ -1781,18 +1808,22 @@ async function handleDashboard(env: Env): Promise<Response> {
       });
     }
     collectLiv(pc, 'Partenaire créative', 'partner');
+    collectPlanning(pc, 'Partenaire créative', 'partner');
     // étapes de suivi non terminées (site + supports)
     const sw = getDomainObj(esp, 'siteWeb');
     if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
     collectLiv(sw, 'Site web', 'website');
+    collectPlanning(sw, 'Site web', 'website');
     const iv = getDomainObj(esp, 'identiteVisuelle');
     if (iv) (iv.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'branding', projectLabel: 'Identité visuelle', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
     collectLiv(iv, 'Identité visuelle', 'branding');
+    collectPlanning(iv, 'Identité visuelle', 'branding');
     const sd = esp.supportsDeCom && esp.supportsDeCom[0];
     if (sd) for (const pid of Object.keys(sd)) {
       const o = getSupportObj(esp, pid);
       if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
       collectLiv(o, supportLabel(pid), 'support-' + pid);
+    collectPlanning(o, supportLabel(pid), 'support-' + pid);
     }
     // Projets en cours (avancement) pour « Tes projets en cours » du cockpit.
     // % = étapes terminées / total ; le partenaire compte ses tâches (hors demandes).
@@ -1845,7 +1876,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
   upcoming.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
   activeProjects.sort((a, b) => String(a.urgency || '9999').localeCompare(String(b.urgency || '9999')));
-  return json({ deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  return json({ plannings, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

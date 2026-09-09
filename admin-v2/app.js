@@ -17,6 +17,7 @@
     priorities: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
     mytasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
     semaine: 'M4 4h4v16H4zM10 4h4v16h-4zM16 4h4v16h-4z',
+    plannings: 'M3 12h18M6 12a2 2 0 1 0 .01 0M12 12a2 2 0 1 0 .01 0M18 12a2 2 0 1 0 .01 0M6 8V5M12 8V5M18 8V5',
     alltasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
     planning: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
     kpi: 'M3 3v18h18M18 17V9M13 17V5M8 17v-3',
@@ -335,7 +336,7 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Toutes les tâches'], ['semaine', 'Ma semaine'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
+      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Toutes les tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];
@@ -583,6 +584,7 @@
     if (VIEW === 'semaine') return renderMaSemaine();
     if (VIEW === 'mytasks') return renderMyTasks();
     if (VIEW === 'visios') return renderVisios();
+    if (VIEW === 'plannings') return renderPlannings();
     if (VIEW === 'questionnaires') return renderQuestionnaires();
     if (VIEW === 'projtpl') return renderProjTpl();
     if (VIEW === 'incidents') return renderIncidents();
@@ -6010,12 +6012,16 @@
     var cur = abs ? new Date(startISO + 'T00:00:00') : null;
     var wk = 0;
     return (planning || []).map(function (j) {
-      var r = { j: j, label: '' };
+      // start/end = vraies dates quand elles sont connues (null en mode
+      // relatif « Sem 1-2 », qui n'a pas de date réelle). Sert à situer un
+      // planning dans le temps sans refaire le calcul ailleurs.
+      var r = { j: j, label: '', start: null, end: null };
       if (j.dateMode === 'range') {
         // Plage début→fin saisie à la main : indépendante du T0 et de la cascade.
         var rs = j.dateStart ? new Date(j.dateStart + 'T00:00:00') : null;
         var re = j.dateEnd ? new Date(j.dateEnd + 'T00:00:00') : null;
         if (rs || re) r.label = planFmtRange(rs || re, re || rs);
+        r.start = rs || re; r.end = re || rs;
         if (abs && re) cur = new Date(re); // la cascade des jalons suivants reprend après la plage
         return r;
       }
@@ -6025,7 +6031,8 @@
         else { var d = (j.durationUnit === 'semaines' ? (j.durationValue || 0) * 7 : (j.durationValue || 0)); e = s ? new Date(s.getTime() + d * 86400000) : null; }
         cur = e ? new Date(e) : cur;
         r.label = (s || e) ? planFmtRange(s, e) : '';
-      } else if (j.dateMode === 'fixed' && j.date) { r.label = planFmtRange(new Date(j.date + 'T00:00:00'), null); }
+        r.start = s || e; r.end = e || s;
+      } else if (j.dateMode === 'fixed' && j.date) { var fx = new Date(j.date + 'T00:00:00'); r.label = planFmtRange(fx, null); r.start = fx; r.end = fx; }
       else { var w = (j.durationUnit === 'semaines' ? (j.durationValue || 0) : Math.round((j.durationValue || 0) / 7 * 10) / 10); var a = Math.floor(wk) + 1, b = Math.max(a, Math.ceil(wk + w)); r.label = (a === b ? 'Sem ' + a : 'Sem ' + a + '-' + b); wk = wk + w; }
       return r;
     });
@@ -7994,6 +8001,109 @@
   function qnrTpl(id) { for (var i = 0; i < QNR.length; i++) if (QNR[i].id === id) return QNR[i]; return null; }
   function qnrCountBlocks(t) { var n = 0; (t.steps || []).forEach(function (s) { (s.blocks || []).forEach(function (b) { if (!qnrIsStatic(b.type)) n++; }); }); return n; }
 
+
+  /* ══ Plannings prévisionnels : où j'en suis, tous espaces confondus ══════
+   * Les plannings vivaient uniquement dans la fiche de chaque cliente, sous-
+   * onglet « Planning » : pour savoir où on en est il fallait les ouvrir un
+   * par un. Cet écran les met côte à côte.
+   * Les dates viennent de planCompute, la MÊME fonction que l'éditeur : cet
+   * écran ne recalcule rien, il ne peut donc pas le contredire. */
+  var PLAN_D = null, PLAN_FILTER = 'actifs';
+  function planDayStart(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  // Situation d'un planning : avancement, jalon courant, retard éventuel.
+  function planSituation(pl) {
+    var rows = planCompute(pl.jalons || [], pl.planningStart || '');
+    var today = planDayStart(new Date());
+    var total = rows.length;
+    var done = 0, late = [], current = null, next = null;
+    rows.forEach(function (r) {
+      var st = r.j.status || 'a_venir';
+      if (st === 'fait') { done++; return; }
+      // En retard : une échéance connue, dépassée, et le jalon pas terminé.
+      if (r.end && planDayStart(r.end) < today) late.push(r);
+      if (st === 'en_cours' && !current) current = r;
+      if (!next) next = r;
+    });
+    if (!current) current = next;            // rien « en cours » : le prochain à faire
+    var pct = total ? Math.round(done / total * 100) : 0;
+    return { rows: rows, total: total, done: done, pct: pct, late: late, current: current, ended: done >= total && total > 0 };
+  }
+  // Clé de tri : le plus urgent d'abord (retard, puis échéance la plus proche).
+  function planSortKey(si) {
+    if (si.ended) return 3e12;
+    if (si.late.length) return -1e12 + (si.late[0].end ? si.late[0].end.getTime() : 0);
+    var e = si.current && (si.current.end || si.current.start);
+    return e ? e.getTime() : 2e12;          // sans date connue : après ceux qui en ont
+  }
+  function planGo(key, pid) { SUBTAB[pid] = 'planning'; navClientTab(key, pid); }
+  function planSetFilter(f) { PLAN_FILTER = f; renderPlanBody(); }
+  function renderPlannings() {
+    setMain(topbar('Plannings', '', 'Où en est chaque planning prévisionnel, toutes clientes confondues') +
+      '<div class="wrap" id="plan-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    if (PLAN_D) { renderPlanBody(); }
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+      PLAN_D = d; if (VIEW === 'plannings') renderPlanBody();
+    }).catch(showError);
+  }
+  function renderPlanBody() {
+    var body = el('plan-body'); if (!body) return;
+    var all = ((PLAN_D && PLAN_D.plannings) || []).map(function (pl) { return { pl: pl, si: planSituation(pl) }; });
+    all.sort(function (a, b) { return planSortKey(a.si) - planSortKey(b.si); });
+    var nLate = all.filter(function (x) { return x.si.late.length && !x.si.ended; }).length;
+    var nDone = all.filter(function (x) { return x.si.ended; }).length;
+    var nWait = all.filter(function (x) { return !x.si.ended && x.si.current && (x.si.current.j.owner === 'cliente'); }).length;
+    var list = all.filter(function (x) {
+      if (PLAN_FILTER === 'retard') return x.si.late.length && !x.si.ended;
+      if (PLAN_FILTER === 'cliente') return !x.si.ended && x.si.current && x.si.current.j.owner === 'cliente';
+      if (PLAN_FILTER === 'termines') return x.si.ended;
+      return !x.si.ended;                    // « actifs » par défaut
+    });
+    var tabs = [['actifs', 'En cours', all.filter(function (x) { return !x.si.ended; }).length],
+                ['retard', 'En retard', nLate],
+                ['cliente', 'Chez la cliente', nWait],
+                ['termines', 'Terminés', nDone]];
+    var bar = '<div class="qbar" style="gap:8px;flex-wrap:wrap">' + tabs.map(function (t) {
+      return '<button class="btn btn--sm ' + (PLAN_FILTER === t[0] ? 'btn--dark' : 'btn--outline') + '" onclick="ADM.planSetFilter(\'' + t[0] + '\')">' + esc(t[1]) + (t[2] ? ' · ' + t[2] : '') + '</button>';
+    }).join('') + '</div>';
+    if (!all.length) { body.innerHTML = bar + '<div class="empty">Aucun planning prévisionnel pour l\'instant. Ils se remplissent depuis la fiche d\'une cliente, sous-onglet « Planning ».</div>'; return; }
+    if (!list.length) { body.innerHTML = bar + '<div class="empty">Rien dans cette sélection.</div>'; return; }
+    body.innerHTML = bar + list.map(planCardHtml).join('');
+  }
+  function planCardHtml(x) {
+    var pl = x.pl, si = x.si;
+    var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#F0E2D6', '#8a4a2c'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
+    var title = esc(pl.client || '') + ' · ' + esc(pl.projectLabel || '') + (pl.creationName ? ' · ' + esc(pl.creationName) : '');
+    var lateN = si.late.length;
+    var flag = si.ended
+      ? '<span class="cg-pill" style="background:#e6f0e2;color:#456039">Terminé</span>'
+      : (lateN ? '<span class="cg-pill" style="background:#F0E2D6;color:#8a4a2c">' + lateN + ' jalon' + (lateN > 1 ? 's' : '') + ' en retard</span>' : '');
+    // Le jalon courant : ce sur quoi le planning est arrêté aujourd'hui.
+    var cur = si.current;
+    var curHtml = '';
+    if (cur && !si.ended) {
+      var ow = OWN[cur.j.owner] || OWN.studio;
+      var isLate = cur.end && planDayStart(cur.end) < planDayStart(new Date());
+      curHtml = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">' +
+        '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + (cur.j.status === 'en_cours' ? 'En cours' : 'Prochain jalon') + '</span>' +
+        '<b style="font-size:14.5px;color:var(--terre)">' + esc(cur.j.title || 'Sans titre') + '</b>' +
+        (cur.label ? '<span class="cg-pill" style="background:' + (isLate ? '#F0E2D6' : 'var(--card)') + ';color:' + (isLate ? '#8a4a2c' : 'var(--terre-600)') + '">' + esc(cur.label) + '</span>' : '') +
+        '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
+      '</div>';
+    }
+    var barCol = si.ended ? '#456039' : (lateN ? '#8a4a2c' : 'var(--terre)');
+    return '<div class="card infocard" style="background:var(--card);max-width:860px">' +
+      '<div class="between" style="align-items:flex-start;gap:12px;flex-wrap:wrap">' +
+        '<div><div style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--terre)">' + title + '</div>' +
+          '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + si.done + ' / ' + si.total + ' jalon' + (si.total > 1 ? 's' : '') + ' terminé' + (si.done > 1 ? 's' : '') + '</div></div>' +
+        '<div style="display:flex;gap:8px;align-items:center">' + flag +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.planGo(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\')">Ouvrir</button></div>' +
+      '</div>' +
+      '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-top:12px">' +
+        '<div style="height:100%;width:' + si.pct + '%;background:' + barCol + ';border-radius:999px"></div></div>' +
+      curHtml +
+    '</div>';
+  }
+
   function renderQuestionnaires() {
     setMain(topbar('') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
@@ -8793,6 +8903,7 @@
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
+    planGo: planGo, planSetFilter: planSetFilter,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
