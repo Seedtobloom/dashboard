@@ -6068,6 +6068,10 @@
           '<div class="cg-jal__meta">' +
             '<label class="cg-fld"><span>Jalon</span><input class="cg-in" value="' + esc(j.jalon || '') + '" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'jalon\',this.value' + cq + ')" placeholder="Envoi V1, Retours…" style="min-width:130px"></label>' +
             '<label class="cg-fld"><span>Responsable</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'owner\',this.value' + cq + ')"><option value="studio"' + (j.owner === 'studio' ? ' selected' : '') + '>🎨 Toi</option><option value="cliente"' + (j.owner === 'cliente' ? ' selected' : '') + '>👤 Cliente</option><option value="les_deux"' + (j.owner === 'les_deux' ? ' selected' : '') + '>🤝 Vous deux</option></select></label>' +
+            // Cocher l'avancement : le statut était AFFICHÉ (pastille, point de
+            // couleur) sans qu'aucun contrôle ne permette de le changer. Les
+            // jalons restaient donc éternellement « à venir ».
+            '<label class="cg-fld"><span>Avancement</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'status\',this.value' + cq + ')"><option value="a_venir"' + (j.status !== 'en_cours' && j.status !== 'fait' ? ' selected' : '') + '>À venir</option><option value="en_cours"' + (j.status === 'en_cours' ? ' selected' : '') + '>En cours</option><option value="fait"' + (j.status === 'fait' ? ' selected' : '') + '>Fait</option></select></label>' +
             '<label class="cg-fld"><span>Échéance</span><select class="cg-in" onchange="ADM.pjSet(\'' + pid + '\',\'' + j.id + '\',\'dateMode\',this.value' + cq + ')"><option value="duration"' + (j.dateMode !== 'fixed' && j.dateMode !== 'range' ? ' selected' : '') + '>Durée</option><option value="range"' + (j.dateMode === 'range' ? ' selected' : '') + '>Plage de dates</option><option value="fixed"' + (j.dateMode === 'fixed' ? ' selected' : '') + '>Date fixe</option></select></label>' +
             timing +
             '<div class="cg-jal__actions">' +
@@ -8048,6 +8052,22 @@
     var e = si.current && (si.current.end || si.current.start);
     return e ? e.getTime() : 2e12;          // sans date connue : après ceux qui en ont
   }
+  // Cocher un jalon SANS quitter l'écran : c'est ici qu'on constate qu'un statut
+  // traîne, autant pouvoir le corriger sur place. La fiche cliente n'étant pas
+  // forcément chargée, on écrit directement au serveur puis on recharge la vue.
+  function planTick(key, pid, cid, jid, status) {
+    var body = { projectId: pid, status: status };
+    if (cid) body.creationId = cid;
+    jpost('/api/clients/' + key + '/planning/' + jid, body, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast(status === 'fait' ? 'Jalon marqué fait ✓' : (status === 'en_cours' ? 'Jalon en cours' : 'Jalon à venir'));
+      // Si la fiche de cette cliente est chargée, on la garde cohérente.
+      if (CURKEY === key && typeof refreshClient === 'function') { try { refreshClient(); } catch (e) {} }
+      api('/api/dashboard').then(function (r2) { return r2.json(); }).then(function (d) {
+        PLAN_D = d; if (VIEW === 'plannings') renderPlanBody();
+      }).catch(function () {});
+    }).catch(function () { toast('Erreur'); });
+  }
   function planGo(key, pid) { SUBTAB[pid] = 'planning'; navClientTab(key, pid); }
   function planSetFilter(f) { PLAN_FILTER = f; renderPlanBody(); }
   function renderPlannings() {
@@ -8108,8 +8128,20 @@
         '<b style="font-size:14.5px;color:var(--terre)">' + esc(cur.j.title || 'Sans titre') + '</b>' +
         (cur.label ? '<span class="cg-pill" style="background:' + (isLate ? '#F0E2D6' : 'var(--card)') + ';color:' + (isLate ? '#8a4a2c' : 'var(--terre-600)') + '">' + esc(cur.label) + '</span>' : '') +
         '<span class="cg-chip" style="background:' + ow[1] + ';color:' + ow[2] + '">' + ow[0] + '</span>' +
+        (cur.j.status !== 'en_cours' ? '<button class="btn btn--outline btn--sm" onclick="ADM.planTick(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\',\'' + esc(pl.creationId || '') + '\',\'' + esc(cur.j.id) + '\',\'en_cours\')">Démarrer</button>' : '') +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.planTick(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\',\'' + esc(pl.creationId || '') + '\',\'' + esc(cur.j.id) + '\',\'fait\')">Marquer fait</button>' +
       '</div>';
     }
+    // Statuts oubliés : on les liste avec leur bouton, pour les régler d'ici.
+    var staleHtml = (si.stale || []).length ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bone-d)">' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:8px">Dépassés par la suite du planning, il ne manque que la coche :</div>' +
+      si.stale.map(function (r) {
+        return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px">' +
+          '<span style="flex:1;min-width:140px;font-size:14px;color:var(--terre-600)">' + esc(r.j.title || 'Sans titre') + '</span>' +
+          (r.label ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + esc(r.label) + '</span>' : '') +
+          '<button class="btn btn--outline btn--sm" onclick="ADM.planTick(\'' + esc(pl.key) + '\',\'' + esc(pl.projectId) + '\',\'' + esc(pl.creationId || '') + '\',\'' + esc(r.j.id) + '\',\'fait\')">Marquer fait</button>' +
+        '</div>';
+      }).join('') + '</div>' : '';
     var barCol = si.ended ? '#456039' : (lateN ? '#8a4a2c' : 'var(--terre)');
     return '<div class="card infocard" style="background:var(--card);max-width:860px">' +
       '<div class="between" style="align-items:flex-start;gap:12px;flex-wrap:wrap">' +
@@ -8120,7 +8152,7 @@
       '</div>' +
       '<div style="height:8px;background:var(--bone-d);border-radius:999px;overflow:hidden;margin-top:12px">' +
         '<div style="height:100%;width:' + si.pct + '%;background:' + barCol + ';border-radius:999px"></div></div>' +
-      curHtml +
+      curHtml + staleHtml +
     '</div>';
   }
 
@@ -8923,7 +8955,7 @@
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
-    planGo: planGo, planSetFilter: planSetFilter,
+    planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
