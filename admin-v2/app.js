@@ -8015,18 +8015,31 @@
     var rows = planCompute(pl.jalons || [], pl.planningStart || '');
     var today = planDayStart(new Date());
     var total = rows.length;
-    var done = 0, late = [], current = null, next = null;
-    rows.forEach(function (r) {
+    // Front d'avancement : dernier jalon fait ou en cours. Le travail a
+    // DÉMONTRABLEMENT dépassé tout ce qui est avant.
+    var front = -1;
+    rows.forEach(function (r, i) {
+      var st = r.j.status || 'a_venir';
+      if (st === 'fait' || st === 'en_cours') front = i;
+    });
+    var done = 0, late = [], stale = [], current = null, firstOpen = null;
+    rows.forEach(function (r, i) {
       var st = r.j.status || 'a_venir';
       if (st === 'fait') { done++; return; }
-      // En retard : une échéance connue, dépassée, et le jalon pas terminé.
-      if (r.end && planDayStart(r.end) < today) late.push(r);
+      var passed = r.end && planDayStart(r.end) < today;
+      if (passed) {
+        // Un jalon non coché mais DÉPASSÉ par la suite du planning n'est pas un
+        // retard : c'est un statut qu'on a oublié de mettre à jour. Le signaler
+        // comme « en retard » ferait crier au loup à chaque planning mal tenu.
+        if (i < front) stale.push(r); else late.push(r);
+      }
       if (st === 'en_cours' && !current) current = r;
-      if (!next) next = r;
+      if (!firstOpen && i >= front) firstOpen = r;   // à faire à partir du front
     });
-    if (!current) current = next;            // rien « en cours » : le prochain à faire
+    if (!current) current = firstOpen;
+    if (!current) { rows.forEach(function (r) { if (!current && (r.j.status || 'a_venir') !== 'fait') current = r; }); }
     var pct = total ? Math.round(done / total * 100) : 0;
-    return { rows: rows, total: total, done: done, pct: pct, late: late, current: current, ended: done >= total && total > 0 };
+    return { rows: rows, total: total, done: done, pct: pct, late: late, stale: stale, current: current, ended: done >= total && total > 0 };
   }
   // Clé de tri : le plus urgent d'abord (retard, puis échéance la plus proche).
   function planSortKey(si) {
@@ -8055,12 +8068,15 @@
     var list = all.filter(function (x) {
       if (PLAN_FILTER === 'retard') return x.si.late.length && !x.si.ended;
       if (PLAN_FILTER === 'cliente') return !x.si.ended && x.si.current && x.si.current.j.owner === 'cliente';
+      if (PLAN_FILTER === 'acocher') return (x.si.stale || []).length > 0;
       if (PLAN_FILTER === 'termines') return x.si.ended;
       return !x.si.ended;                    // « actifs » par défaut
     });
+    var nStale = all.filter(function (x) { return (x.si.stale || []).length; }).length;
     var tabs = [['actifs', 'En cours', all.filter(function (x) { return !x.si.ended; }).length],
                 ['retard', 'En retard', nLate],
                 ['cliente', 'Chez la cliente', nWait],
+                ['acocher', 'À mettre à jour', nStale],
                 ['termines', 'Terminés', nDone]];
     var bar = '<div class="qbar" style="gap:8px;flex-wrap:wrap">' + tabs.map(function (t) {
       return '<button class="btn btn--sm ' + (PLAN_FILTER === t[0] ? 'btn--dark' : 'btn--outline') + '" onclick="ADM.planSetFilter(\'' + t[0] + '\')">' + esc(t[1]) + (t[2] ? ' · ' + t[2] : '') + '</button>';
@@ -8074,9 +8090,13 @@
     var OWN = { studio: ['🎨 Toi', '#eef3f6', '#305277'], cliente: ['👤 Cliente', '#F0E2D6', '#8a4a2c'], les_deux: ['🤝 Vous deux', '#eef1ec', '#3f5a37'] };
     var title = esc(pl.client || '') + ' · ' + esc(pl.projectLabel || '') + (pl.creationName ? ' · ' + esc(pl.creationName) : '');
     var lateN = si.late.length;
-    var flag = si.ended
-      ? '<span class="cg-pill" style="background:#e6f0e2;color:#456039">Terminé</span>'
-      : (lateN ? '<span class="cg-pill" style="background:#F0E2D6;color:#8a4a2c">' + lateN + ' jalon' + (lateN > 1 ? 's' : '') + ' en retard</span>' : '');
+    var staleN = (si.stale || []).length;
+    // Deux signaux bien distincts : un vrai retard (rien n'a avancé depuis) et
+    // un statut oublié (la suite du planning a déjà démarré). Le second est
+    // neutre : c'est une case à cocher, pas une alerte.
+    var flag = (si.ended ? '<span class="cg-pill" style="background:#e6f0e2;color:#456039">Terminé</span>' : '') +
+      (!si.ended && lateN ? '<span class="cg-pill" style="background:#F0E2D6;color:#8a4a2c">' + lateN + ' jalon' + (lateN > 1 ? 's' : '') + ' en retard</span>' : '') +
+      (staleN ? '<span class="cg-pill" style="background:var(--card);color:var(--muted)" title="Ces jalons sont dépassés par la suite du planning : il ne manque que la coche.">' + staleN + ' statut' + (staleN > 1 ? 's' : '') + ' à mettre à jour</span>' : '');
     // Le jalon courant : ce sur quoi le planning est arrêté aujourd'hui.
     var cur = si.current;
     var curHtml = '';
