@@ -646,7 +646,42 @@
   function emailsBody() {
     var intro = '<div class="card" style="background:var(--card)">' +
       '<div class="micro" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600)">Ces e-mails ne partent que lorsque tu cliques toi-même (invitation au bilan, relances). Tu peux modifier l\'objet et le message. Les mots entre accolades, comme <code class="emailvar">{prenom}</code>, sont remplacés automatiquement au moment de l\'envoi.</div></div>';
-    return intro + EMAIL_TPLS.map(emailCard).join('');
+    return intro + mailCfgCard() + EMAIL_TPLS.map(emailCard).join('');
+  }
+  /* ── Adresse de réponse des notifications ──────────────────────────────
+   * Les notifications partent d'une adresse « no-reply » : sans adresse de
+   * réponse, une cliente qui répond écrit dans le vide et croit t'avoir
+   * contactée. Réglable ici plutôt qu'en secret Cloudflare. */
+  var MAIL_CFG = null;
+  function mailCfgCard() {
+    if (!MAIL_CFG) return '';
+    var cur = MAIL_CFG.replyTo || '';
+    var heritee = !cur && MAIL_CFG.secretReplyTo ? MAIL_CFG.secretReplyTo : '';
+    return '<div class="card" style="background:var(--card)">' +
+      '<h3 style="margin:0 0 4px">Adresse de réponse</h3>' +
+      '<div class="micro" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600);margin-bottom:12px">' +
+        'Quand une cliente répond à une notification, sa réponse arrive à cette adresse.' +
+        (MAIL_CFG.from ? ' Les envois partent de <b>' + esc(MAIL_CFG.from) + '</b>.' : '') +
+        (heritee ? ' Actuellement héritée de la configuration serveur : <b>' + esc(heritee) + '</b>.' : '') +
+        (!cur && !heritee ? ' <span style="color:#8a4a2c">Aucune adresse définie : les réponses de tes clientes se perdent.</span>' : '') +
+      '</div>' +
+      '<div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<input class="inp" id="mailcfg-reply" type="email" value="' + esc(cur) + '" placeholder="hello@seedtobloom.fr" style="flex:1;min-width:220px">' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.mailCfgSave()">Enregistrer</button>' +
+      '</div>' +
+      '<div id="mailcfg-res" class="micro" style="text-transform:none;letter-spacing:0;margin-top:8px"></div>' +
+    '</div>';
+  }
+  function mailCfgSave() {
+    var v = (el('mailcfg-reply').value || '').trim();
+    var res = el('mailcfg-res');
+    jpost('/api/mail-config', { replyTo: v }, 'PATCH').then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.error) { res.style.color = 'var(--red)'; res.textContent = d.error; return; }
+      MAIL_CFG.replyTo = d.replyTo || '';
+      res.style.color = 'var(--green)';
+      res.textContent = d.replyTo ? 'Enregistré. Les réponses arriveront à ' + d.replyTo + '.' : 'Adresse effacée.';
+      toast('Enregistré ✓');
+    }).catch(function () { res.style.color = 'var(--red)'; res.textContent = 'Erreur d\'enregistrement.'; });
   }
   function emailCard(t) {
     var vars = (t.vars || []).map(function (v) { return '<code class="emailvar">{' + esc(v) + '}</code>'; }).join(' ');
@@ -687,8 +722,12 @@
   function renderReglages() {
     setMain(topbar('Réglages', '', 'Les paramètres partagés avec l\'espace de tes clients') + '<div class="wrap" style="max-width:820px">' + reglTabs() + '<div id="regl-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
     if (REGL_TAB === 'emails') {
-      api('/api/email-templates').then(function (r) { return r.json(); }).then(function (d) {
-        EMAIL_TPLS = d.templates || [];
+      Promise.all([
+        api('/api/email-templates').then(function (r) { return r.json(); }),
+        api('/api/mail-config').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      ]).then(function (res) {
+        EMAIL_TPLS = (res[0] && res[0].templates) || [];
+        MAIL_CFG = res[1] || {};
         var b = el('regl-body'); if (b) b.innerHTML = emailsBody();
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
     } else if (REGL_TAB === 'quick') {
@@ -8968,6 +9007,7 @@
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
+    mailCfgSave: mailCfgSave,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,

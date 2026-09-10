@@ -127,6 +127,10 @@ export default {
         }
         if (method === 'DELETE') { await env.KV_CLIENT.put(EK, JSON.stringify([])); return json({ ok: true }); }
       }
+      if (pathname === '/api/mail-config') {
+        if (method === 'GET') return handleMailConfigGet(env);
+        if (method === 'PATCH') return handleMailConfigSave(request, env);
+      }
       if (pathname === '/api/quick-replies') {
         if (method === 'GET') return handleQuickRepliesGet(env);
         if (method === 'PATCH') return handleQuickRepliesSave(request, env);
@@ -2163,6 +2167,34 @@ function emailWrapper(title: string, bodyHtml: string): string {
   <div class="b"><p><strong>${escHtml(title)}</strong></p>${bodyHtml}</div>
   <div class="f"><p>Seed to Bloom · seedtobloom.fr</p></div></div></body></html>`;
 }
+/* ── Adresse de réponse des notifications ────────────────────────────────
+ * Réglable depuis les Réglages plutôt qu'en secret Cloudflare : c'est une
+ * adresse qui change (rebranding, boîte dédiée), pas un identifiant technique.
+ * Le secret RESEND_REPLY_TO reste accepté comme valeur de repli. */
+async function mailReplyTo(env: Env): Promise<string> {
+  try {
+    const c = (await env.KV_ADMIN.get('admin:mail', { type: 'json' })) as AnyObj | null;
+    const v = c && typeof c.replyTo === 'string' ? c.replyTo.trim() : '';
+    if (v) return v;
+  } catch (e) { /* lecture KV indisponible : on retombe sur le secret */ }
+  return (env.RESEND_REPLY_TO || '').trim();
+}
+async function handleMailConfigGet(env: Env): Promise<Response> {
+  const c = (await env.KV_ADMIN.get('admin:mail', { type: 'json' })) as AnyObj | null;
+  return json({
+    replyTo: (c && typeof c.replyTo === 'string' ? c.replyTo : '') || '',
+    from: env.RESEND_FROM_EMAIL || '',
+    secretReplyTo: (env.RESEND_REPLY_TO || ''),
+  });
+}
+async function handleMailConfigSave(request: Request, env: Env): Promise<Response> {
+  const body = await readJson(request);
+  const raw = String(body.replyTo || '').trim().slice(0, 200);
+  // Vide = on efface (retour au secret, ou aucune adresse de réponse).
+  if (raw && !/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(raw)) return json({ error: 'Adresse invalide' }, 400);
+  await env.KV_ADMIN.put('admin:mail', JSON.stringify({ replyTo: raw }));
+  return json({ ok: true, replyTo: raw });
+}
 // Version texte d'un HTML d'e-mail. Un message envoyé en HTML SEUL est un
 // signal de spam classique : les filtres attendent les deux versions. On la
 // génère ici pour que les trois points d'envoi en profitent sans y penser.
@@ -2188,6 +2220,7 @@ function htmlToText(html: string): string {
 }
 async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<{ ok: boolean; status: number; error?: string }> {
   if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) return { ok: false, status: 0, error: 'RESEND_API_KEY / RESEND_FROM_EMAIL manquants' };
+  const replyTo = await mailReplyTo(env);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
   try {
@@ -2200,7 +2233,7 @@ async function sendEmail(env: Env, to: string, subject: string, html: string): P
       body: JSON.stringify({
         from: env.RESEND_FROM_EMAIL, to, subject, html,
         text: htmlToText(html),
-        ...(env.RESEND_REPLY_TO ? { reply_to: env.RESEND_REPLY_TO } : {}),
+        ...(replyTo ? { reply_to: replyTo } : {}),
       }),
       signal: ctrl.signal,
     });
