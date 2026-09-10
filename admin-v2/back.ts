@@ -23,6 +23,7 @@ export interface Env {
   R2_FILES: R2Bucket;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
+  RESEND_REPLY_TO?: string;   // adresse de réponse (optionnelle)
   INTERNAL_SECRET?: string;
   SPACE_URL?: string;
 }
@@ -2162,6 +2163,29 @@ function emailWrapper(title: string, bodyHtml: string): string {
   <div class="b"><p><strong>${escHtml(title)}</strong></p>${bodyHtml}</div>
   <div class="f"><p>Seed to Bloom · seedtobloom.fr</p></div></div></body></html>`;
 }
+// Version texte d'un HTML d'e-mail. Un message envoyé en HTML SEUL est un
+// signal de spam classique : les filtres attendent les deux versions. On la
+// génère ici pour que les trois points d'envoi en profitent sans y penser.
+function htmlToText(html: string): string {
+  return String(html || '')
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\s*\/(p|div|h[1-6]|li|tr)\s*>/gi, '\n')
+    .replace(/<\s*li[^>]*>/gi, '- ')
+    .replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, txt) => {
+      const label = String(txt).replace(/<[^>]+>/g, '').trim();
+      return label && label !== href ? `${label} : ${href}` : String(href);
+    })
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&laquo;/g, '\u00ab').replace(/&raquo;/g, '\u00bb')
+    .replace(/&eacute;/g, '\u00e9').replace(/&egrave;/g, '\u00e8').replace(/&agrave;/g, '\u00e0')
+    .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .split('\n').map((l) => l.trim()).join('\n')
+    .trim();
+}
 async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<{ ok: boolean; status: number; error?: string }> {
   if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) return { ok: false, status: 0, error: 'RESEND_API_KEY / RESEND_FROM_EMAIL manquants' };
   const ctrl = new AbortController();
@@ -2170,7 +2194,14 @@ async function sendEmail(env: Env, to: string, subject: string, html: string): P
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: env.RESEND_FROM_EMAIL, to, subject, html }),
+      // `text` : version lisible sans HTML (cf. htmlToText).
+      // `reply_to` : une réponse doit arriver dans TA boîte, pas partir dans le
+      // vide. Une adresse de réponse valide est aussi un signal de légitimité.
+      body: JSON.stringify({
+        from: env.RESEND_FROM_EMAIL, to, subject, html,
+        text: htmlToText(html),
+        ...(env.RESEND_REPLY_TO ? { reply_to: env.RESEND_REPLY_TO } : {}),
+      }),
       signal: ctrl.signal,
     });
     if (!res.ok) {
