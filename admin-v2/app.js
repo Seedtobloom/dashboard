@@ -610,7 +610,11 @@
     ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box" style="text-align:left">' +
       '<div class="admconfirm__title">Tester l\'envoi d\'e-mail</div>' +
-      '<div class="field mt"><label>Adresse de test</label><input class="inp" id="te-to" type="email" placeholder="toi@exemple.fr"></div>' +
+      '<div class="micro mt" style="text-transform:none;letter-spacing:0;line-height:1.6;color:var(--terre-600);background:var(--card);border-radius:10px;padding:12px 14px">' +
+        'Pour savoir si tes e-mails partent en spam et pourquoi : ouvre <b>mail-tester.com</b>, copie l\'adresse jetable qu\'il te donne, colle-la ici et envoie. Reviens ensuite sur le site pour voir le rapport (note sur 10, SPF, DKIM, DMARC, contenu).<br>' +
+        'Le test part par ton vrai circuit d\'envoi : c\'est donc ta configuration réelle qui est analysée.' +
+      '</div>' +
+      '<div class="field mt"><label>Adresse de test</label><input class="inp" id="te-to" type="email" placeholder="xxxxx@srv1.mail-tester.com"></div>' +
       '<div id="te-result" class="micro mt" style="text-transform:none;letter-spacing:0"></div>' +
       '<div class="admconfirm__row"><button class="btn btn--outline btn--sm" data-no>Fermer</button>' +
         '<button class="btn btn--sm" data-yes style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer le test</button></div></div>';
@@ -621,7 +625,15 @@
       var to = (el('te-to').value || '').trim(); if (!to) { toast('Adresse requise'); return; }
       var res = el('te-result'); res.textContent = 'Envoi en cours…';
       jpost('/api/test-email', { to: to }).then(function (r) { return r.json(); }).then(function (d) {
-        if (d.ok) { res.style.color = 'var(--green)'; res.textContent = 'Resend OK · e-mail envoyé à ' + to + '.'; toast('Email envoyé ✓'); }
+        // On affiche l'expéditeur même quand ça marche : un envoi peut réussir
+        // et finir en spam, et c'est justement l'adresse « from » qui le dit
+        // (une adresse de test du prestataire ne passera jamais les filtres).
+        if (d.ok) {
+          res.style.color = 'var(--green)';
+          res.innerHTML = 'Envoi réussi vers ' + esc(to) + '.<br>Expéditeur utilisé : <b>' + esc(d.from || '(non défini)') + '</b>' +
+            (/resend\.dev$/i.test(String(d.from || '')) ? '<br><span style="color:#8a4a2c">C\'est l\'adresse de test du prestataire : elle finira en spam. Il faut vérifier ton propre domaine dans Resend.</span>' : '');
+          toast('Email envoyé ✓');
+        }
         else { res.style.color = 'var(--red)'; res.textContent = 'Échec Resend · from : ' + (d.from || '(non défini)') + ' · statut ' + d.status + (d.error ? ' · ' + d.error : ''); }
       }).catch(function () { res.style.color = 'var(--red)'; res.textContent = 'Erreur réseau.'; });
     };
