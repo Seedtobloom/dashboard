@@ -1791,6 +1791,7 @@ async function handleDashboard(env: Env): Promise<Response> {
             // État des envois de retours : combien de versions envoyées, où en
             // est la dernière, et depuis quand elle attend.
             sentCount: livs.length,
+            lastId: last ? (last.id || '') : '',
             lastSentAt: last ? (last.createdAt || '') : '',
             lastStatus: last ? (last.status || 'a_valider') : '',
             lastName: last ? (last.name || '') : '',

@@ -1463,7 +1463,9 @@
     return '<div class="at-task" onclick="' + oc + '"><span class="at-task__st">' + atStIcon(x.status) + '</span>' +
       '<div class="at-task__b"><div class="at-task__t">' + esc(x.title || 'Tâche') + '</div>' +
       '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span>' + atReviewChip(x) + '<span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atDueLbl(x) + '</div></div>' +
-      '<div class="at-act" onclick="event.stopPropagation()">' + plan + '<button class="pbtn" onclick="' + oc + '">Ouvrir</button></div></div>';
+      '<div class="at-act" onclick="event.stopPropagation()">' + plan +
+      (x.status !== 'done' && !x.archived ? '<button class="pbtn pbtn--ok" title="Clôturer sans attendre la cliente" onclick="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')">Clôturer</button>' : '') +
+      '<button class="pbtn" onclick="' + oc + '">Ouvrir</button></div></div>';
   }
   function atPlan(key, id) {
     var inp = el('atp-' + id); var v = inp ? (inp.value || '').trim() : '';
@@ -1546,6 +1548,21 @@
     var briefTxt = (x.content || '').trim();
     var brief = briefTxt ? esc(briefTxt) : '<span style="color:var(--muted)">Pas de brief renseigné pour cette tâche.</span>';
     var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600)">🔗 Lien déposé par la cliente</a></div>' : '';
+    // Lien de révision : celui que TU envoies à la cliente. Il était stocké et
+    // transmis, mais affiché nulle part : une fois envoyé, impossible de le
+    // retrouver depuis la tâche. Seul le lien reçu DE la cliente l'était.
+    var rl = (x.reviewLink || '').trim();
+    var rlHref = /^https?:\/\//i.test(rl) ? rl : 'https://' + rl;
+    var sentOn = x.lastSentAt || x.reviewSentAt || '';
+    var rev = rl ? '<div style="margin-top:12px;padding:12px 14px;background:var(--card);border-radius:11px">' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:6px">Lien de révision envoyé à la cliente' +
+          (sentOn ? ' · ' + esc(fmtDate(sentOn)) : '') +
+          ((x.sentCount || 0) > 1 ? ' · version ' + x.sentCount : '') + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          '<a href="' + esc(rlHref) + '" target="_blank" rel="noopener" class="pbtn">Ouvrir le lien</a>' +
+          '<button class="pbtn" onclick="ADM.atCopyLink(\'' + esc(rl.replace(/'/g, "\\'")) + '\')">Copier</button>' +
+          '<span style="flex:1;min-width:0;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(rl) + '</span>' +
+        '</div></div>' : '';
     var atts = (x.attachments || []).filter(function (a) { return a.key; });
     var files = atts.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + atts.map(function (a) { return '<a class="pbtn" href="/api/clients/' + key + '/files/' + encodeURIComponent(a.key) + '/download">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
     var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
@@ -1567,7 +1584,7 @@
         '<div class="at-dr__t">' + esc(x.title || 'Tâche') + '</div>' +
         '<div>' + atDueLbl(x) + '</div></div>' +
       '<div class="at-dr__body">' +
-        '<p class="at-dr__lab">Le brief</p><div class="at-dr__brief">' + brief + link + files + '</div>' +
+        '<p class="at-dr__lab">Le brief</p><div class="at-dr__brief">' + brief + link + files + rev + '</div>' +
         timeBlock +
         '<p class="at-dr__lab" style="margin-top:24px">Échange avec la cliente</p><div id="at-dr-cmts"><div class="micro" style="color:var(--muted)">Chargement…</div></div>' +
       '</div>' +
@@ -1609,6 +1626,37 @@
   }
   // Changement du mois : on ré-enregistre temps + mois ensemble (même save).
   function atSetMonth(key, id) { atSetTime(key, id, false); }
+  function atCopyLink(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('Lien copié ✓'); }, function () { toast(url); });
+    else toast(url);
+  }
+  /* ── Clôturer une tâche sans attendre la cliente ──────────────────────
+   * Beaucoup de clientes ne valident jamais : la tâche reste indéfiniment
+   * « à valider » et le livrable « en attente ». On clôt les deux d'un coup,
+   * sinon la tâche passe à « terminée » en laissant derrière elle un livrable
+   * qui attend encore, et l'écran se contredit. */
+  function atCloseTask(key, id) {
+    var x = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
+    var pending = x && (x.lastStatus === 'a_valider');
+    admConfirm({
+      title: 'Clôturer cette tâche ?',
+      message: pending
+        ? 'La version en attente sera marquée validée et la tâche terminée, sans attendre la cliente.'
+        : 'La tâche sera marquée terminée.',
+      yes: 'Oui, clôturer', no: 'Annuler'
+    }, function () {
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', status: 'done' }, 'PATCH').then(function (r) {
+        if (!r.ok) { toast('Erreur'); return; }
+        // Le livrable encore « à valider » doit suivre, sinon la tâche est
+        // terminée mais continue d'afficher « attend sa validation ».
+        if (pending && x.lastId) {
+          jpost('/api/clients/' + key + '/deliverables/' + x.lastId, { projectId: 'partner', status: 'valide' }, 'PATCH').catch(function () {});
+        }
+        toast('Tâche clôturée ✓');
+        atClose(); atRefresh();
+      }).catch(function () { toast('Erreur'); });
+    });
+  }
   function atClose() { var d = el('at-dr'), b = el('at-bk'); if (d) d.classList.remove('on'); if (b) b.classList.remove('on'); }
   function renderPrioBody(d) {
       var right = '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>';
@@ -9068,6 +9116,7 @@
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
+    atCloseTask: atCloseTask, atCopyLink: atCopyLink,
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, atSetTime: atSetTime, atSetMonth: atSetMonth, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
