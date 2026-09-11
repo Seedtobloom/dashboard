@@ -1374,7 +1374,31 @@
   function atDdiff(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); var td = new Date(); td.setHours(0, 0, 0, 0); return Math.round((t - td) / 86400000); }
   function atOffer(x) { return (x.project === 'maintenance' || x.kind === 'ticket') ? 'maint' : 'part'; }
   function atUrg(x) { if (x.status === 'review' || x.status === 'waiting_client') return 'attente'; if (!x.dueDate) return 'plan'; var n = atDdiff(x.dueDate); return n < 0 ? 'late' : n === 0 ? 'today' : n <= 7 ? 'week' : 'later'; }
-  function atList() { return ((AT_D && AT_D.deadlines) || []).slice(); }
+  // Source : la liste EXHAUSTIVE (terminées et archivées comprises). `deadlines`
+  // reste le repli pour un serveur pas encore à jour, mais elle écarte le
+  // terminé et l'archivé : sur cette source les onglets correspondants seraient
+  // vides.
+  function atList() {
+    var full = (AT_D && AT_D.tasksAll) || null;
+    if (full && full.length) return full.slice();
+    return ((AT_D && AT_D.deadlines) || []).slice();
+  }
+  // État d'une tâche, ramené aux catégories de la vue.
+  function atState(x) {
+    if (x.archived) return 'archive';
+    var st = x.status || 'todo';
+    if (st === 'done') return 'termine';
+    if (st === 'review' || st === 'waiting_client') return 'valider';
+    if (st === 'in_progress') return 'wip';
+    // « À venir » : rien n'a commencé et le démarrage est daté dans le futur.
+    var sd = String(x.startDate || '');
+    if (sd && !(x.timeSpentSeconds > 0)) {
+      var d0 = new Date(sd + 'T00:00:00');
+      var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+      if (!isNaN(d0) && d0 > t0) return 'avenir';
+    }
+    return 'todo';
+  }
   function renderAllTasks() {
     setMain(topbar('Toutes les tâches', '', 'Tout ton travail client au même endroit. Filtre, trie, repère-toi') + '<div class="wrap atwrap" id="at-body" style="max-width:1000px"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>' +
       '<div class="at-bk" id="at-bk" onclick="ADM.atClose()"></div><div class="at-dr" id="at-dr"><div id="at-dr-in"></div></div>');
@@ -1391,10 +1415,12 @@
     if (AT_CLIENT && x.client !== AT_CLIENT) return false;
     if (AT_OFFER && atOffer(x) !== AT_OFFER) return false;
     if (q && ((x.title || '') + ' ' + (x.client || '')).toLowerCase().indexOf(q) < 0) return false;
+    var stx = atState(x);
+    // Hors sélection explicite, le travail clos ne pollue pas la liste.
+    if (AT_FILTER !== 'termine' && AT_FILTER !== 'archive' && (stx === 'termine' || stx === 'archive')) return false;
     if (AT_FILTER !== 'all') {
       var u = atUrg(x);
-      if (AT_FILTER === 'todo' && x.status !== 'todo') return false;
-      if (AT_FILTER === 'wip' && x.status !== 'in_progress') return false;
+      if (['todo', 'wip', 'valider', 'avenir', 'termine', 'archive'].indexOf(AT_FILTER) !== -1) return stx === AT_FILTER;
       if (['attente', 'plan', 'late', 'today'].indexOf(AT_FILTER) !== -1 && u !== AT_FILTER) return false;
     }
     return true;
@@ -1411,6 +1437,24 @@
     var t = n < 0 ? ((-n) + ' j de retard') : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : ('dans ' + n + ' j');
     return '<span class="at-due ' + cls + '">' + t + '</span>';
   }
+  /* ── Où en est l'envoi des retours d'une tâche ────────────────────────
+   * Une tâche « en cours » ne dit pas si une version est partie, si elle
+   * attend la cliente, ou si des retours sont à intégrer. C'est pourtant la
+   * première question qu'on se pose sur un travail créatif. */
+  function atReview(x) {
+    var n = x.sentCount || 0;
+    if (x.needsRework || x.lastStatus === 'refuse' || x.lastStatus === 'revision') return { lbl: 'Retours à intégrer', bg: '#F0E2D6', col: '#8a4a2c', n: n };
+    if (x.lastStatus === 'a_valider') return { lbl: 'Attend sa validation', bg: '#E8F1FF', col: '#35608f', n: n };
+    if (x.lastStatus === 'valide') return { lbl: 'Validé', bg: '#e6f0e2', col: '#456039', n: n };
+    if (!n) return { lbl: '', bg: '', col: '', n: 0 };
+    return { lbl: 'Version envoyée', bg: 'var(--card)', col: 'var(--terre-600)', n: n };
+  }
+  function atReviewChip(x) {
+    if (x.archived) return '';
+    var r = atReview(x);
+    if (!r.lbl) return '';
+    return '<span class="at-otag" style="background:' + r.bg + ';color:' + r.col + '">' + esc(r.lbl) + (r.n > 1 ? ' · v' + r.n : '') + '</span>';
+  }
   function atRow(x) {
     var otag = atOffer(x) === 'maint' ? ['Maintenance', 'at-otag--maint'] : ['Partenaire créative', 'at-otag--part'];
     var oc = 'ADM.atOpen(\'' + x.key + '\',\'' + x.id + '\')';
@@ -1418,13 +1462,34 @@
       ? '<input type="date" class="at-plan" id="atp-' + x.id + '"><button class="pbtn pbtn--ok" onclick="ADM.atPlan(\'' + x.key + '\',\'' + x.id + '\')">Planifier</button>' : '';
     return '<div class="at-task" onclick="' + oc + '"><span class="at-task__st">' + atStIcon(x.status) + '</span>' +
       '<div class="at-task__b"><div class="at-task__t">' + esc(x.title || 'Tâche') + '</div>' +
-      '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span><span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atDueLbl(x) + '</div></div>' +
+      '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span>' + atReviewChip(x) + '<span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atDueLbl(x) + '</div></div>' +
       '<div class="at-act" onclick="event.stopPropagation()">' + plan + '<button class="pbtn" onclick="' + oc + '">Ouvrir</button></div></div>';
   }
   function atPlan(key, id) {
     var inp = el('atp-' + id); var v = inp ? (inp.value || '').trim() : '';
     if (!v) { toast('Choisis une date'); return; }
     jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+  }
+  // Les états « clos » ou « pas encore commencé » n'ont rien à faire dans un
+  // regroupement par urgence : une tâche terminée classée « En retard » parce
+  // que son échéance est passée n'a aucun sens. Pour eux, liste à plat, triée
+  // par la date qui compte.
+  var AT_FLAT = ['termine', 'archive', 'avenir', 'valider'];
+  function atListHtml(rows) {
+    if (AT_FLAT.indexOf(AT_FILTER) !== -1) {
+      var lbl = { termine: 'Terminées', archive: 'Archivées', avenir: 'À venir', valider: 'À valider' }[AT_FILTER];
+      var srt = rows.slice().sort(function (a, b) {
+        if (AT_FILTER === 'avenir') return String(a.startDate || '').localeCompare(String(b.startDate || ''));
+        return String(b.completedAt || b.dueDate || b.createdAt || '').localeCompare(String(a.completedAt || a.dueDate || a.createdAt || ''));
+      });
+      if (!srt.length) return '';
+      return '<div class="at-grp"><div class="at-grp__h"><span class="at-grp__t">' + lbl + '</span><span class="at-grp__n">' + srt.length + '</span></div>' + srt.map(atRow).join('') + '</div>';
+    }
+    return AT_GROUPS.map(function (g) {
+      var gr = rows.filter(function (x) { return atUrg(x) === g[0]; });
+      if (!gr.length) return '';
+      return '<div class="at-grp ' + g[2] + '"><div class="at-grp__h"><span class="at-grp__t">' + g[1] + '</span><span class="at-grp__n">' + gr.length + '</span></div>' + gr.map(atRow).join('') + '</div>';
+    }).join('');
   }
   function renderAllTasksBody() {
     var body = el('at-body'); if (!body) return;
@@ -1440,27 +1505,31 @@
     var bar = '<div class="at-bar"><div class="at-search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--terre-600)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="at-q" value="' + esc(AT_Q) + '" placeholder="Rechercher une tâche, une cliente..." oninput="ADM.atOnQ(this.value)"></div>' +
       '<select class="at-sel" id="at-client" onchange="ADM.atOnClient(this.value)">' + copts + '</select>' +
       '<select class="at-sel" id="at-offer" onchange="ADM.atOnOffer(this.value)"><option value="">Toutes les offres</option><option value="part"' + (AT_OFFER === 'part' ? ' selected' : '') + '>Partenaire créative</option><option value="maint"' + (AT_OFFER === 'maint' ? ' selected' : '') + '>Maintenance</option></select></div>';
-    var chips = '<div class="at-chips">' + [['all', 'Toutes', ''], ['todo', 'À faire', 'rgba(17,7,4,.25)'], ['wip', 'En cours', 'var(--gold-chip)'], ['attente', 'Attente client', 'var(--brume)'], ['plan', 'Sans date', 'var(--terre-600)']].map(function (ch) {
+    // Toutes les étapes de vie d'une tâche, y compris le travail clos, avec
+    // leur compte : c'est la question « où en est quoi » posée d'un coup d'œil.
+    var cs = { all: 0, todo: 0, wip: 0, valider: 0, avenir: 0, termine: 0, archive: 0 };
+    all.forEach(function (x) { var k = atState(x); if (cs[k] !== undefined) cs[k]++; if (k !== 'termine' && k !== 'archive') cs.all++; });
+    var chips = '<div class="at-chips">' + [
+      ['all', 'En cours de vie', ''],
+      ['todo', 'À faire', 'rgba(17,7,4,.25)'],
+      ['wip', 'En cours', 'var(--gold-chip)'],
+      ['valider', 'À valider', '#C5DEFF'],
+      ['avenir', 'À venir', '#CD8F6E'],
+      ['termine', 'Terminées', '#456039'],
+      ['archive', 'Archivées', 'var(--bone-d)'],
+    ].map(function (ch) {
       var on = AT_FILTER === ch[0];
-      return '<span class="at-chip' + (on ? ' on' : '') + '" onclick="ADM.atSetFilter(\'' + ch[0] + '\')">' + (ch[2] ? '<i style="background:' + ch[2] + '"></i>' : '') + ch[1] + '</span>';
+      return '<span class="at-chip' + (on ? ' on' : '') + '" onclick="ADM.atSetFilter(\'' + ch[0] + '\')">' + (ch[2] ? '<i style="background:' + ch[2] + '"></i>' : '') + esc(ch[1]) + '<b style="margin-left:6px;opacity:.55">' + (cs[ch[0]] || 0) + '</b></span>';
     }).join('') + '</div>';
     // Regroupé par urgence
-    var listHtml = AT_GROUPS.map(function (g) {
-      var gr = rows.filter(function (x) { return atUrg(x) === g[0]; });
-      if (!gr.length) return '';
-      return '<div class="at-grp ' + g[2] + '"><div class="at-grp__h"><span class="at-grp__t">' + g[1] + '</span><span class="at-grp__n">' + gr.length + '</span></div>' + gr.map(atRow).join('') + '</div>';
-    }).join('');
+    var listHtml = atListHtml(rows);
     if (!listHtml) listHtml = '<div class="at-empty">Aucune tâche pour ces filtres.</div>';
     body.innerHTML = '<div class="at-strip">' + strip + '</div>' + bar + chips + '<div id="at-list">' + listHtml + '</div>';
   }
   // Re-rendu léger sur saisie/filtre sans reconstruire les <select> (pour garder le focus).
   function atRenderBody() {
     var rows = atList().filter(atMatch);
-    var listHtml = AT_GROUPS.map(function (g) {
-      var gr = rows.filter(function (x) { return atUrg(x) === g[0]; });
-      if (!gr.length) return '';
-      return '<div class="at-grp ' + g[2] + '"><div class="at-grp__h"><span class="at-grp__t">' + g[1] + '</span><span class="at-grp__n">' + gr.length + '</span></div>' + gr.map(atRow).join('') + '</div>';
-    }).join('');
+    var listHtml = atListHtml(rows);
     var l = el('at-list'); if (l) l.innerHTML = listHtml || '<div class="at-empty">Aucune tâche pour ces filtres.</div>';
   }
   // ── Panneau latéral : brief + échange (chargé de la fiche) ──

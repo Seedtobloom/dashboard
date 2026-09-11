@@ -1640,6 +1640,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const validated: AnyObj[] = []; // livrables validés par la cliente, pas encore consultés
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
   const plannings: AnyObj[] = []; // plannings prévisionnels, tous espaces confondus
+  const tasksAll: AnyObj[] = []; // TOUTES les tâches, terminées et archivées comprises
   const weekTasks: AnyObj[] = []; // tâches Partenaire créative actives, à agréger dans « Ma semaine »
   const activeProjects: AnyObj[] = []; // projets en cours (avancement) pour « Tes projets en cours »
   // Temps chronométré cette semaine (depuis lundi 00h) : somme des sessions.
@@ -1767,6 +1768,36 @@ async function handleDashboard(env: Env): Promise<Response> {
           inbox.push({ key: ci.key, client: who, id: t.id, title: t.title || '', content: t.content || '', blocks: Array.isArray(t.blocks) ? t.blocks : [], table: (t.table && typeof t.table === 'object') ? t.table : null, urgency: t.urgency || 'normal', dueDate: t.dueDate || '', createdAt: t.createdAt || '', demandeType: t.demandeType || '', attachments: atts, clientLink, forfaitRemaining: fs.remaining, forfaitConfigured: fs.configured, monthCount, avgMinutes });
           return; // ne pas la remonter dans les autres listes
         }
+        // ── Vue « Toutes les tâches » ────────────────────────────────────
+        // Liste EXHAUSTIVE, à part de `deadlines` : celle-ci écarte le terminé
+        // et l'archivé (c'est une liste d'échéances) et sert aux Priorités. Les
+        // mélanger ferait réapparaître du travail clos dans ces écrans-là.
+        {
+          const livs = (Array.isArray(pc.livrables) ? pc.livrables : []).filter((l: AnyObj) => l.taskId === t.id);
+          livs.sort((a1: AnyObj, b1: AnyObj) => String(a1.createdAt || '').localeCompare(String(b1.createdAt || '')));
+          const last = livs.length ? livs[livs.length - 1] : null;
+          const hist2: AnyObj[] = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
+          tasksAll.push({
+            key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative',
+            id: t.id, title: t.title || '', status: t.status || 'todo',
+            archived: !!t.archived, stage: t.stage || '',
+            dueDate: t.dueDate || '', doDate: t.doDate || '', startDate: t.startDate || '',
+            createdAt: t.createdAt || '', completedAt: t.completedAt || '',
+            pole: t.pole || '', content: t.content || '',
+            timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
+            estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0,
+            needsRework: !!t.needsRework,
+            clientFeedbackAt: t.clientFeedbackAt || '',
+            // État des envois de retours : combien de versions envoyées, où en
+            // est la dernière, et depuis quand elle attend.
+            sentCount: livs.length,
+            lastSentAt: last ? (last.createdAt || '') : '',
+            lastStatus: last ? (last.status || 'a_valider') : '',
+            lastName: last ? (last.name || '') : '',
+            roundCount: hist2.length,
+            reviewLink: t.reviewLink || '',
+          });
+        }
         // Tâche Partenaire créative active → agrégée dans « Ma semaine ».
         if (!t.archived && t.status !== 'done') {
           weekTasks.push({ key: ci.key, client: who, id: t.id, title: t.title || '', dueDate: t.dueDate || '', doDate: t.doDate || null, estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, status: t.status || 'todo', stage: t.stage || '' });
@@ -1881,7 +1912,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
   upcoming.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
   activeProjects.sort((a, b) => String(a.urgency || '9999').localeCompare(String(b.urgency || '9999')));
-  return json({ plannings, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  return json({ tasksAll, plannings, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
