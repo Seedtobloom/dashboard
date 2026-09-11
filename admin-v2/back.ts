@@ -15,7 +15,7 @@
  * saisies ensemble. Session 24h (cookie HttpOnly stb_admin).
  */
 
-import { stbTaskMinByMonth, stbForfaitState } from '../shared/forfait-model.js';
+import { stbTaskMinByMonth, stbForfaitState, stbSessionMin } from '../shared/forfait-model.js';
 
 export interface Env {
   KV_CLIENT: KVNamespace;
@@ -1791,6 +1791,13 @@ async function handleDashboard(env: Env): Promise<Response> {
             // État des envois de retours : combien de versions envoyées, où en
             // est la dernière, et depuis quand elle attend.
             sentCount: livs.length,
+            // Les saisies de temps, pour que le studio ait un repère de ce
+            // qu'il a déjà compté et sur quel mois.
+            entries: (Array.isArray(t.sessions) ? t.sessions : []).map((x: AnyObj) => ({
+              id: String(x.id || ''), month: String(x.start || '').slice(0, 7),
+              minutes: Math.round(stbSessionMin(x)), manual: x.manual === true, at: String(x.at || ''),
+            })).filter((x: AnyObj) => x.minutes > 0),
+            workMonth: t.workMonth || '',
             lastId: last ? (last.id || '') : '',
             lastSentAt: last ? (last.createdAt || '') : '',
             lastStatus: last ? (last.status || 'a_valider') : '',
@@ -2098,6 +2105,40 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
     // Garde anti-écrasement : un chrono reparti d'un état périmé ne peut pas
     // réduire le total. La saisie manuelle passe forceTime pour corriger.
     t.timeSpentSeconds = b.forceTime === true ? nv : Math.max(nv, t.timeSpentSeconds || 0);
+  }
+  /* ── Saisie de temps POUR UN MOIS donné ───────────────────────────────
+   * Un travail s'étale : 2 h en septembre, 1 h en octobre. Un total unique ne
+   * sait pas dire ça, il ne peut tomber que dans un seul mois. Chaque saisie
+   * est donc enregistrée comme une SESSION datée dans son mois, exactement
+   * comme le fait le chrono. Aucun concept nouveau : la jauge du forfait, le
+   * détail du mois et l'historique répartissent déjà par mois.
+   * Le total de la tâche devient la somme de ses saisies. */
+  if (b.timeEntry && typeof b.timeEntry === 'object') {
+    const mth = String(b.timeEntry.month || '');
+    const mins = Math.max(0, Math.min(100000, Math.round(Number(b.timeEntry.minutes) || 0)));
+    if (/^\d{4}-\d{2}$/.test(mth) && mins > 0) {
+      if (!Array.isArray(t.sessions)) t.sessions = [];
+      // Milieu de mois : la date sert uniquement à ranger dans le bon mois,
+      // sans risque de bascule liée au fuseau horaire.
+      t.sessions.push({ id: genId(), start: mth + '-15T12:00:00.000Z', minutes: mins, manual: true, at: nowIso() });
+      if (t.sessions.length > 200) t.sessions = t.sessions.slice(-200);
+      const tot = t.sessions.reduce((acc: number, x: AnyObj) => acc + stbSessionMin(x), 0);
+      t.timeSpentMinutes = Math.round(tot);
+      t.timeSpentSeconds = Math.round(tot * 60);
+      // Un découpage explicite rend le mois forcé caduc : le garder ferait
+      // cohabiter deux vérités contradictoires sur la même tâche.
+      t.workMonth = '';
+    }
+  }
+  // Retrait d'une saisie (correction d'erreur).
+  if (b.removeTimeEntry) {
+    const rid = String(b.removeTimeEntry);
+    if (Array.isArray(t.sessions)) {
+      t.sessions = t.sessions.filter((x: AnyObj) => String(x && x.id) !== rid);
+      const tot2 = t.sessions.reduce((acc: number, x: AnyObj) => acc + stbSessionMin(x), 0);
+      t.timeSpentMinutes = Math.round(tot2);
+      t.timeSpentSeconds = Math.round(tot2 * 60);
+    }
   }
   // Journal des sessions de chrono : heure de début et de fin de chaque
   // période travaillée (envoyées à la mise en pause).

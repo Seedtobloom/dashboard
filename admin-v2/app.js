@@ -1571,12 +1571,40 @@
     var isMaint = atOffer(x) === 'maint';
     var curMin = x.timeSpentMinutes || Math.round((x.timeSpentSeconds || 0) / 60) || 0;
     var curH = Math.floor(curMin / 60), curM = curMin % 60;
+    // Saisie du temps PAR MOIS. Un travail s'étale : 2 h en septembre, 1 h en
+    // octobre. Un total unique ne sait pas dire ça. Chaque saisie est datée sur
+    // son mois, et la liste te sert de repère de ce que tu as déjà compté.
+    var ents = (x.entries || []).slice().sort(function (a, b) { return String(a.month).localeCompare(String(b.month)); });
+    var byM = {};
+    ents.forEach(function (e) { byM[e.month] = (byM[e.month] || 0) + e.minutes; });
+    var months = Object.keys(byM).sort();
+    function hm2(m) { m = Math.round(m); var h = Math.floor(m / 60), r = m % 60; return r ? (h + 'h' + String(r).padStart(2, '0')) : (h + ' h'); }
+    function mLbl(ym) {
+      var d = new Date(ym + '-15T12:00:00Z');
+      return isNaN(d) ? ym : d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    }
+    var rowsHtml = ents.map(function (e) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--bone-d)">' +
+        '<span style="flex:1;min-width:0;font-size:13.5px;color:var(--terre)">' + esc(mLbl(e.month)) + '</span>' +
+        (e.at ? '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">saisi le ' + esc(fmtDate(e.at)) + '</span>' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">chrono</span>') +
+        '<b style="font-variant-numeric:tabular-nums;min-width:56px;text-align:right">' + hm2(e.minutes) + '</b>' +
+        (e.id ? '<button class="pbtn" title="Retirer cette saisie" onclick="ADM.atDelEntry(\'' + key + '\',\'' + x.id + '\',\'' + esc(e.id) + '\')">✕</button>' : '') +
+      '</div>';
+    }).join('');
+    var totalMin = ents.reduce(function (a, e) { return a + e.minutes; }, 0);
+    // Repli : ancien total saisi sans détail par mois (tâches d'avant).
+    var legacy = (!ents.length && curMin > 0)
+      ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:8px 0">' + hm2(curMin) + ' enregistrées sans détail par mois' + (x.workMonth ? ', comptées en ' + esc(mLbl(x.workMonth)) : '') + '.</div>'
+      : '';
+    var moisDef = (new Date()).toISOString().slice(0, 7);
     var timeBlock =
-      '<p class="at-dr__lab" style="margin-top:24px">Temps passé</p>' +
-      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-        '<input class="inp" id="att-h-' + x.id + '" type="number" min="0" value="' + curH + '" style="width:64px" onchange="ADM.atSetTime(\'' + key + '\',\'' + x.id + '\',' + isMaint + ')"><span class="micro" style="text-transform:none;letter-spacing:0">h</span>' +
-        '<input class="inp" id="att-m-' + x.id + '" type="number" min="0" max="59" value="' + curM + '" style="width:64px" onchange="ADM.atSetTime(\'' + key + '\',\'' + x.id + '\',' + isMaint + ')"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
-        (isMaint ? '' : '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-left:10px">Compté en</span><input class="inp" id="att-wm-' + x.id + '" type="month" value="' + esc(x.workMonth || '') + '" style="width:158px" onchange="ADM.atSetMonth(\'' + key + '\',\'' + x.id + '\',this.value)" title="Forcer le mois de rattachement (laisser vide = automatique)">') +
+      '<p class="at-dr__lab" style="margin-top:24px">Temps passé' + (totalMin ? ' · ' + hm2(totalMin) + (months.length > 1 ? ' sur ' + months.length + ' mois' : '') : '') + '</p>' +
+      (rowsHtml || legacy || '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:6px 0">Aucun temps saisi.</div>') +
+      '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--bone-d)">' +
+        '<input class="inp" id="ate-m-' + x.id + '" type="month" value="' + moisDef + '" style="width:auto">' +
+        '<input class="inp" id="ate-h-' + x.id + '" type="number" min="0" placeholder="0" style="width:60px"><span class="micro" style="text-transform:none;letter-spacing:0">h</span>' +
+        '<input class="inp" id="ate-mn-' + x.id + '" type="number" min="0" max="59" placeholder="0" style="width:60px"><span class="micro" style="text-transform:none;letter-spacing:0">min</span>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.atAddEntry(\'' + key + '\',\'' + x.id + '\')">Ajouter</button>' +
       '</div>';
     el('at-dr-in').innerHTML =
       '<div class="at-dr__top"><button class="at-dr__x" onclick="ADM.atClose()">✕</button>' +
@@ -1656,6 +1684,39 @@
         atClose(); atRefresh();
       }).catch(function () { toast('Erreur'); });
     });
+  }
+  /* ── Saisies de temps par mois ────────────────────────────────────────
+   * Chaque saisie est datée sur SON mois : le découpage devient explicite au
+   * lieu d'être deviné. Le serveur recalcule le total comme la somme, donc
+   * jauge, détail du mois et historique suivent sans rien faire de plus. */
+  function atAddEntry(key, id) {
+    var m = (el('ate-m-' + id).value || '').trim();
+    var h = Math.max(0, parseInt(el('ate-h-' + id).value, 10) || 0);
+    var mn = Math.max(0, parseInt(el('ate-mn-' + id).value, 10) || 0);
+    var mins = h * 60 + mn;
+    if (!/^\d{4}-\d{2}$/.test(m)) { toast('Choisis un mois'); return; }
+    if (mins <= 0) { toast('Indique une durée'); return; }
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeEntry: { month: m, minutes: mins } }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Temps ajouté ✓');
+      atRefreshOpen(key, id);
+    }).catch(function () { toast('Erreur'); });
+  }
+  function atDelEntry(key, id, entryId) {
+    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', removeTimeEntry: entryId }, 'PATCH').then(function (r) {
+      if (!r.ok) { toast('Erreur'); return; }
+      toast('Saisie retirée');
+      atRefreshOpen(key, id);
+    }).catch(function () { toast('Erreur'); });
+  }
+  // Recharge les données puis rouvre le panneau sur la même tâche, pour que la
+  // liste des saisies reflète tout de suite ce qu'on vient de faire.
+  function atRefreshOpen(key, id) {
+    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+      AT_D = d;
+      if (VIEW === 'alltasks') renderAllTasksBody();
+      atOpen(key, id);
+    }).catch(function () {});
   }
   function atClose() { var d = el('at-dr'), b = el('at-bk'); if (d) d.classList.remove('on'); if (b) b.classList.remove('on'); }
   function renderPrioBody(d) {
@@ -9116,7 +9177,7 @@
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
-    atCloseTask: atCloseTask, atCopyLink: atCopyLink,
+    atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, atSetTime: atSetTime, atSetMonth: atSetMonth, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,

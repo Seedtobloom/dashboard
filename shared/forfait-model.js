@@ -78,15 +78,23 @@ function stbTaskMinByMonth(t) {
   if (!(total > 0)) return {};
   var cur = stbCurYm();
 
+  var sessions = Array.isArray(t.sessions) ? t.sessions : [];
+  var hasEntries = false;
+  for (var k0 = 0; k0 < sessions.length; k0++) { if (stbSessionMin(sessions[k0]) > 0) { hasEntries = true; break; } }
+
+  // « Compté en » (workMonth) force TOUT le temps sur un mois. Il ne s'applique
+  // plus que faute de mieux : dès qu'il existe des saisies datées (chrono ou
+  // saisie manuelle pour un mois donné), ce sont ELLES qui font foi. Sinon un
+  // mois forcé écraserait un découpage explicite 2 h en septembre + 1 h en
+  // octobre, alors qu'il est justement là pour dire où compter le temps.
   var wm = String(t.workMonth || '');
-  if (stbIsYm(wm)) {
+  if (stbIsYm(wm) && !hasEntries) {
     var forced = {};
     forced[wm > cur ? cur : wm] = total;
     return forced;
   }
 
   var map = {}, sessTotal = 0, lastStart = '';
-  var sessions = Array.isArray(t.sessions) ? t.sessions : [];
   for (var i = 0; i < sessions.length; i++) {
     var s = sessions[i];
     var mins = stbSessionMin(s);
