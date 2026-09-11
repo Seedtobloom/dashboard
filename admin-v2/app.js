@@ -538,7 +538,7 @@
       if (changed) renderNav(); else paintBadges();
       refreshTabTitle();
     }).catch(function () {});
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+    dashGet().then(function (d) {
       REV_N = (d.revisions || []).length;
       // Bulle Priorités : révisions + échéances dépassées ou du jour.
       var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1018,7 +1018,7 @@
   };
   function renderInbox() {
     setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes. Traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { INBOX_D = d; renderInboxBody(); }).catch(showError);
+    dashGet().then(function (d) { INBOX_D = d; renderInboxBody(); }).catch(showError);
   }
   function fmtMin(m) { m = Math.round(m || 0); if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + r : ''); }
   // Liste unifiée, du plus récent au plus ancien.
@@ -1357,14 +1357,14 @@
   function renderPriorities() {
     setMain(topbar('Priorités', '<button class="btn btn--outline btn--sm" onclick="ADM.testEmail()">Tester l\'email</button>') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     ensureMissionTypes(function () {
-      api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
+      dashGet().then(function (d) { PRIO_D = d; renderPrioBody(d); }).catch(showError);
     });
   }
   // Rafraîchissement « silencieux » après une action réussie (envoi de livrable…) :
   // ne remplace jamais l'écran par une erreur pleine page si le rechargement
   // échoue — l'action a réussi, on garde l'écran et on réessaiera au besoin.
   function refreshPriorities() {
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { PRIO_D = d; if (VIEW === 'priorities') renderPrioBody(d); }).catch(function () { });
+    dashGet().then(function (d) { PRIO_D = d; if (VIEW === 'priorities') renderPrioBody(d); }).catch(function () { });
   }
 
   // ═══ Toutes les tâches : espace unique, filtrable, tous clients confondus ═══
@@ -1399,12 +1399,31 @@
     }
     return 'todo';
   }
+  /* ── Lecture mutualisée du tableau de bord ────────────────────────────
+   * ATTENTION au coût : /api/dashboard lit l'index PUIS la fiche de CHAQUE
+   * cliente. Un appel coûte donc autant de lectures de base que tu as de
+   * clientes. Avec 13 endroits qui l'appelaient chacun dans leur coin, et un
+   * rechargement complet après la moindre action, la facture de lectures
+   * explose (c'est ce qui a déclenché l'alerte de quota).
+   *   - une réponse récente est réutilisée au lieu d'être redemandée ;
+   *   - les appels simultanés sont dédoublonnés (un seul aller-retour) ;
+   *   - dashGet(true) force le rafraîchissement après une vraie modification. */
+  var DASH_CACHE = null, DASH_AT = 0, DASH_INFLIGHT = null;
+  var DASH_TTL = 60000;
+  function dashGet(force) {
+    if (!force && DASH_CACHE && (Date.now() - DASH_AT) < DASH_TTL) return Promise.resolve(DASH_CACHE);
+    if (DASH_INFLIGHT) return DASH_INFLIGHT;
+    DASH_INFLIGHT = dashGet().then(function (d) {
+      DASH_CACHE = d; DASH_AT = Date.now(); DASH_INFLIGHT = null; return d;
+    }, function (e) { DASH_INFLIGHT = null; throw e; });
+    return DASH_INFLIGHT;
+  }
   function renderAllTasks() {
     setMain(topbar('Toutes les tâches', '', 'Tout ton travail client au même endroit. Filtre, trie, repère-toi') + '<div class="wrap atwrap" id="at-body" style="max-width:1000px"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>' +
       '<div class="at-bk" id="at-bk" onclick="ADM.atClose()"></div><div class="at-dr" id="at-dr"><div id="at-dr-in"></div></div>');
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { AT_D = d; renderAllTasksBody(); }).catch(showError);
+    dashGet().then(function (d) { AT_D = d; renderAllTasksBody(); }).catch(showError);
   }
-  function atRefresh() { api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) { AT_D = d; if (VIEW === 'alltasks') renderAllTasksBody(); }).catch(function () {}); }
+  function atRefresh() { dashGet(true).then(function (d) { AT_D = d; if (VIEW === 'alltasks') renderAllTasksBody(); }).catch(function () {}); }
   function atSetFilter(f) { AT_FILTER = f; renderAllTasksBody(); }
   function atClients() { var s = {}; atList().forEach(function (x) { if (x.client) s[x.client] = 1; }); return Object.keys(s).sort(); }
   function atOnQ(v) { AT_Q = v || ''; atRenderBody(); }
@@ -1455,6 +1474,14 @@
     if (!r.lbl) return '';
     return '<span class="at-otag" style="background:' + r.bg + ';color:' + r.col + '">' + esc(r.lbl) + (r.n > 1 ? ' · v' + r.n : '') + '</span>';
   }
+  // Temps passé, lisible directement dans la liste : c'est l'information qu'on
+  // cherche en premier sur une tâche terminée ou archivée.
+  function atTimeLbl(x) {
+    var m = x.timeSpentMinutes || Math.round((x.timeSpentSeconds || 0) / 60) || 0;
+    if (!m) return '';
+    var h = Math.floor(m / 60), r = m % 60;
+    return '<span style="font-variant-numeric:tabular-nums">' + (r ? (h + 'h' + String(r).padStart(2, '0')) : (h + ' h')) + '</span>';
+  }
   function atRow(x) {
     var otag = atOffer(x) === 'maint' ? ['Maintenance', 'at-otag--maint'] : ['Partenaire créative', 'at-otag--part'];
     var oc = 'ADM.atOpen(\'' + x.key + '\',\'' + x.id + '\')';
@@ -1462,7 +1489,7 @@
       ? '<input type="date" class="at-plan" id="atp-' + x.id + '"><button class="pbtn pbtn--ok" onclick="ADM.atPlan(\'' + x.key + '\',\'' + x.id + '\')">Planifier</button>' : '';
     return '<div class="at-task" onclick="' + oc + '"><span class="at-task__st">' + atStIcon(x.status) + '</span>' +
       '<div class="at-task__b"><div class="at-task__t">' + esc(x.title || 'Tâche') + '</div>' +
-      '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span>' + atReviewChip(x) + '<span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atDueLbl(x) + '</div></div>' +
+      '<div class="at-task__m"><span>' + esc(x.client || '') + '</span><span class="at-otag ' + otag[1] + '">' + otag[0] + '</span>' + atReviewChip(x) + '<span>' + esc(AT_SL[x.status] || 'À faire') + '</span>' + atTimeLbl(x) + atDueLbl(x) + '</div></div>' +
       '<div class="at-act" onclick="event.stopPropagation()">' + plan +
       (x.status !== 'done' && !x.archived ? '<button class="pbtn pbtn--ok" title="Clôturer sans attendre la cliente" onclick="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')">Clôturer</button>' : '') +
       '<button class="pbtn" onclick="' + oc + '">Ouvrir</button></div></div>';
@@ -1594,11 +1621,14 @@
     var totalMin = ents.reduce(function (a, e) { return a + e.minutes; }, 0);
     // Repli : ancien total saisi sans détail par mois (tâches d'avant).
     var legacy = (!ents.length && curMin > 0)
-      ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:8px 0">' + hm2(curMin) + ' enregistrées sans détail par mois' + (x.workMonth ? ', comptées en ' + esc(mLbl(x.workMonth)) : '') + '.</div>'
+      ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:8px 0">Saisi en une fois, sans détail par mois' + (x.workMonth ? ', compté en ' + esc(mLbl(x.workMonth)) : '') + '.</div>'
       : '';
     var moisDef = (new Date()).toISOString().slice(0, 7);
     var timeBlock =
-      '<p class="at-dr__lab" style="margin-top:24px">Temps passé' + (totalMin ? ' · ' + hm2(totalMin) + (months.length > 1 ? ' sur ' + months.length + ' mois' : '') : '') + '</p>' +
+      // Le total affiché est celui ENREGISTRÉ sur la tâche, jamais la somme des
+      // saisies : quand tu saisis à la main sans détail par mois, il n'y a
+      // aucune session, et l'entête restait vide alors que le temps existait.
+      '<p class="at-dr__lab" style="margin-top:24px">Temps passé' + (curMin ? ' · ' + hm2(curMin) + (months.length > 1 ? ' sur ' + months.length + ' mois' : '') : '') + '</p>' +
       (rowsHtml || legacy || '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);padding:6px 0">Aucun temps saisi.</div>') +
       '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--bone-d)">' +
         '<input class="inp" id="ate-m-' + x.id + '" type="month" value="' + moisDef + '" style="width:auto">' +
@@ -1712,7 +1742,7 @@
   // Recharge les données puis rouvre le panneau sur la même tâche, pour que la
   // liste des saisies reflète tout de suite ce qu'on vient de faire.
   function atRefreshOpen(key, id) {
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+    dashGet(true).then(function (d) {
       AT_D = d;
       if (VIEW === 'alltasks') renderAllTasksBody();
       atOpen(key, id);
@@ -3720,7 +3750,7 @@
     Promise.all([
       api('/api/admin/tasks').then(function (r) { return r.json(); }),
       api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; }),
-      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      dashGet().catch(function () { return {}; }),
       api('/api/calendar/events').then(function (r) { return r.json(); }).catch(function () { return {}; })
     ]).then(function (res) {
       MS_TASKS = res[0].tasks || [];
@@ -4657,7 +4687,7 @@
     setMain(topbar('Tableau de bord') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
-      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; }),
+      dashGet().catch(function () { return {}; }),
       api('/api/visios').then(function (r) { return r.json(); }).catch(function () { return {}; }),
       api('/api/avis').then(function (r) { return r.json(); }).catch(function () { return {}; })
     ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; KPI_VIS = res[2] || {}; KPI_AVIS = res[3] || {}; renderKpiBody(KPI_D); }).catch(showError);
@@ -4912,7 +4942,7 @@
     setMain(topbar('') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/kpi').then(function (r) { return r.json(); }).catch(function () { return {}; }),
-      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; })
+      dashGet().catch(function () { return {}; })
     ]).then(function (res) { KPI_D = res[0] || {}; KPI_DASH = res[1] || {}; renderTempsBody(); }).catch(showError);
   }
   function tempsSetTab(t) { TEMPS_TAB = t; renderTempsBody(); }
@@ -5483,7 +5513,7 @@
     // On récupère aussi le tableau de bord pour la vue rapide : forfaits + projets en cours par client.
     Promise.all([
       api('/api/clients').then(function (r) { return r.json(); }),
-      api('/api/dashboard').then(function (r) { return r.json(); }).catch(function () { return {}; })
+      dashGet().catch(function () { return {}; })
     ]).then(function (res) {
       var d = res[0], dash = res[1] || {};
       var forfByKey = {}; (dash.forfaits || []).forEach(function (f) { forfByKey[f.key] = f; });
@@ -8292,7 +8322,7 @@
       toast(status === 'fait' ? 'Jalon marqué fait ✓' : (status === 'en_cours' ? 'Jalon en cours' : 'Jalon à venir'));
       // Si la fiche de cette cliente est chargée, on la garde cohérente.
       if (CURKEY === key && typeof refreshClient === 'function') { try { refreshClient(); } catch (e) {} }
-      api('/api/dashboard').then(function (r2) { return r2.json(); }).then(function (d) {
+      dashGet(true).then(function (d) {
         PLAN_D = d; if (VIEW === 'plannings') renderPlanBody();
       }).catch(function () {});
     }).catch(function () { toast('Erreur'); });
@@ -8303,7 +8333,7 @@
     setMain(topbar('Plannings', '', 'Où en est chaque planning prévisionnel, toutes clientes confondues') +
       '<div class="wrap" id="plan-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (PLAN_D) { renderPlanBody(); }
-    api('/api/dashboard').then(function (r) { return r.json(); }).then(function (d) {
+    dashGet().then(function (d) {
       PLAN_D = d; if (VIEW === 'plannings') renderPlanBody();
     }).catch(showError);
   }

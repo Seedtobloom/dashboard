@@ -7450,7 +7450,10 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
         })
         .catch(function(){})
         .then(function(){ _pollBusy = false; });
-    }, 45000);
+    // 120 s : chaque passage lit la fiche de la cliente en base. À 45 s on
+    // doublait la consommation pour un gain ressenti nul — le retour sur
+    // l'onglet rafraîchit déjà instantanément.
+    }, 120000);
     wireReturnRefresh();
   }
 
