@@ -287,7 +287,26 @@
       }).catch(function () {});
     }
   }
-  function showError() { el('app').innerHTML = '<div class="center"><p class="muted">Erreur. <a href="javascript:location.reload()">Réessayer</a></p></div>'; }
+  /* Un écran « Erreur. Réessayer » ne dit pas QUOI faire. On distingue les
+     causes réelles : quota de base de données atteint (429), qui se débloque
+     seul à minuit UTC, et panne serveur. Sans ça, impossible de savoir s'il
+     faut attendre ou s'inquiéter. */
+  function showError(e) {
+    var st = (e && e.status) || 0;
+    var msg, hint = '';
+    if (st === 429) {
+      msg = 'Quota de base de données atteint pour aujourd\'hui.';
+      hint = 'Le plan gratuit Cloudflare limite les lectures par jour. Le compteur repart à minuit UTC, soit 2 h du matin en France. Pour débloquer tout de suite : plan Workers payant, 5 $/mois.';
+    } else if (st >= 500) {
+      msg = 'Le serveur a renvoyé une erreur (' + st + ').';
+      hint = 'Réessaie dans un instant. Si ça persiste, dis-le-moi.';
+    } else if (st) { msg = 'Erreur ' + st + '.'; }
+    else { msg = 'Connexion impossible.'; hint = 'Vérifie ta connexion, puis réessaie.'; }
+    el('app').innerHTML = '<div class="center" style="max-width:460px;margin:0 auto;padding:40px 20px;text-align:center">' +
+      '<p style="font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--terre);margin-bottom:10px">' + esc(msg) + '</p>' +
+      (hint ? '<p class="muted" style="font-size:14px;line-height:1.6;margin-bottom:18px">' + esc(hint) + '</p>' : '') +
+      '<a class="btn btn--dark btn--sm" href="javascript:location.reload()">Réessayer</a></div>';
+  }
 
   var EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   function showLogin(err) {
@@ -1413,7 +1432,12 @@
   function dashGet(force) {
     if (!force && DASH_CACHE && (Date.now() - DASH_AT) < DASH_TTL) return Promise.resolve(DASH_CACHE);
     if (DASH_INFLIGHT) return DASH_INFLIGHT;
-    DASH_INFLIGHT = dashGet().then(function (d) {
+    DASH_INFLIGHT = api('/api/dashboard').then(function (r) {
+      // Une réponse en erreur n'est pas du JSON : sans ce contrôle le parsing
+      // échoue et on perd la vraie cause (quota atteint, panne serveur).
+      if (!r.ok) { var er = new Error('HTTP ' + r.status); er.status = r.status; throw er; }
+      return r.json();
+    }).then(function (d) {
       DASH_CACHE = d; DASH_AT = Date.now(); DASH_INFLIGHT = null; return d;
     }, function (e) { DASH_INFLIGHT = null; throw e; });
     return DASH_INFLIGHT;
