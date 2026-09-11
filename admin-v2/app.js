@@ -1670,6 +1670,14 @@
     var files = atts.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + atts.map(function (a) { return '<a class="pbtn" href="/api/clients/' + key + '/files/' + encodeURIComponent(a.key) + '/download">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
     var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
       ? '<input type="date" class="at-plan" id="atp2-' + x.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.atPlan2(\'' + key + '\',\'' + x.id + '\')">Planifier</button>' : '';
+    /* Envoyer quelque chose à la cliente sans quitter la tâche : un fichier, un
+     * lien de livrable, ou le lien de révision. Ce sont les mêmes actions que
+     * dans Priorités — mêmes fonctions, pas des copies. Réservé à Partenaire
+     * créative : un ticket de maintenance n'a pas de livrable à valider. */
+    var envoi = (atOffer(x) === 'maint' || x.archived) ? '' :
+      '<button class="btn btn--outline btn--sm" title="Envoyer un fichier à la cliente" onclick="ADM.prioAddDlv(\'' + key + '\',\'' + x.id + '\')">📎 Fichier</button>' +
+      '<button class="btn btn--outline btn--sm" title="Envoyer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + key + '\',\'' + x.id + '\')">🔗 Lien</button>' +
+      '<button class="btn btn--outline btn--sm" title="Envoyer le lien de révision (la tâche passe en « à valider »)" onclick="ADM.prioSendReview(\'' + key + '\',\'' + x.id + '\',\'' + esc((x.reviewLink || '').replace(/'/g, "\\'")) + '\')">Lien de révision</button>';
     // Saisie du temps passé directement depuis ce panneau (sans ouvrir la fiche).
     var isMaint = atOffer(x) === 'maint';
     var curMin = x.timeSpentMinutes || Math.round((x.timeSpentSeconds || 0) / 60) || 0;
@@ -1722,7 +1730,8 @@
         timeBlock +
         '<p class="at-dr__lab" style="margin-top:24px">Échange avec la cliente</p><div id="at-dr-cmts"><div class="micro" style="color:var(--muted)">Chargement…</div></div>' +
       '</div>' +
-      '<div class="at-dr__foot">' + plan + '<button class="btn btn--outline btn--sm" onclick="ADM.atClose();ADM.openClient(\'' + key + '\')">Ouvrir la fiche complète</button></div>';
+      '<div class="at-dr__foot">' + plan + envoi +
+        '<button class="btn btn--outline btn--sm" style="margin-left:auto" onclick="ADM.atClose();ADM.openClient(\'' + key + '\')">Ouvrir la fiche complète</button></div>';
     el('at-dr').classList.add('on'); el('at-bk').classList.add('on');
     // Charge la conversation depuis la fiche cliente.
     api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (data) {
@@ -5333,6 +5342,37 @@
       .then(function (r) { if (r && r.ok) { toast('Révision classée ✓'); refreshPriorities(); if (CURKEY === key) refreshClient(); } else toast('Erreur, réessaie'); })
       .catch(function () { toast('Erreur, réessaie'); });
   }
+  /* ── Envoyer un livrable : les mêmes gestes, depuis n'importe quel écran ──
+   * Ces trois actions (fichier, lien, lien de révision) sont nées dans
+   * Priorités et en avaient gardé deux réflexes : chercher la tâche dans la
+   * liste de Priorités, et y revenir de force après l'envoi. Lancées depuis
+   * « Toutes les tâches », elles repartaient donc sans le nom de la cliente ni
+   * le temps déjà compté, et te sortaient de l'écran où tu travaillais.
+   * D'où ces deux points communs, plutôt qu'une copie par écran. */
+  function taskCtx(key, id) {
+    var at = (AT_D && AT_D.tasksAll), pr = (PRIO_D && PRIO_D.deadlines), ad = (AT_D && AT_D.deadlines);
+    // On interroge d'abord la liste de l'écran où tu te trouves : c'est celle
+    // qu'une mise à jour immédiate doit toucher pour que l'affichage bouge.
+    var lists = VIEW === 'alltasks' ? [at, pr, ad] : [pr, at, ad];
+    for (var i = 0; i < lists.length; i++) {
+      var l = lists[i];
+      if (!Array.isArray(l)) continue;
+      for (var j = 0; j < l.length; j++) {
+        var t = l[j];
+        if (t && t.id === id && (!key || !t.key || t.key === key)) return t;
+      }
+    }
+    return null;
+  }
+  function afterDeliverable(key, id) {
+    if (VIEW === 'alltasks') {
+      var dr = el('at-dr');
+      // Le panneau ouvert doit montrer l'envoi qu'on vient de faire.
+      if (dr && dr.classList.contains('on')) atRefreshOpen(key, id); else atRefresh();
+      return;
+    }
+    PRIO_TAB = 'waiting'; refreshPriorities();
+  }
   function prioAddDlv(key, id) {
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
     document.body.appendChild(inp);
@@ -5340,13 +5380,13 @@
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; if (!f) { cleanup(); return; }
       if (admTooBig(f)) { cleanup(); toast(admBigMsg(f)); return; }
-      var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id; })[0] : null;
+      var cd = taskCtx(key, id);
       var cname = cd ? cd.client : 'le client';
       notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
       var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
-        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; refreshPriorities(); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
+        .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); afterDeliverable(key, id); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
         .catch(function () { cleanup(); toast('Erreur, livrable non envoyé (fichier volumineux ? envoie-le en lien). Réessaie.'); });
       });
     };
@@ -5377,8 +5417,15 @@
       jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
         .then(function (res) {
           if (res.ok) {
-            if (mins) { var cd = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.key === key; })[0] : null; var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins; jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH'); }
-            toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)')); PRIO_TAB = 'waiting'; refreshPriorities();
+            toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
+            // Le temps ajouté doit être enregistré AVANT de rafraîchir, sinon
+            // l'écran se recharge sur des données d'avant la saisie.
+            var fin = function () { afterDeliverable(key, id); };
+            if (mins) {
+              var cd = taskCtx(key, id);
+              var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins;
+              jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH').then(fin, fin);
+            } else fin();
           } else toast(admUploadErrMsg(res.status, res.d && res.d.error));
         })
         .catch(function () { toast('Erreur, livrable non envoyé, réessaie'); });
@@ -5416,8 +5463,10 @@
           // MAJ optimiste locale : KV peut renvoyer l'ancien statut pendant
           // ~1 s, ce qui donnait l'impression que rien ne bougeait. On bascule
           // directement la tâche en « Attente client » sans re-fetch.
-          var it = (PRIO_D && Array.isArray(PRIO_D.deadlines)) ? PRIO_D.deadlines.filter(function (x) { return x.id === id && x.project === 'partner'; })[0] : null;
-          if (it) { it.status = 'review'; it.reviewLink = link; it.reviewSentAt = new Date().toISOString(); PRIO_TAB = 'waiting'; renderPrioBody(PRIO_D); }
+          var it = taskCtx(key, id);
+          if (it) { it.status = 'review'; it.reviewLink = link; it.reviewSentAt = new Date().toISOString(); }
+          if (VIEW === 'alltasks') { renderAllTasksBody(); atOpen(key, id); }
+          else if (it && PRIO_D) { PRIO_TAB = 'waiting'; renderPrioBody(PRIO_D); }
           else { PRIO_TAB = 'waiting'; renderPriorities(); }
         });
       });
