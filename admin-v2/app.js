@@ -1211,6 +1211,7 @@
   }
   function inboxDemandeCard(it) {
     var x = it.x;
+    var bf = taskBrief(x);
     var urg = x.urgency === 'haute' || x.urgency === 'urgent';
     var isProject = x.demandeType === 'project';
     var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
@@ -1222,9 +1223,9 @@
       '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
         '<span style="float:right;font-family:var(--font-micro);font-size:11px;font-weight:600;color:' + forfaitCol + '">' + esc(forfaitTxt) + '</span>' +
       '</div>' +
-      ((Array.isArray(x.blocks) && x.blocks.length)
+      (bf.blocks
         ? ptBlocksHtml(x, x.key, 'La demande du client')
-        : (x.content ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(x.content) + '</div>' : '')) +
+        : (bf.text ? '<div style="font-size:14px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(bf.text) + '</div>' : '')) +
       briefTableHtml(x.table) +
       '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:11px;color:var(--muted)">' +
         (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
@@ -1640,8 +1641,15 @@
     var x = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
     if (!x) return;
     var otag = atOffer(x) === 'maint' ? 'Maintenance' : 'Partenaire créative';
-    var briefTxt = (x.content || '').trim();
-    var brief = briefTxt ? esc(briefTxt) : '<span style="color:var(--muted)">Pas de brief renseigné pour cette tâche.</span>';
+    // Le conteneur est en white-space:pre-wrap (pour respecter les retours à la
+    // ligne d'un brief tapé à la main) : les blocs et le tableau, eux, sont du
+    // HTML mis en page, on y remet l'espacement normal.
+    var bf = taskBrief(x);
+    var briefBody = bf.blocks
+      ? '<div style="white-space:normal">' + ptBlocksHtml(x, key, 'Le brief du client') + '</div>'
+      : (bf.text ? mtLinkify(bf.text) : '');
+    var briefTbl = bf.table ? '<div style="white-space:normal">' + briefTableHtml(x.table) + '</div>' : '';
+    var brief = (briefBody + briefTbl) || '<span style="color:var(--muted)">Pas de brief renseigné pour cette tâche.</span>';
     var link = x.clientLink ? '<div style="margin-top:12px"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener" style="font-family:var(--font-micro);font-size:12px;color:var(--terre-600)">🔗 Lien déposé par la cliente</a></div>' : '';
     // Lien de révision : celui que TU envoies à la cliente. Il était stocké et
     // transmis, mais affiché nulle part : une fois envoyé, impossible de le
@@ -1851,14 +1859,13 @@
         return '<div style="margin-top:4px;font-size:12.5px;display:flex;align-items:center;gap:6px"><span style="flex-shrink:0;opacity:0.6">🔗</span><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:' + (dark ? 'rgba(242,229,194,0.95)' : 'var(--glycine-900)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Lien déposé par le client">' + esc(l.replace(/^https?:\/\//i, '').slice(0, 60)) + '</a></div>';
       }
       function prioBrief(x, dark) {
-        var c = (x.content || '').trim();
-        var hasBlocks = Array.isArray(x.blocks) && x.blocks.length;
-        var hasTable = x.table && Array.isArray(x.table.cols) && x.table.cols.length;
+        var bf = taskBrief(x);
+        var c = bf.text, hasBlocks = bf.blocks, hasTable = bf.table;
         var atts = Array.isArray(x.attachments) ? x.attachments : [];
         var hasLink = !!(x.clientLink && String(x.clientLink).trim());
         var hasAtt = atts.length || x.attCount;
         // Rien à montrer : ni texte, ni blocs, ni tableau, ni fichier, ni lien.
-        if (!c && !hasBlocks && !hasTable && !hasAtt && !hasLink) return '';
+        if (bf.empty && !hasAtt && !hasLink) return '';
         var txtCol = dark ? 'rgba(242,229,194,0.82)' : 'var(--terre-600)';
         var mutCol = dark ? 'rgba(242,229,194,0.6)' : 'var(--muted)';
         var sumBg = dark ? 'rgba(242,229,194,0.16)' : '#E8F1FF';
@@ -2783,6 +2790,20 @@
       if (/^www\.[^\s]+\.[^\s]+$/i.test(tok) || /^[a-z0-9-]+\.(fr|com|net|org|io|co|be|ch|eu|design|studio)(\/[^\s]*)?$/i.test(tok)) return '<a href="https://' + esc(tok) + '" target="_blank" rel="noopener" style="' + st + '">' + esc(tok) + '</a>';
       return esc(tok);
     }).join('');
+  }
+  /* Où est le brief d'une tâche ? Il peut prendre trois formes : l'éditeur par
+   * blocs (le cas courant depuis l'espace client), l'ancien champ texte, et le
+   * tableau. Cette question se tranche ICI, une fois, pour les trois écrans qui
+   * affichent un brief (inbox, Priorités, Toutes les tâches) — chacun garde sa
+   * mise en forme, mais aucun ne redécide tout seul.
+   * Sans ça, « Toutes les tâches » ne regardait que le champ texte et annonçait
+   * « pas de brief » sur des briefs bien remplis dans l'éditeur par blocs. */
+  function taskBrief(t) {
+    t = t || {};
+    var blocks = Array.isArray(t.blocks) ? t.blocks.length : 0;
+    var text = (t.content || '').trim();
+    var table = !!(t.table && Array.isArray(t.table.cols) && t.table.cols.length);
+    return { blocks: !!blocks, text: text, table: table, empty: !blocks && !text && !table };
   }
   // Rend une valeur de cellule (texte simple OU HTML enrichi rédigé par la
   // cliente) de façon SÛRE : texte échappé + liens cliquables, et seules les
@@ -7276,7 +7297,7 @@
         '</div>' : '';
       // Contenu du brief : on affiche l'éditeur par blocs (complet) s'il existe,
       // sinon l'ancien champ texte. Plus jamais tronqué côté admin.
-      var contentHtml = (Array.isArray(t.blocks) && t.blocks.length) ? ptBlocksHtml(t) : brief;
+      var contentHtml = taskBrief(t).blocks ? ptBlocksHtml(t) : brief;
       return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework || t.clientCommentNotif ? ';box-shadow:var(--shadow-2)' : '') + '">' +
         reworkBanner + header + contentHtml + atts + beHtml + tableHtml + work + review +
         '<div style="' + hair + '"></div>' +
