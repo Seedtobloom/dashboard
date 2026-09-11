@@ -555,7 +555,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         clientName: name,
         status: pc.maintenance ? 'maintenance' : 'in_progress',
         startDate: pc.startDate || null,
-        tasks: Array.isArray(pc.taches) ? pc.taches : [],
+        tasks: stripStudio(pc.taches),
         propertySchema: withMissionTypes(Array.isArray(pc.propertySchema) && pc.propertySchema.length ? pc.propertySchema : DEFAULT_PARTNER_SCHEMA),
         monthlyHours: pc.monthlyHours || 0,
         workSlots: Array.isArray(pc.workSlots) ? pc.workSlots : [],
@@ -692,7 +692,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
         projectTitle: (ms.name && String(ms.name).trim()) || 'Tickets & maintenance',
         clientName: name,
         status: ms.maintenance ? 'maintenance' : 'in_progress',
-        tickets: Array.isArray(ms.tickets) ? ms.tickets : [],
+        tickets: stripStudio(ms.tickets),
         counsels: Array.isArray(ms.counsels) ? ms.counsels : [],
         feedbacks: Array.isArray(ms.feedbacks) ? ms.feedbacks : [],
         maintReguls: ms.maintReguls && typeof ms.maintReguls === 'object' ? ms.maintReguls : {},
@@ -1017,6 +1017,19 @@ async function handleForfait(request: Request, env: Env, masterKey: string, data
  * Tâches (partenaire créative)
  * ────────────────────────────────────────────────────────────────────────── */
 
+/* Les tâches et les tickets partent TELS QUELS vers l'espace client : tout
+ * champ ajouté côté studio y serait visible. Les notes que Cindy prend pour
+ * elle sont donc retirées ici, une fois, sur les deux listes — plutôt que de
+ * compter sur le fait que l'espace client ne les affiche pas. */
+function stripStudio(list: unknown): AnyObj[] {
+  if (!Array.isArray(list)) return [];
+  return list.map((t: AnyObj) => {
+    if (!t || typeof t !== 'object' || !('studioNote' in t)) return t;
+    const copie: AnyObj = { ...t };
+    delete copie.studioNote;
+    return copie;
+  });
+}
 function tasksOf(container: AnyObj): AnyObj[] {
   if (!Array.isArray(container.taches)) container.taches = [];
   return container.taches;

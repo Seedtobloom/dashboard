@@ -800,6 +800,19 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .atchev:hover{color:var(--terre)}
 .atchev--open{transform:rotate(90deg)}
 
+/* Raccourcis d'échéance : la date qu'on pose est presque toujours l'une de
+   celles-là. Chacun affiche son jour en clair — rien à calculer de tête. */
+.mtqrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}
+.mtqrow__l{font-family:var(--font-micro);font-size:11px;color:var(--muted);margin-right:1px}
+.mtqd{display:inline-flex;align-items:baseline;gap:6px;border:none;cursor:pointer;background:var(--card);color:var(--terre);
+  font-family:var(--font-body);font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px;transition:.12s}
+.mtqd i{font-style:normal;font-family:var(--font-micro);font-size:10.5px;color:var(--muted)}
+.mtqd:hover{background:var(--beige)}
+.mtqd.on{background:#110704;color:#F8F6F2}
+.mtqd.on i{color:rgba(248,246,242,.7)}
+.mtqd--x{font-weight:500;color:var(--muted)}
+.mtqd__d{width:auto;padding:5px 10px;font-size:12.5px;border-radius:999px}
+
 /* ── Calendrier des échéances (écran Tâches) ─────────────────────────────
    Grille sobre : la couleur ne sert qu'à distinguer cliente et entreprise,
    et le rouge à signaler un jour passé qui porte encore du travail. */

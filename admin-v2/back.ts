@@ -740,7 +740,7 @@ async function handleClientApi(
     const tk = container.tickets.find((t: AnyObj) => t.id === m![1]);
     if (!tk) return json({ error: 'Ticket introuvable' }, 404);
     const prevStatus = tk.status;
-    ['title', 'description', 'priority', 'category', 'status', 'dueDate'].forEach((k) => { if (k in body) tk[k] = body[k]; });
+    ['title', 'description', 'priority', 'category', 'status', 'dueDate', 'studioNote'].forEach((k) => { if (k in body) tk[k] = body[k]; });
     // Notifications de changement de statut (à la demande : body.notify === true).
     let ticketDoneNotify = false, ticketStartNotify = false;
     if ('status' in body && body.notify === true) {
@@ -1188,7 +1188,9 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   const task = container.taches.find((t: AnyObj) => t.id === taskId);
   return task ? { task, container } : null;
 }
-const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'slot'];
+// `studioNote` : la note que le studio prend pour lui. Elle est retirée du
+// paquet envoyé à l'espace client (voir stripStudio, côté client).
+const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'studioNote', 'slot'];
 /* ── Saisie du temps PAR MOIS ─────────────────────────────────────────────
  * Un travail s'étale : 2 h en septembre, 1 h en octobre. Un total unique ne
  * sait pas dire ça, il ne peut tomber que dans un seul mois. Chaque saisie est
@@ -1875,6 +1877,7 @@ async function handleDashboard(env: Env): Promise<Response> {
             dueDate: t.dueDate || '', doDate: t.doDate || '', startDate: t.startDate || '',
             createdAt: t.createdAt || '', completedAt: t.completedAt || '',
             pole: t.pole || '', content: t.content || '',
+            studioNote: t.studioNote || '',
             timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
             estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0,
             needsRework: !!t.needsRework,
@@ -2009,6 +2012,7 @@ async function handleDashboard(env: Env): Promise<Response> {
         dueDate: t.dueDate || '', doDate: '', startDate: '',
         createdAt: t.createdAt || '', completedAt: t.resolvedAt || '',
         pole: 'Maintenance', content: t.description || '',
+        studioNote: t.studioNote || '',
         priority: t.priority || 'moyenne',
         timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
         estMinutes: 0, needsRework: false, clientFeedbackAt: '',

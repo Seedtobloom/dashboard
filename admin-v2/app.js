@@ -1530,13 +1530,64 @@
   // échéance, avec la ligne d'ajout juste au-dessus.
   function atEntrepriseHtml() {
     var rows = mtRows().filter(function (r) { return r.kind === 'perso'; });
-    var quick = '<div style="margin-bottom:16px"><div style="display:flex;gap:8px;flex-wrap:wrap">' +
-      '<input class="inp" id="mt-quick" placeholder="Qu\'as-tu à faire ?" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtQuickAdd();}">' +
-      '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="La date pour laquelle ça doit être fait">Pour le <input class="inp" id="mt-quick-due" type="date" style="width:auto"></label>' +
-      '<button class="btn btn--dark" onclick="ADM.mtQuickAdd()">Ajouter</button></div></div>';
+    var quick = '<div style="margin-bottom:18px">' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<input class="inp" id="mt-quick" placeholder="Qu\'as-tu à faire ?" style="flex:1;min-width:200px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtQuickAdd();}">' +
+        '<button class="btn btn--dark" onclick="ADM.mtQuickAdd()">Ajouter</button>' +
+      '</div>' + mtQuickChips() + '</div>';
     return quick + (rows.length ? mtDueView(rows, mtUniRow)
       : '<div class="empty">Rien à faire pour ton entreprise. Écris ta première ligne ci-dessus.</div>') +
       atEntrepriseDone();
+  }
+  /* ── Poser une échéance en un clic ────────────────────────────────────
+   * Le sélecteur de date du navigateur demande quatre gestes pour dire
+   * « demain ». Les dates qu'on pose vraiment sont presque toujours les mêmes :
+   * aujourd'hui, demain, la fin de la semaine, le lundi suivant. Elles sont là,
+   * datées en clair pour qu'il n'y ait rien à calculer de tête. Le sélecteur
+   * reste, pour tout le reste. */
+  function mtIso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function mtPlus(n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return d; }
+  // Le prochain jour de la semaine demandé. `strict` exclut aujourd'hui —
+  // « lundi prochain » un lundi, c'est dans huit jours, pas dans zéro.
+  function mtNextDow(dow, strict) {
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    var diff = (dow - d.getDay() + 7) % 7;
+    if (diff === 0 && strict) diff = 7;
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+  function mtQuickChips() {
+    var jours = [
+      ['Aujourd\'hui', mtPlus(0)],
+      ['Demain', mtPlus(1)],
+      ['Vendredi', mtNextDow(5, false)],
+      ['Lundi', mtNextDow(1, true)],
+    ];
+    var vus = {};
+    var chips = jours.map(function (j) {
+      var iso = mtIso(j[1]);
+      // Un raccourci qui tombe le même jour qu'un précédent n'apprend rien.
+      if (vus[iso]) return '';
+      vus[iso] = 1;
+      var quand = j[1].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+      return '<button type="button" class="mtqd" id="mtqd-' + iso + '" onclick="ADM.mtQuickDue(\'' + iso + '\')">' +
+        esc(j[0]) + '<i>' + esc(quand) + '</i></button>';
+    }).join('');
+    return '<div class="mtqrow">' +
+      '<span class="mtqrow__l">Pour le</span>' + chips +
+      '<input class="inp mtqd__d" id="mt-quick-due" type="date" onchange="ADM.mtQuickDue(this.value)" title="Une autre date">' +
+      '<button type="button" class="mtqd mtqd--x" id="mtqd-none" onclick="ADM.mtQuickDue(\'\')" title="Sans échéance">sans date</button>' +
+    '</div>';
+  }
+  // Un seul raccourci actif à la fois, et le sélecteur montre toujours la date
+  // retenue : ce qu'on va enregistrer est lisible avant de valider.
+  function mtQuickDue(iso) {
+    var inp = el('mt-quick-due'); if (inp) inp.value = iso || '';
+    var row = inp && inp.parentNode;
+    if (row) Array.prototype.forEach.call(row.querySelectorAll('.mtqd'), function (b) { b.classList.remove('on'); });
+    var cur = el('mtqd-' + (iso || 'none'));
+    if (cur) cur.classList.add('on');
+    var t = el('mt-quick'); if (t) t.focus();
   }
   // Les tâches bouclées, repliées en bas : consultables sans encombrer.
   function atEntrepriseDone() {
@@ -1852,6 +1903,8 @@
         '<div>' + atDueLbl(x) + '</div></div>' +
       '<div class="at-dr__body">' +
         '<p class="at-dr__lab">Le brief</p><div class="at-dr__brief">' + brief + link + files + rev + '</div>' +
+        '<p class="at-dr__lab" style="margin-top:24px">Ma note <span style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11.5px;color:var(--muted)">— pour toi seule, ta cliente ne la voit pas</span></p>' +
+        '<div id="at-note-' + x.id + '">' + atNoteInner(x) + '</div>' +
         timeBlock +
         '<p class="at-dr__lab" style="margin-top:24px">Échange avec la cliente</p><div id="at-dr-cmts"><div class="micro" style="color:var(--muted)">Chargement…</div></div>' +
       '</div>' +
@@ -1869,6 +1922,38 @@
         return '<div class="at-dr__cmt' + (mine ? ' at-dr__cmt--c' : '') + '"><div class="at-dr__cmw">' + esc(mine ? 'Toi' : (x.client || 'Cliente')) + (when ? ' · ' + esc(fmtDate(when)) : '') + '</div><div class="at-dr__cmx">' + esc(cm.text || cm.message || cm.body || '') + '</div></div>';
       }).join('');
     }).catch(function () { var box = el('at-dr-cmts'); if (box) box.innerHTML = '<div class="micro" style="color:var(--muted)">Ouvre la fiche pour voir la conversation.</div>'; });
+  }
+  /* ── La note du studio sur une tâche cliente ──────────────────────────
+   * Le panneau montrait le brief de la cliente et la conversation, mais rien
+   * où poser ce qu'on se dit à soi-même : le mot de passe du FTP, la remarque
+   * à ne pas oublier, la raison d'un choix. Elle ne part pas dans l'espace
+   * client (le paquet envoyé là-bas en est expurgé côté serveur). */
+  function atNoteInner(x) {
+    var n = (x.studioNote || '').trim();
+    var lien = '<button onclick="ADM.atEditNote(\'' + x.key + '\',\'' + x.id + '\')" style="background:none;border:none;color:var(--muted);font-size:11.5px;cursor:pointer;padding:3px 0;text-decoration:underline">' + (n ? 'Modifier' : '+ Ajouter une note') + '</button>';
+    return (n ? '<div style="font-size:13.5px;color:#5e4a2e;white-space:pre-wrap;line-height:1.55;background:var(--card);border-radius:11px;padding:11px 14px;margin-bottom:4px">' + mtLinkify(n) + '</div>' : '') + lien;
+  }
+  function atEditNote(key, id) {
+    var x = atFind(key, id); if (!x) return;
+    var c = el('at-note-' + id); if (!c) return;
+    c.innerHTML = '<textarea id="at-note-ta-' + id + '" class="inp" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical" placeholder="Ce que tu veux garder en tête sur cette tâche…">' + esc(x.studioNote || '') + '</textarea>' +
+      '<div class="row mt" style="gap:6px"><button class="pbtn pbtn--ok" onclick="ADM.atSaveNote(\'' + key + '\',\'' + id + '\')">Enregistrer</button>' +
+      '<button class="pbtn" onclick="ADM.atNoteRestore(\'' + key + '\',\'' + id + '\')">Annuler</button></div>';
+    var ta = el('at-note-ta-' + id); if (ta) ta.focus();
+  }
+  function atNoteRestore(key, id) { var x = atFind(key, id), c = el('at-note-' + id); if (x && c) c.innerHTML = atNoteInner(x); }
+  function atSaveNote(key, id) {
+    var ta = el('at-note-ta-' + id); if (!ta) return;
+    var val = ta.value || '';
+    var x = atFind(key, id);
+    var res = taskRes(x || { key: key, id: id });
+    // Affiché tout de suite : KV répond avec un temps de retard, et on ne va
+    // pas faire attendre l'écran pour une note.
+    if (x) x.studioNote = val;
+    atNoteRestore(key, id);
+    jpost(res.url, { projectId: res.pid, studioNote: val }, 'PATCH').then(function (r) {
+      if (r.ok) toast('Note enregistrée ✓'); else toast('Erreur, note non enregistrée');
+    }).catch(function () { toast('Erreur, note non enregistrée'); });
   }
   function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } var res = taskRes(atFind(key, id) || { key: key, id: id }); jpost(res.url, { projectId: res.pid, dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function atCopyLink(url) {
@@ -9350,10 +9435,10 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
-    atSetSec: atSetSec, atCalMove: atCalMove, atCalToday: atCalToday,
+    atSetSec: atSetSec, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
+    myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
