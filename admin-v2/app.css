@@ -750,6 +750,12 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 @media(max-width:760px){.mt2 .tiles{grid-template-columns:1fr 1fr}}
 .mt2 .tile{background:var(--surf);border:none;border-radius:16px;padding:16px 18px;text-align:left;cursor:pointer;transition:.15s}
 .mt2 .tile:hover{background:var(--lavc)}
+/* Bandeau de la vue « À faire » : quatre repères, pas cinq, et on ne clique
+   pas dessus — ce sont des compteurs, pas des boutons. */
+.mt2 .tiles--4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:760px){.mt2 .tiles--4{grid-template-columns:1fr 1fr}}
+.mt2 .tile--stat{cursor:default}
+.mt2 .tile--stat:hover{background:var(--surf)}
 .mt2 .tile b{display:block;font-family:var(--font-display);font-weight:600;font-size:clamp(26px,3vw,34px);color:var(--brun);line-height:.82}
 .mt2 .tile span{font-family:var(--font-micro);font-weight:500;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;color:var(--brun);opacity:.8;margin-top:9px;display:block}
 .mt2 .tdy{background:var(--lavc);border-radius:20px;padding:clamp(20px,2.6vw,28px);margin-bottom:20px}

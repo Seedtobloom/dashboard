@@ -2446,6 +2446,7 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
+  var MT_DASH = null, MT_WHO = 'all';
   var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'list', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {}, MT_GROUP = 'prio';
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#E8F1FF', '#2c4a72'], ['#F0E2D6', '#8a4a2c'], ['#f6ecd5', '#8a6414'], ['#eef1e6', '#4f6a46'], ['#EDE5D7', '#5A2A11'], ['#e6ddce', '#8a5c3f']];
@@ -2584,7 +2585,7 @@
     var f = el('mt-bulk'); if (f) f.focus();
   }
   // Ligne de checklist (vue Liste) : coche pour terminer.
-  function mtListRow(t) {
+  function mtListRow(t, r) {
     var pc = { haute: '#8a4a2c', normale: '#2c4a72', basse: '#8a5c3f' }[t.priority || 'normale'];
     var hasNote = !!(t.notes && String(t.notes).trim());
     var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
@@ -2599,6 +2600,9 @@
         '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
         '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
         noteMark +
+        // Dans la vue réunie, la ligne dit pour qui elle est ; ailleurs (le
+        // tableau, les archives) la question ne se pose pas, on n'affiche rien.
+        (r ? mtWhoPill(r) : '') +
         // L'échéance d'abord : c'est elle qui dit ce qui presse. Le jour de
         // travail choisi ne vient qu'après, et seulement s'il existe.
         (t.dueDate ? '<span style="flex-shrink:0" title="Échéance : ' + esc(fmtDate(t.dueDate)) + '">' + atDueLbl({ dueDate: t.dueDate }) + '</span>' : '') +
@@ -2626,7 +2630,8 @@
     ['later', 'Plus tard', 'var(--terre-600)'],
     ['plan', 'Sans échéance', 'var(--muted)'],
   ];
-  function mtDueView(todo) {
+  function mtDueView(todo, rowFn) {
+    rowFn = rowFn || mtListRow;
     var by = {};
     todo.forEach(function (t) { var u = atUrg({ dueDate: t.dueDate }); (by[u] = by[u] || []).push(t); });
     return MT_DUE_SECS.map(function (s) {
@@ -2649,10 +2654,101 @@
           '<h3 style="margin:0;font-family:var(--font-display);font-size:20px;font-weight:400;color:var(--terre)">' + s[1] + '</h3>' +
           '<span class="micro" style="color:var(--muted)">' + items.length + '</span>' +
         '</div>' +
-        '<div class="card" style="padding:4px 0">' + items.map(mtListRow).join('') + '</div>' +
+        '<div class="card" style="padding:4px 0">' + items.map(rowFn).join('') + '</div>' +
       '</section>';
     }).join('');
   }
+  /* ── Tout ce que j'ai à faire, d'un coup d'œil ────────────────────────
+   * Le travail était coupé en deux écrans : les tâches clientes d'un côté,
+   * les siennes de l'autre. Deux listes à croiser de tête pour répondre à la
+   * seule question qui compte le matin — qu'est-ce qui m'attend, pour qui, et
+   * pour quand. Elles sont réunies ici, sans être confondues : chaque ligne
+   * dit pour qui elle est, et le filtre isole d'un clic les clientes ou la
+   * boîte. Le classement reste celui de l'échéance.
+   * Rien n'est dupliqué : les tâches clientes viennent du tableau de bord
+   * (tasksAll, la même source que « Toutes les tâches »), les tâches perso de
+   * MT_TASKS. Chacune garde ses propres gestes. */
+  function mtRows() {
+    var rows = [];
+    (MT_TASKS || []).forEach(function (t) {
+      if (t.status === 'done' || t.archived) return;
+      rows.push({
+        kind: 'perso', id: t.id, key: '', title: t.title || '',
+        dueDate: t.dueDate || '', who: t.clientName || '',
+        priority: t.priority || 'normale', createdAt: t.createdAt || '', t: t,
+      });
+    });
+    ((MT_DASH && MT_DASH.tasksAll) || []).forEach(function (x) {
+      if (x.archived || x.status === 'done') return;
+      // « À valider » / « attente client » : la balle est chez la cliente, ce
+      // n'est pas du travail à faire. Compté à part dans le bandeau, pour que
+      // ça ne disparaisse pas non plus.
+      if (x.status === 'review' || x.status === 'waiting_client') return;
+      rows.push({
+        kind: 'client', id: x.id, key: x.key, title: x.title || '',
+        dueDate: x.dueDate || '', who: x.client || '',
+        priority: 'normale', createdAt: x.createdAt || '', x: x,
+      });
+    });
+    return rows;
+  }
+  function mtWhoOf(r) { return r.kind === 'client' ? 'client' : 'boite'; }
+  function mtRowsFiltered() {
+    var rows = mtRows();
+    if (MT_WHO === 'all') return rows;
+    return rows.filter(function (r) { return mtWhoOf(r) === MT_WHO; });
+  }
+  // La pastille « pour qui » : le nom de la cliente, ou la boîte. Une tâche
+  // perso rattachée à une cliente porte son nom, sans devenir du travail client.
+  function mtWhoPill(r) {
+    if (r.kind === 'client') {
+      var maint = atOffer(r.x) === 'maint';
+      return '<span class="at-otag ' + (maint ? 'at-otag--maint' : 'at-otag--part') + '" title="' + esc(maint ? 'Maintenance' : 'Partenaire créative') + '">' + esc(r.who || 'Cliente') + '</span>';
+    }
+    if (r.who) return '<span class="at-otag" style="background:var(--gold-soft);color:var(--cuivre, #5A2A11)">' + esc(r.who) + '</span>';
+    return '<span class="at-otag" style="background:#E6E5B2;color:#5A2A11">Ma boîte</span>';
+  }
+  function mtUniRow(r) {
+    if (r.kind === 'perso') return mtListRow(r.t, r);
+    var x = r.x;
+    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 16px">' +
+      '<input type="checkbox" onchange="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Clôturer">' +
+      '<span class="pdot" style="background:#2c4a72;flex-shrink:0"></span>' +
+      '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">' + esc(x.title || 'Tâche') + '</span>' +
+      mtWhoPill(r) +
+      (x.status === 'in_progress' ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">en cours</span>' : '') +
+      (x.dueDate ? '<span style="flex-shrink:0">' + atDueLbl({ dueDate: x.dueDate }) + '</span>' : '') +
+      '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">Ouvrir</button>' +
+    '</div>';
+  }
+  // Ouvrir une tâche cliente depuis ici : son panneau vit dans « Toutes les
+  // tâches », on y va et on l'ouvre — plutôt qu'un second panneau à maintenir.
+  function mtGoTask(key, id) { nav('alltasks'); setTimeout(function () { atOpen(key, id); }, 60); }
+  // Le bandeau du haut : la réponse en trois chiffres avant même de lire.
+  function mtStrip(rows) {
+    var n = { late: 0, today: 0, week: 0 };
+    rows.forEach(function (r) { var u = atUrg({ dueDate: r.dueDate }); if (n[u] != null) n[u]++; });
+    var chez = ((MT_DASH && MT_DASH.tasksAll) || []).filter(function (x) {
+      return !x.archived && (x.status === 'review' || x.status === 'waiting_client');
+    }).length;
+    function t(v, l, alert) {
+      return '<div class="tile tile--stat"><b' + (alert && v ? ' style="color:#8a4a2c"' : '') + '>' + v + '</b><span>' + l + '</span></div>';
+    }
+    return '<div class="tiles tiles--4">' +
+      t(n.late, 'En retard', true) + t(n.today, 'Aujourd\'hui', true) + t(n.week, 'Cette semaine', false) +
+      t(chez, 'Chez tes clientes', false) + '</div>';
+  }
+  function mtWhoTabs(rows) {
+    var all = mtRows();
+    var nc = all.filter(function (r) { return r.kind === 'client'; }).length;
+    var nb = all.length - nc;
+    function chip(v, lbl, n) {
+      return '<button class="at-chip' + (MT_WHO === v ? ' on' : '') + '" onclick="ADM.mtSetWho(\'' + v + '\')">' + esc(lbl) + '<b style="margin-left:6px;opacity:.55">' + n + '</b></button>';
+    }
+    return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+      chip('all', 'Tout', all.length) + chip('client', 'Pour mes clientes', nc) + chip('boite', 'Pour ma boîte', nb) + '</div>';
+  }
+  function mtSetWho(v) { MT_WHO = v; renderMyTasksBody(); }
   // Sous-tâches compactes, éditables inline (consultation + ajout rapides).
   function mtSubList(t) {
     var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
@@ -3863,6 +3959,9 @@
       MT_TODAY_CAP = days[dow] || 0;
       renderMyTasksBody();
     }).catch(showError);
+    // Le travail client vient du tableau de bord — la même source que
+    // « Toutes les tâches », et déjà en cache la plupart du temps.
+    dashGet().then(function (d) { MT_DASH = d; if (VIEW === 'mytasks') renderMyTasksBody(); }).catch(function () {});
   }
   // ── « Ma semaine » : cockpit de planification (quand/comment je bosse) ──────
   // Distinct de « Mes tâches » (le quoi). Utilise doDate = jour planifié (≠ dueDate
@@ -4731,7 +4830,7 @@
       var archSorted = archived.slice().sort(function (a, b) { return String(b.completedAt || b.dueDate || '').localeCompare(String(a.completedAt || a.dueDate || '')); });
       var archView = archived.length ? archSorted.map(mtCard).join('') : '<div class="empty">Aucune tâche archivée. Archivez une tâche terminée pour la ranger ici.</div>';
       var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'focus' ? ' active' : '') + '" onclick="ADM.mtSetView(\'focus\')">🎯 Focus</button>' +
-        '<button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">À faire · ' + todo.length + '</button>' +
+        '<button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">À faire · ' + mtRows().length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">Tableau · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
@@ -4753,14 +4852,20 @@
       var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? groupToggle + tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus.</div>') : '';
       // Vue « À faire » : la checklist rangée par échéance (voir mtDueView).
       var bulkBtn = '<div style="margin-bottom:12px"><button class="btn btn--outline btn--sm" onclick="ADM.mtBulkAddOpen()">🧠 Vider ton cerveau · coller une liste</button></div>';
-      var listView = quickBar + bulkBtn + (todo.length ? mtDueView(todo) : '<div class="empty">Rien à faire pour le moment. Ajoute une ligne ci-dessus, ou colle une liste.</div>');
+      var uni = mtRowsFiltered();
+      var listView = mtStrip(mtRows()) + quickBar + bulkBtn + mtWhoTabs() +
+        (uni.length ? mtDueView(uni, mtUniRow)
+          : '<div class="empty">' + (MT_WHO === 'client' ? 'Rien à faire pour tes clientes en ce moment.' : (MT_WHO === 'boite' ? 'Rien à faire pour ta boîte. Ajoute une ligne ci-dessus.' : 'Rien à faire pour le moment. Ajoute une ligne ci-dessus, ou colle une liste.')) + '</div>');
       var focusContent = MT_VIEW === 'focus' ? mtFocusView(todo) : '';
       var content = MT_VIEW === 'focus' ? focusContent : (MT_VIEW === 'list' ? listView : (MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent)));
       var addBtn = MT_ADDOPEN
         ? '<button class="btn btn--dark btn--sm" onclick="ADM.mtToggleAdd()">Fermer</button>'
         : '<button class="btn btn--dark btn--sm" onclick="ADM.mtCreatePick()">+ Nouveau</button>';
-      var head = MT_VIEW === 'focus' ? '' : kpis;
-      setMain(topbar('Mes tâches', addBtn, 'Ton organisation personnelle, séparée des espaces clients') + '<div class="wrap mt2" style="max-width:1360px">' + head + form + viewTabs + content + '</div>');
+      // La vue « À faire » a son propre bandeau (retard/aujourd'hui/semaine) :
+      // les compteurs de temps par-dessus feraient deux bandeaux qui se
+      // contredisent du regard.
+      var head = (MT_VIEW === 'focus' || MT_VIEW === 'list') ? '' : kpis;
+      setMain(topbar('Mes tâches', addBtn, 'Ce que tu as à faire — pour tes clientes, pour ta boîte, et pour quand') + '<div class="wrap mt2" style="max-width:1360px">' + head + form + viewTabs + content + '</div>');
   }
   function myTaskAdd() {
     var title = (el('mt-title').value || '').trim(); if (!title) { toast('Titre requis'); return; }
@@ -9502,7 +9607,7 @@
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
-    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
+    myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtSetWho: mtSetWho, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,
     msSaveCap: msSaveCap,
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
