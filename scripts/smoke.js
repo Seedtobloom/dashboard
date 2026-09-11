@@ -121,7 +121,10 @@ section('6. Garde anti-retour du code mort');
   // Attention : ces aiguilles sont cherchées telles quelles. Écrire
   // « renderPlanning » tout court accusait à tort renderPlannings(), la vue
   // des plannings prévisionnels, bien vivante : d'où la parenthèse.
-  const adminDead = { 'admin-v2/app.js': ['renderPlanning(', 'renderPlanningView', 'PLAN_BLOCKS', 'function planCap('] };
+  // atSetTime/atSetMonth : ancienne saisie du temps du panneau « Toutes les
+  // tâches ». Sans appelant, visant des champs disparus, et surtout deuxième
+  // endroit qui décidait de l'URL tâche-ou-ticket — c'est taskRes() désormais.
+  const adminDead = { 'admin-v2/app.js': ['renderPlanning(', 'renderPlanningView', 'PLAN_BLOCKS', 'function planCap(', 'function atSetTime(', 'function atSetMonth('] };
   // client : plus aucune référence à l'ancienne messagerie
   const clientDead = { 'client-v2/front.js': ['function buildConversation(', 'function convThreads(', 'function attachConvoForm(', 'cpConvoSend', 'function buildPartInvoices('] };
   [adminDead, clientDead].forEach((grp) => {

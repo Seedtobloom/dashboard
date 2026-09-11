@@ -1403,7 +1403,7 @@
 
   // ═══ Toutes les tâches : espace unique, filtrable, tous clients confondus ═══
   var AT_D = null, AT_FILTER = 'all', AT_CLIENT = '', AT_OFFER = '', AT_Q = '';
-  var AT_SL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', waiting_client: 'Attente client' };
+  var AT_SL = { todo: 'À faire', in_progress: 'En cours', review: 'À valider', waiting_client: 'Attente client', done: 'Terminée' };
   var AT_GROUPS = [['late', 'En retard', 'at-grp--late'], ['today', "Aujourd'hui", ''], ['week', 'Cette semaine', ''], ['later', 'Plus tard', ''], ['plan', 'À planifier', 'at-grp--plan'], ['attente', 'En attente client', '']];
   function atDdiff(s) { var t = new Date(s); t.setHours(0, 0, 0, 0); var td = new Date(); td.setHours(0, 0, 0, 0); return Math.round((t - td) / 86400000); }
   function atOffer(x) { return (x.project === 'maintenance' || x.kind === 'ticket') ? 'maint' : 'part'; }
@@ -1563,10 +1563,12 @@
       (x.status !== 'done' && !x.archived ? '<button class="pbtn pbtn--ok" title="Clôturer sans attendre la cliente" onclick="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')">Clôturer</button>' : '') +
       '<button class="pbtn" onclick="' + oc + '">Ouvrir</button></div></div>';
   }
+  function atFind(key, id) { return atList().filter(function (t) { return t.id === id && t.key === key; })[0] || null; }
   function atPlan(key, id) {
     var inp = el('atp-' + id); var v = inp ? (inp.value || '').trim() : '';
     if (!v) { toast('Choisis une date'); return; }
-    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
+    var res = taskRes(atFind(key, id) || { key: key, id: id });
+    jpost(res.url, { projectId: res.pid, dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); });
   }
   // Les états « clos » ou « pas encore commencé » n'ont rien à faire dans un
   // regroupement par urgence : une tâche terminée classée « En retard » parce
@@ -1670,16 +1672,19 @@
     var files = atts.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + atts.map(function (a) { return '<a class="pbtn" href="/api/clients/' + key + '/files/' + encodeURIComponent(a.key) + '/download">📎 ' + esc(a.name || 'fichier') + '</a>'; }).join('') + '</div>' : '';
     var plan = (!x.dueDate && x.status !== 'review' && x.status !== 'waiting_client')
       ? '<input type="date" class="at-plan" id="atp2-' + x.id + '"><button class="btn btn--dark btn--sm" onclick="ADM.atPlan2(\'' + key + '\',\'' + x.id + '\')">Planifier</button>' : '';
-    /* Envoyer quelque chose à la cliente sans quitter la tâche : un fichier, un
+    /* Envoyer quelque chose à la cliente sans quitter l'écran : un fichier, un
      * lien de livrable, ou le lien de révision. Ce sont les mêmes actions que
-     * dans Priorités — mêmes fonctions, pas des copies. Réservé à Partenaire
-     * créative : un ticket de maintenance n'a pas de livrable à valider. */
-    var envoi = (atOffer(x) === 'maint' || x.archived) ? '' :
-      '<button class="btn btn--outline btn--sm" title="Envoyer un fichier à la cliente" onclick="ADM.prioAddDlv(\'' + key + '\',\'' + x.id + '\')">📎 Fichier</button>' +
-      '<button class="btn btn--outline btn--sm" title="Envoyer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + key + '\',\'' + x.id + '\')">🔗 Lien</button>' +
-      '<button class="btn btn--outline btn--sm" title="Envoyer le lien de révision (la tâche passe en « à valider »)" onclick="ADM.prioSendReview(\'' + key + '\',\'' + x.id + '\',\'' + esc((x.reviewLink || '').replace(/'/g, "\\'")) + '\')">Lien de révision</button>';
+     * dans Priorités — mêmes fonctions, pas des copies.
+     * Un ticket de maintenance reçoit aussi fichiers et liens (ils arrivent
+     * dans les livrables de son espace) ; seul le lien de révision lui est
+     * étranger : il n'a pas d'état « à valider ». */
+    var resx = taskRes(x);
+    var envoi = x.archived ? '' :
+      '<button class="btn btn--outline btn--sm" title="Envoyer un fichier à la cliente" onclick="ADM.prioAddDlv(\'' + key + '\',\'' + x.id + '\',\'' + resx.pid + '\')">📎 Fichier</button>' +
+      '<button class="btn btn--outline btn--sm" title="Envoyer un livrable sous forme de lien" onclick="ADM.prioAddDlvLink(\'' + key + '\',\'' + x.id + '\',\'' + resx.pid + '\')">🔗 Lien</button>' +
+      (resx.ticket ? '' :
+        '<button class="btn btn--outline btn--sm" title="Envoyer le lien de révision (la tâche passe en « à valider »)" onclick="ADM.prioSendReview(\'' + key + '\',\'' + x.id + '\',\'' + esc((x.reviewLink || '').replace(/'/g, "\\'")) + '\')">Lien de révision</button>');
     // Saisie du temps passé directement depuis ce panneau (sans ouvrir la fiche).
-    var isMaint = atOffer(x) === 'maint';
     var curMin = x.timeSpentMinutes || Math.round((x.timeSpentSeconds || 0) / 60) || 0;
     var curH = Math.floor(curMin / 60), curM = curMin % 60;
     // Saisie du temps PAR MOIS. Un travail s'étale : 2 h en septembre, 1 h en
@@ -1745,30 +1750,7 @@
       }).join('');
     }).catch(function () { var box = el('at-dr-cmts'); if (box) box.innerHTML = '<div class="micro" style="color:var(--muted)">Ouvre la fiche pour voir la conversation.</div>'; });
   }
-  function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
-  // Saisie du temps depuis le panneau « Toutes les tâches » : PATCH la bonne
-  // ressource selon l'offre (tâche partenaire vs ticket maintenance).
-  // Enregistre le temps ET le mois de rattachement ENSEMBLE (un seul PATCH avec
-  // forceTime) : sinon le serveur ne recalcule pas l'attribution mensuelle.
-  function atSetTime(key, id, isMaint) {
-    var hEl = el('att-h-' + id), mEl = el('att-m-' + id), wEl = el('att-wm-' + id);
-    var h = Math.max(0, parseInt(hEl && hEl.value, 10) || 0);
-    var mm = Math.max(0, parseInt(mEl && mEl.value, 10) || 0);
-    var m = h * 60 + mm;
-    var wm = wEl ? String(wEl.value || '') : '';
-    var loc = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
-    if (loc) { loc.timeSpentMinutes = m; loc.timeSpentSeconds = m * 60; if (!isMaint) loc.workMonth = wm; }
-    var url = isMaint ? '/api/clients/' + key + '/tickets/' + id : '/api/clients/' + key + '/tasks/' + id;
-    var body = isMaint
-      ? { projectId: 'maintenance', timeSpentMinutes: m, timeSpentSeconds: m * 60 }
-      : { projectId: 'partner', timeSpentMinutes: m, timeSpentSeconds: m * 60, forceTime: true, workMonth: wm };
-    jpost(url, body, 'PATCH').then(function (r) {
-      if (r.ok) { toast(wm ? ('Enregistré · compté en ' + wm) : 'Temps enregistré ✓'); atRefresh(); }
-      else toast('Erreur');
-    }).catch(function () { toast('Erreur'); });
-  }
-  // Changement du mois : on ré-enregistre temps + mois ensemble (même save).
-  function atSetMonth(key, id) { atSetTime(key, id, false); }
+  function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } var res = taskRes(atFind(key, id) || { key: key, id: id }); jpost(res.url, { projectId: res.pid, dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function atCopyLink(url) {
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('Lien copié ✓'); }, function () { toast(url); });
     else toast(url);
@@ -1779,23 +1761,25 @@
    * sinon la tâche passe à « terminée » en laissant derrière elle un livrable
    * qui attend encore, et l'écran se contredit. */
   function atCloseTask(key, id) {
-    var x = atList().filter(function (t) { return t.id === id && t.key === key; })[0];
+    var x = atFind(key, id);
+    var res = taskRes(x || { key: key, id: id });
+    var quoi = res.ticket ? 'ce ticket' : 'cette tâche';
     var pending = x && (x.lastStatus === 'a_valider');
     admConfirm({
-      title: 'Clôturer cette tâche ?',
+      title: 'Clôturer ' + quoi + ' ?',
       message: pending
-        ? 'La version en attente sera marquée validée et la tâche terminée, sans attendre la cliente.'
-        : 'La tâche sera marquée terminée.',
+        ? 'La version en attente sera marquée validée et ' + quoi + ' terminé' + (res.ticket ? '' : 'e') + ', sans attendre la cliente.'
+        : (res.ticket ? 'Le ticket sera marqué résolu.' : 'La tâche sera marquée terminée.'),
       yes: 'Oui, clôturer', no: 'Annuler'
     }, function () {
-      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', status: 'done' }, 'PATCH').then(function (r) {
+      jpost(res.url, { projectId: res.pid, status: 'done' }, 'PATCH').then(function (r) {
         if (!r.ok) { toast('Erreur'); return; }
-        // Le livrable encore « à valider » doit suivre, sinon la tâche est
-        // terminée mais continue d'afficher « attend sa validation ».
+        // Le livrable encore « à valider » doit suivre, sinon le travail est
+        // terminé mais continue d'afficher « attend sa validation ».
         if (pending && x.lastId) {
-          jpost('/api/clients/' + key + '/deliverables/' + x.lastId, { projectId: 'partner', status: 'valide' }, 'PATCH').catch(function () {});
+          jpost('/api/clients/' + key + '/deliverables/' + x.lastId, { projectId: res.pid, status: 'valide' }, 'PATCH').catch(function () {});
         }
-        toast('Tâche clôturée ✓');
+        toast(res.ticket ? 'Ticket clôturé ✓' : 'Tâche clôturée ✓');
         atClose(); atRefresh();
       }).catch(function () { toast('Erreur'); });
     });
@@ -1811,14 +1795,16 @@
     var mins = h * 60 + mn;
     if (!/^\d{4}-\d{2}$/.test(m)) { toast('Choisis un mois'); return; }
     if (mins <= 0) { toast('Indique une durée'); return; }
-    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeEntry: { month: m, minutes: mins } }, 'PATCH').then(function (r) {
+    var res = taskRes(atFind(key, id) || { key: key, id: id });
+    jpost(res.url, { projectId: res.pid, timeEntry: { month: m, minutes: mins } }, 'PATCH').then(function (r) {
       if (!r.ok) { toast('Erreur'); return; }
       toast('Temps ajouté ✓');
       atRefreshOpen(key, id);
     }).catch(function () { toast('Erreur'); });
   }
   function atDelEntry(key, id, entryId) {
-    jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', removeTimeEntry: entryId }, 'PATCH').then(function (r) {
+    var res = taskRes(atFind(key, id) || { key: key, id: id });
+    jpost(res.url, { projectId: res.pid, removeTimeEntry: entryId }, 'PATCH').then(function (r) {
       if (!r.ok) { toast('Erreur'); return; }
       toast('Saisie retirée');
       atRefreshOpen(key, id);
@@ -5364,6 +5350,17 @@
     }
     return null;
   }
+  /* Une tâche Partenaire créative et un ticket de maintenance ne vivent pas à
+   * la même adresse. Cette question se tranche ici, une fois, pour toutes les
+   * actions : planifier, clôturer, saisir du temps, envoyer un livrable.
+   * Sinon chaque action écrit « /tasks/ » en dur et les tickets ne répondent
+   * à aucune — c'est ce qui les rendait inertes hors de leur propre écran. */
+  function taskRes(x) {
+    x = x || {};
+    return atOffer(x) === 'maint'
+      ? { url: '/api/clients/' + x.key + '/tickets/' + x.id, pid: x.project || 'maintenance', ticket: true }
+      : { url: '/api/clients/' + x.key + '/tasks/' + x.id, pid: 'partner', ticket: false };
+  }
   function afterDeliverable(key, id) {
     if (VIEW === 'alltasks') {
       var dr = el('at-dr');
@@ -5373,7 +5370,8 @@
     }
     PRIO_TAB = 'waiting'; refreshPriorities();
   }
-  function prioAddDlv(key, id) {
+  function prioAddDlv(key, id, pid) {
+    var rs = taskRes({ key: key, id: id, project: pid || 'partner' });
     var inp = document.createElement('input'); inp.type = 'file'; inp.style.cssText = 'position:fixed;left:-9999px;top:0';
     document.body.appendChild(inp);
     var cleanup = function () { if (inp.parentNode) inp.parentNode.removeChild(inp); };
@@ -5383,7 +5381,7 @@
       var cd = taskCtx(key, id);
       var cname = cd ? cd.client : 'le client';
       notifyConfirm('Envoyer ce livrable à la cliente et la prévenir par e-mail ?', function (notify) {
-      var fd = new FormData(); fd.append('file', f); fd.append('projectId', 'partner'); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
+      var fd = new FormData(); fd.append('file', f); fd.append('projectId', rs.pid); fd.append('deliverable', '1'); fd.append('taskId', id); fd.append('notify', notify ? 'true' : 'false');
       toast('Envoi du livrable…');
       api('/api/clients/' + key + '/files', { method: 'POST', body: fd }).then(admUploadResult)
         .then(function (res) { cleanup(); if (res.ok) { toast('Livrable envoyé à ' + cname + (notify ? ' · prévenu·e par e-mail' : ' (sans e-mail)')); afterDeliverable(key, id); } else toast(admUploadErrMsg(res.status, res.d && res.d.error)); })
@@ -5393,7 +5391,8 @@
     inp.click();
   }
   // Déposer un livrable sous forme de LIEN depuis Priorités.
-  function prioAddDlvLink(key, id) {
+  function prioAddDlvLink(key, id, pid) {
+    var rs = taskRes({ key: key, id: id, project: pid || 'partner' });
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
     ov.innerHTML = '<div class="admconfirm__box">' +
@@ -5414,7 +5413,7 @@
       var mins = Math.max(0, parseInt((el('prio-dl-mins') || {}).value, 10) || 0);
       close();
       notifyConfirm('Envoyer ce livrable (lien) à la cliente et la prévenir par e-mail ?', function (notify) {
-      jpost('/api/clients/' + key + '/deliverables', { projectId: 'partner', taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
+      jpost('/api/clients/' + key + '/deliverables', { projectId: rs.pid, taskId: id, link: url, name: name, notify: notify }).then(admUploadResult)
         .then(function (res) {
           if (res.ok) {
             toast((mins ? 'Livrable envoyé · ' + mins + ' min' : 'Livrable envoyé') + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
@@ -5424,7 +5423,7 @@
             if (mins) {
               var cd = taskCtx(key, id);
               var total = Math.round(((cd && cd.timeSpentSeconds) || 0) / 60) + mins;
-              jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH').then(fin, fin);
+              jpost(rs.url, { projectId: rs.pid, timeSpentMinutes: total, timeSpentSeconds: total * 60, forceTime: true }, 'PATCH').then(fin, fin);
             } else fin();
           } else toast(admUploadErrMsg(res.status, res.d && res.d.error));
         })
@@ -9346,7 +9345,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
-    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, atSetTime: atSetTime, atSetMonth: atSetMonth, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

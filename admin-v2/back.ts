@@ -754,6 +754,8 @@ async function handleClientApi(
       tk.timeSpentMinutes = Math.round(body.timeSpentMinutes);
       tk.timeSpentSeconds = tk.timeSpentMinutes * 60;
     }
+    // Un ticket porte du temps comme une tâche : même saisie par mois.
+    applyTimeEntry(tk, body);
     if (body.status === 'done' || body.status === 'closed') { if (!tk.resolvedAt) tk.resolvedAt = nowIso(); }
     else if ('status' in body) { tk.resolvedAt = null; }
     // Report d'échéance PROPOSÉ : la cliente a choisi une date, Cindy en
@@ -1187,6 +1189,42 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
   return task ? { task, container } : null;
 }
 const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'slot'];
+/* ── Saisie du temps PAR MOIS ─────────────────────────────────────────────
+ * Un travail s'étale : 2 h en septembre, 1 h en octobre. Un total unique ne
+ * sait pas dire ça, il ne peut tomber que dans un seul mois. Chaque saisie est
+ * donc enregistrée comme une SESSION datée dans son mois, exactement comme le
+ * fait le chrono ; le total devient la somme des saisies.
+ * Une seule implémentation pour les trois porteurs de temps — tâche cliente,
+ * ticket de maintenance, tâche perso. Elle n'existait que sur les tâches
+ * perso : la même saisie faite sur une tâche cliente répondait « ajouté ✓ »
+ * et ne s'enregistrait nulle part. */
+function applyTimeEntry(t: AnyObj, b: AnyObj): boolean {
+  let touched = false;
+  if (b.timeEntry && typeof b.timeEntry === 'object') {
+    const mth = String(b.timeEntry.month || '');
+    const mins = Math.max(0, Math.min(100000, Math.round(Number(b.timeEntry.minutes) || 0)));
+    if (/^\d{4}-\d{2}$/.test(mth) && mins > 0) {
+      if (!Array.isArray(t.sessions)) t.sessions = [];
+      // Milieu de mois : la date ne sert qu'à ranger dans le bon mois, sans
+      // risque de bascule liée au fuseau horaire.
+      t.sessions.push({ id: genId(), start: mth + '-15T12:00:00.000Z', minutes: mins, manual: true, at: nowIso() });
+      if (t.sessions.length > 200) t.sessions = t.sessions.slice(-200);
+      touched = true;
+    }
+  }
+  if (b.removeTimeEntry) {
+    const rid = String(b.removeTimeEntry);
+    if (Array.isArray(t.sessions)) { t.sessions = t.sessions.filter((x: AnyObj) => String(x && x.id) !== rid); touched = true; }
+  }
+  if (!touched) return false;
+  const tot = (Array.isArray(t.sessions) ? t.sessions : []).reduce((acc: number, x: AnyObj) => acc + stbSessionMin(x), 0);
+  t.timeSpentMinutes = Math.round(tot);
+  t.timeSpentSeconds = Math.round(tot * 60);
+  // Un découpage explicite rend le mois forcé caduc : le garder ferait
+  // cohabiter deux vérités contradictoires sur le même travail.
+  t.workMonth = '';
+  return true;
+}
 async function handleTaskPatch(request: Request, env: Env, key: string, data: AnyObj, taskId: string): Promise<Response> {
   const body = await readJson(request);
   const found = findTask(getEspace(data), (body.projectId || 'partner').toString(), taskId);
@@ -1256,6 +1294,8 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     t.sessions.push({ start: nowIso(), end: nowIso(), minutes: manualDeltaMin });
     if (t.sessions.length > 100) t.sessions = t.sessions.slice(-100);
   }
+  // Saisie du temps par mois depuis « Toutes les tâches » (et son retrait).
+  applyTimeEntry(t, body);
   if (body.properties && typeof body.properties === 'object') t.properties = Object.assign({}, t.properties || {}, body.properties);
   // Report d'échéance PROPOSÉ : la nouvelle date n'est pas appliquée tout de
   // suite ; la cliente la voit dans son espace et doit l'accepter.
@@ -1523,11 +1563,7 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
       const creationId = (form.get('creationId') as string) || null;
       deliverable = { id: genId(), name: fileName, fileKey: r2key, status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId: taskId || null, taskTitle: '', reviewLink: '', version: version, creationId: creationId };
       container.livrables.push(deliverable);
-      // Rattachement à une tâche : on mémorise son titre et on passe la tâche en « à valider ».
-      if (taskId && Array.isArray(container.taches)) {
-        const tk = container.taches.find((t: AnyObj) => t.id === taskId);
-        if (tk) { deliverable.taskTitle = tk.title || ''; tk.status = 'review'; deliverable.reviewLink = tk.reviewLink || ''; }
-      }
+      attachDeliverableParent(container, deliverable, taskId || null);
       await saveClient(env, key, data);
       if ((form.get('notify') as string) !== 'false') {
         await notifyClient(env, data, 'Nouveau livrable à valider', `<p>Un nouveau livrable <strong>${escHtml(fileName)}</strong>${deliverable.taskTitle ? ` pour la tâche <em>${escHtml(deliverable.taskTitle)}</em>` : ''} est disponible dans votre espace. Merci de le valider ou de demander une révision.</p>`, key);
@@ -1537,6 +1573,24 @@ async function handleUpload(request: Request, env: Env, key: string, data: AnyOb
   return json({ key: r2key, name: fileName, type: file.type || guessType(fileName), size: file.size, category: asDeliverable ? 'deliverable' : 'document', deliverable }, 201);
 }
 // Déposer un livrable sous forme de LIEN (au lieu d'un fichier).
+/* Rattacher un livrable à ce dont il découle : une tâche Partenaire créative,
+ * ou un ticket de maintenance. Les deux dépôts (fichier et lien) se posaient la
+ * question chacun de leur côté, et ne connaissaient que les tâches — un
+ * livrable envoyé depuis un ticket arrivait donc chez la cliente sans dire de
+ * quelle demande il venait. Une tâche passe en « à valider » ; un ticket n'a
+ * pas cet état, son statut reste ce qu'il est. */
+function attachDeliverableParent(container: AnyObj, deliverable: AnyObj, taskId: string | null): void {
+  if (!taskId) return;
+  const tk = Array.isArray(container.taches) ? container.taches.find((t: AnyObj) => t.id === taskId) : null;
+  if (tk) {
+    deliverable.taskTitle = tk.title || '';
+    tk.status = 'review';
+    if (!deliverable.reviewLink) deliverable.reviewLink = tk.reviewLink || '';
+    return;
+  }
+  const ti = Array.isArray(container.tickets) ? container.tickets.find((t: AnyObj) => t.id === taskId) : null;
+  if (ti) deliverable.taskTitle = ti.title || '';
+}
 async function handleDeliverableLink(request: Request, env: Env, key: string, data: AnyObj): Promise<Response> {
   const body = await readJson(request);
   const { container } = resolveProject(getEspace(data), (body.projectId || 'partner').toString());
@@ -1550,10 +1604,7 @@ async function handleDeliverableLink(request: Request, env: Env, key: string, da
   const version = taskId ? (container.livrables.filter((l: AnyObj) => l.taskId === taskId).length + 1) : 0;
   const creationId = (body.creationId || '').toString() || null;
   const deliverable: AnyObj = { id: genId(), name, fileKey: '', status: 'a_valider', clientComment: '', validatedAt: null, createdAt: nowIso(), taskId, taskTitle: '', reviewLink: url, version, creationId };
-  if (taskId && Array.isArray(container.taches)) {
-    const tk = container.taches.find((t: AnyObj) => t.id === taskId);
-    if (tk) { deliverable.taskTitle = tk.title || ''; tk.status = 'review'; }
-  }
+  attachDeliverableParent(container, deliverable, taskId);
   container.livrables.push(deliverable);
   await saveClient(env, key, data);
   if (body.notify !== false) {
@@ -1922,8 +1973,43 @@ async function handleDashboard(env: Env): Promise<Response> {
     // Tickets de maintenance ouverts : à retrouver dans les Priorités
     const ms = getDomainObj(esp, 'maintenanceSite');
     if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((t: AnyObj) => {
+      const tAtts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || '' })).filter((a: AnyObj) => a.key);
+      const tLivs = (Array.isArray(ms.livrables) ? ms.livrables : []).filter((l: AnyObj) => l.taskId === t.id);
+      tLivs.sort((a1: AnyObj, b1: AnyObj) => String(a1.createdAt || '').localeCompare(String(b1.createdAt || '')));
+      const tLast = tLivs.length ? tLivs[tLivs.length - 1] : null;
+      /* Vue « Toutes les tâches » : un ticket de maintenance est du travail
+       * comme un autre, et y manquait entièrement — l'écran ne lisait que les
+       * tâches Partenaire créative. Le statut est traduit dans le vocabulaire
+       * commun (ouvert → à faire, clos → terminé) pour que les filtres, les
+       * compteurs et le tri s'appliquent sans exception à traiter. */
+      tasksAll.push({
+        key: ci.key, client: who, project: 'maintenance', projectLabel: 'Espace tickets', kind: 'ticket',
+        id: t.id, title: t.title || 'Sans titre',
+        status: (t.status === 'closed' || t.status === 'done') ? 'done' : (t.status === 'in_progress' ? 'in_progress' : 'todo'),
+        ticketStatus: t.status || 'open',
+        archived: false,
+        dueDate: t.dueDate || '', doDate: '', startDate: '',
+        createdAt: t.createdAt || '', completedAt: t.resolvedAt || '',
+        pole: 'Maintenance', content: t.description || '',
+        priority: t.priority || 'moyenne',
+        timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
+        estMinutes: 0, needsRework: false, clientFeedbackAt: '',
+        sentCount: tLivs.length,
+        entries: (Array.isArray(t.sessions) ? t.sessions : []).map((x: AnyObj) => ({
+          id: String(x.id || ''), month: String(x.start || '').slice(0, 7),
+          minutes: Math.round(stbSessionMin(x)), manual: x.manual === true, at: String(x.at || ''),
+        })).filter((x: AnyObj) => x.minutes > 0),
+        workMonth: t.workMonth || '',
+        lastId: tLast ? (tLast.id || '') : '',
+        lastSentAt: tLast ? (tLast.createdAt || '') : '',
+        lastStatus: tLast ? (tLast.status || 'a_valider') : '',
+        lastName: tLast ? (tLast.name || '') : '',
+        roundCount: 0, reviewLink: '',
+        attachments: tAtts, attCount: tAtts.length, clientLink: '',
+        blocks: [], table: null, reviewSentAt: '',
+      });
       if (t.status === 'done' || t.status === 'closed') return;
-      const atts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || '' })).filter((a: AnyObj) => a.key);
+      const atts = tAtts;
       deadlines.push({ key: ci.key, client: who, project: 'maintenance', projectLabel: 'Espace tickets', kind: 'ticket', id: t.id, title: t.title || 'Sans titre', dueDate: t.dueDate || '', status: t.status || 'open', content: t.description || '', priority: t.priority || 'moyenne', attCount: atts.length, attachments: atts, timeSpentMinutes: t.timeSpentMinutes || 0, seenByAdmin: t.seenByAdmin !== false });
       if (t.seenByAdmin === false) newTasks.push({ key: ci.key, client: who, id: t.id, kind: 'ticket', title: t.title || 'Sans titre', content: t.description || '', dueDate: t.dueDate || '', attCount: atts.length, attachments: atts, createdAt: t.createdAt || '' });
     });
@@ -2129,40 +2215,8 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
     // réduire le total. La saisie manuelle passe forceTime pour corriger.
     t.timeSpentSeconds = b.forceTime === true ? nv : Math.max(nv, t.timeSpentSeconds || 0);
   }
-  /* ── Saisie de temps POUR UN MOIS donné ───────────────────────────────
-   * Un travail s'étale : 2 h en septembre, 1 h en octobre. Un total unique ne
-   * sait pas dire ça, il ne peut tomber que dans un seul mois. Chaque saisie
-   * est donc enregistrée comme une SESSION datée dans son mois, exactement
-   * comme le fait le chrono. Aucun concept nouveau : la jauge du forfait, le
-   * détail du mois et l'historique répartissent déjà par mois.
-   * Le total de la tâche devient la somme de ses saisies. */
-  if (b.timeEntry && typeof b.timeEntry === 'object') {
-    const mth = String(b.timeEntry.month || '');
-    const mins = Math.max(0, Math.min(100000, Math.round(Number(b.timeEntry.minutes) || 0)));
-    if (/^\d{4}-\d{2}$/.test(mth) && mins > 0) {
-      if (!Array.isArray(t.sessions)) t.sessions = [];
-      // Milieu de mois : la date sert uniquement à ranger dans le bon mois,
-      // sans risque de bascule liée au fuseau horaire.
-      t.sessions.push({ id: genId(), start: mth + '-15T12:00:00.000Z', minutes: mins, manual: true, at: nowIso() });
-      if (t.sessions.length > 200) t.sessions = t.sessions.slice(-200);
-      const tot = t.sessions.reduce((acc: number, x: AnyObj) => acc + stbSessionMin(x), 0);
-      t.timeSpentMinutes = Math.round(tot);
-      t.timeSpentSeconds = Math.round(tot * 60);
-      // Un découpage explicite rend le mois forcé caduc : le garder ferait
-      // cohabiter deux vérités contradictoires sur la même tâche.
-      t.workMonth = '';
-    }
-  }
-  // Retrait d'une saisie (correction d'erreur).
-  if (b.removeTimeEntry) {
-    const rid = String(b.removeTimeEntry);
-    if (Array.isArray(t.sessions)) {
-      t.sessions = t.sessions.filter((x: AnyObj) => String(x && x.id) !== rid);
-      const tot2 = t.sessions.reduce((acc: number, x: AnyObj) => acc + stbSessionMin(x), 0);
-      t.timeSpentMinutes = Math.round(tot2);
-      t.timeSpentSeconds = Math.round(tot2 * 60);
-    }
-  }
+  // Saisie du temps par mois, et son retrait (voir applyTimeEntry).
+  applyTimeEntry(t, b);
   // Journal des sessions de chrono : heure de début et de fin de chaque
   // période travaillée (envoyées à la mise en pause).
   if (b.sessionStart && b.sessionEnd) {
