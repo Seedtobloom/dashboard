@@ -369,7 +369,10 @@
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
     var groups = [
-      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Toutes les tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
+      // « Mes tâches » n'avait AUCUNE entrée de menu : l'écran existait, était
+      // routé, avait sa pastille de retard — mais on n'y entrait que par un
+      // petit lien caché dans « Ma semaine ». Autant dire qu'il n'existait pas.
+      ['Mon travail', [['inbox', 'Inbox'], ['priorities', 'Priorités'], ['mytasks', 'Mes tâches'], ['alltasks', 'Toutes les tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];

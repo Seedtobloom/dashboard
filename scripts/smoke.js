@@ -99,6 +99,16 @@ section('4. Admin — vues du menu ↔ fonctions de rendu');
   const orphanNav = navKeys.filter((k) => !known.has(k));
   if (!orphanNav.length) ok(navKeys.length + ' entrées de menu — toutes atteignables');
   else fail('entrée(s) de menu sans destination', orphanNav);
+  // ET L'INVERSE : chaque vue routée doit avoir une porte d'entrée dans le
+  // menu. Ce sens-là n'était pas vérifié, et « Mes tâches » vivait ainsi sans
+  // entrée : écran routé, pastille de retard peinte, mais introuvable.
+  const navSet = new Set(navKeys);
+  // Vues atteintes autrement que par le menu, légitimement : la fiche d'une
+  // cliente, la création d'une cliente, une conversation.
+  const noMenu = new Set(['client', 'newclient', 'chat', 'clients']);
+  const orphanView = Object.keys(routed).filter((v) => !navSet.has(v) && !noMenu.has(v));
+  if (!orphanView.length) ok(Object.keys(routed).length + ' vues — toutes ont une entrée de menu');
+  else fail('vue(s) routée(s) sans entrée de menu (introuvables)', orphanView);
 })();
 
 /* ── 5. Client : messagerie vivante intacte + routeur cohérent ── */
