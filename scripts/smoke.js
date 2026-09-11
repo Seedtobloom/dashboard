@@ -118,7 +118,10 @@ section('5. Client — messagerie vivante & routeur');
 section('6. Garde anti-retour du code mort');
 (function () {
   // admin : plus aucune référence à la vue planning supprimée
-  const adminDead = { 'admin-v2/app.js': ['renderPlanning', 'renderPlanningView', 'PLAN_BLOCKS', 'function planCap('] };
+  // Attention : ces aiguilles sont cherchées telles quelles. Écrire
+  // « renderPlanning » tout court accusait à tort renderPlannings(), la vue
+  // des plannings prévisionnels, bien vivante : d'où la parenthèse.
+  const adminDead = { 'admin-v2/app.js': ['renderPlanning(', 'renderPlanningView', 'PLAN_BLOCKS', 'function planCap('] };
   // client : plus aucune référence à l'ancienne messagerie
   const clientDead = { 'client-v2/front.js': ['function buildConversation(', 'function convThreads(', 'function attachConvoForm(', 'cpConvoSend', 'function buildPartInvoices('] };
   [adminDead, clientDead].forEach((grp) => {

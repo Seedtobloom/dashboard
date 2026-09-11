@@ -151,7 +151,21 @@
   function fmtDate(d) { if (!d) return '·'; var t = new Date(d); return isNaN(t) ? esc(d) : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function fmtDT(d) { if (!d) return ''; var t = new Date(d); return isNaN(t) ? '' : t.toLocaleString('fr-FR'); }
   function el(id) { return document.getElementById(id); }
-  function api(path, opts) { return fetch(path, Object.assign({ credentials: 'same-origin' }, opts || {})); }
+  /* Point de passage UNIQUE de tous les appels réseau. C'est ici, et nulle part
+   * ailleurs, qu'on périme les lectures mutualisées (tableau de bord, liste des
+   * clientes) : dès qu'une écriture réussit, le prochain écran redemande des
+   * données fraîches. Sans cette règle unique il faudrait y penser sur chacune
+   * des dizaines d'actions — et un oubli rend le résultat invisible pendant
+   * toute la durée du cache (c'est ce qui faisait « disparaître » une demande
+   * acceptée : retirée de l'inbox, mais encore marquée « inbox » dans le cache,
+   * donc absente des tâches). */
+  function api(path, opts) {
+    opts = opts || {};
+    var m = String(opts.method || 'GET').toUpperCase();
+    var p = fetch(path, Object.assign({ credentials: 'same-origin' }, opts));
+    if (m === 'GET' || m === 'HEAD') return p;
+    return p.then(function (r) { if (r.ok) cacheStale(); return r; });
+  }
   function jpost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   function toast(m) { var t = el('toast'); if (!t) return; t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2600); }
   // ── Uploads : garde-fou de taille + lecture d'erreur robuste ──
@@ -1432,16 +1446,25 @@
    * sa présence). Un appel coûte donc 2N+1 lectures. Neuf endroits l'appelaient
    * chacun de leur côté, plus un rafraîchissement de fond : c'est le premier
    * poste de consommation du quota, devant le tableau de bord. */
+  /* Génération de cache : incrémentée par chaque écriture réussie (voir api()).
+   * Une lecture partie AVANT l'écriture rapporte des données d'avant : on la
+   * sert à qui l'attendait, mais on refuse de la mettre en cache, sinon elle
+   * masquerait la modification jusqu'à l'expiration du TTL. */
+  var CACHE_GEN = 0;
+  function cacheStale() { CACHE_GEN++; CLI_AT = 0; DASH_AT = 0; }
   var CLI_CACHE = null, CLI_AT = 0, CLI_INFLIGHT = null;
   var CLI_TTL = 120000;
   function clientsGet(force) {
     if (!force && CLI_CACHE && (Date.now() - CLI_AT) < CLI_TTL) return Promise.resolve(CLI_CACHE);
     if (CLI_INFLIGHT) return CLI_INFLIGHT;
+    var gen = CACHE_GEN;
     CLI_INFLIGHT = api('/api/clients').then(function (r) {
       if (!r.ok) { var er = new Error('HTTP ' + r.status); er.status = r.status; throw er; }
       return r.json();
     }).then(function (d) {
-      CLI_CACHE = d; CLI_AT = Date.now(); CLI_INFLIGHT = null; return d;
+      CLI_INFLIGHT = null;
+      if (gen === CACHE_GEN) { CLI_CACHE = d; CLI_AT = Date.now(); }
+      return d;
     }, function (e) { CLI_INFLIGHT = null; throw e; });
     return CLI_INFLIGHT;
   }
@@ -1450,13 +1473,16 @@
   function dashGet(force) {
     if (!force && DASH_CACHE && (Date.now() - DASH_AT) < DASH_TTL) return Promise.resolve(DASH_CACHE);
     if (DASH_INFLIGHT) return DASH_INFLIGHT;
+    var gen = CACHE_GEN;
     DASH_INFLIGHT = api('/api/dashboard').then(function (r) {
       // Une réponse en erreur n'est pas du JSON : sans ce contrôle le parsing
       // échoue et on perd la vraie cause (quota atteint, panne serveur).
       if (!r.ok) { var er = new Error('HTTP ' + r.status); er.status = r.status; throw er; }
       return r.json();
     }).then(function (d) {
-      DASH_CACHE = d; DASH_AT = Date.now(); DASH_INFLIGHT = null; return d;
+      DASH_INFLIGHT = null;
+      if (gen === CACHE_GEN) { DASH_CACHE = d; DASH_AT = Date.now(); }
+      return d;
     }, function (e) { DASH_INFLIGHT = null; throw e; });
     return DASH_INFLIGHT;
   }
