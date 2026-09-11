@@ -1626,6 +1626,27 @@ function forfaitState(pc: AnyObj): AnyObj {
   return stbForfaitState(pc, Array.isArray(pc.taches) ? pc.taches : []);
 }
 
+/* Pièces jointes et lien d'une tâche. UNE seule extraction, partagée par la
+ * liste des échéances et la liste exhaustive : la recopier a déjà coûté cher
+ * (la seconde liste était partie sans les pièces jointes, et la cliente ne
+ * voyait plus les fichiers envoyés par SA cliente). */
+function taskFilesOf(t: AnyObj): { atts: AnyObj[]; clientLink: string } {
+  const atts = (t.attachments || [])
+    .map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' }))
+    .filter((a: AnyObj) => a.key);
+  let clientLink = '';
+  try {
+    const pe = t.properties && t.properties.p_elements;
+    const o = typeof pe === 'string' ? JSON.parse(pe) : pe;
+    if (o && o.link) clientLink = String(o.link).slice(0, 500);
+    if (o && Array.isArray(o.files)) {
+      o.files.forEach((f: AnyObj) => {
+        if (f && f.key) atts.push({ name: String(f.name || 'fichier').slice(0, 120), key: String(f.key).slice(0, 300) });
+      });
+    }
+  } catch (e) { /* propriété illisible : on garde ce qu'on a */ }
+  return { atts, clientLink };
+}
 async function handleDashboard(env: Env): Promise<Response> {
   const idx = await getIndex(env);
   const deadlines: AnyObj[] = [];
@@ -1777,6 +1798,7 @@ async function handleDashboard(env: Env): Promise<Response> {
           livs.sort((a1: AnyObj, b1: AnyObj) => String(a1.createdAt || '').localeCompare(String(b1.createdAt || '')));
           const last = livs.length ? livs[livs.length - 1] : null;
           const hist2: AnyObj[] = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
+          const tf = taskFilesOf(t);
           tasksAll.push({
             key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative',
             id: t.id, title: t.title || '', status: t.status || 'todo',
@@ -1804,6 +1826,12 @@ async function handleDashboard(env: Env): Promise<Response> {
             lastName: last ? (last.name || '') : '',
             roundCount: hist2.length,
             reviewLink: t.reviewLink || '',
+            // Pièces jointes et lien de la cliente : absents de cette liste au
+            // départ, ils disparaissaient donc du panneau de tâche.
+            attachments: tf.atts, attCount: tf.atts.length, clientLink: tf.clientLink,
+            blocks: Array.isArray(t.blocks) ? t.blocks : [],
+            table: (t.table && typeof t.table === 'object') ? t.table : null,
+            reviewSentAt: (hist2.length ? hist2[hist2.length - 1].at : '') || '',
           });
         }
         // Tâche Partenaire créative active → agrégée dans « Ma semaine ».
@@ -1824,16 +1852,11 @@ async function handleDashboard(env: Env): Promise<Response> {
         const _realTask = t.stage !== 'inbox' && t.stage !== 'out_of_scope' && t.stage !== 'refused';
         if (t.status !== 'done' && (t.dueDate || t.status === 'review' || (_realTask && !t.archived))) {
           const hist = Array.isArray(t.reviewHistory) ? t.reviewHistory : [];
-          const atts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key);
-          // Lien & fichiers saisis par le client dans sa tâche (propriété p_elements).
-          let clientLink = '';
+          // Même extraction que la liste exhaustive (taskFilesOf).
+          const _tf = taskFilesOf(t);
+          const atts = _tf.atts;
+          const clientLink = _tf.clientLink;
           const beFiles: AnyObj[] = [];
-          try {
-            const pe = t.properties && t.properties.p_elements;
-            const o = typeof pe === 'string' ? JSON.parse(pe) : pe;
-            if (o && o.link) clientLink = String(o.link).slice(0, 500);
-            if (o && Array.isArray(o.files)) o.files.forEach((f: AnyObj) => { if (f && f.key) beFiles.push({ name: String(f.name || 'fichier').slice(0, 120), key: String(f.key).slice(0, 300) }); });
-          } catch (e) { /* ignore */ }
           deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', doDate: t.doDate || '', pole: t.pole || '', status: t.status, content: t.content || '', blocks: Array.isArray(t.blocks) ? t.blocks : [], table: (t.table && typeof t.table === 'object') ? t.table : null, attCount: atts.length, attachments: atts.concat(beFiles), clientLink, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, workMonth: t.workMonth || '', estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, needsRework: !!t.needsRework });
         }
         // Notification persistante : tâche créée par le client et pas encore traitée.
