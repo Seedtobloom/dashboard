@@ -7572,10 +7572,22 @@
     }
     return String(a);
   }
+  /* L'état d'un questionnaire envoyé, dit pareil dans la fiche cliente et dans
+   * le registre des réponses. Deux libellés divergents pour le même état, ce
+   * serait deux vérités. */
+  var QNR_ST = { assigned: ['À remplir', '#8a6f2e', '#fbf0d8'], in_progress: ['En cours', '#35608f', '#e3edfb'], to_review: ['À revoir', '#8a6f2e', '#fbf0d8'], completed: ['Complété ✓', '#3f6b3a', '#e7f0e3'] };
+  function qnrStPill(inst, extra) {
+    var sm = QNR_ST[inst.status] || QNR_ST.assigned;
+    return '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + (extra || '') + '</span>';
+  }
+  function qnrHasAnswers(inst) {
+    return inst.status === 'completed' || inst.status === 'to_review' ||
+      (inst.answers ? Object.keys(inst.answers).length > 0 : (inst.answersCount || 0) > 0);
+  }
   function qnrAnswersBody(inst) {
     var ans = inst.answers || {};
     var rows = (inst.steps || []).map(function (s) {
-      var blocks = (s.blocks || []).filter(function (b) { return b.type !== 'title' && b.type !== 'paragraph'; });
+      var blocks = (s.blocks || []).filter(function (b) { return !qnrIsStatic(b.type); });
       if (!blocks.length) return '';
       var qs = blocks.map(function (b) {
         var disp = qnrFmtAnswer(ans[b.id]);
@@ -7589,18 +7601,15 @@
   function qnrAnswersTab() {
     var list = CUR.questionnaires || [];
     if (!list.length) return '<div class="card infocard" style="background:var(--card)"><h3>Questionnaires</h3><div class="empty">Aucun questionnaire envoyé à cette cliente. Envoie-en un depuis « Questionnaires » (menu de gauche).</div></div>';
-    var stMeta = { assigned: ['À remplir', '#8a6f2e', '#fbf0d8'], in_progress: ['En cours', '#35608f', '#e3edfb'], to_review: ['À revoir', '#8a6f2e', '#fbf0d8'], completed: ['Complété ✓', '#3f6b3a', '#e7f0e3'] };
     var pending = list.filter(function (q) { return q.status !== 'completed'; }).length;
     var doneN = list.filter(function (q) { return q.status === 'completed'; }).length;
     var summary = '<div class="card infocard" style="background:var(--card);max-width:760px;padding:14px 18px"><span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">' +
       (pending ? '⏳ ' + pending + ' questionnaire' + (pending > 1 ? 's' : '') + ' en attente de réponse' : '✓ Tous les questionnaires sont complétés') +
       (doneN ? ' · ' + doneN + ' complété' + (doneN > 1 ? 's' : '') : '') + '</span></div>';
     var cards = list.map(function (inst) {
-      var sm = stMeta[inst.status] || stMeta.assigned;
       var when = inst.completedAt ? ' · le ' + fmtDate(inst.completedAt) : '';
-      var hasAns = inst.status === 'completed' || inst.status === 'to_review' || (inst.answers && Object.keys(inst.answers).length);
-      var body = hasAns ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses, la cliente ne l\'a pas encore rempli.</div>';
-      var pill = '<span style="flex-shrink:0;font-size:11.5px;font-weight:600;color:' + sm[1] + ';background:' + sm[2] + ';padding:4px 11px;border-radius:999px;white-space:nowrap">' + esc(sm[0]) + when + '</span>';
+      var body = qnrHasAnswers(inst) ? qnrAnswersBody(inst) : '<div class="empty">Pas encore de réponses, la cliente ne l\'a pas encore rempli.</div>';
+      var pill = qnrStPill(inst, when);
       var del = '<button class="btn btn--danger btn--sm" title="Supprimer ce questionnaire" onclick="ADM.qnrDelete(\'' + inst.id + '\',\'' + esc((inst.name || '').replace(/'/g, "\\'")) + '\')">Suppr.</button>';
       var pdf = '<button class="btn btn--outline btn--sm" title="Télécharger en PDF (via Imprimer)" onclick="ADM.qnrExportPdf(\'' + inst.id + '\')">PDF</button>';
       return '<div class="card infocard" style="background:var(--card);max-width:760px">' +
@@ -7616,6 +7625,11 @@
     var inst = (CUR.questionnaires || []).filter(function (q) { return q.id === id; })[0];
     if (!inst) { toast('Questionnaire introuvable'); return; }
     var cn = (CUR.client ? ((CUR.client.prenom || '') + ' ' + (CUR.client.nom || '')).trim() || CUR.client.email : '') || '';
+    qnrPdfOpen(inst, cn);
+  }
+  // Le document lui-même : il ne dépend que du questionnaire et d'un nom, donc
+  // il s'imprime aussi bien depuis la fiche cliente que depuis le registre.
+  function qnrPdfOpen(inst, cn) {
     var ans = inst.answers || {};
     var when = inst.completedAt ? fmtDate(inst.completedAt) : (inst.updatedAt ? fmtDate(inst.updatedAt) : '');
     var sections = (inst.steps || []).map(function (s) {
@@ -8592,9 +8606,12 @@
     '</div>';
   }
 
+  var QNR_D = null, QNR_TAB = 'modeles';
   function renderQuestionnaires() {
     setMain(topbar('') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
+    // Le registre des envois vient du tableau de bord (lecture mutualisée).
+    dashGet().then(function (d) { QNR_D = d; if (VIEW === 'questionnaires') renderQnrBody(); }).catch(function () {});
     if (QNR_LOADED) { renderQnrBody(); return; }
     api('/api/questionnaires').then(function (r) { return r.json(); }).then(function (d) { QNR = (d && d.questionnaires) || []; QNR_LOADED = true; renderQnrBody(); }).catch(showError);
   }
@@ -8604,14 +8621,20 @@
     var body = el('qnr-body'); if (!body) return;
     var active = QNR.filter(function (t) { return !t.archived; });
     var archived = QNR.filter(function (t) { return t.archived; });
-    var head = '<div class="clhead"><div><p class="hello">Questionnaires</p><p class="hello__s">Tes questionnaires-types, prêts à assigner à tes clientes.</p></div></div>' +
-      '<div class="qbar"><p style="font-family:var(--font-body);font-size:12.5px;color:var(--muted);margin:0">Crée un modèle, envoie-le, consulte les réponses dans chaque fiche cliente.</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div></div>';
+    var nRep = qnrRepAll().length;
+    var head = '<div class="clhead"><div><p class="hello">Questionnaires</p><p class="hello__s">Tes questionnaires-types, et les réponses de tes clientes.</p></div></div>' +
+      '<div class="subtabs">' +
+        '<button class="subtab' + (QNR_TAB !== 'reponses' ? ' active' : '') + '" onclick="ADM.qnrSetTab(\'modeles\')">Mes modèles · ' + active.length + '</button>' +
+        '<button class="subtab' + (QNR_TAB === 'reponses' ? ' active' : '') + '" onclick="ADM.qnrSetTab(\'reponses\')">Réponses' + (nRep ? ' · ' + nRep : '') + '</button>' +
+      '</div>';
+    if (QNR_TAB === 'reponses') { body.innerHTML = head + qnrRepView(); return; }
+    var bar = '<div class="qbar"><p style="font-family:var(--font-body);font-size:12.5px;color:var(--muted);margin:0">Crée un modèle, envoie-le, et retrouve les réponses dans l\'onglet « Réponses ».</p><div style="display:flex;gap:8px;align-items:center"><button class="btn btn--outline btn--sm" onclick="ADM.qnrImportJson()">Importer (JSON)</button><button class="btn btn--dark btn--sm" onclick="ADM.qnrAdd()">+ Nouveau modèle</button></div></div>';
     var list = active.length
       ? active.map(qnrTplCardHtml).join('')
       : '<div class="empty">Aucun questionnaire pour l\'instant. Crée ton premier modèle (ex. « Questions de démarrage », « Brief branding »), puis envoie-le à une ou plusieurs clientes.</div>';
     var archBtn = archived.length ? '<button class="btn btn--outline btn--sm" style="margin-top:14px" onclick="ADM.qnrToggleArch()">' + (QNR_SHOW_ARCH ? 'Masquer' : 'Voir') + ' les archivés · ' + archived.length + '</button>' : '';
     var archGrid = (QNR_SHOW_ARCH && archived.length) ? '<div style="margin-top:14px;opacity:0.75">' + archived.map(qnrTplCardHtml).join('') + '</div>' : '';
-    body.innerHTML = head + list + archBtn + archGrid;
+    body.innerHTML = head + bar + list + archBtn + archGrid;
   }
   function qnrTplCardHtml(t) {
     var nQ = qnrCountBlocks(t), nS = (t.steps || []).length;
@@ -8638,6 +8661,98 @@
     '</div>';
   }
   function qnrToggleArch() { QNR_SHOW_ARCH = !QNR_SHOW_ARCH; renderQnrBody(); }
+  /* ── Registre des réponses ────────────────────────────────────────────
+   * Les réponses ne se lisaient qu'en ouvrant les clientes une par une : pour
+   * savoir qui avait rempli quoi, il fallait déjà le savoir. Ici, tous les
+   * envois sont regroupés SOUS LEUR QUESTIONNAIRE — c'est la question qu'on se
+   * pose depuis cet écran : « ce brief, qui me l'a rendu ? ».
+   * Le tableau de bord ne transmet que l'état de chaque envoi, pas les
+   * réponses : on n'en lit qu'une à la fois, on va la chercher à l'ouverture
+   * (et la fiche déjà chargée est réutilisée). */
+  var QNR_REP = {};       // key -> fiche cliente chargée
+  var QNR_REP_OPEN = {};  // id d'envoi -> déplié
+  function qnrRepAll() { return (QNR_D && Array.isArray(QNR_D.qnrAll)) ? QNR_D.qnrAll : []; }
+  function qnrRepView() {
+    var all = qnrRepAll();
+    if (!all.length) return '<div class="empty">Aucun questionnaire envoyé pour l\'instant. Assigne un modèle à une cliente depuis l\'onglet « Mes modèles ».</div>';
+    // Regroupé par questionnaire. On se repère au nom : deux envois du même
+    // modèle renommé depuis restent lisibles côte à côte.
+    var groups = {}, order = [];
+    all.forEach(function (q) {
+      var k = q.templateId || ('n:' + (q.name || ''));
+      if (!groups[k]) { groups[k] = { name: q.name || 'Questionnaire', items: [] }; order.push(k); }
+      groups[k].items.push(q);
+    });
+    var attente = all.filter(function (q) { return q.status !== 'completed'; }).length;
+    var recu = all.length - attente;
+    var head = '<div class="card infocard" style="background:var(--card);max-width:860px;padding:14px 18px;margin-bottom:16px">' +
+      '<span class="micro" style="text-transform:none;letter-spacing:0;color:var(--terre-600);font-weight:600">' +
+      (recu ? '✓ ' + recu + ' questionnaire' + (recu > 1 ? 's' : '') + ' rempli' + (recu > 1 ? 's' : '') : 'Aucun questionnaire rempli pour l\'instant') +
+      (attente ? ' · ⏳ ' + attente + ' en attente' : '') + '</span></div>';
+    return head + order.map(function (k) {
+      var g = groups[k];
+      var rows = g.items.map(qnrRepRow).join('');
+      return '<div class="card infocard" style="background:var(--card);max-width:860px">' +
+        '<div class="between" style="align-items:center;gap:10px"><h3 style="margin:0">' + esc(g.name) + '</h3>' +
+        '<span class="micro" style="color:var(--muted)">' + g.items.length + ' envoi' + (g.items.length > 1 ? 's' : '') + '</span></div>' +
+        '<div style="margin-top:10px">' + rows + '</div></div>';
+    }).join('');
+  }
+  function qnrRepRow(q) {
+    var when = q.completedAt ? ' · le ' + fmtDate(q.completedAt) : '';
+    var open = !!QNR_REP_OPEN[q.id];
+    var lisible = qnrHasAnswers(q);
+    var retard = (!lisible && q.dueDate && atDdiff(q.dueDate) < 0)
+      ? '<span class="at-due at-due--late">en retard</span>' : '';
+    var btn = lisible
+      ? '<button class="btn btn--outline btn--sm" onclick="ADM.qnrRepToggle(\'' + q.key + '\',\'' + q.id + '\')">' + (open ? 'Masquer' : 'Voir les réponses') + '</button>'
+      : '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0">pas encore rempli</span>';
+    return '<div style="border-top:1px solid var(--bone-d);padding:11px 0">' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<span style="flex:1;min-width:140px;font-size:14.5px;color:var(--terre);font-weight:600">' + esc(q.client || '') + '</span>' +
+        retard + qnrStPill(q, when) + btn +
+      '</div>' +
+      '<div id="qnr-rep-' + q.id + '" style="display:' + (open ? 'block' : 'none') + ';padding-top:10px">' +
+        (open ? qnrRepBody(q) : '') + '</div>' +
+    '</div>';
+  }
+  function qnrRepBody(q) {
+    var data = QNR_REP[q.key];
+    if (!data) return '<div class="micro" style="color:var(--muted)">Chargement des réponses…</div>';
+    var inst = (data.questionnaires || []).filter(function (x) { return x.id === q.id; })[0];
+    if (!inst) return '<div class="empty">Réponses introuvables : le questionnaire a peut-être été supprimé.</div>';
+    var cn = (data.client ? ((data.client.prenom || '') + ' ' + (data.client.nom || '')).trim() || data.client.email : '') || q.client || '';
+    return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.qnrRepPdf(\'' + q.key + '\',\'' + q.id + '\')">PDF</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.prioConsultQnr(\'' + q.key + '\',\'' + q.id + '\')">Ouvrir la fiche de ' + esc(cn) + '</button>' +
+      '</div>' + qnrAnswersBody(inst);
+  }
+  function qnrRepToggle(key, id) {
+    QNR_REP_OPEN[id] = !QNR_REP_OPEN[id];
+    if (!QNR_REP_OPEN[id]) { renderQnrBody(); return; }
+    if (QNR_REP[key]) { renderQnrBody(); qnrRepSeen(key, id); return; }
+    renderQnrBody();   // affiche « Chargement… »
+    api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (d) {
+      QNR_REP[key] = d || {};
+      if (VIEW === 'questionnaires') renderQnrBody();
+      qnrRepSeen(key, id);
+    }).catch(function () { toast('Réponses non chargées, réessaie'); });
+  }
+  // Lire les réponses vaut consultation : la pastille de l'inbox doit tomber.
+  function qnrRepSeen(key, id) {
+    var q = qnrRepAll().filter(function (x) { return x.id === id && x.key === key; })[0];
+    if (!q || q.seenByAdmin || !qnrHasAnswers(q)) return;
+    q.seenByAdmin = true;
+    jpost('/api/clients/' + key + '/questionnaires/' + id, { seenByAdmin: true }, 'PATCH').catch(function () {});
+  }
+  function qnrRepPdf(key, id) {
+    var data = QNR_REP[key];
+    var inst = data && (data.questionnaires || []).filter(function (x) { return x.id === id; })[0];
+    if (!inst) { toast('Réponses non chargées'); return; }
+    var cn = (data.client ? ((data.client.prenom || '') + ' ' + (data.client.nom || '')).trim() || data.client.email : '') || '';
+    qnrPdfOpen(inst, cn);
+  }
+  function qnrSetTab(t) { QNR_TAB = t; renderQnrBody(); }
   // Import d'un modèle complet au format JSON (celui que renvoie « Exporter »).
   // Sert à créer un questionnaire long sans le re-saisir question par question.
   // Les identifiants sont TOUJOURS régénérés : on ne risque pas d'écraser un
@@ -9385,7 +9500,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
-    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
+    atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskAdd: myTaskAdd, myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtSetView: mtSetView, mtSetTag: mtSetTag, mtQuickAdd: mtQuickAdd, mtCreatePick: mtCreatePick, mtOpenAdd: mtOpenAdd, mtToggleToday: mtToggleToday, mtScrollTo: mtScrollTo, mtSetMode: mtSetMode, mtMovePick: mtMovePick, mtBulkAddOpen: mtBulkAddOpen, mtMoreDone: mtMoreDone, mtToggleAdd: mtToggleAdd, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtDragStart: mtDragStart, mtDragEnd: mtDragEnd, mtDragOver: mtDragOver, mtDragLeave: mtDragLeave, mtDrop: mtDrop, mtDropCat: mtDropCat, mtSetGroup: mtSetGroup, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
     visTab: visTab, trameOpen: trameOpen, trameEditLib: trameEditLib, trameBackLib: trameBackLib, trameQToggle: trameQToggle, trameQNote: trameQNote, callNoteNew: callNoteNew, callNoteSel: callNoteSel, callNoteDel: callNoteDel, callNoteSet: callNoteSet, callRight: callRight, trameNew: trameNew, trameSel: trameSel, trameDel: trameDel, trameSet: trameSet, trameEditToggle: trameEditToggle, trameEdField: trameEdField, trameEdQ: trameEdQ, trameEdQAdd: trameEdQAdd, trameEdQDel: trameEdQDel, trameEdSecAdd: trameEdSecAdd, trameEdSecDel: trameEdSecDel, trameEdSecMove: trameEdSecMove, visAdd: visAdd, visSet: visSet, visSetClient: visSetClient, visOpen: visOpen, visCloseDrawer: visCloseDrawer, visPresent: visPresent, visPushICloud: visPushICloud, visSetTypeFilter: visSetTypeFilter, visNoteSave: visNoteSave, visDel: visDel, visStepAdd: visStepAdd, visStepSet: visStepSet, visStepDel: visStepDel, visStepMove: visStepMove, visSaveEditor: visSaveEditor, visQAdd: visQAdd, visQToggle: visQToggle, visQSet: visQSet, visQDel: visQDel, visApplyTpl: visApplyTpl, visTplAdd: visTplAdd, visTplSet: visTplSet, visTplDel: visTplDel, visTplStepAdd: visTplStepAdd, visTplStepSet: visTplStepSet, visTplStepDel: visTplStepDel, visTplStepMove: visTplStepMove, visTplQAdd: visTplQAdd, visTplQSet: visTplQSet, visTplQDel: visTplQDel, visFmt: visFmt, visEdActive: visEdActive,

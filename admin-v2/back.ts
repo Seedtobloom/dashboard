@@ -1711,6 +1711,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const inbox: AnyObj[] = [];
   const validated: AnyObj[] = []; // livrables validés par la cliente, pas encore consultés
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
+  const qnrAll: AnyObj[] = [];  // TOUS les envois, pour le registre des réponses
   const plannings: AnyObj[] = []; // plannings prévisionnels, tous espaces confondus
   const tasksAll: AnyObj[] = []; // TOUTES les tâches, terminées et archivées comprises
   const weekTasks: AnyObj[] = []; // tâches Partenaire créative actives, à agréger dans « Ma semaine »
@@ -1730,6 +1731,23 @@ async function handleDashboard(env: Env): Promise<Response> {
       if ((q.status === 'completed' || q.status === 'to_review') && q.seenByAdmin !== true) {
         qnrDone.push({ key: ci.key, client: who, id: q.id, name: q.name || 'Questionnaire', completedAt: q.completedAt || null });
       }
+      /* Registre transversal : qui a reçu quoi, et où ça en est. Sans lui, les
+       * réponses ne se lisaient qu'en ouvrant les clientes une par une, et
+       * `qnrDone` ne montre que le non-encore-consulté — une notification, pas
+       * un registre. Les réponses elles-mêmes ne voyagent pas ici : on ne les
+       * lit qu'une à la fois, on ira les chercher à l'ouverture. */
+      qnrAll.push({
+        key: ci.key, client: who, id: q.id,
+        templateId: q.templateId || q.tplId || '',
+        name: q.name || 'Questionnaire',
+        status: q.status || 'assigned',
+        assignedAt: q.assignedAt || q.createdAt || '',
+        updatedAt: q.updatedAt || '',
+        completedAt: q.completedAt || null,
+        seenByAdmin: q.seenByAdmin === true,
+        dueDate: q.dueDate || '',
+        answersCount: (q.answers && typeof q.answers === 'object') ? Object.keys(q.answers).length : 0,
+      });
     });
     // ── Plannings prévisionnels ──────────────────────────────────────────
     // On transmet les jalons BRUTS, avec leur T0. Le calcul des dates reste
@@ -2024,12 +2042,14 @@ async function handleDashboard(env: Env): Promise<Response> {
   const cap = (await env.KV_ADMIN.get('admin:capacity', { type: 'json' })) as AnyObj | null;
   const weeklyCapacity = cap && typeof cap.weeklyHours === 'number' ? cap.weeklyHours : 0;
   qnrDone.sort((a, b) => String(b.completedAt || '').localeCompare(String(a.completedAt || '')));
+  // Les plus récemment bougés d'abord : c'est ce qu'on vient lire.
+  qnrAll.sort((a, b) => String(b.completedAt || b.updatedAt || b.assignedAt || '').localeCompare(String(a.completedAt || a.updatedAt || a.assignedAt || '')));
   validated.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   const errList = (await env.KV_CLIENT.get('global:clientErrors', { type: 'json' })) as AnyObj[] | null;
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
   upcoming.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
   activeProjects.sort((a, b) => String(a.urgency || '9999').localeCompare(String(b.urgency || '9999')));
-  return json({ tasksAll, plannings, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  return json({ tasksAll, plannings, qnrAll, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.
