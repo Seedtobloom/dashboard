@@ -2443,7 +2443,7 @@
   }
 
   /* ── Mes tâches (perso admin) + timer ── */
-  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'focus', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {}, MT_GROUP = 'prio';
+  var MT_TIMER = null, MT_INT = null, MT_TASKS = [], MT_VIEW = 'list', MT_ADDOPEN = false, MT_TAG = 'all', MT_CLIENTS = [], MT_DONE_LIMIT = 40, MT_EXP = {}, MT_GROUP = 'prio';
   function mtMoreDone() { MT_DONE_LIMIT += 40; renderMyTasks(); }
   var MT_TAG_COLORS = [['#E8F1FF', '#2c4a72'], ['#F0E2D6', '#8a4a2c'], ['#f6ecd5', '#8a6414'], ['#eef1e6', '#4f6a46'], ['#EDE5D7', '#5A2A11'], ['#e6ddce', '#8a5c3f']];
   function mtTagColor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return MT_TAG_COLORS[h % MT_TAG_COLORS.length]; }
@@ -2538,8 +2538,8 @@
     if (/(^|\s)!+(\s|$)/.test(text) || /!+\s*$/.test(text)) { prio = 'haute'; text = text.replace(/!+/g, ' '); }
     text = text.replace(/\s+/g, ' ').trim();
     if (!text) { toast('Titre requis'); return; }
-    var doEl = el('mt-quick-do'); var doDate = doEl && doEl.value ? doEl.value : null;
-    jpost('/api/admin/tasks', { title: text, priority: prio, tags: tags, doDate: doDate }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { inp.value = ''; if (doEl) doEl.value = ''; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
+    var dueEl = el('mt-quick-due'); var dueDate = dueEl && dueEl.value ? dueEl.value : null;
+    jpost('/api/admin/tasks', { title: text, priority: prio, tags: tags, dueDate: dueDate }).then(function (r) { if (!r.ok) { toast('Erreur'); return null; } return r.json(); }).then(function (task) { if (task) { inp.value = ''; if (dueEl) dueEl.value = ''; toast('Tâche ajoutée'); mtApplyLocal(task); } }).catch(function () { toast('Erreur'); });
   }
   function mtToggleAdd() { MT_ADDOPEN = !MT_ADDOPEN; renderMyTasks(); }
   // Ajout en masse : une tâche par ligne (« vider son cerveau »).
@@ -2596,6 +2596,9 @@
         '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
         '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
         noteMark +
+        // L'échéance d'abord : c'est elle qui dit ce qui presse. Le jour de
+        // travail choisi ne vient qu'après, et seulement s'il existe.
+        (t.dueDate ? '<span style="flex-shrink:0" title="Échéance : ' + esc(fmtDate(t.dueDate)) + '">' + atDueLbl({ dueDate: t.dueDate }) + '</span>' : '') +
         (t.doDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">à faire le ' + fmtDate(t.doDate) + '</span>' : '') +
         '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="event.preventDefault();ADM.mtToggleRow(\'' + t.id + '\')">Détails</button>' +
       '</div>' +
@@ -2607,6 +2610,46 @@
     '</div>';
   }
   function mtToggleRow(id) { MT_EXP[id] = !MT_EXP[id]; var e = el('mt-exp-' + id); if (e) e.style.display = (MT_EXP[id] ? 'block' : 'none'); }
+  /* ── Ce que j'ai à faire, rangé par échéance ──────────────────────────
+   * La vue Focus part du jour où l'on compte s'y mettre : on épingle, on
+   * planifie, on estime sa capacité. Celle-ci part de la seule question
+   * « c'est pour quand ? » — rien à organiser pour voir où on en est.
+   * L'urgence n'est pas recalculée ici : c'est atUrg / atDueLbl, les mêmes
+   * qu'en face des tâches clientes. Une échéance se lit pareil partout. */
+  var MT_DUE_SECS = [
+    ['late', 'En retard', '#8a4a2c'],
+    ['today', 'Aujourd\'hui', '#CD8F6E'],
+    ['week', 'Cette semaine', '#5A2A11'],
+    ['later', 'Plus tard', 'var(--terre-600)'],
+    ['plan', 'Sans échéance', 'var(--muted)'],
+  ];
+  function mtDueView(todo) {
+    var by = {};
+    todo.forEach(function (t) { var u = atUrg({ dueDate: t.dueDate }); (by[u] = by[u] || []).push(t); });
+    return MT_DUE_SECS.map(function (s) {
+      var items = by[s[0]] || [];
+      if (!items.length) return '';
+      // À l'intérieur d'un groupe, le plus proche d'abord ; sans échéance, la
+      // priorité reprend la main (c'est tout ce qui reste pour trancher).
+      var prank = { haute: 0, normale: 1, basse: 2 };
+      items.sort(function (a, b) {
+        if (s[0] === 'plan') {
+          var pa = prank[a.priority] == null ? 1 : prank[a.priority], pb = prank[b.priority] == null ? 1 : prank[b.priority];
+          if (pa !== pb) return pa - pb;
+          return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+        }
+        return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'));
+      });
+      return '<section style="margin-bottom:20px">' +
+        '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">' +
+          '<span class="pdot" style="background:' + s[2] + '"></span>' +
+          '<h3 style="margin:0;font-family:var(--font-display);font-size:20px;font-weight:400;color:var(--terre)">' + s[1] + '</h3>' +
+          '<span class="micro" style="color:var(--muted)">' + items.length + '</span>' +
+        '</div>' +
+        '<div class="card" style="padding:4px 0">' + items.map(mtListRow).join('') + '</div>' +
+      '</section>';
+    }).join('');
+  }
   // Sous-tâches compactes, éditables inline (consultation + ajout rapides).
   function mtSubList(t) {
     var subs = Array.isArray(t.subtasks) ? t.subtasks : [];
@@ -4685,7 +4728,7 @@
       var archSorted = archived.slice().sort(function (a, b) { return String(b.completedAt || b.dueDate || '').localeCompare(String(a.completedAt || a.dueDate || '')); });
       var archView = archived.length ? archSorted.map(mtCard).join('') : '<div class="empty">Aucune tâche archivée. Archivez une tâche terminée pour la ranger ici.</div>';
       var viewTabs = '<div class="subtabs"><button class="subtab' + (MT_VIEW === 'focus' ? ' active' : '') + '" onclick="ADM.mtSetView(\'focus\')">🎯 Focus</button>' +
-        '<button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">Liste · ' + todo.length + '</button>' +
+        '<button class="subtab' + (MT_VIEW === 'list' ? ' active' : '') + '" onclick="ADM.mtSetView(\'list\')">À faire · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'board' ? ' active' : '') + '" onclick="ADM.mtSetView(\'board\')">Tableau · ' + todo.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'done' ? ' active' : '') + '" onclick="ADM.mtSetView(\'done\')">Terminées · ' + done.length + '</button>' +
         '<button class="subtab' + (MT_VIEW === 'archived' ? ' active' : '') + '" onclick="ADM.mtSetView(\'archived\')">Archivées · ' + archived.length + '</button></div>';
@@ -4701,19 +4744,13 @@
       var boardShown = board;
       var quickBar = '<div style="margin-bottom:14px"><div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<input class="inp" id="mt-quick" placeholder="Ajout rapide… (ex. Relancer Émilie #Admin !)" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.mtQuickAdd();}">' +
-        '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="Le jour où tu comptes t\'en occuper">À faire le <input class="inp" id="mt-quick-do" type="date" style="width:auto"></label>' +
+        '<label class="micro" style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0" title="La date pour laquelle ça doit être fait">Pour le <input class="inp" id="mt-quick-due" type="date" style="width:auto"></label>' +
         '<button class="btn btn--dark" onclick="ADM.mtQuickAdd()">Ajouter</button></div>' +
-        '<div class="micro" style="margin-top:6px">Astuce : ajoutez <b>#étiquette</b> pour classer, un <b>!</b> pour la priorité haute, et une date <b>« À faire le »</b> si tu veux la planifier. « + Nouvelle tâche » ouvre le détail (client, échéance, récurrence…).</div></div>';
+        '<div class="micro" style="margin-top:6px">Écris ce que tu as à faire, mets une date si elle compte, entrée. Rien d\'autre n\'est obligatoire. Astuce : <b>#étiquette</b> pour classer, <b>!</b> pour la priorité haute. « + Nouvelle tâche » ouvre le détail (client, jour de travail, récurrence…).</div></div>';
       var boardContent = MT_VIEW === 'board' ? quickBar + (todo.length ? groupToggle + tagChips + boardHint + boardShown : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus.</div>') : '';
-      // Vue Liste (checklist) : tout à faire, à cocher, avec ajout en masse.
-      var prank2 = { haute: 0, normale: 1, basse: 2 };
-      var listSorted = todo.slice().sort(function (a, b) {
-        var pa = prank2[a.priority] == null ? 1 : prank2[a.priority], pb = prank2[b.priority] == null ? 1 : prank2[b.priority];
-        if (pa !== pb) return pa - pb;
-        return String(a.doDate || a.dueDate || '9999').localeCompare(String(b.doDate || b.dueDate || '9999'));
-      });
+      // Vue « À faire » : la checklist rangée par échéance (voir mtDueView).
       var bulkBtn = '<div style="margin-bottom:12px"><button class="btn btn--outline btn--sm" onclick="ADM.mtBulkAddOpen()">🧠 Vider ton cerveau · coller une liste</button></div>';
-      var listView = quickBar + bulkBtn + (todo.length ? '<div class="card" style="padding:4px 0">' + listSorted.map(mtListRow).join('') + '</div>' : '<div class="empty">Aucune tâche en cours. Ajoutes-en une ci-dessus, ou colle une liste.</div>');
+      var listView = quickBar + bulkBtn + (todo.length ? mtDueView(todo) : '<div class="empty">Rien à faire pour le moment. Ajoute une ligne ci-dessus, ou colle une liste.</div>');
       var focusContent = MT_VIEW === 'focus' ? mtFocusView(todo) : '';
       var content = MT_VIEW === 'focus' ? focusContent : (MT_VIEW === 'list' ? listView : (MT_VIEW === 'done' ? doneView : (MT_VIEW === 'archived' ? archView : boardContent)));
       var addBtn = MT_ADDOPEN
