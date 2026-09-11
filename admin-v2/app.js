@@ -247,7 +247,7 @@
   }
   function startPoll() {
     if (_poll) return;
-    _poll = setInterval(refreshUnread, 120000); setInterval(refreshOpenChat, 30000);
+    _poll = setInterval(refreshUnread, 300000);   // 5 min : chaque passage coûte 2 lectures par cliente setInterval(refreshOpenChat, 30000);
     checkAppVersion(); setInterval(checkAppVersion, 90000);
     // Rafraîchit à la volée quand on revient sur l'onglet (les intervalles
     // ne tournent pas quand l'onglet est masqué → on économise le quota KV).
@@ -546,7 +546,7 @@
     // oublié en arrière-plan scannait tous les espaces toutes les 45 s et
     // consommait le quota KV pour rien.
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-    api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
+    clientsGet().then(function (d) {
       UNREAD = (d.clients || []).reduce(function (s, c) { return s + (c.unread || 0); }, 0);
       BADGE_CACHE.chat = UNREAD > 0 ? badge(UNREAD) : '';
       BADGE_CACHE.clients = BADGE_CACHE.chat;
@@ -1427,8 +1427,26 @@
    *   - une réponse récente est réutilisée au lieu d'être redemandée ;
    *   - les appels simultanés sont dédoublonnés (un seul aller-retour) ;
    *   - dashGet(true) force le rafraîchissement après une vraie modification. */
+  /* ── Lecture mutualisée de la liste des clientes ──────────────────────
+   * ATTENTION au coût : /api/clients lit DEUX clés par cliente (sa fiche et
+   * sa présence). Un appel coûte donc 2N+1 lectures. Neuf endroits l'appelaient
+   * chacun de leur côté, plus un rafraîchissement de fond : c'est le premier
+   * poste de consommation du quota, devant le tableau de bord. */
+  var CLI_CACHE = null, CLI_AT = 0, CLI_INFLIGHT = null;
+  var CLI_TTL = 120000;
+  function clientsGet(force) {
+    if (!force && CLI_CACHE && (Date.now() - CLI_AT) < CLI_TTL) return Promise.resolve(CLI_CACHE);
+    if (CLI_INFLIGHT) return CLI_INFLIGHT;
+    CLI_INFLIGHT = api('/api/clients').then(function (r) {
+      if (!r.ok) { var er = new Error('HTTP ' + r.status); er.status = r.status; throw er; }
+      return r.json();
+    }).then(function (d) {
+      CLI_CACHE = d; CLI_AT = Date.now(); CLI_INFLIGHT = null; return d;
+    }, function (e) { CLI_INFLIGHT = null; throw e; });
+    return CLI_INFLIGHT;
+  }
   var DASH_CACHE = null, DASH_AT = 0, DASH_INFLIGHT = null;
-  var DASH_TTL = 60000;
+  var DASH_TTL = 180000;   // 3 min : un appel coûte une lecture par cliente
   function dashGet(force) {
     if (!force && DASH_CACHE && (Date.now() - DASH_AT) < DASH_TTL) return Promise.resolve(DASH_CACHE);
     if (DASH_INFLIGHT) return DASH_INFLIGHT;
@@ -2899,7 +2917,7 @@
   function visSetTypeFilter(v) { VIS_TYPEFILTER = v; renderVisiosBody(); }
   function renderVisios() {
     setMain(topbar('') + '<div class="wrap" id="vis-body" style="max-width:none"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
+    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; if (VIEW === 'visios') renderVisiosBody(); }).catch(function () {}); }
     visLoadCalendar();
     // Bibliothèque de trames (serveur) — chargée une fois, avec migration douce
     // depuis l'ancien stockage local et ajout de la trame kakémonos si absente.
@@ -3746,7 +3764,7 @@
     setMain(topbar('Mes tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     Promise.all([
       api('/api/admin/tasks').then(function (r) { return r.json(); }),
-      api('/api/clients').then(function (r) { return r.json(); }).catch(function () { return { clients: [] }; }),
+      clientsGet().catch(function () { return { clients: [] }; }),
       api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; })
     ]).then(function (res) {
       var d = res[0];
@@ -5536,7 +5554,7 @@
     setMain(topbar('Clients', right) + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     // On récupère aussi le tableau de bord pour la vue rapide : forfaits + projets en cours par client.
     Promise.all([
-      api('/api/clients').then(function (r) { return r.json(); }),
+      clientsGet(),
       dashGet().catch(function () { return {}; })
     ]).then(function (res) {
       var d = res[0], dash = res[1] || {};
@@ -8121,7 +8139,7 @@
   /* ── Messagerie globale : clients -> projet -> fil ── */
   function renderChat() {
     setMain(topbar('Messagerie') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    api('/api/clients').then(function (r) { return r.json(); }).then(function (d) {
+    clientsGet().then(function (d) {
       var clients = (d.clients || []).slice().sort(function (a, b) { return (b.unread || 0) - (a.unread || 0); });
       var waiting = clients.filter(function (c) { return (c.unread || 0) > 0; }).length;
       var list = clients.map(function (c) {
@@ -8441,7 +8459,7 @@
 
   function renderQuestionnaires() {
     setMain(topbar('') + '<div class="wrap" id="qnr-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
+    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     if (QNR_LOADED) { renderQnrBody(); return; }
     api('/api/questionnaires').then(function (r) { return r.json(); }).then(function (d) { QNR = (d && d.questionnaires) || []; QNR_LOADED = true; renderQnrBody(); }).catch(showError);
   }
@@ -8935,7 +8953,7 @@
       };
       document.body.appendChild(ov);
     };
-    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; doOpen(); }).catch(function () { doOpen(); }); }
+    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; doOpen(); }).catch(function () { doOpen(); }); }
     else doOpen();
   }
 
@@ -8957,7 +8975,7 @@
   function renderProjTpl() {
     var right = '<button class="btn btn--dark btn--sm" onclick="ADM.prjAdd()">+ Nouveau modèle</button> <button class="btn btn--outline btn--sm" onclick="ADM.prjSeed()" title="Créer les 3 scénarios prêts à l\'emploi (Site, Identité, Support)">Modèles de départ</button>';
     setMain(topbar('Modèles de projets', right, 'Un scénario = des phases, des étapes (cliente / studio / validation) et des livrables. Crée-le une fois, instancie-le dans l\'espace d\'une cliente.') + '<div class="wrap" id="prj-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
-    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
+    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; }).catch(function () {}); }
     if (PRJ_LOADED) { renderPrjBody(); return; }
     api('/api/project-templates').then(function (r) { return r.json(); }).then(function (d) { PRJ = (d && d.templates) || []; PRJ_LOADED = true; renderPrjBody(); }).catch(showError);
   }
@@ -9152,7 +9170,7 @@
       };
       document.body.appendChild(ov);
     };
-    if (!NAV_CLIENTS.length) { api('/api/clients').then(function (r) { return r.json(); }).then(function (d) { NAV_CLIENTS = d.clients || []; doOpen(); }).catch(function () { doOpen(); }); }
+    if (!NAV_CLIENTS.length) { clientsGet().then(function (d) { NAV_CLIENTS = d.clients || []; doOpen(); }).catch(function () { doOpen(); }); }
     else doOpen();
   }
 

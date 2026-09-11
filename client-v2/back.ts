@@ -131,9 +131,14 @@ async function handleClientApi(
     // compte QUE les vraies visites du client — pas les consultations de
     // Cindy en mode édition (editor), qui fausseraient le « En ligne ».
     if (!editor) {
+      // Fréquence d'écriture : le plan gratuit n'autorise QUE 1 000 écritures
+      // par jour, tous espaces confondus. À une écriture toutes les 2 minutes,
+      // quatre onglets clients ouverts une journée épuisaient le quota à eux
+      // seuls. Un quart d'heure suffit largement pour un indicateur « vu
+      // récemment », et divise la consommation par sept.
       const nowSec = Math.floor(Date.now() / 1000);
       const lastP = parseInt((await env.KV_CLIENT.get('presence:' + masterKey)) || '0', 10);
-      if (nowSec - lastP > 120) await env.KV_CLIENT.put('presence:' + masterKey, String(nowSec), { expirationTtl: 60 * 86400 });
+      if (nowSec - lastP > 900) await env.KV_CLIENT.put('presence:' + masterKey, String(nowSec), { expirationTtl: 60 * 86400 });
     }
     return json(await buildAppData(env, masterKey, data));
   }
