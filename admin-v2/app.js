@@ -2669,13 +2669,14 @@
    * L'urgence n'est pas recalculée ici : c'est atUrg / atDueLbl, les mêmes
    * qu'en face des tâches clientes. Une échéance se lit pareil partout. */
   // Mêmes couleurs que les compteurs du bandeau : l'œil fait le lien entre
-  // « 2 en retard » en haut et le bloc « En retard » plus bas.
+  // « 2 en retard » en haut et le bloc « En retard » plus bas. La couleur est
+  // portée par le titre et sa pastille de compte — pas par une barre latérale.
   var MT_DUE_SECS = [
-    ['late', 'En retard', '#8A4A2C'],
-    ['today', 'Aujourd\'hui', '#CD8F6E'],
-    ['week', 'Cette semaine', '#2C4A72'],
-    ['later', 'Plus tard', '#5A2A11'],
-    ['plan', 'Sans échéance', 'var(--bone-d)'],
+    ['late', 'En retard', '#8A4A2C', '#F0E2D6'],
+    ['today', 'Aujourd\'hui', '#7A3A0A', '#FBEFE4'],
+    ['week', 'Cette semaine', '#2C4A72', '#E8F1FF'],
+    ['later', 'Plus tard', '#5A2A11', '#EDE5D7'],
+    ['plan', 'Sans échéance', 'var(--muted)', 'var(--card)'],
   ];
   function mtDueView(todo, rowFn) {
     rowFn = rowFn || mtListRow;
@@ -2695,9 +2696,10 @@
         }
         return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'));
       });
-      var tete = '<div class="atsec__h" style="border-left-color:' + s[2] + '">' +
-        '<h3>' + s[1] + '</h3><span class="n">' + items.length + '</span></div>';
-      var liste = '<div class="atlist" style="border-left:4px solid ' + s[2] + '">' + items.map(rowFn).join('') + '</div>';
+      var tete = '<div class="atsec__h">' +
+        '<h3 style="color:' + s[2] + '">' + s[1] + '</h3>' +
+        '<span class="n" style="background:' + s[3] + ';color:' + s[2] + '">' + items.length + '</span></div>';
+      var liste = '<div class="atlist">' + items.map(rowFn).join('') + '</div>';
       // « Sans échéance » est le plus gros paquet et le moins pressant : replié,
       // il rend la page lisible au lieu de la faire défiler dans le vide.
       if (s[0] === 'plan') {
