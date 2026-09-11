@@ -756,6 +756,30 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 @media(max-width:760px){.mt2 .tiles--4{grid-template-columns:1fr 1fr}}
 .mt2 .tile--stat{cursor:default}
 .mt2 .tile--stat:hover{background:var(--surf)}
+
+/* ── Calendrier des échéances (écran Tâches) ─────────────────────────────
+   Grille sobre : la couleur ne sert qu'à distinguer cliente et entreprise,
+   et le rouge à signaler un jour passé qui porte encore du travail. */
+.atcal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:4px}
+.atcal__dow{font-family:var(--font-micro);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:2px 4px 6px;text-align:center}
+.atcal__d{background:var(--card);border-radius:11px;min-height:96px;padding:7px 7px 8px;display:flex;flex-direction:column;gap:4px}
+.atcal__d--out{background:transparent}
+.atcal__d--today{box-shadow:inset 0 0 0 2px var(--gold-chip)}
+.atcal__d--late{background:#F5E7DE}
+.atcal__n{font-family:var(--font-micro);font-size:11px;font-weight:700;color:var(--terre-600);line-height:1}
+.atcal__i{font-size:11.5px;line-height:1.25;color:#fff;background:#2c4a72;border-radius:6px;padding:3px 6px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.atcal__i:hover{opacity:.85}
+.atcal__i--perso{background:#CD8F6E;color:#2a1206}
+.atcal__more{font-family:var(--font-micro);font-size:10px;color:var(--muted)}
+.atcal__h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 14px}
+.atcal__lg{margin-left:auto;font-family:var(--font-micro);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.atcal__lg i{width:9px;height:9px;border-radius:3px;display:inline-block}
+@media(max-width:760px){
+  .atcal{gap:3px}
+  .atcal__d{min-height:64px;padding:5px 4px}
+  .atcal__i{font-size:10px;-webkit-line-clamp:1;padding:2px 4px}
+  .atcal__lg{display:none}
+}
 .mt2 .tile b{display:block;font-family:var(--font-display);font-weight:600;font-size:clamp(26px,3vw,34px);color:var(--brun);line-height:.82}
 .mt2 .tile span{font-family:var(--font-micro);font-weight:500;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;color:var(--brun);opacity:.8;margin-top:9px;display:block}
 .mt2 .tdy{background:var(--lavc);border-radius:20px;padding:clamp(20px,2.6vw,28px);margin-bottom:20px}
