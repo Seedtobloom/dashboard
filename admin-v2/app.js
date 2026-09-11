@@ -2620,10 +2620,10 @@
     // Ligne dépliable : cliquer le titre (ou « Détails ») ouvre les détails
     // (note, lien, sous-tâches) directement sous la tâche, sans quitter la liste.
     return '<div style="border:none">' +
-      '<div style="display:flex;align-items:center;gap:12px;padding:11px 16px">' +
-        '<input type="checkbox" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Marquer comme fait">' +
+      '<div class="atrow">' +
+        '<input type="checkbox" class="atrow__cb" onchange="ADM.myTaskStatus(\'' + t.id + '\',\'done\')" title="Marquer comme fait">' +
         '<span class="pdot" style="background:' + pc + ';flex-shrink:0"></span>' +
-        '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
+        '<span class="atrow__t" onclick="ADM.mtToggleRow(\'' + t.id + '\')">' + esc(t.title) + (t.mode ? ' ' + mtModePill(t.mode) : '') + (Array.isArray(t.tags) && t.tags.length ? ' ' + t.tags.map(function (tg) { return mtTagPill(tg); }).join(' ') : '') + '</span>' +
         noteMark +
         // Dans la vue réunie, la ligne dit pour qui elle est ; ailleurs (le
         // tableau, les archives) la question ne se pose pas, on n'affiche rien.
@@ -2632,7 +2632,7 @@
         // travail choisi ne vient qu'après, et seulement s'il existe.
         (t.dueDate ? '<span style="flex-shrink:0" title="Échéance : ' + esc(fmtDate(t.dueDate)) + '">' + atDueLbl({ dueDate: t.dueDate }) + '</span>' : '') +
         (t.doDate ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">à faire le ' + fmtDate(t.doDate) + '</span>' : '') +
-        '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="event.preventDefault();ADM.mtToggleRow(\'' + t.id + '\')">Détails</button>' +
+        '<button class="atchev' + (MT_EXP[t.id] ? ' atchev--open' : '') + '" id="mt-chev-' + t.id + '" title="Voir le détail" onclick="event.preventDefault();ADM.mtToggleRow(\'' + t.id + '\')">›</button>' +
       '</div>' +
       '<div id="mt-exp-' + t.id + '" style="display:' + (MT_EXP[t.id] ? 'block' : 'none') + ';padding:2px 16px 14px 46px">' +
         '<div id="mt-note-' + t.id + '">' + mtNoteInner(t) + '</div>' +
@@ -2642,7 +2642,11 @@
       '</div>' +
     '</div>';
   }
-  function mtToggleRow(id) { MT_EXP[id] = !MT_EXP[id]; var e = el('mt-exp-' + id); if (e) e.style.display = (MT_EXP[id] ? 'block' : 'none'); }
+  function mtToggleRow(id) {
+    MT_EXP[id] = !MT_EXP[id];
+    var e = el('mt-exp-' + id); if (e) e.style.display = (MT_EXP[id] ? 'block' : 'none');
+    var c = el('mt-chev-' + id); if (c) c.className = 'atchev' + (MT_EXP[id] ? ' atchev--open' : '');
+  }
   /* Le chrono d'une tâche de la boîte. Il ne vivait que dans les vues Focus et
    * Tableau ; celles-ci parties, il serait devenu inatteignable. Il est ici,
    * dans le détail de la ligne — disponible, sans alourdir la liste de tous
@@ -2664,12 +2668,14 @@
    * « c'est pour quand ? » — rien à organiser pour voir où on en est.
    * L'urgence n'est pas recalculée ici : c'est atUrg / atDueLbl, les mêmes
    * qu'en face des tâches clientes. Une échéance se lit pareil partout. */
+  // Mêmes couleurs que les compteurs du bandeau : l'œil fait le lien entre
+  // « 2 en retard » en haut et le bloc « En retard » plus bas.
   var MT_DUE_SECS = [
-    ['late', 'En retard', '#8a4a2c'],
+    ['late', 'En retard', '#8A4A2C'],
     ['today', 'Aujourd\'hui', '#CD8F6E'],
-    ['week', 'Cette semaine', '#5A2A11'],
-    ['later', 'Plus tard', 'var(--terre-600)'],
-    ['plan', 'Sans échéance', 'var(--muted)'],
+    ['week', 'Cette semaine', '#2C4A72'],
+    ['later', 'Plus tard', '#5A2A11'],
+    ['plan', 'Sans échéance', 'var(--bone-d)'],
   ];
   function mtDueView(todo, rowFn) {
     rowFn = rowFn || mtListRow;
@@ -2689,14 +2695,15 @@
         }
         return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'));
       });
-      return '<section style="margin-bottom:20px">' +
-        '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">' +
-          '<span class="pdot" style="background:' + s[2] + '"></span>' +
-          '<h3 style="margin:0;font-family:var(--font-display);font-size:20px;font-weight:400;color:var(--terre)">' + s[1] + '</h3>' +
-          '<span class="micro" style="color:var(--muted)">' + items.length + '</span>' +
-        '</div>' +
-        '<div class="card" style="padding:4px 0">' + items.map(rowFn).join('') + '</div>' +
-      '</section>';
+      var tete = '<div class="atsec__h" style="border-left-color:' + s[2] + '">' +
+        '<h3>' + s[1] + '</h3><span class="n">' + items.length + '</span></div>';
+      var liste = '<div class="atlist" style="border-left:4px solid ' + s[2] + '">' + items.map(rowFn).join('') + '</div>';
+      // « Sans échéance » est le plus gros paquet et le moins pressant : replié,
+      // il rend la page lisible au lieu de la faire défiler dans le vide.
+      if (s[0] === 'plan') {
+        return '<details class="atsec atsec--fold"><summary class="atsec__l">' + tete + '</summary>' + liste + '</details>';
+      }
+      return '<section class="atsec">' + tete + liste + '</section>';
     }).join('');
   }
   /* ── Tout ce que j'ai à faire, d'un coup d'œil ────────────────────────
@@ -2749,14 +2756,14 @@
   function mtUniRow(r) {
     if (r.kind === 'perso') return mtListRow(r.t, r);
     var x = r.x;
-    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 16px">' +
-      '<input type="checkbox" onchange="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')" style="width:18px;height:18px;flex-shrink:0;cursor:pointer" title="Clôturer">' +
+    return '<div class="atrow">' +
+      '<input type="checkbox" class="atrow__cb" onchange="ADM.atCloseTask(\'' + x.key + '\',\'' + x.id + '\')" title="Clôturer">' +
       '<span class="pdot" style="background:#2c4a72;flex-shrink:0"></span>' +
-      '<span style="flex:1;font-size:14.5px;color:var(--terre);min-width:0;cursor:pointer" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">' + esc(x.title || 'Tâche') + '</span>' +
+      '<span class="atrow__t" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">' + esc(x.title || 'Tâche') + '</span>' +
       mtWhoPill(r) +
       (x.status === 'in_progress' ? '<span class="micro" style="color:var(--muted);text-transform:none;letter-spacing:0;flex-shrink:0">en cours</span>' : '') +
       (x.dueDate ? '<span style="flex-shrink:0">' + atDueLbl({ dueDate: x.dueDate }) + '</span>' : '') +
-      '<button class="btn btn--outline btn--sm" style="flex-shrink:0" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">Ouvrir</button>' +
+      '<button class="atchev" title="Ouvrir la tâche" onclick="ADM.mtGoTask(\'' + x.key + '\',\'' + x.id + '\')">›</button>' +
     '</div>';
   }
   // Ouvrir une tâche cliente depuis ici : son panneau vit dans « Toutes les
@@ -2769,12 +2776,13 @@
     var chez = ((AT_D && AT_D.tasksAll) || []).filter(function (x) {
       return !x.archived && (x.status === 'review' || x.status === 'waiting_client');
     }).length;
-    function t(v, l, alert) {
-      return '<div class="tile tile--stat"><b' + (alert && v ? ' style="color:#8a4a2c"' : '') + '>' + v + '</b><span>' + l + '</span></div>';
+    // Un compteur à zéro reste gris : la couleur signale, elle ne décore pas.
+    function t(v, l, cls) {
+      return '<div class="atstat atstat--' + cls + (v ? ' atstat--on' : '') + '"><b>' + v + '</b><span>' + l + '</span></div>';
     }
-    return '<div class="tiles tiles--4">' +
-      t(n.late, 'En retard', true) + t(n.today, 'Aujourd\'hui', true) + t(n.week, 'Cette semaine', false) +
-      t(chez, 'Chez tes clientes', false) + '</div>';
+    return '<div class="atstats">' +
+      t(n.late, 'En retard', 'late') + t(n.today, 'Aujourd\'hui', 'today') +
+      t(n.week, 'Cette semaine', 'week') + t(chez, 'Chez tes clientes', 'wait') + '</div>';
   }
   // Sous-tâches compactes, éditables inline (consultation + ajout rapides).
   function mtSubList(t) {
