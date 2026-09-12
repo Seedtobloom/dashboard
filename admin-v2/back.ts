@@ -62,6 +62,33 @@ const DOMAINS: Record<string, { internal: string; folder: string; label: string 
   maintenance: { internal: 'maintenanceSite', folder: 'maintenanceSite', label: 'Espace tickets' },
 };
 
+/* ── Compter les opérations KV, pour de vrai ───────────────────────────────
+ * Le plan gratuit plafonne SÉPARÉMENT les lectures (100 000/jour), les
+ * écritures, les suppressions et les listages (1 000/jour chacun), et l'alerte
+ * de Cloudflare ne dit pas laquelle sature. Deviner à partir du code donne des
+ * estimations, pas des faits : le coût réel dépend du nombre d'espaces et de
+ * l'usage de la journée.
+ * Chaque réponse porte donc son addition dans l'en-tête X-KV. Le compteur
+ * enveloppe le binding : aucune opération ne peut lui échapper, y compris
+ * celles cachées au fond d'un helper. Il ne coûte rien lui-même — c'est de la
+ * mémoire, pas du KV. */
+type KvTally = { r: number; w: number; d: number; l: number };
+function countedKv(ns: KVNamespace, t: KvTally): KVNamespace {
+  const any = ns as AnyObj;
+  return {
+    get: (...a: unknown[]) => { t.r++; return any.get(...a); },
+    getWithMetadata: (...a: unknown[]) => { t.r++; return any.getWithMetadata(...a); },
+    put: (...a: unknown[]) => { t.w++; return any.put(...a); },
+    delete: (...a: unknown[]) => { t.d++; return any.delete(...a); },
+    list: (...a: unknown[]) => { t.l++; return any.list(...a); },
+  } as unknown as KVNamespace;
+}
+function withTally(res: Response, t: KvTally): Response {
+  const h = new Headers(res.headers);
+  h.set('X-KV', 'r=' + t.r + ',w=' + t.w + ',d=' + t.d + ',l=' + t.l);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 export default {
   // Sauvegarde automatique quotidienne (cron défini dans wrangler.admin-back.toml)
   async scheduled(_event: unknown, env: Env): Promise<void> {
@@ -71,6 +98,11 @@ export default {
     if (!env.INTERNAL_SECRET || request.headers.get('X-Internal-Auth') !== env.INTERNAL_SECRET) {
       return json({ error: 'Forbidden' }, 403);
     }
+    const tally: KvTally = { r: 0, w: 0, d: 0, l: 0 };
+    env = { ...env, KV_ADMIN: countedKv(env.KV_ADMIN, tally), KV_CLIENT: countedKv(env.KV_CLIENT, tally) };
+    return withTally(await this.route(request, env), tally);
+  },
+  async route(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
     const method = request.method;

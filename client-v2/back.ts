@@ -61,12 +61,56 @@ const DEFAULT_PARTNER_SCHEMA = [
   { id: 'p_realisation', name: 'Date de réalisation', type: 'Date', options: [] },
 ];
 
+/* ── Compter les opérations KV (voir le même dispositif côté studio) ──────
+ * Les plafonds du plan gratuit sont séparés — lectures d'un côté, écritures,
+ * suppressions et listages de l'autre — et l'alerte ne dit pas lequel sature.
+ * Chaque réponse porte son addition dans X-KV. Le compteur enveloppe le
+ * binding : rien ne lui échappe, et il ne coûte pas une opération de plus. */
+/* ── Les trois réglages communs à tous les espaces ────────────────────────
+ * Types de mission, congés du studio, lien de réservation : identiques pour
+ * toutes les clientes, et pourtant relus à CHAQUE chargement et à chaque
+ * rafraîchissement automatique — la moitié du coût d'une visite partait là.
+ * Ils sont gardés une minute en mémoire de l'isolat (pas dans KV : cette
+ * mémoire ne coûte aucune opération). Un réglage changé côté studio met donc
+ * au pire une minute à se voir côté cliente, ce qui est sans conséquence pour
+ * des congés ou un lien de réservation. */
+const GLOB_TTL = 60000;
+const globCache: Record<string, { at: number; v: unknown }> = {};
+async function globalKey(env: Env, key: string, json: boolean): Promise<unknown> {
+  const hit = globCache[key];
+  const now = Date.now();
+  if (hit && now - hit.at < GLOB_TTL) return hit.v;
+  const v = json
+    ? await env.KV_CLIENT.get(key, { type: 'json' })
+    : await env.KV_CLIENT.get(key);
+  globCache[key] = { at: now, v };
+  return v;
+}
+type KvTally = { r: number; w: number; d: number; l: number };
+function countedKv(ns: KVNamespace, t: KvTally): KVNamespace {
+  const any = ns as AnyObj;
+  return {
+    get: (...a: unknown[]) => { t.r++; return any.get(...a); },
+    getWithMetadata: (...a: unknown[]) => { t.r++; return any.getWithMetadata(...a); },
+    put: (...a: unknown[]) => { t.w++; return any.put(...a); },
+    delete: (...a: unknown[]) => { t.d++; return any.delete(...a); },
+    list: (...a: unknown[]) => { t.l++; return any.list(...a); },
+  } as unknown as KVNamespace;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (!env.INTERNAL_SECRET || request.headers.get('X-Internal-Auth') !== env.INTERNAL_SECRET) {
       return json({ error: 'Forbidden' }, 403);
     }
-
+    const tally: KvTally = { r: 0, w: 0, d: 0, l: 0 };
+    env = { ...env, KV_CLIENT: countedKv(env.KV_CLIENT, tally), KV_ADMIN: env.KV_ADMIN ? countedKv(env.KV_ADMIN, tally) : env.KV_ADMIN };
+    const res = await this.route(request, env);
+    const h = new Headers(res.headers);
+    h.set('X-KV', 'r=' + tally.r + ',w=' + tally.w + ',d=' + tally.d + ',l=' + tally.l);
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  },
+  async route(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
     const method = request.method;
@@ -302,7 +346,7 @@ async function isStudioHoliday(env: Env, dateStr: string, data?: AnyObj): Promis
   });
   // Congés globaux (réglés côté studio) ET repli sur les congés stockés par
   // espace pour les clientes existantes — même règle que ce qu'elles voient.
-  const global = (await env.KV_CLIENT.get('global:studioHolidays', { type: 'json' })) as AnyObj[] | null;
+  const global = (await globalKey(env, 'global:studioHolidays', true)) as AnyObj[] | null;
   if (inRange(global)) return true;
   if (data) { const esp = getEspace(data); if (inRange(esp.studioHolidays)) return true; }
   return false;
@@ -527,7 +571,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   const name = clientFullName(data);
   const projects: AnyObj[] = [];
   // Types de mission personnalisés par le studio (partagés via KV_CLIENT)
-  const globalMissionTypes = (await env.KV_CLIENT.get('global:missionTypes', { type: 'json' })) as string[] | null;
+  const globalMissionTypes = (await globalKey(env, 'global:missionTypes', true)) as string[] | null;
   const withMissionTypes = (schema: AnyObj[]): AnyObj[] => {
     if (!Array.isArray(globalMissionTypes) || !globalMissionTypes.length) return schema;
     return (schema || []).map((d) => (d && d.id === 'p_typemission' ? { ...d, options: globalMissionTypes } : d));
@@ -711,7 +755,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   const conversation = mapChatToMessages(espace.conversation || []);
   // Congés du studio : réglés globalement côté admin (repli sur l'ancien
   // stockage par espace pour compatibilité).
-  const globalHolidays = (await env.KV_CLIENT.get('global:studioHolidays', { type: 'json' })) as AnyObj[] | null;
+  const globalHolidays = (await globalKey(env, 'global:studioHolidays', true)) as AnyObj[] | null;
   // Union des congés globaux ET par espace : la cliente voit (et est bloquée
   // sur) exactement ce que le serveur applique, y compris sur les espaces existants.
   const studioHolidays = (Array.isArray(globalHolidays) ? globalHolidays : [])
@@ -723,7 +767,7 @@ async function buildAppData(env: Env, masterKey: string, data: AnyObj): Promise<
   projects.forEach((p) => { if (p.project) p.project.meetingLink = meetingLink; });
 
   // Lien de réservation de créneau (Cal.com), réglé globalement côté admin
-  const bookingLink = ((await env.KV_CLIENT.get('global:bookingLink')) || '').trim();
+  const bookingLink = (((await globalKey(env, 'global:bookingLink', false)) as string) || '').trim();
 
   // Une seule offre active -> atterrissage direct sur sa page riche (forme V1
   // "single-project", sans type:'client') au lieu d'une grille à une carte.

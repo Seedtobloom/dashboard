@@ -163,8 +163,9 @@
     opts = opts || {};
     var m = String(opts.method || 'GET').toUpperCase();
     var p = fetch(path, Object.assign({ credentials: 'same-origin' }, opts));
+    p = p.then(function (r) { kvNote(r); return r; });
     if (m === 'GET' || m === 'HEAD') return p;
-    return p.then(function (r) { if (r.ok) cacheStale(); return r; });
+    return p.then(function (r) { if (r.ok) { cacheStale(); pollWake(); } return r; });
   }
   function jpost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   function toast(m) { var t = el('toast'); if (!t) return; t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2600); }
@@ -259,9 +260,29 @@
       }
     }).catch(function () { });
   }
+  /* ── La boucle de fond, et ce qu'elle coûte ───────────────────────────
+   * Chaque passage relit la liste des clientes ET le tableau de bord : le
+   * coût grandit avec le nombre d'espaces. À cadence fixe, une journée
+   * d'onglet ouvert dépense la même chose qu'il se passe quelque chose ou
+   * non. Elle se calme donc d'elle-même : cinq minutes quand ça bouge,
+   * un quart d'heure après trois passages sans le moindre changement, et
+   * retour à cinq minutes dès que quelque chose change ou que tu agis.
+   * (Le rafraîchissement du chat ouvert avait disparu : un commentaire mal
+   * refermé, le mien, avalait son setInterval. Il est de retour, à la
+   * minute plutôt qu'aux trente secondes, et seulement si un fil est ouvert.) */
+  var POLL_FAST = 300000, POLL_SLOW = 900000, _pollQuiet = 0, _pollSig = '';
+  function pollSchedule() {
+    if (_poll) clearTimeout(_poll);
+    _poll = setTimeout(pollTick, _pollQuiet >= 3 ? POLL_SLOW : POLL_FAST);
+  }
+  function pollTick() { refreshUnread(); pollSchedule(); }
+  // Toute action de ta part remet la boucle en cadence rapide : c'est le
+  // moment où quelque chose est le plus susceptible de bouger.
+  function pollWake() { _pollQuiet = 0; pollSchedule(); }
   function startPoll() {
     if (_poll) return;
-    _poll = setInterval(refreshUnread, 300000);   // 5 min : chaque passage coûte 2 lectures par cliente setInterval(refreshOpenChat, 30000);
+    pollSchedule();
+    setInterval(refreshOpenChat, 60000);
     checkAppVersion(); setInterval(checkAppVersion, 90000);
     // Rafraîchit à la volée quand on revient sur l'onglet (les intervalles
     // ne tournent pas quand l'onglet est masqué → on économise le quota KV).
@@ -370,6 +391,7 @@
     // sur la section qui correspond, plutôt que sur un écran disparu.
     if (v === 'mytasks') { v = 'alltasks'; AT_SEC = 'entreprise'; }
     VIEW = v; if (v !== 'client') CURKEY = null; renderShell(); window.scrollTo(0, 0);
+    pollWake();
   }
   var NAV_CLIENTS = [], NAV_OPEN = {};
   function buildNavHtml() {
@@ -612,6 +634,9 @@
       BADGE_CACHE.alltasks = urgent > 0 ? badgeAlert(urgent) : (todo.length > 0 ? badge(todo.length) : '');
       var b = el('nav-unread-alltasks');
       if (b) b.innerHTML = BADGE_CACHE.alltasks;
+      // Rien de neuf dans aucune pastille ? La boucle peut se calmer.
+      var sig = [BADGE_CACHE.chat, BADGE_CACHE.inbox, BADGE_CACHE.incidents, BADGE_CACHE.alltasks, BADGE_CACHE.priorities].join('|');
+      if (sig !== _pollSig) { _pollSig = sig; _pollQuiet = 0; } else _pollQuiet++;
     }).catch(function () {});
   }
   function renderMain() {
@@ -753,12 +778,83 @@
   var MISSION_LIST = [];
   var REGL_TAB = 'types';
   function reglTabs() {
-    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes']];
+    var items = [['types', 'Types de mission'], ['conges', 'Congés'], ['quick', 'Réponses rapides'], ['emails', 'Textes des e-mails'], ['rdv', 'Rendez-vous'], ['calendar', 'Calendrier iCloud'], ['backups', 'Sauvegardes'], ['kv', 'Consommation KV']];
     return '<div class="subtabs">' + items.map(function (it) {
       return '<button class="subtab' + (REGL_TAB === it[0] ? ' active' : '') + '" onclick="ADM.reglSetTab(\'' + it[0] + '\')">' + it[1] + '</button>';
     }).join('') + '</div>';
   }
   function reglSetTab(t) { REGL_TAB = t; renderReglages(); }
+  /* ── Consommation KV : mesurer au lieu d'estimer ───────────────────────
+   * Cloudflare prévient à 90 % sans dire QUELLE opération sature : les
+   * lectures (100 000/jour) et les écritures (1 000/jour) ont des plafonds
+   * séparés et sans commune mesure. Le serveur renvoie maintenant son
+   * addition dans l'en-tête X-KV de chaque réponse ; on la totalise ici.
+   * KV_SEEN compte tout ce qui est passé depuis l'ouverture de l'onglet —
+   * c'est ça qui dit la vérité sur une journée de travail. */
+  var KV_SEEN = { r: 0, w: 0, d: 0, l: 0, n: 0, since: Date.now() };
+  function kvNote(res) {
+    try {
+      var h = res && res.headers && res.headers.get('X-KV');
+      if (!h) return;
+      KV_SEEN.n++;
+      h.split(',').forEach(function (part) {
+        var kv = part.split('=');
+        if (KV_SEEN[kv[0]] != null) KV_SEEN[kv[0]] += (parseInt(kv[1], 10) || 0);
+      });
+    } catch (e) { /* une mesure ne doit jamais gêner l'usage */ }
+  }
+  // Mesure à la demande : on appelle les endpoints coûteux et on lit leur
+  // addition, pour connaître le prix unitaire de chaque écran.
+  function kvProbe() {
+    var body = el('regl-body'); if (!body) return;
+    var cibles = [
+      ['/api/dashboard', 'Tableau de bord (Priorités, Tâches, Inbox…)'],
+      ['/api/clients', 'Liste des clientes (menu de gauche)'],
+      ['/api/admin/tasks', 'Tâches de l\'entreprise'],
+      ['/api/kpi', 'Tableau de bord chiffré'],
+    ];
+    body.innerHTML = '<div class="empty"><div class="spin" style="margin:20px auto"></div><div class="micro" style="margin-top:8px">Mesure en cours…</div></div>';
+    Promise.all(cibles.map(function (c) {
+      return api(c[0]).then(function (r) {
+        var h = r.headers.get('X-KV') || '';
+        var o = { r: 0, w: 0, d: 0, l: 0 };
+        h.split(',').forEach(function (p) { var kv = p.split('='); if (o[kv[0]] != null) o[kv[0]] = parseInt(kv[1], 10) || 0; });
+        return { path: c[0], label: c[1], ops: o, ok: r.ok };
+      }).catch(function () { return { path: c[0], label: c[1], ops: null, ok: false }; });
+    })).then(function (res) { renderKvBody(res); });
+  }
+  function renderKvBody(mesures) {
+    var body = el('regl-body'); if (!body) return;
+    var min = Math.max(1, Math.round((Date.now() - KV_SEEN.since) / 60000));
+    var parJour = Math.round(KV_SEEN.r / min * 60 * 8);   // huit heures d'onglet ouvert
+    function ligne(m) {
+      if (!m.ops) return '<tr><td>' + esc(m.label) + '</td><td colspan="2" style="color:var(--muted)">non mesurable</td></tr>';
+      return '<tr><td>' + esc(m.label) + '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted)">' + esc(m.path) + '</div></td>' +
+        '<td style="text-align:right;font-variant-numeric:tabular-nums"><b>' + m.ops.r + '</b> lecture' + (m.ops.r > 1 ? 's' : '') + '</td>' +
+        '<td style="text-align:right;font-variant-numeric:tabular-nums;color:' + (m.ops.w ? '#8a4a2c' : 'var(--muted)') + '">' + m.ops.w + ' écriture' + (m.ops.w > 1 ? 's' : '') + '</td></tr>';
+    }
+    var tbl = mesures ? '<table style="width:100%;border-collapse:collapse;font-size:13.5px">' +
+      '<thead><tr><th style="text-align:left;padding-bottom:8px" class="micro">Écran</th><th class="micro" style="text-align:right">Lectures</th><th class="micro" style="text-align:right">Écritures</th></tr></thead>' +
+      '<tbody>' + mesures.map(ligne).join('') + '</tbody></table>' : '';
+    body.innerHTML =
+      '<div class="card infocard" style="background:var(--card)"><h3>Ce que cet onglet a consommé</h3>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:12px">Depuis son ouverture, il y a ' + min + ' min · ' + KV_SEEN.n + ' appel' + (KV_SEEN.n > 1 ? 's' : '') + ' mesuré' + (KV_SEEN.n > 1 ? 's' : '') + '</div>' +
+        '<div style="display:flex;gap:22px;flex-wrap:wrap">' +
+          '<div><div style="font-family:var(--font-display);font-size:30px;color:var(--terre);line-height:1">' + KV_SEEN.r + '</div><div class="micro">lectures</div></div>' +
+          '<div><div style="font-family:var(--font-display);font-size:30px;color:' + (KV_SEEN.w ? '#8a4a2c' : 'var(--terre)') + ';line-height:1">' + KV_SEEN.w + '</div><div class="micro">écritures</div></div>' +
+          '<div><div style="font-family:var(--font-display);font-size:30px;color:var(--terre);line-height:1">' + KV_SEEN.l + '</div><div class="micro">listages</div></div>' +
+          '<div><div style="font-family:var(--font-display);font-size:30px;color:var(--terre);line-height:1">' + KV_SEEN.d + '</div><div class="micro">suppressions</div></div>' +
+        '</div>' +
+        (KV_SEEN.n > 3 ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:12px">À ce rythme, environ <b>' + parJour + '</b> lectures sur huit heures d\'onglet ouvert. Les plafonds gratuits : 100 000 lectures et 1 000 écritures par jour, comptés séparément, pour TOUT le compte (tes espaces clientes compris).</div>' : '') +
+      '</div>' +
+      '<div class="card infocard" style="background:var(--card)"><h3>Le prix d\'un écran</h3>' +
+        '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:12px">Chaque chiffre est mesuré maintenant, pas estimé. Un écran qui lit « une fois par cliente » coûte de plus en plus cher à mesure que tu ajoutes des espaces.</div>' +
+        (tbl || '<div class="empty">Clique sur « Mesurer » pour connaître le coût de chaque écran.</div>') +
+        '<div class="row mt"><button class="btn btn--dark btn--sm" onclick="ADM.kvProbe()">Mesurer maintenant</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.kvReset()">Remettre les compteurs à zéro</button></div>' +
+      '</div>';
+  }
+  function kvReset() { KV_SEEN = { r: 0, w: 0, d: 0, l: 0, n: 0, since: Date.now() }; renderKvBody(null); }
   function renderReglages() {
     setMain(topbar('Réglages', '', 'Les paramètres partagés avec l\'espace de tes clients') + '<div class="wrap" style="max-width:820px">' + reglTabs() + '<div id="regl-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div></div>');
     if (REGL_TAB === 'emails') {
@@ -777,6 +873,9 @@
       api('/api/calendar/config').then(function (r) { return r.json(); }).then(function (d) {
         var b = el('regl-body'); if (b) b.innerHTML = calConfigBody(d || {});
       }).catch(function () { var b = el('regl-body'); if (b) b.innerHTML = '<div class="empty">Erreur de chargement.</div>'; });
+    } else if (REGL_TAB === 'kv') {
+      // Le relevé se lit sans rien appeler : il totalise ce qui est déjà passé.
+      renderKvBody(null);
     } else if (REGL_TAB === 'backups') {
       renderBackups();
     } else if (REGL_TAB === 'conges') {
@@ -9444,7 +9543,7 @@
     stepAdd: stepAdd, stepStatus: stepStatus, stepDelete: stepDelete, stepEditOpen: stepEditOpen,
     qnAdd: qnAdd, qnSet: qnSet, qnDel: qnDel, qnMove: qnMove, qnBulk: qnBulk, qnSetOptions: qnSetOptions, qnSetTitle: qnSetTitle, qnSetReady: qnSetReady, qnPreview: qnPreview,
     planGo: planGo, planSetFilter: planSetFilter, planTick: planTick,
-    mailCfgSave: mailCfgSave,
+    mailCfgSave: mailCfgSave, kvProbe: kvProbe, kvReset: kvReset,
     qnrAdd: qnrAdd, qnrOpen: qnrOpen, qnrCloseDrawer: qnrCloseDrawer, qnrSet: qnrSet, qnrDup: qnrDup, qnrImportJson: qnrImportJson, qnrExportJson: qnrExportJson, qnrArchive: qnrArchive, qnrDel: qnrDel, qnrToggleArch: qnrToggleArch, qnrPreview: qnrPreview, qnrPreviewNav: qnrPreviewNav, qnrPreviewStart: qnrPreviewStart, qnrPreviewCover: qnrPreviewCover, rankDown: rankDown, qnrSmartImport: qnrSmartImport, qnrAssignOpen: qnrAssignOpen, qnrStepAdd: qnrStepAdd, qnrBulkRequire: qnrBulkRequire, qnrStepSet: qnrStepSet, qnrStepDel: qnrStepDel, qnrStepMove: qnrStepMove, qnrBlockAdd: qnrBlockAdd, qnrBlockSet: qnrBlockSet, qnrBlockChangeType: qnrBlockChangeType, qnrBlockOptions: qnrBlockOptions, qnrBlockDel: qnrBlockDel, qnrBlockMove: qnrBlockMove,
     prjAdd: prjAdd, prjSeed: prjSeed, prjOpen: prjOpen, prjCloseDrawer: prjCloseDrawer, prjSet: prjSet, prjDup: prjDup, prjArchive: prjArchive, prjDel: prjDel, prjToggleArch: prjToggleArch, prjAssignOpen: prjAssignOpen, prjPhaseAdd: prjPhaseAdd, prjPhaseSet: prjPhaseSet, prjPhaseDel: prjPhaseDel, prjPhaseMove: prjPhaseMove, prjStepAdd: prjStepAdd, prjStepSet: prjStepSet, prjStepDel: prjStepDel, prjDelivAdd: prjDelivAdd, prjDelivSet: prjDelivSet, prjDelivDel: prjDelivDel,
     incSeenAll: incSeenAll, incClear: incClear,
