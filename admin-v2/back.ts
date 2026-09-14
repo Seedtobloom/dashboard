@@ -1365,6 +1365,10 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
    * générique de changement de statut ne peut pas faire doublon avec celui-ci. */
   const lienDejaLa = String(t.reviewLink || '').trim();
   const revMaj = body.reviewUpdated === true && !!lienDejaLa;
+  // Y a-t-il vraiment eu des retours à intégrer ? On le capture AVANT de lever
+  // le marqueur, sinon la trace disparaît. Sans retour reçu, l'e-mail dit
+  // « des modifications » plutôt que d'affirmer une chose qui n'a pas eu lieu.
+  const avaitRetours = revMaj && (!!t.needsRework || !!t.clientFeedbackAt);
   if (revMaj) {
     if (!Array.isArray(t.reviewHistory)) t.reviewHistory = [];
     t.reviewHistory.push({ url: lienDejaLa.slice(0, 2000), at: nowIso(), updated: true });
@@ -1377,8 +1381,10 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if (revMaj && body.notify !== false) {
     const url = /^https?:\/\//i.test(lienDejaLa) ? lienDejaLa : 'https://' + lienDejaLa;
     const tour = Array.isArray(t.reviewHistory) ? t.reviewHistory.length : 1;
-    await notifyClient(env, data, `Nouvelle version · ${escHtml(t.title || '')}`,
-      `<p>Une nouvelle version de <strong>${escHtml(t.title || '')}</strong> vient d'être déposée${tour > 1 ? ` (version ${tour})` : ''}.</p>` +
+    await notifyClient(env, data, `${avaitRetours ? 'Vos retours sont intégrés' : 'Nouvelle version'} · ${escHtml(t.title || '')}`,
+      (avaitRetours
+        ? `<p>Vos retours sur <strong>${escHtml(t.title || '')}</strong> ont été intégrés : une nouvelle version${tour > 1 ? ` (version ${tour})` : ''} est en ligne.</p>`
+        : `<p>Une nouvelle version de <strong>${escHtml(t.title || '')}</strong>${tour > 1 ? ` (version ${tour})` : ''} vient d'être déposée.</p>`) +
       `<p>Le lien n'a pas changé : c'est au même endroit que la dernière fois.</p>` +
       `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
       `<p style="color:#8a6f54;font-size:13px">Vous pouvez la valider ou demander une révision depuis votre espace, sur la tâche concernée.</p>`, key);

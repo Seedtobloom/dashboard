@@ -202,16 +202,25 @@
   }
   // Popup « Prévenir la cliente ? » : renvoie cb(notify) — par défaut « envoyer
   // sans prévenir » (bouton principal). Cliquer à l'extérieur annule.
-  function notifyConfirm(message, cb) {
+  /* Prévenir la cliente, ou non. Attention au bouton MIS EN AVANT : c'est lui
+   * qui a le focus, donc celui que la touche Entrée déclenche. Par défaut le
+   * silence est mis en avant — c'est le bon choix pour la plupart des gestes,
+   * qui n'ont pas à déclencher un e-mail à chaque fois.
+   * Mais pour un geste dont le SEUL but est de prévenir, mettre le silence en
+   * avant est un contresens : on croit valider l'envoi et rien ne part.
+   * D'où `envoiParDefaut` — la même fenêtre, l'accent inversé. */
+  function notifyConfirm(message, cb, envoiParDefaut) {
     var ov = document.createElement('div');
     ov.className = 'admconfirm';
+    var fort = 'class="btn btn--sm" style="background:var(--terre);color:#fff;border-color:var(--terre)"';
+    var doux = 'class="btn btn--outline btn--sm"';
     ov.innerHTML = '<div class="admconfirm__box">' +
       '<div class="admconfirm__title">Prévenir la cliente ?</div>' +
       '<div class="admconfirm__msg">' + esc(message || 'Souhaites-tu que la cliente soit prévenue par e-mail ?') + '</div>' +
       '<div class="admconfirm__row" style="flex-wrap:wrap;gap:8px">' +
         '<button class="btn btn--outline btn--sm" data-cancel>Annuler</button>' +
-        '<button class="btn btn--outline btn--sm" data-notify>Oui, prévenir</button>' +
-        '<button class="btn btn--sm" data-silent style="background:var(--terre);color:#fff;border-color:var(--terre)">Envoyer sans prévenir</button>' +
+        '<button ' + (envoiParDefaut ? doux : fort) + ' data-silent>' + (envoiParDefaut ? 'Sans e-mail' : 'Envoyer sans prévenir') + '</button>' +
+        '<button ' + (envoiParDefaut ? fort : doux) + ' data-notify>' + (envoiParDefaut ? 'Oui, envoyer l\'e-mail' : 'Oui, prévenir') + '</button>' +
       '</div></div>';
     function close() { ov.remove(); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
@@ -219,7 +228,7 @@
     ov.querySelector('[data-notify]').onclick = function () { close(); cb(true); };
     ov.querySelector('[data-silent]').onclick = function () { close(); cb(false); };
     document.body.appendChild(ov);
-    var s = ov.querySelector('[data-silent]'); if (s) s.focus();
+    var s = ov.querySelector(envoiParDefaut ? '[data-notify]' : '[data-silent]'); if (s) s.focus();
   }
   function pill(status, label) { return '<span class="pill pill--' + esc(status) + '">' + esc(label || status) + '</span>'; }
   function jsq(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
@@ -2065,7 +2074,8 @@
   function atReviewUpdated(key, id) {
     var x = atFind(key, id);
     var tour = ((x && x.roundCount) || 0) + 1;
-    notifyConfirm('Prévenir la cliente qu\'une nouvelle version est en ligne au même lien ?', function (notify) {
+    // Prévenir est TOUT l'intérêt de ce geste : l'envoi est mis en avant.
+    notifyConfirm('Sa version est à jour au même lien, et tu as intégré ses retours. Elle en est prévenue par e-mail.', function (notify) {
       jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewUpdated: true, notify: notify }, 'PATCH')
         .then(function (r) {
           if (!r.ok) { toast('Erreur'); return; }
@@ -2074,7 +2084,7 @@
           toast('Version ' + tour + ' signalée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
           if (VIEW === 'alltasks') { renderAllTasksBody(); atOpen(key, id); }
         }).catch(function () { toast('Erreur'); });
-    });
+    }, true);
   }
   function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } var res = taskRes(atFind(key, id) || { key: key, id: id }); jpost(res.url, { projectId: res.pid, dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function atCopyLink(url) {
