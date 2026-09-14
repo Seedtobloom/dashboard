@@ -1930,12 +1930,15 @@
     var rlHref = /^https?:\/\//i.test(rl) ? rl : 'https://' + rl;
     var sentOn = x.lastSentAt || x.reviewSentAt || '';
     var rev = rl ? '<div style="margin-top:12px;padding:12px 14px;background:var(--card);border-radius:11px">' +
+        // Le nombre de TOURS de révision, pas de livrables : c'est ce lien-ci
+        // qu'on compte, et il peut être mis à jour sans qu'un fichier bouge.
         '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-bottom:6px">Lien de révision envoyé à la cliente' +
           (sentOn ? ' · ' + esc(fmtDate(sentOn)) : '') +
-          ((x.sentCount || 0) > 1 ? ' · version ' + x.sentCount : '') + '</div>' +
+          ((x.roundCount || 0) > 1 ? ' · version ' + x.roundCount : '') + '</div>' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           '<a href="' + esc(rlHref) + '" target="_blank" rel="noopener" class="pbtn">Ouvrir le lien</a>' +
           '<button class="pbtn" onclick="ADM.atCopyLink(\'' + esc(rl.replace(/'/g, "\\'")) + '\')">Copier</button>' +
+          '<button class="pbtn pbtn--ok" title="Tu as déposé une nouvelle version au même endroit : prévenir la cliente" onclick="ADM.atReviewUpdated(\'' + key + '\',\'' + x.id + '\')">↻ J\'ai mis à jour</button>' +
           '<span style="flex:1;min-width:0;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(rl) + '</span>' +
         '</div></div>' : '';
     var atts = (x.attachments || []).filter(function (a) { return a.key; });
@@ -2053,6 +2056,25 @@
     jpost(res.url, { projectId: res.pid, studioNote: val }, 'PATCH').then(function (r) {
       if (r.ok) toast('Note enregistrée ✓'); else toast('Erreur, note non enregistrée');
     }).catch(function () { toast('Erreur, note non enregistrée'); });
+  }
+  /* ── « J'ai mis à jour le lien » ──────────────────────────────────────
+   * Le cas courant d'un travail créatif : la cliente fait ses retours, on
+   * retravaille, et on redépose AU MÊME ENDROIT. Rien ne change d'adresse,
+   * donc rien ne se déclenchait — ni tour de révision compté, ni e-mail. Il
+   * fallait renvoyer le lien identique pour que quelque chose se passe. */
+  function atReviewUpdated(key, id) {
+    var x = atFind(key, id);
+    var tour = ((x && x.roundCount) || 0) + 1;
+    notifyConfirm('Prévenir la cliente qu\'une nouvelle version est en ligne au même lien ?', function (notify) {
+      jpost('/api/clients/' + key + '/tasks/' + id, { projectId: 'partner', reviewUpdated: true, notify: notify }, 'PATCH')
+        .then(function (r) {
+          if (!r.ok) { toast('Erreur'); return; }
+          // Affiché tout de suite : KV répond avec un temps de retard.
+          if (x) { x.roundCount = tour; x.status = 'review'; x.needsRework = false; x.reviewSentAt = new Date().toISOString(); }
+          toast('Version ' + tour + ' signalée' + (notify ? ' · cliente prévenue ✓' : ' (sans e-mail)'));
+          if (VIEW === 'alltasks') { renderAllTasksBody(); atOpen(key, id); }
+        }).catch(function () { toast('Erreur'); });
+    });
   }
   function atPlan2(key, id) { var inp = el('atp2-' + id); var v = inp ? (inp.value || '').trim() : ''; if (!v) { toast('Choisis une date'); return; } var res = taskRes(atFind(key, id) || { key: key, id: id }); jpost(res.url, { projectId: res.pid, dueDate: v }, 'PATCH').then(function (r) { if (r.ok) { toast('Planifié au ' + fmtDate(v)); atClose(); atRefresh(); } else toast('Erreur'); }).catch(function () { toast('Erreur'); }); }
   function atCopyLink(url) {
@@ -9534,7 +9556,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
-    atSetSec: atSetSec, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
+    atSetSec: atSetSec, atReviewUpdated: atReviewUpdated, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,

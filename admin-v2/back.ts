@@ -1355,7 +1355,34 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     t.reviewHistory.push({ url: body.reviewLink.trim().slice(0, 2000), at: nowIso() });
     if (t.reviewHistory.length > 50) t.reviewHistory = t.reviewHistory.slice(-50);
   }
+  /* ── « J'ai mis à jour le lien » ────────────────────────────────────────
+   * Une nouvelle version déposée au MÊME endroit : l'adresse ne change pas,
+   * le statut non plus. Or l'e-mail ne partait qu'au changement de statut —
+   * la cliente n'était donc prévenue de rien, et le tour de révision n'était
+   * pas compté. On journalise le tour, on remet la tâche en attente de sa
+   * validation, et on la prévient avec les mots qui conviennent.
+   * Le statut est posé ICI plutôt que par body.status : ainsi l'e-mail
+   * générique de changement de statut ne peut pas faire doublon avec celui-ci. */
+  const lienDejaLa = String(t.reviewLink || '').trim();
+  const revMaj = body.reviewUpdated === true && !!lienDejaLa;
+  if (revMaj) {
+    if (!Array.isArray(t.reviewHistory)) t.reviewHistory = [];
+    t.reviewHistory.push({ url: lienDejaLa.slice(0, 2000), at: nowIso(), updated: true });
+    if (t.reviewHistory.length > 50) t.reviewHistory = t.reviewHistory.slice(-50);
+    t.status = 'review';
+    t.needsRework = false;      // les retours précédents sont intégrés
+    t.clientNotif = false;
+  }
   await saveClient(env, key, data);
+  if (revMaj && body.notify !== false) {
+    const url = /^https?:\/\//i.test(lienDejaLa) ? lienDejaLa : 'https://' + lienDejaLa;
+    const tour = Array.isArray(t.reviewHistory) ? t.reviewHistory.length : 1;
+    await notifyClient(env, data, `Nouvelle version · ${escHtml(t.title || '')}`,
+      `<p>Une nouvelle version de <strong>${escHtml(t.title || '')}</strong> vient d'être déposée${tour > 1 ? ` (version ${tour})` : ''}.</p>` +
+      `<p>Le lien n'a pas changé : c'est au même endroit que la dernière fois.</p>` +
+      `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
+      `<p style="color:#8a6f54;font-size:13px">Vous pouvez la valider ou demander une révision depuis votre espace, sur la tâche concernée.</p>`, key);
+  }
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
   if (body.status && body.status !== prevStatus && (body.status === 'done' || body.status === 'review') && body.notify !== false) {
