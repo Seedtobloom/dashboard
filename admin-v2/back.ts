@@ -1384,20 +1384,20 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     const vNum = tour > 1 ? ` (version ${tour})` : '';
     const prenom = (getClient(data).prenom || '').toString().trim();
     const titre = escHtml(t.title || '');
-    /* Ton : celui de la trame « V2 / itération » de Cindy, pas une prose
-     * d'application. Phrases courtes, on annonce la chose avant de l'expliquer,
-     * le lien juste après. Vouvoiement (ce mot part aussi à des clientes qu'elle
-     * connaît peu) et aucune formule accordée en genre : le même texte sert à
-     * tout le monde. Pas de cadratin. */
-    await notifyClient(env, data,
-      avaitRetours ? `${titre} : votre nouvelle version est en ligne` : `${titre} : nouvelle version en ligne`,
+    /* Le texte est celui de Cindy, mot pour mot. Seuls varient le prénom, le
+     * titre et le numéro de version. Deux réserves tenues par le code :
+     *  - « mise à jour avec vos derniers retours » n'est écrit que s'il y a
+     *    réellement eu des retours, sinon la phrase serait fausse ;
+     *  - « la version N » devient « la nouvelle version » au premier envoi,
+     *    « la version 1 » ne voulant rien dire pour la cliente. */
+    const quelleVersion = tour > 1 ? `la version ${tour}` : 'la nouvelle version';
+    await notifyClient(env, data, `${titre} : votre nouvelle version est en ligne`,
       `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
-      (avaitRetours
-        ? `<p>Voici la nouvelle version${vNum} de <strong>${titre}</strong>, avec vos retours intégrés.</p>`
-        : `<p>Voici une nouvelle version${vNum} de <strong>${titre}</strong>.</p>`) +
+      `<p>Je vous partage ${quelleVersion} de <strong>${titre}</strong>${avaitRetours ? ', mise à jour avec l’ensemble de vos derniers retours' : ''}.</p>` +
       `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">👉 Voir la nouvelle version</a></p>` +
-      `<p>C'est au même endroit que la dernière fois : le lien n'a pas bougé.</p>` +
-      `<p>N'hésitez pas si vous avez des questions en la regardant ! Vous pouvez ensuite la valider ou me demander une révision depuis <a href="${escHtml(clientSpaceUrl(env))}" style="color:#412F21">votre espace</a>.</p>` +
+      `<p>Vous pouvez la retrouver via le même lien que précédemment, qui reste inchangé.</p>` +
+      `<p>Je vous laisse la découvrir tranquillement ! Si tout vous convient, vous pourrez directement la valider depuis <a href="${escHtml(clientSpaceUrl(env))}" style="color:#412F21">votre espace</a>. Et si quelques ajustements sont encore nécessaires, vous pourrez également m’y transmettre vos retours.</p>` +
+      `<p>Bien sûr, je reste disponible si vous avez la moindre question en la parcourant.</p>` +
       `<p>Belle journée à vous,<br>Cindy</p>`);
   }
   // E-mail seulement aux moments clés (terminée, à valider) : les
