@@ -1381,13 +1381,22 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if (revMaj && body.notify !== false) {
     const url = /^https?:\/\//i.test(lienDejaLa) ? lienDejaLa : 'https://' + lienDejaLa;
     const tour = Array.isArray(t.reviewHistory) ? t.reviewHistory.length : 1;
-    await notifyClient(env, data, `${avaitRetours ? 'Vos retours sont intégrés' : 'Nouvelle version'} · ${escHtml(t.title || '')}`,
+    const vNum = tour > 1 ? ` (version ${tour})` : '';
+    const prenom = (getClient(data).prenom || '').toString().trim();
+    const titre = escHtml(t.title || '');
+    /* Ton : chaleureux mais cadré, vouvoiement (ce mot part à toutes les
+     * clientes, y compris les nouvelles). Pas de cadratin, pas de « restant à
+     * votre disposition ». On dit ce qui a été fait, où c'est, et ce qu'elle
+     * peut faire ensuite : rien de plus. */
+    await notifyClient(env, data, `${avaitRetours ? 'Vos retours sont intégrés' : 'Nouvelle version en ligne'} · ${titre}`,
+      `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
       (avaitRetours
-        ? `<p>Vos retours sur <strong>${escHtml(t.title || '')}</strong> ont été intégrés : une nouvelle version${tour > 1 ? ` (version ${tour})` : ''} est en ligne.</p>`
-        : `<p>Une nouvelle version de <strong>${escHtml(t.title || '')}</strong>${tour > 1 ? ` (version ${tour})` : ''} vient d'être déposée.</p>`) +
-      `<p>Le lien n'a pas changé : c'est au même endroit que la dernière fois.</p>` +
-      `<p style="margin:18px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
-      `<p style="color:#8a6f54;font-size:13px">Vous pouvez la valider ou demander une révision depuis votre espace, sur la tâche concernée.</p>`, key);
+        ? `<p>J'ai repris <strong>${titre}</strong> avec vos retours : la nouvelle version${vNum} est en ligne.</p>`
+        : `<p>Une nouvelle version de <strong>${titre}</strong>${vNum} est en ligne.</p>`) +
+      `<p>Le lien est le même que la dernière fois, vous n'avez rien à retrouver de votre côté.</p>` +
+      `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
+      `<p>Quand vous l'aurez regardée, vous pouvez la valider ou me demander une révision depuis <a href="${escHtml(clientSpaceUrl(env))}" style="color:#412F21">votre espace</a>, sur la tâche concernée.</p>` +
+      `<p>Belle journée à vous,<br>Cindy</p>`);
   }
   // E-mail seulement aux moments clés (terminée, à valider) : les
   // allers-retours de statut intermédiaires ne génèrent plus de mail.
