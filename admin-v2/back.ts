@@ -1384,18 +1384,20 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
     const vNum = tour > 1 ? ` (version ${tour})` : '';
     const prenom = (getClient(data).prenom || '').toString().trim();
     const titre = escHtml(t.title || '');
-    /* Ton : chaleureux mais cadré, vouvoiement (ce mot part à toutes les
-     * clientes, y compris les nouvelles). Pas de cadratin, pas de « restant à
-     * votre disposition ». On dit ce qui a été fait, où c'est, et ce qu'elle
-     * peut faire ensuite : rien de plus. */
-    await notifyClient(env, data, `${avaitRetours ? 'Vos retours sont intégrés' : 'Nouvelle version en ligne'} · ${titre}`,
+    /* Ton : celui de la trame « V2 / itération » de Cindy, pas une prose
+     * d'application. Phrases courtes, on annonce la chose avant de l'expliquer,
+     * le lien juste après. Vouvoiement (ce mot part aussi à des clientes qu'elle
+     * connaît peu) et aucune formule accordée en genre : le même texte sert à
+     * tout le monde. Pas de cadratin. */
+    await notifyClient(env, data,
+      avaitRetours ? `${titre} : votre nouvelle version est en ligne` : `${titre} : nouvelle version en ligne`,
       `<p>Bonjour${prenom ? ' ' + escHtml(prenom) : ''},</p>` +
       (avaitRetours
-        ? `<p>J'ai repris <strong>${titre}</strong> avec vos retours : la nouvelle version${vNum} est en ligne.</p>`
-        : `<p>Une nouvelle version de <strong>${titre}</strong>${vNum} est en ligne.</p>`) +
-      `<p>Le lien est le même que la dernière fois, vous n'avez rien à retrouver de votre côté.</p>` +
-      `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Voir la nouvelle version</a></p>` +
-      `<p>Quand vous l'aurez regardée, vous pouvez la valider ou me demander une révision depuis <a href="${escHtml(clientSpaceUrl(env))}" style="color:#412F21">votre espace</a>, sur la tâche concernée.</p>` +
+        ? `<p>Voici la nouvelle version${vNum} de <strong>${titre}</strong>, avec vos retours intégrés.</p>`
+        : `<p>Voici une nouvelle version${vNum} de <strong>${titre}</strong>.</p>`) +
+      `<p style="margin:20px 0"><a href="${escHtml(url)}" style="display:inline-block;background:#412F21;color:#F2E5C2;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">👉 Voir la nouvelle version</a></p>` +
+      `<p>C'est au même endroit que la dernière fois : le lien n'a pas bougé.</p>` +
+      `<p>N'hésitez pas si vous avez des questions en la regardant ! Vous pouvez ensuite la valider ou me demander une révision depuis <a href="${escHtml(clientSpaceUrl(env))}" style="color:#412F21">votre espace</a>.</p>` +
       `<p>Belle journée à vous,<br>Cindy</p>`);
   }
   // E-mail seulement aux moments clés (terminée, à valider) : les
