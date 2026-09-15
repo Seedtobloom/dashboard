@@ -1768,6 +1768,13 @@ select.cg-in{cursor:pointer}
 .at-bk.on{opacity:1;pointer-events:auto}
 .at-dr{position:fixed;top:0;right:0;height:100vh;width:min(480px,94vw);background:var(--bone);box-shadow:-8px 0 30px rgba(17,7,4,.16);transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1);z-index:201;display:flex;flex-direction:column}
 .at-dr.on{transform:translateX(0)}
+/* Panneau élargi : un brief de cliente peut faire deux écrans de haut dans
+   480 px. On double la largeur plutôt que d'ouvrir une page à part, pour ne
+   pas perdre la liste derrière. Le choix est mémorisé par le navigateur. */
+.at-dr--wide{width:min(1000px,96vw)}
+.at-dr__w{float:right;margin-right:8px;background:rgba(240,233,214,.14);border:none;color:var(--paille);height:30px;padding:0 12px;border-radius:999px;cursor:pointer;font-family:var(--font-micro);font-size:11px;letter-spacing:.04em}
+.at-dr__w:hover{background:rgba(240,233,214,.26)}
+@media(max-width:900px){.at-dr__w{display:none}}
 /* Le conteneur interne n'avait aucune règle : le « flex:1 » et le défilement du
    corps ne s'appliquaient donc à rien, et un brief long dépassait sans pouvoir
    être atteint. Il doit relayer la hauteur du panneau, et min-height:0 est

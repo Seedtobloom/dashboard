@@ -1610,6 +1610,17 @@
    * superpose pour ne montrer que les échéances.
    * Le bandeau du haut, lui, compte TOUT : c'est le coup d'œil. */
   var AT_SEC = 'clientes';  // clientes | entreprise | calendrier
+  /* Largeur du panneau. Retenue par le navigateur : quelqu'un qui travaille
+   * sur des briefs longs ne veut pas recliquer à chaque tâche. Le stockage
+   * local peut être indisponible (navigation privée), d'où les gardes. */
+  var AT_WIDE = false;
+  try { AT_WIDE = localStorage.getItem('stb_at_wide') === '1'; } catch (e) { /* tant pis */ }
+  function atWide() {
+    AT_WIDE = !AT_WIDE;
+    try { localStorage.setItem('stb_at_wide', AT_WIDE ? '1' : '0'); } catch (e) { /* tant pis */ }
+    var d = el('at-dr'); if (d) d.classList.toggle('at-dr--wide', AT_WIDE);
+    var b = el('at-dr-w'); if (b) b.textContent = AT_WIDE ? '⤡ Réduire' : '⤢ Élargir';
+  }
   var MT_LOADED = false;
   function atSetSec(s) { AT_SEC = s; renderAllTasksBody(); }
   function atSecTabs() {
@@ -2009,6 +2020,7 @@
       '</div>';
     el('at-dr-in').innerHTML =
       '<div class="at-dr__top"><button class="at-dr__x" onclick="ADM.atClose()">✕</button>' +
+        '<button class="at-dr__w" id="at-dr-w" title="Élargir ou réduire le panneau" onclick="ADM.atWide()">' + (AT_WIDE ? '⤡ Réduire' : '⤢ Élargir') + '</button>' +
         '<div class="at-dr__meta">' + esc(otag) + ' · ' + esc(x.client || '') + '</div>' +
         '<div class="at-dr__t">' + esc(x.title || 'Tâche') + '</div>' +
         '<div>' + atDueLbl(x) + '</div></div>' +
@@ -2021,7 +2033,10 @@
       '</div>' +
       '<div class="at-dr__foot">' + plan + envoi +
         '<button class="btn btn--outline btn--sm" style="margin-left:auto" onclick="ADM.atClose();ADM.openClient(\'' + key + '\')">Ouvrir la fiche complète</button></div>';
-    el('at-dr').classList.add('on'); el('at-bk').classList.add('on');
+    var dr = el('at-dr');
+    dr.classList.add('on');
+    dr.classList.toggle('at-dr--wide', AT_WIDE);
+    el('at-bk').classList.add('on');
     // Charge la conversation depuis la fiche cliente.
     api('/api/clients/' + key).then(function (r) { return r.json(); }).then(function (data) {
       var t = atDeepFindTask(data, id); var cms = (t && Array.isArray(t.comments)) ? t.comments : [];
@@ -9566,7 +9581,7 @@
     missionTypeAdd: missionTypeAdd, missionTypeDel: missionTypeDel, missionTypeSave: missionTypeSave,
     prioDone: prioDone, prioCloseDlv: prioCloseDlv, prioPostpone: prioPostpone, prioProposeDate: prioProposeDate, prioTicketStart: prioTicketStart, prioAddDlv: prioAddDlv, prioAddDlvLink: prioAddDlvLink, revResolve: revResolve, prioDragStart: prioDragStart, prioDragEnd: prioDragEnd, prioDayOver: prioDayOver, prioDayLeave: prioDayLeave, prioDropDay: prioDropDay, prioSetDoDate: prioSetDoDate, prioClearDoDate: prioClearDoDate, prioPlan: prioPlan,
     atCloseTask: atCloseTask, atCopyLink: atCopyLink, atAddEntry: atAddEntry, atDelEntry: atDelEntry,
-    atSetSec: atSetSec, atReviewUpdated: atReviewUpdated, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
+    atSetSec: atSetSec, atWide: atWide, atReviewUpdated: atReviewUpdated, atEditNote: atEditNote, atSaveNote: atSaveNote, atNoteRestore: atNoteRestore, atCalMove: atCalMove, atCalToday: atCalToday,
     atSetFilter: atSetFilter, atRenderBody: atRenderBody, atOnQ: atOnQ, atOnClient: atOnClient, atOnOffer: atOnOffer, atPlan: atPlan, atPlan2: atPlan2, atOpen: atOpen, atClose: atClose, prioSetCat: prioSetCat, prioSendReview: prioSendReview, prioSetTime: prioSetTime, prioAddTaskTime: prioAddTaskTime, prioSetGroup: prioSetGroup, prioSetFilter: prioSetFilter, prioSetTab: prioSetTab, prioMainTab: prioMainTab, prioWkView: prioWkView, prioConsultQnr: prioConsultQnr, qnrDelete: qnrDelete, qnrExportPdf: qnrExportPdf, qnrSetTab: qnrSetTab, qnrRepToggle: qnrRepToggle, qnrRepPdf: qnrRepPdf, capSave: capSave, inboxTriage: inboxTriage, ptDemandeTriage: ptDemandeTriage, inboxProposeDate: inboxProposeDate, inboxSeen: inboxSeen, inboxDrawer: inboxDrawer, inboxDrawerClose: inboxDrawerClose, inboxResend: inboxResend, inboxResendLink: inboxResendLink, kpiSetTab: kpiSetTab, kpiExport: kpiExport, tempsSetTab: tempsSetTab, doneSetTab: doneSetTab, doneExport: doneExport, avisSetTab: avisSetTab, remind: remind,
     notifToggle: notifToggle, notifOpen: notifOpen, notifAck: notifAck, notifAckRework: notifAckRework, notifAckComment: notifAckComment,
     myTaskStatus: myTaskStatus, myTaskDel: myTaskDel, myTaskArchive: myTaskArchive, mtStart: mtStart, mtPause: mtPause, mtQuickAdd: mtQuickAdd, mtQuickDue: mtQuickDue, mtSubAdd: mtSubAdd, mtSubToggle: mtSubToggle, mtSubDel: mtSubDel, mtGoTask: mtGoTask, mtEditNote: mtEditNote, mtSaveNote: mtSaveNote, mtNoteRestore: mtNoteRestore, mtEditOpen: mtEditOpen, mtToggleRow: mtToggleRow,
