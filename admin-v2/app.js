@@ -3334,13 +3334,20 @@
         var srv = (d && Array.isArray(d.trames)) ? d.trames : [];
         if (!srv.length) { try { var loc = JSON.parse(localStorage.getItem('stb_trames') || 'null'); if (Array.isArray(loc) && loc.length) srv = loc; } catch (e) {} }
         var changed = false;
-        if (!srv.length) { srv = [kakemonoTrame(), defaultTrame()]; changed = true; }
+        if (!srv.length) { srv = [erdynTrame(), kakemonoTrame(), defaultTrame()]; changed = true; }
         else { var kseed = false; try { kseed = localStorage.getItem('stb_kakemono_seeded') === '1'; } catch (e) {}
           if (!kseed && !srv.some(function (t) { return t.id === 't_kakemono_h2eau'; })) { srv.unshift(kakemonoTrame()); changed = true; try { localStorage.setItem('stb_kakemono_seeded', '1'); } catch (e) {} } }
+        // Trame ERDYN : ajoutée une fois, et jamais réimposée si tu la
+        // supprimes ou la retouches (le drapeau retient qu'elle est passée).
+        var eseed = false; try { eseed = localStorage.getItem('stb_erdyn_seeded') === '1'; } catch (e) {}
+        if (!eseed && !srv.some(function (t) { return t.id === 't_erdyn_serenity'; })) {
+          srv.unshift(erdynTrame()); changed = true;
+          try { localStorage.setItem('stb_erdyn_seeded', '1'); } catch (e) {}
+        }
         TRAMES_SRV = srv; TRAMES_LOADED = true;
         if (changed) jpost('/api/call-trames', { trames: srv }, 'PATCH').catch(function () {});
         if (VIEW === 'visios') renderVisiosBody();
-      }).catch(function () { TRAMES_SRV = [kakemonoTrame(), defaultTrame()]; TRAMES_LOADED = true; if (VIEW === 'visios') renderVisiosBody(); });
+      }).catch(function () { TRAMES_SRV = [erdynTrame(), kakemonoTrame(), defaultTrame()]; TRAMES_LOADED = true; if (VIEW === 'visios') renderVisiosBody(); });
     }
     if (VISIOS_LOADED) { renderVisiosBody(); return; }
     api('/api/visios').then(function (r) { return r.json(); }).then(function (d) { VISIOS = { cards: (d && d.cards) || [], templates: (d && d.templates) || [] }; visMigrate(); VISIOS_LOADED = true; renderVisiosBody(); }).catch(showError);
@@ -3501,6 +3508,87 @@
       "« C'est toi qui valides directement les créations, ou quelqu'un d'autre dans la boucle ? »"
     ];
     return { id: 't_kakemono_h2eau', title: 'Découverte projet print (kakémonos)', content: L.join('\n') };
+  }
+  function erdynTrame() {
+    var L = [
+      "🛰 Visio de cadrage · ERDYN, projet SERENITY",
+      "Fil : Objectif réel → SEO → Liberté UX → Textes et langues → Visuels → Charte → Technique → Administration → Qui valide → Maintenance → Planning",
+      "Déjà connu, à ne PAS redemander : pages Project, Partners, Results, News, Contact · charte fournie (logo, typos, couleurs) · accès pour publier les actus · mise en ligne le 18 décembre 2026 · consortium de 11 acteurs dans 6 pays · enveloppe maintenance 1 500 € pour 3 ans.",
+      "Ne pas dérouler comme un interrogatoire : une réponse en couvre souvent trois. Si elle dit « les textes seront rédigés en anglais par notre équipe com et on ne cherche pas Google », coche textes + langue + rédaction + SEO et passe à la suite.",
+      "",
+      "① INTRODUCTION",
+      "Tu peux quasiment la lire.",
+      "« Merci d'avoir pris le temps pour cet échange. J'ai bien parcouru le cahier des charges, qui est déjà très complet. J'avais surtout quelques questions pour préciser certains points avant de préparer mon devis et être sûre de vous proposer quelque chose qui corresponde vraiment à vos besoins. »",
+      "",
+      "② LE VÉRITABLE OBJECTIF DU SITE",
+      "Le brief dit déjà « valoriser les technologies » et « sensibiliser le grand public ». Va un cran plus loin : cette réponse commande l'importance du référencement.",
+      "« Au-delà des objectifs présentés dans le cahier des charges, qu'aimeriez-vous concrètement que le site permette au projet SERENITY ? Qu'est-ce qui vous ferait dire, dans quelques mois, qu'il remplit vraiment son rôle ? »",
+      "Si la réponse reste vague :",
+      "« Est-ce que l'objectif est surtout d'avoir une vitrine officielle vers laquelle renvoyer depuis vos communications et celles des partenaires, ou souhaitez-vous également que de nouvelles personnes puissent découvrir SERENITY par elles-mêmes ? »",
+      "",
+      "③ SEO ET VISIBILITÉ",
+      "SEULEMENT si sa réponse montre qu'ils veulent être découverts au-delà de leur réseau. Sinon, passe.",
+      "« Est-ce que vous avez déjà prévu un accompagnement concernant le référencement naturel et la rédaction des contenus ? »",
+      "Si non, tu expliques :",
+      "« Si vous souhaitez que le projet puisse être découvert via les moteurs de recherche, je vous conseillerais de travailler cette partie dès la conception. De mon côté, je peux prévoir les bonnes bases techniques et la structure du site, et pour la stratégie de contenus et leur optimisation, je recommande généralement l'intervention d'une rédactrice SEO. »",
+      "",
+      "④ LIBERTÉ SUR L'ARBORESCENCE ET L'UX",
+      "Détermine si tu intègres une phase UX et conseil dans le devis.",
+      "« J'ai vu que vous aviez déjà défini une première arborescence avec les différentes pages. Est-ce qu'elle est complètement arrêtée ou êtes-vous ouverts à ce que je vous fasse des recommandations si j'identifie des possibilités d'améliorer la navigation, la structure ou l'organisation des contenus ? »",
+      "Puis éventuellement :",
+      "« Plus globalement, attendez-vous surtout de moi la réalisation du cahier des charges tel qu'il est aujourd'hui, ou souhaitez-vous également que j'apporte un regard conseil sur l'UX et la structure du site ? »",
+      "",
+      "⑤ TEXTES ET ACCOMPAGNEMENT RÉDACTIONNEL",
+      "Le cahier des charges décrit les contenus mais ne dit pas QUI les rédige. La question des langues est indispensable au chiffrage.",
+      "« Concernant les textes, est-ce qu'ils me seront fournis finalisés et prêts à être intégrés ? »",
+      "« Est-ce que vous êtes déjà accompagnés pour leur rédaction ou est-ce que vous souhaitez être accompagnés sur cette partie ? »",
+      "« Le site est-il prévu uniquement en anglais ou souhaitez-vous plusieurs langues ? »",
+      "",
+      "⑥ LES RESSOURCES VISUELLES",
+      "Savoir si ton travail graphique part d'une matière déjà riche, ou s'il faut prévoir de la création.",
+      "« Concernant les visuels, disposez-vous déjà d'une banque d'images de qualité autour du projet et des technologies développées : photos, rendus 3D, illustrations, schémas ? »",
+      "Puis si nécessaire :",
+      "« Est-ce que ces éléments me seront fournis ou faut-il prévoir de mon côté de la recherche, du traitement ou de la création de certains visuels ? »",
+      "",
+      "⑦ LA CHARTE GRAPHIQUE",
+      "Tu sais déjà qu'une charte sera fournie : ne redemande pas s'ils ont une identité. Ce point peut représenter une vraie partie de ton travail.",
+      "« La charte qui sera fournie comprend-elle également un univers graphique plus développé, par exemple des éléments graphiques, illustrations, iconographie ou règles de mise en page, ou essentiellement le logo, les couleurs et les typographies mentionnés dans le cahier des charges ? »",
+      "Puis :",
+      "« S'il s'agit principalement de ces éléments de base, attendez-vous que je développe davantage l'univers graphique pour son application au site ? »",
+      "",
+      "⑧ WORDPRESS ET CONTRAINTES TECHNIQUES",
+      "Ne demande pas quel CMS ils veulent : annonce le tien.",
+      "« De mon côté, je conçois et développe mes sites sous WordPress. Est-ce que vous avez des contraintes particulières concernant le CMS ou est-ce que WordPress vous convient ? »",
+      "Puis :",
+      "« Est-ce qu'il existe des contraintes techniques ou de sécurité particulières liées à ERDYN, au CEA ou au projet dont je dois avoir connaissance ? »",
+      "",
+      "⑨ ADMINISTRATION DU SITE",
+      "On sait déjà qu'ils veulent publier leurs actualités : ne le redemande pas.",
+      "« En dehors des actualités et des résultats qui évolueront au fil du projet, souhaitez-vous pouvoir modifier vous-mêmes d'autres parties du site ? »",
+      "« Souhaitez-vous que je prévoie une formation à la prise en main du site lors de la livraison ? »",
+      "",
+      "⑩ QUI VALIDE",
+      "Vraiment important avec un consortium de 11 acteurs dans 6 pays : c'est ce qui encadre le nombre de vagues de retours dans ton devis.",
+      "« Concernant les validations, est-ce que tu seras mon interlocutrice principale et est-ce que les différents retours seront centralisés de votre côté avant de m'être transmis ? »",
+      "Si non :",
+      "« Qui devra intervenir dans les différentes validations ? »",
+      "",
+      "⑪ LA MAINTENANCE · point sensible",
+      "Leur enveloppe est de 1 500 € pour trois ans, ton forfait habituel de 120 €/mois représenterait 4 320 €. Le cahier des charges ne dit pas ce que l'enveloppe couvre. NE COMMENCE PAS par dire que leur budget est insuffisant : fais-leur définir le besoin d'abord.",
+      "« J'ai vu que vous aviez prévu une maintenance pendant les trois années du projet. Qu'attendez-vous précisément derrière cette maintenance : uniquement le suivi technique du site, ou souhaitez-vous également prévoir des interventions et modifications ponctuelles ? »",
+      "Selon la réponse : ton forfait habituel, ou une maintenance technique plus légère avec les interventions supplémentaires facturées séparément.",
+      "",
+      "⑫ CE QU'IL FAUT POUR LE PLANNING",
+      "La deadline est connue (18 décembre 2026) : ne demande pas quand ils veulent le site, demande quand TU recevras la matière.",
+      "« Pour que je puisse construire un planning réaliste jusqu'au 18 décembre, avez-vous déjà une idée de la date à laquelle la charte graphique, les textes et les différents contenus pourront m'être transmis ? »",
+      "Et éventuellement :",
+      "« Y a-t-il des délais ou étapes de validation internes que je dois anticiper dans mon planning ? »",
+      "",
+      "⑬ POUR TERMINER",
+      "« Est-ce qu'il y a une attente, une contrainte ou un élément important qui n'apparaît pas forcément dans le cahier des charges et que tu souhaiterais que je prenne en compte dans ma proposition ? »",
+      "« Super, j'ai toutes les informations dont j'ai besoin. Je vais pouvoir reprendre tout ça et préparer une proposition détaillée avec le périmètre de la prestation et le planning. »"
+    ];
+    return { id: 't_erdyn_serenity', title: 'Visio de cadrage · ERDYN (SERENITY)', content: L.join('\n') };
   }
   function defaultTrame() {
     var L = [
