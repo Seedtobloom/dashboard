@@ -3130,7 +3130,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="font-size:14px;color:var(--navy);line-height:1">→</span>' +
         '<div style="display:flex;gap:4px">' +
           '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Modifier</button>' +
-          '<button onclick="cliDupliquerDemande(\''+t.id+'\',\''+pid+'\')" title="Repartir de cette demande pour en créer une nouvelle" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Reprendre</button>' +
+          '<button onclick="cliDupliquerDemande(\''+t.id+'\',\''+pid+'\')" title="Dupliquer cette demande pour en créer une nouvelle" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Dupliquer</button>' +
           '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #CD8F6E;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#5A2A11">✕</button>' +
         '</div>' +
       '</div>' +
@@ -5243,11 +5243,11 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">' + (src ? 'Reprendre une demande' : 'Nouvelle demande') + '</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">' + (src ? 'Dupliquer une demande' : 'Nouvelle demande') + '</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>' +
         '</div>' +
         (src
-          ? '<div style="background:#F8F6F2;border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;color:#5A2A11;line-height:1.55">Repris de <strong>' + vTitre + '</strong>. Le brief détaillé et le tableau sont recopiés. Modifie ce qui change, rien n\'est envoyé avant que tu valides.</div>'
+          ? '<div style="background:#F8F6F2;border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;color:#5A2A11;line-height:1.55">Copie de <strong>' + vTitre + '</strong>. Le brief détaillé et le tableau sont repris à l\'identique. Modifie ce qui change, rien n\'est envoyé avant que tu valides.</div>'
           : '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>') +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Titre de la demande *</label>' +
           '<input id="_ptask-title" type="text" value="'+vTitre+'" placeholder="Ex, visuel Instagram pour la collection été" style="'+S+'"></div>' +
@@ -5316,7 +5316,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };
-    // Reprendre une demande de projet ne la transforme pas en petite demande.
+    // Dupliquer une demande de projet ne la transforme pas en petite demande.
     if (cpDupSource && cpDupSource.demandeType) body.demandeType = cpDupSource.demandeType;
     if (dueDate)   body.dueDate   = dueDate;
     if (startDate) body.startDate = startDate;
@@ -5379,7 +5379,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       .catch(function(){ return task; });
   }
 
-  // Reprendre une demande existante comme modèle.
+  // Dupliquer une demande existante pour s'en servir de modèle.
   window.cliDupliquerDemande = function(taskId, pid) {
     var t = (window._cliTaskReg || {})[taskId];
     if (!t) { var pd = getPD(pid); var l = (pd && pd.project && pd.project.tasks) || []; for (var i = 0; i < l.length; i++) if (l[i] && l[i].id === taskId) t = l[i]; }
