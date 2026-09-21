@@ -9506,12 +9506,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:var(--terre-400,rgba(17,7,4,.5));pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
       + '[data-stb-rich] a{color:#5A2A11;text-decoration:underline;cursor:pointer}'
-      + '.stb-row .stb-ctrl{opacity:.28;transition:opacity .12s}'
+      + '.stb-row .stb-ctrl{opacity:.62;transition:opacity .12s}'
       + '.stb-row:hover .stb-ctrl{opacity:1}'
-      + '.stb-ctrl button:hover{background:#F8F6F2!important;color:#110704!important}'
-      + '.stb-del{opacity:.5;transition:opacity .12s,background .12s,color .12s}'
-      + '.stb-row:hover .stb-del{opacity:.9}'
-      + '.stb-del:hover{opacity:1;background:#F8F6F2!important;color:#5A2A11!important}';
+      + '.stb-ctrl button:hover{background:#C5DEFF!important;border-color:#C5DEFF!important;color:#110704!important}'
+      + '.stb-del{opacity:.62;transition:opacity .12s,background .12s,color .12s}'
+      + '.stb-row:hover .stb-del{opacity:1}'
+      + '.stb-del:hover{opacity:1;background:#F0D9D2!important;color:#8D2B21!important}'
+      + '.stb-tbtn{font-size:11.5px;padding:6px 12px;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;background:#fff;color:var(--navy,#110704);cursor:pointer;display:inline-flex;align-items:center;gap:6px}'
+      + '.stb-tbtn:hover{background:#F8F6F2}'
+      + '.stb-tbtn--on{background:#C5DEFF;border-color:#C5DEFF;font-weight:600}';
     document.head.appendChild(_stbPh);
   }
   // Ajuste toutes les zones de texte des blocs à la hauteur réelle de leur
@@ -9567,11 +9570,15 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#110704);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
-    var ctrlBtn = 'width:20px;height:18px;border:1px solid var(--bone-d,#F8F6F2);border-radius:5px;background:#fff;color:#5A2A11;cursor:pointer;font-size:11px;line-height:1;padding:0';
+    var ctrlBtn = 'width:24px;height:22px;border:1px solid var(--bone-d,#F8F6F2);border-radius:6px;background:#fff;color:#5A2A11;cursor:pointer;font-size:12px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center';
     var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
-      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+';color:'+(b.bg?b.bg:'#5A2A11')+';font-size:11px" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+(b.bg?'●':'○')+'</button>'+
+      // La couleur choisie se montre telle quelle : une pastille remplie, pas un
+      // rond coloré qu'on ne distingue pas du fond blanc.
+      '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+'" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+
+        '<span style="width:13px;height:13px;border-radius:4px;display:block;'+(b.bg?'background:'+esc(b.bg)+';border:1px solid rgba(17,7,4,0.18)':'background:linear-gradient(135deg,#fff 46%,#CD8F6E 46%,#CD8F6E 54%,#fff 54%);border:1px solid var(--bone-d,#F8F6F2)')+'"></span>'+
+      '</button>'+
     '</div>';
     var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #F8F6F2;border-radius:7px;background:#F8F6F2;color:#5A2A11;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
@@ -9623,17 +9630,28 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           '<span draggable="true" ondragstart="window.stbDragStart(event,\'col\','+ci+','+dB+')" ondragend="window.stbDragEnd(event)" title="Glisser pour déplacer la colonne" style="'+poignee+'">⠿</span>'+
           '<input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#110704);padding:7px 6px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
       }).join('') + '<th style="border:none;width:20px"></th></tr>';
+      // Une ligne sur deux teintée : c'est ce qui rend un long tableau lisible.
+      // Actif par défaut, débrayable tableau par tableau.
+      var zebre = b.zebra !== false;
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
-        return '<tr ondragover="window.stbDragOver(event,\'row\','+rr+','+dB+')" ondragleave="window.stbDragLeave(event)" ondrop="window.stbDrop(event,'+dA+',\'row\','+rr+')">'+
+        var fond = (zebre && ri % 2 === 1) ? '#FBF4E7' : '#fff';
+        return '<tr data-zebre="'+fond+'" style="background:'+fond+'" ondragover="window.stbDragOver(event,\'row\','+rr+','+dB+')" ondragleave="window.stbDragLeave(event)" ondrop="window.stbDrop(event,'+dA+',\'row\','+rr+')">'+
           '<td style="border:none;width:22px;text-align:center;vertical-align:top"><span draggable="true" ondragstart="window.stbDragStart(event,\'row\','+rr+','+dB+')" ondragend="window.stbDragEnd(event)" title="Glisser pour déplacer la ligne" style="'+poignee+';display:inline-block;margin-top:9px">⠿</span></td>' + row.map(function(c, ci){
           return '<td style="border:1px solid var(--bone-d,#F8F6F2);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#110704);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
         }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
       }).join('');
       inner = '<div style="flex:1;min-width:0;overflow-x:auto"><table style="border-collapse:collapse;width:100%;background:#fff;border-radius:8px"><tbody>'+thead+tbody+'</tbody></table>'+
-        '<div style="display:flex;gap:6px;margin-top:7px">'+
-          '<button onclick="window.stbTableAddRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Ligne</button>'+
-          '<button onclick="window.stbTableAddCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="font-size:11px;padding:5px 11px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">+ Colonne</button>'+
+        '<div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;align-items:center">'+
+          '<button class="stb-tbtn" onclick="window.stbTableAddRow('+dA+')">+ Ligne</button>'+
+          '<button class="stb-tbtn" onclick="window.stbTableAddCol('+dA+')">+ Colonne</button>'+
+          '<button class="stb-tbtn'+(zebre?' stb-tbtn--on':'')+'" title="Colorer une ligne sur deux" onclick="window.stbTableZebra('+dA+')">'+
+            '<span style="display:inline-flex;flex-direction:column;gap:1px">'+
+              '<span style="width:11px;height:3px;border-radius:1px;background:#FBF4E7;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
+              '<span style="width:11px;height:3px;border-radius:1px;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
+              '<span style="width:11px;height:3px;border-radius:1px;background:#FBF4E7;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
+            '</span>Lignes alternées</button>'+
+          '<span style="font-size:11px;color:var(--terre-400,rgba(17,7,4,.45));margin-left:2px">Glisse la poignée pour déplacer une ligne ou une colonne.</span>'+
         '</div></div>';
     } else if (b.type === 'link') {
       var lu = b.url || '';
@@ -9814,6 +9832,12 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
   window.stbTableAddCol = function(pid, taskId, blockId){
     var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows) return;
     b.rows.forEach(function(row, i){ row.push(i === 0 ? 'Colonne' : ''); });
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  window.stbTableZebra = function(pid, taskId, blockId){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b) return;
+    // Par défaut le zébrage est actif : on ne stocke donc que le refus.
+    if (b.zebra === false) delete b.zebra; else b.zebra = false;
     stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   window.stbTableDelRow = function(pid, taskId, blockId, r){

@@ -7355,9 +7355,9 @@
         var cols = rows[0] || [];
         // Réordonnable seulement si le bloc porte un identifiant : sans lui, le
         // serveur ne saurait pas QUEL tableau déplacer.
-        if (!editable || !b.id) return admPrettyTable(cols, rows.slice(1));
+        if (!editable || !b.id) return admPrettyTable(cols, rows.slice(1), null, b.zebra);
         var tid = tblId(t.id, b.id);
-        TBL_REG[tid] = { key: CK, taskId: t.id, blockId: b.id, cols: cols, src: rows, entete: 1 };
+        TBL_REG[tid] = { key: CK, taskId: t.id, blockId: b.id, cols: cols, src: rows, entete: 1, zebre: b.zebra };
         return tblWrap(tid);
       }
       return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
@@ -7438,10 +7438,12 @@
         '<button class="btn btn--dark btn--sm" onclick="ADM.tblSave(\'' + id + '\')">Enregistrer l\'ordre</button>'
       : '<button class="btn btn--outline btn--sm" title="Changer l\'ordre des lignes de ce tableau" onclick="ADM.tblStart(\'' + id + '\')">⇅ Déplacer les lignes</button>') +
       '</div>';
-    return '<div id="' + id + '">' + barre + admPrettyTable(r.cols, vue, actif ? id : null) + '</div>';
+    return '<div id="' + id + '">' + barre + admPrettyTable(r.cols, vue, actif ? id : null, r.zebre) + '</div>';
   }
 
-  function admPrettyTable(cols, dataRows, moveId) {
+  // zebre : une ligne sur deux teintée. Le réglage appartient au tableau (la
+  // cliente peut le couper depuis son espace) ; par défaut il est actif.
+  function admPrettyTable(cols, dataRows, moveId, zebre) {
     cols = Array.isArray(cols) ? cols : [];
     dataRows = Array.isArray(dataRows) ? dataRows : [];
     if (!cols.length) return '';
@@ -7459,7 +7461,7 @@
       return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
     }).join('') + '</tr>';
     var bodyR = dataRows.map(function (row, ri) {
-      var even = ri % 2 === 1, last = ri === dataRows.length - 1;
+      var even = (zebre !== false) && ri % 2 === 1, last = ri === dataRows.length - 1;
       var rowBg = even ? '#FBF4E7' : 'var(--card)';
       var td0 = '';
       if (moveId) {
