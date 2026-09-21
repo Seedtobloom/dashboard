@@ -624,12 +624,19 @@
     } else if (b.type === 'table') {
       if (!Array.isArray(b.rows) || !b.rows.length) b.rows = [['Colonne 1','Colonne 2','Colonne 3'],['','','']];
       var ncol = b.rows[0].length;
-      var thead = '<tr>' + b.rows[0].map(function(c, ci){
-        return '<th style="border:1px solid var(--bone-d,#F8F6F2);background:#F8F6F2;padding:0;font-weight:400"><div style="display:flex;align-items:center"><input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#110704);padding:7px 9px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
+      // Arguments répétés à chaque poignée : on les écrit une fois.
+      var dA = '\''+pid+'\',\''+taskId+'\',\''+b.id+'\'';
+      var dB = '\''+b.id+'\'';
+      var poignee = 'cursor:grab;color:var(--terre-400,rgba(17,7,4,.42));font-size:12px;line-height:1;padding:1px 3px;border-radius:5px;user-select:none;-webkit-user-select:none';
+      var thead = '<tr><th style="border:none;width:22px"></th>' + b.rows[0].map(function(c, ci){
+        return '<th ondragover="window.stbDragOver(event,\'col\','+ci+','+dB+')" ondragleave="window.stbDragLeave(event)" ondrop="window.stbDrop(event,'+dA+',\'col\','+ci+')" style="border:1px solid var(--bone-d,#F8F6F2);background:#F8F6F2;padding:0;font-weight:400"><div style="display:flex;align-items:center">'+
+          '<span draggable="true" ondragstart="window.stbDragStart(event,\'col\','+ci+','+dB+')" ondragend="window.stbDragEnd(event)" title="Glisser pour déplacer la colonne" style="'+poignee+'">⠿</span>'+
+          '<input value="'+esc(c)+'" oninput="window.stbTableInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" onchange="window.stbTableSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',0,'+ci+',this.value)" style="flex:1;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--navy,#110704);padding:7px 6px;min-width:54px;outline:none">'+(ncol>1?'<button onclick="window.stbTableDelCol(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+ci+')" title="Supprimer la colonne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;padding:0 5px;opacity:0.45">✕</button>':'')+'</div></th>';
       }).join('') + '<th style="border:none;width:20px"></th></tr>';
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
-        return '<tr>' + row.map(function(c, ci){
+        return '<tr ondragover="window.stbDragOver(event,\'row\','+rr+','+dB+')" ondragleave="window.stbDragLeave(event)" ondrop="window.stbDrop(event,'+dA+',\'row\','+rr+')">'+
+          '<td style="border:none;width:22px;text-align:center;vertical-align:top"><span draggable="true" ondragstart="window.stbDragStart(event,\'row\','+rr+','+dB+')" ondragend="window.stbDragEnd(event)" title="Glisser pour déplacer la ligne" style="'+poignee+';display:inline-block;margin-top:9px">⠿</span></td>' + row.map(function(c, ci){
           return '<td style="border:1px solid var(--bone-d,#F8F6F2);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#110704);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
         }).join('') + '<td style="border:none;width:20px;text-align:center;vertical-align:top"><button onclick="window.stbTableDelRow(\''+pid+'\',\''+taskId+'\',\''+b.id+'\','+rr+')" title="Supprimer la ligne" style="border:none;background:none;color:#c08;cursor:pointer;font-size:11px;opacity:0.45;margin-top:8px">✕</button></td></tr>';
       }).join('');
@@ -826,6 +833,70 @@
   window.stbTableDelCol = function(pid, taskId, blockId, c){
     var b = stbTableBlock(pid, taskId, blockId); if (!b || !b.rows || b.rows[0].length <= 1) return;
     b.rows.forEach(function(row){ row.splice(c, 1); }); stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+
+  /* ── Déplacer une ligne ou une colonne, en la glissant ───────────────────
+   * On attrape la poignée, on lâche sur la ligne (ou la colonne) dont on veut
+   * prendre la place. Seule la poignée est glissable : sinon, sélectionner du
+   * texte dans une cellule déclencherait un déplacement à chaque fois.
+   */
+  var stbDrag = null;
+
+  function stbBouge(arr, de, vers){ var x = arr.splice(de, 1)[0]; arr.splice(vers, 0, x); }
+
+  window.stbTableMoveRow = function(pid, taskId, blockId, de, vers){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !Array.isArray(b.rows)) return;
+    // La ligne 0 est l'en-tête : elle ne se déplace pas et rien ne se pose dessus.
+    if (de < 1 || vers < 1 || de >= b.rows.length || vers >= b.rows.length || de === vers) return;
+    stbBouge(b.rows, de, vers);
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+  window.stbTableMoveCol = function(pid, taskId, blockId, de, vers){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b || !Array.isArray(b.rows) || !b.rows.length) return;
+    var n = b.rows[0].length;
+    if (de < 0 || vers < 0 || de >= n || vers >= n || de === vers) return;
+    // Une colonne, c'est une cellule par ligne : toutes les lignes suivent,
+    // en-tête comprise, sinon les titres se décalent des valeurs.
+    b.rows.forEach(function(row){ if (Array.isArray(row)) stbBouge(row, de, vers); });
+    stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+  };
+
+  function stbEfface(){
+    var l = document.querySelectorAll('[data-stb-cible]');
+    for (var i = 0; i < l.length; i++){ l[i].style.background = l[i].getAttribute('data-stb-cible'); l[i].removeAttribute('data-stb-cible'); }
+  }
+  window.stbDragStart = function(e, sorte, i, bid){
+    stbDrag = { sorte: sorte, de: i, bid: bid };
+    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', sorte + ':' + i); } catch(err){}
+    // L'image glissée : la ligne (ou l'en-tête) entière plutôt que la poignée seule.
+    try {
+      var vis = sorte === 'row' ? e.target.parentNode.parentNode : e.target.parentNode.parentNode;
+      if (vis && e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(vis, 12, 12);
+    } catch(err2){}
+  };
+  window.stbDragEnd = function(){ stbDrag = null; stbEfface(); };
+  window.stbDragOver = function(e, sorte, i, bid){
+    if (!stbDrag || stbDrag.sorte !== sorte || stbDrag.bid !== bid || stbDrag.de === i) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch(err){}
+    var cible = e.currentTarget;
+    if (cible.getAttribute('data-stb-cible') === null){
+      stbEfface();
+      cible.setAttribute('data-stb-cible', cible.style.background || '');
+      cible.style.background = '#F1DCC9';
+    }
+  };
+  window.stbDragLeave = function(e){
+    var c = e.currentTarget;
+    if (c.getAttribute('data-stb-cible') !== null){ c.style.background = c.getAttribute('data-stb-cible'); c.removeAttribute('data-stb-cible'); }
+  };
+  window.stbDrop = function(e, pid, taskId, blockId, sorte, i){
+    e.preventDefault();
+    stbEfface();
+    if (!stbDrag || stbDrag.sorte !== sorte || stbDrag.bid !== blockId) { stbDrag = null; return; }
+    var de = stbDrag.de; stbDrag = null;
+    if (sorte === 'row') window.stbTableMoveRow(pid, taskId, blockId, de, i);
+    else window.stbTableMoveCol(pid, taskId, blockId, de, i);
   };
   window.stbBlockToggle = function(pid, taskId, blockId){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;

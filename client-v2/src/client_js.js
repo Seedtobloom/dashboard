@@ -184,6 +184,11 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
   var cpHolidays = []; // conges du studio (depuis les reglages)
   var convData = []; // fil de conversation unifié (espace client)
   var cpNewTaskFiles = []; // fichiers ajoutés un à un dans le formulaire de nouvelle tâche
+  // Reprise d'une ancienne demande comme modèle : on garde ici le brief et le
+  // tableau de la demande source, pour les recopier sur la nouvelle une fois
+  // qu'elle est créée. Rien n'est envoyé au studio tant que le formulaire n'est
+  // pas validé : dupliquer ne dérange personne.
+  var cpDupSource = null;
   var currentId = null;
   var currentView = 'home'; // 'home' | 'project' | 'messages' | 'questionnaires'
   // Plateforme Questionnaires (côté cliente)
@@ -3125,6 +3130,7 @@ var CLIENT_JS = String.raw`// Client portal SPA — multi-project
         '<span style="font-size:14px;color:var(--navy);line-height:1">→</span>' +
         '<div style="display:flex;gap:4px">' +
           '<button onclick="cliEditTask(\''+t.id+'\',\''+pid+'\')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Modifier</button>' +
+          '<button onclick="cliDupliquerDemande(\''+t.id+'\',\''+pid+'\')" title="Repartir de cette demande pour en créer une nouvelle" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:var(--muted)">Reprendre</button>' +
           '<button onclick="cliDeleteTask(\''+pid+'\',\''+t.id+'\')" style="background:none;border:1.5px solid #CD8F6E;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:11px;color:#5A2A11">✕</button>' +
         '</div>' +
       '</div>' +
@@ -5208,12 +5214,23 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       }).catch(function(err){ toast('Erreur, réessaie'); });
   };
 
-  window.cliOpenAddTask = function(pid, ds) {
+  window.cliOpenAddTask = function(pid, ds, src) {
     var pd = getPD(pid);
     var projectType = pd && pd.project && pd.project.type ? pd.project.type : '';
     if (projectType === 'partenaire') {
       // Modal spécifique partenaire
       cpNewTaskFiles = [];
+      var SRC = src || {};
+      var vTitre = SRC.title ? esc(SRC.title) : '';
+      var vBrief = SRC.content ? esc(SRC.content) : '';
+      var vUrg = SRC.urgency || 'normal';
+      var sProps = (SRC.properties && typeof SRC.properties === 'object') ? SRC.properties : {};
+      cpDupSource = src ? {
+        titre: SRC.title || '',
+        blocks: Array.isArray(SRC.blocks) ? SRC.blocks : null,
+        table: (SRC.table && typeof SRC.table === 'object') ? SRC.table : null,
+        demandeType: SRC.demandeType || ''
+      } : null;
       var existing = document.getElementById('_cp-partenaire-task-ov');
       if (existing) existing.remove();
       var ov = document.createElement('div');
@@ -5226,19 +5243,21 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:none;max-height:90vh;overflow-y:auto">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">' +
-          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">Nouvelle demande</span>' +
+          '<span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:22px;color:var(--navy,#110704)">' + (src ? 'Reprendre une demande' : 'Nouvelle demande') + '</span>' +
           '<button onclick="document.getElementById(\'_cp-partenaire-task-ov\').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted,#C5DEFF);line-height:1">✕</button>' +
         '</div>' +
-        '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>' +
+        (src
+          ? '<div style="background:#F8F6F2;border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;color:#5A2A11;line-height:1.55">Repris de <strong>' + vTitre + '</strong>. Le brief détaillé et le tableau sont recopiés. Modifie ce qui change, rien n\'est envoyé avant que tu valides.</div>'
+          : '<div style="font-size:13px;color:var(--terre-600,#5A2A11);line-height:1.55;margin-bottom:18px">Plus votre demande est détaillée, mieux je peux la réaliser. N\'hésitez pas à donner des exemples, des liens et le contexte.</div>') +
         '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Titre de la demande *</label>' +
-          '<input id="_ptask-title" type="text" placeholder="Ex, visuel Instagram pour la collection été" style="'+S+'"></div>' +
-        '<input type="hidden" id="_ptask-urgency" value="normal">' +
+          '<input id="_ptask-title" type="text" value="'+vTitre+'" placeholder="Ex, visuel Instagram pour la collection été" style="'+S+'"></div>' +
+        '<input type="hidden" id="_ptask-urgency" value="'+esc(vUrg)+'">' +
         '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Pour quand ? (échéance souhaitée) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A2A11">(optionnel)</span></label>' +
           '<input id="_ptask-startDate" type="hidden">' +
           '<input id="_ptask-dueDate" type="text" readonly data-iso="'+(ds||'')+'" value="'+(ds?cpMcFmt(ds):'')+'" placeholder="Cliquer pour choisir une date" onclick="cpDateOpen(\'_ptask-dueDate\')" style="'+S+';cursor:pointer;background:#fff"></div>' +
         '<div style="margin-bottom:14px;background:#F8F6F2;border:1px solid var(--border,#F8F6F2);border-radius:12px;padding:15px"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy,#110704);display:block;margin-bottom:6px">Votre brief</label>' +
           '<div style="font-size:11.5px;color:var(--muted,#C5DEFF);line-height:1.5;margin-bottom:8px">Décrivez l\'objectif, le format et les dimensions, le ton souhaité, les éléments à mettre en avant et ce qu\'il faut éviter.</div>' +
-          '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge."></textarea></div>' +
+          '<textarea id="_ptask-content" rows="6" style="'+S+';resize:vertical" placeholder="Exemple, un visuel carré 1080x1080 pour Instagram, ton doux et lumineux, mettre en avant le nouveau parfum, reprendre les couleurs de la charte, éviter le rouge.">'+vBrief+'</textarea></div>' +
         '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Liens et références (optionnel)</label>' +
           '<textarea id="_ptask-links" rows="2" style="'+S+';resize:vertical" placeholder="Collez des liens d\'inspiration, exemples, Pinterest, Drive..."></textarea></div>' +
         '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted,#C5DEFF);display:block;margin-bottom:6px">Fichiers joints (optionnel)</label>' +
@@ -5270,7 +5289,7 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
       document.body.appendChild(ov);
       ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
       // Pre-select "normal" urgence pill
-      setTimeout(function(){ window._ptaskSelUrg('normal'); }, 0);
+      setTimeout(function(){ window._ptaskSelUrg(vUrg); }, 0);
     } else {
       cliTaskOverlay(pid, { dueDate: ds, onSubmit: cliDoAddTask });
     }
@@ -5297,6 +5316,8 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
     var ov = document.getElementById('_cp-partenaire-task-ov');
     if (ov) ov.remove();
     var body = { projectId: pid, title: title.trim(), content: content, urgency: urgency };
+    // Reprendre une demande de projet ne la transforme pas en petite demande.
+    if (cpDupSource && cpDupSource.demandeType) body.demandeType = cpDupSource.demandeType;
     if (dueDate)   body.dueDate   = dueDate;
     if (startDate) body.startDate = startDate;
     if (pole)      body.pole      = pole;
@@ -5318,12 +5339,52 @@ function buildPartTaskDrawer(pid, tasks, files, project) {
           var pd = getPD(pid);
           if (pd) { if(!Array.isArray(pd.project.tasks)) pd.project.tasks=[]; pd.project.tasks.push(task); if(!Array.isArray(pd.files)) pd.files=[]; attachments.forEach(function(a){ pd.files.push({ key:a.key, name:a.name, type:a.type, category:'document', source:'client' }); }); }
           if (dueDate) cliCalSelected[pid] = dueDate;
+          return cliRecopierBrief(pid, task);
+        })
+        .then(function(task) {
           toast('Demande ajoutee');
           // Ouvre directement le panneau de la tâche créée (vue Tableau).
           if (task && task.id) { cliSelTask[pid] = task.id; cliPartTab[pid] = 'board'; }
           try { renderShell(); } catch(e){ console.error('renderShell apres ajout tache', e); }
         });
     }).catch(function(err){ console.error('ajout tache echoue', err); toast('Erreur : ' + (err && err.message ? err.message : 'reessayez')); });
+  };
+
+  // Recopie du brief détaillé (blocs) et du tableau de la demande reprise.
+  // Chaque bloc reçoit un nouvel identifiant : deux demandes ne doivent jamais
+  // partager les mêmes blocs, sinon modifier l'une modifierait l'autre.
+  function cliRecopierBrief(pid, task) {
+    var src = cpDupSource; cpDupSource = null;
+    if (!task || !task.id || !src || (!src.blocks && !src.table)) return Promise.resolve(task);
+    var corps = { projectId: pid };
+    if (src.blocks) {
+      corps.blocks = JSON.parse(JSON.stringify(src.blocks)).map(function(bl){
+        if (bl && typeof bl === 'object') bl.id = cpbId() + cpbId();
+        return bl;
+      });
+    }
+    if (src.table) corps.table = JSON.parse(JSON.stringify(src.table));
+    return fetch(API_BASE + '/tasks/' + task.id, { method:'PATCH', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify(corps) })
+      .then(function(r){ return r.ok ? r.json() : task; })
+      .then(function(maj){
+        // On garde la tâche à jour dans l'affichage sans tout recharger.
+        var pd = getPD(pid);
+        if (pd && Array.isArray(pd.project.tasks)) {
+          for (var i = 0; i < pd.project.tasks.length; i++) {
+            if (pd.project.tasks[i] && pd.project.tasks[i].id === task.id) { pd.project.tasks[i] = maj; break; }
+          }
+        }
+        return maj;
+      })
+      .catch(function(){ return task; });
+  }
+
+  // Reprendre une demande existante comme modèle.
+  window.cliDupliquerDemande = function(taskId, pid) {
+    var t = (window._cliTaskReg || {})[taskId];
+    if (!t) { var pd = getPD(pid); var l = (pd && pd.project && pd.project.tasks) || []; for (var i = 0; i < l.length; i++) if (l[i] && l[i].id === taskId) t = l[i]; }
+    if (!t) { toast('Demande introuvable'); return; }
+    window.cliOpenAddTask(pid, '', t);
   };
 
   function cliDoAddTask(pid) {
