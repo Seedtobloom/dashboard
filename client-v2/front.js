@@ -4980,10 +4980,15 @@ function stbFmtMin(min) {
         var propChipsHtml = propChip(briefRaw, STATUT_COL) + statusPill;
         var _stIcMap = { todo:'clock', in_progress:'zap', review:'chat', done:'check' };
         var _stIc = cpIcon(_stIcMap[t.status] || 'clock', 12, 'color:' + sm.color + ';flex-shrink:0');
+        // Dupliquer sans ouvrir : l'icône vit sur la carte elle-même. Elle arrête
+        // le clic (sinon le panneau s'ouvrirait) et le glisser (sinon attraper
+        // l'icône déplacerait la demande dans le calendrier).
+        var dupBtn = '<button draggable="false" onmousedown="event.stopPropagation()" ondragstart="event.preventDefault();event.stopPropagation()" onclick="event.stopPropagation();cliDupliquerDemande(\''+t.id+'\',\''+pid+'\')" title="Dupliquer cette demande" style="margin-left:auto;flex-shrink:0;width:21px;height:21px;border:1px solid rgba(17,7,4,0.12);border-radius:6px;background:rgba(255,255,255,0.85);color:#5A2A11;cursor:pointer;font-size:11px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center">⧉</button>';
         return '<div draggable="true" ondragstart="cliDragStart(event,\''+t.id+'\')" onclick="event.stopPropagation();cliOpenTaskDrawer(\''+pid+'\',\''+t.id+'\')" style="padding:8px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(65,47,33,0.09);background:'+(isDone?'#F8F6F2':'#ffffff')+';cursor:pointer;margin-top:5px;'+(isActive?'box-shadow:none':'')+'">' +
           '<div style="display:flex;align-items:center;gap:5px">' +
             _stIc +
-            '<span title="'+esc(t.title)+'" style="font-size:13px;font-weight:600;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            '<span title="'+esc(t.title)+'" style="flex:1;min-width:0;font-size:13px;font-weight:600;color:'+(isDone?'#F8F6F2':'var(--terre,#110704)')+';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;'+(isDone?'text-decoration:line-through':'')+'">'+esc(t.title)+'</span>' +
+            dupBtn +
           '</div>' +
           (t.dueDate ? '<div style="font-size:10px;color:#5A2A11;margin-top:2px">'+fmtDate(t.dueDate)+timeLbl+'</div>' : '') +
           (propChipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'+propChipsHtml+'</div>' : '') +
