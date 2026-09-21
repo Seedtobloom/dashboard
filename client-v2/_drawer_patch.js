@@ -128,6 +128,9 @@
     // Actions
     var actions =
       '<button onclick="cliEditPartTask(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:1.5px solid var(--terre,#110704);border-radius:10px;background:none;color:var(--terre,#110704);cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Modifier ma demande</button>'+
+      // Dupliquer est ici aussi : depuis le calendrier, c'est par ce panneau
+      // qu'on ouvre une demande, et c'est donc là qu'on s'en sert de modèle.
+      '<button onclick="cliDupliquerDemande(\''+t.id+'\',\''+pid+'\')" style="width:100%;padding:12px;border:1.5px solid var(--bone-d,#F8F6F2);border-radius:10px;background:none;color:var(--navy,#110704);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px">Dupliquer cette demande</button>'+
       '<button onclick="cliMarkDoneAndNotify(\''+pid+'\',\''+t.id+'\')" style="width:100%;padding:12px;border:none;border-radius:10px;background:#F8F6F2;color:#110704;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:10px">Marquer terminé &amp; prévenir</button>'+
       '<div style="display:flex;gap:8px">'+
         '<button onclick="cliPatchTask(\''+pid+'\',\''+t.id+'\',{pinned:'+(t.pinned?'false':'true')+'})" style="flex:1;padding:8px;border:1px solid #F8F6F2;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--navy,#110704)">'+(t.pinned?'Désépingler':'Épingler')+'</button>'+

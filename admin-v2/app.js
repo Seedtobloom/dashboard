@@ -7355,9 +7355,9 @@
         var cols = rows[0] || [];
         // Réordonnable seulement si le bloc porte un identifiant : sans lui, le
         // serveur ne saurait pas QUEL tableau déplacer.
-        if (!editable || !b.id) return admPrettyTable(cols, rows.slice(1), null, b.zebra);
+        if (!editable || !b.id) return admPrettyTable(cols, rows.slice(1), null, b.zebra, b.zebraBg);
         var tid = tblId(t.id, b.id);
-        TBL_REG[tid] = { key: CK, taskId: t.id, blockId: b.id, cols: cols, src: rows, entete: 1, zebre: b.zebra };
+        TBL_REG[tid] = { key: CK, taskId: t.id, blockId: b.id, cols: cols, src: rows, entete: 1, zebre: b.zebra, teinte: b.zebraBg };
         return tblWrap(tid);
       }
       return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
@@ -7438,12 +7438,12 @@
         '<button class="btn btn--dark btn--sm" onclick="ADM.tblSave(\'' + id + '\')">Enregistrer l\'ordre</button>'
       : '<button class="btn btn--outline btn--sm" title="Changer l\'ordre des lignes de ce tableau" onclick="ADM.tblStart(\'' + id + '\')">⇅ Déplacer les lignes</button>') +
       '</div>';
-    return '<div id="' + id + '">' + barre + admPrettyTable(r.cols, vue, actif ? id : null, r.zebre) + '</div>';
+    return '<div id="' + id + '">' + barre + admPrettyTable(r.cols, vue, actif ? id : null, r.zebre, r.teinte) + '</div>';
   }
 
   // zebre : une ligne sur deux teintée. Le réglage appartient au tableau (la
   // cliente peut le couper depuis son espace) ; par défaut il est actif.
-  function admPrettyTable(cols, dataRows, moveId, zebre) {
+  function admPrettyTable(cols, dataRows, moveId, zebre, teinte) {
     cols = Array.isArray(cols) ? cols : [];
     dataRows = Array.isArray(dataRows) ? dataRows : [];
     if (!cols.length) return '';
@@ -7462,7 +7462,7 @@
     }).join('') + '</tr>';
     var bodyR = dataRows.map(function (row, ri) {
       var even = (zebre !== false) && ri % 2 === 1, last = ri === dataRows.length - 1;
-      var rowBg = even ? '#FBF4E7' : 'var(--card)';
+      var rowBg = even ? (teinte || '#FBF4E7') : 'var(--card)';
       var td0 = '';
       if (moveId) {
         var mid = '\'' + moveId + '\',' + ri;

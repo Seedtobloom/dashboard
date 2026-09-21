@@ -306,21 +306,71 @@
     stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
   };
   // Couleur de fond d'un bloc.
-  var STB_BLOCK_BG = ['', '#F8F6F2', '#C5DEFF', '#C5DEFF', '#F8F6F2', '#F8F6F2', '#F8F6F2', '#F8F6F2', '#C5DEFF', '#F8F6F2', '#F8F6F2', '#110704'];
-  window.stbBlockBg = function(pid, taskId, blockId){
-    var old = document.getElementById('stb-bg-pop'); if (old && old.parentNode) old.parentNode.removeChild(old);
+  /* ── Palette ─────────────────────────────────────────────────────────────
+   * Douze teintes DISTINCTES, tirées de la charte. L'ancienne liste répétait
+   * deux couleurs sur douze cases : cliquer sur des pastilles différentes
+   * donnait le même résultat, d'où l'impression que le réglage ne marchait pas.
+   * Le jaune n'apparaît jamais en aplat : seulement des crèmes et des sables.
+   */
+  var STB_BLOCK_BG = ['', '#F8F6F2', '#F3EFE8', '#FBF4E7', '#EFE6D6', '#E8F1FF',
+                      '#C5DEFF', '#F7E7DD', '#EFD3C3', '#E7EEE6', '#F5E4E1', '#110704'];
+  // Pour les lignes alternées, on ne propose que des teintes claires : une
+  // ligne sur deux en ébène rendrait le texte illisible.
+  var STB_ZEBRA_BG = ['#F8F6F2', '#F3EFE8', '#FBF4E7', '#EFE6D6', '#E8F1FF',
+                      '#C5DEFF', '#F7E7DD', '#E7EEE6'];
+  var STB_ZEBRA_DEFAUT = '#FBF4E7';
+
+  /* Une seule palette pour tout ce qui se colore : fond d'un bloc, lignes
+   * alternées d'un tableau. Deux popups séparés auraient fini par diverger. */
+  var stbPaletteCb = null;
+  function stbFermerPalette(){
+    var old = document.getElementById('stb-bg-pop');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+  }
+  window.stbPaletteChoix = function(c){
+    var f = stbPaletteCb; stbPaletteCb = null; stbFermerPalette();
+    if (f) f(c);
+  };
+  function stbOuvrirPalette(ancreId, couleurs, actuelle, cb){
+    stbFermerPalette();
+    stbPaletteCb = cb;
     var pop = document.createElement('div'); pop.id = 'stb-bg-pop';
-    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid #F8F6F2;border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px';
-    pop.innerHTML = STB_BLOCK_BG.map(function(c){
-      var isNone = !c;
-      var sw = isNone ? 'background:#fff;border:1px solid #ddd;position:relative' : 'background:'+c+';border:1px solid rgba(0,0,0,0.1)';
-      var cross = isNone ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#5A2A11;font-size:13px">⦸</span>' : '';
-      return '<button type="button" title="'+(isNone?'Aucune':c)+'" onmousedown="event.preventDefault()" onclick="window.stbSetBlockBg(\''+pid+'\',\''+taskId+'\',\''+blockId+'\',\''+c+'\')" style="width:24px;height:24px;border-radius:7px;cursor:pointer;padding:0;'+sw+'">'+cross+'</button>';
+    pop.style.cssText = 'position:absolute;z-index:99998;background:#fff;border:1px solid var(--bone-d,#F8F6F2);border-radius:12px;box-shadow:0 12px 30px -10px rgba(28,18,5,0.3);padding:9px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px';
+    pop.innerHTML = couleurs.map(function(c){
+      var aucune = !c;
+      var choisie = (c || '') === (actuelle || '');
+      var fond = aucune
+        ? 'background:#fff;border:1px solid var(--bone-d,#F8F6F2);position:relative'
+        : 'background:'+c+';border:1px solid rgba(17,7,4,0.14)';
+      var croix = aucune ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#5A2A11;font-size:13px">⦸</span>' : '';
+      var marque = choisie ? 'box-shadow:0 0 0 2px #110704;' : '';
+      return '<button type="button" title="'+(aucune?'Aucune':c)+'" onmousedown="event.preventDefault()" onclick="window.stbPaletteChoix(\''+c+'\')" style="width:26px;height:26px;border-radius:8px;cursor:pointer;padding:0;'+marque+fond+'">'+croix+'</button>';
     }).join('');
     document.body.appendChild(pop);
-    var btn = document.getElementById('stb-bgbtn-' + blockId);
-    if (btn){ var r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + window.pageYOffset + 4) + 'px'; pop.style.left = Math.max(8, r.left + window.pageXOffset - 10) + 'px'; }
-    setTimeout(function(){ function close(ev){ if (!pop.contains(ev.target)){ if (pop.parentNode) pop.parentNode.removeChild(pop); document.removeEventListener('mousedown', close); } } document.addEventListener('mousedown', close); }, 0);
+    var btn = document.getElementById(ancreId);
+    if (btn){ var r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + window.pageYOffset + 5) + 'px'; pop.style.left = Math.max(8, r.left + window.pageXOffset - 10) + 'px'; }
+    setTimeout(function(){
+      function close(ev){ if (!pop.contains(ev.target)){ stbPaletteCb = null; stbFermerPalette(); document.removeEventListener('mousedown', close); } }
+      document.addEventListener('mousedown', close);
+    }, 0);
+  }
+
+  window.stbBlockBg = function(pid, taskId, blockId){
+    var b0 = (cliTaskById(pid, taskId) || {}).blocks || [];
+    var bloc = b0.find ? b0.find(function(x){ return x.id === blockId; }) : null;
+    stbOuvrirPalette('stb-bgbtn-' + blockId, STB_BLOCK_BG, bloc && bloc.bg, function(c){
+      window.stbSetBlockBg(pid, taskId, blockId, c);
+    });
+  };
+  // Couleur des lignes alternées, tableau par tableau.
+  window.stbZebraBg = function(pid, taskId, blockId){
+    var b = stbTableBlock(pid, taskId, blockId); if (!b) return;
+    stbOuvrirPalette('stb-zbtn-' + blockId, STB_ZEBRA_BG, b.zebraBg || STB_ZEBRA_DEFAUT, function(c){
+      if (!c) return;
+      if (c === STB_ZEBRA_DEFAUT) delete b.zebraBg; else b.zebraBg = c;
+      delete b.zebra;            // choisir une couleur rallume le zébrage
+      stbBlocksSave(pid, taskId); stbRenderBlocks(pid, taskId);
+    });
   };
   window.stbSetBlockBg = function(pid, taskId, blockId, color){
     var t = cliTaskById(pid, taskId); if (!t || !Array.isArray(t.blocks)) return;
@@ -516,11 +566,10 @@
     _stbPh.textContent = '[data-stb-rich]:focus:empty:before{content:attr(data-ph);color:var(--terre-400,rgba(17,7,4,.5));pointer-events:none}'
       + '[data-stb-rich] i,[data-stb-rich] em{font-style:italic}'
       + '[data-stb-rich] a{color:#5A2A11;text-decoration:underline;cursor:pointer}'
-      + '.stb-row .stb-ctrl{opacity:.62;transition:opacity .12s}'
-      + '.stb-row:hover .stb-ctrl{opacity:1}'
-      + '.stb-ctrl button:hover{background:#C5DEFF!important;border-color:#C5DEFF!important;color:#110704!important}'
-      + '.stb-del{opacity:.62;transition:opacity .12s,background .12s,color .12s}'
-      + '.stb-row:hover .stb-del{opacity:1}'
+      + '.stb-row .stb-ctrl{opacity:1}'
+      + '.stb-ctrl button{box-shadow:0 1px 2px rgba(17,7,4,.08)}'
+      + '.stb-ctrl button:hover{background:#C5DEFF!important;border-color:#8FB9E8!important;color:#110704!important}'
+      + '.stb-del{opacity:1;box-shadow:0 1px 2px rgba(17,7,4,.08)}'
       + '.stb-del:hover{opacity:1;background:#F0D9D2!important;color:#8D2B21!important}'
       + '.stb-tbtn{font-size:11.5px;padding:6px 12px;border:1px solid var(--bone-d,#F8F6F2);border-radius:8px;background:#fff;color:var(--navy,#110704);cursor:pointer;display:inline-flex;align-items:center;gap:6px}'
       + '.stb-tbtn:hover{background:#F8F6F2}'
@@ -580,17 +629,17 @@
     return '<input id="stb-f-'+b.id+'" value="'+esc(stbPlain(b.text))+'" onkeydown="window.stbBlockKey(event,\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" oninput="window.stbBlockInput(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" onchange="window.stbBlockSet(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',this.value)" placeholder="'+ph+'" style="flex:1;border:none;outline:none;background:none;font-size:14px;line-height:1.55;color:var(--navy,#110704);box-sizing:border-box;padding:5px 2px;'+(extra||'')+'">';
   }
   function stbBlockRow(pid, taskId, b, i, n, num){
-    var ctrlBtn = 'width:24px;height:22px;border:1px solid var(--bone-d,#F8F6F2);border-radius:6px;background:#fff;color:#5A2A11;cursor:pointer;font-size:12px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center';
+    var ctrlBtn = 'width:28px;height:26px;border:1px solid #DCCFBC;border-radius:7px;background:#F8F6F2;color:#5A2A11;cursor:pointer;font-size:13px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center';
     var ctrl = '<div class="stb-ctrl" style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:4px">'+
       '<button title="Monter" '+(i===0?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',-1)">↑</button>'+
       '<button title="Descendre" '+(i===n-1?'disabled style="opacity:0.3;':'style="')+ctrlBtn+'" onclick="window.stbBlockMove(\''+pid+'\',\''+taskId+'\',\''+b.id+'\',1)">↓</button>'+
       // La couleur choisie se montre telle quelle : une pastille remplie, pas un
       // rond coloré qu'on ne distingue pas du fond blanc.
       '<button id="stb-bgbtn-'+b.id+'" title="Couleur de fond du bloc" style="'+ctrlBtn+'" onclick="window.stbBlockBg(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')">'+
-        '<span style="width:13px;height:13px;border-radius:4px;display:block;'+(b.bg?'background:'+esc(b.bg)+';border:1px solid rgba(17,7,4,0.18)':'background:linear-gradient(135deg,#fff 46%,#CD8F6E 46%,#CD8F6E 54%,#fff 54%);border:1px solid var(--bone-d,#F8F6F2)')+'"></span>'+
+        '<span style="width:15px;height:15px;border-radius:5px;display:block;'+(b.bg?'background:'+esc(b.bg)+';border:1px solid rgba(17,7,4,0.18)':'background:linear-gradient(135deg,#fff 46%,#CD8F6E 46%,#CD8F6E 54%,#fff 54%);border:1px solid var(--bone-d,#F8F6F2)')+'"></span>'+
       '</button>'+
     '</div>';
-    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:24px;height:24px;border:1px solid #F8F6F2;border-radius:7px;background:#F8F6F2;color:#5A2A11;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
+    var del = '<button class="stb-del" title="Supprimer ce bloc" onclick="window.stbBlockDel(\''+pid+'\',\''+taskId+'\',\''+b.id+'\')" style="flex-shrink:0;width:28px;height:26px;border:1px solid #E7D3CC;border-radius:7px;background:#F7EBE7;color:#8D2B21;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
     var inner;
     if (b.type === 'sep') {
       inner = '<div style="flex:1;display:flex;align-items:center;min-height:28px"><hr style="width:100%;border:none;border-top:2px dashed var(--bone-d,#F8F6F2);margin:0"></div>';
@@ -643,9 +692,10 @@
       // Une ligne sur deux teintée : c'est ce qui rend un long tableau lisible.
       // Actif par défaut, débrayable tableau par tableau.
       var zebre = b.zebra !== false;
+      var teinte = b.zebraBg || STB_ZEBRA_DEFAUT;
       var tbody = b.rows.slice(1).map(function(row, ri){
         var rr = ri + 1;
-        var fond = (zebre && ri % 2 === 1) ? '#FBF4E7' : '#fff';
+        var fond = (zebre && ri % 2 === 1) ? teinte : '#fff';
         return '<tr data-zebre="'+fond+'" style="background:'+fond+'" ondragover="window.stbDragOver(event,\'row\','+rr+','+dB+')" ondragleave="window.stbDragLeave(event)" ondrop="window.stbDrop(event,'+dA+',\'row\','+rr+')">'+
           '<td style="border:none;width:22px;text-align:center;vertical-align:top"><span draggable="true" ondragstart="window.stbDragStart(event,\'row\','+rr+','+dB+')" ondragend="window.stbDragEnd(event)" title="Glisser pour déplacer la ligne" style="'+poignee+';display:inline-block;margin-top:9px">⠿</span></td>' + row.map(function(c, ci){
           return '<td style="border:1px solid var(--bone-d,#F8F6F2);padding:0;vertical-align:top"><div contenteditable="true" data-stb-rich="1" data-pid="'+pid+'" data-tid="'+taskId+'" data-bid="'+b.id+'" data-r="'+rr+'" data-c="'+ci+'" data-ph="…" onfocus="window.stbCellFocus(this)" oninput="window.stbCellInput(this)" onblur="window.stbCellBlur(this)" style="min-height:34px;font-family:inherit;font-size:13px;line-height:1.45;color:var(--navy,#110704);padding:7px 9px;box-sizing:border-box;outline:none;word-break:break-word;white-space:pre-wrap">'+stbCellToHtml(c)+'</div></td>';
@@ -657,10 +707,12 @@
           '<button class="stb-tbtn" onclick="window.stbTableAddCol('+dA+')">+ Colonne</button>'+
           '<button class="stb-tbtn'+(zebre?' stb-tbtn--on':'')+'" title="Colorer une ligne sur deux" onclick="window.stbTableZebra('+dA+')">'+
             '<span style="display:inline-flex;flex-direction:column;gap:1px">'+
-              '<span style="width:11px;height:3px;border-radius:1px;background:#FBF4E7;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
+              '<span style="width:11px;height:3px;border-radius:1px;background:'+esc(teinte)+';box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
               '<span style="width:11px;height:3px;border-radius:1px;background:#fff;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
-              '<span style="width:11px;height:3px;border-radius:1px;background:#FBF4E7;box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
+              '<span style="width:11px;height:3px;border-radius:1px;background:'+esc(teinte)+';box-shadow:inset 0 0 0 1px rgba(17,7,4,.14)"></span>'+
             '</span>Lignes alternées</button>'+
+          '<button id="stb-zbtn-'+b.id+'" class="stb-tbtn" title="Choisir la couleur des lignes alternées" onclick="window.stbZebraBg('+dA+')">'+
+            '<span style="width:15px;height:15px;border-radius:5px;display:block;background:'+esc(teinte)+';border:1px solid rgba(17,7,4,0.18)"></span>Couleur</button>'+
           '<span style="font-size:11px;color:var(--terre-400,rgba(17,7,4,.45));margin-left:2px">Glisse la poignée pour déplacer une ligne ou une colonne.</span>'+
         '</div></div>';
     } else if (b.type === 'link') {
