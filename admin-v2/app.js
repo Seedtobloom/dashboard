@@ -7322,7 +7322,7 @@
   // Rendu lecture seule du contenu par blocs (brief rédigé par la cliente dans
   // son éditeur type Notion). Affiché en entier côté admin — jamais tronqué —
   // avec les tableaux visibles.
-  function ptBlocksHtml(t, keyOverride, label) {
+  function ptBlocksHtml(t, keyOverride, label, editable) {
     var blocks = Array.isArray(t.blocks) ? t.blocks : [];
     if (!blocks.length) return '';
     var CK = keyOverride || CURKEY;
@@ -7353,7 +7353,12 @@
         var rows = Array.isArray(b.rows) ? b.rows : [];
         if (!rows.length) return '';
         var cols = rows[0] || [];
-        return admPrettyTable(cols, rows.slice(1));
+        // Réordonnable seulement si le bloc porte un identifiant : sans lui, le
+        // serveur ne saurait pas QUEL tableau déplacer.
+        if (!editable || !b.id) return admPrettyTable(cols, rows.slice(1));
+        var tid = tblId(t.id, b.id);
+        TBL_REG[tid] = { key: CK, taskId: t.id, blockId: b.id, cols: cols, src: rows, entete: 1 };
+        return tblWrap(tid);
       }
       return '<div style="font-size:14px;line-height:1.6;color:var(--terre-600);white-space:pre-wrap;margin:6px 0">' + admRichSafe(b.text || '') + '</div>';
     }
@@ -7368,7 +7373,75 @@
   // Rendu embelli d'un tableau du client (carrousel de Marie, etc.) : structure
   // GARDÉE, mais sans bordure — en-tête marron foncé, lignes alternées chaudes,
   // colonne « Visuel » en lavande, « Titre » en serif, 1re colonne courte en pastille.
-  function admPrettyTable(cols, dataRows) {
+  // ── Déplacer les lignes d'un tableau du brief ────────────────────────────
+  // Les lignes bougent d'abord À L'ÉCRAN, sans rien écrire. On enregistre une
+  // seule fois, à la fin : réorganiser un tableau de douze lignes coûte donc
+  // UNE écriture et non douze. La réserve KV est comptée.
+  //
+  // Le tableau appartient à la cliente : l'ordre qu'on pose ici est celui
+  // qu'elle verra. On ne touche à rien d'autre que l'ordre, et un point de
+  // restauration du brief est posé côté serveur avant chaque enregistrement.
+  var TBL_REG = {};   // identifiant du tableau -> de quoi le redessiner
+  var TBL = null;     // réorganisation en cours : { id, ordre }
+
+  function tblId(taskId, blockId) { return 'tbl-' + taskId + '-' + (blockId || 'x'); }
+  function tblRows(r) { return r.src.slice(r.entete); }
+  function tblPaint(id) { var n = el(id); if (n) n.outerHTML = tblWrap(id); }
+
+  function tblStart(id) {
+    if (!TBL_REG[id]) return;
+    var avant = TBL && TBL.id;
+    TBL = { id: id, ordre: tblRows(TBL_REG[id]).map(function (_, i) { return i; }) };
+    // Un seul tableau en réorganisation à la fois : sinon on ne sait plus ce
+    // qu'on est en train de bouger.
+    if (avant && avant !== id) tblPaint(avant);
+    tblPaint(id);
+  }
+  function tblCancel(id) { TBL = null; tblPaint(id); }
+  function tblMove(id, i, d) {
+    if (!TBL || TBL.id !== id) return;
+    var j = i + d;
+    if (j < 0 || j >= TBL.ordre.length) return;
+    var o = TBL.ordre, t = o[i]; o[i] = o[j]; o[j] = t;
+    tblPaint(id);
+  }
+  function tblSave(id) {
+    var r = TBL_REG[id];
+    if (!r || !TBL || TBL.id !== id) return;
+    var ordre = TBL.ordre.slice();
+    jpost('/api/clients/' + r.key + '/tasks/' + r.taskId + '/table-order',
+      { projectId: 'partner', blockId: r.blockId || '', order: ordre }).then(function (res) {
+      if (!res || !res.ok) { toast('Erreur'); return; }
+      // On applique le même ordre à la copie locale (le tableau VIVANT de la
+      // fiche), pour ne pas avoir à tout recharger depuis le serveur.
+      var avant = tblRows(r);
+      var apres = ordre.map(function (i) { return avant[i]; });
+      Array.prototype.splice.apply(r.src, [r.entete, avant.length].concat(apres));
+      TBL = null;
+      tblPaint(id);
+      toast('Ordre enregistré ✓');
+    }).catch(function () { toast('Erreur'); });
+  }
+
+  function tblWrap(id) {
+    var r = TBL_REG[id];
+    if (!r) return '';
+    var data = tblRows(r);
+    // Si la fiche a été rechargée pendant une réorganisation, l'ordre en cours
+    // ne correspond plus aux lignes : on repart proprement du tableau réel.
+    if (TBL && TBL.id === id && TBL.ordre.length !== data.length) TBL = null;
+    var actif = !!(TBL && TBL.id === id);
+    var vue = actif ? TBL.ordre.map(function (i) { return data[i]; }) : data;
+    var barre = '<div class="tbord">' + (actif
+      ? '<span class="tbord__t">Remonte ou descends les lignes, puis enregistre.</span>' +
+        '<button class="btn btn--outline btn--sm" onclick="ADM.tblCancel(\'' + id + '\')">Annuler</button>' +
+        '<button class="btn btn--dark btn--sm" onclick="ADM.tblSave(\'' + id + '\')">Enregistrer l\'ordre</button>'
+      : '<button class="btn btn--outline btn--sm" title="Changer l\'ordre des lignes de ce tableau" onclick="ADM.tblStart(\'' + id + '\')">⇅ Déplacer les lignes</button>') +
+      '</div>';
+    return '<div id="' + id + '">' + barre + admPrettyTable(r.cols, vue, actif ? id : null) + '</div>';
+  }
+
+  function admPrettyTable(cols, dataRows, moveId) {
     cols = Array.isArray(cols) ? cols : [];
     dataRows = Array.isArray(dataRows) ? dataRows : [];
     if (!cols.length) return '';
@@ -7378,18 +7451,32 @@
       if (visIdx < 0 && /visuel|image|réf|ref\b|illustr/.test(h)) visIdx = i;
       if (titIdx < 0 && /titre|title|nom\b/.test(h)) titIdx = i;
     });
-    var head = '<tr>' + cols.map(function (c, i) {
-      var rnd = (i === 0 ? 'border-top-left-radius:13px;' : '') + (i === cols.length - 1 ? 'border-top-right-radius:13px;' : '');
+    // En réorganisation, une colonne de poignées s'ajoute à gauche : c'est elle
+    // qui porte alors les coins arrondis.
+    var th0 = moveId ? '<th style="background:var(--terre);padding:12px 8px;width:1%;white-space:nowrap;border-top-left-radius:13px"></th>' : '';
+    var head = '<tr>' + th0 + cols.map(function (c, i) {
+      var rnd = (i === 0 && !moveId ? 'border-top-left-radius:13px;' : '') + (i === cols.length - 1 ? 'border-top-right-radius:13px;' : '');
       return '<th style="background:var(--terre);color:var(--paille);font-family:var(--font-micro);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 15px;vertical-align:middle;text-align:' + (i === 0 ? 'center' : 'left') + ';' + rnd + '">' + esc(c || '') + '</th>';
     }).join('') + '</tr>';
     var bodyR = dataRows.map(function (row, ri) {
       var even = ri % 2 === 1, last = ri === dataRows.length - 1;
       var rowBg = even ? '#FBF4E7' : 'var(--card)';
-      return '<tr>' + cols.map(function (c, ci) {
+      var td0 = '';
+      if (moveId) {
+        var mid = '\'' + moveId + '\',' + ri;
+        // Pas de numéro de rang ici : la cliente a souvent déjà sa propre
+        // colonne de numérotation, deux compteurs se contrediraient.
+        td0 = '<td style="padding:12px 8px;vertical-align:top;width:1%;white-space:nowrap;background:' + rowBg + ';' +
+          (last ? 'border-bottom-left-radius:13px;' : '') + '"><div class="tbmv">' +
+          '<button class="tbmv__b" title="Monter cette ligne"' + (ri === 0 ? ' disabled' : '') + ' onclick="ADM.tblMove(' + mid + ',-1)">↑</button>' +
+          '<button class="tbmv__b" title="Descendre cette ligne"' + (last ? ' disabled' : '') + ' onclick="ADM.tblMove(' + mid + ',1)">↓</button>' +
+          '</div></td>';
+      }
+      return '<tr>' + td0 + cols.map(function (c, ci) {
         var val = (row && row[ci] != null) ? row[ci] : '';
         var vis = ci === visIdx;
         var cellBg = vis ? (even ? '#E8F1FF' : '#eaf1fb') : rowBg;
-        var rnd = last ? ((ci === 0 ? 'border-bottom-left-radius:13px;' : '') + (ci === cols.length - 1 ? 'border-bottom-right-radius:13px;' : '')) : '';
+        var rnd = last ? ((ci === 0 && !moveId ? 'border-bottom-left-radius:13px;' : '') + (ci === cols.length - 1 ? 'border-bottom-right-radius:13px;' : '')) : '';
         var raw = String(val).replace(/<[^>]*>/g, '').trim();
         if (ci === 0 && raw && raw.length <= 4) {
           return '<td style="padding:14px 10px;text-align:center;vertical-align:top;background:' + cellBg + ';' + rnd + '"><span style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#F1DCA6;color:#7a5a1e;font-family:var(--font-display);font-style:italic;font-size:16px">' + esc(raw) + '</span></td>';
@@ -7401,9 +7488,18 @@
     }).join('');
     return '<div style="margin:12px 0;overflow-x:auto;border-radius:13px"><table style="border-collapse:separate;border-spacing:0;width:100%;min-width:600px">' + head + bodyR + '</table></div>';
   }
-  function briefTableHtml(table) {
+  function briefTableHtml(table, t, editable) {
     if (!table || !Array.isArray(table.cols) || !table.cols.length) return '';
-    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div>' + admPrettyTable(table.cols, Array.isArray(table.rows) ? table.rows : []) + '</div>';
+    var corps;
+    if (editable && t && t.id) {
+      if (!Array.isArray(table.rows)) table.rows = [];
+      var tid = tblId(t.id, '');
+      TBL_REG[tid] = { key: CURKEY, taskId: t.id, blockId: '', cols: table.cols, src: table.rows, entete: 0 };
+      corps = tblWrap(tid);
+    } else {
+      corps = admPrettyTable(table.cols, Array.isArray(table.rows) ? table.rows : []);
+    }
+    return '<div style="margin-top:14px"><div class="micro" style="margin-bottom:7px">Tableau du client</div>' + corps + '</div>';
   }
   function partnerTasks(d) {
     var raw = Array.isArray(d.content.taches) ? d.content.taches : [];
@@ -7508,7 +7604,9 @@
         be.files.map(function (f) { return '<a class="btn btn--outline btn--sm" href="/api/clients/' + CURKEY + '/files/' + encodeURIComponent(f.key) + '/download" target="_blank">📎 ' + esc(f.name || 'fichier') + '</a>'; }).join('') +
         '</div></div>' : '';
       // Tableau rempli par le client (lecture seule côté admin).
-      var tableHtml = briefTableHtml(t.table);
+      // Seule la fiche cliente autorise le déplacement des lignes : ailleurs
+      // (boîte de réception, priorités) le brief reste en lecture seule.
+      var tableHtml = briefTableHtml(t.table, t, true);
       // bloc « suivi » : statut + chrono, dans un encart doux
       var work = '<div style="background:var(--surface-2);border-radius:13px;padding:14px 16px;margin-top:16px">' +
         '<div class="micro" style="margin-bottom:9px">Où en est cette tâche ?</div>' +
@@ -7567,7 +7665,7 @@
         '</div>' : '';
       // Contenu du brief : on affiche l'éditeur par blocs (complet) s'il existe,
       // sinon l'ancien champ texte. Plus jamais tronqué côté admin.
-      var contentHtml = taskBrief(t).blocks ? ptBlocksHtml(t) : brief;
+      var contentHtml = taskBrief(t).blocks ? ptBlocksHtml(t, null, null, true) : brief;
       return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework || t.clientCommentNotif ? ';box-shadow:var(--shadow-2)' : '') + '">' +
         reworkBanner + header + contentHtml + atts + beHtml + tableHtml + work + review +
         '<div style="' + hair + '"></div>' +
@@ -9676,6 +9774,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
+    tblStart: tblStart, tblCancel: tblCancel, tblMove: tblMove, tblSave: tblSave,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
     emailSave: emailSave, emailReset: emailReset, reglSetTab: reglSetTab, bookingSave: bookingSave, calSave: calSave, calTest: calTest, calDisconnect: calDisconnect, congesAdd: congesAdd, congesDel: congesDel, congesSave: congesSave, wsAdd: wsAdd, wsDel: wsDel, wsSave: wsSave, backupRun: backupRun, backupDownload: backupDownload, backupRestoreOpen: backupRestoreOpen,

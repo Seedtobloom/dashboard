@@ -1793,3 +1793,11 @@ select.cg-in{cursor:pointer}
 .at-dr__cmx{font-size:14.5px;color:var(--terre);margin-top:4px;line-height:1.45}
 .at-dr__cmt--c .at-dr__cmx{background:var(--gold-soft);border-radius:11px;padding:9px 13px;display:inline-block}
 .at-dr__foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:9px;flex-wrap:wrap;flex-shrink:0}
+
+/* Déplacement des lignes d'un tableau du brief (fiche cliente) */
+.tbord{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0 0}
+.tbord__t{font-family:var(--font-micro);font-size:12px;color:var(--muted);margin-right:auto}
+.tbmv{display:flex;gap:3px}
+.tbmv__b{width:25px;height:25px;border:none;border-radius:8px;background:var(--surface-2);color:var(--terre);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tbmv__b:hover:not(:disabled){background:var(--glycine)}
+.tbmv__b:disabled{opacity:0.28;cursor:default}

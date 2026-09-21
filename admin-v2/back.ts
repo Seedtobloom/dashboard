@@ -636,6 +636,57 @@ async function handleClientApi(
     await saveClient(env, key, data);
     return json(copy, 201);
   }
+  // Réordonner les lignes d'un tableau du brief.
+  // Le brief appartient à la cliente : on ne réécrit donc JAMAIS son contenu.
+  // On reçoit une permutation des lignes, on vérifie que c'en est bien une, et
+  // on se contente de les remettre dans cet ordre. Un point de restauration est
+  // posé avant, comme le fait l'éditeur côté cliente.
+  m = sub.match(/^\/tasks\/([a-f0-9]+)\/table-order$/);
+  if (m && method === 'POST') {
+    const body = await readJson(request);
+    const pid = String(body.projectId || url.searchParams.get('projectId') || 'partner');
+    const found = findTask(esp, pid, m[1]);
+    if (!found || !Array.isArray(found.container.taches)) return json({ error: 'Tâche introuvable' }, 404);
+    const t = found.container.taches.find((x: AnyObj) => x.id === m![1]);
+    if (!t) return json({ error: 'Tâche introuvable' }, 404);
+
+    // Deux formes de tableau coexistent : celui d'un bloc du brief (sa
+    // première ligne est l'en-tête) et l'ancien t.table (en-têtes à part).
+    const blockId = body.blockId ? String(body.blockId) : '';
+    let rows: AnyObj[] | null = null;
+    let entete = 0;
+    if (blockId) {
+      const b = (Array.isArray(t.blocks) ? t.blocks : [])
+        .find((x: AnyObj) => x && x.id === blockId && x.type === 'table');
+      if (!b || !Array.isArray(b.rows)) return json({ error: 'Tableau introuvable' }, 404);
+      rows = b.rows; entete = 1;
+    } else if (t.table && typeof t.table === 'object' && Array.isArray(t.table.rows)) {
+      rows = t.table.rows;
+    }
+    if (!rows) return json({ error: 'Tableau introuvable' }, 404);
+
+    const n = rows.length - entete;
+    const ordre = Array.isArray(body.order) ? body.order.map((v: unknown) => Math.round(Number(v))) : [];
+    // Une permutation, rien d'autre : ni ligne perdue, ni ligne dupliquée.
+    const vus = new Set<number>();
+    const valide = ordre.length === n && ordre.every((i: number) => {
+      if (!isFinite(i) || i < 0 || i >= n || vus.has(i)) return false;
+      vus.add(i); return true;
+    });
+    if (!valide) return json({ error: 'Ordre invalide' }, 400);
+
+    if (blockId) {
+      if (!Array.isArray(t.blocksHistory)) t.blocksHistory = [];
+      t.blocksHistory.push({ blocks: JSON.parse(JSON.stringify(t.blocks)), at: nowIso(), by: 'studio' });
+      if (t.blocksHistory.length > 20) t.blocksHistory = t.blocksHistory.slice(-20);
+    }
+    const avant = rows.slice(entete);
+    const apres = ordre.map((i: number) => avant[i]);
+    rows.splice(entete, avant.length, ...apres);
+    await saveClient(env, key, data);
+    return json({ ok: true, rows });
+  }
+
   m = sub.match(/^\/tasks\/([a-f0-9]+)\/comments$/);
   if (m && method === 'POST') return handleTaskComment(request, env, key, data, m[1]);
 
