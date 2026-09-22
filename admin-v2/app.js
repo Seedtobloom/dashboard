@@ -408,7 +408,7 @@
       // « Tâches » réunit l'ancien « Toutes les tâches » (le travail client) et
       // l'ancien « Mes tâches » (le travail de la boîte) : c'était la même
       // question posée à deux endroits, qu'il fallait croiser de tête.
-      ['Mon travail', [['cockpit', 'Accueil (nouveau)'], ['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
+      ['Mon travail', [['cockpit', 'Accueil (nouveau)'], ['cktaches', 'Tâches (nouveau)'], ['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];
@@ -657,6 +657,7 @@
     if (VIEW === 'alltasks') return renderAllTasks();
     if (VIEW === 'done') return renderDone();
     if (VIEW === 'cockpit') return renderCockpit();
+    if (VIEW === 'cktaches') return renderCockpitTaches();
     if (VIEW === 'semaine') return renderMaSemaine();
     if (VIEW === 'visios') return renderVisios();
     if (VIEW === 'plannings') return renderPlannings();
@@ -4633,9 +4634,7 @@
 
   /* ── Rendu ────────────────────────────────────────────────────────────── */
 
-  function renderCockpit() {
-    if (CKP.pret) return renderCockpitBody();
-    setMain(topbar('Accueil') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+  function ckpCharger(apres) {
     Promise.all([
       api('/api/admin/tasks').then(function (r) { return r.json(); }).catch(function () { return {}; }),
       api('/api/admin/planning').then(function (r) { return r.json(); }).catch(function () { return {}; }),
@@ -4647,10 +4646,14 @@
       CKP.dash = res[2] || {};
       CKP.cal = (res[3] && Array.isArray(res[3].events)) ? res[3].events : [];
       CKP.pret = true;
-      renderCockpitBody();
+      apres();
     }).catch(showError);
   }
-  function ckpRefresh() { CKP.pret = false; renderCockpit(); }
+  function renderCockpit() {
+    if (CKP.pret) return renderCockpitBody();
+    setMain(topbar('Accueil') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    ckpCharger(renderCockpitBody);
+  }
 
   function renderCockpitBody() {
     var auj = ckpAuj(), c = ckpCapaciteDu(auj), cap = ckpCap(), s = ckpSemaine();
@@ -4699,10 +4702,7 @@
         '</div>' +
         '<div class="ck-act">' +
           '<button class="btn btn--dark btn--sm" onclick="' + ckpOuvrirArg(t) + '">Ouvrir</button>' +
-          (ckpRestant(t) === null
-            ? '<div class="ck-reste"><input class="inp" id="ck-r-' + esc(t.id) + '" placeholder="1h30" ' +
-              'onkeydown="if(event.key===\'Enter\'){event.preventDefault();ADM.ckpReste(\'' + esc(t.id) + '\');}">' +
-              '<button class="btn btn--outline btn--sm" onclick="ADM.ckpReste(\'' + esc(t.id) + '\')">Noter</button></div>'
+          (ckpRestant(t) === null ? ckpChampReste(t, 'cap')
             : (ap ? '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'semaine\')">Planifier</button>'
                   : '<button class="btn btn--outline btn--sm" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>')) +
         '</div></div>';
@@ -4713,7 +4713,7 @@
       '<div class="ck-cap">' + corps + '</div></section>';
   }
 
-  function ckpSecJournee(c) {
+  function ckpJourneeCorps() {
     var auj = ckpAuj(), items = [];
     ckpTaches().forEach(function (t) {
       (t.slots || []).forEach(function (cr) {
@@ -4745,19 +4745,23 @@
         '<button class="btn btn--outline btn--sm" onclick="' + ckpOuvrirArg(x.t) + '">Ouvrir</button></div>';
     }).join('');
 
-    // Passé l'heure de fin, il ne reste plus de capacité du tout : dire
-    // « engagées sur 0 min » n'aurait aucun sens.
-    var finie = c.certaine <= 0 && c.engagee <= 0;
-    var chapo = finie
-      ? 'Ta journée de travail est derrière toi. Ce qui suit attend demain.'
-      : (c.libre > 0
-        ? ckpDuree(c.libre) + ' de vraie place, plus ' + ckpDuree(c.mobilisable) + ' de marge que tu peux mobiliser si tu l’assumes.'
-        : 'Tout est engagé. Les ' + ckpDuree(c.mobilisable) + ' qui restent sont ta marge : les entamer, c’est supprimer l’amortisseur.');
+    return '<div class="ck-jour">' + (lignes || '<div class="ck-vide">Rien n’est posé aujourd’hui.</div>') + '</div>';
+  }
+  // Passé l'heure de fin, il ne reste plus de capacité du tout : dire
+  // « engagées sur 0 min » n'aurait aucun sens.
+  function ckpChapoJournee(c) {
+    if (c.certaine <= 0 && c.engagee <= 0) return 'Ta journée de travail est derrière toi. Ce qui suit attend demain.';
+    if (c.libre > 0) return ckpDuree(c.libre) + ' de vraie place, plus ' + ckpDuree(c.mobilisable) +
+      ' de marge que tu peux mobiliser si tu l’assumes.';
+    return 'Tout est engagé. Les ' + ckpDuree(c.mobilisable) +
+      ' qui restent sont ta marge : les entamer, c’est supprimer l’amortisseur.';
+  }
+  function ckpSecJournee(c) {
     var droite = c.certaine > 0
       ? '<span class="ck-doux"><b>' + esc(ckpDuree(c.engagee)) + '</b> engagées sur ' + esc(ckpDuree(c.certaine)) + '</span>'
       : '<span class="ck-doux">Journée terminée</span>';
-    return '<section class="ck-sec">' + ckpTitre('Ta journée', esc(chapo), droite) +
-      '<div class="ck-jour">' + (lignes || '<div class="ck-vide">Rien n’est posé aujourd’hui.</div>') + '</div></section>';
+    return '<section class="ck-sec">' + ckpTitre('Ta journée', esc(ckpChapoJournee(c)), droite) +
+      ckpJourneeCorps() + '</section>';
   }
 
   function ckpSecAttention() {
@@ -4847,19 +4851,235 @@
     if (t.src === 'ticket') return '/api/clients/' + t.key + '/tickets/' + t.id;
     return '/api/clients/' + t.key + '/tasks/' + t.id;
   }
-  function ckpReste(id) {
+  // Le champ, écrit une fois, posé où on en a besoin. La zone évite deux
+  // identifiants identiques quand le cap et la liste sont à l'écran ensemble.
+  function ckpChampReste(t, zone) {
+    var a = '\'' + esc(t.id) + '\',\'' + zone + '\'';
+    return '<div class="ck-reste"><input class="inp" id="ck-r-' + zone + '-' + esc(t.id) + '" placeholder="1h30" ' +
+      'onclick="event.stopPropagation()" ' +
+      'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpReste(' + a + ');}">' +
+      '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpReste(' + a + ')">Noter</button></div>';
+  }
+  function ckpReste(id, zone) {
     var t = ckpTaches().filter(function (x) { return x.id === id; })[0];
     if (!t) return;
-    var champ = el('ck-r-' + id);
+    var champ = el('ck-r-' + (zone || 'cap') + '-' + id);
     var min = ckpParseDuree(champ ? champ.value : '');
     if (min === null || min < 0) { toast('Écris par exemple 90, 1h30 ou 1,5'); if (champ) champ.focus(); return; }
     var body = { restMinutes: min };
     if (t.src === 'client') body.projectId = t.projet || 'partner';
     if (t.src === 'ticket') body.projectId = 'maintenance';
     jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
-      if (r && !r.error) { toast('Noté : ' + ckpDuree(min) + ' à faire'); ckpRefresh(); }
+      if (r && !r.error) { toast('Noté : ' + ckpDuree(min) + ' à faire'); CKP.pret = false; renderMain(); }
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     TÂCHES — trois vues de LA MÊME liste.
+       Liste     pour décider : Tâche · Travail restant · Organisation · Échéance
+       Colonnes  pour voir où en est chaque chose
+       Journée   pour exécuter : la chronologie, la même que celle de l'Accueil
+
+     Ce ne sont pas trois écrans. C'est le même jeu de données regardé sous
+     trois angles, avec le MÊME moteur que le cap : une tâche ne peut pas être
+     première ici et cinquième là-bas.
+     ════════════════════════════════════════════════════════════════════════ */
+
+  var CKT = { vue: 'liste', tri: 'priorite', filtre: 'tout', ouverte: null };
+
+  function ckTSetVue(v) { CKT.vue = v; renderCockpitTaches(); }
+  function ckTSetTri(v) { CKT.tri = v; renderCockpitTaches(); }
+  function ckTSetFiltre(v) { CKT.filtre = v; renderCockpitTaches(); }
+  // Un seul panneau ouvert à la fois : sinon l'écran redevient une pile.
+  function ckTOuvrir(id) { CKT.ouverte = CKT.ouverte === id ? null : id; renderCockpitTaches(); }
+
+  function ckTListe() {
+    var l = ckpTaches();
+    if (CKT.filtre === 'clientes') l = l.filter(function (t) { return t.src !== 'perso'; });
+    if (CKT.filtre === 'stb') l = l.filter(function (t) { return t.src === 'perso'; });
+    if (CKT.filtre === 'sansplace') l = l.filter(function (t) { return ckpAPlanifier(t) > 0; });
+    if (CKT.tri === 'echeance') {
+      l.sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
+    } else if (CKT.tri === 'restant') {
+      l.sort(function (a, b) { return (ckpRestant(b) || 0) - (ckpRestant(a) || 0); });
+    } else {
+      // Le tri « priorité » n'est pas un tri de plus : c'est le moteur du cap.
+      l.sort(function (a, b) { return ckpScore(b) - ckpScore(a); });
+    }
+    return l;
+  }
+
+  function renderCockpitTaches() {
+    if (!CKP.pret) {
+      setMain(topbar('Tâches') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+      return ckpCharger(renderCockpitTaches);
+    }
+    var l = ckTListe();
+    var connus = l.filter(function (t) { return ckpRestant(t) !== null; });
+    var restant = connus.reduce(function (s, t) { return s + ckpRestant(t); }, 0);
+    var aPlanifier = connus.reduce(function (s, t) { return s + (ckpAPlanifier(t) || 0); }, 0);
+    var inconnus = l.length - connus.length;
+
+    setMain(topbar('Tâches') +
+      '<div class="wrap ck">' +
+        '<div class="ck-tete"><div><div class="ck-meta">Tâches</div>' +
+          '<h1 class="ck-h1">Tout ce qui reste</h1></div>' +
+          '<div class="ck-date">' + l.length + ' tâches actives · ' + esc(ckpDuree(restant)) + ' à faire' +
+          (aPlanifier ? ' · <b>' + esc(ckpDuree(aPlanifier)) + ' à planifier</b>' : '') +
+          (inconnus ? '<br><span class="ck-inc">' + inconnus + ' sans temps estimé</span>' : '') +
+          '</div></div>' +
+        '<div class="ck-filet"></div>' +
+        ckTBarre() +
+        (CKT.vue === 'liste' ? ckTVueListe(l)
+          : CKT.vue === 'colonnes' ? ckTVueColonnes(l)
+          : ckTVueJournee()) +
+      '</div>');
+  }
+
+  function ckTSegm(courant, choix, geste) {
+    return '<div class="ck-segm">' + choix.map(function (c) {
+      return '<button class="ck-segb ' + (courant === c[0] ? 'on' : '') + '" onclick="ADM.' + geste + '(\'' + c[0] + '\')">' +
+        esc(c[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  function ckTBarre() {
+    return '<div class="ck-barre2">' +
+      ckTSegm(CKT.vue, [['liste', 'Liste'], ['colonnes', 'Colonnes'], ['journee', 'Journée']], 'ckTSetVue') +
+      '<span class="ck-esp"></span>' +
+      ckTSegm(CKT.filtre, [['tout', 'Tout'], ['clientes', 'Clientes'], ['stb', 'Seed to Bloom'], ['sansplace', 'Sans place']], 'ckTSetFiltre') +
+      (CKT.vue === 'liste' ? '<span class="ck-tri"><span class="ck-meta">Trier par</span>' +
+        ckTSegm(CKT.tri, [['priorite', 'Priorité conseillée'], ['echeance', 'Échéance'], ['restant', 'Travail restant']], 'ckTSetTri') + '</span>' : '') +
+      '</div>';
+  }
+
+  /* ── Liste : quatre colonnes, pas une de plus ─────────────────────────── */
+
+  function ckTVueListe(l) {
+    return '<div class="ck-tbl">' +
+      '<div class="ck-th"><span>Tâche</span><span>Travail restant</span><span>Organisation</span><span>Échéance</span><span></span></div>' +
+      (l.length ? l.map(ckTLigne).join('')
+        : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>') +
+      '</div>';
+  }
+  function ckTLigne(t) {
+    var r = ckpRestant(t), ap = ckpAPlanifier(t), pf = ckpPlanifieFutur(t);
+    var org = ap > 0
+      ? '<b class="ck-ap">' + esc(ckpDuree(ap)) + ' à planifier</b>' + (pf ? '<span class="ck-ts">' + esc(ckpDuree(pf)) + ' déjà posées</span>' : '')
+      : (pf ? esc(ckpDuree(pf)) + ' planifiées' + ckTQuandPose(t)
+            : (r === null ? '<span class="ck-doux">à estimer d’abord</span>' : '<span class="ck-doux">Rien à poser</span>'));
+    var ech = !t.echeance ? '<span class="ck-doux">Pas d’échéance</span>'
+      : (t.statut === 'review'
+        // Une échéance dépassée pendant que la cliente a la main n'est pas un
+        // retard de ton fait : elle n'a rien à faire en rouge.
+        ? '<span class="ck-doux">Chez elle depuis ' + esc(ckpQuand(t.echeance)) + '</span>'
+        : (ckpEnRetard(t) ? '<b class="ck-ret">En retard depuis ' + esc(ckpQuand(t.echeance)) + '</b>'
+          : esc(ckpMaj(ckpQuand(t.echeance)))));
+    return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
+      '<div><div class="ck-tt">' + esc(t.titre) + '</div>' +
+        '<div class="ck-ts">' + ckpPuceQui(t) + ' ' + esc(t.ctx || '') + '</div></div>' +
+      '<div>' + (r === null ? '<b class="ck-inc">à estimer</b>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
+      '<div>' + org + '</div>' +
+      '<div>' + ech + '</div>' +
+      '<div class="ck-tra">' + ckTEtat(t) + '<span class="ck-chev">' + (CKT.ouverte === t.id ? '▴' : '▾') + '</span></div>' +
+      '</div>' + (CKT.ouverte === t.id ? ckTPanneau(t) : '');
+  }
+  function ckTQuandPose(t) {
+    var c = (t.slots || []).filter(function (x) { return !ckpCreneauPasse(x); })[0];
+    if (!c) return '';
+    var q = ckpQuand(c.date);
+    var de = /^[aeiouâéèêîôû]/i.test(q) ? 'd’' + q : 'de ' + q;
+    return '<span class="ck-ts">à partir ' + esc(de) + ' ' + esc(ckpHM(c.start || 0)) + '</span>';
+  }
+  function ckTEtat(t) {
+    if (t.statut === 'review') return '<span class="ck-puce ck-puce--ca">Chez la cliente</span>';
+    if (ckpEnRetard(t)) return '<span class="ck-puce ck-puce--al">En retard</span>';
+    if (t.statut === 'in_progress') return '<span class="ck-puce ck-puce--ac">En cours</span>';
+    // Sans temps connu, on ne peut pas dire « planifié » : on ne sait pas si
+    // ce qui est posé suffit.
+    if (ckpRestant(t) === null) return '<span class="ck-puce">À estimer</span>';
+    if (ckpAPlanifier(t) > 0) return '<span class="ck-puce">À planifier</span>';
+    return '<span class="ck-puce">Planifié</span>';
+  }
+
+  /* ── Le panneau : compact, sous la ligne, jamais un tiroir de plus ────── */
+
+  function ckTPanneau(t) {
+    var r = ckpRestant(t), prev = (r === null) ? null : t.reel + r;
+    var ecart = (prev === null || !t.estim) ? null : prev - t.estim;
+    var futurs = (t.slots || []).filter(function (c) { return !ckpCreneauPasse(c); });
+    return '<div class="ck-pan" onclick="event.stopPropagation()">' +
+      '<div class="ck-pang">' +
+        '<div><div class="ck-meta">Les trois temps</div>' +
+          '<div class="ck-pl"><span>Estimation initiale</span><b>' + (t.estim ? esc(ckpDuree(t.estim)) : '—') + '</b></div>' +
+          '<div class="ck-pl"><span>Déjà passé</span><b>' + esc(ckpDuree(t.reel)) + '</b></div>' +
+          '<div class="ck-pl"><span>Encore nécessaire</span><b>' + (r === null ? '<span class="ck-inc">à estimer</span>' : esc(ckpDuree(r))) + '</b></div>' +
+          '<div class="ck-pl ck-pl--t"><span>Prévision totale</span><b>' + (prev === null ? '—' : esc(ckpDuree(prev))) + '</b></div>' +
+          (ecart ? '<div class="ck-pe">' + (ecart > 0 ? '+' : '−') + esc(ckpDuree(Math.abs(ecart))) +
+            ' par rapport à ce que tu avais prévu au départ. L’estimation initiale n’a pas bougé : c’est elle qui te permet de voir l’écart.</div>' : '') +
+        '</div>' +
+        '<div><div class="ck-meta">Combien de temps te faut-il encore ?</div>' +
+          ckpChampReste(t, 'pan') +
+          '<div class="ck-pn">On ne te demande jamais « combien ça va prendre en tout ». Seulement ce qu’il te reste.</div>' +
+        '</div>' +
+        '<div><div class="ck-meta">Quand</div>' +
+          (futurs.length ? futurs.map(function (c) {
+            return '<div class="ck-pcr">' + esc(ckpMaj(ckpQuand(c.date))) + ' · ' + esc(ckpHM(c.start || 0)) +
+              ' → ' + esc(ckpHM(ckpFinCreneau(c))) + '<b>' + esc(ckpDuree(c.minutes || 0)) + '</b></div>';
+          }).join('') : '<div class="ck-pcr ck-pcr--v">Aucun créneau à venir</div>') +
+          (ckpAPlanifier(t) ? '<div class="ck-pn ck-ap">Il reste <b>' + esc(ckpDuree(ckpAPlanifier(t))) + '</b> sans créneau.</div>' : '') +
+          '<button class="btn btn--outline btn--sm" style="margin-top:10px" onclick="ADM.nav(\'semaine\')">Poser un créneau</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ck-pp">' +
+        '<button class="btn btn--dark btn--sm" onclick="' + ckpOuvrirArg(t) + '">Ouvrir</button>' +
+        '<span class="ck-ppq">' + esc(ckTPourquoi(t)) + '</span>' +
+      '</div></div>';
+  }
+  // Pourquoi cette tâche est là où elle est. Toujours dicible : si on ne sait
+  // pas l'expliquer, c'est que le classement n'a pas de sens.
+  function ckTPourquoi(t) {
+    var s = ckpSignaux(t);
+    if (!s.length) return 'Rien ne la presse aujourd’hui.';
+    return s.slice(0, 2).map(function (x) { return x.texte; }).join(' · ');
+  }
+
+  /* ── Colonnes : où en est chaque chose ───────────────────────────────── */
+
+  function ckTVueColonnes(l) {
+    var cols = [
+      ['Sans place', function (t) { return ckpAPlanifier(t) > 0; }],
+      ['À estimer', function (t) { return ckpRestant(t) === null; }],
+      ['En cours', function (t) { return t.statut === 'in_progress'; }],
+      ['Chez la cliente', function (t) { return t.statut === 'review'; }],
+      ['Planifié', function () { return true; }]
+    ];
+    var pris = {};
+    return '<div class="ck-cols">' + cols.map(function (c) {
+      var dedans = l.filter(function (t) { return !pris[t.id] && c[1](t); });
+      dedans.forEach(function (t) { pris[t.id] = 1; });
+      var min = dedans.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
+      return '<div class="ck-col"><div class="ck-colh"><span class="ck-meta">' + esc(c[0]) + '</span>' +
+        '<span class="ck-colc">' + dedans.length + (min ? ' · ' + esc(ckpDuree(min)) : '') + '</span></div>' +
+        (dedans.length ? dedans.map(ckTCarte).join('') : '<div class="ck-colv">Rien</div>') + '</div>';
+    }).join('') + '</div>';
+  }
+  function ckTCarte(t) {
+    var r = ckpRestant(t);
+    return '<div class="ck-crt" onclick="ADM.ckTSetVue(\'liste\');ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
+      '<div class="ck-crtt">' + esc(t.titre) + '</div>' +
+      '<div class="ck-crtm">' + ckpPuceQui(t) +
+      (r === null ? '<span class="ck-inc">à estimer</span>' : (r ? '<span class="ck-doux">' + esc(ckpDuree(r)) + '</span>' : '')) + '</div>' +
+      (t.echeance ? '<div class="ck-crte ' + (ckpEnRetard(t) ? 'ck-ret' : '') + '">' +
+        esc(ckpEnRetard(t) ? 'En retard' : ckpQuand(t.echeance)) + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ── Journée : exactement la chronologie de l'Accueil ─────────────────── */
+
+  function ckTVueJournee() {
+    var c = ckpCapaciteDu(ckpAuj());
+    return '<p class="ck-chapo2">' + esc(ckpChapoJournee(c)) + '</p>' + ckpJourneeCorps();
   }
 
   function renderMaSemaine() {
@@ -10360,6 +10580,7 @@
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
     tblStart: tblStart, tblCancel: tblCancel, tblMove: tblMove, tblSave: tblSave,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
