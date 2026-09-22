@@ -4593,10 +4593,10 @@
     // ça, aucune capacité n'est honnête.
     var inconnues = ckpTaches().filter(function (t) { return ckpRestant(t) === null && t.statut !== 'review'; });
     if (inconnues.length) {
-      out.push({ g: 44, ton: 'calme',
+      out.push({ g: 44, ton: 'calme', aller: 'ADM.ckTAEstimer()',
         titre: inconnues.length + ' tâche' + (inconnues.length > 1 ? 's' : '') + ' sans temps estimé',
         texte: 'Tant qu’on ne sait pas ce qu’elles demandent, la capacité affichée est optimiste. ' +
-          'Tu peux le dire en une fois depuis « Tâches ».' });
+          'Le champ est sur chaque ligne : tu peux les dire toutes en une fois.' });
     }
 
     // Ce qui attend la cliente depuis trop longtemps.
@@ -4858,7 +4858,7 @@
           '<div><div class="ck-attt"><span class="ck-attp"></span>' + esc(a.titre) + '</div>' +
           '<div class="ck-attx">' + esc(a.texte) + '</div></div>' +
           (a.t ? '<button class="btn btn--outline btn--sm" onclick="' + ckpOuvrirArg(a.t) + '">Ouvrir</button>'
-               : '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'alltasks\')">Voir</button>') +
+               : '<button class="btn btn--outline btn--sm" onclick="' + (a.aller || 'ADM.nav(\'cktaches\')') + '">Voir</button>') +
           '</div>';
       }).join('') + '</div></section>';
   }
@@ -5023,6 +5023,8 @@
   function ckTSetVue(v) { CKT.vue = v; renderCockpitTaches(); }
   function ckTSetTri(v) { CKT.tri = v; renderCockpitTaches(); }
   function ckTSetFiltre(v) { CKT.filtre = v; renderCockpitTaches(); }
+  // Arriver sur l'écran Tâches avec, sous les yeux, exactement ce qui manque.
+  function ckTAEstimer() { CKT.filtre = 'aestimer'; CKT.tri = 'priorite'; nav('cktaches'); }
   // Un seul panneau ouvert à la fois : sinon l'écran redevient une pile.
   // La ligne de tâche sert à deux écrans : l'écran Tâches et la vue d'ensemble
   // d'un projet. Elle redessine celui où l'on se trouve, pas l'autre — sinon
@@ -5037,6 +5039,7 @@
     if (CKT.filtre === 'clientes') l = l.filter(function (t) { return t.src !== 'perso'; });
     if (CKT.filtre === 'stb') l = l.filter(function (t) { return t.src === 'perso'; });
     if (CKT.filtre === 'sansplace') l = l.filter(function (t) { return ckpAPlanifier(t) > 0; });
+    if (CKT.filtre === 'aestimer') l = l.filter(function (t) { return ckpRestant(t) === null; });
     if (CKT.tri === 'echeance') {
       l.sort(function (a, b) { return (a.echeance || '9999') < (b.echeance || '9999') ? -1 : 1; });
     } else if (CKT.tri === 'restant') {
@@ -5092,7 +5095,8 @@
     return '<div class="ck-barre2">' +
       ckTSegm(CKT.vue, [['liste', 'Liste'], ['colonnes', 'Colonnes'], ['journee', 'Journée']], 'ckTSetVue') +
       '<span class="ck-esp"></span>' +
-      ckTSegm(CKT.filtre, [['tout', 'Tout'], ['clientes', 'Clientes'], ['stb', 'Seed to Bloom'], ['sansplace', 'Sans place']], 'ckTSetFiltre') +
+      ckTSegm(CKT.filtre, [['tout', 'Tout'], ['clientes', 'Clientes'], ['stb', 'Seed to Bloom'],
+        ['sansplace', 'Sans place'], ['aestimer', 'À estimer']], 'ckTSetFiltre') +
       (CKT.vue === 'liste' ? '<span class="ck-tri"><span class="ck-meta">Trier par</span>' +
         ckTSegm(CKT.tri, [['priorite', 'Priorité conseillée'], ['echeance', 'Échéance'], ['restant', 'Travail restant']], 'ckTSetTri') + '</span>' : '') +
       '</div>';
@@ -5118,7 +5122,12 @@
       (ecran ? ',\'' + ecran + '\'' : '') + ')">' +
       '<div><div class="ck-eb">' + esc(t.qui + (t.ctx ? ' · ' + t.ctx : '')) + '</div>' +
         '<div class="ck-tt">' + esc(t.titre) + '</div></div>' +
-      '<div>' + (r === null ? '<b class="ck-inc">à estimer</b>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
+      // Quand le temps n'a jamais été dit, on ne se contente pas de l'écrire :
+      // on pose le champ ICI. Le dire était jusqu'ici caché derrière un clic
+      // sur la ligne, et donc introuvable.
+      '<div>' + (r === null
+        ? '<b class="ck-inc">à estimer</b>' + ckpChampReste(t, (ecran || 'lst'))
+        : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
       '<div>' + org + '</div>' +
       '<div>' + ech + '</div>' +
       '<div class="ck-tra">' + ckTEtat(t) + '<span class="ck-chev">' + (CKT.ouverte === t.id ? '▴' : '▾') + '</span></div>' +
@@ -5137,9 +5146,9 @@
     if (t.statut === 'review') return '';
     if (t.statut === 'in_progress') return '<span class="ck-puce ck-puce--ac">En cours</span>';
     if (ckpEnRetard(t)) return '';
-    // Sans temps connu, on ne peut pas dire « planifié » : on ne sait pas si
-    // ce qui est posé suffit.
-    if (ckpRestant(t) === null) return '<span class="ck-puce">À estimer</span>';
+    // « À estimer » est déjà dit par la colonne du travail restant, qui porte
+    // en plus le champ pour y répondre : le répéter ici n'apprendrait rien.
+    if (ckpRestant(t) === null) return '';
     if (ckpAPlanifier(t) > 0) return '<span class="ck-puce">À planifier</span>';
     return '<span class="ck-puce">Planifié</span>';
   }
@@ -11426,6 +11435,7 @@
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
+    ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
