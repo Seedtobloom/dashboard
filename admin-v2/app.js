@@ -4778,7 +4778,7 @@
         '</div>' +
         '<div class="ck-act">' +
           '<button class="btn btn--dark btn--sm" onclick="' + ckpOuvrirArg(t) + '">Ouvrir</button>' +
-          (ckpRestant(t) === null ? ckpChampReste(t, 'cap')
+          (ckpRestant(t) === null ? ckpChampEstim(t, 'cap')
             : (ap ? ckpPlanifierBtn(t, 'Planifier')
                   : '<button class="btn btn--outline btn--sm" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>')) +
           ckpChampFini(t, 'cap') +
@@ -4947,6 +4947,37 @@
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpReste(' + a + ');}">' +
       '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpReste(' + a + ')">Noter</button></div>';
   }
+  /* ── Le temps estimé ────────────────────────────────────────────────────
+     « Combien ça va me prendre ? » C'est la question qu'on se pose en posant
+     la tâche, et c'est celle-là qu'il faut pouvoir répondre en premier.
+     Le travail restant, lui, en découle tant qu'on ne l'a pas corrigé :
+     ckpRestant retombe sur estimation − réel. Deux champs, deux moments, un
+     seul modèle : on ne mélange jamais les trois temps. */
+  function ckpChampEstim(t, zone) {
+    var a = '\'' + esc(t.id) + '\',\'' + zone + '\'';
+    return '<div class="ck-reste"><span class="ck-fl">Estimé</span>' +
+      '<input class="inp" id="ck-e-' + zone + '-' + esc(t.id) + '" placeholder="2 h" aria-label="Temps estimé" ' +
+      'value="' + esc(t.estim > 0 ? ckpDuree(t.estim) : '') + '" ' +
+      'onclick="event.stopPropagation()" ' +
+      'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpEstim(' + a + ');}">' +
+      '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpEstim(' + a + ')">Noter</button></div>';
+  }
+  function ckpEstim(id, zone) {
+    var t = ckpToutes().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var champ = el('ck-e-' + (zone || 'cap') + '-' + id);
+    var min = ckpParseDuree(champ ? champ.value : '');
+    if (min === null || min < 0) { toast('Écris par exemple 2 h, 90 ou 1,5'); if (champ) champ.focus(); return; }
+    // Taper dans un champ nommé « temps estimé » est un geste explicite : il a
+    // le droit de corriger une estimation posée trop vite.
+    var body = { estMinutes: min, forceEst: true };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    if (t.src === 'ticket') body.projectId = 'maintenance';
+    jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+      if (r && !r.error) { toast('Estimé : ' + ckpDuree(min)); CKP.pret = false; renderMain(); }
+      else toast('Erreur');
+    }).catch(function () { toast('Erreur'); });
+  }
   function ckpReste(id, zone) {
     var t = ckpTaches().filter(function (x) { return x.id === id; })[0];
     if (!t) return;
@@ -5107,7 +5138,7 @@
   function ckTVueListe(l) {
     return '<div class="ck-tbl">' +
       '<div class="ck-th"><span>Tâche</span><span>Travail restant</span><span>Organisation</span><span>Échéance</span><span></span></div>' +
-      (l.length ? l.map(ckTLigne).join('')
+      (l.length ? l.map(function (t) { return ckTLigne(t); }).join('')
         : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>') +
       '</div>';
   }
@@ -5125,8 +5156,10 @@
       // Quand le temps n'a jamais été dit, on ne se contente pas de l'écrire :
       // on pose le champ ICI. Le dire était jusqu'ici caché derrière un clic
       // sur la ligne, et donc introuvable.
+      // Rien de connu : on demande ce qu'on se demande vraiment en posant la
+      // tâche, « combien ça va me prendre », pas « combien il me reste ».
       '<div>' + (r === null
-        ? '<b class="ck-inc">à estimer</b>' + ckpChampReste(t, (ecran || 'lst'))
+        ? '<b class="ck-inc">à estimer</b>' + ckpChampEstim(t, (ecran || 'lst'))
         : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
       '<div>' + org + '</div>' +
       '<div>' + ech + '</div>' +
@@ -5163,6 +5196,7 @@
       '<div class="ck-pang">' +
         '<div><div class="ck-meta">Les trois temps</div>' +
           '<div class="ck-pl"><span>Estimation initiale</span><b>' + (t.estim ? esc(ckpDuree(t.estim)) : '—') + '</b></div>' +
+          '<div class="ck-ple">' + ckpChampEstim(t, 'pan') + '</div>' +
           '<div class="ck-pl"><span>Déjà passé</span><b>' + esc(ckpDuree(t.reel)) + '</b></div>' +
           '<div class="ck-pl"><span>Encore nécessaire</span><b>' + (r === null ? '<span class="ck-inc">à estimer</span>' : esc(ckpDuree(r))) + '</b></div>' +
           '<div class="ck-pl ck-pl--t"><span>Prévision totale</span><b>' + (prev === null ? '—' : esc(ckpDuree(prev))) + '</b></div>' +
@@ -5171,7 +5205,7 @@
         '</div>' +
         '<div><div class="ck-meta">Combien de temps te faut-il encore ?</div>' +
           ckpChampReste(t, 'pan') +
-          '<div class="ck-pn">On ne te demande jamais « combien ça va prendre en tout ». Seulement ce qu’il te reste.</div>' +
+          '<div class="ck-pn">Tant que tu ne le corriges pas, le restant découle de ton estimation moins ce que tu as déjà passé. Le corriger ici ne touche jamais à l’estimation de départ : c’est elle qui te permet de voir l’écart.</div>' +
         '</div>' +
         '<div><div class="ck-meta">Quand</div>' +
           (futurs.length ? futurs.map(function (c) {
@@ -11433,7 +11467,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
     ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,

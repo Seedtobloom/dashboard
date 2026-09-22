@@ -2147,3 +2147,4 @@ select.cg-in{cursor:pointer}
 .ck .ck-pan .btn--outline{background:rgba(230,229,178,.1);color:var(--paille)}
 .ck .ck-pan .btn--outline:hover{background:rgba(230,229,178,.18)}
 .ck .ck-pan .btn--dark{background:var(--paille);color:var(--ebene)}
+.ck .ck-ple{margin:6px 0 4px}
