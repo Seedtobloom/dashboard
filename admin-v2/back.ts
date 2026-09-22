@@ -1909,6 +1909,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const qnrDone: AnyObj[] = []; // questionnaires complétés, pas encore consultés
   const qnrAll: AnyObj[] = [];  // TOUS les envois, pour le registre des réponses
   const plannings: AnyObj[] = []; // plannings prévisionnels, tous espaces confondus
+  const projets: AnyObj[] = []; // tous les projets, toutes prestations, une seule structure
   const tasksAll: AnyObj[] = []; // TOUTES les tâches, terminées et archivées comprises
   const weekTasks: AnyObj[] = []; // tâches Partenaire créative actives, à agréger dans « Ma semaine »
   const activeProjects: AnyObj[] = []; // projets en cours (avancement) pour « Tes projets en cours »
@@ -1969,6 +1970,28 @@ async function handleDashboard(env: Env): Promise<Response> {
       push(container.planning, container.planningStart, '', '');
       (Array.isArray(container.creations) ? container.creations : []).forEach((c: AnyObj) => {
         push(c.planning, c.planningStart, String(c.id || ''), String(c.name || ''));
+      });
+    };
+    /* ── Projets, vus comme UNE seule structure ─────────────────────────────
+     * Partenaire créative, site web, identité visuelle, supports de com et
+     * espace tickets sont cinq prestations, pas cinq objets différents : ils
+     * ont tous un client, une prestation, des étapes (parfois vides), un jalon
+     * et du travail. L'écran Projets lit CETTE liste ; les temps, eux, se
+     * recalculent à partir de tasksAll, pour qu'un projet ne puisse jamais
+     * afficher un total que la liste des tâches contredirait.
+     * Aucune lecture KV de plus : on est déjà dans la boucle des clientes. */
+    const collectProjet = (container: AnyObj | null, label: string, projectId: string, prestation: string) => {
+      if (!container) return;
+      const suivi = Array.isArray(container.suivi) ? container.suivi : [];
+      const etapes = suivi.slice(0, 60).map((s: AnyObj) => ({
+        id: String(s.id || ''), title: String(s.title || '').slice(0, 200),
+        status: String(s.status || 'todo'), date: String(s.date || '').slice(0, 10),
+        clientVisible: s.clientVisible !== false,
+      }));
+      projets.push({
+        key: ci.key, client: who, projectId, projectLabel: label, prestation,
+        actif: container.isActive !== false,
+        etapes,
       });
     };
     // livrables : en attente de validation client, ou révision demandée par le client
@@ -2145,21 +2168,25 @@ async function handleDashboard(env: Env): Promise<Response> {
     }
     collectLiv(pc, 'Partenaire créative', 'partner');
     collectPlanning(pc, 'Partenaire créative', 'partner');
+    collectProjet(pc, 'Partenaire créative', 'partner', 'partenaire');
     // étapes de suivi non terminées (site + supports)
     const sw = getDomainObj(esp, 'siteWeb');
     if (sw) (sw.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'website', projectLabel: 'Site web', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
     collectLiv(sw, 'Site web', 'website');
     collectPlanning(sw, 'Site web', 'website');
+    collectProjet(sw, 'Site web', 'website', 'site');
     const iv = getDomainObj(esp, 'identiteVisuelle');
     if (iv) (iv.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'branding', projectLabel: 'Identité visuelle', kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
     collectLiv(iv, 'Identité visuelle', 'branding');
     collectPlanning(iv, 'Identité visuelle', 'branding');
+    collectProjet(iv, 'Identité visuelle', 'branding', 'identite');
     const sd = esp.supportsDeCom && esp.supportsDeCom[0];
     if (sd) for (const pid of Object.keys(sd)) {
       const o = getSupportObj(esp, pid);
       if (o) (o.suivi || []).forEach((s: AnyObj) => { if (s.status !== 'done' && s.date) deadlines.push({ key: ci.key, client: who, project: 'support-' + pid, projectLabel: supportLabel(pid), kind: 'étape', id: s.id, title: s.title, dueDate: s.date, status: s.status, content: s.description || '' }); });
       collectLiv(o, supportLabel(pid), 'support-' + pid);
     collectPlanning(o, supportLabel(pid), 'support-' + pid);
+    collectProjet(o, supportLabel(pid), 'support-' + pid, 'support');
     }
     // Projets en cours (avancement) pour « Tes projets en cours » du cockpit.
     // % = étapes terminées / total ; le partenaire compte ses tâches (hors demandes).
@@ -2190,6 +2217,7 @@ async function handleDashboard(env: Env): Promise<Response> {
     }
     // Tickets de maintenance ouverts : à retrouver dans les Priorités
     const ms = getDomainObj(esp, 'maintenanceSite');
+    collectProjet(ms, 'Espace tickets', 'maintenance', 'maintenance');
     if (ms && Array.isArray(ms.tickets)) ms.tickets.forEach((t: AnyObj) => {
       const tAtts = (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || '' })).filter((a: AnyObj) => a.key);
       const tLivs = (Array.isArray(ms.livrables) ? ms.livrables : []).filter((l: AnyObj) => l.taskId === t.id);
@@ -2254,7 +2282,7 @@ async function handleDashboard(env: Env): Promise<Response> {
   const clientErrorsUnseen = (Array.isArray(errList) ? errList : []).filter((e) => !e.seen).length;
   upcoming.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
   activeProjects.sort((a, b) => String(a.urgency || '9999').localeCompare(String(b.urgency || '9999')));
-  return json({ tasksAll, plannings, qnrAll, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
+  return json({ tasksAll, plannings, projets, qnrAll, deadlines, upcoming, forfaits, pendingValidation, revisions, newTasks, reworkTasks, commentTasks, inbox, validated, qnrDone, weekTasks, activeProjects, clientCount: idx.length, weeklyCapacity, weekTimeMinutes: Math.round(weekTimeMinutes), clientErrorsUnseen });
 }
 
 // Historique : tout ce qui a été terminé (tâches + étapes), avec la date/heure de réalisation.

@@ -2016,3 +2016,38 @@ select.cg-in{cursor:pointer}
 .ckl-proj{background:var(--bone);border-radius:26px;padding:22px 24px}
 .ckl-projf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--text)}
 @media(max-width:900px){.ckl-gr{padding:14px 12px 10px}.ckl-c{min-width:96px}.ckl-r{width:38px}}
+
+/* ── Projets (nouveau) — une seule structure pour cinq prestations ────────
+   Pas de barre sur le côté des lignes : la pastille cliente suffit. */
+.ckj-h,.ckj-l{display:grid;grid-template-columns:2fr 1.7fr 1.1fr 1.2fr;gap:18px;align-items:center}
+.ckj-h{padding:0 24px 9px;font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted)}
+.ckj{background:var(--bone);border-radius:26px;padding:4px 24px 8px}
+.ckj-l{padding:17px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13.5px}
+.ckj-l:last-child{border-bottom:none}
+.ckj-l:hover .ckj-n{color:var(--glycine-900)}
+.ckj-n{font-size:15.5px;font-weight:500;color:var(--terre)}
+.ckj-c{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;font-size:12.5px}
+.ckj-et{font-size:13.5px;color:var(--text)}
+.ckj-etn{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
+.ckj-jauge{display:block;height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:7px;max-width:170px}
+.ckj-jauge span{display:block;height:100%;background:var(--glycine-900);border-radius:999px}
+.ckj-ong{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.ckj-ong .btn{margin-left:auto}
+.ckj-fini{margin-top:18px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.ckj-fini b{color:var(--text)}
+/* Étapes : un point, jamais une barre */
+.ckj-etp{background:var(--bone);border-radius:26px;padding:8px 24px}
+.ckj-etl{display:flex;align-items:flex-start;gap:14px;padding:15px 0;border-bottom:1px solid var(--border)}
+.ckj-etl:last-child{border-bottom:none}
+.ckj-etp2{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--bone-d)}
+.ckj-etl--faite .ckj-etp2{background:var(--green);box-shadow:none}
+.ckj-etl--encours .ckj-etp2{background:var(--glycine-900);box-shadow:0 0 0 4px var(--glycine-50)}
+.ckj-etn2{font-size:15px;color:var(--terre)}
+.ckj-etl--faite .ckj-etn2{color:var(--muted)}
+.ckj-ets{font-size:12.5px;color:var(--muted);margin-top:3px}
+.ckj-ech{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 0;border-bottom:1px solid var(--border)}
+.ckj-ech:last-child{border-bottom:none}
+.ckj-echn{font-size:14.5px;color:var(--terre)}
+.ckj-fl{color:var(--glycine-900);text-decoration:none;font-size:14.5px}
+.ckj-fl:hover{text-decoration:underline}
+@media(max-width:900px){.ckj-h{display:none}.ckj-l{grid-template-columns:1fr;gap:9px}}

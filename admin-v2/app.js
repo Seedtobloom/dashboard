@@ -408,7 +408,7 @@
       // « Tâches » réunit l'ancien « Toutes les tâches » (le travail client) et
       // l'ancien « Mes tâches » (le travail de la boîte) : c'était la même
       // question posée à deux endroits, qu'il fallait croiser de tête.
-      ['Mon travail', [['cockpit', 'Accueil (nouveau)'], ['cktaches', 'Tâches (nouveau)'], ['ckplanning', 'Planning (nouveau)'], ['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
+      ['Mon travail', [['cockpit', 'Accueil (nouveau)'], ['cktaches', 'Tâches (nouveau)'], ['ckplanning', 'Planning (nouveau)'], ['ckprojets', 'Projets (nouveau)'], ['inbox', 'Inbox'], ['priorities', 'Priorités'], ['alltasks', 'Tâches'], ['semaine', 'Ma semaine'], ['plannings', 'Plannings'], ['questionnaires', 'Questionnaires'], ['visios', 'Visios']]],
       ['Pilotage', [['kpi', 'Tableau de bord'], ['temps', 'Temps & rentabilité'], ['done', 'Réalisé'], ['avis', 'Avis'], ['incidents', 'Incidents']]],
       ['Configuration', [['projtpl', 'Modèles de projets'], ['reglages', 'Réglages']]],
     ];
@@ -659,6 +659,7 @@
     if (VIEW === 'cockpit') return renderCockpit();
     if (VIEW === 'cktaches') return renderCockpitTaches();
     if (VIEW === 'ckplanning') return renderCockpitPlanning();
+    if (VIEW === 'ckprojets') return renderCockpitProjets();
     if (VIEW === 'semaine') return renderMaSemaine();
     if (VIEW === 'visios') return renderVisios();
     if (VIEW === 'plannings') return renderPlannings();
@@ -4373,14 +4374,20 @@
       slots: Array.isArray(t.slots) ? t.slots : []
     };
   }
-  function ckpTaches() {
+  // Tout le travail vivant, terminé COMPRIS : un projet a besoin de ce qui est
+  // fait pour dire le temps déjà passé, la journée n'a besoin que du reste.
+  // Une seule lecture, deux vues.
+  function ckpToutes() {
     var out = [];
     ((CKP.dash && CKP.dash.tasksAll) || []).forEach(function (t) {
       if (t.archived || t.stage === 'inbox') return;
       out.push(ckpNorm(t, t.kind === 'ticket' ? 'ticket' : 'client'));
     });
     (CKP.perso || []).forEach(function (t) { if (!t.archived) out.push(ckpNorm(t, 'perso')); });
-    return out.filter(function (t) { return t.statut !== 'done'; });
+    return out;
+  }
+  function ckpTaches() {
+    return ckpToutes().filter(function (t) { return t.statut !== 'done'; });
   }
 
   /* ── Les trois temps ──────────────────────────────────────────────────── */
@@ -4959,7 +4966,13 @@
   function ckTSetTri(v) { CKT.tri = v; renderCockpitTaches(); }
   function ckTSetFiltre(v) { CKT.filtre = v; renderCockpitTaches(); }
   // Un seul panneau ouvert à la fois : sinon l'écran redevient une pile.
-  function ckTOuvrir(id) { CKT.ouverte = CKT.ouverte === id ? null : id; renderCockpitTaches(); }
+  // La ligne de tâche sert à deux écrans : l'écran Tâches et la vue d'ensemble
+  // d'un projet. Elle redessine celui où l'on se trouve, pas l'autre — sinon
+  // ouvrir une tâche depuis un projet renverrait ailleurs sans prévenir.
+  function ckTOuvrir(id, ecran) {
+    CKT.ouverte = CKT.ouverte === id ? null : id;
+    if (ecran === 'projets') renderCockpitProjetsBody(); else renderCockpitTaches();
+  }
 
   function ckTListe() {
     var l = ckpTaches();
@@ -5029,7 +5042,7 @@
         : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>') +
       '</div>';
   }
-  function ckTLigne(t) {
+  function ckTLigne(t, ecran) {
     var r = ckpRestant(t), ap = ckpAPlanifier(t), pf = ckpPlanifieFutur(t);
     var org = ap > 0
       ? '<b class="ck-ap">' + esc(ckpDuree(ap)) + ' à planifier</b>' + (pf ? '<span class="ck-ts">' + esc(ckpDuree(pf)) + ' déjà posées</span>' : '')
@@ -5042,7 +5055,8 @@
         ? '<span class="ck-doux">Chez elle depuis ' + esc(ckpQuand(t.echeance)) + '</span>'
         : (ckpEnRetard(t) ? '<b class="ck-ret">En retard depuis ' + esc(ckpQuand(t.echeance)) + '</b>'
           : esc(ckpMaj(ckpQuand(t.echeance)))));
-    return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\')">' +
+    return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\'' +
+      (ecran ? ',\'' + ecran + '\'' : '') + ')">' +
       '<div><div class="ck-tt">' + esc(t.titre) + '</div>' +
         '<div class="ck-ts">' + ckpPuceQui(t) + ' ' + esc(t.ctx || '') + '</div></div>' +
       '<div>' + (r === null ? '<b class="ck-inc">à estimer</b>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
@@ -5531,6 +5545,308 @@
   // Arriver ici avec une tâche déjà en main : le bouton « Planifier » de
   // l'Accueil et de l'écran Tâches n'a alors plus rien à réexpliquer.
   function ckLDepuis(id) { CKL.choisie = id; CKL.off = 0; nav('ckplanning'); }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     PROJETS — une structure interne unique.
+
+     Cinq prestations : partenaire créative, site web, identité visuelle,
+     support de com, espace tickets. Ce ne sont pas cinq objets différents :
+     tous ont une cliente, des étapes (parfois aucune), du travail, des
+     validations et des fichiers. La prestation ne change donc pas l'écran,
+     elle en CONFIGURE le contenu. Un écran par prestation, c'est cinq fois
+     la même chose à maintenir, et cinq occasions de diverger.
+
+     Les temps ne sont jamais stockés au niveau du projet : ils se recalculent
+     à partir des mêmes tâches que le reste du cockpit. Un projet ne peut donc
+     pas afficher un total que la liste des tâches contredirait.
+     ════════════════════════════════════════════════════════════════════════ */
+
+  var CKJ = { ouvert: null, onglet: 'ensemble', filtre: 'actifs' };
+  var CKJ_PRESTA = { partenaire: 'Partenaire créative', site: 'Site web', identite: 'Identité visuelle',
+    support: 'Support de com', maintenance: 'Espace tickets' };
+
+  function ckJId(p) { return p.key + '|' + p.projectId; }
+  function ckJTachesDe(p) {
+    return ckpToutes().filter(function (t) { return t.key === p.key && t.projet === p.projectId; });
+  }
+  // Le même bilan pour tous les projets, quelle que soit la prestation.
+  function ckJBilan(p) {
+    var l = ckJTachesDe(p);
+    var vives = l.filter(function (t) { return t.statut !== 'done'; });
+    var som = function (arr, f) { return arr.reduce(function (s, t) { return s + (f(t) || 0); }, 0); };
+    return {
+      reel: som(l, function (t) { return t.reel; }),
+      estim: som(l, function (t) { return t.estim; }),
+      restant: som(vives, function (t) { return ckpRestant(t) || 0; }),
+      aPlanifier: som(vives, function (t) { return ckpAPlanifier(t) || 0; }),
+      inconnu: vives.filter(function (t) { return ckpRestant(t) === null; }).length,
+      vives: vives.length, total: l.length,
+      faites: l.filter(function (t) { return t.statut === 'done'; })
+    };
+  }
+  function ckJEtapes(p) { return Array.isArray(p.etapes) ? p.etapes : []; }
+  function ckJEtapeCourante(p) {
+    var e = ckJEtapes(p);
+    if (!e.length) return null;
+    var reste = e.filter(function (x) { return x.status !== 'done'; });
+    if (!reste.length) return { fini: true, faites: e.length, total: e.length };
+    var cur = reste.filter(function (x) { return x.status === 'in_progress'; })[0] || reste[0];
+    return { etape: cur, rang: e.indexOf(cur) + 1, total: e.length, faites: e.length - reste.length };
+  }
+  // Le prochain jalon daté : une étape à venir, sinon l'échéance la plus
+  // proche du travail encore vivant. Jamais deux sources contradictoires.
+  function ckJJalon(p) {
+    var auj = ckpAuj();
+    var e = ckJEtapes(p).filter(function (x) { return x.status !== 'done' && x.date; })
+      .sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
+    if (e) return { titre: e.title, date: e.date };
+    var t = ckJTachesDe(p).filter(function (x) { return x.statut !== 'done' && x.echeance; })
+      .sort(function (a, b) { return a.echeance < b.echeance ? -1 : 1; })[0];
+    if (t) return { titre: t.titre, date: t.echeance, tache: true };
+    void auj;
+    return null;
+  }
+  function ckJForfait(p) {
+    if (p.prestation !== 'partenaire') return null;
+    var l = (CKP.dash && CKP.dash.forfaits) || [];
+    for (var i = 0; i < l.length; i++) if (l[i].key === p.key) return l[i];
+    return null;
+  }
+  function ckJEchanges(p) {
+    var d = CKP.dash || {};
+    var mien = function (x) { return x.key === p.key && x.project === p.projectId; };
+    return {
+      attente: (d.pendingValidation || []).filter(mien),
+      revisions: (d.revisions || []).filter(mien),
+      valides: (d.validated || []).filter(mien)
+    };
+  }
+  function ckJFichiers(p) {
+    var out = [];
+    ((CKP.dash && CKP.dash.tasksAll) || []).forEach(function (t) {
+      if (t.key !== p.key || t.project !== p.projectId) return;
+      (t.attachments || []).forEach(function (a) {
+        if (a && a.key) out.push({ nom: a.name || 'fichier', cle: a.key, tache: t.title || '' });
+      });
+      if (t.clientLink) out.push({ lien: t.clientLink, tache: t.title || '' });
+    });
+    return out;
+  }
+
+  function ckJListe() {
+    var l = ((CKP.dash && CKP.dash.projets) || []).slice();
+    if (CKJ.filtre === 'actifs') {
+      // Actif = l'espace est ouvert ET il reste quelque chose à faire. Un
+      // projet fini n'est pas un projet en cours, même si son espace vit.
+      l = l.filter(function (p) {
+        if (!p.actif) return false;
+        var c = ckJEtapeCourante(p);
+        return ckJBilan(p).vives > 0 || (c && !c.fini);
+      });
+    }
+    // Ce qui presse d'abord : le jalon le plus proche, puis le volume restant.
+    return l.sort(function (a, b) {
+      var ja = ckJJalon(a), jb = ckJJalon(b);
+      if (!!ja !== !!jb) return ja ? -1 : 1;
+      if (ja && jb && ja.date !== jb.date) return ja.date < jb.date ? -1 : 1;
+      return ckJBilan(b).restant - ckJBilan(a).restant;
+    });
+  }
+
+  function ckJSetFiltre(f) { CKJ.filtre = f; renderCockpitProjetsBody(); }
+  function ckJOuvrir(id) { CKJ.ouvert = id; CKJ.onglet = 'ensemble'; renderCockpitProjetsBody(); window.scrollTo(0, 0); }
+  function ckJFermer() { CKJ.ouvert = null; renderCockpitProjetsBody(); }
+  function ckJOnglet(o) { CKJ.onglet = o; renderCockpitProjetsBody(); }
+  function ckJTrouver(id) {
+    var l = (CKP.dash && CKP.dash.projets) || [];
+    for (var i = 0; i < l.length; i++) if (ckJId(l[i]) === id) return l[i];
+    return null;
+  }
+
+  /* ── La liste ────────────────────────────────────────────────────────── */
+
+  function ckJLigne(p) {
+    var b = ckJBilan(p), c = ckJEtapeCourante(p), j = ckJJalon(p);
+    var pr = CKJ_PRESTA[p.prestation] || '';
+    var ou = c
+      ? (c.fini ? '<span class="ck-doux">Toutes les étapes sont faites</span>'
+        : '<div class="ckj-et">' + esc(c.etape.title || 'Étape sans titre') +
+          '<span class="ckj-etn">étape ' + c.rang + ' sur ' + c.total + '</span>' +
+          '<span class="ckj-jauge"><span style="width:' + (c.faites / c.total * 100).toFixed(0) + '%"></span></span></div>')
+      : '<span class="ck-doux">' + esc(ckJSousTitre(p)) + '</span>';
+    return '<div class="ckj-l" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')">' +
+      '<div><div class="ckj-n">' + esc(p.projectLabel) + '</div>' +
+        '<div class="ckj-c"><span class="ck-puce ck-puce--cli">' + esc(p.client) + '</span>' +
+        // La prestation ne se répète pas quand elle porte déjà le nom du
+        // projet : « Site web · Site web » n'apprend rien.
+        (pr && pr !== p.projectLabel ? '<span class="ck-doux">' + esc(pr) + '</span>' : '') +
+        '</div></div>' +
+      '<div>' + ou + '</div>' +
+      '<div>' + (b.restant ? '<b>' + esc(ckpDuree(b.restant)) + '</b> à faire'
+        : (b.inconnu ? '<b class="ck-inc">' + b.inconnu + ' à estimer</b>' : '<span class="ck-doux">rien à faire</span>')) +
+        (b.aPlanifier ? '<div class="ck-ts ck-ap">' + esc(ckpDuree(b.aPlanifier)) + ' sans place</div>' : '') +
+        (b.reel ? '<div class="ck-ts">' + esc(ckpDuree(b.reel)) + ' passées</div>' : '') + '</div>' +
+      '<div>' + (j ? '<b>' + esc(j.titre) + '</b><div class="ck-ts">' + esc(ckpMaj(ckpQuand(j.date))) + '</div>'
+        : '<span class="ck-doux">Pas de jalon</span>') + '</div>' +
+      '</div>';
+  }
+  function ckJSousTitre(p) {
+    if (p.prestation === 'partenaire') {
+      var f = ckJForfait(p);
+      // Le forfait se compte en HEURES côté modèle partagé : on convertit ici,
+      // une fois, plutôt que de laisser deux unités circuler.
+      return (f && f.configured) ? 'Forfait : ' + ckpDuree(Math.round(f.base * 60)) + ' par mois' : 'À la demande';
+    }
+    if (p.prestation === 'maintenance') return 'Demandes au fil de l’eau';
+    return 'Pas d’étapes posées';
+  }
+
+  /* ── Le détail : quatre onglets, les mêmes pour tous ──────────────────── */
+
+  function ckJDetail(p) {
+    var b = ckJBilan(p), j = ckJJalon(p);
+    var onglets = [['ensemble', 'Vue d’ensemble'], ['etapes', 'Étapes'],
+      ['echanges', 'Échanges & validations'], ['fichiers', 'Fichiers']];
+    return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">← Tous les projets</button>' +
+      '<div class="ck-tete" style="margin-top:16px"><div>' +
+        '<div class="ck-meta">' + esc(p.client + (CKJ_PRESTA[p.prestation] && CKJ_PRESTA[p.prestation] !== p.projectLabel
+          ? ' · ' + CKJ_PRESTA[p.prestation] : '')) + '</div>' +
+        '<h1 class="ck-h1">' + esc(p.projectLabel) + '</h1></div>' +
+        '<div class="ck-date">' + (j ? esc(j.titre + ' · ' + ckpQuand(j.date)) : '') + '</div></div>' +
+      '<div class="ck-filet"></div>' +
+      '<div class="ckj-ong"><div class="ck-segm">' + onglets.map(function (o) {
+        return '<button class="ck-segb' + (CKJ.onglet === o[0] ? ' on' : '') +
+          '" onclick="ADM.ckJOnglet(\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
+      }).join('') + '</div>' +
+      '<button class="btn btn--dark btn--sm" onclick="ADM.openClient(\'' + esc(p.key) + '\')">Ouvrir la fiche cliente</button></div>' +
+      (CKJ.onglet === 'ensemble' ? ckJEnsemble(p, b)
+        : CKJ.onglet === 'etapes' ? ckJOngletEtapes(p)
+        : CKJ.onglet === 'echanges' ? ckJOngletEchanges(p)
+        : ckJOngletFichiers(p));
+  }
+
+  function ckJEnsemble(p, b) {
+    var prev = b.reel + b.restant;
+    var cartes = [
+      ['Déjà passé', ckpDuree(b.reel), 'Compté quand le travail est réellement fait, pas quand il est planifié.'],
+      ['Encore nécessaire', ckpDuree(b.restant),
+        b.inconnu ? b.inconnu + ' tâche' + (b.inconnu > 1 ? 's n’ont' : ' n’a') + ' pas de temps estimé : ce total est optimiste.'
+          : (b.aPlanifier ? ckpDuree(b.aPlanifier) + ' n’ont pas encore de créneau.' : 'Tout a un créneau.')],
+      ['Prévision totale', ckpDuree(prev),
+        b.estim ? 'Estimation initiale : ' + ckpDuree(b.estim) + '.' : 'Aucune estimation initiale n’a été posée.']
+    ];
+    var f = ckJForfait(p);
+    if (f && f.configured) {
+      var h = function (x) { return ckpDuree(Math.round((x || 0) * 60)); };
+      var depasse = (f.remaining || 0) < 0;
+      cartes.push([depasse ? 'Dépassement ce mois-ci' : 'Restant ce mois-ci',
+        h(depasse ? f.over : f.remaining),
+        h(f.used) + ' consommées sur ' + h(f.available) + ' disponibles' +
+        (f.carryIn ? ' (dont ' + h(f.carryIn) + ' reportées)' : '') +
+        '. Une demande en cours ne consomme rien tant qu’elle n’est pas travaillée.']);
+    }
+    var vives = ckJTachesDe(p).filter(function (t) { return t.statut !== 'done'; })
+      .sort(function (a, b2) { return ckpScore(b2) - ckpScore(a); });
+    return '<div class="ckl-cap" style="margin-bottom:24px">' + cartes.map(function (x) {
+      return '<div class="ckl-capb"><div class="ckl-capv">' + esc(x[1]) + '</div>' +
+        '<div class="ckl-capn">' + esc(x[0]) + '</div><div class="ckl-capx">' + esc(x[2]) + '</div></div>';
+    }).join('') + '</div>' +
+      '<section class="ck-sec">' + ckpTitre('Ce qui reste à faire') +
+        '<div class="ck-tbl">' + (vives.length ? vives.map(function (t) { return ckTLigne(t, 'projets'); }).join('')
+          : '<div class="ck-vide">Rien de ton côté.</div>') + '</div></section>' +
+      (b.faites.length ? '<div class="ckj-fini"><b>Terminé :</b> ' + b.faites.map(function (t) {
+        return esc(t.titre) + (t.reel ? ' (' + esc(ckpDuree(t.reel)) + ')' : '');
+      }).join(' · ') + '</div>' : '');
+  }
+
+  function ckJOngletEtapes(p) {
+    var e = ckJEtapes(p);
+    if (!e.length) {
+      return '<p class="ck-semp">Cette prestation ne fonctionne pas par étapes : elle avance à la demande. ' +
+        'C’est le même écran, configuré autrement : les étapes se posent depuis la fiche cliente si un jour tu en veux.</p>';
+    }
+    var caches = e.filter(function (x) { return x.clientVisible === false; }).length;
+    return '<div class="ckj-etp">' + e.map(function (x) {
+      var etat = x.status === 'done' ? 'faite' : (x.status === 'in_progress' ? 'encours' : 'avenir');
+      return '<div class="ckj-etl ckj-etl--' + etat + '"><span class="ckj-etp2"></span>' +
+        '<div><div class="ckj-etn2">' + esc(x.title || 'Étape sans titre') + '</div>' +
+        '<div class="ckj-ets">' + (etat === 'faite' ? 'Terminée' : etat === 'encours' ? 'En cours' : 'À venir') +
+        (x.date ? ' · ' + esc(ckpMaj(ckpQuand(x.date))) : '') +
+        (x.clientVisible === false ? ' · interne, la cliente ne la voit pas' : '') + '</div></div></div>';
+    }).join('') + '</div>' +
+    (caches ? '<p class="ck-semp" style="margin-top:16px">Ta cliente voit ' + (e.length - caches) +
+      ' étapes sur ' + e.length + '. Les autres sont ton découpage de travail : les lui montrer ne l’aiderait pas.</p>' : '');
+  }
+
+  function ckJOngletEchanges(p) {
+    var x = ckJEchanges(p);
+    var bloc = function (titre, l, rendu, vide) {
+      return '<section class="ck-sec">' + ckpTitre(titre) +
+        '<div class="ck-tbl">' + (l.length ? l.map(rendu).join('') : '<div class="ck-vide">' + esc(vide) + '</div>') + '</div></section>';
+    };
+    var ligneLiv = function (l) {
+      return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(l.name || l.taskTitle || 'Livrable') + '</div>' +
+        (l.taskTitle && l.name ? '<div class="ck-ts">' + esc(l.taskTitle) + '</div>' : '') + '</div>' +
+        '<div class="ck-ts">' + esc(l.createdAt || l.at ? ckpMaj(ckpQuand(String(l.createdAt || l.at).slice(0, 10))) : '') + '</div></div>';
+    };
+    var ligneRev = function (l) {
+      return '<div class="ckj-ech"><div><div class="ckj-echn">' + esc(l.name || l.taskTitle || 'Livrable') + '</div>' +
+        (l.comment ? '<div class="ck-ts">« ' + esc(String(l.comment).slice(0, 180)) + ' »</div>' : '') + '</div>' +
+        '<div class="ck-ts">' + esc(l.at ? ckpMaj(ckpQuand(String(l.at).slice(0, 10))) : '') + '</div></div>';
+    };
+    return bloc('Chez la cliente, en attente', x.attente, ligneLiv, 'Rien n’attend sa validation.') +
+      bloc('Retours à retravailler', x.revisions, ligneRev, 'Aucun retour en attente de ta main.') +
+      bloc('Validés, pas encore consultés', x.valides, ligneLiv, 'Rien de nouveau à consulter.');
+  }
+
+  function ckJOngletFichiers(p) {
+    var l = ckJFichiers(p);
+    if (!l.length) {
+      return '<p class="ck-semp">Aucun fichier n’a encore transité par ce projet. Les pièces jointes des tâches ' +
+        'et les liens déposés par ta cliente apparaîtront ici.</p>';
+    }
+    return '<section class="ck-sec">' + ckpTitre('Ce qui a transité par ce projet',
+      'Les pièces jointes des tâches et les liens déposés par ta cliente, au même endroit.') +
+      '<div class="ck-tbl">' + l.map(function (f) {
+        var lien = f.lien
+          ? '<a class="ckj-fl" href="' + esc(f.lien) + '" target="_blank" rel="noopener">Lien déposé par la cliente</a>'
+          : '<a class="ckj-fl" href="/api/clients/' + esc(p.key) + '/files/' + encodeURIComponent(f.cle) +
+            '/download" target="_blank" rel="noopener">' + esc(f.nom) + '</a>';
+        return '<div class="ckj-ech"><div>' + lien +
+          (f.tache ? '<div class="ck-ts">' + esc(f.tache) + '</div>' : '') + '</div></div>';
+      }).join('') + '</div></section>';
+  }
+
+  /* ── Rendu ───────────────────────────────────────────────────────────── */
+
+  function renderCockpitProjets() {
+    if (CKP.pret) return renderCockpitProjetsBody();
+    setMain(topbar('Projets') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    ckpCharger(renderCockpitProjetsBody);
+  }
+  function renderCockpitProjetsBody() {
+    var p = CKJ.ouvert ? ckJTrouver(CKJ.ouvert) : null;
+    if (CKJ.ouvert && !p) CKJ.ouvert = null;
+    if (p) { setMain(topbar('Projets') + '<div class="wrap ck">' + ckJDetail(p) + '</div>'); return; }
+    var l = ckJListe();
+    var presta = {}; l.forEach(function (x) { presta[x.prestation] = 1; });
+    var nb = Object.keys(presta).length;
+    setMain(topbar('Projets') +
+      '<div class="wrap ck">' +
+        '<div class="ck-tete"><div><div class="ck-meta">Projets</div>' +
+          '<h1 class="ck-h1">Où en est <span class="ck-accent">chaque projet</span></h1></div>' +
+          '<div class="ck-date">' + l.length + ' projet' + (l.length > 1 ? 's' : '') + ' · ' + nb +
+          ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran</div></div>' +
+        '<div class="ck-filet"></div>' +
+        '<div class="ck-segm" style="margin-bottom:18px">' +
+          '<button class="ck-segb' + (CKJ.filtre === 'actifs' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'actifs\')">En cours</button>' +
+          '<button class="ck-segb' + (CKJ.filtre === 'tout' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'tout\')">Tous</button>' +
+        '</div>' +
+        '<div class="ckj-h"><span>Projet</span><span>Où ça en est</span><span>Travail</span><span>Prochain jalon</span></div>' +
+        '<div class="ckj">' + (l.length ? l.map(ckJLigne).join('')
+          : '<div class="ck-vide">Aucun projet en cours. Tout est fini, ou tout reste à ouvrir.</div>') + '</div>' +
+      '</div>');
+  }
 
   function renderMaSemaine() {
     setMain(topbar('Ma semaine') + '<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
@@ -11034,6 +11350,7 @@
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
     ckLSetSimH: ckLSetSimH, ckLSetSimHz: ckLSetSimHz, ckLDepuis: ckLDepuis,
+    ckJSetFiltre: ckJSetFiltre, ckJOuvrir: ckJOuvrir, ckJFermer: ckJFermer, ckJOnglet: ckJOnglet,
     tblStart: tblStart, tblCancel: tblCancel, tblMove: tblMove, tblSave: tblSave,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,
     bilanRequest: bilanRequest, beneficeAdd: beneficeAdd, beneficeDel: beneficeDel,
