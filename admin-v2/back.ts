@@ -2529,9 +2529,15 @@ function totalSemaine(days: AnyObj): number {
 }
 function normMessages(raw: unknown): AnyObj {
   const m = (raw || {}) as AnyObj;
+  // Zéro est une valeur, pas une absence : « || défaut » remettait 30 minutes
+  // à chaque tentative de supprimer le bloc, et minuit redevenait 14h20.
+  const nb = (v: unknown, def: number, max: number) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? Math.min(max, Math.max(0, n)) : def;
+  };
   return {
-    heure: Math.min(1439, Math.max(0, Math.round(Number(m.heure)) || MESSAGES_DEFAUT.heure)),
-    duree: Math.min(480, Math.max(0, Math.round(Number(m.duree)) || MESSAGES_DEFAUT.duree)),
+    heure: nb(m.heure, MESSAGES_DEFAUT.heure, 1439),
+    duree: nb(m.duree, MESSAGES_DEFAUT.duree, 480),
     enveloppe: String(m.enveloppe || MESSAGES_DEFAUT.enveloppe).slice(0, 24),
   };
 }
