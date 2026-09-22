@@ -10,7 +10,14 @@
   function stbBlocksSave(pid, taskId, beacon){
     var t = cliTaskById(pid, taskId); if (!t) return;
     var body = { projectId: pid, blocks: t.blocks || [] };
-    if (t._migrated) { body.content = ''; t.content = ''; t._migrated = false; }
+    // On ne vide PLUS le brief d'origine. Avant, dès que le paragraphe avait
+    // été repris en bloc, content était effacé côté serveur : si par la suite
+    // un enregistrement partait sans ce bloc, le paragraphe n'existait plus
+    // nulle part, et le serveur ne garde pas de point de restauration sur la
+    // toute première écriture de blocs. Une seule mauvaise sauvegarde suffisait
+    // donc à le perdre définitivement. content ne coûte qu'une chaîne : il
+    // reste, en silence, comme filet.
+    if (t._migrated) { body.contentMigrated = true; t.contentMigrated = true; t._migrated = false; }
     var sc = ''; try { sc = sessionStorage.getItem('_sc') || ''; } catch(e){}
     var headers = { 'Content-Type':'application/json' }; if (sc) headers['x-space-code'] = sc;
     var opts = { method:'PATCH', headers: headers, body: JSON.stringify(body) };
@@ -811,7 +818,7 @@
         '<button onclick="window.stbRestore(\''+pid+'\',\''+t.id+'\','+o.idx+')" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid var(--border,#F8F6F2);border-radius:7px;background:#fff;color:var(--navy,#110704);cursor:pointer">Restaurer</button>'+
       '</div>';
     }).join('');
-    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#C5DEFF);letter-spacing:0.04em">Historique — versions précédentes ('+h.length+')</summary>'+
+    return '<details style="margin-top:18px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--muted,#C5DEFF);letter-spacing:0.04em">Historique : versions précédentes ('+h.length+')</summary>'+
       '<div style="margin-top:4px">'+rows+'</div></details>';
   }
   window.stbRestore = function(pid, taskId, index){
@@ -825,10 +832,25 @@
   function stbBlocks(pid, t){
     if (!t._blkInit){
       if (!Array.isArray(t.blocks)) t.blocks = [];
-      if (!t.blocks.length && t.content && String(t.content).trim()){ t.blocks = [{ id: stbBid(), type:'text', text: t.content }]; t._migrated = true; }
+      // Le brief rédigé à la création devient un bloc de texte. On le fait une
+      // fois pour toutes (contentMigrated), puis on n'y revient jamais : sinon
+      // un paragraphe supprimé exprès reviendrait à chaque ouverture.
+      var brief = String(t.content || '').trim();
+      if (brief && !t.contentMigrated){
+        var aDuTexte = t.blocks.some(function(b){
+          return b && typeof b.text === 'string' && stbPlain(b.text).trim() !== '';
+        });
+        if (!aDuTexte){
+          t.blocks.unshift({ id: stbBid(), type:'text', text: t.content });
+          t._migrated = true;
+        }
+      }
       // Toujours une zone d'écriture prête : on peut taper « / » tout de suite.
       if (!t.blocks.length) t.blocks = [{ id: stbBid(), type:'text', text:'' }];
       t._blkInit = true;
+      // On enregistre tout de suite : tant que la reprise n'est qu'en mémoire,
+      // n'importe quelle autre action peut sauvegarder des blocs sans elle.
+      if (t._migrated) setTimeout(function(){ stbBlocksSave(pid, t.id); }, 0);
     }
     return '<div style="border-top:2px solid var(--bone-d,#F8F6F2);margin-top:22px;padding-top:20px">'+
       '<div style="margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-style:italic;font-size:20px;color:var(--navy,#110704)">Votre demande</span></div>'+

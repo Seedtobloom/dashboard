@@ -3161,10 +3161,17 @@
    * « pas de brief » sur des briefs bien remplis dans l'éditeur par blocs. */
   function taskBrief(t) {
     t = t || {};
-    var blocks = Array.isArray(t.blocks) ? t.blocks.length : 0;
+    var liste = Array.isArray(t.blocks) ? t.blocks : [];
     var text = (t.content || '').trim();
     var table = !!(t.table && Array.isArray(t.table.cols) && t.table.cols.length);
-    return { blocks: !!blocks, text: text, table: table, empty: !blocks && !text && !table };
+    // Des blocs SANS une seule ligne de prose ne remplacent pas le brief écrit
+    // à la création : on montre les deux plutôt que de laisser le paragraphe
+    // invisible sous prétexte qu'un tableau existe.
+    var prose = liste.some(function (b) {
+      return b && typeof b.text === 'string' && b.text.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim() !== '';
+    });
+    return { blocks: !!liste.length, text: text, table: table,
+      garderTexte: !!text && !prose, empty: !liste.length && !text && !table };
   }
   // Rend une valeur de cellule (texte simple OU HTML enrichi rédigé par la
   // cliente) de façon SÛRE : texte échappé + liens cliquables, et seules les
@@ -7667,7 +7674,8 @@
         '</div>' : '';
       // Contenu du brief : on affiche l'éditeur par blocs (complet) s'il existe,
       // sinon l'ancien champ texte. Plus jamais tronqué côté admin.
-      var contentHtml = taskBrief(t).blocks ? ptBlocksHtml(t, null, null, true) : brief;
+      var _bf = taskBrief(t);
+      var contentHtml = _bf.blocks ? ((_bf.garderTexte ? brief : '') + ptBlocksHtml(t, null, null, true)) : brief;
       return '<div class="card" style="background:var(--card);padding:22px 24px' + (needsAction || t.needsRework || t.clientCommentNotif ? ';box-shadow:var(--shadow-2)' : '') + '">' +
         reworkBanner + header + contentHtml + atts + beHtml + tableHtml + work + review +
         '<div style="' + hair + '"></div>' +
