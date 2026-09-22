@@ -4314,14 +4314,18 @@
 
   /* ── Temps et dates ───────────────────────────────────────────────────── */
 
+  // Typographie française de la maison : une espace autour de l'unité.
+  // « 1 h 25 », « 10 h », « 45 min ». ckpParseDuree relit ces formes.
   function ckpDuree(m) {
     m = Math.max(0, Math.round(m || 0));
     if (!m) return '0 min';
     if (m < 60) return m + ' min';
     var h = Math.floor(m / 60), r = m % 60;
-    return r ? h + 'h' + (r < 10 ? '0' + r : r) : h + 'h';
+    return r ? h + ' h ' + (r < 10 ? '0' + r : r) : h + ' h';
   }
-  function ckpHM(m) { var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r < 10 ? '0' + r : r); }
+  // Une heure pile se dit « 14 h », pas « 14 h 00 » : c'est la typographie de
+  // la maison, et ça tient dans la colonne des heures du planning.
+  function ckpHM(m) { var h = Math.floor(m / 60), r = m % 60; return r ? h + ' h ' + (r < 10 ? '0' + r : r) : h + ' h'; }
   function ckpD(iso) { return new Date(iso + 'T12:00:00'); }
   function ckpIso(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -4683,14 +4687,68 @@
           '<div class="ck-date">' + esc(ckpMaj(CKP_JOURS[d.getDay()]) + ' ' + d.getDate() + ' ' + CKP_MOIS[d.getMonth()]) + '</div>' +
         '</div>' +
         '<div class="ck-filet"></div>' +
-        '<p class="ck-chapo">' + esc(phrase) + '</p>' +
+        ckpHero('Aujourd’hui', c.certaine > 0
+          ? esc(ckpDuree(c.libre)) + ' <em>disponibles</em>'
+          : '<em>Journée terminée</em>', esc(phrase), ckpHeroJournee()) +
         ckpSecCap(cap) + ckpSecJournee(c) + ckpSecAttention() + ckpSecSemaine(s) +
       '</div>');
   }
 
+  /* ── Le bandeau sombre d'en-tête ────────────────────────────────────────
+     Posé en haut des quatre écrans neufs. Écrit UNE fois : quatre bandeaux
+     recopiés, ce serait quatre occasions de ne plus dire la même chose. */
+  function ckpHero(eyebrow, valeur, sous, droite) {
+    return '<div class="ck-hero"><div>' +
+      '<div class="ck-hero__e">' + esc(eyebrow) + '</div>' +
+      '<div class="ck-hero__v">' + valeur + '</div>' +
+      (sous ? '<div class="ck-hero__s">' + sous + '</div>' : '') +
+      '</div><div class="ck-hero__d">' + (droite || '') + '</div></div>';
+  }
+  function ckpHeroPuce(couleur, texte) {
+    return '<div class="ck-hero__lg"><span class="ck-hero__p" style="background:' + couleur + '"></span>' +
+      '<span>' + esc(texte) + '</span></div>';
+  }
+  // La jauge de la journée et sa légende : les quatre natures de capacité,
+  // dans les mêmes couleurs et le même ordre partout.
+  function ckpHeroJournee() {
+    var c = ckpCapaciteDu(ckpAuj());
+    var tot = (c.certaine + c.mobilisable) || 1;
+    var pc = function (v) { return Math.max(0, v) / tot * 100; };
+    var seg = function (col, v) { return v > 0 ? '<span style="background:' + col + ';width:' + pc(v).toFixed(1) + '%"></span>' : ''; };
+    var barre = '<div class="ck-hero__b">' +
+      seg('var(--ciel)', Math.min(c.engagee, c.certaine)) +
+      seg('var(--terracotta)', Math.min(c.depassement, c.mobilisable)) +
+      seg('var(--paille)', c.certaine - c.engagee) +
+      seg('rgba(230,229,178,.22)', c.mobilisable - c.depassement) + '</div>';
+    return barre +
+      ckpHeroPuce('var(--ciel)', ckpDuree(c.engagee) + ' déjà engagées : créneaux, rendez-vous et consultation des messages') +
+      ckpHeroPuce('var(--paille)', c.libre > 0
+        ? ckpDuree(c.libre) + ' de vraie place, que tu peux promettre sans rien déplacer'
+        : (c.certaine <= 0 ? 'Ta journée de travail est derrière toi' : 'Plus de place libre aujourd’hui')) +
+      ckpHeroPuce('rgba(230,229,178,.28)', ckpDuree(c.mobilisable) + ' de marge protégée : l’entamer supprime l’amortisseur') +
+      (c.depassement ? ckpHeroPuce('var(--terracotta)', ckpDuree(c.depassement) + ' au-delà de ta capacité du jour') : '');
+  }
   function ckpTitre(t, chapo, droite) {
     return '<div class="ck-st"><span class="ck-meta">' + esc(t) + '</span><span class="ck-ln"></span>' +
       (droite || '') + '</div>' + (chapo ? '<p class="ck-chapo2">' + chapo + '</p>' : '');
+  }
+  /* L'échéance, dite en une pastille dont la couleur porte le sens :
+     terracotta = ça réclame, ciel = c'est pour maintenant ou chez la cliente,
+     neutre = c'est posé. Écrite une fois, lue partout. */
+  function ckpChEcheance(t) {
+    if (!t.echeance) return '<span class="ck-doux">Pas d’échéance</span>';
+    var auj = ckpAuj();
+    // Une échéance dépassée pendant que la cliente a la main n'est pas un
+    // retard de ton fait : elle n'a rien à faire en alerte.
+    if (t.statut === 'review') {
+      return '<span class="ck-ch ck-ch--ciel">Chez elle</span>' +
+        '<div class="ck-ts">depuis ' + esc(ckpQuand(t.echeance)) + '</div>';
+    }
+    if (ckpEnRetard(t)) return '<span class="ck-ch ck-ch--terra">En retard</span>' +
+      '<div class="ck-ts">depuis ' + esc(ckpQuand(t.echeance)) + '</div>';
+    if (t.echeance === auj) return '<span class="ck-ch ck-ch--ciel">Aujourd’hui</span>';
+    if (t.echeance === ckpPlus(auj, 1)) return '<span class="ck-ch ck-ch--ciel">Demain</span>';
+    return '<span class="ck-ch ck-ch--neutre">' + esc(ckpMaj(ckpQuand(t.echeance))) + '</span>';
   }
   function ckpPuceQui(t) {
     return '<span class="ck-puce ' + (t.src === 'perso' ? 'ck-puce--int' : 'ck-puce--cli') + '">' + esc(t.qui) + '</span>';
@@ -5010,6 +5068,13 @@
           (inconnus ? '<br><span class="ck-inc">' + inconnus + ' sans temps estimé</span>' : '') +
           '</div></div>' +
         '<div class="ck-filet"></div>' +
+        ckpHero('Aujourd’hui · ' + ckpMaj(ckpJourCourt(ckpAuj())),
+          (ckpCapaciteDu(ckpAuj()).certaine > 0
+            ? esc(ckpDuree(ckpCapaciteDu(ckpAuj()).libre)) + ' <em>disponibles</em>'
+            : '<em>Journée terminée</em>'),
+          l.length + ' tâches actives, ' + esc(ckpDuree(restant)) + ' à faire' +
+          (aPlanifier ? ', dont ' + esc(ckpDuree(aPlanifier)) + ' qui n’ont encore de place nulle part' : '') + '.',
+          ckpHeroJournee()) +
         ckTBarre() +
         (CKT.vue === 'liste' ? ckTVueListe(l)
           : CKT.vue === 'colonnes' ? ckTVueColonnes(l)
@@ -5048,17 +5113,11 @@
       ? '<b class="ck-ap">' + esc(ckpDuree(ap)) + ' à planifier</b>' + (pf ? '<span class="ck-ts">' + esc(ckpDuree(pf)) + ' déjà posées</span>' : '')
       : (pf ? esc(ckpDuree(pf)) + ' planifiées' + ckTQuandPose(t)
             : (r === null ? '<span class="ck-doux">à estimer d’abord</span>' : '<span class="ck-doux">Rien à poser</span>'));
-    var ech = !t.echeance ? '<span class="ck-doux">Pas d’échéance</span>'
-      : (t.statut === 'review'
-        // Une échéance dépassée pendant que la cliente a la main n'est pas un
-        // retard de ton fait : elle n'a rien à faire en rouge.
-        ? '<span class="ck-doux">Chez elle depuis ' + esc(ckpQuand(t.echeance)) + '</span>'
-        : (ckpEnRetard(t) ? '<b class="ck-ret">En retard depuis ' + esc(ckpQuand(t.echeance)) + '</b>'
-          : esc(ckpMaj(ckpQuand(t.echeance)))));
+    var ech = ckpChEcheance(t);
     return '<div class="ck-tr ' + (CKT.ouverte === t.id ? 'on' : '') + '" onclick="ADM.ckTOuvrir(\'' + esc(t.id) + '\'' +
       (ecran ? ',\'' + ecran + '\'' : '') + ')">' +
-      '<div><div class="ck-tt">' + esc(t.titre) + '</div>' +
-        '<div class="ck-ts">' + ckpPuceQui(t) + ' ' + esc(t.ctx || '') + '</div></div>' +
+      '<div><div class="ck-eb">' + esc(t.qui + (t.ctx ? ' · ' + t.ctx : '')) + '</div>' +
+        '<div class="ck-tt">' + esc(t.titre) + '</div></div>' +
       '<div>' + (r === null ? '<b class="ck-inc">à estimer</b>' : (r ? '<b>' + esc(ckpDuree(r)) + '</b> à faire' : '<span class="ck-doux">rien de mon côté</span>')) + '</div>' +
       '<div>' + org + '</div>' +
       '<div>' + ech + '</div>' +
@@ -5073,9 +5132,11 @@
     return '<span class="ck-ts">à partir ' + esc(de) + ' ' + esc(ckpHM(c.start || 0)) + '</span>';
   }
   function ckTEtat(t) {
-    if (t.statut === 'review') return '<span class="ck-puce ck-puce--ca">Chez la cliente</span>';
-    if (ckpEnRetard(t)) return '<span class="ck-puce ck-puce--al">En retard</span>';
+    // « En retard » et « Chez elle » sont déjà dits par la pastille d'échéance :
+    // les répéter ici ferait deux fois la même information sur la même ligne.
+    if (t.statut === 'review') return '';
     if (t.statut === 'in_progress') return '<span class="ck-puce ck-puce--ac">En cours</span>';
+    if (ckpEnRetard(t)) return '';
     // Sans temps connu, on ne peut pas dire « planifié » : on ne sait pas si
     // ce qui est posé suffit.
     if (ckpRestant(t) === null) return '<span class="ck-puce">À estimer</span>';
@@ -5537,7 +5598,14 @@
           '<div class="ck-date">' + esc(ckpDuree(jour) + ' par semaine, dont ' +
             ckpDuree(ckpMargeJour() * (ckpJoursSemaine().length || 5)) + ' de marge') + '</div></div>' +
         '<div class="ck-filet"></div>' +
-        '<p class="ck-chapo">Le planning décide de ce qui est possible. Tout le reste du cockpit lit ces créneaux : si une heure n’est pas ici, elle n’existe nulle part.</p>' +
+        ckpHero('Cette semaine',
+          esc(ckpDuree(s.libre)) + ' <em>encore libres</em>',
+          'Le planning décide de ce qui est possible. Tout le reste du cockpit lit ces créneaux : si une heure n’est pas ici, elle n’existe nulle part.',
+          ckpHeroPuce('var(--ciel)', ckpDuree(s.besoin) + ' restent à caser d’ici la fin de la semaine') +
+          ckpHeroPuce('var(--paille)', ckpDuree(jour) + ' par semaine, dont ' +
+            ckpDuree(ckpMargeJour() * (ckpJoursSemaine().length || 5)) + ' de marge protégée') +
+          (s.inconnu ? ckpHeroPuce('var(--terracotta)', s.inconnu + ' tâche' + (s.inconnu > 1 ? 's n’ont' : ' n’a') +
+            ' pas de temps estimé : ce calcul est optimiste') : '')) +
         ckLBarreSansPlace() + ckLGrille() +
         ckLCapacites(s) + ckLReglages() + ckLProjection(s) +
       '</div>');
@@ -5675,12 +5743,10 @@
           '<span class="ckj-jauge"><span style="width:' + (c.faites / c.total * 100).toFixed(0) + '%"></span></span></div>')
       : '<span class="ck-doux">' + esc(ckJSousTitre(p)) + '</span>';
     return '<div class="ckj-l" onclick="ADM.ckJOuvrir(\'' + esc(ckJId(p)) + '\')">' +
-      '<div><div class="ckj-n">' + esc(p.projectLabel) + '</div>' +
-        '<div class="ckj-c"><span class="ck-puce ck-puce--cli">' + esc(p.client) + '</span>' +
-        // La prestation ne se répète pas quand elle porte déjà le nom du
-        // projet : « Site web · Site web » n'apprend rien.
-        (pr && pr !== p.projectLabel ? '<span class="ck-doux">' + esc(pr) + '</span>' : '') +
-        '</div></div>' +
+      // On pense d'abord en clientes : son nom porte la ligne, la prestation
+      // la qualifie juste en dessous.
+      '<div><div class="ckj-n">' + esc(p.client) + '</div>' +
+        '<div class="ck-eb" style="margin-top:5px">' + esc(p.projectLabel) + '</div></div>' +
       '<div>' + ou + '</div>' +
       '<div>' + (b.restant ? '<b>' + esc(ckpDuree(b.restant)) + '</b> à faire'
         : (b.inconnu ? '<b class="ck-inc">' + b.inconnu + ' à estimer</b>' : '<span class="ck-doux">rien à faire</span>')) +
@@ -5831,6 +5897,13 @@
     var l = ckJListe();
     var presta = {}; l.forEach(function (x) { presta[x.prestation] = 1; });
     var nb = Object.keys(presta).length;
+    // Les totaux du bandeau viennent des MÊMES bilans que les lignes.
+    var totRestant = 0, totSansPlace = 0, prochain = null;
+    l.forEach(function (x) {
+      var b = ckJBilan(x); totRestant += b.restant; totSansPlace += b.aPlanifier;
+      var j = ckJJalon(x);
+      if (j && (!prochain || j.date < prochain.date)) prochain = j;
+    });
     setMain(topbar('Projets') +
       '<div class="wrap ck">' +
         '<div class="ck-tete"><div><div class="ck-meta">Projets</div>' +
@@ -5838,6 +5911,12 @@
           '<div class="ck-date">' + l.length + ' projet' + (l.length > 1 ? 's' : '') + ' · ' + nb +
           ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran</div></div>' +
         '<div class="ck-filet"></div>' +
+        ckpHero('Tes projets', l.length + ' <em>en cours</em>',
+          nb + ' type' + (nb > 1 ? 's' : '') + ' de prestation, un seul écran : ce qui change, c’est le contenu, jamais la structure.',
+          ckpHeroPuce('var(--ciel)', totRestant ? ckpDuree(totRestant) + ' de travail encore nécessaire, tous projets confondus'
+            : 'Rien à faire de ton côté sur les projets en cours') +
+          (totSansPlace ? ckpHeroPuce('var(--terracotta)', ckpDuree(totSansPlace) + ' n’ont encore de place nulle part') : '') +
+          (prochain ? ckpHeroPuce('var(--paille)', 'Prochain jalon : ' + prochain.titre + ' · ' + ckpQuand(prochain.date)) : '')) +
         '<div class="ck-segm" style="margin-bottom:18px">' +
           '<button class="ck-segb' + (CKJ.filtre === 'actifs' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'actifs\')">En cours</button>' +
           '<button class="ck-segb' + (CKJ.filtre === 'tout' ? ' on' : '') + '" onclick="ADM.ckJSetFiltre(\'tout\')">Tous</button>' +

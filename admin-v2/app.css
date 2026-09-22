@@ -1964,14 +1964,14 @@ select.cg-in{cursor:pointer}
 .ckl-pu.on b{color:var(--paille-200)}
 .ckl-aide{margin-top:11px;font-size:12.5px;color:var(--muted);line-height:1.45}
 
-.ckl-gr{display:flex;gap:10px;background:var(--bone);border-radius:26px;padding:18px 20px 14px;overflow-x:auto}
-.ckl-r{position:relative;width:46px;flex:none}
-.ckl-h{position:absolute;right:6px;transform:translateY(-50%);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ckl-gr{display:flex;gap:10px;background:var(--card);border-radius:26px;padding:18px 20px 14px;overflow-x:auto}
+.ckl-r{position:relative;width:58px;flex:none}
+.ckl-h{position:absolute;right:6px;transform:translateY(-50%);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ckl-h--d{transform:none;color:var(--terre-600);font-weight:600}
 .ckl-c{flex:1 1 0;min-width:112px}
 .ckl-n{font-family:var(--font-micro);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;padding-bottom:8px}
 .ckl-c--auj .ckl-n{color:var(--terre);font-weight:600}
-.ckl-b{position:relative;background:var(--surface);border-radius:14px;overflow:hidden}
+.ckl-b{position:relative;background:var(--bone);border-radius:14px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--border)}
 .ckl-c--auj .ckl-b{box-shadow:inset 0 0 0 1.5px var(--glycine-700)}
 .ckl-c--p .ckl-b{opacity:.45}
 .ckl-pause{position:absolute;left:0;right:0;background:repeating-linear-gradient(135deg,rgba(90,42,17,0.05) 0 6px,transparent 6px 12px)}
@@ -2051,3 +2051,99 @@ select.cg-in{cursor:pointer}
 .ckj-fl{color:var(--glycine-900);text-decoration:none;font-size:14.5px}
 .ckj-fl:hover{text-decoration:underline}
 @media(max-width:900px){.ckj-h{display:none}.ckj-l{grid-template-columns:1fr;gap:9px}}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COCKPIT — la charte Seed to bloom, appliquée aux quatre écrans neufs.
+
+   Les jetons sont REDÉFINIS dans la portée .ck, pas dans :root : les écrans
+   historiques gardent exactement leur apparence, et il n'y a qu'un endroit
+   à changer si la charte bouge encore. Aucune règle n'est recopiée.
+
+   Dominantes : Ébène, Ciel, Paille. Le Cuivre ne s'emploie jamais en grand
+   aplat, seulement sur petite surface. Le jaune n'est jamais en aplat non
+   plus : il sert de texte sur fond sombre, ou de dégradé.
+   ═══════════════════════════════════════════════════════════════════════ */
+.ck{
+  --ebene:#110704; --cuivre:#5A2A11; --cuivre-800:#2c1408;
+  --ciel:#C5DEFF; --ciel-bg:#EAF2FF; --terracotta:#CD8F6E;
+  /* surfaces : blanc pour les cartes, ivoire pour respirer, ciel pâle pour
+     ce qui demande une décision */
+  --bone:#ffffff; --card:#F8F6F2; --surface:#F8F6F2; --surface-2:#EAF2FF;
+  --border:#e9e5dc; --bone-d:#e9e5dc;
+  --paille:#E6E5B2; --paille-200:#f4f3d9;
+  --text:#110704; --muted:rgba(17,7,4,0.58);
+  --glycine:#C5DEFF; --glycine-50:#f2f7ff; --glycine-700:#7fa4d4; --glycine-900:#3f5f8c;
+  --terre-600:#7a3d1e; --terre-400:#a56b48; --terre-200:#d3b19a;
+  --gold-chip:#CD8F6E; --gold-soft:#E6E5B2;
+  --font-display:'Alegreya',Georgia,serif;
+  --font-body:'Alegreya',Georgia,serif;
+  font-family:var(--font-body);
+  font-size:16.5px;
+}
+.ck .btn,.ck .ck-meta,.ck .ck-segb,.ck .ckl-n,.ck .ckl-h,.ck .ck-puce,.ck .ckj-h,
+.ck .ck-th,.ck .ckl-capn,.ck .ckl-navl,.ck .ckl-fl,.ck .ck-fl,.ck .ckj-c .ck-doux,
+.ck .ckl-troul,.ck .ckl-sale,.ck .ckj-etn,.ck .ck-ch{font-family:var(--font-micro)}
+/* Les grands arrondis d'avant faisaient « bulle » : la charte va de 8 à 28. */
+.ck .ck-tbl,.ck .ck-jour,.ck .ckl-gr,.ck .ckj,.ck .ckj-etp,.ck .ckl-proj,.ck .ck-sem{border-radius:20px}
+.ck .ckl-capb,.ck .ckl-regc,.ck .ckl-sp,.ck .ck-col,.ck .ck-att>*{border-radius:16px}
+.ck .ck-pan{border-radius:16px}
+.ck h1,.ck .ck-h1{letter-spacing:-0.025em}
+.ck .ck-chapo,.ck .ck-chapo2,.ck .ck-semp,.ck .ckl-aide,.ck .ckl-capx,.ck .ckl-note{font-size:15.5px}
+
+/* ── Le bandeau d'en-tête sombre : ce que la journée permet ─────────────
+   Un seul composant, posé en haut des quatre écrans. Le chiffre est en
+   Paille, jamais en aplat : c'est du texte sur Ébène. */
+.ck-hero{background:var(--ebene);color:var(--paille);border-radius:24px;padding:26px 30px;margin-bottom:22px;
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:26px;align-items:center}
+.ck-hero__e{font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(230,229,178,.62)}
+.ck-hero__v{font-family:var(--font-display);font-size:clamp(28px,3.4vw,40px);line-height:1.04;letter-spacing:-0.025em;color:var(--paille);margin-top:7px}
+.ck-hero__v em{font-style:italic;color:var(--ciel)}
+.ck-hero__s{font-size:14.5px;color:rgba(230,229,178,.72);margin-top:9px;line-height:1.45}
+.ck-hero__d{display:flex;flex-direction:column;gap:9px}
+.ck-hero__lg{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:rgba(230,229,178,.82);line-height:1.4}
+.ck-hero__p{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px}
+.ck-hero__b{display:flex;height:9px;border-radius:999px;overflow:hidden;background:rgba(230,229,178,.16);margin-bottom:14px}
+.ck-hero__b span{display:block;height:100%}
+.ck-hero a{color:var(--ciel)}
+@media(max-width:900px){.ck-hero{grid-template-columns:1fr;padding:20px 20px}}
+
+/* ── Le bandeau Cuivre : la règle, dite une fois ────────────────────────
+   Petite surface, jamais un grand aplat : il n'accueille qu'une phrase. */
+.ck-regle{background:var(--cuivre);color:var(--paille);border-radius:18px;padding:17px 22px;margin-bottom:20px}
+.ck-regle__e{font-family:var(--font-micro);font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(230,229,178,.66);margin-bottom:6px}
+.ck-regle p{font-size:15px;line-height:1.5;color:var(--paille)}
+
+/* ── Les pastilles de sens ──────────────────────────────────────────────
+   Quatre teintes, quatre significations, jamais plus : ciel = ça avance ou
+   ça attend la cliente, terracotta = ça réclame, ébène = c'est à moi,
+   neutre = c'est posé. */
+.ck-ch{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;
+  font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;white-space:nowrap}
+.ck-ch--ciel{background:var(--ciel);color:var(--glycine-900)}
+.ck-ch--terra{background:var(--terracotta);color:#3d1c0b}
+.ck-ch--dark{background:var(--ebene);color:var(--paille)}
+.ck-ch--neutre{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--border)}
+
+/* ── L'eyebrow cliente · prestation, au-dessus du titre ────────────────── */
+.ck-eb{font-family:var(--font-micro);font-size:10px;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--terre-600);margin-bottom:4px}
+
+/* ── Le panneau d'une tâche, en Ébène ───────────────────────────────────
+   Il s'ouvre SOUS la ligne : le fond sombre dit qu'on a changé de plan,
+   sans avoir besoin d'un tiroir ni d'une fenêtre. */
+.ck .ck-pan{background:var(--ebene);color:var(--paille)}
+.ck .ck-pan .ck-meta{color:rgba(230,229,178,.6)}
+.ck .ck-pan .ck-pl{color:rgba(230,229,178,.82)}
+.ck .ck-pan .ck-pl b,.ck .ck-pan .ck-pcr b{color:var(--paille)}
+.ck .ck-pan .ck-pl--t{border-top-color:rgba(230,229,178,.2)}
+.ck .ck-pan .ck-pe,.ck .ck-pan .ck-pn,.ck .ck-pan .ck-ppq{color:rgba(230,229,178,.6)}
+.ck .ck-pan .ck-inc{color:var(--terracotta)}
+.ck .ck-pan .ck-ap{color:var(--ciel)}
+.ck .ck-pan .ck-pcr{background:rgba(230,229,178,.08);color:rgba(230,229,178,.88)}
+.ck .ck-pan .ck-pcr--v{background:transparent;color:rgba(230,229,178,.5)}
+.ck .ck-pan .ck-pp{border-top-color:rgba(230,229,178,.2)}
+.ck .ck-pan .inp{background:rgba(230,229,178,.1);color:var(--paille);border:1px solid rgba(230,229,178,.22)}
+.ck .ck-pan .inp::placeholder{color:rgba(230,229,178,.4)}
+.ck .ck-pan .ck-fl{color:rgba(230,229,178,.6)}
+.ck .ck-pan .btn--outline{background:rgba(230,229,178,.1);color:var(--paille)}
+.ck .ck-pan .btn--outline:hover{background:rgba(230,229,178,.18)}
+.ck .ck-pan .btn--dark{background:var(--paille);color:var(--ebene)}
