@@ -1274,6 +1274,65 @@ function findTask(esp: AnyObj, projectId: string, taskId: string): { task: AnyOb
 // `studioNote` : la note que le studio prend pour lui. Elle est retirée du
 // paquet envoyé à l'espace client (voir stripStudio, côté client).
 const ADMIN_TASK_FIELDS = ['status', 'briefStatus', 'content', 'title', 'urgency', 'dueDate', 'startDate', 'doDate', 'pole', 'livrableUrl', 'deliverableFileKey', 'archived', 'pinned', 'reviewLink', 'v1Date', 'v2Date', 'clientNotif', 'needsRework', 'clientCommentNotif', 'notes', 'studioNote', 'slot'];
+
+/* ── Le travail d'une tâche : les trois temps, et ses créneaux ─────────────
+ * Une seule implémentation pour les tâches clientes, les tickets et les tâches
+ * perso. Trois temps qu'on ne mélange JAMAIS :
+ *   estMinutes   l'estimation initiale. Posée une fois, jamais écrasée : c'est
+ *                elle, et elle seule, qui permet de voir l'écart plus tard.
+ *                Il faut le demander explicitement (forceEst) pour la changer.
+ *   sessions     le temps RÉELLEMENT passé (voir applyTimeEntry).
+ *   restMinutes  ce qu'il reste ENCORE à faire. C'est la seule valeur que l'on
+ *                réestime. Prévision totale = réel + restant, jamais
+ *                l'estimation initiale.
+ * Planifier n'est pas consommer : les créneaux vivent à part, dans slots.
+ * slots est la SOURCE ; doDate et slot n'en sont que le reflet, pour que
+ * l'écran « Ma semaine » continue de fonctionner sans seconde vérité.
+ */
+const SLOT_MAX_MIN = 720;
+function normSlots(raw: unknown): AnyObj[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 40).map((s: AnyObj) => ({
+    id: (s && typeof s.id === 'string' && s.id) ? String(s.id).slice(0, 40) : genId(),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(String((s && s.date) || '')) ? String(s.date) : '',
+    start: Math.min(1439, Math.max(0, Math.round(Number(s && s.start)) || 0)),
+    minutes: Math.min(SLOT_MAX_MIN, Math.max(5, Math.round(Number(s && s.minutes)) || 30)),
+  })).filter((s: AnyObj) => !!s.date)
+    .sort((a: AnyObj, b2: AnyObj) => (a.date < b2.date ? -1 : a.date > b2.date ? 1 : a.start - b2.start));
+}
+function applyWork(t: AnyObj, b: AnyObj): boolean {
+  let touched = false;
+  if ('estMinutes' in b) {
+    const v = Math.max(0, Math.min(100000, Math.round(Number(b.estMinutes) || 0)));
+    if (!(Number(t.estMinutes) > 0) || b.forceEst) { t.estMinutes = v; touched = true; }
+  }
+  if ('restMinutes' in b) {
+    t.restMinutes = Math.max(0, Math.min(100000, Math.round(Number(b.restMinutes) || 0)));
+    touched = true;
+  }
+  if ('unblocks' in b) {
+    t.unblocks = String(b.unblocks == null ? '' : b.unblocks).slice(0, 200);
+    touched = true;
+  }
+  if ('slots' in b) {
+    t.slots = normSlots(b.slots);
+    const p = t.slots[0];
+    t.doDate = p ? p.date : null;
+    t.slot = p ? String(p.start) : '';
+    touched = true;
+  } else if ('doDate' in b || 'slot' in b) {
+    // L'ancien écran ne connaît qu'un créneau et ignore sa durée. On garde
+    // malgré tout les deux écritures d'accord entre elles : sinon le planning
+    // et la liste diraient deux choses différentes du même travail.
+    const d = String(t.doDate || '').slice(0, 10);
+    const prev = (Array.isArray(t.slots) ? t.slots[0] : null) as AnyObj | null;
+    t.slots = d ? [{ id: (prev && prev.id) || genId(), date: d,
+      start: Math.min(1439, Math.max(0, parseInt(String(t.slot || '0'), 10) || 0)),
+      minutes: (prev && prev.minutes) || 60 }] : [];
+    touched = true;
+  }
+  return touched;
+}
 /* ── Saisie du temps PAR MOIS ─────────────────────────────────────────────
  * Un travail s'étale : 2 h en septembre, 1 h en octobre. Un total unique ne
  * sait pas dire ça, il ne peut tomber que dans un seul mois. Chaque saisie est
@@ -1345,7 +1404,12 @@ async function handleTaskPatch(request: Request, env: Env, key: string, data: An
   if ('title' in body) body.title = (body.title || '').toString().slice(0, 300);
   if ('content' in body) body.content = (body.content || '').toString().slice(0, 10000);
   ADMIN_TASK_FIELDS.forEach((k) => { if (k in body) t[k] = body[k]; });
-  if ('estMinutes' in body) t.estMinutes = Math.max(0, Math.min(100000, Math.round(Number(body.estMinutes) || 0)));
+  // Après la liste blanche : les créneaux doivent pouvoir corriger doDate
+  // et slot que celle-ci vient peut-être d'écrire.
+  // applyWork est le SEUL endroit qui écrit estMinutes : une seconde écriture
+  // vivait ici et repassait par-dessus, ce qui rendait l'estimation initiale
+  // réécrivable alors qu'elle doit rester le point de comparaison.
+  applyWork(t, body);
   // Mois de travail forcé (YYYY-MM) : repère fiable pour le suivi du temps.
   if ('workMonth' in body) { const w = String(body.workMonth || '').slice(0, 7); t.workMonth = /^\d{4}-\d{2}$/.test(w) ? w : ''; }
   let manualDeltaMin = 0;
@@ -2007,6 +2071,9 @@ async function handleDashboard(env: Env): Promise<Response> {
             studioNote: t.studioNote || '',
             timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
             estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0,
+            restMinutes: typeof t.restMinutes === 'number' ? t.restMinutes : null,
+            unblocks: t.unblocks || '',
+            slots: Array.isArray(t.slots) ? t.slots : [],
             needsRework: !!t.needsRework,
             clientFeedbackAt: t.clientFeedbackAt || '',
             // État des envois de retours : combien de versions envoyées, où en
@@ -2056,7 +2123,7 @@ async function handleDashboard(env: Env): Promise<Response> {
           const atts = _tf.atts;
           const clientLink = _tf.clientLink;
           const beFiles: AnyObj[] = [];
-          deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', doDate: t.doDate || '', pole: t.pole || '', status: t.status, content: t.content || '', blocks: Array.isArray(t.blocks) ? t.blocks : [], table: (t.table && typeof t.table === 'object') ? t.table : null, attCount: atts.length, attachments: atts.concat(beFiles), clientLink, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, workMonth: t.workMonth || '', estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, needsRework: !!t.needsRework });
+          deadlines.push({ key: ci.key, client: who, project: 'partner', projectLabel: 'Partenaire créative', kind: 'tâche', id: t.id, title: t.title, dueDate: t.dueDate || '', doDate: t.doDate || '', pole: t.pole || '', status: t.status, content: t.content || '', blocks: Array.isArray(t.blocks) ? t.blocks : [], table: (t.table && typeof t.table === 'object') ? t.table : null, attCount: atts.length, attachments: atts.concat(beFiles), clientLink, reviewLink: t.reviewLink || '', reviewSentAt: (hist.length ? hist[hist.length - 1].at : '') || '', timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60, workMonth: t.workMonth || '', estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0, restMinutes: typeof t.restMinutes === 'number' ? t.restMinutes : null, unblocks: t.unblocks || '', slots: Array.isArray(t.slots) ? t.slots : [], needsRework: !!t.needsRework });
         }
         // Notification persistante : tâche créée par le client et pas encore traitée.
         if (t.clientNotif && !t.archived) newTasks.push({ key: ci.key, client: who, id: t.id, title: t.title, content: t.content || '', dueDate: t.dueDate || '', attCount: (t.attachments || []).length, attachments: (t.attachments || []).map((a: AnyObj) => ({ name: a.name || 'fichier', key: a.key || a.fileKey || '' })).filter((a: AnyObj) => a.key), createdAt: t.createdAt || '' });
@@ -2142,7 +2209,11 @@ async function handleDashboard(env: Env): Promise<Response> {
         studioNote: t.studioNote || '',
         priority: t.priority || 'moyenne',
         timeSpentSeconds: t.timeSpentSeconds || (t.timeSpentMinutes || 0) * 60,
-        estMinutes: 0, needsRework: false, clientFeedbackAt: '',
+        estMinutes: typeof t.estMinutes === 'number' ? t.estMinutes : 0,
+        restMinutes: typeof t.restMinutes === 'number' ? t.restMinutes : null,
+        unblocks: t.unblocks || '',
+        slots: Array.isArray(t.slots) ? t.slots : [],
+        needsRework: false, clientFeedbackAt: '',
         sentCount: tLivs.length,
         entries: (Array.isArray(t.sessions) ? t.sessions : []).map((x: AnyObj) => ({
           id: String(x.id || ''), month: String(x.start || '').slice(0, 7),
@@ -2360,6 +2431,7 @@ async function handleMyTaskUpdate(request: Request, env: Env, id: string): Promi
   const t = tasks.find((x) => x.id === id);
   if (!t) return json({ error: 'Tâche introuvable' }, 404);
   MYTASK_FIELDS.forEach((k) => { if (k in b) t[k] = b[k]; });
+  applyWork(t, b);
   if ('timeSpentSeconds' in b) {
     const nv = Math.max(0, Math.round(Number(b.timeSpentSeconds) || 0));
     // Garde anti-écrasement : un chrono reparti d'un état périmé ne peut pas
@@ -2419,10 +2491,56 @@ async function handleMyTaskDelete(env: Env, id: string): Promise<Response> {
 }
 
 /* ─────────── Planning : capacité hebdo (minutes par jour de semaine 1=lundi) ─────────── */
+/* Répartition provisoire de la semaine. Trois enveloppes qui font EXACTEMENT
+ * la semaine : c'est ce qui garantit que la marge n'est jamais retirée deux
+ * fois. Les consultations de messages sont un vrai bloc de planning, imputé
+ * sur une enveloppe : elles prennent de la place comme le reste. */
+const MESSAGES_DEFAUT = { heure: 860, duree: 30, enveloppe: 'stb' };
+/* Les enveloppes par défaut se DÉDUISENT de la semaine réglée, elles ne sont
+ * pas écrites en dur : sinon elles diraient 35h50 pendant que le planning dit
+ * 30h, et la marge se retrouverait comptée de travers. La dernière absorbe
+ * l'arrondi, pour que la somme fasse exactement la semaine. */
+function enveloppesDefaut(totalSemaine: number): AnyObj[] {
+  const total = Math.max(0, Math.round(totalSemaine) || 0);
+  const cliente = Math.round(total * 0.70);
+  const stb = Math.round(total * 0.14);
+  return [
+    { id: 'cliente', nom: 'Travail cliente', minutes: cliente },
+    { id: 'stb', nom: 'Seed to Bloom', minutes: stb },
+    { id: 'marge', nom: 'Marge protégée', minutes: Math.max(0, total - cliente - stb) },
+  ];
+}
+function normEnveloppes(raw: unknown, totalSemaine: number): AnyObj[] {
+  if (!Array.isArray(raw)) return enveloppesDefaut(totalSemaine);
+  const out = raw.slice(0, 8).map((e: AnyObj) => ({
+    id: String((e && e.id) || '').slice(0, 24) || genId().slice(0, 8),
+    nom: String((e && e.nom) || '').slice(0, 60) || 'Enveloppe',
+    minutes: Math.max(0, Math.min(10080, Math.round(Number(e && e.minutes)) || 0)),
+  }));
+  return out.length ? out : enveloppesDefaut(totalSemaine);
+}
+function totalSemaine(days: AnyObj): number {
+  let n = 0;
+  for (let i = 1; i <= 7; i++) n += Math.max(0, Math.round(Number(days && days[i])) || 0);
+  return n;
+}
+function normMessages(raw: unknown): AnyObj {
+  const m = (raw || {}) as AnyObj;
+  return {
+    heure: Math.min(1439, Math.max(0, Math.round(Number(m.heure)) || MESSAGES_DEFAUT.heure)),
+    duree: Math.min(480, Math.max(0, Math.round(Number(m.duree)) || MESSAGES_DEFAUT.duree)),
+    enveloppe: String(m.enveloppe || MESSAGES_DEFAUT.enveloppe).slice(0, 24),
+  };
+}
 async function getPlanning(env: Env): Promise<AnyObj> {
   const p = (await env.KV_ADMIN.get('admin:planning', { type: 'json' })) as AnyObj | null;
-  if (p && p.days) return { startHour: 9, endHour: 18, lunchStart: 13, lunchEnd: 14, blocks: [], ...p };
-  return { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, startHour: 9.5, endHour: 18, lunchStart: 13, lunchEnd: 14, blocks: [] };
+  const base = { startHour: 9, endHour: 18, lunchStart: 13, lunchEnd: 14, blocks: [] };
+  const cur = (p && p.days)
+    ? { ...base, ...p }
+    : { days: { 1: 360, 2: 360, 3: 360, 4: 360, 5: 360, 6: 0, 7: 0 }, ...base, startHour: 9.5 };
+  cur.enveloppes = normEnveloppes(cur.enveloppes, totalSemaine(cur.days));
+  cur.messages = normMessages(cur.messages);
+  return cur;
 }
 function sanitizeBlocks(raw: any): AnyObj[] {
   if (!Array.isArray(raw)) return [];
@@ -2448,8 +2566,13 @@ async function handlePlanningSave(request: Request, env: Env): Promise<Response>
   const lunchStart = b.lunchStart != null ? Math.round(Math.min(22, Math.max(0, parseFloat(b.lunchStart) || 0)) * 2) / 2 : (cur.lunchStart != null ? cur.lunchStart : 13);
   const lunchEnd = b.lunchEnd != null ? Math.round(Math.min(23, Math.max(lunchStart, parseFloat(b.lunchEnd) || 0)) * 2) / 2 : (cur.lunchEnd != null ? cur.lunchEnd : 14);
   const blocks = b.blocks !== undefined ? sanitizeBlocks(b.blocks) : (cur.blocks || []);
-  await env.KV_ADMIN.put('admin:planning', JSON.stringify({ days, startHour, endHour, lunchStart, lunchEnd, blocks }));
-  return json({ days, startHour, endHour, lunchStart, lunchEnd, blocks });
+  // On n'impose pas que la somme fasse la semaine : c'est sa répartition,
+  // pas la nôtre. L'écart, s'il y en a un, se dira à l'écran.
+  const enveloppes = normEnveloppes(b.enveloppes !== undefined ? b.enveloppes : cur.enveloppes, totalSemaine(days));
+  const messages = b.messages !== undefined ? normMessages(b.messages) : normMessages(cur.messages);
+  const out = { days, startHour, endHour, lunchStart, lunchEnd, blocks, enveloppes, messages };
+  await env.KV_ADMIN.put('admin:planning', JSON.stringify(out));
+  return json(out);
 }
 
 /* ─────────────────────────── notifications client (Resend) ─────────────────────────── */
