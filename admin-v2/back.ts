@@ -839,6 +839,9 @@ async function handleClientApi(
     }
     // Un ticket porte du temps comme une tâche : même saisie par mois.
     applyTimeEntry(tk, body);
+    // Même modèle de travail que les tâches : un ticket a lui aussi une
+    // estimation, un travail restant et des créneaux.
+    applyWork(tk, body);
     if (body.status === 'done' || body.status === 'closed') { if (!tk.resolvedAt) tk.resolvedAt = nowIso(); }
     else if ('status' in body) { tk.resolvedAt = null; }
     // Report d'échéance PROPOSÉ : la cliente a choisi une date, Cindy en
