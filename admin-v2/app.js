@@ -4705,6 +4705,7 @@
           (ckpRestant(t) === null ? ckpChampReste(t, 'cap')
             : (ap ? '<button class="btn btn--outline btn--sm" onclick="ADM.nav(\'semaine\')">Planifier</button>'
                   : '<button class="btn btn--outline btn--sm" onclick="ADM.ckpPasMaintenant(\'' + esc(t.id) + '\')">Pas maintenant</button>')) +
+          ckpChampFini(t, 'cap') +
         '</div></div>';
     }).join('') : '<div class="ck-vide">Aucune tâche ne réclame de décision aujourd’hui.</div>';
     return '<section class="ck-sec">' + ckpTitre('Ton cap aujourd’hui',
@@ -4833,9 +4834,12 @@
   // « Combien de temps te faut-il ENCORE ? » — jamais « combien ça va prendre
   // en tout ». C'est la seule question qu'on pose, et c'est elle qui remplit
   // peu à peu les chiffres dont la capacité a besoin.
-  // On accepte ce qui se tape naturellement : 90, 1h30, 1h, 1,5.
+  // On accepte ce qui se tape naturellement : 90, 1h30, 1h, 1,5, 45 min.
+  // Le « min » final est toléré pour que ckpDuree se relise : les champs sont
+  // pré-remplis avec ce que le tableau de bord affiche, pas avec autre chose.
   function ckpParseDuree(v) {
     var s = String(v == null ? '' : v).toLowerCase().replace(',', '.').replace(/\s+/g, '').trim();
+    s = s.replace(/(mn|min|minutes?)$/, '');
     if (!s) return null;
     var m = s.match(/^(\d+(?:\.\d+)?)h(\d{1,2})?$/);
     if (m) return Math.round(parseFloat(m[1]) * 60 + (m[2] ? parseInt(m[2], 10) : 0));
@@ -4855,7 +4859,8 @@
   // identifiants identiques quand le cap et la liste sont à l'écran ensemble.
   function ckpChampReste(t, zone) {
     var a = '\'' + esc(t.id) + '\',\'' + zone + '\'';
-    return '<div class="ck-reste"><input class="inp" id="ck-r-' + zone + '-' + esc(t.id) + '" placeholder="1h30" ' +
+    return '<div class="ck-reste"><span class="ck-fl">Reste</span>' +
+      '<input class="inp" id="ck-r-' + zone + '-' + esc(t.id) + '" placeholder="1h30" aria-label="Travail restant" ' +
       'onclick="event.stopPropagation()" ' +
       'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpReste(' + a + ');}">' +
       '<button class="btn btn--outline btn--sm" onclick="event.stopPropagation();ADM.ckpReste(' + a + ')">Noter</button></div>';
@@ -4873,6 +4878,51 @@
       if (r && !r.error) { toast('Noté : ' + ckpDuree(min) + ' à faire'); CKP.pret = false; renderMain(); }
       else toast('Erreur');
     }).catch(function () { toast('Erreur'); });
+  }
+
+  // « J'ai terminé » — le MÊME geste partout, et il pose le temps passé au
+  // moment où on termine. Aucun créneau n'est exigé : une tâche faite sans
+  // avoir jamais été planifiée se clôt exactement comme les autres. Le temps
+  // part en session datée du mois courant (jamais en total écrasé), et le
+  // travail restant tombe à zéro pour qu'elle quitte la capacité.
+  function ckpChampFini(t, zone) {
+    var a = '\'' + esc(t.id) + '\',\'' + zone + '\'';
+    var r = ckpRestant(t);
+    var pre = (r !== null && r > 0) ? ckpDuree(r) : (t.estim > 0 ? ckpDuree(t.estim) : '');
+    return '<div class="ck-fini"><span class="ck-fl">Passé</span>' +
+      '<input class="inp" id="ck-f-' + zone + '-' + esc(t.id) + '" placeholder="1h30" ' +
+      'value="' + esc(pre) + '" aria-label="Temps passé" title="Le temps que tu y as passé" ' +
+      'onclick="event.stopPropagation()" ' +
+      'onkeydown="event.stopPropagation();if(event.key===\'Enter\'){event.preventDefault();ADM.ckpFinir(' + a + ');}">' +
+      '<button class="btn btn--sm ck-bfin" onclick="event.stopPropagation();ADM.ckpFinir(' + a + ')">J’ai terminé</button></div>';
+  }
+  function ckpFinir(id, zone) {
+    var t = ckpTaches().filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var champ = el('ck-f-' + (zone || 'cap') + '-' + id);
+    var brut = champ ? String(champ.value || '').trim() : '';
+    // Champ vide : on termine quand même, sans rien inventer sur le temps.
+    var min = brut ? ckpParseDuree(brut) : 0;
+    if (min === null || min < 0) { toast('Écris par exemple 90, 1h30 ou 1,5'); if (champ) champ.focus(); return; }
+    var d = new Date();
+    var body = { status: 'done', restMinutes: 0 };
+    if (min > 0) body.timeEntry = { month: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), minutes: min };
+    if (t.src === 'client') body.projectId = t.projet || 'partner';
+    if (t.src === 'ticket') body.projectId = 'maintenance';
+    var envoyer = function (notify) {
+      body.notify = !!notify;
+      jpost(ckpUrl(t), body, 'PATCH').then(function (r) {
+        if (r && !r.error) {
+          toast('Terminée ✓' + (min > 0 ? ' · ' + ckpDuree(min) + ' notées' : '') + (notify ? ' · cliente prévenue' : ''));
+          CKP.pret = false; renderMain();
+        } else toast('Erreur');
+      }).catch(function () { toast('Erreur'); });
+    };
+    // Une tâche interne ne prévient personne. Pour une cliente, la question se
+    // pose une seule fois, avec le dialogue que le reste du dashboard emploie
+    // déjà : pas de second mécanisme de notification.
+    if (t.src === 'perso') { envoyer(false); return; }
+    notifyConfirm('Prévenir ' + (t.qui || 'la cliente') + ' par e-mail que « ' + (t.titre || '') + ' » est terminée ?', envoyer);
   }
 
   /* ════════════════════════════════════════════════════════════════════════
@@ -5033,6 +5083,7 @@
       '</div>' +
       '<div class="ck-pp">' +
         '<button class="btn btn--dark btn--sm" onclick="' + ckpOuvrirArg(t) + '">Ouvrir</button>' +
+        ckpChampFini(t, 'pan') +
         '<span class="ck-ppq">' + esc(ckTPourquoi(t)) + '</span>' +
       '</div></div>';
   }
@@ -10579,7 +10630,7 @@
     msWeek: msWeek, msFilter: msFilter, msToggleCap: msToggleCap, msMode: msMode, msDaySel: msDaySel, msPlace: msPlace, msDone: msDone, msDelete: msDelete, msNoteOpen: msNoteOpen, msPlanOver: msPlanOver, msPlanLeave: msPlanLeave, msPlanDrop: msPlanDrop, msPlanUnplace: msPlanUnplace, msAutoPlan: msAutoPlan, msOrganizeWeek: msOrganizeWeek, msOrganizeDay: msOrganizeDay, msUnplace: msUnplace, msDragStart: msDragStart, msDragEnd: msDragEnd, msDayOver: msDayOver, msDayLeave: msDayLeave, msDrop: msDrop, msSlotOver: msSlotOver, msDropSlot: msDropSlot, msNewBlock: msNewBlock, msSaveBlock: msSaveBlock, msDeleteBlock: msDeleteBlock, msEst: msEst, msEstH: msEstH, msAddTop: msAddTop, msAddDay: msAddDay,
     openClient: openClient, tab: tab, subtab: subtab, ffShow: ffShow, saveInfos: saveInfos, saveForfait: saveForfait, forfaitOverrideAdd: forfaitOverrideAdd, forfaitOverrideDel: forfaitOverrideDel, testEmail: testEmail, toggleOffer: toggleOffer, addOffer: addOffer, setBanner: setBanner, setMaintenance: setMaintenance, renameSupport: renameSupport, addSupport: addSupport, addSupportQuick: addSupportQuick, delSupport: delSupport, crAdd: crAdd, crSet: crSet, crReply: crReply, crDel: crDel, crAddVersion: crAddVersion, crAddVersionLink: crAddVersionLink, crDelVersion: crDelVersion, pjAdd: pjAdd, pjSet: pjSet, pjMove: pjMove, pjDel: pjDel, pjStart: pjStart, pjNotify: pjNotify, pjToggle: pjToggle, deleteClient: deleteClient,
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
-    ckpReste: ckpReste, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
+    ckpReste: ckpReste, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetVue: ckTSetVue, ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir,
     tblStart: tblStart, tblCancel: tblCancel, tblMove: tblMove, tblSave: tblSave,
     taskStatus: taskStatus, ptFinishPrompt: ptFinishPrompt, ptTimePrompt: ptTimePrompt, taskDelete: taskDelete, taskDuplicate: taskDuplicate, taskTime: taskTime, ptToggleContent: ptToggleContent, taskComment: taskComment, taskReview: taskReview, taskSendReview: taskSendReview, taskClearRework: taskClearRework, uploadTaskDlv: uploadTaskDlv, addDlvLink: addDlvLink, delDeliverable: delDeliverable, taskArchive: taskArchive, taskMilestone: taskMilestone, taskProposeDate: taskProposeDate, taskEditOpen: taskEditOpen, ptStart: ptStart, ptPause: ptPause, tkStart: tkStart, tkPause: tkPause, navTimerPause: navTimerPause,

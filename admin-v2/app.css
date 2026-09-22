@@ -1842,6 +1842,14 @@ select.cg-in{cursor:pointer}
 .ck-act{display:flex;flex-direction:column;gap:8px;align-items:stretch;padding-top:3px}
 .ck-reste{display:flex;gap:6px;align-items:center}
 .ck-reste .inp{width:82px;padding:7px 10px;font-size:13px}
+/* Terminer, avec le temps passé, sans passer par un créneau ni par un tiroir. */
+.ck-fini{display:flex;gap:6px;align-items:center}
+.ck-fini .inp{width:82px;padding:7px 10px;font-size:13px}
+/* Chaque champ de durée dit lequel des trois temps il écrit : sans ça, deux
+   champs voisins se ressemblent et on note le restant en croyant clore. */
+.ck-fl{font-family:var(--font-micro);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);flex:none}
+.ck-bfin{background:var(--green);color:#fff;white-space:nowrap}
+.ck-bfin:hover{filter:brightness(1.12)}
 
 /* 2 · Ta journée */
 .ck-jour{background:var(--bone);border-radius:26px;padding:4px 26px}
@@ -1926,7 +1934,7 @@ select.cg-in{cursor:pointer}
 .ck-pcr{display:flex;justify-content:space-between;gap:10px;font-size:13px;background:var(--bone);border-radius:10px;padding:8px 11px;margin-bottom:5px}
 .ck-pcr--v{color:var(--muted);background:transparent;padding-left:0}
 .ck-pp{display:flex;gap:8px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
-.ck-ppq{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+.ck-ppq{margin-left:auto;font-size:12px;color:var(--muted);text-align:right;flex:1 1 140px}
 .ck-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;align-items:start}
 .ck-col{background:var(--bone);border-radius:26px;padding:16px 14px}
 .ck-colh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px;padding:0 4px}
