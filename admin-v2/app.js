@@ -1231,9 +1231,10 @@
     revision:  { icon: 'stepStudio',      label: 'Livrable à revoir',      ic: '#8a4a2c', bg: '#F0E2D6' }
   };
   function renderInbox() {
-    setMain(topbar('Inbox', '', 'Tout ce qui arrive de tes clientes. Traite, et ça disparaît') + '<div class="wrap" id="inbox-body"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
+    setMain('<div class="wrap ck ckt inb" id="inbox-body"><h1 class="ck-h1">Inbox</h1><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
     dashGet().then(function (d) { INBOX_D = d; renderInboxBody(); }).catch(showError);
   }
+
   function fmtMin(m) { m = Math.round(m || 0); if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + r : ''); }
   // Liste unifiée, du plus récent au plus ancien.
   function inboxItems() {
@@ -1252,45 +1253,10 @@
     d = d || INBOX_D || {};
     return (d.inbox || []).length + (d.qnrDone || []).length + (d.newTasks || []).length + (d.reworkTasks || []).length + (d.commentTasks || []).length + (d.validated || []).length + (d.revisions || []).filter(function (x) { return !x.seenByAdmin; }).length;
   }
-  function renderInboxBody() {
-    var b = el('inbox-body'); if (!b) return;
-    var items = inboxItems();
-    if (!items.length) { b.innerHTML = '<div class="card infocard" style="background:var(--card);max-width:720px"><div class="empty" style="padding:34px 20px">🌾 Boîte vide : tout est traité.<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:8px">Les demandes, questionnaires, retours, commentaires et validations de tes clientes arriveront ici.</div></div></div>'; return; }
-    var today = new Date(); today.setHours(0, 0, 0, 0);
-    function bucket(at) { if (!at) return 'Plus tôt'; var t = new Date(at); if (isNaN(t)) return 'Plus tôt'; t.setHours(0, 0, 0, 0); var diff = Math.round((today - t) / 86400000); if (diff <= 0) return "Aujourd'hui"; if (diff === 1) return 'Hier'; if (diff <= 7) return 'Cette semaine'; return 'Plus tôt'; }
-    var order = ["Aujourd'hui", 'Hier', 'Cette semaine', 'Plus tôt'], groups = {};
-    items.forEach(function (it) { var k = bucket(it.at); (groups[k] = groups[k] || []).push(it); });
-    var html = '';
-    order.forEach(function (g) {
-      if (!groups[g]) return;
-      html += '<div class="micro" style="text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin:18px 2px 8px;font-weight:600">' + g + ' · ' + groups[g].length + '</div>' + groups[g].map(inboxCard).join('');
-    });
-    b.innerHTML = '<div style="max-width:720px">' + html + '</div>';
-  }
+
   // Coquille commune : pastille icône + type + cliente + date, puis corps + actions.
-  function inboxChrome(it, bodyHtml, actionsHtml, accent) {
-    var cfg = INBOX_TYPES[it.type] || INBOX_TYPES.task, x = it.x;
-    var w = it.at ? new Date(it.at) : null;
-    var whenTxt = w && !isNaN(w) ? w.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
-    var chip = '<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:' + cfg.bg + ';color:' + cfg.ic + ';flex-shrink:0">' + admIcon(cfg.icon) + '</span>';
-    return '<div style="background:' + (accent ? '#f7ede6' : 'var(--card)') + ';border-radius:14px;padding:15px 17px;margin-bottom:11px">' +
-      '<div style="display:flex;gap:12px;align-items:flex-start">' + chip +
-        '<div style="min-width:0;flex:1">' +
-          '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">' +
-            '<span class="micro" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:' + cfg.ic + '">' + cfg.label + '</span>' +
-            (whenTxt ? '<span class="micro" style="color:var(--muted);flex-shrink:0;text-transform:none;letter-spacing:0">' + whenTxt + '</span>' : '') +
-          '</div>' +
-          '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--glycine-900);margin-top:2px"><a href="javascript:ADM.openClient(\'' + x.key + '\')">' + esc(x.client) + '</a></div>' +
-          bodyHtml +
-          (actionsHtml ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px">' + actionsHtml + '</div>' : '') +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  function inboxPreview(content) {
-    var c = (content || '').trim();
-    return c ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:5px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + mtLinkify(c) + '</div>' : '';
-  }
+
+
   function inboxAtts(x) {
     // Dernier fichier joint en premier (les fichiers récents sont ajoutés en fin de liste).
     var atts = (Array.isArray(x.attachments) ? x.attachments : []).slice().reverse();
@@ -1304,41 +1270,145 @@
       return '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:15px;padding:5px 10px;border-radius:8px;border:none;color:var(--glycine-900);text-decoration:none">📎 ' + esc(a.name || 'fichier') + '</a>';
     }).join('') + '</div>';
   }
-  function inboxCard(it) {
-    if (it.type === 'demande') return inboxDemandeCard(it);
-    var x = it.x;
-    var openBtn = '<button class="btn btn--dark btn--sm" onclick="ADM.inboxDrawer(\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\')">Ouvrir la fiche</button>';
-    var seenArgs = '\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\'' + ((it.type === 'validated' || it.type === 'revision') ? ',\'' + (x.project || 'partner') + '\'' : '');
-    var seenBtn = '<button class="btn btn--outline btn--sm" onclick="ADM.inboxSeen(' + seenArgs + ')">Vu</button>';
-    var body = '';
-    if (it.type === 'qnr') {
-      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:6px">' + esc(x.name || 'Questionnaire') + '</div>';
-    } else if (it.type === 'task' || it.type === 'ticket') {
-      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + inboxPreview(x.content) + inboxAtts(x);
-    } else if (it.type === 'rework') {
-      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div><div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a laissé ses retours · à retravailler de ton côté.</div>' + inboxAtts(x);
-    } else if (it.type === 'comment') {
-      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + '</div>' + (x.text ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:5px;font-style:italic">« ' + esc(x.text) + ' »</div>' : '') + inboxAtts(x);
-    } else if (it.type === 'validated') {
-      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' + (x.taskTitle ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">Tâche : ' + esc(x.taskTitle) + '</div>' : '');
-    } else if (it.type === 'revision') {
-      var rlink = x.clientLink ? '<div style="margin-top:8px"><a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Lien de la cliente</a></div>' : '';
-      var rwish = x.wishDate ? '<div style="margin-top:7px;font-family:var(--font-micro);font-size:15px;font-weight:700;color:#6a4a0b;background:#fbf5e6;border:none;border-radius:8px;padding:6px 10px;display:inline-block">📅 Nouvelle version souhaitée pour le ' + esc((x.wishDate || '').split('-').reverse().join('/')) + '</div>' : '';
-      body = '<div style="font-size:15px;font-weight:600;color:var(--terre);margin-top:5px">' + esc(x.name || 'Livrable') + '</div>' +
-        (x.projectLabel ? '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:3px">' + esc(x.projectLabel) + '</div>' : '') +
-        (x.comment ? '<div style="font-size:15px;color:#7a2e1e;line-height:1.5;margin-top:7px;white-space:pre-wrap;background:#fbeae5;border:none;border-radius:9px;padding:9px 12px">« ' + esc(x.comment) + ' »</div>' : '<div class="micro" style="text-transform:none;letter-spacing:0;color:var(--muted);margin-top:4px">La cliente a demandé une révision.</div>') +
-        rwish + inboxAtts(x) + rlink;
-    }
-    if (it.type === 'revision') {
-      var cidArg = x.creationId ? '\'' + x.creationId + '\'' : 'null';
-      var tidArg = x.taskId ? '\'' + x.taskId + '\'' : 'null';
-      var resendArgs = '\'' + x.key + '\',\'' + (x.project || 'partner') + '\',' + cidArg + ',' + tidArg + ',\'' + x.id + '\'';
-      var resendBtns = '<button class="btn btn--dark btn--sm" onclick="ADM.inboxResend(' + resendArgs + ')">↩ Renvoyer une version (fichier)</button>' +
-        '<button class="btn btn--outline btn--sm" onclick="ADM.inboxResendLink(' + resendArgs + ')">Renvoyer un lien</button>';
-      return inboxChrome(it, body, resendBtns + openBtn + seenBtn, '#a8432f');
-    }
-    return inboxChrome(it, body, openBtn + seenBtn, '');
+  /* ── Inbox : trois onglets, la liste à gauche, l'élément choisi à droite ──
+     À décider : les demandes à accepter ou non. Retours : révisions et
+     messages des clients. Pour info : ce qui a été validé, complété, créé.
+     Le même dessin que l'écran Tâches, pour ne pas réapprendre. */
+  var INB = { onglet: 'decider', sel: null };
+  var INB_CAT = { demande: 'decider', revision: 'retours', rework: 'retours', comment: 'retours', qnr: 'info', task: 'info', ticket: 'info', validated: 'info' };
+  var INB_TAG = { demande: ['Demande', 'paille'], revision: ['À revoir', 'retard'], rework: ['Retours reçus', 'paille'], comment: ['Message', 'relance'],
+    qnr: ['Questionnaire', 'estim'], task: ['Nouvelle tâche', 'estim'], ticket: ['Ticket', 'estim'], validated: ['Validé', 'relance'] };
+  function inbSetOnglet(o) { INB.onglet = o; INB.sel = null; renderInboxBody(); }
+  function inbChoisir(k) { INB.sel = k; renderInboxBody(); }
+  function inbCle(it) { return it.type + ':' + it.x.key + ':' + it.x.id; }
+  function inbUrgent(it) { return it.type === 'demande' && (it.x.urgency === 'haute' || it.x.urgency === 'urgent'); }
+  function inbTag(it) {
+    var t = INB_TAG[it.type] || ['À voir', 'info'];
+    if (inbUrgent(it)) t = ['Demande, urgent', 'retard'];
+    return '<span class="ck-tag ck-tag--' + t[1] + '">' + esc(t[0]) + '</span>';
   }
+  function inbQuand(at) {
+    var w = at ? new Date(at) : null; if (!w || isNaN(w)) return '';
+    var auj = new Date(); auj.setHours(0, 0, 0, 0);
+    var j = new Date(w); j.setHours(0, 0, 0, 0);
+    var h = w.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ');
+    var diff = Math.round((auj - j) / 86400000);
+    return diff <= 0 ? h : diff === 1 ? 'hier, ' + h : w.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+  function renderInboxBody() {
+    var b = el('inbox-body'); if (!b) return;
+    var toutes = inboxItems();
+    var par = { decider: [], retours: [], info: [] };
+    toutes.forEach(function (it) { par[INB_CAT[it.type] || 'info'].push(it); });
+    var l = par[INB.onglet];
+    var sel = l.filter(function (it) { return inbCle(it) === INB.sel; })[0] || l[0] || null;
+    INB.sel = sel ? inbCle(sel) : null;
+    var ong = function (o, cls, nom, sous) {
+      var on = INB.onglet === o;
+      return '<button role="tab" aria-selected="' + on + '" class="ckt-ong ckt-ong--' + cls + (on ? ' on' : '') + '" onclick="ADM.inbSetOnglet(\'' + o + '\')">' +
+        '<span class="ckt-ong__t"><span class="ckt-ong__n">' + nom + '</span><span class="ckt-ong__h">' + sous + '</span></span>' +
+        '<span class="ckt-ong__c num">' + par[o].length + '</span></button>';
+    };
+    var n = l.length;
+    var resume = INB.onglet === 'decider'
+      ? '<b>' + (n ? n + ' demande' + (n > 1 ? 's' : '') + ' à décider' : 'Rien à décider') + '</b><span class="ckg-doux">Accepter en fait une tâche, dans Tâches.</span>'
+      : INB.onglet === 'retours'
+        ? '<b>' + (n ? n + ' retour' + (n > 1 ? 's' : '') + ' de tes clients' : 'Aucun retour en attente') + '</b>'
+        : '<b>' + (n ? n + ' chose' + (n > 1 ? 's' : '') + ' à voir' : 'Rien de neuf') + '</b>' +
+          (n > 1 ? '<button class="ckt-rac" onclick="ADM.inbToutVu()">Tout marquer comme vu</button>' : '');
+    // Par jour : Aujourd'hui, Hier, Cette semaine, Plus tôt.
+    var auj = new Date(); auj.setHours(0, 0, 0, 0);
+    var jourDe = function (at) {
+      var t = at ? new Date(at) : null; if (!t || isNaN(t)) return 'Plus tôt';
+      t.setHours(0, 0, 0, 0); var d = Math.round((auj - t) / 86400000);
+      return d <= 0 ? 'Aujourd’hui' : d === 1 ? 'Hier' : d <= 7 ? 'Cette semaine' : 'Plus tôt';
+    };
+    var ordre = ['Aujourd’hui', 'Hier', 'Cette semaine', 'Plus tôt'], jours = {};
+    l.forEach(function (it) { var k = jourDe(it.at); (jours[k] = jours[k] || []).push(it); });
+    var liste = ordre.filter(function (k) { return jours[k]; }).map(function (k) {
+      return '<section class="ckg"><div class="inb-j">' + k + '</div>' + jours[k].map(function (it) {
+        var x = it.x, on = sel && inbCle(it) === inbCle(sel);
+        return '<div class="ckg-r inb-r' + (on ? ' on' : '') + '" tabindex="0" data-kb role="button" aria-pressed="' + !!on + '" onclick="ADM.inbChoisir(\'' + esc(inbCle(it)) + '\')">' +
+          '<div><div class="ckg-tt">' + esc(x.title || x.name || 'Sans titre') + '</div>' +
+          '<div class="ckg-ctx">' + esc(x.client || '') + (x.projectLabel ? ' · ' + esc(x.projectLabel) : '') + '</div></div>' +
+          '<div class="inb-rd">' + inbTag(it) + '<span class="ckg-doux num">' + esc(inbQuand(it.at)) + '</span></div></div>';
+      }).join('') + '</section>';
+    }).join('');
+    var vide = { decider: 'Rien à décider : tout est traité.', retours: 'Aucun retour en attente.', info: 'Rien de neuf depuis ta dernière visite.' }[INB.onglet];
+    b.className = 'wrap ck ckt inb inb--' + INB.onglet;
+    b.innerHTML = '<h1 class="ck-h1">Inbox</h1>' +
+      '<div class="ckt-ongs inb-ongs" role="tablist" aria-label="Ce qui arrive">' +
+        ong('decider', 'clients', 'À décider', 'Demandes à accepter ou non') +
+        ong('retours', 'stb', 'Retours', 'Révisions et messages') +
+        ong('info', 'info', 'Pour info', 'Validé, complété, créé') + '</div>' +
+      '<div class="ckt-barre"><div class="ckt-resume num">' + resume + '</div></div>' +
+      (sel ? '<div class="ckt-corps"><div class="ckt-groupes">' + liste + '</div>' + inbPanneau(sel) + '</div>'
+           : '<div class="ck-vide">' + vide + '</div>');
+  }
+  function inbPanneau(it) {
+    var x = it.x, k = esc(x.key), i = esc(x.id), t = it.type;
+    var faits = [];
+    if (t === 'demande') {
+      faits.push(['Souhaitée pour', x.dueDate ? ckpDateLongue(String(x.dueDate).slice(0, 10)) : 'Pas de date', '']);
+      faits.push(['Forfait', x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'Épuisé' : ckpDuree(Math.round(x.forfaitRemaining * 60))) : 'Non défini', x.forfaitConfigured && x.forfaitRemaining > 0 ? 'restant ce mois' : '']);
+      faits.push(['Ce mois-ci', (x.monthCount || 0) + ' demande' + (x.monthCount > 1 ? 's' : ''), x.avgMinutes ? fmtMin(x.avgMinutes) + ' en moyenne' : '']);
+    } else if (t === 'revision' && x.wishDate) {
+      faits.push(['Nouvelle date souhaitée', ckpDateLongue(String(x.wishDate).slice(0, 10)), '']);
+    }
+    var corps = '', titreCorps = 'Le détail';
+    if (t === 'demande') {
+      var bf = taskBrief(x); titreCorps = 'Sa demande';
+      corps = (bf.blocks ? ptBlocksHtml(x, x.key, '').replace(/<div class="micro"[^>]*>[^<]*<\/div>/, '') : (bf.text ? '<p class="ckp-bt">' + mtLinkify(bf.text) + '</p>' : '')) + briefTableHtml(x.table);
+    } else if (t === 'revision') {
+      titreCorps = 'Son retour';
+      corps = x.comment ? '<p class="ckp-bt">« ' + esc(x.comment) + ' »</p>' : '<p class="ckg-doux">Pas de commentaire.</p>';
+    } else if (t === 'comment') { titreCorps = 'Son message'; corps = x.text ? '<p class="ckp-bt">' + esc(x.text) + '</p>' : ''; }
+    else if (t === 'rework') { titreCorps = 'Ses retours'; corps = (x.text || x.content) ? '<p class="ckp-bt">' + esc(x.text || x.content) + '</p>' : ''; }
+    else if (t === 'validated') { titreCorps = 'Validé'; corps = '<p class="ckp-bt">' + esc(x.name || 'Livrable') + (x.taskTitle ? ', pour « ' + esc(x.taskTitle) + ' »' : '') + '.</p>'; }
+    else if (t === 'qnr') { titreCorps = 'Questionnaire complété'; corps = '<p class="ckp-bt">' + esc(x.name || 'Questionnaire') + '</p>'; }
+    else { corps = x.content ? '<p class="ckp-bt">' + mtLinkify(x.content) + '</p>' : ''; }
+    corps += inboxAtts(x);
+    if (x.clientLink) corps += '<p class="ckp-tab"><a href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Le lien donné par le client</a></p>';
+    var fiche = ['Ouvrir la fiche client', 'ADM.openClient(\'' + k + '\')'];
+    var vu = 'ADM.inboxSeen(\'' + t + '\',\'' + k + '\',\'' + i + '\'' + ((t === 'validated' || t === 'revision') ? ',\'' + esc(x.project || 'partner') + '\'' : '') + ')';
+    var actions;
+    if (t === 'demande') {
+      actions = '<button class="btn btn--dark" onclick="ADM.inboxTriage(\'' + k + '\',\'' + i + '\',\'accept\')">Accepter en tâche</button>' +
+        '<button class="pjc-lien" onclick="ADM.inboxProposeDate(\'' + k + '\',\'' + i + '\',\'' + esc(String(x.dueDate || '').slice(0, 10)) + '\')">Proposer une date</button>' +
+        '<span class="ck-esp"></span>' + ckMenuHtml([['Hors forfait', 'ADM.inboxTriage(\'' + k + '\',\'' + i + '\',\'hors_forfait\')'], fiche],
+          'ADM.inbRefuser(\'' + k + '\',\'' + i + '\')', 'haut', 'Refuser…');
+    } else if (t === 'revision') {
+      var args = '\'' + k + '\',\'' + esc(x.project || 'partner') + '\',' + (x.creationId ? '\'' + esc(x.creationId) + '\'' : 'null') + ',' + (x.taskId ? '\'' + esc(x.taskId) + '\'' : 'null') + ',\'' + i + '\'';
+      actions = '<button class="btn btn--dark" onclick="ADM.inboxResend(' + args + ')">Renvoyer une version</button>' +
+        '<button class="pjc-lien" onclick="ADM.inboxResendLink(' + args + ')">Renvoyer un lien</button>' +
+        '<span class="ck-esp"></span>' + ckMenuHtml([['C’est vu', vu], fiche], '', 'haut');
+    } else {
+      actions = '<button class="btn btn--dark" onclick="' + vu + '">C’est vu</button>' +
+        '<button class="pjc-lien" onclick="ADM.inboxDrawer(\'' + t + '\',\'' + k + '\',\'' + i + '\')">Ouvrir le détail</button>' +
+        '<span class="ck-esp"></span>' + ckMenuHtml([fiche], '', 'haut');
+    }
+    return '<aside class="ckp" aria-label="Élément choisi">' +
+      '<div class="ckp-h"><div class="ckp-qui"><span><button class="ckp-cl" onclick="ADM.openClient(\'' + k + '\')">' + esc(x.client || '') + '</button>' +
+        (x.projectLabel ? ', ' + esc(x.projectLabel) : '') + '</span>' + inbTag(it) + '</div>' +
+        '<h2 class="ckp-t">' + esc(x.title || x.name || 'Sans titre') + '</h2></div>' +
+      (faits.length ? '<dl class="ckp-f num" style="grid-template-columns:repeat(' + faits.length + ',1fr)">' + faits.map(function (f) {
+        return '<div><dt>' + esc(f[0]) + '</dt><dd><b>' + esc(f[1]) + '</b>' + (f[2] ? '<span>' + esc(f[2]) + '</span>' : '') + '</dd></div>'; }).join('') + '</dl>' : '') +
+      '<div class="ckp-b"><h3>' + titreCorps + '</h3>' + corps + '</div>' +
+      '<div class="ckp-a">' + actions + '</div></aside>';
+  }
+  // Refuser efface la demande de l'Inbox : on le confirme, comme une suppression.
+  function inbRefuser(key, id) {
+    admConfirm({ title: 'Refuser cette demande ?', message: 'Elle quitte l’Inbox et ne devient pas une tâche. Si c’est une question de budget, choisis plutôt « Hors forfait ».', yes: 'Oui, refuser', no: 'Annuler', danger: true }, function () {
+      inboxTriage(key, id, 'refuse');
+    });
+  }
+  function inbToutVu() {
+    inboxItems().filter(function (it) { return INB_CAT[it.type] === 'info'; }).forEach(function (it) {
+      inboxSeen(it.type, it.x.key, it.x.id, it.x.project);
+    });
+  }
+
+
   // Une fois la nouvelle version envoyée depuis l'Inbox : la demande de révision
   // est traitée → on la retire de l'Inbox et on la marque vue côté serveur.
   function inboxResendDone(key, project, oldId) {
@@ -1390,39 +1460,7 @@
     document.body.appendChild(ov);
     var i = el('ibx-dl-url'); if (i) i.focus();
   }
-  function inboxDemandeCard(it) {
-    var x = it.x;
-    var bf = taskBrief(x);
-    var urg = x.urgency === 'haute' || x.urgency === 'urgent';
-    var isProject = x.demandeType === 'project';
-    var projBadge = isProject ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#7a3a0a;background:#fdf3e8;padding:3px 8px;border-radius:999px;vertical-align:middle">🟠 Nouveau projet · devis</span>' : '';
-    var urgBadge = urg ? ' <span style="font-family:var(--font-micro);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a4a2c;background:#F0E2D6;padding:3px 8px;border-radius:999px;vertical-align:middle">Urgent</span>' : '';
-    var forfaitTxt = x.forfaitConfigured ? (x.forfaitRemaining <= 0 ? 'forfait épuisé' : 'reste ' + x.forfaitRemaining + ' h') : 'forfait non défini';
-    var forfaitCol = x.forfaitConfigured && x.forfaitRemaining <= 0 ? '#8a4a2c' : (x.forfaitConfigured && x.forfaitRemaining <= 2 ? 'var(--orange)' : 'var(--muted)');
-    var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Ajouter un lien</a>' : '';
-    var body =
-      '<div style="font-size:16px;font-weight:650;color:var(--terre);margin-top:5px">' + esc(x.title || 'Sans titre') + urgBadge + projBadge +
-        '<span style="float:right;font-family:var(--font-micro);font-size:15px;font-weight:600;color:' + forfaitCol + '">' + esc(forfaitTxt) + '</span>' +
-      '</div>' +
-      (bf.blocks
-        ? ptBlocksHtml(x, x.key, 'La demande du client')
-        : (bf.text ? '<div style="font-size:15px;color:var(--terre-600);line-height:1.5;margin-top:10px;white-space:pre-wrap">' + mtLinkify(bf.text) + '</div>' : '')) +
-      briefTableHtml(x.table) +
-      '<div class="row" style="gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-micro);font-size:15px;color:var(--muted)">' +
-        (x.dueDate ? '<span>📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong></span>' : '') +
-        '<span>📨 ' + x.monthCount + ' demande' + (x.monthCount > 1 ? 's' : '') + ' ce mois</span>' +
-        (x.avgMinutes ? '<span>⏱ Temps moyen : ' + fmtMin(x.avgMinutes) + '</span>' : '') +
-      '</div>' +
-      inboxAtts(x) +
-      (link ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">' + link + '</div>' : '');
-    var actions =
-      '<button class="btn btn--dark btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'accept\')">✓ Accepter → tâche</button>' +
-      '<button class="btn btn--outline btn--sm" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'hors_forfait\')">Hors forfait</button>' +
-      '<button class="btn btn--outline btn--sm" onclick="ADM.inboxProposeDate(\'' + x.key + '\',\'' + x.id + '\',\'' + esc((x.dueDate || '').slice(0, 10)) + '\')">📅 Proposer une date</button>' +
-      '<button class="btn btn--outline btn--sm" style="margin-left:auto;color:#5A2A11" onclick="ADM.inboxTriage(\'' + x.key + '\',\'' + x.id + '\',\'refuse\')">Refuser</button>' +
-      '<button class="pbtn" onclick="ADM.inboxDrawer(\'' + it.type + '\',\'' + x.key + '\',\'' + x.id + '\')">Ouvrir la fiche</button>';
-    return inboxChrome(it, body, actions, urg ? '#8a4a2c' : '');
-  }
+
   // Panneau latéral droit : ouvre le détail d'un élément d'Inbox sans quitter
   // la liste (au lieu de rediriger vers la fiche complète).
   /* Un tiroir à droite, partagé. L'inbox en avait un, les questionnaires un
@@ -1467,8 +1505,8 @@
     var contentTxt = x.content || x.text || x.comment || '';
     var chip = '<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:' + cfg.bg + ';color:' + cfg.ic + ';flex-shrink:0">' + admIcon(cfg.icon) + '</span>';
     var meta = [];
-    if (x.dueDate) meta.push('📅 Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong>');
-    if (x.createdAt) meta.push('🕐 ' + esc(fmtDate(x.createdAt)));
+    if (x.dueDate) meta.push('Souhaité : <strong style="color:var(--terre)">' + esc((x.dueDate || '').split('-').reverse().join('/')) + '</strong>');
+    if (x.createdAt) meta.push('Reçu le ' + esc(fmtDate(x.createdAt)));
     if (x.forfaitConfigured) meta.push(x.forfaitRemaining <= 0 ? 'Forfait épuisé' : 'Reste ' + x.forfaitRemaining + ' h');
     var link = x.clientLink ? '<a class="btn btn--outline btn--sm" href="' + esc(/^https?:\/\//i.test(x.clientLink) ? x.clientLink : 'https://' + x.clientLink) + '" target="_blank" rel="noopener">Lien de la cliente</a>' : '';
     // Actions selon le type (chaque action ferme le panneau puis agit)
@@ -1524,7 +1562,7 @@
     else if (type === 'validated' || type === 'revision') { url = '/api/clients/' + key + '/deliverables/' + id; body = { projectId: project || 'partner', seenByAdmin: true }; }
     else { url = '/api/clients/' + key + '/tasks/' + id; body = { projectId: 'partner', clientNotif: false }; }
     jpost(url, body, 'PATCH').catch(function () {});
-    toast('Traité ✓');
+    toast('C’est noté');
   }
   function inboxTriage(key, id, action, after) {
     var labels = { accept: 'Accepter cette demande et en faire une tâche planifiée ?', hors_forfait: 'Marquer comme hors forfait (la cliente sera prévenue que ça nécessite un devis) ?', refuse: 'Refuser et archiver cette demande ?' };
@@ -5283,12 +5321,12 @@
   /* Le menu « ⋯ » : les gestes rares ou à conséquences, jamais à côté du
    * geste principal. Supprimer est toujours dernier, séparé. */
   // Le menu « ⋯ », écrit une fois : items = [[libellé, geste]], supprimer à part.
-  function ckMenuHtml(items, supprimer, vers) {
+  function ckMenuHtml(items, supprimer, vers, libelle) {
     return '<div class="ckm' + (vers === 'haut' ? ' ckm--haut' : '') + '">' +
       '<button class="ckm-b" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions" onclick="event.stopPropagation();ADM.ckMenu(this)">' + ICON_POINTS + '</button>' +
       '<div class="ckm-l" role="menu" hidden>' + items.map(function (x) {
         return '<button role="menuitem" class="ckm-i" onclick="' + x[1] + '">' + esc(x[0]) + '</button>';
-      }).join('') + (supprimer ? '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="' + supprimer + '">Supprimer…</button>' : '') + '</div></div>';
+      }).join('') + (supprimer ? '<hr><button role="menuitem" class="ckm-i ckm-i--del" onclick="' + supprimer + '">' + esc(libelle || 'Supprimer…') + '</button>' : '') + '</div></div>';
   }
   function ckTMenu(t, vers) {
     var k = esc(t.key), i = esc(t.id), p = esc(t.projet || 'partner');
@@ -12560,7 +12598,7 @@
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
-    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
+    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, inbSetOnglet: inbSetOnglet, inbChoisir: inbChoisir, inbRefuser: inbRefuser, inbToutVu: inbToutVu, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,

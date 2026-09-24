@@ -2670,3 +2670,22 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .ckp-a{margin-top:auto}
 .ckp-f + .ckp-a{margin-top:0}
 .ckt--stb .ckg-r.on .ck-tag--paille{background:#fff}
+
+/* ── Inbox (maquette validée) ── */
+.main:has(.inb){background:#F8F6F2}
+.inb .ck-h1{font-family:'Cormorant Garamond',Georgia,serif;font-style:normal;font-weight:400;font-size:44px;margin:8px 0 18px}
+.inb-ongs .ckt-ong{flex:1;min-width:0}
+.ckt-ong--info.on{background:#F0E9D6}
+.inb-j{padding:10px 12px 8px;font-size:15px;font-weight:700}
+.inb-r{grid-template-columns:minmax(0,1fr) auto}
+.inb-rd{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right}
+.inb-r.on .ck-tag--paille,.inb-r.on .ck-tag--relance{background:#fff}
+.inb .ckp-qui .ck-tag{background:#fff;color:#110704}
+.inb .ckp-bt{margin:0;font-size:16px;line-height:1.55;white-space:pre-wrap}
+.inb .ckp-tab a{color:#5A2A11;font-weight:600}
+.inb .ckp-a .btn--dark{min-height:44px}
+.inb .ckp-a{gap:14px;padding:16px 24px 18px}
+/* La ligne choisie et le panneau prennent la couleur de l'onglet */
+.inb--retours .ckg-r.on,.inb--retours .ckp-h{background:#E6E5B2}
+.inb--info .ckg-r.on,.inb--info .ckp-h{background:#F0E9D6}
+.inb--retours .inb-r.on .ck-tag--paille{background:#fff}
