@@ -5919,12 +5919,17 @@
   }
 
   function ckJSetFiltre(f) { CKJ.filtre = f; renderCockpitProjetsBody(); }
+  /* Où l'on arrive en ouvrant un projet : là où il se travaille.
+   * Un support de com vit par ses créations ; une vue d'ensemble en tête
+   * n'était qu'une page qu'on traversait sans la lire. Les autres prestations
+   * gardent leur synthèse, qui elle dit quelque chose. */
+  function ckJOngletDefaut(p) { return (p && p.prestation === 'support') ? 'creations' : 'ensemble'; }
   function ckJOuvrir(id) {
     navPas(function () {
       // On retient où l'on était dans la liste : la refermer doit y revenir,
       // pas nous reposer en haut de la page.
       CKJ.y = window.scrollY || 0;
-      CKJ.ouvert = id; CKJ.onglet = 'ensemble'; CKJ.chargeFait = null;
+      CKJ.ouvert = id; CKJ.onglet = ckJOngletDefaut(ckJTrouver(id)); CKJ.chargeFait = null;
       renderCockpitProjetsBody(); window.scrollTo(0, 0);
     });
   }
@@ -6078,12 +6083,18 @@
      * livrables, forfait, tickets, questionnaire, messages), puis ses fichiers.
      * On ne réécrit pas ces sections : ce sont les mêmes blocs, avec les mêmes
      * gestes. Deux copies finiraient par dire deux choses. */
-    var onglets = [['ensemble', 'Vue d’ensemble', 0]];
+    var estSupport = p.prestation === 'support';
+    var onglets = estSupport ? [] : [['ensemble', 'Vue d’ensemble', 0]];
     if (d) { sectionsFor(d).forEach(function (x) { if (x[0] !== 'apercu') onglets.push(x); }); }
-    else if (p.prestation !== 'support') { onglets.push(['etapes', 'Étapes', 0]); }
+    else if (!estSupport) { onglets.push(['etapes', 'Étapes', 0]); }
     onglets.push(['fichiers', 'Fichiers', 0]);
-    // L'onglet ouvert ailleurs ne doit pas laisser une page vide ici.
-    if (!onglets.some(function (o) { return o[0] === CKJ.onglet; })) CKJ.onglet = 'ensemble';
+    // L'onglet ouvert ailleurs ne doit pas laisser une page vide ici. Tant que
+    // la charge n'est pas arrivée, on ne corrige rien : ses sections manquent
+    // encore, et on renverrait sur un onglet qu'on n'a pas demandé.
+    if (d && !onglets.some(function (o) { return o[0] === CKJ.onglet; })) {
+      var def = ckJOngletDefaut(p);
+      CKJ.onglet = onglets.some(function (o) { return o[0] === def; }) ? def : onglets[0][0];
+    }
     var tn = ckTeinte({ presta2: p.prestation });
     return '<button class="btn btn--outline btn--sm" onclick="ADM.ckJFermer()">← Tous les projets</button>' +
       '<div class="ckj-band' + (tn.sombre ? ' ckj-band--sombre' : '') +
@@ -6111,7 +6122,11 @@
       (CKJ.onglet === 'ensemble' ? ckJEnsemble(p, b, d)
         : CKJ.onglet === 'fichiers' ? ckJOngletFichiers(p)
         : CKJ.onglet === 'etapes' ? ckJOngletEtapes(p)
-        : d ? '<div class="cl2 ckj-sec">' + sectionContent(d, CKJ.onglet) + '</div>'
+        // Un support n'a plus de vue d'ensemble : ce qu'elle disait de vrai
+        // (où en est le planning, ce qui attend un retour) passe au-dessus de
+        // ses créations, là où il travaille.
+        : d ? ((estSupport && CKJ.onglet === 'creations' ? ckJBandePlanning(p) + ckJRetours(p) : '') +
+               '<div class="cl2 ckj-sec">' + sectionContent(d, CKJ.onglet) + '</div>')
         : '<div class="empty"><div class="spin" style="margin:20px auto"></div></div>');
   }
 
@@ -6201,11 +6216,14 @@
     var pct = jal ? Math.round(faits / jal * 100) : 0;
     var cu = l[0].si.ended ? null : l[0].si.current;
     var OWN = { studio: 'de ton côté', cliente: 'chez ta cliente', les_deux: 'à deux' };
+    // Quand le bandeau du projet est déjà foncé, la bande s'éclaircit : deux
+    // aplats sombres l'un sur l'autre ne se distinguent plus.
+    var clair = !!(ckTeinte({ presta2: p.prestation }) || {}).sombre;
     return '<section class="ck-sec">' +
       ckpTitre('Où on en est dans le planning',
         faits + ' jalon' + (faits > 1 ? 's' : '') + ' sur ' + jal + ' terminé' + (faits > 1 ? 's' : '') +
         (retard ? ' : ' + retard + ' en retard' : '') + '.') +
-      '<div class="ckj-pl">' +
+      '<div class="ckj-pl' + (clair ? ' ckj-pl--clair' : '') + '">' +
         '<div class="ckj-plj"><span style="width:' + pct + '%"></span></div>' +
         (cu ? '<div class="ckj-plc">' +
           '<span class="ck-ts">' + (cu.j.status === 'en_cours' ? 'En cours' : 'Prochain jalon') + '</span>' +

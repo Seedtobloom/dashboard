@@ -2270,6 +2270,13 @@ select.cg-in{cursor:pointer}
 .ckj-plc b{font-size:15px;color:var(--paille)}
 .ckj-pl .ck-ts{color:rgba(248,246,242,.72)}
 .ckj-pl .btn--outline{background:rgba(248,246,242,.16);color:#F8F6F2}
+/* Variante claire, quand le bandeau du projet est déjà en aplat foncé. */
+.ckj-pl--clair{background:var(--card);color:var(--ebene)}
+.ckj-pl--clair .ckj-plj{background:rgba(17,7,4,.12)}
+.ckj-pl--clair .ckj-plj span{background:var(--cuivre)}
+.ckj-pl--clair .ckj-plc b{color:var(--cuivre)}
+.ckj-pl--clair .ck-ts{color:rgba(17,7,4,.62)}
+.ckj-pl--clair .btn--outline{background:rgba(17,7,4,.09);color:var(--ebene)}
 .ckj-pl .btn{align-self:flex-start}
 .ckj-ret+.ckj-ret{margin-top:6px;padding-top:12px;border-top:1px solid var(--border)}
 .ckj-rett{display:block;margin-bottom:6px}
