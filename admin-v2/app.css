@@ -2647,3 +2647,26 @@ h1.cdhead__n{margin:0;font-weight:400;font-size:36px}
 .cke-aj{display:flex;align-items:center;gap:12px;margin-top:10px}
 .cke-aj .inp{max-width:340px}
 .ckgv-s h2 .ckg-doux{font-weight:400}
+/* Mes clients / Seed to Bloom : deux onglets en blocs de couleur */
+.ckt-ongs{display:flex;gap:16px;margin:0 0 22px}
+.ckt-ong{display:flex;align-items:center;gap:14px;min-width:300px;padding:16px 22px;border:none;border-radius:16px;background:#fff;color:#7a5540;box-shadow:0 1px 2px rgba(17,7,4,.08);cursor:pointer;text-align:left;font:inherit}
+.ckt-ong:hover{color:#110704}
+.ckt-ong.on{box-shadow:none;color:#110704}
+.ckt-ong--clients.on{background:#C5DEFF}
+.ckt-ong--stb.on{background:#E6E5B2}
+.ckt-ong__i{width:40px;height:40px;flex-shrink:0;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:22px;color:#110704}
+.ckt-ong--clients .ckt-ong__i{background:#C5DEFF}
+.ckt-ong--stb .ckt-ong__i{background:#E6E5B2}
+.ckt-ong.on .ckt-ong__i{background:#fff}
+.ckt-ong__t{display:flex;flex-direction:column;gap:2px;flex:1}
+.ckt-ong__n{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:28px;line-height:1}
+.ckt-ong__h{font-size:15px;color:#7a5540}
+.ckt-ong.on .ckt-ong__h{color:#3b2a20}
+.ckt-ong__c{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:#F0E9D6;color:#110704}
+.ckt-ong.on .ckt-ong__c{background:#110704;color:#F8F6F2}
+.ckt-ong:focus-visible{outline:2px solid #110704;outline-offset:3px}
+/* Côté Seed to Bloom, la tâche choisie et son panneau prennent la paille de l'onglet */
+.ckt--stb .ckg-r.on,.ckt--stb .ckp-h{background:#E6E5B2}
+.ckp-a{margin-top:auto}
+.ckp-f + .ckp-a{margin-top:0}
+.ckt--stb .ckg-r.on .ck-tag--paille{background:#fff}

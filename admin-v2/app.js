@@ -5102,9 +5102,12 @@
      fichiers et les échanges.
      ════════════════════════════════════════════════════════════════════════ */
 
-  var CKT = { tri: 'priorite', filtre: 'tout', ouverte: null, grand: false };
+  // cote : les tâches des clients et celles de Seed to Bloom ne se mélangent pas.
+  var CKT = { tri: 'priorite', filtre: 'tout', ouverte: null, grand: false, cote: 'clients' };
 
   function ckTSetTri(v) { CKT.tri = v; renderCockpitTaches(); }
+  function ckTSetCote(v) { CKT.cote = v; CKT.filtre = 'tout'; CKT.ouverte = null; renderCockpitTaches(); }
+  function ckTDuCote(t) { return (t.src === 'perso') === (CKT.cote === 'stb'); }
   // Cliquer une deuxième fois sur un raccourci le retire : la liste revient entière.
   function ckTSetFiltre(v) { CKT.filtre = CKT.filtre === v ? 'tout' : v; renderCockpitTaches(); }
   // Arriver sur l'écran Tâches avec, sous les yeux, exactement ce qui manque.
@@ -5116,11 +5119,15 @@
     CKT.ouverte = id; renderCockpitTaches();
   }
   // Ouvrir une tâche précise depuis un autre écran (l'Accueil, par exemple).
-  function ckTVoir(id) { CKT.ouverte = id; CKT.grand = false; CKT.filtre = 'tout'; nav('cktaches'); }
+  function ckTVoir(id) {
+    var t = ckTTrouve(id);
+    if (t) CKT.cote = t.src === 'perso' ? 'stb' : 'clients';
+    CKT.ouverte = id; CKT.grand = false; CKT.filtre = 'tout'; nav('cktaches');
+  }
   function ckTGrand(v) { CKT.grand = !!v; renderCockpitTaches(); window.scrollTo(0, 0); }
 
   function ckTListe() {
-    var l = ckpTaches();
+    var l = ckpTaches().filter(ckTDuCote);
     if (CKT.filtre === 'sansplace') l = l.filter(function (t) { return ckpAPlanifier(t) > 0; });
     if (CKT.filtre === 'aestimer') l = l.filter(function (t) { return ckpRestant(t) === null; });
     if (CKT.tri === 'echeance') {
@@ -5155,7 +5162,7 @@
       setMain('<div class="wrap"><div class="empty"><div class="spin" style="margin:20px auto"></div></div></div>');
       return ckpCharger(renderCockpitTaches);
     }
-    var tout = ckpTaches(), l = ckTListe();
+    var toutes = ckpTaches(), tout = toutes.filter(ckTDuCote), l = ckTListe();
     // La tâche ouverte reste celle qu'on a choisie tant qu'elle est dans la
     // liste ; sinon la première, pour que le panneau ne soit jamais vide.
     var ouverte = l.filter(function (t) { return t.id === CKT.ouverte; })[0] || l[0] || null;
@@ -5163,7 +5170,6 @@
     if (CKT.grand && ouverte) return setMain(ckTGrandeVue(ouverte, l));
     CKT.grand = false;
 
-    var restant = tout.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
     var nEstim = tout.filter(function (t) { return ckpRestant(t) === null; }).length;
     var nPlace = tout.filter(function (t) { return ckpAPlanifier(t) > 0; }).length;
     var raccourci = function (v, n, lib) {
@@ -5174,22 +5180,38 @@
         return '<option value="' + o[0] + '"' + (CKT.tri === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
       }).join('') + '</select></label>';
 
-    setMain('<div class="wrap ck ckt">' +
+    setMain('<div class="wrap ck ckt' + (CKT.cote === 'stb' ? ' ckt--stb' : '') + '">' +
         '<h1 class="ck-h1">Tout ce qui reste</h1>' +
-        '<div class="ckt-barre"><div class="ckt-resume num"><b>' + tout.length + ' tâche' + (tout.length > 1 ? 's' : '') +
-          (restant ? ', ' + esc(ckpDuree(restant)) + ' à faire' : '') + '</b>' +
+        ckTOnglets(toutes) +
+        // Le temps à faire est déjà dit par l'onglet : la ligne ne redit que le compte.
+        '<div class="ckt-barre"><div class="ckt-resume num"><b>' + tout.length + ' tâche' + (tout.length > 1 ? 's' : '') + '</b>' +
           raccourci('aestimer', nEstim, 'à estimer') + raccourci('sansplace', nPlace, 'sans créneau') +
           (CKT.filtre !== 'tout' ? '<button class="ckt-rac" onclick="ADM.ckTSetFiltre(\'' + CKT.filtre + '\')">Tout voir</button>' : '') +
         '</div>' + tri + '</div>' +
         (l.length
-          ? '<div class="ckt-corps"><div class="ckt-groupes">' + ckTParCliente(l).map(ckTGroupe).join('') + ckTAjoutStb() + '</div>' +
+          ? '<div class="ckt-corps"><div class="ckt-groupes">' +
+              (CKT.cote === 'stb' ? '<section class="ckg">' + l.map(ckTRang).join('') + '</section>' + ckTAjoutStb()
+                : ckTParCliente(l).map(ckTGroupe).join('')) + '</div>' +
               ckTPanneauDroit(ouverte) + '</div>'
-          : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>' + ckTAjoutStb()) +
+          : '<div class="ck-vide">Rien ici. Ce n’est pas un écran vide, c’est une bonne nouvelle.</div>' + (CKT.cote === 'stb' ? ckTAjoutStb() : '')) +
       '</div>');
   }
 
   // Les tâches de Seed to Bloom se créent ici : c'était le rôle des anciens
   // écrans « Toutes les tâches » et « Ma semaine », retirés du menu.
+  // Deux onglets en blocs : l'onglet ouvert prend sa couleur en fond.
+  function ckTOnglets(toutes) {
+    var un = function (cote, lettre, nom) {
+      var l = toutes.filter(function (t) { return (t.src === 'perso') === (cote === 'stb'); });
+      var h = l.reduce(function (s, t) { return s + (ckpRestant(t) || 0); }, 0);
+      var on = CKT.cote === cote;
+      return '<button role="tab" aria-selected="' + on + '" class="ckt-ong ckt-ong--' + cote + (on ? ' on' : '') + '" onclick="ADM.ckTSetCote(\'' + cote + '\')">' +
+        '<span class="ckt-ong__i" aria-hidden="true">' + lettre + '</span>' +
+        '<span class="ckt-ong__t"><span class="ckt-ong__n">' + nom + '</span><span class="ckt-ong__h num">' + (h ? esc(ckpDuree(h)) + ' à faire' : 'Rien à faire') + '</span></span>' +
+        '<span class="ckt-ong__c num">' + l.length + '</span></button>';
+    };
+    return '<div class="ckt-ongs" role="tablist" aria-label="Quelles tâches">' + un('clients', 'M', 'Mes clients') + un('stb', 'S', 'Seed to Bloom') + '</div>';
+  }
   function ckTAjoutStb() {
     return '<details class="ckt-ajout"><summary>Ajouter une tâche Seed to Bloom</summary>' +
       '<div class="ckt-ajout__f"><input class="inp" id="ckt-stb" aria-label="Titre de la tâche" placeholder="Préparer la newsletter" ' +
@@ -5201,7 +5223,7 @@
     if (!v) { if (champ) champ.focus(); return; }
     jpost('/api/admin/tasks', { title: v }).then(function (r) { return r.ok ? r.json() : null; }).then(function (t) {
       if (!t) { toast('Erreur'); return; }
-      toast('Tâche ajoutée'); CKT.ouverte = t.id || null; CKT.filtre = 'tout'; ckTRecharger();
+      toast('Tâche ajoutée'); CKT.cote = 'stb'; CKT.ouverte = t.id || null; CKT.filtre = 'tout'; ckTRecharger();
     }).catch(function () { toast('Erreur'); });
   }
   function ckTGroupe(g) {
@@ -12538,7 +12560,7 @@
     toggleTicketsSpace: toggleTicketsSpace, ticketStatus: ticketStatus, ticketDue: ticketDue, ticketTime: ticketTime, ticketDelete: ticketDelete, ticketForfait: ticketForfait, ticketProposeDate: ticketProposeDate,
     ckpReste: ckpReste, ckpEstim: ckpEstim, ckpFinir: ckpFinir, ckpPasMaintenant: ckpPasMaintenant, ckpOrdreSysteme: ckpOrdreSysteme,
     ckTSetTri: ckTSetTri, ckTSetFiltre: ckTSetFiltre, ckTOuvrir: ckTOuvrir, ckTGrand: ckTGrand, ckMenu: ckMenu,
-    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
+    ckTRepondre: ckTRepondre, ckTCloturer: ckTCloturer, ckTSupprimer: ckTSupprimer, ckTCreerStb: ckTCreerStb, ckTSetCote: ckTSetCote, ckTVoir: ckTVoir, ckTEtape: ckTEtape,
     ckTAEstimer: ckTAEstimer,
     ckLChoisir: ckLChoisir, ckLSemaine: ckLSemaine, ckLPoser: ckLPoser, ckLRetirer: ckLRetirer,
     ckLRegSet: ckLRegSet, ckLRegEnregistrer: ckLRegEnregistrer, ckLRegAnnuler: ckLRegAnnuler,
